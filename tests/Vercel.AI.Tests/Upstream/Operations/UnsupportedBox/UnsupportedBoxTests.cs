@@ -20,7 +20,10 @@ public sealed class UnsupportedBoxTests
     {
         public int Calls { get; private set; }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
         {
             Calls++;
             throw new InvalidOperationException("The provider must not be called.");
@@ -31,15 +34,27 @@ public sealed class UnsupportedBoxTests
     [InlineData("openai")]
     [InlineData("google")]
     [InlineData("gateway")]
-    [UpstreamTest("packages/ai/src/decide/unsupported-box.test.ts::rejects box questions in %s before downloading files or calling the provider", Coverage = UpstreamCoverage.Partial, Note = "The models are sealed, so the test checks that the HTTP handler is never reached instead of spying on DoDecideAsync.")]
-    public async Task Rejects_box_questions_in_provider_before_downloading_files_or_calling_the_provider(string provider)
+    [UpstreamTest(
+        "packages/ai/src/decide/unsupported-box.test.ts::rejects box questions in %s before downloading files or calling the provider",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The models are sealed, so the test checks that the HTTP handler is never reached instead of spying on DoDecideAsync."
+    )]
+    public async Task Rejects_box_questions_in_provider_before_downloading_files_or_calling_the_provider(
+        string provider
+    )
     {
         var handler = new CountingHandler();
         IDecisionCaller model = provider switch
         {
-            "openai" => OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test" }, handler).DecisionModel("test"),
-            "google" => GoogleProvider.Create(new GoogleOptions { ApiKey = "test" }, handler).DecisionModel("test"),
-            _ => GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }, handler).DecisionModel("test"),
+            "openai" => OpenAIProvider
+                .Create(new OpenAIOptions { ApiKey = "test" }, handler)
+                .DecisionModel("test"),
+            "google" => GoogleProvider
+                .Create(new GoogleOptions { ApiKey = "test" }, handler)
+                .DecisionModel("test"),
+            _ => GatewayProvider
+                .Create(new GatewayOptions { ApiKey = "test" }, handler)
+                .DecisionModel("test"),
         };
         var downloads = 0;
         var previous = Download.Fetch;
@@ -50,12 +65,29 @@ public sealed class UnsupportedBoxTests
                 downloads++;
                 return Task.FromResult(DownloadResponse.Bytes(new byte[] { 1 }, "image/png"));
             };
-            await Assert.ThrowsAnyAsync<DecisionUnsupportedQuestionTypeException>(() => DecideOperation.DecideAsync(new DecideRequest
-            {
-                Model = model,
-                State = S(new List<object?> { new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image/png", ["data"] = new Uri("https://example.com/cat.png") } }),
-                Questions = new Dictionary<string, DecisionQuestion> { ["target"] = Q("box", "The cat") },
-            }));
+            await Assert.ThrowsAnyAsync<DecisionUnsupportedQuestionTypeException>(() =>
+                DecideOperation.DecideAsync(
+                    new DecideRequest
+                    {
+                        Model = model,
+                        State = S(
+                            new List<object?>
+                            {
+                                new Dictionary<string, object?>
+                                {
+                                    ["type"] = "file",
+                                    ["mediaType"] = "image/png",
+                                    ["data"] = new Uri("https://example.com/cat.png"),
+                                },
+                            }
+                        ),
+                        Questions = new Dictionary<string, DecisionQuestion>
+                        {
+                            ["target"] = Q("box", "The cat"),
+                        },
+                    }
+                )
+            );
         }
         finally
         {

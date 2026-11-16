@@ -10,11 +10,14 @@ namespace Vercel.AI.Tests.OpenAIResponsesApi;
 /// <summary>Port of <c>openai-responses-api.test.ts</c> &gt; <c>openaiResponsesChunkSchema</c>.</summary>
 public sealed class OpenAIResponsesChunkSchemaTests
 {
-    private const string Prefix = "packages/openai/src/responses/openai-responses-api.test.ts::openaiResponsesChunkSchema::";
+    private const string Prefix =
+        "packages/openai/src/responses/openai-responses-api.test.ts::openaiResponsesChunkSchema::";
 
-    private const string ItemPrefix = "packages/openai/src/responses/openai-responses-api.test.ts::openaiResponsesChunkSchema > %s::";
+    private const string ItemPrefix =
+        "packages/openai/src/responses/openai-responses-api.test.ts::openaiResponsesChunkSchema > %s::";
 
-    private const string LocalShellPrefix = "packages/openai/src/responses/openai-responses-api.test.ts::openaiResponsesChunkSchema > %s local_shell_call::";
+    private const string LocalShellPrefix =
+        "packages/openai/src/responses/openai-responses-api.test.ts::openaiResponsesChunkSchema > %s local_shell_call::";
 
     public static TheoryData<string, string> RejectedItemEvents()
     {
@@ -30,7 +33,8 @@ public sealed class OpenAIResponsesChunkSchemaTests
         return data;
     }
 
-    public static TheoryData<string> ItemTypes() => ["response.output_item.added", "response.output_item.done"];
+    public static TheoryData<string> ItemTypes() =>
+        ["response.output_item.added", "response.output_item.done"];
 
     public static TheoryData<string, string> CompletedEvents()
     {
@@ -44,25 +48,32 @@ public sealed class OpenAIResponsesChunkSchemaTests
         return data;
     }
 
-    public static TheoryData<string, string> RefusalEvents() => new()
-    {
+    public static TheoryData<string, string> RefusalEvents() =>
+        new()
         {
-            "response.refusal.delta",
-            """{ "type": "response.refusal.delta", "content_index": 0, "delta": "I'm sorry", "item_id": "msg_1", "output_index": 0, "sequence_number": 4 }"""
-        },
-        {
-            "response.refusal.done",
-            """{ "type": "response.refusal.done", "content_index": 0, "item_id": "msg_1", "output_index": 0, "refusal": "I'm sorry, I can't assist with that.", "sequence_number": 5 }"""
-        },
-    };
+            {
+                "response.refusal.delta",
+                """{ "type": "response.refusal.delta", "content_index": 0, "delta": "I'm sorry", "item_id": "msg_1", "output_index": 0, "sequence_number": 4 }"""
+            },
+            {
+                "response.refusal.done",
+                """{ "type": "response.refusal.done", "content_index": 0, "item_id": "msg_1", "output_index": 0, "refusal": "I'm sorry, I can't assist with that.", "sequence_number": 5 }"""
+            },
+        };
 
-    private static bool IsValid(string json) => OpenAIResponsesSchema.IsValidChunk(OpenAIUpstream.Json(json));
+    private static bool IsValid(string json) =>
+        OpenAIResponsesSchema.IsValidChunk(OpenAIUpstream.Json(json));
 
-    private static string ItemEvent(string type, string itemProperty) => $$"""{ "type": "{{type}}", "output_index": 0{{itemProperty}} }""";
+    private static string ItemEvent(string type, string itemProperty) =>
+        $$"""{ "type": "{{type}}", "output_index": 0{{itemProperty}} }""";
 
     [Theory]
     [MemberData(nameof(RejectedItemEvents))]
-    [UpstreamTest(ItemPrefix + "rejects events with $name", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
+    [UpstreamTest(
+        ItemPrefix + "rejects events with $name",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc"
+    )]
     public void Rejects_events_with_name(string type, string name)
     {
         var itemProperty = name switch
@@ -78,10 +89,16 @@ public sealed class OpenAIResponsesChunkSchemaTests
 
     [Theory]
     [MemberData(nameof(ItemTypes))]
-    [UpstreamTest(Prefix + "keeps future item types forward compatible for %s", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
+    [UpstreamTest(
+        Prefix + "keeps future item types forward compatible for %s",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc"
+    )]
     public void Keeps_future_item_types_forward_compatible_for_s(string type)
     {
-        var chunk = OpenAIUpstream.Json(ItemEvent(type, ", \"item\": { \"id\": \"item_1\", \"type\": \"future_output_item\" }"));
+        var chunk = OpenAIUpstream.Json(
+            ItemEvent(type, ", \"item\": { \"id\": \"item_1\", \"type\": \"future_output_item\" }")
+        );
 
         Assert.True(OpenAIResponsesSchema.IsValidChunk(chunk));
         Assert.True(OpenAIResponsesSchema.IsUnknownChunk(chunk));
@@ -89,7 +106,11 @@ public sealed class OpenAIResponsesChunkSchemaTests
 
     [Theory]
     [MemberData(nameof(ItemTypes))]
-    [UpstreamTest(LocalShellPrefix + "accepts valid events", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
+    [UpstreamTest(
+        LocalShellPrefix + "accepts valid events",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc"
+    )]
     public void Accepts_valid_events(string type)
     {
         var chunk = OpenAIUpstream.Json(ItemEvent(type, ", \"item\": " + LocalShellItem(type)));
@@ -100,33 +121,57 @@ public sealed class OpenAIResponsesChunkSchemaTests
 
     [Theory]
     [MemberData(nameof(ItemTypes))]
-    [UpstreamTest(LocalShellPrefix + "rejects events without output_index", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
+    [UpstreamTest(
+        LocalShellPrefix + "rejects events without output_index",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc"
+    )]
     public void Rejects_events_without_output_index(string type)
     {
         Assert.False(IsValid($$"""{ "type": "{{type}}", "item": {{LocalShellItem(type)}} }"""));
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "accepts valid function call arguments done events", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
+    [UpstreamTest(
+        Prefix + "accepts valid function call arguments done events",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc"
+    )]
     public void Accepts_valid_function_call_arguments_done_events()
     {
-        Assert.True(IsValid("""
-            { "type": "response.function_call_arguments.done", "item_id": "item_1", "output_index": 0, "arguments": "{\"city\":\"Berlin\"}" }
-            """));
+        Assert.True(
+            IsValid(
+                """
+                { "type": "response.function_call_arguments.done", "item_id": "item_1", "output_index": 0, "arguments": "{\"city\":\"Berlin\"}" }
+                """
+            )
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects malformed function call arguments done events", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
+    [UpstreamTest(
+        Prefix + "rejects malformed function call arguments done events",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc"
+    )]
     public void Rejects_malformed_function_call_arguments_done_events()
     {
-        Assert.False(IsValid("""
-            { "type": "response.function_call_arguments.done", "item_id": "item_1", "arguments": "{\"city\":\"Berlin\"}" }
-            """));
+        Assert.False(
+            IsValid(
+                """
+                { "type": "response.function_call_arguments.done", "item_id": "item_1", "arguments": "{\"city\":\"Berlin\"}" }
+                """
+            )
+        );
     }
 
     [Theory]
     [MemberData(nameof(CompletedEvents))]
-    [UpstreamTest(ItemPrefix + "accepts responses with $name", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
+    [UpstreamTest(
+        ItemPrefix + "accepts responses with $name",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc"
+    )]
     public void Accepts_responses_with_name(string type, string name)
     {
         var response = name == "null usage" ? """{ "usage": null }""" : "{}";
@@ -136,7 +181,11 @@ public sealed class OpenAIResponsesChunkSchemaTests
 
     [Theory]
     [MemberData(nameof(RefusalEvents))]
-    [UpstreamTest(Prefix + "accepts $type events", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
+    [UpstreamTest(
+        Prefix + "accepts $type events",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc"
+    )]
     public void Accepts_type_events(string type, string json)
     {
         var chunk = OpenAIUpstream.Json(json);

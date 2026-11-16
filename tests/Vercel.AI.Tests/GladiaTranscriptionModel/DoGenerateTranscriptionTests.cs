@@ -14,198 +14,346 @@ namespace Vercel.AI.Tests.GladiaTranscriptionModel;
 public sealed class DoGenerateTranscriptionTests
 {
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should pass audio_url to pre-recorded endpoint", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should pass audio_url to pre-recorded endpoint",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldPassAudioUrlToPreRecordedEndpoint()
     {
         var handler = GladiaFixtures.Handler();
-        var provider = GladiaProvider.Create(new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask }, handler);
-        await provider.Transcription().TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
+        var provider = GladiaProvider.Create(
+            new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask },
+            handler
+        );
+        await provider
+            .Transcription()
+            .TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
         using var body = JsonDocument.Parse(handler.Calls[1].Text);
-        Assert.Equal("https://api.gladia.io/file/7403f025-be30-4335-ae29-20131e0adbd6", body.RootElement.GetProperty("audio_url").GetString());
+        Assert.Equal(
+            "https://api.gladia.io/file/7403f025-be30-4335-ae29-20131e0adbd6",
+            body.RootElement.GetProperty("audio_url").GetString()
+        );
         Assert.Equal("https://api.gladia.io/v2/pre-recorded", handler.Calls[1].Uri.AbsoluteUri);
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should pass provider options to pre-recorded endpoint", Coverage = UpstreamCoverage.Covered, Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb")]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should pass provider options to pre-recorded endpoint",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb"
+    )]
     public async Task ShouldPassProviderOptionsToPreRecordedEndpoint()
     {
         var handler = GladiaFixtures.Handler();
-        var request = GladiaFixtures.Options("""
+        var request = GladiaFixtures.Options(
+            """
             {"languageConfig":{"languages":["en"],"codeSwitching":true},"piiRedaction":true,
              "piiRedactionConfig":{"entityTypes":["EMAIL_ADDRESS","NAME"],"processedTextType":"MARKER"}}
-            """);
-        await GladiaFixtures.Provider(handler).Transcription().TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
+            """
+        );
+        await GladiaFixtures
+            .Provider(handler)
+            .Transcription()
+            .TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
         var body = GladiaFixtures.InitBody(handler);
-        Assert.Equal("https://api.gladia.io/file/7403f025-be30-4335-ae29-20131e0adbd6", (string?)body["audio_url"]);
-        Assert.Equal("""{"languages":["en"],"code_switching":true}""", body["language_config"]!.ToJsonString());
+        Assert.Equal(
+            "https://api.gladia.io/file/7403f025-be30-4335-ae29-20131e0adbd6",
+            (string?)body["audio_url"]
+        );
+        Assert.Equal(
+            """{"languages":["en"],"code_switching":true}""",
+            body["language_config"]!.ToJsonString()
+        );
         Assert.True((bool?)body["pii_redaction"]);
-        Assert.Equal("""{"entity_types":["EMAIL_ADDRESS","NAME"],"processed_text_type":"MARKER"}""", body["pii_redaction_config"]!.ToJsonString());
+        Assert.Equal(
+            """{"entity_types":["EMAIL_ADDRESS","NAME"],"processed_text_type":"MARKER"}""",
+            body["pii_redaction_config"]!.ToJsonString()
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should map deprecated language options to language_config", Coverage = UpstreamCoverage.Covered, Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb")]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should map deprecated language options to language_config",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb"
+    )]
     public async Task ShouldMapDeprecatedLanguageOptionsToLanguageConfig()
     {
         var handler = GladiaFixtures.Handler();
         var request = GladiaFixtures.Options("""{"language":"en","enableCodeSwitching":true}""");
-        await GladiaFixtures.Provider(handler).Transcription().TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
-        Assert.Equal("""{"languages":["en"],"code_switching":true}""", GladiaFixtures.InitBody(handler)["language_config"]!.ToJsonString());
+        await GladiaFixtures
+            .Provider(handler)
+            .Transcription()
+            .TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
+        Assert.Equal(
+            """{"languages":["en"],"code_switching":true}""",
+            GladiaFixtures.InitBody(handler)["language_config"]!.ToJsonString()
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should map deprecated customVocabulary arrays to custom_vocabulary_config", Coverage = UpstreamCoverage.Covered, Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb")]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should map deprecated customVocabulary arrays to custom_vocabulary_config",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb"
+    )]
     public async Task ShouldMapDeprecatedCustomVocabularyArraysToCustomVocabularyConfig()
     {
         var handler = GladiaFixtures.Handler();
         var request = GladiaFixtures.Options("""{"customVocabulary":["Gladia","AI SDK"]}""");
-        await GladiaFixtures.Provider(handler).Transcription().TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
+        await GladiaFixtures
+            .Provider(handler)
+            .Transcription()
+            .TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
         var body = GladiaFixtures.InitBody(handler);
         Assert.True((bool?)body["custom_vocabulary"]);
-        Assert.Equal("""{"vocabulary":["Gladia","AI SDK"]}""", body["custom_vocabulary_config"]!.ToJsonString());
+        Assert.Equal(
+            """{"vocabulary":["Gladia","AI SDK"]}""",
+            body["custom_vocabulary_config"]!.ToJsonString()
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should pass the model id to the pre-recorded endpoint", Coverage = UpstreamCoverage.Covered, Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb")]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should pass the model id to the pre-recorded endpoint",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb"
+    )]
     public async Task ShouldPassTheModelIdToThePreRecordedEndpoint()
     {
         var handler = GladiaFixtures.Handler();
         var request = GladiaFixtures.Options("""{"languageConfig":{"languages":["fr"]}}""");
         var provider = GladiaFixtures.Provider(handler);
-        await ((GladiaProvider.GladiaTranscriptionModel)provider.TranscriptionModel("solaria-3")).TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
+        await (
+            (GladiaProvider.GladiaTranscriptionModel)provider.TranscriptionModel("solaria-3")
+        ).TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
         var body = GladiaFixtures.InitBody(handler);
-        Assert.Equal("https://api.gladia.io/file/7403f025-be30-4335-ae29-20131e0adbd6", (string?)body["audio_url"]);
+        Assert.Equal(
+            "https://api.gladia.io/file/7403f025-be30-4335-ae29-20131e0adbd6",
+            (string?)body["audio_url"]
+        );
         Assert.Equal("solaria-3", (string?)body["model"]);
         Assert.Equal("""{"languages":["fr"]}""", body["language_config"]!.ToJsonString());
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::does not send a model when none is specified", Coverage = UpstreamCoverage.Covered, Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb")]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::does not send a model when none is specified",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb"
+    )]
     public async Task DoesNotSendAModelWhenNoneIsSpecified()
     {
         var handler = GladiaFixtures.Handler();
-        await GladiaFixtures.Provider(handler).Transcription().TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
+        await GladiaFixtures
+            .Provider(handler)
+            .Transcription()
+            .TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
         Assert.False(GladiaFixtures.InitBody(handler).ContainsKey("model"));
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::warns when solaria-3 is combined with multiple languages or code switching", Coverage = UpstreamCoverage.Covered, Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb")]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::warns when solaria-3 is combined with multiple languages or code switching",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb"
+    )]
     public async Task WarnsWhenSolaria3IsCombinedWithMultipleLanguagesOrCodeSwitching()
     {
         var handler = GladiaFixtures.Handler();
-        var request = GladiaFixtures.Options("""{"languageConfig":{"languages":["fr","en"],"codeSwitching":true}}""");
+        var request = GladiaFixtures.Options(
+            """{"languageConfig":{"languages":["fr","en"],"codeSwitching":true}}"""
+        );
         var provider = GladiaFixtures.Provider(handler);
-        var result = await ((GladiaProvider.GladiaTranscriptionModel)provider.TranscriptionModel("solaria-3")).TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
+        var result = await (
+            (GladiaProvider.GladiaTranscriptionModel)provider.TranscriptionModel("solaria-3")
+        ).TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
         Assert.Collection(
             result.Warnings,
-            warning => Assert.Contains("single language", Assert.IsType<OtherWarning>(warning).Message, StringComparison.Ordinal),
-            warning => Assert.Contains("code switching", Assert.IsType<OtherWarning>(warning).Message, StringComparison.Ordinal));
+            warning =>
+                Assert.Contains(
+                    "single language",
+                    Assert.IsType<OtherWarning>(warning).Message,
+                    StringComparison.Ordinal
+                ),
+            warning =>
+                Assert.Contains(
+                    "code switching",
+                    Assert.IsType<OtherWarning>(warning).Message,
+                    StringComparison.Ordinal
+                )
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::does not warn when solaria-3 is used with a single language", Coverage = UpstreamCoverage.Covered, Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb")]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::does not warn when solaria-3 is used with a single language",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb"
+    )]
     public async Task DoesNotWarnWhenSolaria3IsUsedWithASingleLanguage()
     {
         var handler = GladiaFixtures.Handler();
         var request = GladiaFixtures.Options("""{"languageConfig":{"languages":["fr"]}}""");
         var provider = GladiaFixtures.Provider(handler);
-        var result = await ((GladiaProvider.GladiaTranscriptionModel)provider.TranscriptionModel("solaria-3")).TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
+        var result = await (
+            (GladiaProvider.GladiaTranscriptionModel)provider.TranscriptionModel("solaria-3")
+        ).TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
         Assert.Empty(result.Warnings);
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::does not send the API key when the result URL is on a foreign origin", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::does not send the API key when the result URL is on a foreign origin",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task DoesNotSendTheApiKeyWhenTheResultUrlIsOnAForeignOrigin()
     {
         var handler = GladiaFixtures.Handler(foreign: true);
-        var provider = GladiaProvider.Create(new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask }, handler);
-        await provider.Transcription().TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
+        var provider = GladiaProvider.Create(
+            new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask },
+            handler
+        );
+        await provider
+            .Transcription()
+            .TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
         var poll = handler.Calls.Single(call => call.Uri.Host == "cdn.evil.example");
         Assert.Null(poll.Header("x-gladia-key"));
         Assert.Null(poll.Header("Authorization"));
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should pass headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should pass headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldPassHeaders()
     {
         var handler = GladiaFixtures.Handler();
-        var options = new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask };
+        var options = new GladiaOptions
+        {
+            ApiKey = "test-api-key",
+            PollDelay = _ => Task.CompletedTask,
+        };
         options.Headers["Custom-Provider-Header"] = "provider-header-value";
         var provider = GladiaProvider.Create(options, handler);
-        var request = new GladiaTranscriptionRequest { Headers = new Dictionary<string, string> { ["Custom-Request-Header"] = "request-header-value" } };
-        await provider.Transcription().TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
+        var request = new GladiaTranscriptionRequest
+        {
+            Headers = new Dictionary<string, string>
+            {
+                ["Custom-Request-Header"] = "request-header-value",
+            },
+        };
+        await provider
+            .Transcription()
+            .TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
         var call = handler.Calls[1];
         Assert.Equal("test-api-key", call.Header("x-gladia-key"));
         Assert.Equal("ai-sdk/" + AiSdkVersion.Version, call.Header("x-gladia-version"));
         Assert.Equal("application/json", call.Header("Content-Type"));
         Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
         Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
-        Assert.Contains("ai-sdk/gladia/" + AiSdkVersion.Version, handler.Calls[0].Header("User-Agent"), StringComparison.Ordinal);
+        Assert.Contains(
+            "ai-sdk/gladia/" + AiSdkVersion.Version,
+            handler.Calls[0].Header("User-Agent"),
+            StringComparison.Ordinal
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should extract the transcription text", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should extract the transcription text",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldExtractTheTranscriptionText()
     {
         var handler = GladiaFixtures.Handler();
-        var provider = GladiaProvider.Create(new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask }, handler);
-        var result = await provider.Transcription().TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
+        var provider = GladiaProvider.Create(
+            new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask },
+            handler
+        );
+        var result = await provider
+            .Transcription()
+            .TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
         Assert.Equal(GladiaFixtures.Text, result.Text);
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should preserve utterance metadata in provider metadata", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should preserve utterance metadata in provider metadata",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldPreserveUtteranceMetadataInProviderMetadata()
     {
         var handler = GladiaFixtures.Handler(metadata: true);
-        var provider = GladiaProvider.Create(new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask }, handler);
-        var result = await provider.Transcription().TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
-        var utterances = result.ProviderMetadata.GetProperty("gladia").GetProperty("result").GetProperty("transcription").GetProperty("utterances");
+        var provider = GladiaProvider.Create(
+            new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask },
+            handler
+        );
+        var result = await provider
+            .Transcription()
+            .TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
+        var utterances = result
+            .ProviderMetadata.GetProperty("gladia")
+            .GetProperty("result")
+            .GetProperty("transcription")
+            .GetProperty("utterances");
         Assert.Equal(0, utterances[0].GetProperty("speaker").GetInt32());
         Assert.Equal(0.91, utterances[0].GetProperty("confidence").GetDouble(), 2);
         Assert.Equal("en", utterances[0].GetProperty("language").GetString());
-        Assert.Equal("Galileo", utterances[0].GetProperty("words")[0].GetProperty("word").GetString());
+        Assert.Equal(
+            "Galileo",
+            utterances[0].GetProperty("words")[0].GetProperty("word").GetString()
+        );
         Assert.Equal("speaker-1", utterances[1].GetProperty("speaker").GetString());
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should preserve audio intelligence results in provider metadata", Coverage = UpstreamCoverage.Covered, Commit = "9207c2b1e040938ac6753d766da4ee9672127ae5")]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should preserve audio intelligence results in provider metadata",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "9207c2b1e040938ac6753d766da4ee9672127ae5"
+    )]
     public async Task ShouldPreserveAudioIntelligenceResultsInProviderMetadata()
     {
-        var fixture = JsonNode.Parse("""
-            {
-              "metadata": { "number_of_distinct_channels": 1, "billing_time": 36.74, "transcription_time": 12.5 },
-              "transcription": {
-                "sentences": [{ "sentence": "Galileo was an American robotic space program.", "start": 0.14, "end": 5.341, "words": [] }],
-                "subtitles": [{ "format": "srt", "subtitles": "1\n00:00:00.140 --> 00:00:05.341\nGalileo" }]
-              },
-              "translation": {
-                "success": true, "is_empty": false, "exec_time": 2.4, "error": null,
-                "results": [{
-                  "languages": ["fr"],
-                  "full_transcript": "Galilée était un programme spatial.",
-                  "utterances": [{ "start": 0.14, "end": 5.341, "text": "Galilée était un programme spatial.", "language": "fr", "channel": 0, "confidence": 0.9, "words": [] }]
-                }]
-              },
-              "summarization": { "success": true, "is_empty": false, "exec_time": 1.2, "error": null, "results": "A summary of the transcription." },
-              "named_entity_recognition": {
-                "success": true, "is_empty": false, "exec_time": 0.5, "error": null,
-                "results": [{ "entity_type": "ORIGIN", "text": "American", "start": 1.02, "end": 1.48 }]
-              },
-              "sentiment_analysis": {
-                "success": true, "is_empty": false, "exec_time": 0.6, "error": null,
-                "results": [{ "text": "Galileo was an American robotic space program.", "sentiment": "neutral", "emotion": "interest", "start": 0.14, "end": 5.341, "channel": 0 }]
-              },
-              "audio_to_llm": {
-                "success": true, "is_empty": false, "exec_time": 3.1, "error": null,
-                "results": [{ "results": { "model": "openai/gpt-5.4-nano", "prompt": "What is this about?", "response": "A space program." } }]
-              },
-              "sentences": {
-                "success": true, "is_empty": false, "exec_time": 0.4, "error": null,
-                "results": [{ "sentence": "Galileo was an American robotic space program.", "start": 0.14, "end": 5.341, "words": [] }]
-              }
-            }
-            """)!.AsObject();
+        var fixture = JsonNode
+            .Parse(
+                """
+                {
+                  "metadata": { "number_of_distinct_channels": 1, "billing_time": 36.74, "transcription_time": 12.5 },
+                  "transcription": {
+                    "sentences": [{ "sentence": "Galileo was an American robotic space program.", "start": 0.14, "end": 5.341, "words": [] }],
+                    "subtitles": [{ "format": "srt", "subtitles": "1\n00:00:00.140 --> 00:00:05.341\nGalileo" }]
+                  },
+                  "translation": {
+                    "success": true, "is_empty": false, "exec_time": 2.4, "error": null,
+                    "results": [{
+                      "languages": ["fr"],
+                      "full_transcript": "Galilée était un programme spatial.",
+                      "utterances": [{ "start": 0.14, "end": 5.341, "text": "Galilée était un programme spatial.", "language": "fr", "channel": 0, "confidence": 0.9, "words": [] }]
+                    }]
+                  },
+                  "summarization": { "success": true, "is_empty": false, "exec_time": 1.2, "error": null, "results": "A summary of the transcription." },
+                  "named_entity_recognition": {
+                    "success": true, "is_empty": false, "exec_time": 0.5, "error": null,
+                    "results": [{ "entity_type": "ORIGIN", "text": "American", "start": 1.02, "end": 1.48 }]
+                  },
+                  "sentiment_analysis": {
+                    "success": true, "is_empty": false, "exec_time": 0.6, "error": null,
+                    "results": [{ "text": "Galileo was an American robotic space program.", "sentiment": "neutral", "emotion": "interest", "start": 0.14, "end": 5.341, "channel": 0 }]
+                  },
+                  "audio_to_llm": {
+                    "success": true, "is_empty": false, "exec_time": 3.1, "error": null,
+                    "results": [{ "results": { "model": "openai/gpt-5.4-nano", "prompt": "What is this about?", "response": "A space program." } }]
+                  },
+                  "sentences": {
+                    "success": true, "is_empty": false, "exec_time": 0.4, "error": null,
+                    "results": [{ "sentence": "Galileo was an American robotic space program.", "start": 0.14, "end": 5.341, "words": [] }]
+                  }
+                }
+                """
+            )!
+            .AsObject();
         var response = GladiaFixtures.Result();
         var result = response["result"]!.AsObject();
         foreach (var pair in fixture.ToArray())
@@ -226,9 +374,14 @@ public sealed class DoGenerateTranscriptionTests
         }
 
         var handler = GladiaFixtures.Handler(result: response);
-        var provider = GladiaProvider.Create(new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask }, handler);
+        var provider = GladiaProvider.Create(
+            new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask },
+            handler
+        );
 
-        var transcription = await provider.Transcription().TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
+        var transcription = await provider
+            .Transcription()
+            .TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
 
         var gladia = transcription.ProviderMetadata.GetProperty("gladia").GetProperty("result");
         var metadata = gladia.GetProperty("metadata");
@@ -238,14 +391,33 @@ public sealed class DoGenerateTranscriptionTests
         Assert.Equal(12.5, metadata.GetProperty("transcription_time").GetDouble(), 2);
         var subtitles = gladia.GetProperty("transcription").GetProperty("subtitles")[0];
         Assert.Equal("srt", subtitles.GetProperty("format").GetString());
-        Assert.Equal("1\n00:00:00.140 --> 00:00:05.341\nGalileo", subtitles.GetProperty("subtitles").GetString());
-        Assert.Equal("Galileo was an American robotic space program.", gladia.GetProperty("transcription").GetProperty("sentences")[0].GetProperty("sentence").GetString());
+        Assert.Equal(
+            "1\n00:00:00.140 --> 00:00:05.341\nGalileo",
+            subtitles.GetProperty("subtitles").GetString()
+        );
+        Assert.Equal(
+            "Galileo was an American robotic space program.",
+            gladia
+                .GetProperty("transcription")
+                .GetProperty("sentences")[0]
+                .GetProperty("sentence")
+                .GetString()
+        );
         var translation = gladia.GetProperty("translation").GetProperty("results")[0];
         Assert.Equal("fr", translation.GetProperty("languages")[0].GetString());
-        Assert.Equal("Galilée était un programme spatial.", translation.GetProperty("full_transcript").GetString());
-        Assert.Equal("Galilée était un programme spatial.", translation.GetProperty("utterances")[0].GetProperty("text").GetString());
+        Assert.Equal(
+            "Galilée était un programme spatial.",
+            translation.GetProperty("full_transcript").GetString()
+        );
+        Assert.Equal(
+            "Galilée était un programme spatial.",
+            translation.GetProperty("utterances")[0].GetProperty("text").GetString()
+        );
         Assert.Equal(0, translation.GetProperty("utterances")[0].GetProperty("channel").GetInt32());
-        Assert.Equal("A summary of the transcription.", gladia.GetProperty("summarization").GetProperty("results").GetString());
+        Assert.Equal(
+            "A summary of the transcription.",
+            gladia.GetProperty("summarization").GetProperty("results").GetString()
+        );
         var entity = gladia.GetProperty("named_entity_recognition").GetProperty("results")[0];
         Assert.Equal("ORIGIN", entity.GetProperty("entity_type").GetString());
         Assert.Equal("American", entity.GetProperty("text").GetString());
@@ -254,42 +426,68 @@ public sealed class DoGenerateTranscriptionTests
         var sentiment = gladia.GetProperty("sentiment_analysis").GetProperty("results")[0];
         Assert.Equal("neutral", sentiment.GetProperty("sentiment").GetString());
         Assert.Equal("interest", sentiment.GetProperty("emotion").GetString());
-        var llm = gladia.GetProperty("audio_to_llm").GetProperty("results")[0].GetProperty("results");
+        var llm = gladia
+            .GetProperty("audio_to_llm")
+            .GetProperty("results")[0]
+            .GetProperty("results");
         Assert.Equal("openai/gpt-5.4-nano", llm.GetProperty("model").GetString());
         Assert.Equal("What is this about?", llm.GetProperty("prompt").GetString());
         Assert.Equal("A space program.", llm.GetProperty("response").GetString());
-        Assert.Equal("Galileo was an American robotic space program.", gladia.GetProperty("sentences").GetProperty("results")[0].GetProperty("sentence").GetString());
+        Assert.Equal(
+            "Galileo was an American robotic space program.",
+            gladia
+                .GetProperty("sentences")
+                .GetProperty("results")[0]
+                .GetProperty("sentence")
+                .GetString()
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should pass through add-ons that do not match the documented shape", Coverage = UpstreamCoverage.Covered, Commit = "9207c2b1e040938ac6753d766da4ee9672127ae5")]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should pass through add-ons that do not match the documented shape",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "9207c2b1e040938ac6753d766da4ee9672127ae5"
+    )]
     public async Task ShouldPassThroughAddOnsThatDoNotMatchTheDocumentedShape()
     {
         var response = GladiaFixtures.Result();
         var result = response["result"]!.AsObject();
-        result["named_entity_recognition"] = JsonNode.Parse("""
+        result["named_entity_recognition"] = JsonNode.Parse(
+            """
             {
               "success": true, "is_empty": false, "exec_time": 0.5,
               "error": { "status_code": 500, "message": "Upstream failure" },
               "results": [{ "entity_type": "ORIGIN", "start": 1.02, "end": 1.48 }]
             }
-            """);
-        result["sentences"] = JsonNode.Parse("""
+            """
+        );
+        result["sentences"] = JsonNode.Parse(
+            """
             {
               "success": true, "is_empty": false, "exec_time": 0.4, "error": null,
               "results": ["Galileo was an American robotic space program.", "It studied the planet Jupiter."]
             }
-            """);
+            """
+        );
         var handler = GladiaFixtures.Handler(result: response);
-        var provider = GladiaProvider.Create(new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask }, handler);
+        var provider = GladiaProvider.Create(
+            new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask },
+            handler
+        );
 
-        var transcription = await provider.Transcription().TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
+        var transcription = await provider
+            .Transcription()
+            .TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
 
         Assert.Equal(GladiaFixtures.Text, transcription.Text);
         var gladia = transcription.ProviderMetadata.GetProperty("gladia").GetProperty("result");
         var entities = gladia.GetProperty("named_entity_recognition");
         Assert.Equal(500, entities.GetProperty("error").GetProperty("status_code").GetInt32());
-        Assert.Equal("Upstream failure", entities.GetProperty("error").GetProperty("message").GetString());
+        Assert.Equal(
+            "Upstream failure",
+            entities.GetProperty("error").GetProperty("message").GetString()
+        );
         var entity = entities.GetProperty("results")[0];
         Assert.Equal("ORIGIN", entity.GetProperty("entity_type").GetString());
         Assert.Equal(1.02, entity.GetProperty("start").GetDouble(), 2);
@@ -300,11 +498,16 @@ public sealed class DoGenerateTranscriptionTests
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should preserve audio-to-LLM item fields in provider metadata", Coverage = UpstreamCoverage.Covered, Commit = "9207c2b1e040938ac6753d766da4ee9672127ae5")]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should preserve audio-to-LLM item fields in provider metadata",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "9207c2b1e040938ac6753d766da4ee9672127ae5"
+    )]
     public async Task ShouldPreserveAudioToLlmItemFieldsInProviderMetadata()
     {
         var response = GladiaFixtures.Result();
-        response["result"]!["audio_to_llm"] = JsonNode.Parse("""
+        response["result"]!["audio_to_llm"] = JsonNode.Parse(
+            """
             {
               "success": true, "is_empty": false, "exec_time": 1.6, "error": null,
               "results": [
@@ -313,13 +516,23 @@ public sealed class DoGenerateTranscriptionTests
                   "error": { "status_code": 400, "exception": "BadRequest", "message": "Prompt rejected" } }
               ]
             }
-            """);
+            """
+        );
         var handler = GladiaFixtures.Handler(result: response);
-        var provider = GladiaProvider.Create(new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask }, handler);
+        var provider = GladiaProvider.Create(
+            new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask },
+            handler
+        );
 
-        var transcription = await provider.Transcription().TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
+        var transcription = await provider
+            .Transcription()
+            .TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
 
-        var items = transcription.ProviderMetadata.GetProperty("gladia").GetProperty("result").GetProperty("audio_to_llm").GetProperty("results");
+        var items = transcription
+            .ProviderMetadata.GetProperty("gladia")
+            .GetProperty("result")
+            .GetProperty("audio_to_llm")
+            .GetProperty("results");
         Assert.Equal(2, items.GetArrayLength());
         Assert.Equal("What is this about?", items[0].GetProperty("prompt").GetString());
         Assert.Equal("A space program.", items[0].GetProperty("response").GetString());
@@ -333,12 +546,22 @@ public sealed class DoGenerateTranscriptionTests
         Assert.True(items[1].GetProperty("is_empty").GetBoolean());
         Assert.Equal(0.2, items[1].GetProperty("exec_time").GetDouble(), 2);
         Assert.Equal(400, items[1].GetProperty("error").GetProperty("status_code").GetInt32());
-        Assert.Equal("BadRequest", items[1].GetProperty("error").GetProperty("exception").GetString());
-        Assert.Equal("Prompt rejected", items[1].GetProperty("error").GetProperty("message").GetString());
+        Assert.Equal(
+            "BadRequest",
+            items[1].GetProperty("error").GetProperty("exception").GetString()
+        );
+        Assert.Equal(
+            "Prompt rejected",
+            items[1].GetProperty("error").GetProperty("message").GetString()
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should include the Gladia error code in the error message", Coverage = UpstreamCoverage.Covered, Commit = "9207c2b1e040938ac6753d766da4ee9672127ae5")]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should include the Gladia error code in the error message",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "9207c2b1e040938ac6753d766da4ee9672127ae5"
+    )]
     public async Task ShouldIncludeTheGladiaErrorCodeInTheErrorMessage()
     {
         var response = GladiaFixtures.Result();
@@ -346,11 +569,22 @@ public sealed class DoGenerateTranscriptionTests
         response["error_code"] = 400;
         response["result"] = null;
         var handler = GladiaFixtures.Handler(result: response);
-        var provider = GladiaProvider.Create(new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask }, handler);
+        var provider = GladiaProvider.Create(
+            new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask },
+            handler
+        );
 
-        var error = await Assert.ThrowsAsync<AiSdkError>(() => provider.Transcription().TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None));
+        var error = await Assert.ThrowsAsync<AiSdkError>(() =>
+            provider
+                .Transcription()
+                .TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None)
+        );
 
-        Assert.Contains("Transcription job failed with error code 400", error.Message, StringComparison.Ordinal);
+        Assert.Contains(
+            "Transcription job failed with error code 400",
+            error.Message,
+            StringComparison.Ordinal
+        );
         Assert.Equal("TranscriptionJobFailed", error.ErrorName);
         var cause = Assert.IsType<GladiaTranscriptionJobResultException>(error.Cause);
         Assert.Equal(400, cause.ErrorCode);
@@ -358,12 +592,25 @@ public sealed class DoGenerateTranscriptionTests
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should generate full response", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should generate full response",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldExtractTheTranscriptionTextion_response()
     {
         var handler = GladiaFixtures.Handler();
-        var provider = GladiaProvider.Create(new GladiaOptions { ApiKey = "test-api-key", Clock = () => DateTimeOffset.UnixEpoch, PollDelay = _ => Task.CompletedTask }, handler);
-        var result = await provider.Transcription().TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
+        var provider = GladiaProvider.Create(
+            new GladiaOptions
+            {
+                ApiKey = "test-api-key",
+                Clock = () => DateTimeOffset.UnixEpoch,
+                PollDelay = _ => Task.CompletedTask,
+            },
+            handler
+        );
+        var result = await provider
+            .Transcription()
+            .TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
         Assert.Equal(GladiaFixtures.Text, result.Text);
         Assert.Equal("en", result.Language);
         Assert.Equal(36.74, result.DurationInSeconds!.Value, 2);
@@ -371,11 +618,19 @@ public sealed class DoGenerateTranscriptionTests
         Assert.Equal(11, result.Segments.Count);
         Assert.Equal(0.14, result.Segments[0].StartSecond, 2);
         Assert.Equal(5.341, result.Segments[0].EndSecond, 3);
-        Assert.StartsWith("Galileo was an American robotic space program", result.Segments[0].Text, StringComparison.Ordinal);
+        Assert.StartsWith(
+            "Galileo was an American robotic space program",
+            result.Segments[0].Text,
+            StringComparison.Ordinal
+        );
         Assert.Equal("and became the first spacecraft to orbit Jupiter.", result.Segments[10].Text);
         Assert.Equal(DateTimeOffset.UnixEpoch, result.Response.Timestamp);
         Assert.Equal("default", result.Response.ModelId);
-        Assert.Contains("application/json", ContentType(result.Response.Headers), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(
+            "application/json",
+            ContentType(result.Response.Headers),
+            StringComparison.OrdinalIgnoreCase
+        );
         Assert.Equal(JsonValueKind.Object, result.ProviderMetadata.ValueKind);
     }
 

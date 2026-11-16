@@ -21,16 +21,19 @@ internal static class OpenAILiveSessionConfig
     public static JsonObject BuildOpenAILiveSessionConfig(
         RealtimeModelV4SessionConfig config,
         string modelId,
-        string transport = WebSocketTransport)
+        string transport = WebSocketTransport
+    )
     {
-        foreach (var (key, present) in new (string, bool)[]
-        {
-            ("outputModalities", config.OutputModalities != null),
-            ("inputAudioTranscription", config.InputAudioTranscription != null),
-            ("outputAudioTranscription", config.OutputAudioTranscription != null),
-            ("turnDetection", config.TurnDetection != null || config.TurnDetectionDisabled),
-            ("tools", config.Tools != null),
-        })
+        foreach (
+            var (key, present) in new (string, bool)[]
+            {
+                ("outputModalities", config.OutputModalities != null),
+                ("inputAudioTranscription", config.InputAudioTranscription != null),
+                ("outputAudioTranscription", config.OutputAudioTranscription != null),
+                ("turnDetection", config.TurnDetection != null || config.TurnDetectionDisabled),
+                ("tools", config.Tools != null),
+            }
+        )
         {
             if (present)
             {
@@ -38,16 +41,22 @@ internal static class OpenAILiveSessionConfig
             }
         }
 
-        var providerOptions = config.ProviderOptions != null && config.ProviderOptions.TryGetPropertyValue("openai", out var openai)
-            ? openai
-            : null;
-        if (providerOptions is JsonObject providerObject
+        var providerOptions =
+            config.ProviderOptions != null
+            && config.ProviderOptions.TryGetPropertyValue("openai", out var openai)
+                ? openai
+                : null;
+        if (
+            providerOptions is JsonObject providerObject
             && providerObject["delegation"] is JsonObject delegationObject
             && delegationObject["type"] is JsonValue delegationType
             && delegationType.TryGetValue<string>(out var delegationName)
-            && delegationName == "responses")
+            && delegationName == "responses"
+        )
         {
-            throw Unsupported("OpenAI Live Responses delegation; only client delegation is supported");
+            throw Unsupported(
+                "OpenAI Live Responses delegation; only client delegation is supported"
+            );
         }
 
         var options = OpenAIRealtimeModelLiveOptions.Parse(providerOptions);
@@ -58,24 +67,52 @@ internal static class OpenAILiveSessionConfig
 
         if (options.VoiceId != null && config.Voice != null)
         {
-            throw new InvalidArgumentException("voice", config.Voice, "Choose either voice or providerOptions.openai.voice.");
+            throw new InvalidArgumentException(
+                "voice",
+                config.Voice,
+                "Choose either voice or providerOptions.openai.voice."
+            );
         }
 
-        var hasInputFormat = config.InputAudioFormatType != null || config.InputAudioFormatRate != null;
-        var hasOutputFormat = config.OutputAudioFormatType != null || config.OutputAudioFormatRate != null;
+        var hasInputFormat =
+            config.InputAudioFormatType != null || config.InputAudioFormatRate != null;
+        var hasOutputFormat =
+            config.OutputAudioFormatType != null || config.OutputAudioFormatRate != null;
         if (transport == WebRTCTransport && (hasInputFormat || hasOutputFormat))
         {
-            throw Unsupported("Fixed audio formats for OpenAI Live WebRTC; audio is negotiated through SDP");
+            throw Unsupported(
+                "Fixed audio formats for OpenAI Live WebRTC; audio is negotiated through SDP"
+            );
         }
 
-        var inputFormat = hasInputFormat ? ParseAudioFormat("inputAudioFormat", config.InputAudioFormatType, config.InputAudioFormatRate) : ((string Type, int Rate)?)null;
-        var outputFormat = hasOutputFormat ? ParseAudioFormat("outputAudioFormat", config.OutputAudioFormatType, config.OutputAudioFormatRate) : ((string Type, int Rate)?)null;
-        if (inputFormat != null && outputFormat != null && (inputFormat.Value.Type != outputFormat.Value.Type || inputFormat.Value.Rate != outputFormat.Value.Rate))
+        var inputFormat = hasInputFormat
+            ? ParseAudioFormat(
+                "inputAudioFormat",
+                config.InputAudioFormatType,
+                config.InputAudioFormatRate
+            )
+            : ((string Type, int Rate)?)null;
+        var outputFormat = hasOutputFormat
+            ? ParseAudioFormat(
+                "outputAudioFormat",
+                config.OutputAudioFormatType,
+                config.OutputAudioFormatRate
+            )
+            : ((string Type, int Rate)?)null;
+        if (
+            inputFormat != null
+            && outputFormat != null
+            && (
+                inputFormat.Value.Type != outputFormat.Value.Type
+                || inputFormat.Value.Rate != outputFormat.Value.Rate
+            )
+        )
         {
             throw new InvalidArgumentException(
                 "outputAudioFormat",
                 outputFormat.Value.Type,
-                "OpenAI Live requires the same input and output audio format.");
+                "OpenAI Live requires the same input and output audio format."
+            );
         }
 
         var session = new JsonObject { ["model"] = modelId };
@@ -93,7 +130,10 @@ internal static class OpenAILiveSessionConfig
 
         audio["output"] = new JsonObject
         {
-            ["voice"] = options.VoiceId != null ? new JsonObject { ["id"] = options.VoiceId } : (JsonNode?)(config.Voice ?? "marin"),
+            ["voice"] =
+                options.VoiceId != null
+                    ? new JsonObject { ["id"] = options.VoiceId }
+                    : (JsonNode?)(config.Voice ?? "marin"),
         };
         session["audio"] = audio;
 
@@ -115,7 +155,13 @@ internal static class OpenAILiveSessionConfig
             }
             else if (options.Client.AllowedClientEvents != null)
             {
-                channel["allowed_client_events"] = new JsonArray(options.Client.AllowedClientEvents.Select(value => (JsonNode?)JsonValue.Create(value)).ToArray());
+                channel["allowed_client_events"] = new JsonArray(
+                    options
+                        .Client.AllowedClientEvents.Select(value =>
+                            (JsonNode?)JsonValue.Create(value)
+                        )
+                        .ToArray()
+                );
             }
 
             if (options.Client.AllowAllServerEvents)
@@ -144,7 +190,9 @@ internal static class OpenAILiveSessionConfig
 
         if (options.Input != null)
         {
-            session["input"] = new JsonArray(options.Input.Select(item => (JsonNode?)item.DeepClone()).ToArray());
+            session["input"] = new JsonArray(
+                options.Input.Select(item => (JsonNode?)item.DeepClone()).ToArray()
+            );
         }
 
         if (options.Store != null)
@@ -155,13 +203,22 @@ internal static class OpenAILiveSessionConfig
         return session;
     }
 
-    private static (string Type, int Rate) ParseAudioFormat(string argument, string? type, int? rate)
+    private static (string Type, int Rate) ParseAudioFormat(
+        string argument,
+        string? type,
+        int? rate
+    )
     {
-        var valid = (type == "audio/pcm" && (rate == 16000 || rate == 24000))
+        var valid =
+            (type == "audio/pcm" && (rate == 16000 || rate == 24000))
             || ((type == "audio/pcma" || type == "audio/pcmu") && rate == 8000);
         if (!valid)
         {
-            throw new InvalidArgumentException(argument, type, "OpenAI Live does not support this audio format.");
+            throw new InvalidArgumentException(
+                argument,
+                type,
+                "OpenAI Live does not support this audio format."
+            );
         }
 
         return (type!, rate!.Value);
@@ -169,6 +226,9 @@ internal static class OpenAILiveSessionConfig
 
     private static UnsupportedFunctionalityException Unsupported(string functionality)
     {
-        return new UnsupportedFunctionalityException(functionality, "'" + functionality + "' functionality not supported.");
+        return new UnsupportedFunctionalityException(
+            functionality,
+            "'" + functionality + "' functionality not supported."
+        );
     }
 }

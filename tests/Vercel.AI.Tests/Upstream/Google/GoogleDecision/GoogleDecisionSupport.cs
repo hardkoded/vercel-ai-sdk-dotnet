@@ -17,15 +17,28 @@ internal static class GoogleDecisionSupport
 {
     internal static JsonObject Fixture()
     {
-        return (JsonObject)JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "google-decision.json")))!;
+        return (JsonObject)
+            JsonNode.Parse(
+                File.ReadAllText(
+                    Path.Combine(AppContext.BaseDirectory, "Fixtures", "google-decision.json")
+                )
+            )!;
     }
 
     internal static Dictionary<string, DecisionQuestion> Questions()
     {
         return new Dictionary<string, DecisionQuestion>
         {
-            ["department"] = Q("choice", "Pick the team.", new Dictionary<string, object?> { ["technical"] = "Bugs", ["billing"] = "Charges" }),
-            ["severity"] = Q("score", new[] { "Rate severity." }, new List<object?> { "Low", "Medium", "High" }),
+            ["department"] = Q(
+                "choice",
+                "Pick the team.",
+                new Dictionary<string, object?> { ["technical"] = "Bugs", ["billing"] = "Charges" }
+            ),
+            ["severity"] = Q(
+                "score",
+                new[] { "Rate severity." },
+                new List<object?> { "Low", "Medium", "High" }
+            ),
             ["requestsRefund"] = Q("boolean", "Is a refund requested?"),
         };
     }
@@ -37,7 +50,8 @@ internal static class GoogleDecisionSupport
         CancellationToken cancellationToken = default,
         IReadOnlyList<object?>? state = null,
         double? maxOutputTokens = null,
-        string? reasoning = null)
+        string? reasoning = null
+    )
     {
         using var document = JsonDocument.Parse(providerOptions);
         state ??= new List<object?>
@@ -45,17 +59,39 @@ internal static class GoogleDecisionSupport
             new Dictionary<string, object?>
             {
                 ["type"] = "json",
-                ["value"] = new Dictionary<string, object?> { ["message"] = "A billing issue with a workaround." },
+                ["value"] = new Dictionary<string, object?>
+                {
+                    ["message"] = "A billing issue with a workaround.",
+                },
             },
         };
-        return new DecisionModelCall(P(state), questions ?? Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), cancellationToken, maxOutputTokens, reasoning);
+        return new DecisionModelCall(
+            P(state),
+            questions ?? Questions(),
+            document.RootElement.Clone(),
+            headers ?? new Dictionary<string, string>(),
+            cancellationToken,
+            maxOutputTokens,
+            reasoning
+        );
     }
 
-    internal static (GoogleDecisionModel Model, GoogleDecisionCapture Capture) Setup(JsonNode? body = null, int status = 200)
+    internal static (GoogleDecisionModel Model, GoogleDecisionCapture Capture) Setup(
+        JsonNode? body = null,
+        int status = 200
+    )
     {
-        var capture = new GoogleDecisionCapture { ResponseJson = (body ?? Fixture()).ToJsonString(), Status = (HttpStatusCode)status };
+        var capture = new GoogleDecisionCapture
+        {
+            ResponseJson = (body ?? Fixture()).ToJsonString(),
+            Status = (HttpStatusCode)status,
+        };
         capture.ResponseHeaders["x-request-id"] = "req-test";
-        var options = new GoogleOptions { ApiKey = "test-key", BaseUrl = "https://example.com/v1beta/" };
+        var options = new GoogleOptions
+        {
+            ApiKey = "test-key",
+            BaseUrl = "https://example.com/v1beta/",
+        };
 
         options.Headers["x-provider"] = "configured";
         var provider = GoogleProvider.Create(options, capture);
@@ -83,20 +119,29 @@ internal sealed class GoogleDecisionCapture : HttpMessageHandler
 
     public string ResponseJson { get; set; } = "{}";
 
-    public Dictionary<string, string> ResponseHeaders { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string> ResponseHeaders { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         Calls++;
         Uri = request.RequestUri?.AbsoluteUri ?? string.Empty;
-        Body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        Body = request.Content is null
+            ? string.Empty
+            : await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         Headers.Clear();
         foreach (var header in request.Headers)
         {
             Headers[header.Key] = string.Join(",", header.Value);
         }
 
-        var response = new HttpResponseMessage(Status) { Content = new StringContent(ResponseJson, Encoding.UTF8, "application/json") };
+        var response = new HttpResponseMessage(Status)
+        {
+            Content = new StringContent(ResponseJson, Encoding.UTF8, "application/json"),
+        };
         foreach (var header in ResponseHeaders)
         {
             response.Headers.TryAddWithoutValidation(header.Key, header.Value);

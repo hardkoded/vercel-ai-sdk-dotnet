@@ -21,9 +21,15 @@ internal static class DiceGameFixture
     internal const string StreamCodeExecId = "srvtoolu_01MzSrFWsmzBdcoQkGWLyRjK";
     internal const string StreamContainerId = "container_011CWHPPTDTn1XufeRB9uHeH";
 
-    private const string RollDieSchema = "{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"player\":{\"type\":\"string\",\"enum\":[\"player1\",\"player2\"]}},\"required\":[\"player\"],\"additionalProperties\":false}";
+    private const string RollDieSchema =
+        "{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"player\":{\"type\":\"string\",\"enum\":[\"player1\",\"player2\"]}},\"required\":[\"player\"],\"additionalProperties\":false}";
 
-    internal sealed record PrepareCall(string ModelId, int StepNumber, IReadOnlyList<StepResult> Steps, IReadOnlyList<ModelMessage> Messages);
+    internal sealed record PrepareCall(
+        string ModelId,
+        int StepNumber,
+        IReadOnlyList<StepResult> Steps,
+        IReadOnlyList<ModelMessage> Messages
+    );
 
     internal sealed class Run
     {
@@ -55,19 +61,23 @@ internal static class DiceGameFixture
                 return GenerateResponse(responseCount++);
             },
         };
-        await new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })).GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            Prompt = "Play a dice game between two players.",
-            Tools = Tools(run),
-            StopWhen = StopWhen.IsStepCount(10),
-            OnStepEnd = (step, _) =>
+        await new AiClient(
+            GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })
+        ).GenerateTextAsync(
+            new GenerateTextOptions
             {
-                run.StepResults.Add(step);
-                return Task.CompletedTask;
-            },
-            PrepareStep = context => PrepareStep(run, context),
-        });
+                Model = model,
+                Prompt = "Play a dice game between two players.",
+                Tools = Tools(run),
+                StopWhen = StopWhen.IsStepCount(10),
+                OnStepEnd = (step, _) =>
+                {
+                    run.StepResults.Add(step);
+                    return Task.CompletedTask;
+                },
+                PrepareStep = context => PrepareStep(run, context),
+            }
+        );
         return run;
     }
 
@@ -81,22 +91,24 @@ internal static class DiceGameFixture
             run.ModelCalls.Add(options);
             return StreamResponse(responseCount++);
         });
-        var result = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })).StreamTextAsync(new StreamTextOptions
-        {
-            Model = model,
-            Prompt = "Play a dice game between two players.",
-            Tools = Tools(run),
-            StopWhen = StopWhen.IsStepCount(10),
-            OnStepEnd = (step, _) =>
+        var result = new AiClient(
+            GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })
+        ).StreamTextAsync(
+            new StreamTextOptions
             {
-                run.StepResults.Add(step);
-                return Task.CompletedTask;
-            },
-            PrepareStep = context => PrepareStep(run, context),
-        });
-        await foreach (var _ in result.Stream())
-        {
-        }
+                Model = model,
+                Prompt = "Play a dice game between two players.",
+                Tools = Tools(run),
+                StopWhen = StopWhen.IsStepCount(10),
+                OnStepEnd = (step, _) =>
+                {
+                    run.StepResults.Add(step);
+                    return Task.CompletedTask;
+                },
+                PrepareStep = context => PrepareStep(run, context),
+            }
+        );
+        await foreach (var _ in result.Stream()) { }
 
         return run;
     }
@@ -113,16 +125,34 @@ internal static class DiceGameFixture
             switch (message)
             {
                 case ToolModelMessage tool:
-                    lines.Add("tool|" + string.Join(";", tool.Results.Select(r => Result(r.ToolCallId, r.ToolName, r.OutputType, r.OutputJson))));
+                    lines.Add(
+                        "tool|"
+                            + string.Join(
+                                ";",
+                                tool.Results.Select(r =>
+                                    Result(r.ToolCallId, r.ToolName, r.OutputType, r.OutputJson)
+                                )
+                            )
+                    );
                     break;
                 case UserModelMessage user:
-                    lines.Add("user|" + string.Join(";", user.Content.Select(part => "text:" + Assert.IsType<TextContentPart>(part).Text)));
+                    lines.Add(
+                        "user|"
+                            + string.Join(
+                                ";",
+                                user.Content.Select(part =>
+                                    "text:" + Assert.IsType<TextContentPart>(part).Text
+                                )
+                            )
+                    );
                     break;
                 case AssistantModelMessage assistant:
                     lines.Add("assistant|" + string.Join(";", assistant.Parts.Select(RenderPart)));
                     break;
                 default:
-                    throw new InvalidOperationException("Unexpected message " + message.GetType().Name);
+                    throw new InvalidOperationException(
+                        "Unexpected message " + message.GetType().Name
+                    );
             }
         }
 
@@ -144,13 +174,18 @@ internal static class DiceGameFixture
         Assert.Equal("Roll a die and return the result.", rollDie.Description);
         JsonAssert.Equal(rollDie.InputSchema, RollDieSchema);
         Assert.Equal("rollDie", rollDie.Name);
-        JsonAssert.Equal(rollDie.ProviderOptions!.Value, "{\"anthropic\":{\"allowedCallers\":[\"code_execution_20250825\"]}}");
+        JsonAssert.Equal(
+            rollDie.ProviderOptions!.Value,
+            "{\"anthropic\":{\"allowedCallers\":[\"code_execution_20250825\"]}}"
+        );
     }
 
     /// <summary>Checks that the provider options of a model call forward the container id.</summary>
     internal static void AssertContainerForwarded(LanguageModelCallOptions call, string containerId)
     {
-        var options = Assert.IsAssignableFrom<IReadOnlyDictionary<string, JsonElement>>(call.ProviderOptions);
+        var options = Assert.IsAssignableFrom<IReadOnlyDictionary<string, JsonElement>>(
+            call.ProviderOptions
+        );
         Assert.Equal(new[] { "anthropic" }, options.Keys.ToArray());
         JsonAssert.Equal(options["anthropic"], "{\"container\":{\"id\":\"" + containerId + "\"}}");
     }
@@ -158,20 +193,37 @@ internal static class DiceGameFixture
     /// <summary>Checks the provider metadata of a step carries the container id.</summary>
     internal static void AssertContainerMetadata(StepResult step, string containerId)
     {
-        JsonAssert.Equal(step.ProviderMetadata!.Value, "{\"anthropic\":{\"container\":{\"id\":\"" + containerId + "\"}}}");
+        JsonAssert.Equal(
+            step.ProviderMetadata!.Value,
+            "{\"anthropic\":{\"container\":{\"id\":\"" + containerId + "\"}}}"
+        );
     }
 
     internal static string User(string text) => "user|text:" + text;
 
-    internal static string Assistant(params string[] parts) => "assistant|" + string.Join(";", parts);
+    internal static string Assistant(params string[] parts) =>
+        "assistant|" + string.Join(";", parts);
 
-    internal static string ToolResults(params string[] results) => "tool|" + string.Join(";", results);
+    internal static string ToolResults(params string[] results) =>
+        "tool|" + string.Join(";", results);
 
     internal static string Text(string text) => "text:" + text;
 
-    internal static string Call(string id, string name, string inputJson, bool providerExecuted = false)
+    internal static string Call(
+        string id,
+        string name,
+        string inputJson,
+        bool providerExecuted = false
+    )
     {
-        return "call:" + id + ":" + name + ":" + Normalize(inputJson) + ":" + (providerExecuted ? "provider" : "client");
+        return "call:"
+            + id
+            + ":"
+            + name
+            + ":"
+            + Normalize(inputJson)
+            + ":"
+            + (providerExecuted ? "provider" : "client");
     }
 
     internal static string Result(string id, string name, string outputType, string outputJson)
@@ -184,7 +236,12 @@ internal static class DiceGameFixture
         return part switch
         {
             AssistantTextPart text => Text(text.Text),
-            AssistantToolCallPart call => Call(call.ToolCall.ToolCallId, call.ToolCall.ToolName, call.ToolCall.ArgumentsJson, call.ToolCall.ProviderExecuted),
+            AssistantToolCallPart call => Call(
+                call.ToolCall.ToolCallId,
+                call.ToolCall.ToolName,
+                call.ToolCall.ArgumentsJson,
+                call.ToolCall.ProviderExecuted
+            ),
             _ => throw new InvalidOperationException("Unexpected part " + part.GetType().Name),
         };
     }
@@ -205,11 +262,21 @@ internal static class DiceGameFixture
                 var player = input.GetProperty("player").GetString()!;
                 run.RollDieExecutions.Add(player);
                 return Task.FromResult(player == "player1" ? "6" : "3");
-            });
-        rollDie.ProviderOptions = Json("{\"anthropic\":{\"allowedCallers\":[\"code_execution_20250825\"]}}");
+            }
+        );
+        rollDie.ProviderOptions = Json(
+            "{\"anthropic\":{\"allowedCallers\":[\"code_execution_20250825\"]}}"
+        );
         return new[]
         {
-            Tool.ProviderDefined("anthropic.code_execution_20250825", "code_execution", Json("{}"), Json("{\"type\":\"object\",\"properties\":{\"code\":{\"type\":\"string\"}},\"required\":[\"code\"],\"additionalProperties\":false}")),
+            Tool.ProviderDefined(
+                "anthropic.code_execution_20250825",
+                "code_execution",
+                Json("{}"),
+                Json(
+                    "{\"type\":\"object\",\"properties\":{\"code\":{\"type\":\"string\"}},\"required\":[\"code\"],\"additionalProperties\":false}"
+                )
+            ),
             rollDie,
         };
     }
@@ -217,21 +284,34 @@ internal static class DiceGameFixture
     // Forwards the container id of the last step, as forwardAnthropicContainerIdFromLastStep does.
     private static PrepareStepUpdate? PrepareStep(Run run, PrepareStepContext context)
     {
-        run.PrepareCalls.Add(new PrepareCall(context.Model!.ModelId, context.StepNumber, context.Steps.ToArray(), context.Messages.ToArray()));
+        run.PrepareCalls.Add(
+            new PrepareCall(
+                context.Model!.ModelId,
+                context.StepNumber,
+                context.Steps.ToArray(),
+                context.Messages.ToArray()
+            )
+        );
         if (context.StepNumber > 0 && context.Steps.Count > 0)
         {
             var metadata = context.Steps[context.Steps.Count - 1].ProviderMetadata;
-            if (metadata is { ValueKind: JsonValueKind.Object } root
+            if (
+                metadata is { ValueKind: JsonValueKind.Object } root
                 && root.TryGetProperty("anthropic", out var anthropic)
                 && anthropic.TryGetProperty("container", out var container)
                 && container.TryGetProperty("id", out var id)
-                && id.ValueKind == JsonValueKind.String)
+                && id.ValueKind == JsonValueKind.String
+            )
             {
                 return new PrepareStepUpdate
                 {
                     ProviderOptions = new Dictionary<string, JsonElement>
                     {
-                        ["anthropic"] = Json("{\"container\":{\"id\":" + JsonSerializer.Serialize(id.GetString()) + "}}"),
+                        ["anthropic"] = Json(
+                            "{\"container\":{\"id\":"
+                                + JsonSerializer.Serialize(id.GetString())
+                                + "}}"
+                        ),
                     },
                 };
             }
@@ -242,93 +322,221 @@ internal static class DiceGameFixture
 
     private static LanguageModelGenerateResult GenerateResponse(int index)
     {
-        JsonElement? container = Json("{\"anthropic\":{\"container\":{\"id\":\"" + GenerateContainerId + "\"}}}");
+        JsonElement? container = Json(
+            "{\"anthropic\":{\"container\":{\"id\":\"" + GenerateContainerId + "\"}}}"
+        );
         switch (index)
         {
             case 0:
                 return new LanguageModelGenerateResult(
                     new GeneratedContent[]
                     {
-                        new GeneratedText("I'll help you simulate this dice game between two players! Let me run the game where both players roll dice each round until one player wins 3 rounds."),
-                        new GeneratedToolCall(GenerateCodeExecId, "code_execution", "{\"type\":\"programmatic-tool-call\",\"code\":\"game_loop()\"}") { ProviderExecuted = true },
-                        new GeneratedToolCall("toolu_01PMcE1JBKCeLjn83cgUCvR5", "rollDie", "{ \"player\": \"player2\" }"),
-                        new GeneratedToolCall("toolu_01MZf5QJ1EQyd2yGyeLzBxAS", "rollDie", "{ \"player\": \"player1\" }"),
+                        new GeneratedText(
+                            "I'll help you simulate this dice game between two players! Let me run the game where both players roll dice each round until one player wins 3 rounds."
+                        ),
+                        new GeneratedToolCall(
+                            GenerateCodeExecId,
+                            "code_execution",
+                            "{\"type\":\"programmatic-tool-call\",\"code\":\"game_loop()\"}"
+                        )
+                        {
+                            ProviderExecuted = true,
+                        },
+                        new GeneratedToolCall(
+                            "toolu_01PMcE1JBKCeLjn83cgUCvR5",
+                            "rollDie",
+                            "{ \"player\": \"player2\" }"
+                        ),
+                        new GeneratedToolCall(
+                            "toolu_01MZf5QJ1EQyd2yGyeLzBxAS",
+                            "rollDie",
+                            "{ \"player\": \"player1\" }"
+                        ),
                     },
                     FinishReason.ToolCalls,
                     new LanguageModelUsage(3369, 577, 3946),
-                    providerMetadata: container);
+                    providerMetadata: container
+                );
             case 1:
-                return RollRound(container, "toolu_01UvVQ2xwA6preZppeajCkYK", "player1", "toolu_01BghspNownQFtRgv8jVicr3", "player2");
+                return RollRound(
+                    container,
+                    "toolu_01UvVQ2xwA6preZppeajCkYK",
+                    "player1",
+                    "toolu_01BghspNownQFtRgv8jVicr3",
+                    "player2"
+                );
             case 2:
-                return RollRound(container, "toolu_01T7Upuuv8C71nq7DZ9ZPNQW", "player1", "toolu_016Da1tDet9Bf7dAdYTkF5Ar", "player2");
+                return RollRound(
+                    container,
+                    "toolu_01T7Upuuv8C71nq7DZ9ZPNQW",
+                    "player1",
+                    "toolu_016Da1tDet9Bf7dAdYTkF5Ar",
+                    "player2"
+                );
             case 3:
-                return RollRound(container, "toolu_01DiUBRds64sNajVPTZRrDSM", "player1", "toolu_01XQa3r3y1Fe8rnkGSncq626", "player2");
+                return RollRound(
+                    container,
+                    "toolu_01DiUBRds64sNajVPTZRrDSM",
+                    "player1",
+                    "toolu_01XQa3r3y1Fe8rnkGSncq626",
+                    "player2"
+                );
             case 4:
                 return new LanguageModelGenerateResult(
                     new GeneratedContent[]
                     {
-                        new GeneratedToolResult(GenerateCodeExecId, "code_execution", "{\"type\":\"code_execution_result\",\"stdout\":\"PLAYER 1 WINS THE GAME!\",\"stderr\":\"\",\"return_code\":0,\"content\":[]}"),
-                        new GeneratedText("**Game Over!**\n\nPlayer 1 dominated this game with a decisive 3-0 victory!"),
+                        new GeneratedToolResult(
+                            GenerateCodeExecId,
+                            "code_execution",
+                            "{\"type\":\"code_execution_result\",\"stdout\":\"PLAYER 1 WINS THE GAME!\",\"stderr\":\"\",\"return_code\":0,\"content\":[]}"
+                        ),
+                        new GeneratedText(
+                            "**Game Over!**\n\nPlayer 1 dominated this game with a decisive 3-0 victory!"
+                        ),
                     },
                     FinishReason.Stop,
                     new LanguageModelUsage(4243, 229, 4472),
-                    "stop");
+                    "stop"
+                );
             default:
                 throw new InvalidOperationException("Unexpected response count: " + index);
         }
     }
 
-    private static LanguageModelGenerateResult RollRound(JsonElement? container, string firstId, string firstPlayer, string secondId, string secondPlayer)
+    private static LanguageModelGenerateResult RollRound(
+        JsonElement? container,
+        string firstId,
+        string firstPlayer,
+        string secondId,
+        string secondPlayer
+    )
     {
         return new LanguageModelGenerateResult(
             new GeneratedContent[]
             {
-                new GeneratedToolCall(firstId, "rollDie", "{ \"player\": \"" + firstPlayer + "\" }"),
-                new GeneratedToolCall(secondId, "rollDie", "{ \"player\": \"" + secondPlayer + "\" }"),
+                new GeneratedToolCall(
+                    firstId,
+                    "rollDie",
+                    "{ \"player\": \"" + firstPlayer + "\" }"
+                ),
+                new GeneratedToolCall(
+                    secondId,
+                    "rollDie",
+                    "{ \"player\": \"" + secondPlayer + "\" }"
+                ),
             },
             FinishReason.ToolCalls,
             new LanguageModelUsage(0, 0, 0),
-            providerMetadata: container);
+            providerMetadata: container
+        );
     }
 
     private static IAsyncEnumerable<LanguageModelStreamPart> StreamResponse(int index)
     {
-        JsonElement? container = Json("{\"anthropic\":{\"container\":{\"id\":\"" + StreamContainerId + "\"}}}");
+        JsonElement? container = Json(
+            "{\"anthropic\":{\"container\":{\"id\":\"" + StreamContainerId + "\"}}}"
+        );
         switch (index)
         {
             case 0:
                 return Parts(
                     new TextStartStreamPart("1"),
-                    new TextDeltaStreamPart("1", "I'll help you simulate this game between two players where one is using a loaded die."),
+                    new TextDeltaStreamPart(
+                        "1",
+                        "I'll help you simulate this game between two players where one is using a loaded die."
+                    ),
                     new TextEndStreamPart("1"),
-                    new ToolCallStreamPart(StreamCodeExecId, "code_execution", "{\"type\":\"programmatic-tool-call\",\"code\":\"game_loop()\"}") { ProviderExecuted = true },
-                    new ToolCallStreamPart("toolu_019jKkXz4jAdwHweHBw92CVY", "rollDie", "{ \"player\": \"player1\" }"),
-                    new FinishStreamPart(FinishReason.ToolCalls, new LanguageModelUsage(3369, 725, 4094), null, container));
+                    new ToolCallStreamPart(
+                        StreamCodeExecId,
+                        "code_execution",
+                        "{\"type\":\"programmatic-tool-call\",\"code\":\"game_loop()\"}"
+                    )
+                    {
+                        ProviderExecuted = true,
+                    },
+                    new ToolCallStreamPart(
+                        "toolu_019jKkXz4jAdwHweHBw92CVY",
+                        "rollDie",
+                        "{ \"player\": \"player1\" }"
+                    ),
+                    new FinishStreamPart(
+                        FinishReason.ToolCalls,
+                        new LanguageModelUsage(3369, 725, 4094),
+                        null,
+                        container
+                    )
+                );
             case 1:
                 return Parts(
-                    new ToolCallStreamPart("toolu_015dGLMbwBKv1ZRQr6KdJzeH", "rollDie", "{ \"player\": \"player2\" }"),
-                    new FinishStreamPart(FinishReason.ToolCalls, new LanguageModelUsage(0, 0, 0), null, container));
+                    new ToolCallStreamPart(
+                        "toolu_015dGLMbwBKv1ZRQr6KdJzeH",
+                        "rollDie",
+                        "{ \"player\": \"player2\" }"
+                    ),
+                    new FinishStreamPart(
+                        FinishReason.ToolCalls,
+                        new LanguageModelUsage(0, 0, 0),
+                        null,
+                        container
+                    )
+                );
             case 2:
                 return Parts(
-                    new ToolCallStreamPart("toolu_01YYqBNq5mk1wMtv3PAqY44m", "rollDie", "{ \"player\": \"player1\" }"),
-                    new FinishStreamPart(FinishReason.ToolCalls, new LanguageModelUsage(0, 0, 0), null, container));
+                    new ToolCallStreamPart(
+                        "toolu_01YYqBNq5mk1wMtv3PAqY44m",
+                        "rollDie",
+                        "{ \"player\": \"player1\" }"
+                    ),
+                    new FinishStreamPart(
+                        FinishReason.ToolCalls,
+                        new LanguageModelUsage(0, 0, 0),
+                        null,
+                        container
+                    )
+                );
             case 3:
                 return Parts(
-                    new ToolCallStreamPart("toolu_018WxjDkQG8h7i63poySGT2x", "rollDie", "{ \"player\": \"player2\" }"),
-                    new FinishStreamPart(FinishReason.ToolCalls, new LanguageModelUsage(0, 0, 0), null, container));
+                    new ToolCallStreamPart(
+                        "toolu_018WxjDkQG8h7i63poySGT2x",
+                        "rollDie",
+                        "{ \"player\": \"player2\" }"
+                    ),
+                    new FinishStreamPart(
+                        FinishReason.ToolCalls,
+                        new LanguageModelUsage(0, 0, 0),
+                        null,
+                        container
+                    )
+                );
             case 4:
                 return Parts(
-                    new ToolResultStreamPart(StreamCodeExecId, "code_execution", Json("{\"type\":\"code_execution_result\",\"stdout\":\"Player 2 wins\",\"stderr\":\"\",\"return_code\":0,\"content\":[]}")),
+                    new ToolResultStreamPart(
+                        StreamCodeExecId,
+                        "code_execution",
+                        Json(
+                            "{\"type\":\"code_execution_result\",\"stdout\":\"Player 2 wins\",\"stderr\":\"\",\"return_code\":0,\"content\":[]}"
+                        )
+                    ),
                     new TextStartStreamPart("2"),
-                    new TextDeltaStreamPart("2", "## Game Results\n\n**Player 2 wins the game 3-2!**"),
+                    new TextDeltaStreamPart(
+                        "2",
+                        "## Game Results\n\n**Player 2 wins the game 3-2!**"
+                    ),
                     new TextEndStreamPart("2"),
-                    new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(4551, 197, 4748), "stop"));
+                    new FinishStreamPart(
+                        FinishReason.Stop,
+                        new LanguageModelUsage(4551, 197, 4748),
+                        "stop"
+                    )
+                );
             default:
                 throw new InvalidOperationException("Unexpected response count: " + index);
         }
     }
 
-    private static async IAsyncEnumerable<LanguageModelStreamPart> Parts(params LanguageModelStreamPart[] parts)
+    private static async IAsyncEnumerable<LanguageModelStreamPart> Parts(
+        params LanguageModelStreamPart[] parts
+    )
     {
         yield return new StreamStartStreamPart(null);
         foreach (var part in parts)
@@ -341,14 +549,20 @@ internal static class DiceGameFixture
 
     private sealed class ScriptedStreamModel : ILanguageModel
     {
-        private readonly Func<LanguageModelCallOptions, IAsyncEnumerable<LanguageModelStreamPart>> _next;
+        private readonly Func<
+            LanguageModelCallOptions,
+            IAsyncEnumerable<LanguageModelStreamPart>
+        > _next;
 
-        public ScriptedStreamModel(Func<LanguageModelCallOptions, IAsyncEnumerable<LanguageModelStreamPart>> next)
+        public ScriptedStreamModel(
+            Func<LanguageModelCallOptions, IAsyncEnumerable<LanguageModelStreamPart>> next
+        )
         {
             _next = next;
         }
 
-        public IReadOnlyDictionary<string, string> SupportedUrls => Vercel.AI.ProviderUtils.UrlSupport.None;
+        public IReadOnlyDictionary<string, string> SupportedUrls =>
+            Vercel.AI.ProviderUtils.UrlSupport.None;
 
         public string SpecificationVersion => "V4";
 
@@ -356,12 +570,18 @@ internal static class DiceGameFixture
 
         public string ModelId => "claude-sonnet-4-5-20250929";
 
-        public Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        public Task<LanguageModelGenerateResult> DoGenerateAsync(
+            LanguageModelCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
             throw new NotSupportedException();
         }
 
-        public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        public Task<LanguageModelStreamResult> DoStreamAsync(
+            LanguageModelCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
             return Task.FromResult(new LanguageModelStreamResult(_next(options)));
         }

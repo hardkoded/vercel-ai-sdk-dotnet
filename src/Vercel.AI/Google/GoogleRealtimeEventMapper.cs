@@ -18,12 +18,17 @@ namespace Vercel.AI.Google;
 /// </summary>
 public sealed class GoogleRealtimeEventMapper
 {
-    private static readonly Regex ThinkingLive = new(@"^gemini-[0-9]+\.[0-9]+-live\b.*thinking", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex ThinkingLive = new(
+        @"^gemini-[0-9]+\.[0-9]+-live\b.*thinking",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(100)
+    );
 
     private int _turnCounter;
     private int _inputTranscriptionCounter;
     private string _inputTranscriptionBuffer = string.Empty;
-    private InputTranscriptionBoundary _inputTranscriptionBoundary = InputTranscriptionBoundary.None;
+    private InputTranscriptionBoundary _inputTranscriptionBoundary =
+        InputTranscriptionBoundary.None;
     private bool _preserveInputTranscriptionAcrossTurnComplete;
     private bool _hasAudio;
     private bool _hasText;
@@ -52,7 +57,10 @@ public sealed class GoogleRealtimeEventMapper
     /// Builds a Google-specific session configuration from a normalized config. Used to construct the
     /// <c>bidiGenerateContentSetup</c> payload for auth token creation. Maps to <c>buildGoogleSessionConfig</c>.
     /// </summary>
-    public static JsonObject BuildGoogleSessionConfig(RealtimeModelV4SessionConfig? config, string modelId)
+    public static JsonObject BuildGoogleSessionConfig(
+        RealtimeModelV4SessionConfig? config,
+        string modelId
+    )
     {
         var setup = new JsonObject { ["model"] = GoogleModelPath.Get(modelId) };
 
@@ -93,7 +101,10 @@ public sealed class GoogleRealtimeEventMapper
         {
             generationConfig["speechConfig"] = new JsonObject
             {
-                ["voiceConfig"] = new JsonObject { ["prebuiltVoiceConfig"] = new JsonObject { ["voiceName"] = config.Voice } },
+                ["voiceConfig"] = new JsonObject
+                {
+                    ["prebuiltVoiceConfig"] = new JsonObject { ["voiceName"] = config.Voice },
+                },
             };
         }
 
@@ -101,7 +112,10 @@ public sealed class GoogleRealtimeEventMapper
 
         if (config?.Instructions != null)
         {
-            setup["systemInstruction"] = new JsonObject { ["parts"] = new JsonArray(new JsonObject { ["text"] = config.Instructions }) };
+            setup["systemInstruction"] = new JsonObject
+            {
+                ["parts"] = new JsonArray(new JsonObject { ["text"] = config.Instructions }),
+            };
         }
 
         if (config?.Tools is { Count: > 0 })
@@ -125,7 +139,9 @@ public sealed class GoogleRealtimeEventMapper
                 declarations.Add(declaration);
             }
 
-            setup["tools"] = new JsonArray(new JsonObject { ["functionDeclarations"] = declarations });
+            setup["tools"] = new JsonArray(
+                new JsonObject { ["functionDeclarations"] = declarations }
+            );
         }
 
         if (config?.InputAudioTranscription != null)
@@ -144,9 +160,16 @@ public sealed class GoogleRealtimeEventMapper
         // sets neither. Merged last so it survives a raw `providerOptions.generationConfig`.
         var typedThinkingConfig = googleOptions?["thinkingConfig"] as JsonObject;
         var explicitThinkingConfig = typedThinkingConfig
-            ?? ((restProviderOptions["generationConfig"] as JsonObject)?["thinkingConfig"] as JsonObject);
+            ?? (
+                (restProviderOptions["generationConfig"] as JsonObject)?["thinkingConfig"]
+                as JsonObject
+            );
         JsonObject? thinkingConfig;
-        if (IsThinkingLiveModel(modelId) && explicitThinkingConfig?["thinkingLevel"] == null && explicitThinkingConfig?["thinkingBudget"] == null)
+        if (
+            IsThinkingLiveModel(modelId)
+            && explicitThinkingConfig?["thinkingLevel"] == null
+            && explicitThinkingConfig?["thinkingBudget"] == null
+        )
         {
             thinkingConfig = (JsonObject?)explicitThinkingConfig?.DeepClone() ?? new JsonObject();
             thinkingConfig["thinkingLevel"] = "low";
@@ -189,9 +212,11 @@ public sealed class GoogleRealtimeEventMapper
     {
         var clone = raw.Clone();
         var events = ParseEvent(clone, clone);
-        var usage = clone.ValueKind == JsonValueKind.Object && clone.TryGetProperty("usageMetadata", out var usageMetadata)
-            ? MapGoogleUsage(usageMetadata)
-            : null;
+        var usage =
+            clone.ValueKind == JsonValueKind.Object
+            && clone.TryGetProperty("usageMetadata", out var usageMetadata)
+                ? MapGoogleUsage(usageMetadata)
+                : null;
         if (usage == null)
         {
             return events;
@@ -208,7 +233,12 @@ public sealed class GoogleRealtimeEventMapper
             return events;
         }
 
-        var update = new RealtimeModelV4ServerEvent("custom") { RawType = "usageMetadata", Usage = usage, Raw = clone };
+        var update = new RealtimeModelV4ServerEvent("custom")
+        {
+            RawType = "usageMetadata",
+            Usage = usage,
+            Raw = clone,
+        };
         if (events.Count == 1 && events[0].Type == "custom" && events[0].RawType == "usageMetadata")
         {
             return [update];
@@ -232,7 +262,10 @@ public sealed class GoogleRealtimeEventMapper
                     _inputAudioRate = clientEvent.Config.InputAudioFormatRate.Value;
                 }
 
-                return new JsonObject { ["setup"] = BuildGoogleSessionConfig(clientEvent.Config, modelId) };
+                return new JsonObject
+                {
+                    ["setup"] = BuildGoogleSessionConfig(clientEvent.Config, modelId),
+                };
 
             case "input-audio-append":
                 return new JsonObject
@@ -242,19 +275,27 @@ public sealed class GoogleRealtimeEventMapper
                         ["audio"] = new JsonObject
                         {
                             ["data"] = clientEvent.Audio,
-                            ["mimeType"] = "audio/pcm;rate=" + _inputAudioRate.ToString(CultureInfo.InvariantCulture),
+                            ["mimeType"] =
+                                "audio/pcm;rate="
+                                + _inputAudioRate.ToString(CultureInfo.InvariantCulture),
                         },
                     },
                 };
 
             case "input-audio-commit":
-                return new JsonObject { ["realtimeInput"] = new JsonObject { ["audioStreamEnd"] = true } };
+                return new JsonObject
+                {
+                    ["realtimeInput"] = new JsonObject { ["audioStreamEnd"] = true },
+                };
 
             case "conversation-item-create":
                 switch (clientEvent.Item?.Type)
                 {
                     case "text-message":
-                        return new JsonObject { ["realtimeInput"] = new JsonObject { ["text"] = clientEvent.Item.Text } };
+                        return new JsonObject
+                        {
+                            ["realtimeInput"] = new JsonObject { ["text"] = clientEvent.Item.Text },
+                        };
                     case "function-call-output":
                         return SerializeFunctionCallOutput(clientEvent.Item);
                     default:
@@ -267,7 +308,11 @@ public sealed class GoogleRealtimeEventMapper
         }
     }
 
-    private static void ApplyThinkingConfig(JsonObject setup, JsonObject generationConfig, JsonObject? thinkingConfig)
+    private static void ApplyThinkingConfig(
+        JsonObject setup,
+        JsonObject generationConfig,
+        JsonObject? thinkingConfig
+    )
     {
         if (thinkingConfig == null)
         {
@@ -311,14 +356,22 @@ public sealed class GoogleRealtimeEventMapper
         }
 
         var (inputText, inputAudio) = SumByModality(Property(usageMetadata, "promptTokensDetails"));
-        var (outputText, outputAudio) = SumByModality(Property(usageMetadata, "responseTokensDetails"));
+        var (outputText, outputAudio) = SumByModality(
+            Property(usageMetadata, "responseTokensDetails")
+        );
         var prompt = Count(usageMetadata, "promptTokenCount");
         var response = Count(usageMetadata, "responseTokenCount");
 
         var usage = new RealtimeModelV4Usage
         {
-            InputTokens = prompt != null ? prompt + (Count(usageMetadata, "toolUsePromptTokenCount") ?? 0) : null,
-            OutputTokens = response != null ? response + (Count(usageMetadata, "thoughtsTokenCount") ?? 0) : null,
+            InputTokens =
+                prompt != null
+                    ? prompt + (Count(usageMetadata, "toolUsePromptTokenCount") ?? 0)
+                    : null,
+            OutputTokens =
+                response != null
+                    ? response + (Count(usageMetadata, "thoughtsTokenCount") ?? 0)
+                    : null,
             CachedInputTokens = Count(usageMetadata, "cachedContentTokenCount"),
             InputTextTokens = inputText,
             InputAudioTokens = inputAudio,
@@ -327,9 +380,14 @@ public sealed class GoogleRealtimeEventMapper
         };
 
         // Drop empty fields; return null when nothing is observable.
-        return usage.InputTokens == null && usage.OutputTokens == null && usage.CachedInputTokens == null
-            && usage.InputTextTokens == null && usage.InputAudioTokens == null
-            && usage.OutputTextTokens == null && usage.OutputAudioTokens == null
+        return
+            usage.InputTokens == null
+            && usage.OutputTokens == null
+            && usage.CachedInputTokens == null
+            && usage.InputTextTokens == null
+            && usage.InputAudioTokens == null
+            && usage.OutputTextTokens == null
+            && usage.OutputAudioTokens == null
             ? null
             : usage;
     }
@@ -352,7 +410,8 @@ public sealed class GoogleRealtimeEventMapper
                 continue;
             }
 
-            var modality = Property(detail, "modality") is { ValueKind: JsonValueKind.String } modalityValue
+            var modality = Property(detail, "modality")
+                is { ValueKind: JsonValueKind.String } modalityValue
                 ? modalityValue.GetString()!.ToUpperInvariant()
                 : null;
             if (modality == "AUDIO")
@@ -380,7 +439,11 @@ public sealed class GoogleRealtimeEventMapper
 
     private static JsonElement? Property(JsonElement element, string name)
     {
-        if (element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null)
+        if (
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind != JsonValueKind.Null
+        )
         {
             return value;
         }
@@ -390,7 +453,10 @@ public sealed class GoogleRealtimeEventMapper
 
     private static string? NonEmptyString(JsonElement element, string name)
     {
-        if (Property(element, name) is { ValueKind: JsonValueKind.String } value && value.GetString() is { Length: > 0 } text)
+        if (
+            Property(element, name) is { ValueKind: JsonValueKind.String } value
+            && value.GetString() is { Length: > 0 } text
+        )
         {
             return text;
         }
@@ -400,7 +466,9 @@ public sealed class GoogleRealtimeEventMapper
 
     private static string? OptionalString(JsonElement element, string name)
     {
-        return Property(element, name) is { ValueKind: JsonValueKind.String } value ? value.GetString() : null;
+        return Property(element, name) is { ValueKind: JsonValueKind.String } value
+            ? value.GetString()
+            : null;
     }
 
     private static bool IsTrue(JsonElement element, string name)
@@ -435,7 +503,14 @@ public sealed class GoogleRealtimeEventMapper
         {
             ["toolResponse"] = new JsonObject
             {
-                ["functionResponses"] = new JsonArray(new JsonObject { ["id"] = item.CallId, ["name"] = item.Name, ["response"] = response }),
+                ["functionResponses"] = new JsonArray(
+                    new JsonObject
+                    {
+                        ["id"] = item.CallId,
+                        ["name"] = item.Name,
+                        ["response"] = response,
+                    }
+                ),
             },
         };
     }
@@ -469,7 +544,9 @@ public sealed class GoogleRealtimeEventMapper
     /// <c>finished</c> signal is the authoritative utterance boundary; for older payloads without that signal,
     /// response boundaries remain a fallback. Input transcriptions use a sequence independent of the turn counter.
     /// </summary>
-    private (string ItemId, string Transcript)? AccumulateInputTranscription(JsonElement inputTranscription)
+    private (string ItemId, string Transcript)? AccumulateInputTranscription(
+        JsonElement inputTranscription
+    )
     {
         var text = NonEmptyString(inputTranscription, "text");
         var finishedValue = Property(inputTranscription, "finished");
@@ -488,16 +565,26 @@ public sealed class GoogleRealtimeEventMapper
         }
 
         var hasFinishedSignal = finishedValue != null;
-        if (_inputTranscriptionBuffer.Length > 0
-            && (_inputTranscriptionBoundary == InputTranscriptionBoundary.Interrupted
-                || (_inputTranscriptionBoundary == InputTranscriptionBoundary.TurnComplete && !hasFinishedSignal)))
+        if (
+            _inputTranscriptionBuffer.Length > 0
+            && (
+                _inputTranscriptionBoundary == InputTranscriptionBoundary.Interrupted
+                || (
+                    _inputTranscriptionBoundary == InputTranscriptionBoundary.TurnComplete
+                    && !hasFinishedSignal
+                )
+            )
+        )
         {
             FinishInputTranscription();
         }
 
         _inputTranscriptionBoundary = InputTranscriptionBoundary.None;
         _inputTranscriptionBuffer += text;
-        var result = ("google-input-" + _inputTranscriptionCounter.ToString(CultureInfo.InvariantCulture), _inputTranscriptionBuffer);
+        var result = (
+            "google-input-" + _inputTranscriptionCounter.ToString(CultureInfo.InvariantCulture),
+            _inputTranscriptionBuffer
+        );
         if (finished)
         {
             FinishInputTranscription();
@@ -528,14 +615,38 @@ public sealed class GoogleRealtimeEventMapper
         {
             BeginTurnIfClosed();
             var events = new List<RealtimeModelV4ServerEvent>();
-            if (Property(toolCall, "functionCalls") is { ValueKind: JsonValueKind.Array } functionCalls)
+            if (
+                Property(toolCall, "functionCalls") is
+                { ValueKind: JsonValueKind.Array } functionCalls
+            )
             {
                 foreach (var functionCall in functionCalls.EnumerateArray())
                 {
-                    var args = Property(functionCall, "args") is { } value ? value.GetRawText() : "{}";
+                    var args = Property(functionCall, "args") is { } value
+                        ? value.GetRawText()
+                        : "{}";
                     var id = OptionalString(functionCall, "id");
-                    events.Add(new RealtimeModelV4ServerEvent("function-call-arguments-delta") { ResponseId = ResponseId, ItemId = ItemId, CallId = id, Delta = args, Raw = raw });
-                    events.Add(new RealtimeModelV4ServerEvent("function-call-arguments-done") { ResponseId = ResponseId, ItemId = ItemId, CallId = id, Name = OptionalString(functionCall, "name"), Arguments = args, Raw = raw });
+                    events.Add(
+                        new RealtimeModelV4ServerEvent("function-call-arguments-delta")
+                        {
+                            ResponseId = ResponseId,
+                            ItemId = ItemId,
+                            CallId = id,
+                            Delta = args,
+                            Raw = raw,
+                        }
+                    );
+                    events.Add(
+                        new RealtimeModelV4ServerEvent("function-call-arguments-done")
+                        {
+                            ResponseId = ResponseId,
+                            ItemId = ItemId,
+                            CallId = id,
+                            Name = OptionalString(functionCall, "name"),
+                            Arguments = args,
+                            Raw = raw,
+                        }
+                    );
                 }
             }
 
@@ -544,7 +655,14 @@ public sealed class GoogleRealtimeEventMapper
 
         if (Property(data, "toolCallCancellation") != null)
         {
-            return [new RealtimeModelV4ServerEvent("custom") { RawType = "toolCallCancellation", Raw = raw }];
+            return
+            [
+                new RealtimeModelV4ServerEvent("custom")
+                {
+                    RawType = "toolCallCancellation",
+                    Raw = raw,
+                },
+            ];
         }
 
         if (Property(data, "goAway") != null)
@@ -554,7 +672,14 @@ public sealed class GoogleRealtimeEventMapper
 
         if (Property(data, "sessionResumptionUpdate") != null)
         {
-            return [new RealtimeModelV4ServerEvent("custom") { RawType = "sessionResumptionUpdate", Raw = raw }];
+            return
+            [
+                new RealtimeModelV4ServerEvent("custom")
+                {
+                    RawType = "sessionResumptionUpdate",
+                    Raw = raw,
+                },
+            ];
         }
 
         if (Property(data, "serverContent") is { } serverContent)
@@ -562,10 +687,20 @@ public sealed class GoogleRealtimeEventMapper
             return ParseServerContent(serverContent, raw);
         }
 
-        if (Property(data, "inputTranscription") is { } inputTranscription
-            && AccumulateInputTranscription(inputTranscription) is { } transcription)
+        if (
+            Property(data, "inputTranscription") is { } inputTranscription
+            && AccumulateInputTranscription(inputTranscription) is { } transcription
+        )
         {
-            return [new RealtimeModelV4ServerEvent("input-transcription-completed") { ItemId = transcription.ItemId, Transcript = transcription.Transcript, Raw = raw }];
+            return
+            [
+                new RealtimeModelV4ServerEvent("input-transcription-completed")
+                {
+                    ItemId = transcription.ItemId,
+                    Transcript = transcription.Transcript,
+                    Raw = raw,
+                },
+            ];
         }
 
         string? rawType = null;
@@ -578,10 +713,20 @@ public sealed class GoogleRealtimeEventMapper
             }
         }
 
-        return [new RealtimeModelV4ServerEvent("custom") { RawType = rawType ?? "undefined", Raw = raw }];
+        return
+        [
+            new RealtimeModelV4ServerEvent("custom")
+            {
+                RawType = rawType ?? "undefined",
+                Raw = raw,
+            },
+        ];
     }
 
-    private List<RealtimeModelV4ServerEvent> ParseServerContent(JsonElement serverContent, JsonElement raw)
+    private List<RealtimeModelV4ServerEvent> ParseServerContent(
+        JsonElement serverContent,
+        JsonElement raw
+    )
     {
         var events = new List<RealtimeModelV4ServerEvent>();
 
@@ -596,7 +741,10 @@ public sealed class GoogleRealtimeEventMapper
             events.Add(new RealtimeModelV4ServerEvent("speech-started") { Raw = raw });
         }
 
-        if (Property(serverContent, "modelTurn") is { } modelTurn && Property(modelTurn, "parts") is { } parts)
+        if (
+            Property(serverContent, "modelTurn") is { } modelTurn
+            && Property(modelTurn, "parts") is { } parts
+        )
         {
             // New model response content marks the start of the next turn.
             BeginTurnIfClosed();
@@ -604,31 +752,70 @@ public sealed class GoogleRealtimeEventMapper
             {
                 foreach (var part in parts.EnumerateArray())
                 {
-                    if (Property(part, "inlineData") is { } inlineData && NonEmptyString(inlineData, "data") is { } data)
+                    if (
+                        Property(part, "inlineData") is { } inlineData
+                        && NonEmptyString(inlineData, "data") is { } data
+                    )
                     {
                         _hasAudio = true;
-                        events.Add(new RealtimeModelV4ServerEvent("audio-delta") { ResponseId = ResponseId, ItemId = ItemId, Delta = data, Raw = raw });
+                        events.Add(
+                            new RealtimeModelV4ServerEvent("audio-delta")
+                            {
+                                ResponseId = ResponseId,
+                                ItemId = ItemId,
+                                Delta = data,
+                                Raw = raw,
+                            }
+                        );
                     }
 
                     if (NonEmptyString(part, "text") is { } text)
                     {
                         _hasText = true;
-                        events.Add(new RealtimeModelV4ServerEvent("text-delta") { ResponseId = ResponseId, ItemId = ItemId, Delta = text, Raw = raw });
+                        events.Add(
+                            new RealtimeModelV4ServerEvent("text-delta")
+                            {
+                                ResponseId = ResponseId,
+                                ItemId = ItemId,
+                                Delta = text,
+                                Raw = raw,
+                            }
+                        );
                     }
                 }
             }
         }
 
-        if (Property(serverContent, "outputTranscription") is { } outputTranscription && NonEmptyString(outputTranscription, "text") is { } outputText)
+        if (
+            Property(serverContent, "outputTranscription") is { } outputTranscription
+            && NonEmptyString(outputTranscription, "text") is { } outputText
+        )
         {
             _hasTranscript = true;
-            events.Add(new RealtimeModelV4ServerEvent("audio-transcript-delta") { ResponseId = ResponseId, ItemId = ItemId, Delta = outputText, Raw = raw });
+            events.Add(
+                new RealtimeModelV4ServerEvent("audio-transcript-delta")
+                {
+                    ResponseId = ResponseId,
+                    ItemId = ItemId,
+                    Delta = outputText,
+                    Raw = raw,
+                }
+            );
         }
 
-        if (Property(serverContent, "inputTranscription") is { } inputTranscription
-            && AccumulateInputTranscription(inputTranscription) is { } transcription)
+        if (
+            Property(serverContent, "inputTranscription") is { } inputTranscription
+            && AccumulateInputTranscription(inputTranscription) is { } transcription
+        )
         {
-            events.Add(new RealtimeModelV4ServerEvent("input-transcription-completed") { ItemId = transcription.ItemId, Transcript = transcription.Transcript, Raw = raw });
+            events.Add(
+                new RealtimeModelV4ServerEvent("input-transcription-completed")
+                {
+                    ItemId = transcription.ItemId,
+                    Transcript = transcription.Transcript,
+                    Raw = raw,
+                }
+            );
         }
 
         // `generationComplete` means generation has stopped, but playback and the
@@ -636,7 +823,13 @@ public sealed class GoogleRealtimeEventMapper
         // emitted only when Google sends `turnComplete`.
         if (IsTrue(serverContent, "generationComplete"))
         {
-            events.Add(new RealtimeModelV4ServerEvent("custom") { RawType = "generationComplete", Raw = raw });
+            events.Add(
+                new RealtimeModelV4ServerEvent("custom")
+                {
+                    RawType = "generationComplete",
+                    Raw = raw,
+                }
+            );
         }
 
         // `interactionStatus` (IN_PROGRESS | IDLE | WAITING_FOR_INPUT) is the definitive
@@ -644,7 +837,13 @@ public sealed class GoogleRealtimeEventMapper
         // no longer implies the model is idle.
         if (Property(serverContent, "interactionStatus") != null)
         {
-            events.Add(new RealtimeModelV4ServerEvent("custom") { RawType = "interactionStatus", Raw = raw });
+            events.Add(
+                new RealtimeModelV4ServerEvent("custom")
+                {
+                    RawType = "interactionStatus",
+                    Raw = raw,
+                }
+            );
         }
 
         // `waitingForInput` is the always-on Proactive Audio turn-taking signal:
@@ -652,27 +851,57 @@ public sealed class GoogleRealtimeEventMapper
         // expects the user to continue.
         if (IsTrue(serverContent, "waitingForInput"))
         {
-            events.Add(new RealtimeModelV4ServerEvent("custom") { RawType = "waitingForInput", Raw = raw });
+            events.Add(
+                new RealtimeModelV4ServerEvent("custom") { RawType = "waitingForInput", Raw = raw }
+            );
         }
 
         if (IsTrue(serverContent, "turnComplete"))
         {
             if (_hasAudio)
             {
-                events.Add(new RealtimeModelV4ServerEvent("audio-done") { ResponseId = ResponseId, ItemId = ItemId, Raw = raw });
+                events.Add(
+                    new RealtimeModelV4ServerEvent("audio-done")
+                    {
+                        ResponseId = ResponseId,
+                        ItemId = ItemId,
+                        Raw = raw,
+                    }
+                );
             }
 
             if (_hasText)
             {
-                events.Add(new RealtimeModelV4ServerEvent("text-done") { ResponseId = ResponseId, ItemId = ItemId, Raw = raw });
+                events.Add(
+                    new RealtimeModelV4ServerEvent("text-done")
+                    {
+                        ResponseId = ResponseId,
+                        ItemId = ItemId,
+                        Raw = raw,
+                    }
+                );
             }
 
             if (_hasTranscript)
             {
-                events.Add(new RealtimeModelV4ServerEvent("audio-transcript-done") { ResponseId = ResponseId, ItemId = ItemId, Raw = raw });
+                events.Add(
+                    new RealtimeModelV4ServerEvent("audio-transcript-done")
+                    {
+                        ResponseId = ResponseId,
+                        ItemId = ItemId,
+                        Raw = raw,
+                    }
+                );
             }
 
-            events.Add(new RealtimeModelV4ServerEvent("response-done") { ResponseId = ResponseId, Status = "completed", Raw = raw });
+            events.Add(
+                new RealtimeModelV4ServerEvent("response-done")
+                {
+                    ResponseId = ResponseId,
+                    Status = "completed",
+                    Raw = raw,
+                }
+            );
 
             // Mark the turn closed but defer advancing the counter until the next
             // response actually begins (see `BeginTurnIfClosed`).
@@ -691,7 +920,9 @@ public sealed class GoogleRealtimeEventMapper
 
         if (events.Count == 0)
         {
-            events.Add(new RealtimeModelV4ServerEvent("custom") { RawType = "serverContent", Raw = raw });
+            events.Add(
+                new RealtimeModelV4ServerEvent("custom") { RawType = "serverContent", Raw = raw }
+            );
         }
 
         return events;

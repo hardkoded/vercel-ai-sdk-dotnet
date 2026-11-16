@@ -15,17 +15,16 @@ public static class GoogleJson
     /// <summary>
     /// Serializes like <c>JSON.stringify</c>: no null properties, and non-ASCII characters stay unescaped.
     /// </summary>
-    public static JsonSerializerOptions Options { get; } = new()
-    {
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    };
+    public static JsonSerializerOptions Options { get; } =
+        new()
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        };
 
     /// <summary>Serializes metadata and keeps explicit nulls.</summary>
-    public static JsonSerializerOptions Metadata { get; } = new()
-    {
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    };
+    public static JsonSerializerOptions Metadata { get; } =
+        new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     /// <summary>Writes a node with <see cref="Options"/>.</summary>
     public static string Write(JsonNode node)
@@ -92,7 +91,10 @@ public static class GoogleJson
     /// <summary>Clones a JSON element into a node.</summary>
     public static JsonNode? Clone(JsonElement? element)
     {
-        if (element is not { } value || value.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
+        if (
+            element is not { } value
+            || value.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null
+        )
         {
             return null;
         }
@@ -103,12 +105,17 @@ public static class GoogleJson
     /// <summary>Reads a string property.</summary>
     public static string? String(JsonElement element, string name)
     {
-        if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty(name, out var property))
+        if (
+            element.ValueKind != JsonValueKind.Object
+            || !element.TryGetProperty(name, out var property)
+        )
         {
             return null;
         }
 
-        return property.ValueKind == JsonValueKind.String ? property.GetString() : property.GetRawText();
+        return property.ValueKind == JsonValueKind.String
+            ? property.GetString()
+            : property.GetRawText();
     }
 
     /// <summary>Reads an object property.</summary>

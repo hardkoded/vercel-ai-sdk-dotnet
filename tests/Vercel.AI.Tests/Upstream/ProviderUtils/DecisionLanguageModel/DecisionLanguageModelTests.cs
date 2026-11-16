@@ -20,42 +20,69 @@ public sealed class DecisionLanguageModelTests
 
     public static TheoryData<double> BooleanProbabilities => new() { 0, 0.02, 0.5, 0.98, 1 };
 
-    public static TheoryData<string> InvalidBooleanProbabilities => new() { "-0.01", "1.01", "1e999", "-1e999", "null", "true", "false", "\"0.5\"", "{}", "[]" };
+    public static TheoryData<string> InvalidBooleanProbabilities =>
+        new()
+        {
+            "-0.01",
+            "1.01",
+            "1e999",
+            "-1e999",
+            "null",
+            "true",
+            "false",
+            "\"0.5\"",
+            "{}",
+            "[]",
+        };
 
-    public static TheoryData<string> MissingOrExtraBooleanAnswers => new()
-    {
-        "{\"q0\":\"c1\",\"q1\":1.25}",
-        "{\"q0\":\"c1\",\"q1\":1.25,\"q2\":0.5,\"extra\":0.5}",
-    };
+    public static TheoryData<string> MissingOrExtraBooleanAnswers =>
+        new()
+        {
+            "{\"q0\":\"c1\",\"q1\":1.25}",
+            "{\"q0\":\"c1\",\"q1\":1.25,\"q2\":0.5,\"extra\":0.5}",
+        };
 
-    public static TheoryData<FinishReason> UnfinishedReasons => new() { FinishReason.Length, FinishReason.ContentFilter, FinishReason.ToolCalls, FinishReason.Error, FinishReason.Other };
+    public static TheoryData<FinishReason> UnfinishedReasons =>
+        new()
+        {
+            FinishReason.Length,
+            FinishReason.ContentFilter,
+            FinishReason.ToolCalls,
+            FinishReason.Error,
+            FinishReason.Other,
+        };
 
-    public static TheoryData<string> MalformedOutputs => new()
-    {
-        string.Empty,
-        "not JSON",
-        "```json\n{}\n```",
-        "null",
-        "[]",
-        "{}",
-        "{\"q0\":\"c1\"}",
-        "{\"q0\":\"c1\",\"q1\":1,\"extra\":true}",
-        "{\"q0\":\"C1\",\"q1\":1}",
-        "{\"q0\":\"c01\",\"q1\":1}",
-        "{\"q0\":\"c3\",\"q1\":1}",
-        "{\"q0\":1,\"q1\":1}",
-        "{\"q0\":\"c1\",\"q1\":\"1\"}",
-        "{\"q0\":\"c1\",\"q1\":-0.01}",
-        "{\"q0\":\"c1\",\"q1\":2.01}",
-        "{\"q0\":\"c1\",\"q1\":1e999}",
-        "{\"q0\":\"c1\",\"q1\":null}",
-        "{\"q0\":\"c1\",\"q1\":1,\"__proto__\":{}}",
-    };
+    public static TheoryData<string> MalformedOutputs =>
+        new()
+        {
+            string.Empty,
+            "not JSON",
+            "```json\n{}\n```",
+            "null",
+            "[]",
+            "{}",
+            "{\"q0\":\"c1\"}",
+            "{\"q0\":\"c1\",\"q1\":1,\"extra\":true}",
+            "{\"q0\":\"C1\",\"q1\":1}",
+            "{\"q0\":\"c01\",\"q1\":1}",
+            "{\"q0\":\"c3\",\"q1\":1}",
+            "{\"q0\":1,\"q1\":1}",
+            "{\"q0\":\"c1\",\"q1\":\"1\"}",
+            "{\"q0\":\"c1\",\"q1\":-0.01}",
+            "{\"q0\":\"c1\",\"q1\":2.01}",
+            "{\"q0\":\"c1\",\"q1\":1e999}",
+            "{\"q0\":\"c1\",\"q1\":null}",
+            "{\"q0\":\"c1\",\"q1\":1,\"__proto__\":{}}",
+        };
 
-    public static TheoryData<string> InvalidRubricShapes => new() { "no questions", "choice without options", "score with one level" };
+    public static TheoryData<string> InvalidRubricShapes =>
+        new() { "no questions", "choice without options", "score with one level" };
 
     [Fact]
-    [UpstreamTest(Prefix + "maps exact caller labels and fractional scores without inventing distributions", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "maps exact caller labels and fractional scores without inventing distributions",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Maps_exact_caller_labels_and_fractional_scores_without_inventing_distributions()
     {
         var (model, language, _) = Setup();
@@ -68,7 +95,10 @@ public sealed class DecisionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "accepts exact choice labels when an internal option code is not returned", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "accepts exact choice labels when an internal option code is not returned",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Accepts_exact_choice_labels_when_an_internal_option_code_is_not_returned()
     {
         var (model, _, _) = Setup(Text("{\"q1\":1.25,\"q0\":\"Needs review\"}"));
@@ -80,13 +110,22 @@ public sealed class DecisionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "prefers internal option codes over identical choice labels", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "prefers internal option codes over identical choice labels",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Prefers_internal_option_codes_over_identical_choice_labels()
     {
         var (model, _, _) = Setup(Text("{\"q0\":\"c1\"}"));
         var questions = new Dictionary<string, DecisionQuestion>
         {
-            ["category"] = Category(new Dictionary<string, object?> { ["c1"] = "first label", ["other"] = "second label" }),
+            ["category"] = Category(
+                new Dictionary<string, object?>
+                {
+                    ["c1"] = "first label",
+                    ["other"] = "second label",
+                }
+            ),
         };
 
         var result = await model.DoDecideAsync(Call(questions));
@@ -95,7 +134,10 @@ public sealed class DecisionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "uses a portable flat schema with required fields and internal option codes", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "uses a portable flat schema with required fields and internal option codes",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Uses_a_portable_flat_schema_with_required_fields_and_internal_option_codes()
     {
         var (model, language, _) = Setup();
@@ -108,27 +150,37 @@ public sealed class DecisionLanguageModelTests
         var description = schema["properties"]!["q1"]!["description"]!.GetValue<string>();
         Assert.Contains("0 to 2", description, StringComparison.Ordinal);
         AssertJson(
-            "{\"type\":\"object\",\"properties\":{\"q0\":{\"type\":\"string\",\"enum\":[\"c0\",\"c1\",\"c2\"]},\"q1\":{\"type\":\"number\",\"description\":" + JsonSerializer.Serialize(description) + "}},\"required\":[\"q0\",\"q1\"],\"additionalProperties\":false}",
-            schema);
+            "{\"type\":\"object\",\"properties\":{\"q0\":{\"type\":\"string\",\"enum\":[\"c0\",\"c1\",\"c2\"]},\"q1\":{\"type\":\"number\",\"description\":"
+                + JsonSerializer.Serialize(description)
+                + "}},\"required\":[\"q0\",\"q1\"],\"additionalProperties\":false}",
+            schema
+        );
 
         var message = Assert.IsType<UserModelMessage>(call.Prompt[1]);
         AssertJson(
             "{\"questions\":{"
-            + "\"q0\":{\"id\":\"category\",\"type\":\"choice\",\"instructions\":{\"task\":[\"Pick the exact label\"]},\"criteria\":{"
-            + "\"c0\":{\"label\":\"Needs Review\",\"description\":{\"meaning\":\"manual\"}},"
-            + "\"c1\":{\"label\":\"Needs review\",\"description\":[\"automatic\"]},"
-            + "\"c2\":{\"label\":\"other\",\"description\":null}}},"
-            + "\"q1\":{\"id\":\"severity\",\"type\":\"score\",\"instructions\":[\"Rate the impact\"],\"criteria\":[\"low\",{\"meaning\":\"medium\"},null]}}}",
-            JsonNode.Parse(Assert.IsType<TextContentPart>(message.Content[0]).Text));
+                + "\"q0\":{\"id\":\"category\",\"type\":\"choice\",\"instructions\":{\"task\":[\"Pick the exact label\"]},\"criteria\":{"
+                + "\"c0\":{\"label\":\"Needs Review\",\"description\":{\"meaning\":\"manual\"}},"
+                + "\"c1\":{\"label\":\"Needs review\",\"description\":[\"automatic\"]},"
+                + "\"c2\":{\"label\":\"other\",\"description\":null}}},"
+                + "\"q1\":{\"id\":\"severity\",\"type\":\"score\",\"instructions\":[\"Rate the impact\"],\"criteria\":[\"low\",{\"meaning\":\"medium\"},null]}}}",
+            JsonNode.Parse(Assert.IsType<TextContentPart>(message.Content[0]).Text)
+        );
         Assert.Equal("Shared state:", Assert.IsType<TextContentPart>(message.Content[1]).Text);
-        Assert.Equal(JsonSerializer.Serialize(StateValue()), Assert.IsType<TextContentPart>(message.Content[2]).Text);
+        Assert.Equal(
+            JsonSerializer.Serialize(StateValue()),
+            Assert.IsType<TextContentPart>(message.Content[2]).Text
+        );
         Assert.Null(call.Temperature);
         Assert.Null(call.Tools);
         Assert.Equal("none", call.Reasoning);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves usage, response, warnings, and provider metadata", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "preserves usage, response, warnings, and provider metadata",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Preserves_usage_response_warnings_and_provider_metadata()
     {
         var (model, _, result) = Setup();
@@ -144,21 +196,37 @@ public sealed class DecisionLanguageModelTests
         Assert.Equal(result.Warnings[0].Message, warning.Message);
         Assert.Equal("response", output.Response!.Id);
         Assert.Equal("resolved", output.Response.ModelId);
-        Assert.Equal(DateTimeOffset.FromUnixTimeMilliseconds(0).UtcDateTime, output.Response.Timestamp);
+        Assert.Equal(
+            DateTimeOffset.FromUnixTimeMilliseconds(0).UtcDateTime,
+            output.Response.Timestamp
+        );
         Assert.Equal(result.ResponseHeaders, output.Response.Headers);
         Assert.Equal("{\"raw\":true}", output.Response.Body!.Value.GetRawText());
-        Assert.Equal(result.ProviderMetadata!.Value.GetRawText(), output.ProviderMetadata!.Value.GetRawText());
+        Assert.Equal(
+            result.ProviderMetadata!.Value.GetRawText(),
+            output.ProviderMetadata!.Value.GetRawText()
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "forwards cancellation, headers, and provider options unchanged", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "forwards cancellation, headers, and provider options unchanged",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Forwards_cancellation_headers_and_provider_options_unchanged()
     {
         var (model, language, _) = Setup();
         using var controller = new CancellationTokenSource();
         var headers = new Dictionary<string, string> { ["test"] = "header" };
 
-        await model.DoDecideAsync(Call(providerOptions: "{\"test\":{\"reasoning\":\"low\"}}", headers: headers, cancellationToken: controller.Token), controller.Token);
+        await model.DoDecideAsync(
+            Call(
+                providerOptions: "{\"test\":{\"reasoning\":\"low\"}}",
+                headers: headers,
+                cancellationToken: controller.Token
+            ),
+            controller.Token
+        );
 
         var call = language.Calls[0];
         Assert.Equal("none", call.Reasoning);
@@ -172,15 +240,30 @@ public sealed class DecisionLanguageModelTests
 
     [Theory]
     [MemberData(nameof(BooleanProbabilities))]
-    [UpstreamTest(Prefix + "preserves Boolean P(true) %s without thresholding in a mixed decision", Coverage = UpstreamCoverage.Covered)]
-    public async Task Preserves_Boolean_P_true_without_thresholding_in_a_mixed_decision(double probability)
+    [UpstreamTest(
+        Prefix + "preserves Boolean P(true) %s without thresholding in a mixed decision",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Preserves_Boolean_P_true_without_thresholding_in_a_mixed_decision(
+        double probability
+    )
     {
-        var (model, language, _) = Setup(Text("{\"q2\":" + probability.ToString("R", CultureInfo.InvariantCulture) + ",\"q1\":1.25,\"q0\":\"c1\"}"));
+        var (model, language, _) = Setup(
+            Text(
+                "{\"q2\":"
+                    + probability.ToString("R", CultureInfo.InvariantCulture)
+                    + ",\"q1\":1.25,\"q0\":\"c1\"}"
+            )
+        );
         const string instructions = "{\"task\":[\"Is a refund requested?\"]}";
         const string whenTrue = "{\"meaning\":\"A refund is requested\"}";
         const string whenFalse = "[\"No refund requested\"]";
         var questions = Questions();
-        questions["flag"] = Q("boolean", instructions, new Dictionary<string, object?> { ["true"] = whenTrue, ["false"] = whenFalse });
+        questions["flag"] = Q(
+            "boolean",
+            instructions,
+            new Dictionary<string, object?> { ["true"] = whenTrue, ["false"] = whenFalse }
+        );
 
         var result = await model.DoDecideAsync(Call(questions));
 
@@ -198,7 +281,11 @@ public sealed class DecisionLanguageModelTests
         var schema = JsonNode.Parse(call.JsonSchema!.Value.GetRawText())!;
         var q2 = schema["properties"]!["q2"]!.AsObject();
         Assert.Equal("number", q2["type"]!.GetValue<string>());
-        Assert.Contains("probability", q2["description"]!.GetValue<string>(), StringComparison.Ordinal);
+        Assert.Contains(
+            "probability",
+            q2["description"]!.GetValue<string>(),
+            StringComparison.Ordinal
+        );
         Assert.False(q2.ContainsKey("minimum"));
         Assert.False(q2.ContainsKey("maximum"));
         AssertJson("[\"q0\",\"q1\",\"q2\"]", schema["required"]);
@@ -210,19 +297,34 @@ public sealed class DecisionLanguageModelTests
             ["instructions"] = instructions,
             ["criteria"] = new JsonObject { ["true"] = whenTrue, ["false"] = whenFalse },
         };
-        AssertJson(expected.ToJsonString(), JsonNode.Parse(Assert.IsType<TextContentPart>(message.Content[0]).Text)!["questions"]!["q2"]);
-        Assert.Contains("not confidence in whichever outcome", Assert.IsType<SystemModelMessage>(call.Prompt[0]).Content, StringComparison.Ordinal);
+        AssertJson(
+            expected.ToJsonString(),
+            JsonNode.Parse(Assert.IsType<TextContentPart>(message.Content[0]).Text)!["questions"]![
+                "q2"
+            ]
+        );
+        Assert.Contains(
+            "not confidence in whichever outcome",
+            Assert.IsType<SystemModelMessage>(call.Prompt[0]).Content,
+            StringComparison.Ordinal
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "supports Boolean questions without criteria", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "supports Boolean questions without criteria",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Supports_Boolean_questions_without_criteria()
     {
         var (model, _, _) = Setup(Text("{\"q0\":0.25}"));
 
-        var result = await model.DoDecideAsync(Call(
-            new Dictionary<string, DecisionQuestion> { ["flag"] = Q("boolean", "Yes?") },
-            TextState("test")));
+        var result = await model.DoDecideAsync(
+            Call(
+                new Dictionary<string, DecisionQuestion> { ["flag"] = Q("boolean", "Yes?") },
+                TextState("test")
+            )
+        );
 
         var flag = Assert.Single(result.Answers);
         Assert.Equal("flag", flag.Key);
@@ -232,22 +334,34 @@ public sealed class DecisionLanguageModelTests
 
     [Theory]
     [MemberData(nameof(InvalidBooleanProbabilities))]
-    [UpstreamTest(Prefix + "rejects invalid Boolean probability %s without returning partial answers", Coverage = UpstreamCoverage.Covered)]
-    public async Task Rejects_invalid_Boolean_probability_without_returning_partial_answers(string value)
+    [UpstreamTest(
+        Prefix + "rejects invalid Boolean probability %s without returning partial answers",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Rejects_invalid_Boolean_probability_without_returning_partial_answers(
+        string value
+    )
     {
         var (model, _, _) = Setup(Text("{\"q0\":\"c1\",\"q1\":1.25,\"q2\":" + value + "}"));
 
-        await Assert.ThrowsAsync<InvalidResponseDataException>(() => model.DoDecideAsync(Call(WithFlag())));
+        await Assert.ThrowsAsync<InvalidResponseDataException>(() =>
+            model.DoDecideAsync(Call(WithFlag()))
+        );
     }
 
     [Theory]
     [MemberData(nameof(MissingOrExtraBooleanAnswers))]
-    [UpstreamTest(Prefix + "rejects missing or extra answers for mixed Boolean decisions: %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "rejects missing or extra answers for mixed Boolean decisions: %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_missing_or_extra_answers_for_mixed_Boolean_decisions(string text)
     {
         var (model, _, _) = Setup(Text(text));
 
-        await Assert.ThrowsAsync<InvalidResponseDataException>(() => model.DoDecideAsync(Call(WithFlag())));
+        await Assert.ThrowsAsync<InvalidResponseDataException>(() =>
+            model.DoDecideAsync(Call(WithFlag()))
+        );
     }
 
     [Theory]
@@ -262,7 +376,10 @@ public sealed class DecisionLanguageModelTests
 
     [Theory]
     [MemberData(nameof(MalformedOutputs))]
-    [UpstreamTest(Prefix + "rejects malformed decision output %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "rejects malformed decision output %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_malformed_decision_output(string text)
     {
         var (model, _, _) = Setup(Text(text));
@@ -271,15 +388,20 @@ public sealed class DecisionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "joins text parts and ignores reasoning", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "joins text parts and ignores reasoning",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Joins_text_parts_and_ignores_reasoning()
     {
-        var (model, _, _) = Setup(new GeneratedContent[]
-        {
-            new GeneratedReasoning("internal"),
-            new GeneratedText("{\"q0\":\"c1\","),
-            new GeneratedText("\"q1\":1}"),
-        });
+        var (model, _, _) = Setup(
+            new GeneratedContent[]
+            {
+                new GeneratedReasoning("internal"),
+                new GeneratedText("{\"q0\":\"c1\","),
+                new GeneratedText("\"q1\":1}"),
+            }
+        );
 
         var result = await model.DoDecideAsync(Call());
 
@@ -287,11 +409,18 @@ public sealed class DecisionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves unusual IDs without using them as schema property names", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "preserves unusual IDs without using them as schema property names",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Preserves_unusual_IDs_without_using_them_as_schema_property_names()
     {
         var (model, _, _) = Setup();
-        var weird = new Dictionary<string, DecisionQuestion> { ["__proto__"] = Category(), ["a.b [✓]"] = Severity() };
+        var weird = new Dictionary<string, DecisionQuestion>
+        {
+            ["__proto__"] = Category(),
+            ["a.b [✓]"] = Severity(),
+        };
 
         var result = await model.DoDecideAsync(Call(weird));
 
@@ -300,11 +429,19 @@ public sealed class DecisionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "does not retry or wrap language-model errors", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "does not retry or wrap language-model errors",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Does_not_retry_or_wrap_language_model_errors()
     {
         var (model, language, _) = Setup();
-        var error = new ApiCallError("retry later", "https://example.com", new Dictionary<string, object?>(), 429);
+        var error = new ApiCallError(
+            "retry later",
+            "https://example.com",
+            new Dictionary<string, object?>(),
+            429
+        );
         language.OnGenerate = (_, _) => throw error;
 
         var thrown = await Assert.ThrowsAsync<ApiCallError>(() => model.DoDecideAsync(Call()));
@@ -314,21 +451,29 @@ public sealed class DecisionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects pre-aborted requests without invoking the model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "rejects pre-aborted requests without invoking the model",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_pre_aborted_requests_without_invoking_the_model()
     {
         var (model, language, _) = Setup();
         using var controller = new CancellationTokenSource();
         controller.Cancel();
 
-        var thrown = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => model.DoDecideAsync(Call(cancellationToken: controller.Token), controller.Token));
+        var thrown = await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            model.DoDecideAsync(Call(cancellationToken: controller.Token), controller.Token)
+        );
 
         Assert.Equal(controller.Token, thrown.CancellationToken);
         Assert.Empty(language.Calls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "checks cancellation after the model returns", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "checks cancellation after the model returns",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Checks_cancellation_after_the_model_returns()
     {
         var (model, language, result) = Setup();
@@ -339,31 +484,47 @@ public sealed class DecisionLanguageModelTests
             return Task.FromResult(result);
         };
 
-        var thrown = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => model.DoDecideAsync(Call(cancellationToken: controller.Token), controller.Token));
+        var thrown = await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            model.DoDecideAsync(Call(cancellationToken: controller.Token), controller.Token)
+        );
 
         Assert.Equal(controller.Token, thrown.CancellationToken);
     }
 
     [Theory]
     [MemberData(nameof(InvalidRubricShapes))]
-    [UpstreamTest(Prefix + "rejects invalid rubric shapes before model I/O", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "rejects invalid rubric shapes before model I/O",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_invalid_rubric_shapes_before_model_IO(string shape)
     {
         var (model, language, _) = Setup();
         var questions = shape switch
         {
             "no questions" => new Dictionary<string, DecisionQuestion>(),
-            "choice without options" => new Dictionary<string, DecisionQuestion> { ["category"] = Category(new Dictionary<string, object?>()) },
-            _ => new Dictionary<string, DecisionQuestion> { ["severity"] = Severity(new List<object?> { "only" }) },
+            "choice without options" => new Dictionary<string, DecisionQuestion>
+            {
+                ["category"] = Category(new Dictionary<string, object?>()),
+            },
+            _ => new Dictionary<string, DecisionQuestion>
+            {
+                ["severity"] = Severity(new List<object?> { "only" }),
+            },
         };
 
-        await Assert.ThrowsAsync<InvalidArgumentException>(() => model.DoDecideAsync(Call(questions, TextState("text"))));
+        await Assert.ThrowsAsync<InvalidArgumentException>(() =>
+            model.DoDecideAsync(Call(questions, TextState("text")))
+        );
 
         Assert.Empty(language.Calls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "restores the wrapped model and provider across workflow hooks", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "restores the wrapped model and provider across workflow hooks",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Restores_the_wrapped_model_and_provider_across_workflow_hooks()
     {
         var (model, language, _) = Setup();
@@ -379,7 +540,10 @@ public sealed class DecisionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "sends images as files and preserves state part order in the prompt", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "sends images as files and preserves state part order in the prompt",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Sends_images_as_files_and_preserves_state_part_order_in_the_prompt()
     {
         var (model, language, _) = Setup();
@@ -387,20 +551,39 @@ public sealed class DecisionLanguageModelTests
         {
             ["type"] = "file",
             ["mediaType"] = "image/png",
-            ["data"] = new Dictionary<string, object?> { ["type"] = "data", ["data"] = new byte[] { 1, 2 } },
-            ["providerOptions"] = new Dictionary<string, object?> { ["test"] = new Dictionary<string, object?> { ["detail"] = "high" } },
+            ["data"] = new Dictionary<string, object?>
+            {
+                ["type"] = "data",
+                ["data"] = new byte[] { 1, 2 },
+            },
+            ["providerOptions"] = new Dictionary<string, object?>
+            {
+                ["test"] = new Dictionary<string, object?> { ["detail"] = "high" },
+            },
         };
 
-        await model.DoDecideAsync(Call(state: new List<object?>
-        {
-            new Dictionary<string, object?> { ["type"] = "text", ["text"] = "Inspect." },
-            image,
-            new Dictionary<string, object?> { ["type"] = "json", ["value"] = new List<object?> { 1, null } },
-        }));
+        await model.DoDecideAsync(
+            Call(
+                state: new List<object?>
+                {
+                    new Dictionary<string, object?> { ["type"] = "text", ["text"] = "Inspect." },
+                    image,
+                    new Dictionary<string, object?>
+                    {
+                        ["type"] = "json",
+                        ["value"] = new List<object?> { 1, null },
+                    },
+                }
+            )
+        );
 
         var user = Assert.IsType<UserModelMessage>(language.Calls[0].Prompt[1]);
         Assert.Equal(5, user.Content.Count);
-        Assert.Contains("\"questions\"", Assert.IsType<TextContentPart>(user.Content[0]).Text, StringComparison.Ordinal);
+        Assert.Contains(
+            "\"questions\"",
+            Assert.IsType<TextContentPart>(user.Content[0]).Text,
+            StringComparison.Ordinal
+        );
         Assert.Equal("Shared state:", Assert.IsType<TextContentPart>(user.Content[1]).Text);
         Assert.Equal("Inspect.", Assert.IsType<TextContentPart>(user.Content[2]).Text);
         var file = Assert.IsType<FileContentPart>(user.Content[3]);
@@ -415,20 +598,33 @@ public sealed class DecisionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects unsupported media before generating a decision", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "rejects unsupported media before generating a decision",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_unsupported_media_before_generating_a_decision()
     {
         var (model, language, _) = Setup();
 
-        await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => model.DoDecideAsync(Call(state: new List<object?>
-        {
-            new Dictionary<string, object?>
-            {
-                ["type"] = "file",
-                ["mediaType"] = "audio/wav",
-                ["data"] = new Dictionary<string, object?> { ["type"] = "data", ["data"] = "AAAA" },
-            },
-        })));
+        await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() =>
+            model.DoDecideAsync(
+                Call(
+                    state: new List<object?>
+                    {
+                        new Dictionary<string, object?>
+                        {
+                            ["type"] = "file",
+                            ["mediaType"] = "audio/wav",
+                            ["data"] = new Dictionary<string, object?>
+                            {
+                                ["type"] = "data",
+                                ["data"] = "AAAA",
+                            },
+                        },
+                    }
+                )
+            )
+        );
 
         Assert.Empty(language.Calls);
     }
@@ -436,16 +632,35 @@ public sealed class DecisionLanguageModelTests
     [Theory]
     [InlineData("{}")]
     [InlineData("{\"instructions\":null}")]
-    [UpstreamTest(Prefix + "includes criteria-only questions in the model prompt with %j", Coverage = UpstreamCoverage.Partial, Note = "A missing, undefined, and null instructions field are all a null instruction here, so no instructions field is sent. Upstream sends null for the null case.")]
+    [UpstreamTest(
+        Prefix + "includes criteria-only questions in the model prompt with %j",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "A missing, undefined, and null instructions field are all a null instruction here, so no instructions field is sent. Upstream sends null for the null case."
+    )]
     public async Task Includes_criteria_only_questions_in_the_model_prompt(string instructionFields)
     {
         _ = instructionFields;
         var (model, language, _) = Setup(Text("{\"q0\":\"c0\",\"q1\":0.75,\"q2\":0.8}"));
         var questions = new Dictionary<string, DecisionQuestion>
         {
-            ["category"] = Q("choice", null, new Dictionary<string, object?> { ["billing"] = new List<object?> { "Charges" }, ["other"] = null }),
+            ["category"] = Q(
+                "choice",
+                null,
+                new Dictionary<string, object?>
+                {
+                    ["billing"] = new List<object?> { "Charges" },
+                    ["other"] = null,
+                }
+            ),
             ["severity"] = Q("score", null, new List<object?> { "Low", "High" }),
-            ["refund"] = Q("boolean", null, new Dictionary<string, object?> { ["true"] = new Dictionary<string, object?> { ["intent"] = "Refund" } }),
+            ["refund"] = Q(
+                "boolean",
+                null,
+                new Dictionary<string, object?>
+                {
+                    ["true"] = new Dictionary<string, object?> { ["intent"] = "Refund" },
+                }
+            ),
         };
 
         var result = await model.DoDecideAsync(Call(questions));
@@ -458,19 +673,23 @@ public sealed class DecisionLanguageModelTests
         var message = Assert.IsType<UserModelMessage>(language.Calls[0].Prompt[1]);
         AssertJson(
             "{\"questions\":{"
-            + "\"q0\":{\"id\":\"category\",\"type\":\"choice\",\"criteria\":{"
-            + "\"c0\":{\"label\":\"billing\",\"description\":[\"Charges\"]},"
-            + "\"c1\":{\"label\":\"other\",\"description\":null}}},"
-            + "\"q1\":{\"id\":\"severity\",\"type\":\"score\",\"criteria\":[\"Low\",\"High\"]},"
-            + "\"q2\":{\"id\":\"refund\",\"type\":\"boolean\",\"criteria\":{\"true\":{\"intent\":\"Refund\"}}}}}",
-            JsonNode.Parse(Assert.IsType<TextContentPart>(message.Content[0]).Text));
+                + "\"q0\":{\"id\":\"category\",\"type\":\"choice\",\"criteria\":{"
+                + "\"c0\":{\"label\":\"billing\",\"description\":[\"Charges\"]},"
+                + "\"c1\":{\"label\":\"other\",\"description\":null}}},"
+                + "\"q1\":{\"id\":\"severity\",\"type\":\"score\",\"criteria\":[\"Low\",\"High\"]},"
+                + "\"q2\":{\"id\":\"refund\",\"type\":\"boolean\",\"criteria\":{\"true\":{\"intent\":\"Refund\"}}}}}",
+            JsonNode.Parse(Assert.IsType<TextContentPart>(message.Content[0]).Text)
+        );
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData(1.0)]
     [InlineData(512.0)]
-    [UpstreamTest(Prefix + "forwards maxOutputTokens to the language model: %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "forwards maxOutputTokens to the language model: %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Forwards_maxOutputTokens_to_the_language_model(double? maxOutputTokens)
     {
         var (model, language, _) = Setup();
@@ -482,7 +701,9 @@ public sealed class DecisionLanguageModelTests
     public async Task Rejects_a_maxOutputTokens_that_does_not_fit_an_int()
     {
         var (model, language, _) = Setup();
-        await Assert.ThrowsAsync<InvalidArgumentError>(() => model.DoDecideAsync(Call(maxOutputTokens: 2147483648.0)));
+        await Assert.ThrowsAsync<InvalidArgumentError>(() =>
+            model.DoDecideAsync(Call(maxOutputTokens: 2147483648.0))
+        );
         Assert.Empty(language.Calls);
     }
 
@@ -496,7 +717,10 @@ public sealed class DecisionLanguageModelTests
     [InlineData("high")]
     [InlineData("xhigh")]
     [InlineData("max")]
-    [UpstreamTest(Prefix + "forwards reasoning and defaults to none when omitted: %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "forwards reasoning and defaults to none when omitted: %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Forwards_reasoning_and_defaults_to_none_when_omitted(string? reasoning)
     {
         var (model, language, _) = Setup();
@@ -512,7 +736,10 @@ public sealed class DecisionLanguageModelTests
 
     private static List<object?> TextState(string text)
     {
-        return new List<object?> { new Dictionary<string, object?> { ["type"] = "text", ["text"] = text } };
+        return new List<object?>
+        {
+            new Dictionary<string, object?> { ["type"] = "text", ["text"] = text },
+        };
     }
 
     private static Dictionary<string, DecisionQuestion> WithFlag()

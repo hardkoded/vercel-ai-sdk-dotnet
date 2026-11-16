@@ -36,17 +36,39 @@ public sealed class GoogleVertexCloudSpeechModel : ISpeechModel
     public string ModelId { get; }
 
     /// <summary>Warnings from the last call.</summary>
-    public IReadOnlyList<GoogleWarning> Warnings { get; private set; } = Array.Empty<GoogleWarning>();
+    public IReadOnlyList<GoogleWarning> Warnings { get; private set; } =
+        Array.Empty<GoogleWarning>();
 
     /// <inheritdoc />
-    public async Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
+    public async Task<SpeechResult> DoGenerateAsync(
+        SpeechCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
-        var prepared = Prepare(options.Text, options.Voice, options.Language, options.Speed, options.Instructions);
+        var prepared = Prepare(
+            options.Text,
+            options.Voice,
+            options.Language,
+            options.Speed,
+            options.Instructions
+        );
         Warnings = prepared.Warnings;
         var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
-        using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, new Uri(SynthesizeUrl), GoogleJson.Write(prepared.Body), headers, cancellationToken).ConfigureAwait(false);
+        using var document = await _provider
+            .Http.SendJsonAsync(
+                HttpMethod.Post,
+                new Uri(SynthesizeUrl),
+                GoogleJson.Write(prepared.Body),
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var audio = Array.Empty<byte>();
-        if (document.RootElement.TryGetProperty("audioContent", out var content) && content.ValueKind == System.Text.Json.JsonValueKind.String && !string.IsNullOrEmpty(content.GetString()))
+        if (
+            document.RootElement.TryGetProperty("audioContent", out var content)
+            && content.ValueKind == System.Text.Json.JsonValueKind.String
+            && !string.IsNullOrEmpty(content.GetString())
+        )
         {
             audio = Convert.FromBase64String(content.GetString()!);
         }
@@ -55,7 +77,13 @@ public sealed class GoogleVertexCloudSpeechModel : ISpeechModel
     }
 
     /// <summary>Builds the synthesize body.</summary>
-    public static GoogleSpeechPreparation Prepare(string text, string? voice, string? language, double? speed, string? instructions)
+    public static GoogleSpeechPreparation Prepare(
+        string text,
+        string? voice,
+        string? language,
+        double? speed,
+        string? instructions
+    )
     {
         var warnings = new List<GoogleWarning>();
         const string infix = "Chirp3-HD";
@@ -65,7 +93,9 @@ public sealed class GoogleVertexCloudSpeechModel : ISpeechModel
         if (selected.IndexOf(infix, StringComparison.Ordinal) >= 0)
         {
             voiceName = selected;
-            var prefix = selected.Substring(0, selected.IndexOf(infix, StringComparison.Ordinal)).TrimEnd('-');
+            var prefix = selected
+                .Substring(0, selected.IndexOf(infix, StringComparison.Ordinal))
+                .TrimEnd('-');
             languageCode = language ?? (prefix.Length == 0 ? "en-US" : prefix);
         }
         else
@@ -76,7 +106,12 @@ public sealed class GoogleVertexCloudSpeechModel : ISpeechModel
 
         if (!string.IsNullOrEmpty(instructions))
         {
-            warnings.Add(GoogleWarning.Unsupported("instructions", "Google Cloud Text-to-Speech Chirp 3: HD voices do not support the instructions option. It was ignored."));
+            warnings.Add(
+                GoogleWarning.Unsupported(
+                    "instructions",
+                    "Google Cloud Text-to-Speech Chirp 3: HD voices do not support the instructions option. It was ignored."
+                )
+            );
         }
 
         var audio = new JsonObject { ["audioEncoding"] = "LINEAR16" };
@@ -117,12 +152,26 @@ public sealed class GoogleVertexSpeechTranscriptionModel : ITranscriptionModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+    public async Task<TranscriptionResult> DoTranscribeAsync(
+        AudioInput audio,
+        CancellationToken cancellationToken
+    )
     {
-        var url = GoogleVertexEndpoints.RecognizeUrl(_provider.Vertex.Project, _provider.Vertex.Region);
+        var url = GoogleVertexEndpoints.RecognizeUrl(
+            _provider.Vertex.Project,
+            _provider.Vertex.Region
+        );
         var body = Request(ModelId, audio.Data, null);
         var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
-        using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, new Uri(url), GoogleJson.Write(body), headers, cancellationToken).ConfigureAwait(false);
+        using var document = await _provider
+            .Http.SendJsonAsync(
+                HttpMethod.Post,
+                new Uri(url),
+                GoogleJson.Write(body),
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return new TranscriptionResult(ReadTranscript(document.RootElement), null);
     }
 
@@ -149,7 +198,11 @@ public sealed class GoogleVertexSpeechTranscriptionModel : ITranscriptionModel
                 ["model"] = modelId,
                 ["languageCodes"] = codes,
                 ["autoDecodingConfig"] = new JsonObject(),
-                ["features"] = new JsonObject { ["enableWordTimeOffsets"] = true, ["enableAutomaticPunctuation"] = true },
+                ["features"] = new JsonObject
+                {
+                    ["enableWordTimeOffsets"] = true,
+                    ["enableAutomaticPunctuation"] = true,
+                },
             },
             ["content"] = Convert.ToBase64String(audio ?? Array.Empty<byte>()),
         };
@@ -181,8 +234,17 @@ public sealed class GoogleVertexSpeechTranscriptionModel : ITranscriptionModel
             return null;
         }
 
-        var text = value!.EndsWith("s", StringComparison.Ordinal) ? value.Substring(0, value.Length - 1) : value;
-        return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) ? seconds : null;
+        var text = value!.EndsWith("s", StringComparison.Ordinal)
+            ? value.Substring(0, value.Length - 1)
+            : value;
+        return double.TryParse(
+            text,
+            NumberStyles.Float,
+            CultureInfo.InvariantCulture,
+            out var seconds
+        )
+            ? seconds
+            : null;
     }
 
     private static string ReadTranscript(System.Text.Json.JsonElement root)
@@ -195,7 +257,10 @@ public sealed class GoogleVertexSpeechTranscriptionModel : ITranscriptionModel
         var parts = new List<string>();
         foreach (var result in results.EnumerateArray())
         {
-            if (result.TryGetProperty("alternatives", out var alternatives) && alternatives.GetArrayLength() > 0)
+            if (
+                result.TryGetProperty("alternatives", out var alternatives)
+                && alternatives.GetArrayLength() > 0
+            )
             {
                 var transcript = GoogleJson.String(alternatives[0], "transcript");
                 if (!string.IsNullOrEmpty(transcript))
@@ -207,14 +272,20 @@ public sealed class GoogleVertexSpeechTranscriptionModel : ITranscriptionModel
 
         return string.Join(" ", parts).Trim();
     }
-
 }
 
 /// <summary>Vertex Gemini transcription through generateContent.</summary>
 public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, ITranscriptionCaller
 {
     private static readonly string[] OptionNamespaces = { "googleVertex", "vertex", "google" };
-    private static readonly string[] ConfigFields = { "languageCodes", "customVocabulary", "wordTimestamp", "diarization", "mode" };
+    private static readonly string[] ConfigFields =
+    {
+        "languageCodes",
+        "customVocabulary",
+        "wordTimestamp",
+        "diarization",
+        "mode",
+    };
 
     private readonly GoogleVertexProvider _provider;
 
@@ -247,9 +318,18 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
     }
 
     /// <inheritdoc />
-    public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+    public async Task<TranscriptionResult> DoTranscribeAsync(
+        AudioInput audio,
+        CancellationToken cancellationToken
+    )
     {
-        var call = new TranscriptionModelCall(audio.Data, audio.MediaType, default, new Dictionary<string, string>(), cancellationToken);
+        var call = new TranscriptionModelCall(
+            audio.Data,
+            audio.MediaType,
+            default,
+            new Dictionary<string, string>(),
+            cancellationToken
+        );
         var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
         return new TranscriptionResult(result.Text ?? string.Empty, null);
     }
@@ -258,11 +338,17 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
     /// Transcribes audio. Options are read from <c>googleVertex</c>, then <c>vertex</c>, then <c>google</c>.
     /// Text parts win over the <c>audioTranscription</c> text, which also carries the language and word timings.
     /// </summary>
-    public async Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
+    public async Task<TranscriptionModelResult> DoGenerateAsync(
+        TranscriptionModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (GoogleTranscriptionModel.IsLive(ModelId))
         {
-            throw new ArgumentException("Model '" + ModelId + "' only supports streaming transcription.", nameof(ModelId));
+            throw new ArgumentException(
+                "Model '" + ModelId + "' only supports streaming transcription.",
+                nameof(ModelId)
+            );
         }
 
         var body = new JsonObject
@@ -291,15 +377,28 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
         var wordTimestamp = WordTimestampOption(call.ProviderOptions);
         if (wantsWord && wordTimestamp == false)
         {
-            warnings.Add(OperationWarning.Unsupported("timestampGranularities", "The provider wordTimestamp option is false and overrides the requested word timings."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "timestampGranularities",
+                    "The provider wordTimestamp option is false and overrides the requested word timings."
+                )
+            );
         }
 
         if (call.TimestampGranularities?.Contains("segment") == true)
         {
-            warnings.Add(OperationWarning.Unsupported("timestampGranularities", "Vertex Gemini transcription returns word timings and does not provide separate caption segments."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "timestampGranularities",
+                    "Vertex Gemini transcription returns word timings and does not provide separate caption segments."
+                )
+            );
         }
 
-        if (TranscriptionConfig(call.ProviderOptions, wantsWord && wordTimestamp == null) is { } config)
+        if (
+            TranscriptionConfig(call.ProviderOptions, wantsWord && wordTimestamp == null) is
+            { } config
+        )
         {
             body["generationConfig"] = new JsonObject { ["audioTranscriptionConfig"] = config };
         }
@@ -310,21 +409,31 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
             headers[header.Key] = header.Value;
         }
 
-        using var document = await _provider.Http.SendJsonAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, GoogleModelPath.Get(ModelId) + ":generateContent"),
-            GoogleJson.Write(body),
-            headers,
-            cancellationToken).ConfigureAwait(false);
+        using var document = await _provider
+            .Http.SendJsonAsync(
+                HttpMethod.Post,
+                ApiKeys.Combine(
+                    _provider.Options.BaseUrl,
+                    GoogleModelPath.Get(ModelId) + ":generateContent"
+                ),
+                GoogleJson.Write(body),
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var root = document.RootElement;
         var plainText = string.Empty;
         var transcriptionText = string.Empty;
         string? language = null;
         var segments = new List<TranscriptSegment>();
         var wordTimings = new List<TranscriptSegment>();
-        if (root.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0
+        if (
+            root.TryGetProperty("candidates", out var candidates)
+            && candidates.GetArrayLength() > 0
             && GoogleJson.TryObject(candidates[0], "content", out var content)
-            && content.TryGetProperty("parts", out var parts) && parts.ValueKind == JsonValueKind.Array)
+            && content.TryGetProperty("parts", out var parts)
+            && parts.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var part in parts.EnumerateArray())
             {
@@ -336,7 +445,10 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
 
                 transcriptionText += GoogleJson.String(transcription, "text");
                 language ??= GoogleJson.String(transcription, "languageCode");
-                if (!transcription.TryGetProperty("words", out var words) || words.ValueKind != JsonValueKind.Array)
+                if (
+                    !transcription.TryGetProperty("words", out var words)
+                    || words.ValueKind != JsonValueKind.Array
+                )
                 {
                     continue;
                 }
@@ -344,8 +456,12 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
                 foreach (var word in words.EnumerateArray())
                 {
                     var text = GoogleJson.String(word, "word");
-                    var start = GoogleVertexSpeechTranscriptionModel.ParseDuration(GoogleJson.String(word, "startOffset"));
-                    var end = GoogleVertexSpeechTranscriptionModel.ParseDuration(GoogleJson.String(word, "endOffset"));
+                    var start = GoogleVertexSpeechTranscriptionModel.ParseDuration(
+                        GoogleJson.String(word, "startOffset")
+                    );
+                    var end = GoogleVertexSpeechTranscriptionModel.ParseDuration(
+                        GoogleJson.String(word, "endOffset")
+                    );
                     if (text != null && start != null && end != null)
                     {
                         wordTimings.Add(new TranscriptSegment(text, start.Value, end.Value));
@@ -358,13 +474,30 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
         JsonElement? metadata = null;
         if (GoogleJson.TryObject(root, "usageMetadata", out var usage))
         {
-            metadata = JsonSerializer.SerializeToElement(new JsonObject { ["google"] = new JsonObject { ["usageMetadata"] = JsonNode.Parse(usage.GetRawText()) } });
+            metadata = JsonSerializer.SerializeToElement(
+                new JsonObject
+                {
+                    ["google"] = new JsonObject
+                    {
+                        ["usageMetadata"] = JsonNode.Parse(usage.GetRawText()),
+                    },
+                }
+            );
         }
 
         var transcript = plainText.Length > 0 ? plainText : transcriptionText;
-        if (wantsWord && wordTimestamp != false && wordTimings.Count == 0 && transcript.Trim().Length > 0)
+        if (
+            wantsWord
+            && wordTimestamp != false
+            && wordTimings.Count == 0
+            && transcript.Trim().Length > 0
+        )
         {
-            warnings.Add(OperationWarning.Other("The Vertex Gemini transcription response omitted the requested word timings."));
+            warnings.Add(
+                OperationWarning.Other(
+                    "The Vertex Gemini transcription response omitted the requested word timings."
+                )
+            );
         }
 
         return new TranscriptionModelResult(
@@ -373,12 +506,20 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
             language,
             warnings: warnings,
             providerMetadata: metadata,
-            response: new ProviderResponse(body: root.Clone(), timestamp: DateTime.UtcNow, modelId: ModelId),
-            words: wordTimings.Count > 0 ? wordTimings : null);
+            response: new ProviderResponse(
+                body: root.Clone(),
+                timestamp: DateTime.UtcNow,
+                modelId: ModelId
+            ),
+            words: wordTimings.Count > 0 ? wordTimings : null
+        );
     }
 
     /// <summary>Returns null. The Vertex Live WebSocket is not opened by this port.</summary>
-    public Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+    public Task<TranscriptionStreamStart?> DoStreamAsync(
+        TranscriptionStreamCall call,
+        CancellationToken cancellationToken
+    )
     {
         return Task.FromResult<TranscriptionStreamStart?>(null);
     }
@@ -389,7 +530,9 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
         {
             if (GoogleJson.TryObject(providerOptions, name, out var options))
             {
-                return options.TryGetProperty("wordTimestamp", out var value) && value.ValueKind is JsonValueKind.True or JsonValueKind.False
+                return
+                    options.TryGetProperty("wordTimestamp", out var value)
+                    && value.ValueKind is JsonValueKind.True or JsonValueKind.False
                     ? value.GetBoolean()
                     : null;
             }
@@ -398,7 +541,10 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
         return null;
     }
 
-    private static JsonObject? TranscriptionConfig(JsonElement providerOptions, bool forceWordTimestamp)
+    private static JsonObject? TranscriptionConfig(
+        JsonElement providerOptions,
+        bool forceWordTimestamp
+    )
     {
         var config = new JsonObject();
         foreach (var name in OptionNamespaces)

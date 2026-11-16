@@ -19,11 +19,17 @@ internal static class ToolLoopAgentInstructions
     {
         return new Dictionary<string, JsonElement>
         {
-            ["test"] = JsonSerializer.SerializeToElement(new Dictionary<string, string> { ["value"] = value }),
+            ["test"] = JsonSerializer.SerializeToElement(
+                new Dictionary<string, string> { ["value"] = value }
+            ),
         };
     }
 
-    public static void AssertSystem(ModelMessage message, string content, string? providerOptionValue)
+    public static void AssertSystem(
+        ModelMessage message,
+        string content,
+        string? providerOptionValue
+    )
     {
         var system = Assert.IsType<SystemModelMessage>(message);
         Assert.Equal(content, system.Content);
@@ -33,13 +39,18 @@ internal static class ToolLoopAgentInstructions
             return;
         }
 
-        var options = Assert.IsAssignableFrom<IReadOnlyDictionary<string, JsonElement>>(system.ProviderOptions);
+        var options = Assert.IsAssignableFrom<IReadOnlyDictionary<string, JsonElement>>(
+            system.ProviderOptions
+        );
         Assert.Equal(providerOptionValue, options["test"].GetProperty("value").GetString());
     }
 
     public static void AssertUser(ModelMessage message)
     {
         var user = Assert.IsType<UserModelMessage>(message);
-        Assert.Equal("Hello, world!", Assert.IsType<TextContentPart>(Assert.Single(user.Content)).Text);
+        Assert.Equal(
+            "Hello, world!",
+            Assert.IsType<TextContentPart>(Assert.Single(user.Content)).Text
+        );
     }
 }

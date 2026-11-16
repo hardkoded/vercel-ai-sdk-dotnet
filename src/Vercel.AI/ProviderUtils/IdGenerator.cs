@@ -11,14 +11,20 @@ namespace Vercel.AI.ProviderUtils;
 public static class IdGenerator
 {
     /// <summary>Default alphabet, letters and digits.</summary>
-    public const string DefaultAlphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    public const string DefaultAlphabet =
+        "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
     private static readonly Func<string> Default = Create();
     private static readonly object Gate = new object();
     private static readonly Random Random = new Random();
 
     /// <summary>Creates a generator. <paramref name="size"/> is the length of the random part.</summary>
-    public static Func<string> Create(string? prefix = null, int size = 16, string? alphabet = null, string separator = "-")
+    public static Func<string> Create(
+        string? prefix = null,
+        int size = 16,
+        string? alphabet = null,
+        string separator = "-"
+    )
     {
         if (size < 0)
         {
@@ -34,8 +40,13 @@ public static class IdGenerator
         if (prefix != null && symbols.IndexOf(separator, StringComparison.Ordinal) >= 0)
         {
             throw new ArgumentException(
-                "The separator \"" + separator + "\" must not be part of the alphabet \"" + symbols + "\".",
-                nameof(separator));
+                "The separator \""
+                    + separator
+                    + "\" must not be part of the alphabet \""
+                    + symbols
+                    + "\".",
+                nameof(separator)
+            );
         }
 
         var length = symbols.Length;

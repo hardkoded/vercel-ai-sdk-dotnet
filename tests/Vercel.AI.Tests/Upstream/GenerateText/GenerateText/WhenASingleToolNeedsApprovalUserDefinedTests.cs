@@ -12,10 +12,14 @@ namespace Vercel.AI.Tests.Upstream.GenerateText.GenerateText;
 /// <summary>Port of <c>generate-text.test.ts</c> &gt; <c>generateText &gt; tool execution approval &gt; when a single tool needs approval (user-defined)</c>.</summary>
 public sealed class WhenASingleToolNeedsApprovalUserDefinedTests
 {
-    private const string Id = "packages/ai/src/generate-text/generate-text.test.ts::generateText > tool execution approval > when a single tool needs approval (user-defined)::";
+    private const string Id =
+        "packages/ai/src/generate-text/generate-text.test.ts::generateText > tool execution approval > when a single tool needs approval (user-defined)::";
 
     [Fact]
-    [UpstreamTest(Id + "should only execute 1 step when the tool needs approval", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should only execute 1 step when the tool needs approval",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_only_execute_1_step_when_the_tool_needs_approval()
     {
         var result = await RunAsync();
@@ -33,18 +37,30 @@ public sealed class WhenASingleToolNeedsApprovalUserDefinedTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should add a tool approval request to the content", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should add a tool approval request to the content",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_add_a_tool_approval_request_to_the_content()
     {
         var result = await RunAsync();
 
         Assert.Equal(2, result.Content.Count);
         AssertToolCall(result.Content[0], "call-1", "tool1", "{\"value\":\"value\"}");
-        AssertApprovalRequest(result.Content[1], "id-1", "call-1", "tool1", "{\"value\":\"value\"}");
+        AssertApprovalRequest(
+            result.Content[1],
+            "id-1",
+            "call-1",
+            "tool1",
+            "{\"value\":\"value\"}"
+        );
     }
 
     [Fact]
-    [UpstreamTest(Id + "should include tool approval request in response messages", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should include tool approval request in response messages",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_include_tool_approval_request_in_response_messages()
     {
         var result = await RunAsync();
@@ -56,13 +72,20 @@ public sealed class WhenASingleToolNeedsApprovalUserDefinedTests
     }
 
     private static Task<GenerateTextResult> RunAsync() =>
-        Client().GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = new TestLanguageModel { OnGenerate = _ => ToolCalls("tool1", ("call-1", "{ \"value\": \"value\" }")) },
-            Tools = new[] { ValueTool((_, _) => Task.FromResult("result1")) },
-            ToolApproval = new ToolApprovalConfiguration { { "tool1", "user-approval" } },
-            StopWhen = StopWhen.IsStepCount(3),
-            Prompt = "test-input",
-            GenerateId = MockId("id"),
-        });
+        Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = new TestLanguageModel
+                    {
+                        OnGenerate = _ =>
+                            ToolCalls("tool1", ("call-1", "{ \"value\": \"value\" }")),
+                    },
+                    Tools = new[] { ValueTool((_, _) => Task.FromResult("result1")) },
+                    ToolApproval = new ToolApprovalConfiguration { { "tool1", "user-approval" } },
+                    StopWhen = StopWhen.IsStepCount(3),
+                    Prompt = "test-input",
+                    GenerateId = MockId("id"),
+                }
+            );
 }

@@ -11,8 +11,16 @@ public static class GoogleFileUrls
 {
     private static readonly Regex[] YouTube =
     {
-        new(@"^https://(?:www\.)?youtube\.com/watch\?v=[A-Za-z0-9_-]+(?:&[A-Za-z0-9_=&.-]*)?\z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100)),
-        new(@"^https://youtu\.be/[A-Za-z0-9_-]+(?:\?[A-Za-z0-9_=&.-]*)?\z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100)),
+        new(
+            @"^https://(?:www\.)?youtube\.com/watch\?v=[A-Za-z0-9_-]+(?:&[A-Za-z0-9_=&.-]*)?\z",
+            RegexOptions.CultureInvariant,
+            TimeSpan.FromMilliseconds(100)
+        ),
+        new(
+            @"^https://youtu\.be/[A-Za-z0-9_-]+(?:\?[A-Za-z0-9_=&.-]*)?\z",
+            RegexOptions.CultureInvariant,
+            TimeSpan.FromMilliseconds(100)
+        ),
     };
 
     /// <summary>True for Generative Language file URLs and public YouTube watch URLs.</summary>
@@ -23,7 +31,12 @@ public static class GoogleFileUrls
             return false;
         }
 
-        if (url!.StartsWith("https://generativelanguage.googleapis.com/v1beta/files/", StringComparison.Ordinal))
+        if (
+            url!.StartsWith(
+                "https://generativelanguage.googleapis.com/v1beta/files/",
+                StringComparison.Ordinal
+            )
+        )
         {
             return true;
         }

@@ -19,7 +19,13 @@ namespace Vercel.AI.Cohere;
 /// </remarks>
 internal sealed class CohereCitation
 {
-    private CohereCitation(double? start, double? end, string? text, IReadOnlyList<CohereCitationSource>? sources, string? type)
+    private CohereCitation(
+        double? start,
+        double? end,
+        string? text,
+        IReadOnlyList<CohereCitationSource>? sources,
+        string? type
+    )
     {
         Start = start;
         End = end;
@@ -47,7 +53,10 @@ internal sealed class CohereCitation
         }
 
         List<CohereCitationSource>? sources = null;
-        if (value.TryGetProperty("sources", out var sourcesElement) && sourcesElement.ValueKind != JsonValueKind.Null)
+        if (
+            value.TryGetProperty("sources", out var sourcesElement)
+            && sourcesElement.ValueKind != JsonValueKind.Null
+        )
         {
             if (sourcesElement.ValueKind != JsonValueKind.Array)
             {
@@ -66,7 +75,8 @@ internal sealed class CohereCitation
             Number(value, "end"),
             StringField(value, "text"),
             sources,
-            StringField(value, "type"));
+            StringField(value, "type")
+        );
     }
 
     /// <summary>Validates the citations of a <c>citation-start</c> event: a single citation or an array of them.</summary>
@@ -133,7 +143,12 @@ internal sealed class CohereCitation
 
         var metadata = new JsonObject { [CohereProvider.ProviderName] = cohere };
         var title = string.IsNullOrEmpty(document.Value.Title) ? "Document" : document.Value.Title!;
-        return new GeneratedDocumentSource(generateId(), "text/plain", title, providerMetadata: JsonSerializer.SerializeToElement(metadata));
+        return new GeneratedDocumentSource(
+            generateId(),
+            "text/plain",
+            title,
+            providerMetadata: JsonSerializer.SerializeToElement(metadata)
+        );
     }
 
     internal static string? StringField(JsonElement owner, string name)
@@ -143,7 +158,9 @@ internal sealed class CohereCitation
             return null;
         }
 
-        return value.ValueKind == JsonValueKind.String ? value.GetString() : throw Invalid("Cohere citation " + name + " must be a string.", owner);
+        return value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : throw Invalid("Cohere citation " + name + " must be a string.", owner);
     }
 
     internal static TypeValidationException Invalid(string message, JsonElement value)
@@ -158,7 +175,9 @@ internal sealed class CohereCitation
             return null;
         }
 
-        return value.ValueKind == JsonValueKind.Number ? value.GetDouble() : throw Invalid("Cohere citation " + name + " must be a number.", owner);
+        return value.ValueKind == JsonValueKind.Number
+            ? value.GetDouble()
+            : throw Invalid("Cohere citation " + name + " must be a number.", owner);
     }
 }
 
@@ -167,7 +186,12 @@ internal sealed class CohereCitationSource
 {
     private readonly JsonElement _json;
 
-    private CohereCitationSource(string? type, string? id, CohereCitationDocument? document, JsonElement json)
+    private CohereCitationSource(
+        string? type,
+        string? id,
+        CohereCitationDocument? document,
+        JsonElement json
+    )
     {
         Type = type;
         Id = id;
@@ -189,17 +213,28 @@ internal sealed class CohereCitationSource
         }
 
         CohereCitationDocument? document = null;
-        if (value.TryGetProperty("document", out var documentElement) && documentElement.ValueKind != JsonValueKind.Null)
+        if (
+            value.TryGetProperty("document", out var documentElement)
+            && documentElement.ValueKind != JsonValueKind.Null
+        )
         {
             document = CohereCitationDocument.Parse(documentElement);
         }
 
-        if (value.TryGetProperty("tool_output", out var toolOutput) && toolOutput.ValueKind is not (JsonValueKind.Null or JsonValueKind.Object))
+        if (
+            value.TryGetProperty("tool_output", out var toolOutput)
+            && toolOutput.ValueKind is not (JsonValueKind.Null or JsonValueKind.Object)
+        )
         {
             throw CohereCitation.Invalid("Cohere citation tool_output must be an object.", value);
         }
 
-        return new CohereCitationSource(CohereCitation.StringField(value, "type"), CohereCitation.StringField(value, "id"), document, value);
+        return new CohereCitationSource(
+            CohereCitation.StringField(value, "type"),
+            CohereCitation.StringField(value, "id"),
+            document,
+            value
+        );
     }
 
     /// <summary>The typed fields as they were sent, without unknown keys. Absent keys stay absent.</summary>

@@ -18,12 +18,16 @@ namespace Vercel.AI.Tests.Upstream.UiMessageStreamCancellation;
 /// <summary>Port of <c>ui-message-stream-cancellation.node.test.ts</c> &gt; <c>UI message stream HTTP cancellation</c>.</summary>
 public sealed class UiMessageStreamHttpCancellationTests
 {
-    private const string Prefix = "packages/ai/src/ui-message-stream/ui-message-stream-cancellation.node.test.ts::UI message stream HTTP cancellation::";
+    private const string Prefix =
+        "packages/ai/src/ui-message-stream/ui-message-stream-cancellation.node.test.ts::UI message stream HTTP cancellation::";
 
     [Theory]
     [InlineData("abort-first")]
     [InlineData("cancel-first")]
-    [UpstreamTest(Prefix + "reports consumer cancellation for the same-tick streamText race ($s)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "reports consumer cancellation for the same-tick streamText race ($s)",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Reports_consumer_cancellation_for_the_same_tick_streamText_race(string order)
     {
         using var context = SetupStream();
@@ -31,7 +35,10 @@ public sealed class UiMessageStreamHttpCancellationTests
 
         while (true)
         {
-            Assert.True(await reader.MoveNextAsync(), "Stream ended before a text delta was received.");
+            Assert.True(
+                await reader.MoveNextAsync(),
+                "Stream ended before a text delta was received."
+            );
             if ((string?)reader.Current["type"] == "text-delta")
             {
                 break;
@@ -59,7 +66,11 @@ public sealed class UiMessageStreamHttpCancellationTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "reports consumer cancellation when abort and response cancellation happen in the same tick", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "reports consumer cancellation when abort and response cancellation happen in the same tick",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Reports_consumer_cancellation_when_abort_and_response_cancellation_happen_in_the_same_tick()
     {
         var ended = await RunDisconnectScenario(consumeSseStream: false);
@@ -70,7 +81,11 @@ public sealed class UiMessageStreamHttpCancellationTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "reports an observed abort when consumeSseStream keeps the source flowing", Coverage = UpstreamCoverage.Covered, Note = "isCancelled is a bool in .NET, so 'undefined' is false.")]
+    [UpstreamTest(
+        Prefix + "reports an observed abort when consumeSseStream keeps the source flowing",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "isCancelled is a bool in .NET, so 'undefined' is false."
+    )]
     public async Task Reports_an_observed_abort_when_consumeSseStream_keeps_the_source_flowing()
     {
         var ended = await RunDisconnectScenario(consumeSseStream: true);
@@ -80,7 +95,9 @@ public sealed class UiMessageStreamHttpCancellationTests
         Assert.False(ended.IsCancelled);
     }
 
-    private static async Task<UIMessageStreamOnEndEvent> RunDisconnectScenario(bool consumeSseStream)
+    private static async Task<UIMessageStreamOnEndEvent> RunDisconnectScenario(
+        bool consumeSseStream
+    )
     {
         StreamContext? context = null;
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -98,8 +115,11 @@ public sealed class UiMessageStreamHttpCancellationTests
                 ReadableStream<JsonObject>.From(context.Stream),
                 new UIMessageStreamResponseInit
                 {
-                    ConsumeSseStream = consumeSseStream ? stream => ConsumeStream.ConsumeAsync(stream) : null,
-                });
+                    ConsumeSseStream = consumeSseStream
+                        ? stream => ConsumeStream.ConsumeAsync(stream)
+                        : null,
+                }
+            );
             http.Response.StatusCode = response.Status;
             foreach (var header in response.Headers.Entries())
             {
@@ -115,7 +135,9 @@ public sealed class UiMessageStreamHttpCancellationTests
                     // Upstream aborts and then cancels. In JavaScript nothing runs between the two calls (the same tick). Here the abort reaches
                     // the run on other threads right away, so the cancellation goes first to keep nothing observable between the two.
                     _ = reader.CancelAsync();
-                    context.Abort.Abort(new OperationCanceledException("The operation was aborted."));
+                    context.Abort.Abort(
+                        new OperationCanceledException("The operation was aborted.")
+                    );
                 }
             });
 
@@ -148,7 +170,9 @@ public sealed class UiMessageStreamHttpCancellationTests
             using var client = new System.Net.Sockets.TcpClient();
             await client.ConnectAsync(address.Host, address.Port);
             var stream = client.GetStream();
-            await stream.WriteAsync(Encoding.ASCII.GetBytes($"GET / HTTP/1.1\r\nHost: {address.Authority}\r\n\r\n"));
+            await stream.WriteAsync(
+                Encoding.ASCII.GetBytes($"GET / HTTP/1.1\r\nHost: {address.Authority}\r\n\r\n")
+            );
             await ReadUntilText(stream);
 
             // The client abort: an immediate reset of the connection, so the server sees the disconnect right away.
@@ -185,18 +209,21 @@ public sealed class UiMessageStreamHttpCancellationTests
     private static StreamContext SetupStream()
     {
         var context = new StreamContext();
-        var result = Client().StreamTextAsync(new StreamTextOptions
-        {
-            Model = new AbortableModel(),
-            Prompt = "Hello",
-            AbortSignal = context.Abort,
-            OnAbort = (_, _) =>
-            {
-                context.OnAbortFired = true;
-                return Task.CompletedTask;
-            },
-            OnError = (_, _) => Task.CompletedTask,
-        });
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = new AbortableModel(),
+                    Prompt = "Hello",
+                    AbortSignal = context.Abort,
+                    OnAbort = (_, _) =>
+                    {
+                        context.OnAbortFired = true;
+                        return Task.CompletedTask;
+                    },
+                    OnError = (_, _) => Task.CompletedTask,
+                }
+            );
 
         context.Stream = UIMessageStreamConverter.ToUIMessageStream(
             result.Stream(),
@@ -207,11 +234,14 @@ public sealed class UiMessageStreamHttpCancellationTests
                     context.Ended.TrySetResult(e);
                     return Task.CompletedTask;
                 },
-            });
+            }
+        );
         return context;
     }
 
-    private static async Task<UIMessageStreamOnEndEvent> WaitForEnd(Task<UIMessageStreamOnEndEvent> ended)
+    private static async Task<UIMessageStreamOnEndEvent> WaitForEnd(
+        Task<UIMessageStreamOnEndEvent> ended
+    )
     {
         var completed = await Task.WhenAny(ended, Task.Delay(TimeSpan.FromSeconds(1)));
         Assert.Same(ended, completed); // Timed out waiting for the onEnd callback.
@@ -233,21 +263,21 @@ public sealed class UiMessageStreamHttpCancellationTests
     {
         public AbortSignal Abort { get; } = new();
 
-        public TaskCompletionSource<UIMessageStreamOnEndEvent> Ended { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource<UIMessageStreamOnEndEvent> Ended { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public bool OnAbortFired { get; set; }
 
         public IAsyncEnumerable<JsonObject> Stream { get; set; } = null!;
 
-        public void Dispose()
-        {
-        }
+        public void Dispose() { }
     }
 
     // createAbortableModel: the stream errors when the call is aborted.
     private sealed class AbortableModel : ILanguageModel
     {
-        public IReadOnlyDictionary<string, string> SupportedUrls => Vercel.AI.ProviderUtils.UrlSupport.None;
+        public IReadOnlyDictionary<string, string> SupportedUrls =>
+            Vercel.AI.ProviderUtils.UrlSupport.None;
 
         public string SpecificationVersion => "V4";
 
@@ -255,26 +285,38 @@ public sealed class UiMessageStreamHttpCancellationTests
 
         public string ModelId => "mock-model-id";
 
-        public Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
-            => throw new NotSupportedException();
+        public Task<LanguageModelGenerateResult> DoGenerateAsync(
+            LanguageModelCallOptions options,
+            CancellationToken cancellationToken
+        ) => throw new NotSupportedException();
 
-        public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
-            => Task.FromResult(new LanguageModelStreamResult(Stream(options, cancellationToken)));
+        public Task<LanguageModelStreamResult> DoStreamAsync(
+            LanguageModelCallOptions options,
+            CancellationToken cancellationToken
+        ) => Task.FromResult(new LanguageModelStreamResult(Stream(options, cancellationToken)));
 
         private static async IAsyncEnumerable<LanguageModelStreamPart> Stream(
             LanguageModelCallOptions options,
-            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+            [System.Runtime.CompilerServices.EnumeratorCancellation]
+                CancellationToken cancellationToken
+        )
         {
             yield return new StreamStartStreamPart(null);
             yield return new TextStartStreamPart("text-1");
             yield return new TextDeltaStreamPart("text-1", "Hello");
 
-            var aborted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var aborted = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously
+            );
             Action onAbort = () => aborted.TrySetResult(true);
             options.AbortSignal?.AddAbortHandler(onAbort);
             try
             {
-                await using (cancellationToken.Register(() => aborted.TrySetResult(true)).ConfigureAwait(false))
+                await using (
+                    cancellationToken
+                        .Register(() => aborted.TrySetResult(true))
+                        .ConfigureAwait(false)
+                )
                 {
                     await aborted.Task.ConfigureAwait(false);
                 }

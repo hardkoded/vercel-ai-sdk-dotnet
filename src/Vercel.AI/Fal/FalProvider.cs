@@ -36,9 +36,14 @@ public sealed class FalProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider.</summary>
-    public static new FalProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new FalProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         if (handler is not null)
         {
             options = options?.Copy() ?? new OpenAICompatibleOptions();
@@ -52,7 +57,10 @@ public sealed class FalProvider : OpenAICompatibleProvider
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
+        options.BaseUrl =
+            string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
+                ? DefaultBaseUrl
+                : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "FAL_API_KEY";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
@@ -68,31 +76,67 @@ public sealed class FalProvider : OpenAICompatibleProvider
     public override ISpeechModel SpeechModel(string modelId) => new FalSpeechModel(this, modelId);
 
     /// <inheritdoc />
-    public override ITranscriptionModel TranscriptionModel(string modelId) => new FalTranscriptionModel(this, modelId);
+    public override ITranscriptionModel TranscriptionModel(string modelId) =>
+        new FalTranscriptionModel(this, modelId);
 
     /// <summary>Posts <paramref name="options"/> to <c>{base}/{modelId}</c>. <paramref name="headers"/> override the provider headers.</summary>
-    public Task<ImageGenerationResult> GenerateImageAsync(string modelId, ImageCallOptions options, IDictionary<string, string>? headers, CancellationToken cancellationToken)
+    public Task<ImageGenerationResult> GenerateImageAsync(
+        string modelId,
+        ImageCallOptions options,
+        IDictionary<string, string>? headers,
+        CancellationToken cancellationToken
+    )
     {
         return new FalImageModel(this, modelId).GenerateAsync(options, headers, cancellationToken);
     }
 
-    internal Task<ProviderExchangeResult> SendAsync(HttpMethod method, Uri uri, HttpContent? content, IReadOnlyDictionary<string, string>? headers, CancellationToken cancellationToken)
+    internal Task<ProviderExchangeResult> SendAsync(
+        HttpMethod method,
+        Uri uri,
+        HttpContent? content,
+        IReadOnlyDictionary<string, string>? headers,
+        CancellationToken cancellationToken
+    )
     {
-        return ProviderExchange.SendAsync(_httpClient, method, uri, content, ProviderExchange.Merge(CreateHeaders(), headers), cancellationToken);
+        return ProviderExchange.SendAsync(
+            _httpClient,
+            method,
+            uri,
+            content,
+            ProviderExchange.Merge(CreateHeaders(), headers),
+            cancellationToken
+        );
     }
 
     /// <summary>Downloads a generated file. A URL outside <paramref name="trustedOrigin"/> must pass download validation.</summary>
-    internal async Task<byte[]> DownloadAsync(string url, string trustedOrigin, CancellationToken cancellationToken)
+    internal async Task<byte[]> DownloadAsync(
+        string url,
+        string trustedOrigin,
+        CancellationToken cancellationToken
+    )
     {
-        var response = await ProviderExchange.GetResponseUrlAsync(_httpClient, url, trustedOrigin, DownloadUrls.ValidateDownloadUrl, null, cancellationToken, ProviderExchange.DownloadClient(Options), ProviderExchange.UserAgentOnly(CreateHeaders())).ConfigureAwait(false);
+        var response = await ProviderExchange
+            .GetResponseUrlAsync(
+                _httpClient,
+                url,
+                trustedOrigin,
+                DownloadUrls.ValidateDownloadUrl,
+                null,
+                cancellationToken,
+                ProviderExchange.DownloadClient(Options),
+                ProviderExchange.UserAgentOnly(CreateHeaders())
+            )
+            .ConfigureAwait(false);
         return response.Bytes;
     }
 
     internal static JsonElement? FalOptions(JsonElement? providerOptions)
     {
-        if (providerOptions is { ValueKind: JsonValueKind.Object } options
+        if (
+            providerOptions is { ValueKind: JsonValueKind.Object } options
             && options.TryGetProperty(ProviderId, out var fal)
-            && fal.ValueKind == JsonValueKind.Object)
+            && fal.ValueKind == JsonValueKind.Object
+        )
         {
             return fal;
         }
@@ -105,14 +149,20 @@ public sealed class FalProvider : OpenAICompatibleProvider
 public static class FalServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddFal(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddFal(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(FalProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new FalProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(FalProvider.ProviderId), options);
+            return new FalProvider(
+                sp.GetRequiredService<IHttpClientFactory>().CreateClient(FalProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

@@ -16,7 +16,13 @@ public sealed class KlingAIProviderTests
 
         Vercel.AI.KlingAI.KlingAIProvider.Create(null, clientHandler);
         Vercel.AI.KlingAI.KlingAIProvider.Create(null, socketsHandler);
-        Vercel.AI.KlingAI.KlingAIProvider.Create(null, new PassThroughHandler { InnerHandler = new PassThroughHandler { InnerHandler = wrappedHandler } });
+        Vercel.AI.KlingAI.KlingAIProvider.Create(
+            null,
+            new PassThroughHandler
+            {
+                InnerHandler = new PassThroughHandler { InnerHandler = wrappedHandler },
+            }
+        );
 
         Assert.False(clientHandler.AllowAutoRedirect);
         Assert.False(socketsHandler.AllowAutoRedirect);
@@ -37,8 +43,16 @@ public sealed class KlingAIProviderTests
     public void DisablesAutoRedirectOnEveryHandlerOfAChain()
     {
         var inner = new HttpClientHandler { AllowAutoRedirect = true };
-        var middle = new RedirectingDelegatingHandler { AllowAutoRedirect = true, InnerHandler = inner };
-        var outer = new RedirectingDelegatingHandler { AllowAutoRedirect = true, InnerHandler = middle };
+        var middle = new RedirectingDelegatingHandler
+        {
+            AllowAutoRedirect = true,
+            InnerHandler = inner,
+        };
+        var outer = new RedirectingDelegatingHandler
+        {
+            AllowAutoRedirect = true,
+            InnerHandler = middle,
+        };
 
         Vercel.AI.KlingAI.KlingAIProvider.Create(null, outer);
 
@@ -52,7 +66,10 @@ public sealed class KlingAIProviderTests
     {
         var inner = new ReadOnlyRedirectHandler();
 
-        Vercel.AI.KlingAI.KlingAIProvider.Create(null, new PassThroughHandler { InnerHandler = inner });
+        Vercel.AI.KlingAI.KlingAIProvider.Create(
+            null,
+            new PassThroughHandler { InnerHandler = inner }
+        );
 
         Assert.True(inner.AllowAutoRedirect);
     }
@@ -76,14 +93,20 @@ public sealed class KlingAIProviderTests
             set => AutoRedirectWasDisabled = !value;
         }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        ) => throw new NotSupportedException();
     }
 
     private sealed class RedirectingHandler : HttpMessageHandler
     {
         public bool AllowAutoRedirect { get; set; }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        ) => throw new NotSupportedException();
     }
 
     private sealed class RedirectingDelegatingHandler : DelegatingHandler
@@ -95,10 +118,11 @@ public sealed class KlingAIProviderTests
     {
         public bool AllowAutoRedirect { get; } = true;
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        ) => throw new NotSupportedException();
     }
 
-    private sealed class PassThroughHandler : DelegatingHandler
-    {
-    }
+    private sealed class PassThroughHandler : DelegatingHandler { }
 }

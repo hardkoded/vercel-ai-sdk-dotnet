@@ -5,9 +5,7 @@
 namespace Vercel.AI.Testing;
 
 /// <summary>Call options recorded by the mock language models.</summary>
-public sealed class MockLanguageModelCallOptions
-{
-}
+public sealed class MockLanguageModelCallOptions { }
 
 /// <summary>Text content returned by a mock generate result.</summary>
 public sealed class MockTextContent
@@ -127,7 +125,8 @@ public sealed class MockLanguageModelV2
         IReadOnlyList<MockGenerateResult>? doGenerate = null,
         IReadOnlyList<MockStreamResult>? doStream = null,
         Func<MockLanguageModelCallOptions?, Task<MockGenerateResult>>? generate = null,
-        Func<MockLanguageModelCallOptions?, Task<MockStreamResult>>? stream = null)
+        Func<MockLanguageModelCallOptions?, Task<MockStreamResult>>? stream = null
+    )
     {
         Provider = provider;
         ModelId = modelId;
@@ -150,10 +149,12 @@ public sealed class MockLanguageModelV2
     public string ModelId { get; }
 
     /// <summary>Generate calls in order.</summary>
-    public List<MockLanguageModelCallOptions> DoGenerateCalls { get; } = new List<MockLanguageModelCallOptions>();
+    public List<MockLanguageModelCallOptions> DoGenerateCalls { get; } =
+        new List<MockLanguageModelCallOptions>();
 
     /// <summary>Stream calls in order.</summary>
-    public List<MockLanguageModelCallOptions> DoStreamCalls { get; } = new List<MockLanguageModelCallOptions>();
+    public List<MockLanguageModelCallOptions> DoStreamCalls { get; } =
+        new List<MockLanguageModelCallOptions>();
 
     /// <summary>Returns the next scripted generate result.</summary>
     public Task<MockGenerateResult> DoGenerateAsync(MockLanguageModelCallOptions? options)
@@ -200,7 +201,8 @@ public sealed class MockLanguageModelV3
         string provider = "mock-provider",
         string modelId = "mock-model-id",
         IReadOnlyList<MockGenerateResult>? doGenerate = null,
-        IReadOnlyList<MockStreamResult>? doStream = null)
+        IReadOnlyList<MockStreamResult>? doStream = null
+    )
     {
         _inner = new MockLanguageModelV2(provider, modelId, doGenerate, doStream);
     }
@@ -258,7 +260,8 @@ public sealed class MockLanguageModelV4
         string provider = "mock-provider",
         string modelId = "mock-model-id",
         IReadOnlyList<MockGenerateResult>? doGenerate = null,
-        IReadOnlyList<MockStreamResult>? doStream = null)
+        IReadOnlyList<MockStreamResult>? doStream = null
+    )
     {
         _inner = new MockLanguageModelV2(provider, modelId, doGenerate, doStream);
     }
@@ -319,7 +322,8 @@ public sealed class MockEmbeddingModelV3
         int? maxEmbeddingsPerCall = 1,
         bool supportsParallelCalls = false,
         IReadOnlyList<MockEmbedResult>? doEmbed = null,
-        Func<MockEmbedOptions?, Task<MockEmbedResult>>? embed = null)
+        Func<MockEmbedOptions?, Task<MockEmbedResult>>? embed = null
+    )
     {
         Provider = provider;
         ModelId = modelId;
@@ -380,9 +384,16 @@ public sealed class MockEmbeddingModelV4
         int? maxEmbeddingsPerCall = 1,
         int? maxInputBytesPerCall = null,
         bool supportsParallelCalls = false,
-        IReadOnlyList<MockEmbedResult>? doEmbed = null)
+        IReadOnlyList<MockEmbedResult>? doEmbed = null
+    )
     {
-        _inner = new MockEmbeddingModelV3(provider, modelId, maxEmbeddingsPerCall, supportsParallelCalls, doEmbed);
+        _inner = new MockEmbeddingModelV3(
+            provider,
+            modelId,
+            maxEmbeddingsPerCall,
+            supportsParallelCalls,
+            doEmbed
+        );
         MaxInputBytesPerCall = maxInputBytesPerCall;
     }
 

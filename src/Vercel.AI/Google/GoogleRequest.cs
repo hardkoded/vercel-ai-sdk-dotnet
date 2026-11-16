@@ -14,7 +14,13 @@ namespace Vercel.AI.Google;
 public sealed class GooglePreparedRequest
 {
     /// <summary>Creates a prepared request.</summary>
-    public GooglePreparedRequest(JsonObject body, IReadOnlyList<GoogleWarning> warnings, IReadOnlyDictionary<string, string?> extraHeaders, GoogleToolPreparation tools, string? jsonResponseToolName = null)
+    public GooglePreparedRequest(
+        JsonObject body,
+        IReadOnlyList<GoogleWarning> warnings,
+        IReadOnlyDictionary<string, string?> extraHeaders,
+        GoogleToolPreparation tools,
+        string? jsonResponseToolName = null
+    )
     {
         Body = body;
         Warnings = warnings;
@@ -50,35 +56,69 @@ public static class GoogleRequest
         "HARM_CATEGORY_SEXUALLY_EXPLICIT",
     };
 
-    private static readonly Regex GeminiModel = new(@"(^|/)gemini-", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex GeminiModel = new(
+        @"(^|/)gemini-",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(100)
+    );
 
-    private static readonly Regex Gemini25 = new(@"(^|/)gemini-2\.5(?:[.-]|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex Gemini25 = new(
+        @"(^|/)gemini-2\.5(?:[.-]|$)",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(100)
+    );
 
     /// <summary>Builds the request for a language-model call.</summary>
-    public static GooglePreparedRequest Prepare(string modelId, string provider, LanguageModelCallOptions options, bool streaming, bool supportsGoogleCloudStorageUrls = false)
+    public static GooglePreparedRequest Prepare(
+        string modelId,
+        string provider,
+        LanguageModelCallOptions options,
+        bool streaming,
+        bool supportsGoogleCloudStorageUrls = false
+    )
     {
         options ??= new LanguageModelCallOptions();
         var warnings = new List<GoogleWarning>();
-        var vertex = provider != null && provider.IndexOf("vertex", StringComparison.OrdinalIgnoreCase) >= 0;
+        var vertex =
+            provider != null && provider.IndexOf("vertex", StringComparison.OrdinalIgnoreCase) >= 0;
         var names = vertex ? new[] { "googleVertex", "vertex" } : new[] { "google" };
         var google = ReadOptions(options.ProviderOptions, names, vertex);
         var providerTools = ReadProviderTools(google);
 
         if (!vertex && HasTool(providerTools, "google.vertex_rag_store"))
         {
-            warnings.Add(new GoogleWarning("other", "The 'vertex_rag_store' tool is only supported with the Google Vertex provider and might not be supported or could behave unexpectedly with the current Google provider (" + provider + ")."));
+            warnings.Add(
+                new GoogleWarning(
+                    "other",
+                    "The 'vertex_rag_store' tool is only supported with the Google Vertex provider and might not be supported or could behave unexpectedly with the current Google provider ("
+                        + provider
+                        + ")."
+                )
+            );
         }
 
         var streamArgs = Bool(google, "streamFunctionCallArguments");
         if (streamArgs == true && !vertex)
         {
-            warnings.Add(new GoogleWarning("other", "'streamFunctionCallArguments' is only supported on the Vertex AI API and will be ignored with the current Google provider (" + provider + ")."));
+            warnings.Add(
+                new GoogleWarning(
+                    "other",
+                    "'streamFunctionCallArguments' is only supported on the Vertex AI API and will be ignored with the current Google provider ("
+                        + provider
+                        + ")."
+                )
+            );
         }
 
         var serviceTier = GoogleJson.String(google, "serviceTier");
         if (!string.IsNullOrEmpty(serviceTier) && vertex)
         {
-            warnings.Add(new GoogleWarning("other", "'serviceTier' is a Gemini API option and is not supported on Vertex AI. Use 'sharedRequestType' (and optionally 'requestType') instead."));
+            warnings.Add(
+                new GoogleWarning(
+                    "other",
+                    "'serviceTier' is a Gemini API option and is not supported on Vertex AI. Use 'sharedRequestType' (and optionally 'requestType') instead."
+                )
+            );
             serviceTier = null;
         }
 
@@ -86,7 +126,14 @@ public static class GoogleRequest
         var requestType = GoogleJson.String(google, "requestType");
         if ((!string.IsNullOrEmpty(shared) || !string.IsNullOrEmpty(requestType)) && !vertex)
         {
-            warnings.Add(new GoogleWarning("other", "'sharedRequestType' and 'requestType' are Vertex AI options and are ignored with the current Google provider (" + provider + ")."));
+            warnings.Add(
+                new GoogleWarning(
+                    "other",
+                    "'sharedRequestType' and 'requestType' are Vertex AI options and are ignored with the current Google provider ("
+                        + provider
+                        + ")."
+                )
+            );
             shared = null;
             requestType = null;
         }
@@ -119,7 +166,11 @@ public static class GoogleRequest
             ModelId = modelId ?? string.Empty,
             IncludeFunctionCallIds = !vertex,
             ProviderOptionNames = names,
-            SupportedFunctionResponseUrls = supportsGoogleCloudStorageUrls && GoogleModelCapability.Get(modelId ?? string.Empty).UsesGemini3Features ? GoogleMessages.GoogleCloudStorageFunctionResponseUrls : null,
+            SupportedFunctionResponseUrls =
+                supportsGoogleCloudStorageUrls
+                && GoogleModelCapability.Get(modelId ?? string.Empty).UsesGemini3Features
+                    ? GoogleMessages.GoogleCloudStorageFunctionResponseUrls
+                    : null,
         };
         var prompt = GoogleMessages.Convert(options.Prompt, messageOptions);
         warnings.AddRange(messageOptions.Warnings);
@@ -135,19 +186,36 @@ public static class GoogleRequest
 
         // Enforce the caller's tool choice before the JSON response fallback replaces it with a forced call to the
         // synthetic response tool.
-        var enabledProviderTools = options.ToolChoice?.Type == "none" ? new List<GoogleProviderTool>() : providerTools;
-        var tools = GoogleTools.Prepare(callTools, enabledProviderTools, toolChoice, modelId ?? string.Empty, vertex);
+        var enabledProviderTools =
+            options.ToolChoice?.Type == "none" ? new List<GoogleProviderTool>() : providerTools;
+        var tools = GoogleTools.Prepare(
+            callTools,
+            enabledProviderTools,
+            toolChoice,
+            modelId ?? string.Empty,
+            vertex
+        );
         warnings.AddRange(tools.Warnings);
 
         JsonObject? thinking;
         var hasOverride = GoogleJson.TryObject(google, "thinkingConfig", out var thinkingOverride);
-        if (hasOverride && (thinkingOverride.TryGetProperty("thinkingBudget", out _) || thinkingOverride.TryGetProperty("thinkingLevel", out _)))
+        if (
+            hasOverride
+            && (
+                thinkingOverride.TryGetProperty("thinkingBudget", out _)
+                || thinkingOverride.TryGetProperty("thinkingLevel", out _)
+            )
+        )
         {
             thinking = Merge(null, thinkingOverride);
         }
         else
         {
-            var resolved = GoogleThinking.Resolve(options.Reasoning, modelId ?? string.Empty, warnings);
+            var resolved = GoogleThinking.Resolve(
+                options.Reasoning,
+                modelId ?? string.Empty,
+                warnings
+            );
             thinking = hasOverride ? Merge(resolved, thinkingOverride) : resolved;
         }
 
@@ -182,7 +250,10 @@ public static class GoogleRequest
         if (options.JsonSchema != null && responseTool == null)
         {
             config["responseMimeType"] = "application/json";
-            var structured = google.ValueKind != JsonValueKind.Object || !google.TryGetProperty("structuredOutputs", out var flag) || flag.ValueKind != JsonValueKind.False;
+            var structured =
+                google.ValueKind != JsonValueKind.Object
+                || !google.TryGetProperty("structuredOutputs", out var flag)
+                || flag.ValueKind != JsonValueKind.False;
             if (structured)
             {
                 config["responseJsonSchema"] = GoogleJsonSchema.Sanitize(options.JsonSchema.Value);
@@ -190,7 +261,11 @@ public static class GoogleRequest
         }
 
         GoogleJson.Set(config, "audioTimestamp", Bool(google, "audioTimestamp"));
-        if (google.ValueKind == JsonValueKind.Object && google.TryGetProperty("responseModalities", out var modalities) && modalities.ValueKind == JsonValueKind.Array)
+        if (
+            google.ValueKind == JsonValueKind.Object
+            && google.TryGetProperty("responseModalities", out var modalities)
+            && modalities.ValueKind == JsonValueKind.Array
+        )
         {
             config["responseModalities"] = JsonNode.Parse(modalities.GetRawText());
         }
@@ -222,11 +297,7 @@ public static class GoogleRequest
             toolConfig["retrievalConfig"] = JsonNode.Parse(retrieval.GetRawText());
         }
 
-        var body = new JsonObject
-        {
-            ["generationConfig"] = config,
-            ["contents"] = prompt.Contents,
-        };
+        var body = new JsonObject { ["generationConfig"] = config, ["contents"] = prompt.Contents };
         if (prompt.SystemInstruction != null)
         {
             body["systemInstruction"] = prompt.SystemInstruction;
@@ -261,18 +332,24 @@ public static class GoogleRequest
 
     // Gemini before Gemini 3 rejects JSON response formatting together with function tools. Gemini 3 accepts the
     // combination only with automatic tool choice. Forced tool choice needs a JSON response tool instead.
-    private static LanguageModelTool? JsonResponseToolFor(string modelId, LanguageModelCallOptions options)
+    private static LanguageModelTool? JsonResponseToolFor(
+        string modelId,
+        LanguageModelCallOptions options
+    )
     {
-        if (options.JsonSchema is not { } schema
+        if (
+            options.JsonSchema is not { } schema
             || schema.ValueKind == JsonValueKind.Undefined
             || schema.ValueKind == JsonValueKind.Null
             || options.Tools is not { Count: > 0 } tools
-            || !GeminiModel.IsMatch(modelId))
+            || !GeminiModel.IsMatch(modelId)
+        )
         {
             return null;
         }
 
-        var forced = options.ToolChoice?.Type == "required" || options.ToolChoice is ToolChoice.NamedChoice;
+        var forced =
+            options.ToolChoice?.Type == "required" || options.ToolChoice is ToolChoice.NamedChoice;
         if (GoogleModelCapability.Get(modelId).UsesGemini3Features && !forced)
         {
             return null;
@@ -281,7 +358,12 @@ public static class GoogleRequest
         return JsonResponseTools.CreateTool(tools, schema, options.JsonSchemaDescription);
     }
 
-    private static JsonObject? ImageConfig(JsonElement google, bool vertex, string provider, List<GoogleWarning> warnings)
+    private static JsonObject? ImageConfig(
+        JsonElement google,
+        bool vertex,
+        string provider,
+        List<GoogleWarning> warnings
+    )
     {
         if (!GoogleJson.TryObject(google, "imageConfig", out var image))
         {
@@ -306,8 +388,21 @@ public static class GoogleRequest
 
         if (dropped.Count > 0)
         {
-            var verb = dropped.Count == 1 ? "is a Vertex AI option and is" : "are Vertex AI options and are";
-            warnings.Add(new GoogleWarning("other", string.Join(", ", dropped) + " " + verb + " ignored with the current Google provider (" + provider + ")."));
+            var verb =
+                dropped.Count == 1
+                    ? "is a Vertex AI option and is"
+                    : "are Vertex AI options and are";
+            warnings.Add(
+                new GoogleWarning(
+                    "other",
+                    string.Join(", ", dropped)
+                        + " "
+                        + verb
+                        + " ignored with the current Google provider ("
+                        + provider
+                        + ")."
+                )
+            );
         }
 
         return clone.Count == 0 ? null : clone;
@@ -315,7 +410,11 @@ public static class GoogleRequest
 
     private static JsonArray? Safety(JsonElement google)
     {
-        if (google.ValueKind == JsonValueKind.Object && google.TryGetProperty("safetySettings", out var settings) && settings.ValueKind == JsonValueKind.Array)
+        if (
+            google.ValueKind == JsonValueKind.Object
+            && google.TryGetProperty("safetySettings", out var settings)
+            && settings.ValueKind == JsonValueKind.Array
+        )
         {
             return JsonNode.Parse(settings.GetRawText()) as JsonArray;
         }
@@ -346,7 +445,11 @@ public static class GoogleRequest
         return result;
     }
 
-    private static JsonElement ReadOptions(IReadOnlyDictionary<string, JsonElement>? options, IReadOnlyList<string> names, bool vertex)
+    private static JsonElement ReadOptions(
+        IReadOnlyDictionary<string, JsonElement>? options,
+        IReadOnlyList<string> names,
+        bool vertex
+    )
     {
         if (options != null)
         {
@@ -370,7 +473,11 @@ public static class GoogleRequest
     private static List<GoogleProviderTool> ReadProviderTools(JsonElement google)
     {
         var tools = new List<GoogleProviderTool>();
-        if (google.ValueKind != JsonValueKind.Object || !google.TryGetProperty("providerTools", out var array) || array.ValueKind != JsonValueKind.Array)
+        if (
+            google.ValueKind != JsonValueKind.Object
+            || !google.TryGetProperty("providerTools", out var array)
+            || array.ValueKind != JsonValueKind.Array
+        )
         {
             return tools;
         }
@@ -405,7 +512,10 @@ public static class GoogleRequest
 
     private static bool? Bool(JsonElement element, string name)
     {
-        if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty(name, out var value))
+        if (
+            element.ValueKind != JsonValueKind.Object
+            || !element.TryGetProperty(name, out var value)
+        )
         {
             return null;
         }

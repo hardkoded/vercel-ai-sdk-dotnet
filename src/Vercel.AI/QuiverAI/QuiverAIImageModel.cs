@@ -22,16 +22,32 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
     private const int MaxAnimationSourceBase64Length = 1_066_668;
     private const int MaxEditSvgBytes = 200_000;
 
-    private static readonly Regex AnimationSvgStart = new Regex("^(?:(?:<\\?xml[\\s\\S]*?\\?>|<!--[\\s\\S]*?-->|<!DOCTYPE[\\s\\S]*?>)\\s*)*<svg(?:\\s|>)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, SafeRegex.LargeInputTimeout);
-    private static readonly Regex DecimalReference = new Regex("^#[0-9]+\\z", RegexOptions.CultureInvariant, SafeRegex.LargeInputTimeout);
-    private static readonly Regex HexReference = new Regex("^#x[0-9A-Fa-f]+\\z", RegexOptions.CultureInvariant, SafeRegex.LargeInputTimeout);
+    private static readonly Regex AnimationSvgStart = new Regex(
+        "^(?:(?:<\\?xml[\\s\\S]*?\\?>|<!--[\\s\\S]*?-->|<!DOCTYPE[\\s\\S]*?>)\\s*)*<svg(?:\\s|>)",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+        SafeRegex.LargeInputTimeout
+    );
+    private static readonly Regex DecimalReference = new Regex(
+        "^#[0-9]+\\z",
+        RegexOptions.CultureInvariant,
+        SafeRegex.LargeInputTimeout
+    );
+    private static readonly Regex HexReference = new Regex(
+        "^#x[0-9A-Fa-f]+\\z",
+        RegexOptions.CultureInvariant,
+        SafeRegex.LargeInputTimeout
+    );
     private static readonly string[] ReasoningEfforts = { "low", "medium", "high", "xhigh" };
 
     private readonly QuiverAIProvider _provider;
     private readonly Func<DateTimeOffset> _clock;
 
     /// <summary>Creates a model. <paramref name="clock"/> sets the timestamp when the response has none.</summary>
-    public QuiverAIImageModel(QuiverAIProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
+    public QuiverAIImageModel(
+        QuiverAIProvider provider,
+        string modelId,
+        Func<DateTimeOffset>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -54,16 +70,31 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
     }
 
     /// <inheritdoc />
-    public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+    public async Task<ImageGenerationResult> DoGenerateAsync(
+        ImageCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
         var call = options.ToModelCall(cancellationToken);
         var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
-        return new ImageGenerationResult(result.Images.Select(image => new ProviderGeneratedImage("image/svg+xml", (byte[])image!, null)).ToArray(), result.Warnings.Select(warning => warning.ToCallWarning()).ToList());
+        return new ImageGenerationResult(
+            result
+                .Images.Select(image => new ProviderGeneratedImage(
+                    "image/svg+xml",
+                    (byte[])image!,
+                    null
+                ))
+                .ToArray(),
+            result.Warnings.Select(warning => warning.ToCallWarning()).ToList()
+        );
     }
 
     /// <inheritdoc />
-    public async Task<ImageModelResult> DoGenerateAsync(ImageModelCall call, CancellationToken cancellationToken)
+    public async Task<ImageModelResult> DoGenerateAsync(
+        ImageModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var options = ParseOptions(call.ProviderOptions);
@@ -76,22 +107,36 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
             headers[pair.Key] = pair.Value;
         }
 
-        var response = await _provider.Http.SendJsonStringAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, OperationPath(options.Operation)),
-            body.ToJsonString(),
-            _provider.CreateHeaders(headers),
-            cancellationToken).ConfigureAwait(false);
+        var response = await _provider
+            .Http.SendJsonStringAsync(
+                HttpMethod.Post,
+                ApiKeys.Combine(_provider.Options.BaseUrl, OperationPath(options.Operation)),
+                body.ToJsonString(),
+                _provider.CreateHeaders(headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return ParseResponse(response, timestamp, warnings);
     }
 
-    private ImageModelResult ParseResponse(ProviderTextResponse response, DateTimeOffset timestamp, IReadOnlyList<OperationWarning> warnings)
+    private ImageModelResult ParseResponse(
+        ProviderTextResponse response,
+        DateTimeOffset timestamp,
+        IReadOnlyList<OperationWarning> warnings
+    )
     {
         using var document = JsonDocument.Parse(response.Body);
         var root = document.RootElement;
-        if (!root.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array || data.GetArrayLength() == 0)
+        if (
+            !root.TryGetProperty("data", out var data)
+            || data.ValueKind != JsonValueKind.Array
+            || data.GetArrayLength() == 0
+        )
         {
-            throw new InvalidResponseDataException(response.Body, "QuiverAI response did not contain any SVG documents.");
+            throw new InvalidResponseDataException(
+                response.Body,
+                "QuiverAI response did not contain any SVG documents."
+            );
         }
 
         var images = new List<object?>();
@@ -99,14 +144,27 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
         var index = 0;
         foreach (var item in data.EnumerateArray())
         {
-            var svg = item.TryGetProperty("svg", out var svgElement) && svgElement.ValueKind == JsonValueKind.String ? svgElement.GetString() : null;
+            var svg =
+                item.TryGetProperty("svg", out var svgElement)
+                && svgElement.ValueKind == JsonValueKind.String
+                    ? svgElement.GetString()
+                    : null;
             if (string.IsNullOrEmpty(svg))
             {
-                throw new InvalidResponseDataException(response.Body, "QuiverAI response contained an SVG document without markup.");
+                throw new InvalidResponseDataException(
+                    response.Body,
+                    "QuiverAI response contained an SVG document without markup."
+                );
             }
 
             images.Add(Encoding.UTF8.GetBytes(svg));
-            var metadata = new JsonObject { ["index"] = index++, ["mimeType"] = item.TryGetProperty("mime_type", out var mimeType) ? mimeType.GetString() : null };
+            var metadata = new JsonObject
+            {
+                ["index"] = index++,
+                ["mimeType"] = item.TryGetProperty("mime_type", out var mimeType)
+                    ? mimeType.GetString()
+                    : null,
+            };
             if (item.TryGetProperty("loop_period_ms", out var loop))
             {
                 metadata["loopPeriodMs"] = JsonNode.Parse(loop.GetRawText());
@@ -121,30 +179,49 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
         }
 
         var quiverai = new JsonObject();
-        if (root.TryGetProperty("credits", out var credits) && credits.ValueKind == JsonValueKind.Number)
+        if (
+            root.TryGetProperty("credits", out var credits)
+            && credits.ValueKind == JsonValueKind.Number
+        )
         {
             quiverai["credits"] = credits.GetInt32();
         }
 
         quiverai["images"] = imageMetadata;
         OperationUsage? usage = null;
-        if (root.TryGetProperty("usage", out var usageElement) && usageElement.ValueKind == JsonValueKind.Object)
+        if (
+            root.TryGetProperty("usage", out var usageElement)
+            && usageElement.ValueKind == JsonValueKind.Object
+        )
         {
             usage = new OperationUsage(
                 usageElement.GetProperty("input_tokens").GetInt32(),
                 usageElement.GetProperty("output_tokens").GetInt32(),
-                usageElement.GetProperty("total_tokens").GetInt32());
+                usageElement.GetProperty("total_tokens").GetInt32()
+            );
         }
 
-        var created = root.TryGetProperty("created", out var createdElement) && createdElement.ValueKind == JsonValueKind.Number ? createdElement.GetInt64() : 0;
-        var responseTimestamp = created != 0 ? DateTimeOffset.FromUnixTimeSeconds(created) : timestamp;
-        var providerMetadata = OperationJson.Parse(new JsonObject { ["quiverai"] = quiverai }.ToJsonString());
+        var created =
+            root.TryGetProperty("created", out var createdElement)
+            && createdElement.ValueKind == JsonValueKind.Number
+                ? createdElement.GetInt64()
+                : 0;
+        var responseTimestamp =
+            created != 0 ? DateTimeOffset.FromUnixTimeSeconds(created) : timestamp;
+        var providerMetadata = OperationJson.Parse(
+            new JsonObject { ["quiverai"] = quiverai }.ToJsonString()
+        );
         return new ImageModelResult(
             images,
             warnings,
             usage,
             providerMetadata,
-            new ProviderResponse(response.Headers, timestamp: responseTimestamp.UtcDateTime, modelId: ModelId));
+            new ProviderResponse(
+                response.Headers,
+                timestamp: responseTimestamp.UtcDateTime,
+                modelId: ModelId
+            )
+        );
     }
 
     private static string OperationPath(string operation)
@@ -163,22 +240,46 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
         var warnings = new List<OperationWarning>();
         if (call.Size != null)
         {
-            warnings.Add(new OperationWarning("unsupported", feature: "size", details: "QuiverAI SVG generation does not support the `size` option. The setting was ignored."));
+            warnings.Add(
+                new OperationWarning(
+                    "unsupported",
+                    feature: "size",
+                    details: "QuiverAI SVG generation does not support the `size` option. The setting was ignored."
+                )
+            );
         }
 
         if (call.AspectRatio != null)
         {
-            warnings.Add(new OperationWarning("unsupported", feature: "aspectRatio", details: "QuiverAI SVG generation does not support the `aspectRatio` option. The setting was ignored."));
+            warnings.Add(
+                new OperationWarning(
+                    "unsupported",
+                    feature: "aspectRatio",
+                    details: "QuiverAI SVG generation does not support the `aspectRatio` option. The setting was ignored."
+                )
+            );
         }
 
         if (call.Seed != null)
         {
-            warnings.Add(new OperationWarning("unsupported", feature: "seed", details: "QuiverAI SVG generation does not support the `seed` option. The setting was ignored."));
+            warnings.Add(
+                new OperationWarning(
+                    "unsupported",
+                    feature: "seed",
+                    details: "QuiverAI SVG generation does not support the `seed` option. The setting was ignored."
+                )
+            );
         }
 
         if (call.Mask != null)
         {
-            warnings.Add(new OperationWarning("unsupported", feature: "mask", details: "QuiverAI SVG generation does not support masks. The mask was ignored."));
+            warnings.Add(
+                new OperationWarning(
+                    "unsupported",
+                    feature: "mask",
+                    details: "QuiverAI SVG generation does not support masks. The mask was ignored."
+                )
+            );
         }
 
         return warnings;
@@ -188,7 +289,11 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
     {
         if ((ModelId == "arrow-2" || ModelId == "arrow-2-telos") && options.MaxOutputTokens > 65536)
         {
-            throw new InvalidArgumentException("maxOutputTokens", options.MaxOutputTokens, "QuiverAI model \"" + ModelId + "\" supports at most 65536 output tokens.");
+            throw new InvalidArgumentException(
+                "maxOutputTokens",
+                options.MaxOutputTokens,
+                "QuiverAI model \"" + ModelId + "\" supports at most 65536 output tokens."
+            );
         }
 
         if (options.Operation != "edit")
@@ -209,17 +314,29 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
         var files = call.Files;
         if (files == null || files.Count == 0)
         {
-            throw new InvalidArgumentException("files", null, "QuiverAI vectorize requires an input image. Pass an image in the generateImage prompt and set providerOptions.quiverai.operation to \"vectorize\".");
+            throw new InvalidArgumentException(
+                "files",
+                null,
+                "QuiverAI vectorize requires an input image. Pass an image in the generateImage prompt and set providerOptions.quiverai.operation to \"vectorize\"."
+            );
         }
 
         if (files.Count > 1)
         {
-            throw new InvalidArgumentException("files", files.Count, "QuiverAI vectorize accepts a single input image.");
+            throw new InvalidArgumentException(
+                "files",
+                files.Count,
+                "QuiverAI vectorize accepts a single input image."
+            );
         }
 
         if (call.N != 1)
         {
-            throw new InvalidArgumentException("n", call.N, "QuiverAI vectorize returns one SVG per request. Set maxImagesPerCall to 1 in generateImage to vectorize multiple times.");
+            throw new InvalidArgumentException(
+                "n",
+                call.N,
+                "QuiverAI vectorize returns one SVG per request. Set maxImagesPerCall to 1 in generateImage to vectorize multiple times."
+            );
         }
 
         var body = new JsonObject { ["model"] = ModelId, ["image"] = Reference(files[0]) };
@@ -233,22 +350,41 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
     {
         if (string.IsNullOrWhiteSpace(call.Prompt))
         {
-            throw new InvalidArgumentException("prompt", call.Prompt, "QuiverAI image generation requires a non-empty prompt for generateImage.");
+            throw new InvalidArgumentException(
+                "prompt",
+                call.Prompt,
+                "QuiverAI image generation requires a non-empty prompt for generateImage."
+            );
         }
 
         // Only documented Arrow 1.x models get the lower limit. The API enforces model-specific limits within its 16-reference request limit.
         var maxReferences = ModelId is "arrow-1" or "arrow-1.0" or "arrow-1.1" ? 4 : 16;
         if (call.Files != null && call.Files.Count > maxReferences)
         {
-            throw new InvalidArgumentException("files", call.Files.Count, "QuiverAI generate supports up to " + maxReferences + " reference images for model \"" + ModelId + "\".");
+            throw new InvalidArgumentException(
+                "files",
+                call.Files.Count,
+                "QuiverAI generate supports up to "
+                    + maxReferences
+                    + " reference images for model \""
+                    + ModelId
+                    + "\"."
+            );
         }
 
-        var body = new JsonObject { ["model"] = ModelId, ["n"] = call.N, ["prompt"] = call.Prompt };
+        var body = new JsonObject
+        {
+            ["model"] = ModelId,
+            ["n"] = call.N,
+            ["prompt"] = call.Prompt,
+        };
         AddSharedOptions(body, options);
         Add(body, "instructions", options.Instructions);
         if (call.Files != null)
         {
-            body["references"] = new JsonArray(call.Files.Select(file => (JsonNode)Reference(file)).ToArray());
+            body["references"] = new JsonArray(
+                call.Files.Select(file => (JsonNode)Reference(file)).ToArray()
+            );
         }
 
         return body;
@@ -258,32 +394,56 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
     {
         if (ModelId != "arrow-2" && ModelId != "arrow-2-telos")
         {
-            throw new InvalidArgumentException("modelId", ModelId, "QuiverAI animate is supported by the \"arrow-2\" and \"arrow-2-telos\" models.");
+            throw new InvalidArgumentException(
+                "modelId",
+                ModelId,
+                "QuiverAI animate is supported by the \"arrow-2\" and \"arrow-2-telos\" models."
+            );
         }
 
         if (call.Files == null || call.Files.Count == 0)
         {
-            throw new InvalidArgumentException("files", null, "QuiverAI animate requires exactly one source SVG in prompt.images.");
+            throw new InvalidArgumentException(
+                "files",
+                null,
+                "QuiverAI animate requires exactly one source SVG in prompt.images."
+            );
         }
 
         if (call.Files.Count != 1)
         {
-            throw new InvalidArgumentException("files", call.Files.Count, "QuiverAI animate accepts exactly one source SVG in prompt.images.");
+            throw new InvalidArgumentException(
+                "files",
+                call.Files.Count,
+                "QuiverAI animate accepts exactly one source SVG in prompt.images."
+            );
         }
 
         if (call.N != 1)
         {
-            throw new InvalidArgumentException("n", call.N, "QuiverAI animate returns one SVG per request. Set maxImagesPerCall to 1 in generateImage to animate multiple times.");
+            throw new InvalidArgumentException(
+                "n",
+                call.N,
+                "QuiverAI animate returns one SVG per request. Set maxImagesPerCall to 1 in generateImage to animate multiple times."
+            );
         }
 
         if (call.Mask != null)
         {
-            throw new InvalidArgumentException("mask", null, "QuiverAI animate does not support masks.");
+            throw new InvalidArgumentException(
+                "mask",
+                null,
+                "QuiverAI animate does not support masks."
+            );
         }
 
         if (call.Prompt != null && call.Prompt.Trim().Length == 0)
         {
-            throw new InvalidArgumentException("prompt", call.Prompt, "QuiverAI animate requires a non-empty prompt when an animation instruction is provided.");
+            throw new InvalidArgumentException(
+                "prompt",
+                call.Prompt,
+                "QuiverAI animate requires a non-empty prompt when an animation instruction is provided."
+            );
         }
 
         var unsupported = new (string Name, bool Present)[]
@@ -297,10 +457,20 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
         }.FirstOrDefault(option => option.Present);
         if (unsupported.Name != null)
         {
-            throw new InvalidArgumentException("providerOptions.quiverai." + unsupported.Name, null, "QuiverAI animate does not support providerOptions.quiverai." + unsupported.Name + ".");
+            throw new InvalidArgumentException(
+                "providerOptions.quiverai." + unsupported.Name,
+                null,
+                "QuiverAI animate does not support providerOptions.quiverai."
+                    + unsupported.Name
+                    + "."
+            );
         }
 
-        var body = new JsonObject { ["model"] = ModelId, ["svg_source"] = AnimationSource(call.Files[0]) };
+        var body = new JsonObject
+        {
+            ["model"] = ModelId,
+            ["svg_source"] = AnimationSource(call.Files[0]),
+        };
         Add(body, "prompt", call.Prompt);
         Add(body, "temperature", options.Temperature);
         Add(body, "max_output_tokens", options.MaxOutputTokens);
@@ -313,37 +483,65 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
     {
         if (ModelId != "arrow-2" && ModelId != "arrow-2-telos")
         {
-            throw new InvalidArgumentException("modelId", ModelId, "QuiverAI SVG editing is supported by the \"arrow-2\" and \"arrow-2-telos\" models.");
+            throw new InvalidArgumentException(
+                "modelId",
+                ModelId,
+                "QuiverAI SVG editing is supported by the \"arrow-2\" and \"arrow-2-telos\" models."
+            );
         }
 
         if (string.IsNullOrWhiteSpace(call.Prompt))
         {
-            throw new InvalidArgumentException("prompt", call.Prompt, "QuiverAI SVG editing requires a non-empty instruction in generateImage prompt.text.");
+            throw new InvalidArgumentException(
+                "prompt",
+                call.Prompt,
+                "QuiverAI SVG editing requires a non-empty instruction in generateImage prompt.text."
+            );
         }
 
         if (call.Prompt!.Length > 4000)
         {
-            throw new InvalidArgumentException("prompt", call.Prompt, "QuiverAI SVG editing instructions must contain at most 4000 characters.");
+            throw new InvalidArgumentException(
+                "prompt",
+                call.Prompt,
+                "QuiverAI SVG editing instructions must contain at most 4000 characters."
+            );
         }
 
         if (call.Files == null || call.Files.Count == 0)
         {
-            throw new InvalidArgumentException("files", null, "QuiverAI SVG editing requires one source SVG in generateImage prompt.images.");
+            throw new InvalidArgumentException(
+                "files",
+                null,
+                "QuiverAI SVG editing requires one source SVG in generateImage prompt.images."
+            );
         }
 
         if (call.Files.Count != 1)
         {
-            throw new InvalidArgumentException("files", call.Files.Count, "QuiverAI SVG editing accepts exactly one source SVG.");
+            throw new InvalidArgumentException(
+                "files",
+                call.Files.Count,
+                "QuiverAI SVG editing accepts exactly one source SVG."
+            );
         }
 
         if (call.N != 1)
         {
-            throw new InvalidArgumentException("n", call.N, "QuiverAI SVG editing returns exactly one SVG per request. Set maxImagesPerCall to 1 in generateImage to edit multiple times.");
+            throw new InvalidArgumentException(
+                "n",
+                call.N,
+                "QuiverAI SVG editing returns exactly one SVG per request. Set maxImagesPerCall to 1 in generateImage to edit multiple times."
+            );
         }
 
         if (call.Mask != null)
         {
-            throw new InvalidArgumentException("mask", null, "QuiverAI SVG editing does not support masks.");
+            throw new InvalidArgumentException(
+                "mask",
+                null,
+                "QuiverAI SVG editing does not support masks."
+            );
         }
 
         var unsupported = new (string Name, bool Present)[]
@@ -354,13 +552,27 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
             ("presencePenalty", options.PresencePenalty != null),
             ("autoCrop", options.AutoCrop != null),
             ("targetSize", options.TargetSize != null),
-        }.Where(option => option.Present).Select(option => option.Name).ToArray();
+        }
+            .Where(option => option.Present)
+            .Select(option => option.Name)
+            .ToArray();
         if (unsupported.Length > 0)
         {
-            throw new InvalidArgumentException("providerOptions", null, "QuiverAI SVG editing does not support these provider options: " + string.Join(", ", unsupported) + ".");
+            throw new InvalidArgumentException(
+                "providerOptions",
+                null,
+                "QuiverAI SVG editing does not support these provider options: "
+                    + string.Join(", ", unsupported)
+                    + "."
+            );
         }
 
-        var body = new JsonObject { ["model"] = ModelId, ["prompt"] = call.Prompt, ["svg_source"] = EditSource(call.Files[0]) };
+        var body = new JsonObject
+        {
+            ["model"] = ModelId,
+            ["prompt"] = call.Prompt,
+            ["svg_source"] = EditSource(call.Files[0]),
+        };
         if (options.ReferenceImages != null)
         {
             var references = new JsonArray();
@@ -369,11 +581,19 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
                 var reference = options.ReferenceImages[index];
                 if (reference.Url != null)
                 {
-                    references.Add(new JsonObject { ["url"] = QuiverAIImageReference.ValidateImageUrl(reference.Url) });
+                    references.Add(
+                        new JsonObject
+                        {
+                            ["url"] = QuiverAIImageReference.ValidateImageUrl(reference.Url),
+                        }
+                    );
                     continue;
                 }
 
-                QuiverAIImageReference.ValidateReferenceBase64(reference.Base64!, "providerOptions.quiverai.referenceImages[" + index + "]");
+                QuiverAIImageReference.ValidateReferenceBase64(
+                    reference.Base64!,
+                    "providerOptions.quiverai.referenceImages[" + index + "]"
+                );
                 references.Add(new JsonObject { ["base64"] = reference.Base64 });
             }
 
@@ -404,10 +624,21 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
             ("maxReviewSteps", options.MaxReviewSteps != null),
             ("orchestratorMaxOutputTokens", options.OrchestratorMaxOutputTokens != null),
             ("shallowMaxOutputTokens", options.ShallowMaxOutputTokens != null),
-        }.Where(option => option.Present).Select(option => option.Name).ToArray();
+        }
+            .Where(option => option.Present)
+            .Select(option => option.Name)
+            .ToArray();
         if (editOnly.Length > 0)
         {
-            throw new InvalidArgumentException("providerOptions", null, "QuiverAI " + options.Operation + " does not support these edit-only provider options: " + string.Join(", ", editOnly) + ".");
+            throw new InvalidArgumentException(
+                "providerOptions",
+                null,
+                "QuiverAI "
+                    + options.Operation
+                    + " does not support these edit-only provider options: "
+                    + string.Join(", ", editOnly)
+                    + "."
+            );
         }
     }
 
@@ -460,12 +691,20 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
         {
             if (!Uri.TryCreate(file.Url, UriKind.Absolute, out var url))
             {
-                throw new InvalidArgumentException("files", file.Url, "QuiverAI animate requires a valid HTTP or HTTPS SVG URL.");
+                throw new InvalidArgumentException(
+                    "files",
+                    file.Url,
+                    "QuiverAI animate requires a valid HTTP or HTTPS SVG URL."
+                );
             }
 
             if (url.Scheme != Uri.UriSchemeHttp && url.Scheme != Uri.UriSchemeHttps)
             {
-                throw new InvalidArgumentException("files", file.Url, "QuiverAI animate requires an HTTP or HTTPS SVG URL.");
+                throw new InvalidArgumentException(
+                    "files",
+                    file.Url,
+                    "QuiverAI animate requires an HTTP or HTTPS SVG URL."
+                );
             }
 
             return new JsonObject { ["url"] = file.Url };
@@ -475,13 +714,23 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
         var head = Encoding.UTF8.GetString(bytes, 0, Math.Min(bytes.Length, 4096)).TrimStart();
         if (!SafeRegex.IsMatch(AnimationSvgStart, head))
         {
-            throw new InvalidArgumentException("files", null, "QuiverAI animate requires the input file to contain SVG data.");
+            throw new InvalidArgumentException(
+                "files",
+                null,
+                "QuiverAI animate requires the input file to contain SVG data."
+            );
         }
 
         var base64 = Convert.ToBase64String(bytes);
         if (base64.Length > MaxAnimationSourceBase64Length)
         {
-            throw new InvalidArgumentException("files", null, "QuiverAI animate accepts at most " + MaxAnimationSourceBase64Length + " base64 characters for the source SVG.");
+            throw new InvalidArgumentException(
+                "files",
+                null,
+                "QuiverAI animate accepts at most "
+                    + MaxAnimationSourceBase64Length
+                    + " base64 characters for the source SVG."
+            );
         }
 
         return new JsonObject { ["base64"] = base64 };
@@ -497,7 +746,11 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
         var data = file.Data!;
         if (data.Length == 0 || data.Length > MaxEditSvgBytes)
         {
-            throw new InvalidArgumentException("files", null, "QuiverAI SVG source data must contain 1-" + MaxEditSvgBytes + " bytes.");
+            throw new InvalidArgumentException(
+                "files",
+                null,
+                "QuiverAI SVG source data must contain 1-" + MaxEditSvgBytes + " bytes."
+            );
         }
 
         string svg;
@@ -507,12 +760,20 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
         }
         catch (DecoderFallbackException)
         {
-            throw new InvalidArgumentException("files", null, "QuiverAI SVG source data must be valid UTF-8.");
+            throw new InvalidArgumentException(
+                "files",
+                null,
+                "QuiverAI SVG source data must be valid UTF-8."
+            );
         }
 
         if (svg.Length > MaxEditSvgBytes || !IsSvgMarkup(svg))
         {
-            throw new InvalidArgumentException("files", null, "QuiverAI SVG source data must contain a complete SVG document.");
+            throw new InvalidArgumentException(
+                "files",
+                null,
+                "QuiverAI SVG source data must contain a complete SVG document."
+            );
         }
 
         return new JsonObject { ["base64"] = Convert.ToBase64String(data) };
@@ -535,7 +796,11 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
                 var nextTag = document.IndexOf('<', position);
                 var end = nextTag == -1 ? document.Length : nextTag;
                 var text = document.Substring(position, end - position);
-                if ((elements.Count == 0 && text.Trim().Length > 0) || text.Contains("]]>") || !HasValidXmlReferences(text))
+                if (
+                    (elements.Count == 0 && text.Trim().Length > 0)
+                    || text.Contains("]]>")
+                    || !HasValidXmlReferences(text)
+                )
                 {
                     return false;
                 }
@@ -547,7 +812,10 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
             if (StartsAt(document, "<!--", position))
             {
                 var commentEnd = document.IndexOf("-->", position + 4, StringComparison.Ordinal);
-                if (commentEnd == -1 || document.Substring(position + 4, commentEnd - position - 4).Contains("--"))
+                if (
+                    commentEnd == -1
+                    || document.Substring(position + 4, commentEnd - position - 4).Contains("--")
+                )
                 {
                     return false;
                 }
@@ -585,15 +853,34 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
                 continue;
             }
 
-            if (position + 9 <= document.Length && string.Equals(document.Substring(position, 9), "<!DOCTYPE", StringComparison.OrdinalIgnoreCase))
+            if (
+                position + 9 <= document.Length
+                && string.Equals(
+                    document.Substring(position, 9),
+                    "<!DOCTYPE",
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
             {
-                if (rootSeen || doctypeSeen || elements.Count > 0 || !IsXmlWhitespace(At(document, position + 9)))
+                if (
+                    rootSeen
+                    || doctypeSeen
+                    || elements.Count > 0
+                    || !IsXmlWhitespace(At(document, position + 9))
+                )
                 {
                     return false;
                 }
 
                 var doctypeName = ReadXmlName(document, SkipXmlWhitespace(document, position + 9));
-                if (doctypeName == null || !string.Equals(doctypeName.Value.Name, "svg", StringComparison.OrdinalIgnoreCase))
+                if (
+                    doctypeName == null
+                    || !string.Equals(
+                        doctypeName.Value.Name,
+                        "svg",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
                 {
                     return false;
                 }
@@ -623,7 +910,11 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
                 }
 
                 var tagEnd = SkipXmlWhitespace(document, closingTag.Value.End);
-                if (At(document, tagEnd) != '>' || elements.Count == 0 || elements.Pop() != closingTag.Value.Name)
+                if (
+                    At(document, tagEnd) != '>'
+                    || elements.Count == 0
+                    || elements.Pop() != closingTag.Value.Name
+                )
                 {
                     return false;
                 }
@@ -650,7 +941,9 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
 
             if (!rootSeen)
             {
-                if (!string.Equals(openingTag.Value.Name, "svg", StringComparison.OrdinalIgnoreCase))
+                if (
+                    !string.Equals(openingTag.Value.Name, "svg", StringComparison.OrdinalIgnoreCase)
+                )
                 {
                     return false;
                 }
@@ -733,7 +1026,8 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
 
     private static bool StartsAt(string value, string prefix, int position)
     {
-        return string.CompareOrdinal(value, position, prefix, 0, prefix.Length) == 0 && position + prefix.Length <= value.Length;
+        return string.CompareOrdinal(value, position, prefix, 0, prefix.Length) == 0
+            && position + prefix.Length <= value.Length;
     }
 
     private static char At(string value, int position)
@@ -748,7 +1042,8 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
 
     private static bool IsXmlNameStart(char character)
     {
-        return character is (>= 'A' and <= 'Z') or (>= 'a' and <= 'z') or '_' or ':' || character >= (char)0x80;
+        return character is (>= 'A' and <= 'Z') or (>= 'a' and <= 'z') or '_' or ':'
+            || character >= (char)0x80;
     }
 
     private static bool IsXmlNameCharacter(char character)
@@ -795,7 +1090,11 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
             }
 
             var reference = value.Substring(position + 1, end - position - 1);
-            if (!SafeRegex.IsMatch(DecimalReference, reference) && !SafeRegex.IsMatch(HexReference, reference) && !IsXmlName(reference))
+            if (
+                !SafeRegex.IsMatch(DecimalReference, reference)
+                && !SafeRegex.IsMatch(HexReference, reference)
+                && !IsXmlName(reference)
+            )
             {
                 return false;
             }
@@ -808,7 +1107,9 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
 
     private static bool IsXmlName(string value)
     {
-        return value.Length > 0 && IsXmlNameStart(value[0]) && value.Skip(1).All(IsXmlNameCharacter);
+        return value.Length > 0
+            && IsXmlNameStart(value[0])
+            && value.Skip(1).All(IsXmlNameCharacter);
     }
 
     private static int FindDoctypeEnd(string value, int position)
@@ -856,9 +1157,11 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
     private static QuiverAIOptions ParseOptions(JsonElement? providerOptions)
     {
         var options = new QuiverAIOptions();
-        if (providerOptions is not { ValueKind: JsonValueKind.Object } bag
+        if (
+            providerOptions is not { ValueKind: JsonValueKind.Object } bag
             || !bag.TryGetProperty("quiverai", out var quiverai)
-            || quiverai.ValueKind != JsonValueKind.Object)
+            || quiverai.ValueKind != JsonValueKind.Object
+        )
         {
             return options;
         }
@@ -869,7 +1172,14 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
             switch (property.Name)
             {
                 case "operation":
-                    options.Operation = OneOf(value, property.Name, "generate", "vectorize", "animate", "edit");
+                    options.Operation = OneOf(
+                        value,
+                        property.Name,
+                        "generate",
+                        "vectorize",
+                        "animate",
+                        "edit"
+                    );
                     break;
                 case "instructions":
                     options.Instructions = NonEmptyString(value, property.Name, int.MaxValue);
@@ -894,7 +1204,10 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
                     break;
                 case "presencePenalty":
                     options.HasPresencePenalty = true;
-                    options.PresencePenalty = value.ValueKind == JsonValueKind.Null ? null : Number(value, property.Name, -2, 2);
+                    options.PresencePenalty =
+                        value.ValueKind == JsonValueKind.Null
+                            ? null
+                            : Number(value, property.Name, -2, 2);
                     break;
                 case "maxOutputTokens":
                     options.MaxOutputTokens = Integer(value, property.Name, 1, 131072);
@@ -932,14 +1245,31 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
         var references = new List<QuiverAIReferenceOption>();
         foreach (var item in value.EnumerateArray())
         {
-            var properties = item.ValueKind == JsonValueKind.Object ? item.EnumerateObject().ToArray() : Array.Empty<JsonProperty>();
-            if (properties.Length != 1 || (properties[0].Name != "url" && properties[0].Name != "base64"))
+            var properties =
+                item.ValueKind == JsonValueKind.Object
+                    ? item.EnumerateObject().ToArray()
+                    : Array.Empty<JsonProperty>();
+            if (
+                properties.Length != 1
+                || (properties[0].Name != "url" && properties[0].Name != "base64")
+            )
             {
-                throw InvalidOption("referenceImages", "must contain objects with exactly one of url or base64");
+                throw InvalidOption(
+                    "referenceImages",
+                    "must contain objects with exactly one of url or base64"
+                );
             }
 
-            var text = NonEmptyString(properties[0].Value, "referenceImages", properties[0].Name == "base64" ? 16_777_216 : int.MaxValue);
-            references.Add(properties[0].Name == "url" ? new QuiverAIReferenceOption(text, null) : new QuiverAIReferenceOption(null, text));
+            var text = NonEmptyString(
+                properties[0].Value,
+                "referenceImages",
+                properties[0].Name == "base64" ? 16_777_216 : int.MaxValue
+            );
+            references.Add(
+                properties[0].Name == "url"
+                    ? new QuiverAIReferenceOption(text, null)
+                    : new QuiverAIReferenceOption(null, text)
+            );
         }
 
         return references;
@@ -959,10 +1289,32 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
                 throw InvalidOption("attributes.viewBox", "must be an object");
             }
 
-            Number(Required(viewBox, "minX"), "attributes.viewBox.minX", double.MinValue, double.MaxValue);
-            Number(Required(viewBox, "minY"), "attributes.viewBox.minY", double.MinValue, double.MaxValue);
-            if (Number(Required(viewBox, "width"), "attributes.viewBox.width", double.MinValue, double.MaxValue) <= 0
-                || Number(Required(viewBox, "height"), "attributes.viewBox.height", double.MinValue, double.MaxValue) <= 0)
+            Number(
+                Required(viewBox, "minX"),
+                "attributes.viewBox.minX",
+                double.MinValue,
+                double.MaxValue
+            );
+            Number(
+                Required(viewBox, "minY"),
+                "attributes.viewBox.minY",
+                double.MinValue,
+                double.MaxValue
+            );
+            if (
+                Number(
+                    Required(viewBox, "width"),
+                    "attributes.viewBox.width",
+                    double.MinValue,
+                    double.MaxValue
+                ) <= 0
+                || Number(
+                    Required(viewBox, "height"),
+                    "attributes.viewBox.height",
+                    double.MinValue,
+                    double.MaxValue
+                ) <= 0
+            )
             {
                 throw InvalidOption("attributes.viewBox", "must have a positive width and height");
             }
@@ -1000,7 +1352,11 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
 
     private static double Number(JsonElement value, string name, double min, double max)
     {
-        if (value.ValueKind != JsonValueKind.Number || value.GetDouble() < min || value.GetDouble() > max)
+        if (
+            value.ValueKind != JsonValueKind.Number
+            || value.GetDouble() < min
+            || value.GetDouble() > max
+        )
         {
             throw InvalidOption(name, "must be a number from " + min + " to " + max);
         }
@@ -1010,7 +1366,12 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
 
     private static int Integer(JsonElement value, string name, int min, int max)
     {
-        if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt32(out var number) || number < min || number > max)
+        if (
+            value.ValueKind != JsonValueKind.Number
+            || !value.TryGetInt32(out var number)
+            || number < min
+            || number > max
+        )
         {
             throw InvalidOption(name, "must be an integer from " + min + " to " + max);
         }
@@ -1020,7 +1381,11 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
 
     private static InvalidArgumentException InvalidOption(string name, string rule)
     {
-        return new InvalidArgumentException("providerOptions", null, "Invalid QuiverAI provider option " + name + ": " + rule + ".");
+        return new InvalidArgumentException(
+            "providerOptions",
+            null,
+            "Invalid QuiverAI provider option " + name + ": " + rule + "."
+        );
     }
 
     private sealed class QuiverAIOptions

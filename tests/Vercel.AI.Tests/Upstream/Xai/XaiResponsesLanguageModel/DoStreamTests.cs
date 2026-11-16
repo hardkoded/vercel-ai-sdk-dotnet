@@ -22,10 +22,18 @@ public sealed class DoStreamTests
     public async Task Handles_a_stream_ending_with(string ending)
     {
         var withError = ending is "invalid-json" or "provider-error";
-        var events = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", "xai-text-streaming.1.chunks.txt"))
+        var events = File.ReadAllLines(
+                Path.Combine(
+                    AppContext.BaseDirectory,
+                    "Fixtures",
+                    "xai-text-streaming.1.chunks.txt"
+                )
+            )
             .Where(line => line.Trim().Length > 0)
             .ToList();
-        var firstText = events.FindIndex(line => JsonNode.Parse(line)!["type"]!.GetValue<string>() == "response.output_text.delta");
+        var firstText = events.FindIndex(line =>
+            JsonNode.Parse(line)!["type"]!.GetValue<string>() == "response.output_text.delta"
+        );
         Assert.True(firstText >= 0);
         var chunks = events.Take(firstText + 1).ToList();
         if (ending == "invalid-json")
@@ -40,7 +48,13 @@ public sealed class DoStreamTests
 
         if (ending == "empty-status")
         {
-            var completed = JsonNode.Parse(events.First(line => JsonNode.Parse(line)!["type"]!.GetValue<string>() == "response.completed"))!.AsObject();
+            var completed = JsonNode
+                .Parse(
+                    events.First(line =>
+                        JsonNode.Parse(line)!["type"]!.GetValue<string>() == "response.completed"
+                    )
+                )!
+                .AsObject();
             completed["response"]!["status"] = "";
             chunks.Add(completed.ToJsonString());
         }
@@ -50,12 +64,20 @@ public sealed class DoStreamTests
         Assert.Contains(parts, part => part is TextDeltaStreamPart);
         Assert.Equal(withError ? 1 : 0, parts.OfType<ErrorStreamPart>().Count());
         var finish = Assert.Single(parts.OfType<FinishStreamPart>());
-        Assert.Equal(withError ? FinishReason.Error : ending == "empty-status" ? FinishReason.Other : FinishReason.Interrupted, finish.FinishReason);
+        Assert.Equal(
+            withError ? FinishReason.Error
+                : ending == "empty-status" ? FinishReason.Other
+                : FinishReason.Interrupted,
+            finish.FinishReason
+        );
         Assert.Null(finish.RawFinishReason);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should warn about unsupported sampling settings", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should warn about unsupported sampling settings",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_warn_about_unsupported_sampling_settings()
     {
         var capture = ChunksFixture("xai-text-streaming.1.chunks.txt");
@@ -67,7 +89,10 @@ public sealed class DoStreamTests
         var parts = await Collect(Model(capture), options);
 
         var start = First<StreamStartStreamPart>(parts);
-        Assert.Equal(new[] { "frequencyPenalty", "presencePenalty" }, start.Warnings.Select(warning => warning.Feature));
+        Assert.Equal(
+            new[] { "frequencyPenalty", "presencePenalty" },
+            start.Warnings.Select(warning => warning.Feature)
+        );
         Assert.All(start.Warnings, warning => Assert.Equal("unsupported", warning.Type));
     }
 }

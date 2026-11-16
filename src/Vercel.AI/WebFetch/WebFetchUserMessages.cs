@@ -10,7 +10,11 @@ namespace Vercel.AI.WebFetch;
 /// <summary>Checks whether a URL appears in a user message. Maps to <c>is-url-in-user-messages.ts</c>.</summary>
 internal static class WebFetchUserMessages
 {
-    private static readonly Regex UrlPattern = new(@"https?://[^\s<>""'`]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+    private static readonly Regex UrlPattern = new(
+        @"https?://[^\s<>""'`]+",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(1)
+    );
 
     /// <summary>
     /// Only user messages count. Assistant messages, tool calls, and tool results are excluded because the model controls

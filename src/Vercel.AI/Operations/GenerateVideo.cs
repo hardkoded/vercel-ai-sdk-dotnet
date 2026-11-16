@@ -152,7 +152,12 @@ public sealed class VideoPrompt
 public sealed class VideoOutput
 {
     /// <summary>Creates an output.</summary>
-    public VideoOutput(string type, string? url = null, object? data = null, string? mediaType = null)
+    public VideoOutput(
+        string type,
+        string? url = null,
+        object? data = null,
+        string? mediaType = null
+    )
     {
         Type = type;
         Url = url;
@@ -200,7 +205,24 @@ public sealed class GeneratedVideo
 public sealed class VideoModelCall
 {
     /// <summary>Creates a call.</summary>
-    public VideoModelCall(string? prompt, int n, string? aspectRatio, string? resolution, double? duration, int? fps, double? seed, VideoModelFile? image, IReadOnlyList<VideoFrameFile>? frameImages, IReadOnlyList<VideoModelFile>? inputReferences, bool? generateAudio, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken, string? webhookUrl = null, object? operation = null)
+    public VideoModelCall(
+        string? prompt,
+        int n,
+        string? aspectRatio,
+        string? resolution,
+        double? duration,
+        int? fps,
+        double? seed,
+        VideoModelFile? image,
+        IReadOnlyList<VideoFrameFile>? frameImages,
+        IReadOnlyList<VideoModelFile>? inputReferences,
+        bool? generateAudio,
+        JsonElement providerOptions,
+        IReadOnlyDictionary<string, string> headers,
+        CancellationToken cancellationToken,
+        string? webhookUrl = null,
+        object? operation = null
+    )
     {
         Prompt = prompt;
         N = n;
@@ -273,7 +295,12 @@ public sealed class VideoModelCall
 public sealed class VideoModelResult
 {
     /// <summary>Creates a result.</summary>
-    public VideoModelResult(IReadOnlyList<VideoOutput>? videos, IReadOnlyList<OperationWarning>? warnings = null, JsonElement? providerMetadata = null, ProviderResponse? response = null)
+    public VideoModelResult(
+        IReadOnlyList<VideoOutput>? videos,
+        IReadOnlyList<OperationWarning>? warnings = null,
+        JsonElement? providerMetadata = null,
+        ProviderResponse? response = null
+    )
     {
         Videos = videos ?? Array.Empty<VideoOutput>();
         Warnings = warnings ?? Array.Empty<OperationWarning>();
@@ -298,7 +325,12 @@ public sealed class VideoModelResult
 public sealed class VideoStartResult
 {
     /// <summary>Creates a start result.</summary>
-    public VideoStartResult(object? operation, IReadOnlyList<OperationWarning>? warnings = null, JsonElement? providerMetadata = null, ProviderResponse? response = null)
+    public VideoStartResult(
+        object? operation,
+        IReadOnlyList<OperationWarning>? warnings = null,
+        JsonElement? providerMetadata = null,
+        ProviderResponse? response = null
+    )
     {
         Operation = operation;
         Warnings = warnings ?? Array.Empty<OperationWarning>();
@@ -323,7 +355,14 @@ public sealed class VideoStartResult
 public sealed class VideoStatusResult
 {
     /// <summary>Creates a status result.</summary>
-    public VideoStatusResult(string status, IReadOnlyList<VideoOutput>? videos = null, string? error = null, IReadOnlyList<OperationWarning>? warnings = null, JsonElement? providerMetadata = null, ProviderResponse? response = null)
+    public VideoStatusResult(
+        string status,
+        IReadOnlyList<VideoOutput>? videos = null,
+        string? error = null,
+        IReadOnlyList<OperationWarning>? warnings = null,
+        JsonElement? providerMetadata = null,
+        ProviderResponse? response = null
+    )
     {
         Status = status ?? string.Empty;
         Videos = videos ?? Array.Empty<VideoOutput>();
@@ -397,7 +436,10 @@ public interface IVideoCaller
     bool CanWebhook { get; }
 
     /// <summary>Generates videos in one call.</summary>
-    Task<VideoModelResult> DoGenerateAsync(VideoModelCall call, CancellationToken cancellationToken);
+    Task<VideoModelResult> DoGenerateAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    );
 
     /// <summary>Starts an asynchronous generation.</summary>
     Task<VideoStartResult> DoStartAsync(VideoModelCall call, CancellationToken cancellationToken);
@@ -406,14 +448,23 @@ public interface IVideoCaller
     Task<VideoStatusResult> DoStatusAsync(VideoModelCall call, CancellationToken cancellationToken);
 
     /// <summary>Turns a webhook factory into a URL and a received task.</summary>
-    Task<VideoWebhook> HandleWebhookAsync(Func<Task<VideoWebhook>> webhook, CancellationToken cancellationToken);
+    Task<VideoWebhook> HandleWebhookAsync(
+        Func<Task<VideoWebhook>> webhook,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>Normalized prompt, frames, and references.</summary>
 public sealed class VideoCallInputs
 {
     /// <summary>Creates normalized inputs.</summary>
-    public VideoCallInputs(string? prompt, VideoModelFile? image, IReadOnlyList<VideoFrameFile>? frameImages, IReadOnlyList<VideoModelFile>? inputReferences, IReadOnlyList<OperationWarning> warnings)
+    public VideoCallInputs(
+        string? prompt,
+        VideoModelFile? image,
+        IReadOnlyList<VideoFrameFile>? frameImages,
+        IReadOnlyList<VideoModelFile>? inputReferences,
+        IReadOnlyList<OperationWarning> warnings
+    )
     {
         Prompt = prompt;
         Image = image;
@@ -443,7 +494,13 @@ public sealed class VideoCallInputs
 public sealed class GenerateVideoResult
 {
     /// <summary>Creates a result.</summary>
-    public GenerateVideoResult(IReadOnlyList<GeneratedVideo> videos, IReadOnlyList<OperationWarning> warnings, IReadOnlyList<ProviderResponse> responses, JsonElement providerMetadata, int uploadedVideos = 0)
+    public GenerateVideoResult(
+        IReadOnlyList<GeneratedVideo> videos,
+        IReadOnlyList<OperationWarning> warnings,
+        IReadOnlyList<ProviderResponse> responses,
+        JsonElement providerMetadata,
+        int uploadedVideos = 0
+    )
     {
         Videos = videos ?? Array.Empty<GeneratedVideo>();
         UploadedVideos = uploadedVideos;
@@ -462,7 +519,10 @@ public sealed class GenerateVideoResult
         {
             if (Videos.Count == 0)
             {
-                throw new NoVideoGeneratedException(Responses, "Videos were delivered to the upload destination. Use uploadedVideos instead of video.");
+                throw new NoVideoGeneratedException(
+                    Responses,
+                    "Videos were delivered to the upload destination. Use uploadedVideos instead of video."
+                );
             }
 
             return Videos[0];
@@ -489,7 +549,12 @@ public sealed class GenerateVideoResult
 public sealed class StartVideoResult
 {
     /// <summary>Creates a start result.</summary>
-    public StartVideoResult(object? operation, IReadOnlyList<OperationWarning> warnings, JsonElement? providerMetadata, ProviderResponse response)
+    public StartVideoResult(
+        object? operation,
+        IReadOnlyList<OperationWarning> warnings,
+        JsonElement? providerMetadata,
+        ProviderResponse response
+    )
     {
         Operation = operation;
         Warnings = warnings ?? Array.Empty<OperationWarning>();
@@ -588,43 +653,90 @@ public sealed class GetVideoStatusRequest : OperationRequest
 public static class GenerateVideo
 {
     /// <summary>Generates videos, polling or waiting on a webhook when the model requires it.</summary>
-    public static async Task<GenerateVideoResult> GenerateVideoAsync(GenerateVideoRequest request, CancellationToken cancellationToken = default)
+    public static async Task<GenerateVideoResult> GenerateVideoAsync(
+        GenerateVideoRequest request,
+        CancellationToken cancellationToken = default
+    )
     {
         if (request == null)
         {
             throw new ArgumentNullException(nameof(request));
         }
 
-        var model = request.Model ?? throw new InvalidArgumentException("model", null, "model is required");
-        var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
+        var model = request.Model
+            ?? throw new InvalidArgumentException("model", null, "model is required");
+        var token = request.CancellationToken.CanBeCanceled
+            ? request.CancellationToken
+            : cancellationToken;
         var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
         var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
         var inputs = Normalize(request.Prompt, request.FrameImages, request.InputReferences);
-        var maxPerCall = request.MaxVideosPerCall ?? await model.ResolveMaxVideosPerCallAsync(token).ConfigureAwait(false) ?? 1;
+        var maxPerCall = request.MaxVideosPerCall
+            ?? await model.ResolveMaxVideosPerCallAsync(token).ConfigureAwait(false)
+            ?? 1;
         var hasStart = model.CanStart && model.CanStatus;
         var useStart = hasStart && (request.Poll || request.Webhook != null || !model.CanGenerate);
         if (!model.CanGenerate && !hasStart)
         {
-            throw new InvalidOperationException("Video model " + model.ModelId + " does not implement doGenerate or doStart/doStatus.");
+            throw new InvalidOperationException(
+                "Video model "
+                    + model.ModelId
+                    + " does not implement doGenerate or doStart/doStatus."
+            );
         }
 
         if ((request.Poll || request.Webhook != null) && !hasStart)
         {
-            WarningLog.Write(new[] { OperationWarning.Other("poll/webhook options were provided but the model does not support doStart/doStatus. Falling back to doGenerate.") }, model.Provider, model.ModelId);
+            WarningLog.Write(
+                new[]
+                {
+                    OperationWarning.Other(
+                        "poll/webhook options were provided but the model does not support doStart/doStatus. Falling back to doGenerate."
+                    ),
+                },
+                model.Provider,
+                model.ModelId
+            );
         }
 
         var count = (int)request.N;
         var counts = Split(count, maxPerCall);
-        var results = await Task.WhenAll(counts.Select(callCount =>
-        {
-            var call = new VideoModelCall(inputs.Prompt, callCount, request.AspectRatio, request.Resolution, request.Duration, request.Fps, request.Seed, inputs.Image, inputs.FrameImages, inputs.InputReferences, request.GenerateAudio, providerOptions, headers, token);
-            if (useStart)
-            {
-                return RunStartStatusAsync(model, request, call, token);
-            }
+        var results = await Task.WhenAll(
+                counts
+                    .Select(callCount =>
+                    {
+                        var call = new VideoModelCall(
+                            inputs.Prompt,
+                            callCount,
+                            request.AspectRatio,
+                            request.Resolution,
+                            request.Duration,
+                            request.Fps,
+                            request.Seed,
+                            inputs.Image,
+                            inputs.FrameImages,
+                            inputs.InputReferences,
+                            request.GenerateAudio,
+                            providerOptions,
+                            headers,
+                            token
+                        );
+                        if (useStart)
+                        {
+                            return RunStartStatusAsync(model, request, call, token);
+                        }
 
-            return OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, ct => model.DoGenerateAsync(call, ct), null);
-        }).ToArray()).ConfigureAwait(false);
+                        return OperationRetry.ExecuteAsync(
+                            request.MaxRetries,
+                            token,
+                            request.AbortReason,
+                            ct => model.DoGenerateAsync(call, ct),
+                            null
+                        );
+                    })
+                    .ToArray()
+            )
+            .ConfigureAwait(false);
 
         var videos = new List<GeneratedVideo>();
         var uploadedVideos = 0;
@@ -641,11 +753,22 @@ public static class GenerateVideo
                     continue;
                 }
 
-                videos.Add(await MaterializeAsync(video, request.Download, token).ConfigureAwait(false));
+                videos.Add(
+                    await MaterializeAsync(video, request.Download, token).ConfigureAwait(false)
+                );
             }
 
             warnings.AddRange(result.Warnings);
-            responses.Add(new ProviderResponse(result.Response.Headers, result.Response.Body, result.Response.Id, result.Response.Timestamp, result.Response.ModelId, result.ProviderMetadata));
+            responses.Add(
+                new ProviderResponse(
+                    result.Response.Headers,
+                    result.Response.Body,
+                    result.Response.Id,
+                    result.Response.Timestamp,
+                    result.Response.ModelId,
+                    result.ProviderMetadata
+                )
+            );
             MergeMetadata(metadata, result.ProviderMetadata);
         }
 
@@ -659,11 +782,21 @@ public static class GenerateVideo
             WarningLog.Write(warnings, model.Provider, model.ModelId);
         }
 
-        return new GenerateVideoResult(videos, warnings, responses, OperationJson.Parse(metadata.ToJsonString()), uploadedVideos);
+        return new GenerateVideoResult(
+            videos,
+            warnings,
+            responses,
+            OperationJson.Parse(metadata.ToJsonString()),
+            uploadedVideos
+        );
     }
 
     /// <summary>Normalizes prompt, frames, and references.</summary>
-    public static VideoCallInputs Normalize(VideoPrompt? prompt, IReadOnlyList<VideoFrameImage>? frameImages, IReadOnlyList<VideoReference>? inputReferences)
+    public static VideoCallInputs Normalize(
+        VideoPrompt? prompt,
+        IReadOnlyList<VideoFrameImage>? frameImages,
+        IReadOnlyList<VideoReference>? inputReferences
+    )
     {
         string? text = null;
         VideoModelFile? image = null;
@@ -710,7 +843,10 @@ public static class GenerateVideo
 
                 if (reference.HasMediaType && reference.MediaType != null)
                 {
-                    file = file.Type == "url" ? VideoModelFile.FromUrl(file.Url!, reference.MediaType) : VideoModelFile.FromFile(file.Data!, reference.MediaType);
+                    file =
+                        file.Type == "url"
+                            ? VideoModelFile.FromUrl(file.Url!, reference.MediaType)
+                            : VideoModelFile.FromFile(file.Data!, reference.MediaType);
                 }
 
                 normalized.Add(file);
@@ -723,7 +859,11 @@ public static class GenerateVideo
         var framesPresent = frames != null && frames.Count > 0;
         if (framesPresent && references != null && references.Count > 0)
         {
-            warnings.Add(OperationWarning.Other("inputReferences were ignored because frameImages were provided; frameImages and inputReferences cannot be combined."));
+            warnings.Add(
+                OperationWarning.Other(
+                    "inputReferences were ignored because frameImages were provided; frameImages and inputReferences cannot be combined."
+                )
+            );
         }
 
         VideoModelFile? first = null;
@@ -741,13 +881,28 @@ public static class GenerateVideo
 
         if (image != null && first != null)
         {
-            warnings.Add(OperationWarning.Other("prompt.image was ignored because a first_frame frameImage was provided; the first_frame frameImage takes precedence as the start image."));
+            warnings.Add(
+                OperationWarning.Other(
+                    "prompt.image was ignored because a first_frame frameImage was provided; the first_frame frameImage takes precedence as the start image."
+                )
+            );
         }
 
-        return new VideoCallInputs(text, first ?? image, frames, framesPresent ? null : references, warnings);
+        return new VideoCallInputs(
+            text,
+            first ?? image,
+            frames,
+            framesPresent ? null : references,
+            warnings
+        );
     }
 
-    internal static async Task<VideoModelResult> RunStartStatusAsync(IVideoCaller model, GenerateVideoRequest request, VideoModelCall call, CancellationToken cancellationToken)
+    internal static async Task<VideoModelResult> RunStartStatusAsync(
+        IVideoCaller model,
+        GenerateVideoRequest request,
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         var warnings = new List<OperationWarning>();
         string? webhookUrl = null;
@@ -756,30 +911,74 @@ public static class GenerateVideo
         {
             if (model.CanWebhook)
             {
-                var handle = await model.HandleWebhookAsync(request.Webhook, cancellationToken).ConfigureAwait(false);
+                var handle = await model
+                    .HandleWebhookAsync(request.Webhook, cancellationToken)
+                    .ConfigureAwait(false);
                 received = handle.Received;
-                _ = received.ContinueWith(_ => { }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+                _ = received.ContinueWith(
+                    _ => { },
+                    CancellationToken.None,
+                    TaskContinuationOptions.OnlyOnFaulted,
+                    TaskScheduler.Default
+                );
                 webhookUrl = handle.Url;
             }
             else
             {
-                warnings.Add(OperationWarning.Unsupported("webhook", "This model does not support webhooks. Falling back to polling."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "webhook",
+                        "This model does not support webhooks. Falling back to polling."
+                    )
+                );
             }
         }
 
         var headers = WithIdempotency(call.Headers, request.GenerateId);
-        var startCall = new VideoModelCall(call.Prompt, call.N, call.AspectRatio, call.Resolution, call.Duration, call.Fps, call.Seed, call.Image, call.FrameImages, call.InputReferences, call.GenerateAudio, call.ProviderOptions, headers, cancellationToken, webhookUrl);
-        var started = await OperationRetry.ExecuteAsync(request.MaxRetries, cancellationToken, request.AbortReason, ct => model.DoStartAsync(startCall, ct), null).ConfigureAwait(false);
+        var startCall = new VideoModelCall(
+            call.Prompt,
+            call.N,
+            call.AspectRatio,
+            call.Resolution,
+            call.Duration,
+            call.Fps,
+            call.Seed,
+            call.Image,
+            call.FrameImages,
+            call.InputReferences,
+            call.GenerateAudio,
+            call.ProviderOptions,
+            headers,
+            cancellationToken,
+            webhookUrl
+        );
+        var started = await OperationRetry
+            .ExecuteAsync(
+                request.MaxRetries,
+                cancellationToken,
+                request.AbortReason,
+                ct => model.DoStartAsync(startCall, ct),
+                null
+            )
+            .ConfigureAwait(false);
         warnings.AddRange(started.Warnings);
-        var metadata = started.ProviderMetadata == null ? null : JsonNode.Parse(started.ProviderMetadata.Value.GetRawText()) as JsonObject;
+        var metadata =
+            started.ProviderMetadata == null
+                ? null
+                : JsonNode.Parse(started.ProviderMetadata.Value.GetRawText()) as JsonObject;
         var interval = request.PollIntervalMs ?? 5000;
         var timeout = request.PollTimeoutMs ?? 600000;
         var delay = request.Delay ?? ((ms, ct) => Task.Delay(ms, ct));
         var clock = Stopwatch.StartNew();
-        var timeoutError = new TimeoutException("Video generation timed out after " + timeout.ToString(CultureInfo.InvariantCulture) + "ms.");
+        var timeoutError = new TimeoutException(
+            "Video generation timed out after "
+                + timeout.ToString(CultureInfo.InvariantCulture)
+                + "ms."
+        );
         if (received != null)
         {
-            await WaitForWebhookAsync(received, timeout, cancellationToken, delay, timeoutError).ConfigureAwait(false);
+            await WaitForWebhookAsync(received, timeout, cancellationToken, delay, timeoutError)
+                .ConfigureAwait(false);
         }
 
         while (true)
@@ -792,7 +991,8 @@ public static class GenerateVideo
                     throw timeoutError;
                 }
 
-                await delay(Math.Min(interval, timeout - elapsed), cancellationToken).ConfigureAwait(false);
+                await delay(Math.Min(interval, timeout - elapsed), cancellationToken)
+                    .ConfigureAwait(false);
                 if (clock.ElapsedMilliseconds >= timeout)
                 {
                     throw timeoutError;
@@ -802,19 +1002,79 @@ public static class GenerateVideo
             VideoStatusResult status;
             if (received != null)
             {
-                status = await OperationRetry.ExecuteAsync(request.MaxRetries, cancellationToken, request.AbortReason, ct => model.DoStatusAsync(new VideoModelCall(null, 0, null, null, null, null, null, null, null, null, null, OperationJson.Parse("{}"), call.Headers, ct, operation: started.Operation), ct), null).ConfigureAwait(false);
+                status = await OperationRetry
+                    .ExecuteAsync(
+                        request.MaxRetries,
+                        cancellationToken,
+                        request.AbortReason,
+                        ct =>
+                            model.DoStatusAsync(
+                                new VideoModelCall(
+                                    null,
+                                    0,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    OperationJson.Parse("{}"),
+                                    call.Headers,
+                                    ct,
+                                    operation: started.Operation
+                                ),
+                                ct
+                            ),
+                        null
+                    )
+                    .ConfigureAwait(false);
             }
             else
             {
                 var remaining = timeout - (int)clock.ElapsedMilliseconds;
                 using (var timeoutSource = new CancellationTokenSource())
-                using (var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutSource.Token))
+                using (
+                    var linked = CancellationTokenSource.CreateLinkedTokenSource(
+                        cancellationToken,
+                        timeoutSource.Token
+                    )
+                )
                 {
-                    var statusTask = OperationRetry.ExecuteAsync(request.MaxRetries, linked.Token, request.AbortReason, ct => model.DoStatusAsync(new VideoModelCall(null, 0, null, null, null, null, null, null, null, null, null, OperationJson.Parse("{}"), call.Headers, ct, operation: started.Operation), ct), null);
+                    var statusTask = OperationRetry.ExecuteAsync(
+                        request.MaxRetries,
+                        linked.Token,
+                        request.AbortReason,
+                        ct =>
+                            model.DoStatusAsync(
+                                new VideoModelCall(
+                                    null,
+                                    0,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    OperationJson.Parse("{}"),
+                                    call.Headers,
+                                    ct,
+                                    operation: started.Operation
+                                ),
+                                ct
+                            ),
+                        null
+                    );
                     var timeoutTask = delay(Math.Max(remaining, 0), linked.Token);
                     try
                     {
-                        var finished = await Task.WhenAny(statusTask, timeoutTask).ConfigureAwait(false);
+                        var finished = await Task.WhenAny(statusTask, timeoutTask)
+                            .ConfigureAwait(false);
                         if (finished != statusTask)
                         {
                             timeoutSource.Cancel();
@@ -823,7 +1083,10 @@ public static class GenerateVideo
 
                         status = await statusTask.ConfigureAwait(false);
                     }
-                    catch (Exception) when (timeoutSource.IsCancellationRequested || clock.ElapsedMilliseconds >= timeout)
+                    catch (Exception)
+                        when (timeoutSource.IsCancellationRequested
+                            || clock.ElapsedMilliseconds >= timeout
+                        )
                     {
                         throw timeoutError;
                     }
@@ -848,20 +1111,38 @@ public static class GenerateVideo
 
             if (status.Status == "completed")
             {
-                return new VideoModelResult(status.Videos, warnings, metadata == null ? null : OperationJson.Parse(metadata.ToJsonString()), status.Response);
+                return new VideoModelResult(
+                    status.Videos,
+                    warnings,
+                    metadata == null ? null : OperationJson.Parse(metadata.ToJsonString()),
+                    status.Response
+                );
             }
 
             if (received != null)
             {
-                throw new InvalidOperationException("Video generation did not complete after webhook notification.");
+                throw new InvalidOperationException(
+                    "Video generation did not complete after webhook notification."
+                );
             }
         }
     }
 
-    private static async Task WaitForWebhookAsync(Task received, int timeout, CancellationToken cancellationToken, Func<int, CancellationToken, Task> delay, Exception timeoutError)
+    private static async Task WaitForWebhookAsync(
+        Task received,
+        int timeout,
+        CancellationToken cancellationToken,
+        Func<int, CancellationToken, Task> delay,
+        Exception timeoutError
+    )
     {
         using (var timeoutSource = new CancellationTokenSource())
-        using (var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutSource.Token))
+        using (
+            var linked = CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken,
+                timeoutSource.Token
+            )
+        )
         {
             try
             {
@@ -881,35 +1162,60 @@ public static class GenerateVideo
         }
     }
 
-    private static async Task<GeneratedVideo> MaterializeAsync(VideoOutput video, Func<string, CancellationToken, Task<DownloadedMedia>>? download, CancellationToken cancellationToken)
+    private static async Task<GeneratedVideo> MaterializeAsync(
+        VideoOutput video,
+        Func<string, CancellationToken, Task<DownloadedMedia>>? download,
+        CancellationToken cancellationToken
+    )
     {
         if (video.Type == "url")
         {
             if (download == null)
             {
-                throw new InvalidArgumentException("download", null, "download is required for URL videos");
+                throw new InvalidArgumentException(
+                    "download",
+                    null,
+                    "download is required for URL videos"
+                );
             }
 
-            var downloaded = await download(video.Url ?? string.Empty, cancellationToken).ConfigureAwait(false);
-            var mediaType = Usable(video.MediaType) ?? Usable(downloaded.MediaType) ?? MediaTypeDetector.Detect(downloaded.Data, "video") ?? "video/mp4";
+            var downloaded = await download(video.Url ?? string.Empty, cancellationToken)
+                .ConfigureAwait(false);
+            var mediaType = Usable(video.MediaType)
+                ?? Usable(downloaded.MediaType)
+                ?? MediaTypeDetector.Detect(downloaded.Data, "video")
+                ?? "video/mp4";
             return new GeneratedVideo(downloaded.Data, mediaType);
         }
 
         if (video.Type == "base64")
         {
-            return new GeneratedVideo(MediaTypeDetector.ToBytes(video.Data), string.IsNullOrEmpty(video.MediaType) ? "video/mp4" : video.MediaType!);
+            return new GeneratedVideo(
+                MediaTypeDetector.ToBytes(video.Data),
+                string.IsNullOrEmpty(video.MediaType) ? "video/mp4" : video.MediaType!
+            );
         }
 
         var bytes = MediaTypeDetector.ToBytes(video.Data);
-        return new GeneratedVideo(bytes, string.IsNullOrEmpty(video.MediaType) ? MediaTypeDetector.Detect(bytes, "video") ?? "video/mp4" : video.MediaType!);
+        return new GeneratedVideo(
+            bytes,
+            string.IsNullOrEmpty(video.MediaType)
+                ? MediaTypeDetector.Detect(bytes, "video") ?? "video/mp4"
+                : video.MediaType!
+        );
     }
 
     private static string? Usable(string? mediaType)
     {
-        return !string.IsNullOrEmpty(mediaType) && mediaType != "application/octet-stream" ? mediaType : null;
+        return !string.IsNullOrEmpty(mediaType) && mediaType != "application/octet-stream"
+            ? mediaType
+            : null;
     }
 
-    internal static IReadOnlyDictionary<string, string> WithIdempotency(IReadOnlyDictionary<string, string> headers, Func<string>? generateId)
+    internal static IReadOnlyDictionary<string, string> WithIdempotency(
+        IReadOnlyDictionary<string, string> headers,
+        Func<string>? generateId
+    )
     {
         foreach (var pair in headers)
         {
@@ -924,7 +1230,8 @@ public static class GenerateVideo
         {
             copy[header.Key] = header.Value;
         }
-        copy["idempotency-key"] = "aisdk_vid_" + (generateId ?? (() => Guid.NewGuid().ToString("N")))();
+        copy["idempotency-key"] =
+            "aisdk_vid_" + (generateId ?? (() => Guid.NewGuid().ToString("N")))();
         return copy;
     }
 
@@ -950,7 +1257,10 @@ public static class GenerateVideo
 
         if (data is string text)
         {
-            if (text.StartsWith("http://", StringComparison.Ordinal) || text.StartsWith("https://", StringComparison.Ordinal))
+            if (
+                text.StartsWith("http://", StringComparison.Ordinal)
+                || text.StartsWith("https://", StringComparison.Ordinal)
+            )
             {
                 return VideoModelFile.FromUrl(text);
             }
@@ -967,8 +1277,13 @@ public static class GenerateVideo
                     media = media.Substring(0, separator);
                 }
 
-                var bytes = string.IsNullOrEmpty(payload) ? Array.Empty<byte>() : Convert.FromBase64String(payload);
-                return VideoModelFile.FromFile(bytes, media.Length == 0 ? Detect(bytes, imagesOnly) : media);
+                var bytes = string.IsNullOrEmpty(payload)
+                    ? Array.Empty<byte>()
+                    : Convert.FromBase64String(payload);
+                return VideoModelFile.FromFile(
+                    bytes,
+                    media.Length == 0 ? Detect(bytes, imagesOnly) : media
+                );
             }
 
             var decoded = Convert.FromBase64String(text);
@@ -981,7 +1296,11 @@ public static class GenerateVideo
 
     private static string Detect(byte[] data, bool imagesOnly)
     {
-        return (imagesOnly ? MediaTypeDetector.Detect(data, "image") : MediaTypeDetector.Detect(data, null)) ?? "image/png";
+        return (
+            imagesOnly
+                ? MediaTypeDetector.Detect(data, "image")
+                : MediaTypeDetector.Detect(data, null)
+        ) ?? "image/png";
     }
 
     private static void MergeMetadata(JsonObject target, JsonElement? source)
@@ -1037,38 +1356,97 @@ public static class GenerateVideo
 public static class StartVideo
 {
     /// <summary>Starts one operation and returns without waiting.</summary>
-    public static async Task<StartVideoResult> StartVideoAsync(GenerateVideoRequest request, CancellationToken cancellationToken = default)
+    public static async Task<StartVideoResult> StartVideoAsync(
+        GenerateVideoRequest request,
+        CancellationToken cancellationToken = default
+    )
     {
         if (request == null)
         {
             throw new ArgumentNullException(nameof(request));
         }
 
-        var model = request.Model ?? throw new InvalidArgumentException("model", null, "model is required");
+        var model = request.Model
+            ?? throw new InvalidArgumentException("model", null, "model is required");
         if (!model.CanStart)
         {
-            throw new InvalidOperationException("Video model " + model.ModelId + " does not implement doStart. Use generateVideo for models without an asynchronous start/status flow.");
+            throw new InvalidOperationException(
+                "Video model "
+                    + model.ModelId
+                    + " does not implement doStart. Use generateVideo for models without an asynchronous start/status flow."
+            );
         }
 
         if (request.N != Math.Truncate(request.N) || request.N < 1)
         {
-            throw new InvalidOperationException("Invalid n: expected a positive integer, received " + request.N.ToString(CultureInfo.InvariantCulture) + ".");
+            throw new InvalidOperationException(
+                "Invalid n: expected a positive integer, received "
+                    + request.N.ToString(CultureInfo.InvariantCulture)
+                    + "."
+            );
         }
 
-        var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
-        var limit = request.MaxVideosPerCall ?? await model.ResolveMaxVideosPerCallAsync(token).ConfigureAwait(false);
+        var token = request.CancellationToken.CanBeCanceled
+            ? request.CancellationToken
+            : cancellationToken;
+        var limit = request.MaxVideosPerCall
+            ?? await model.ResolveMaxVideosPerCallAsync(token).ConfigureAwait(false);
         if (limit != null && request.N > limit.Value)
         {
-            throw new InvalidOperationException("Video model " + model.ModelId + " supports at most " + limit.Value.ToString(CultureInfo.InvariantCulture) + " video(s) per call, but " + ((int)request.N).ToString(CultureInfo.InvariantCulture) + " were requested. Split the batch across multiple startVideo calls.");
+            throw new InvalidOperationException(
+                "Video model "
+                    + model.ModelId
+                    + " supports at most "
+                    + limit.Value.ToString(CultureInfo.InvariantCulture)
+                    + " video(s) per call, but "
+                    + ((int)request.N).ToString(CultureInfo.InvariantCulture)
+                    + " were requested. Split the batch across multiple startVideo calls."
+            );
         }
 
-        var inputs = GenerateVideo.Normalize(request.Prompt, request.FrameImages, request.InputReferences);
-        var headers = GenerateVideo.WithIdempotency(OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent), request.GenerateId);
-        var call = new VideoModelCall(inputs.Prompt, (int)request.N, request.AspectRatio, request.Resolution, request.Duration, request.Fps, request.Seed, inputs.Image, inputs.FrameImages, inputs.InputReferences, request.GenerateAudio, request.ProviderOptions ?? OperationJson.Parse("{}"), headers, token, request.WebhookUrl);
-        var started = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, ct => model.DoStartAsync(call, ct), null).ConfigureAwait(false);
+        var inputs = GenerateVideo.Normalize(
+            request.Prompt,
+            request.FrameImages,
+            request.InputReferences
+        );
+        var headers = GenerateVideo.WithIdempotency(
+            OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent),
+            request.GenerateId
+        );
+        var call = new VideoModelCall(
+            inputs.Prompt,
+            (int)request.N,
+            request.AspectRatio,
+            request.Resolution,
+            request.Duration,
+            request.Fps,
+            request.Seed,
+            inputs.Image,
+            inputs.FrameImages,
+            inputs.InputReferences,
+            request.GenerateAudio,
+            request.ProviderOptions ?? OperationJson.Parse("{}"),
+            headers,
+            token,
+            request.WebhookUrl
+        );
+        var started = await OperationRetry
+            .ExecuteAsync(
+                request.MaxRetries,
+                token,
+                request.AbortReason,
+                ct => model.DoStartAsync(call, ct),
+                null
+            )
+            .ConfigureAwait(false);
         var warnings = new List<OperationWarning>(inputs.Warnings);
         warnings.AddRange(started.Warnings);
-        return new StartVideoResult(started.Operation, warnings, started.ProviderMetadata, started.Response);
+        return new StartVideoResult(
+            started.Operation,
+            warnings,
+            started.ProviderMetadata,
+            started.Response
+        );
     }
 }
 
@@ -1076,22 +1454,58 @@ public static class StartVideo
 public static class GetVideoStatus
 {
     /// <summary>Performs one status check.</summary>
-    public static async Task<VideoStatusResult> GetVideoStatusAsync(GetVideoStatusRequest request, CancellationToken cancellationToken = default)
+    public static async Task<VideoStatusResult> GetVideoStatusAsync(
+        GetVideoStatusRequest request,
+        CancellationToken cancellationToken = default
+    )
     {
         if (request == null)
         {
             throw new ArgumentNullException(nameof(request));
         }
 
-        var model = request.Model ?? throw new InvalidArgumentException("model", null, "model is required");
+        var model = request.Model
+            ?? throw new InvalidArgumentException("model", null, "model is required");
         if (!model.CanStatus)
         {
-            throw new InvalidOperationException("Video model " + model.ModelId + " does not implement doStatus.");
+            throw new InvalidOperationException(
+                "Video model " + model.ModelId + " does not implement doStatus."
+            );
         }
 
-        var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
+        var token = request.CancellationToken.CanBeCanceled
+            ? request.CancellationToken
+            : cancellationToken;
         var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
-        return await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, ct => model.DoStatusAsync(new VideoModelCall(null, 0, null, null, null, null, null, null, null, null, null, OperationJson.Parse("{}"), headers, ct, operation: request.Operation), ct), null).ConfigureAwait(false);
+        return await OperationRetry
+            .ExecuteAsync(
+                request.MaxRetries,
+                token,
+                request.AbortReason,
+                ct =>
+                    model.DoStatusAsync(
+                        new VideoModelCall(
+                            null,
+                            0,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            OperationJson.Parse("{}"),
+                            headers,
+                            ct,
+                            operation: request.Operation
+                        ),
+                        ct
+                    ),
+                null
+            )
+            .ConfigureAwait(false);
     }
 }
 
@@ -1101,12 +1515,20 @@ public static class GetVideoStatus
 /// </summary>
 internal sealed class GenerateVideoResultConverter : JsonConverter<GenerateVideoResult>
 {
-    public override GenerateVideoResult Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override GenerateVideoResult Read(
+        ref Utf8JsonReader reader,
+        Type typeToConvert,
+        JsonSerializerOptions options
+    )
     {
         throw new NotSupportedException("GenerateVideoResult is write-only for JSON.");
     }
 
-    public override void Write(Utf8JsonWriter writer, GenerateVideoResult value, JsonSerializerOptions options)
+    public override void Write(
+        Utf8JsonWriter writer,
+        GenerateVideoResult value,
+        JsonSerializerOptions options
+    )
     {
         writer.WriteStartObject();
         if (value.Videos.Count > 0)
@@ -1122,7 +1544,12 @@ internal sealed class GenerateVideoResultConverter : JsonConverter<GenerateVideo
         writer.WriteEndObject();
     }
 
-    private static void Property<T>(Utf8JsonWriter writer, JsonSerializerOptions options, string name, T value)
+    private static void Property<T>(
+        Utf8JsonWriter writer,
+        JsonSerializerOptions options,
+        string name,
+        T value
+    )
     {
         writer.WritePropertyName(options.PropertyNamingPolicy?.ConvertName(name) ?? name);
         JsonSerializer.Serialize(writer, value, options);

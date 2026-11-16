@@ -22,9 +22,25 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
     // Option keys the model maps itself. Every other key is sent to the API as is.
     private static readonly HashSet<string> HandledOptions = new(StringComparer.Ordinal)
     {
-        "mode", "pollIntervalMs", "pollTimeoutMs", "negativePrompt", "sound", "cfgScale", "cameraControl", "multiShot", "shotType",
-        "multiPrompt", "elementList", "voiceList", "imageTail", "staticMask", "dynamicMasks", "videoUrl", "characterOrientation",
-        "keepOriginalSound", "watermarkEnabled",
+        "mode",
+        "pollIntervalMs",
+        "pollTimeoutMs",
+        "negativePrompt",
+        "sound",
+        "cfgScale",
+        "cameraControl",
+        "multiShot",
+        "shotType",
+        "multiPrompt",
+        "elementList",
+        "voiceList",
+        "imageTail",
+        "staticMask",
+        "dynamicMasks",
+        "videoUrl",
+        "characterOrientation",
+        "keepOriginalSound",
+        "watermarkEnabled",
     };
 
     private static readonly Dictionary<string, string> Endpoints = new(StringComparer.Ordinal)
@@ -39,7 +55,11 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
     private readonly Func<DateTimeOffset> _clock;
 
     /// <summary>Creates a model. <paramref name="clock"/> sets the response timestamp.</summary>
-    public KlingAIVideoModel(KlingAIProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
+    public KlingAIVideoModel(
+        KlingAIProvider provider,
+        string modelId,
+        Func<DateTimeOffset>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -77,27 +97,51 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
     }
 
     /// <summary>Starts a task and polls it until the video is ready.</summary>
-    public async Task<VideoResult> DoGenerateAsync(VideoCallOptions options, CancellationToken cancellationToken)
+    public async Task<VideoResult> DoGenerateAsync(
+        VideoCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
-        var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest { Model = this, Prompt = new VideoPrompt(options.Prompt), Duration = options.DurationSeconds }, cancellationToken).ConfigureAwait(false);
+        var result = await GenerateVideo
+            .GenerateVideoAsync(
+                new GenerateVideoRequest
+                {
+                    Model = this,
+                    Prompt = new VideoPrompt(options.Prompt),
+                    Duration = options.DurationSeconds,
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return new VideoResult(null, result.Video.Data, result.Video.MediaType);
     }
 
     /// <inheritdoc />
-    public Task<VideoModelResult> DoGenerateAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public Task<VideoModelResult> DoGenerateAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         throw new NotSupportedException("KlingAI generates videos with doStart and doStatus.");
     }
 
     /// <inheritdoc />
-    public Task<VideoWebhook> HandleWebhookAsync(Func<Task<VideoWebhook>> webhook, CancellationToken cancellationToken)
+    public Task<VideoWebhook> HandleWebhookAsync(
+        Func<Task<VideoWebhook>> webhook,
+        CancellationToken cancellationToken
+    )
     {
-        throw new NotSupportedException("KlingAI forwards a webhook URL as callback_url but does not handle webhooks.");
+        throw new NotSupportedException(
+            "KlingAI forwards a webhook URL as callback_url but does not handle webhooks."
+        );
     }
 
     /// <inheritdoc />
-    public async Task<VideoStartResult> DoStartAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public async Task<VideoStartResult> DoStartAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var timestamp = _clock();
@@ -117,7 +161,12 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
 
         if (referenceImages != null && effectiveMode != "mi2v")
         {
-            warnings.Add(OperationWarning.Unsupported("inputReferences", "KlingAI only supports inputReferences (reference-to-video) on image-to-video models. The reference images were ignored."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "inputReferences",
+                    "KlingAI only supports inputReferences (reference-to-video) on image-to-video models. The reference images were ignored."
+                )
+            );
         }
 
         // Progress notifications need a protocol-aware receiver, so the generic webhook hook stays off.
@@ -131,11 +180,13 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
 
         var endpointPath = Endpoints[effectiveMode];
         var response = await SendAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, endpointPath),
-            ProviderExchange.Json(body.ToJsonString()),
-            call,
-            cancellationToken).ConfigureAwait(false);
+                HttpMethod.Post,
+                ApiKeys.Combine(_provider.Options.BaseUrl, endpointPath),
+                ProviderExchange.Json(body.ToJsonString()),
+                call,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
 
         string? taskId;
         try
@@ -155,31 +206,54 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
 
         if (string.IsNullOrEmpty(taskId))
         {
-            throw new AiSdkException("No task_id returned from KlingAI API. Response: " + response.Body);
+            throw new AiSdkException(
+                "No task_id returned from KlingAI API. Response: " + response.Body
+            );
         }
 
         var operation = new JsonObject { ["taskId"] = taskId, ["endpointPath"] = endpointPath };
-        return new VideoStartResult(OperationJson.Parse(operation.ToJsonString()), warnings, response: Response(response, timestamp));
+        return new VideoStartResult(
+            OperationJson.Parse(operation.ToJsonString()),
+            warnings,
+            response: Response(response, timestamp)
+        );
     }
 
     /// <inheritdoc />
-    public async Task<VideoStatusResult> DoStatusAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public async Task<VideoStatusResult> DoStatusAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var timestamp = _clock();
-        var taskId = call.Operation is JsonElement { ValueKind: JsonValueKind.Object } operation ? String(operation, "taskId") : null;
-        var endpointPath = call.Operation is JsonElement { ValueKind: JsonValueKind.Object } source ? String(source, "endpointPath") : null;
-        if (string.IsNullOrEmpty(taskId) || string.IsNullOrEmpty(endpointPath) || !Endpoints.ContainsValue(endpointPath!))
+        var taskId = call.Operation is JsonElement { ValueKind: JsonValueKind.Object } operation
+            ? String(operation, "taskId")
+            : null;
+        var endpointPath = call.Operation is JsonElement { ValueKind: JsonValueKind.Object } source
+            ? String(source, "endpointPath")
+            : null;
+        if (
+            string.IsNullOrEmpty(taskId)
+            || string.IsNullOrEmpty(endpointPath)
+            || !Endpoints.ContainsValue(endpointPath!)
+        )
         {
-            throw new InvalidArgumentException("operation", call.Operation, "KlingAI operations are objects with a taskId and an endpointPath.");
+            throw new InvalidArgumentException(
+                "operation",
+                call.Operation,
+                "KlingAI operations are objects with a taskId and an endpointPath."
+            );
         }
 
         var baseUrl = _provider.Options.BaseUrl;
         var response = await GetAsync(
-            ApiKeys.Combine(baseUrl, endpointPath + "/" + PathSegments.Encode(taskId!)),
-            call,
-            baseUrl,
-            cancellationToken).ConfigureAwait(false);
+                ApiKeys.Combine(baseUrl, endpointPath + "/" + PathSegments.Encode(taskId!)),
+                call,
+                baseUrl,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
 
         JsonElement? data;
         try
@@ -207,8 +281,10 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
         {
             return new VideoStatusResult(
                 "error",
-                error: "Video generation failed: " + (String(data!.Value, "task_status_msg") ?? "Unknown error"),
-                response: Response(response, timestamp));
+                error: "Video generation failed: "
+                    + (String(data!.Value, "task_status_msg") ?? "Unknown error"),
+                response: Response(response, timestamp)
+            );
         }
 
         return new VideoStatusResult("pending", response: Response(response, timestamp));
@@ -237,7 +313,10 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
     // 'kling-v2.6-t2v' -> 'kling-v2-6', 'kling-v3.0-t2v' -> 'kling-v3'.
     private string ApiModelName(string mode)
     {
-        var suffix = mode == "motion-control" ? "-motion-control" : mode == "mi2v" ? "-i2v" : "-" + mode;
+        var suffix =
+            mode == "motion-control" ? "-motion-control"
+            : mode == "mi2v" ? "-i2v"
+            : "-" + mode;
         var baseName = ModelId.Substring(0, ModelId.Length - suffix.Length);
         if (baseName.EndsWith(".0", StringComparison.Ordinal))
         {
@@ -247,7 +326,11 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
         return baseName.Replace('.', '-');
     }
 
-    private JsonObject BuildTextToVideo(VideoModelCall call, Options options, List<OperationWarning> warnings)
+    private JsonObject BuildTextToVideo(
+        VideoModelCall call,
+        Options options,
+        List<OperationWarning> warnings
+    )
     {
         var body = new JsonObject { ["model_name"] = ApiModelName("t2v") };
         if (call.Prompt != null)
@@ -273,14 +356,23 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
         SetWatermark(options, body);
         if (ResolveStartImage(call, warnings) != null)
         {
-            warnings.Add(OperationWarning.Unsupported("image", "KlingAI text-to-video does not support image input. Use an image-to-video model instead."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "image",
+                    "KlingAI text-to-video does not support image input. Use an image-to-video model instead."
+                )
+            );
         }
 
         AddPassthrough(body, options);
         return body;
     }
 
-    private JsonObject BuildImageToVideo(VideoModelCall call, Options options, List<OperationWarning> warnings)
+    private JsonObject BuildImageToVideo(
+        VideoModelCall call,
+        Options options,
+        List<OperationWarning> warnings
+    )
     {
         var body = new JsonObject { ["model_name"] = ApiModelName("i2v") };
         if (call.Prompt != null)
@@ -315,14 +407,24 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
         SetDuration(call, body);
         if (call.AspectRatio != null)
         {
-            warnings.Add(OperationWarning.Unsupported("aspectRatio", "KlingAI image-to-video does not support aspectRatio. The output dimensions are determined by the input image."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "aspectRatio",
+                    "KlingAI image-to-video does not support aspectRatio. The output dimensions are determined by the input image."
+                )
+            );
         }
 
         AddPassthrough(body, options);
         return body;
     }
 
-    private JsonObject BuildMultiImage(VideoModelCall call, Options options, IReadOnlyList<VideoModelFile> referenceImages, List<OperationWarning> warnings)
+    private JsonObject BuildMultiImage(
+        VideoModelCall call,
+        Options options,
+        IReadOnlyList<VideoModelFile> referenceImages,
+        List<OperationWarning> warnings
+    )
     {
         var imageList = new JsonArray();
         foreach (var image in referenceImages)
@@ -330,7 +432,11 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
             imageList.Add(new JsonObject { ["image"] = ImageString(image) });
         }
 
-        var body = new JsonObject { ["model_name"] = ApiModelName("mi2v"), ["image_list"] = imageList };
+        var body = new JsonObject
+        {
+            ["model_name"] = ApiModelName("mi2v"),
+            ["image_list"] = imageList,
+        };
         if (call.Prompt != null)
         {
             body["prompt"] = call.Prompt;
@@ -348,23 +454,43 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
         SetWatermark(options, body);
         if (ResolveStartImage(call, warnings) != null)
         {
-            warnings.Add(OperationWarning.Unsupported("image", "KlingAI reference-to-video does not support a separate start frame. Provide all guidance images via inputReferences instead."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "image",
+                    "KlingAI reference-to-video does not support a separate start frame. Provide all guidance images via inputReferences instead."
+                )
+            );
         }
 
         if (ResolveImageTail(call, options, warnings) != null)
         {
-            warnings.Add(OperationWarning.Unsupported("frameImages", "KlingAI reference-to-video does not support a last frame (image_tail). Provide all guidance images via inputReferences instead."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "frameImages",
+                    "KlingAI reference-to-video does not support a last frame (image_tail). Provide all guidance images via inputReferences instead."
+                )
+            );
         }
 
         AddPassthrough(body, options);
         return body;
     }
 
-    private JsonObject BuildMotionControl(VideoModelCall call, Options options, List<OperationWarning> warnings)
+    private JsonObject BuildMotionControl(
+        VideoModelCall call,
+        Options options,
+        List<OperationWarning> warnings
+    )
     {
-        if (string.IsNullOrEmpty(options.String("videoUrl")) || string.IsNullOrEmpty(options.String("characterOrientation")) || string.IsNullOrEmpty(options.String("mode")))
+        if (
+            string.IsNullOrEmpty(options.String("videoUrl"))
+            || string.IsNullOrEmpty(options.String("characterOrientation"))
+            || string.IsNullOrEmpty(options.String("mode"))
+        )
         {
-            throw new AiSdkException("KlingAI Motion Control requires providerOptions.klingai with videoUrl, characterOrientation, and mode.");
+            throw new AiSdkException(
+                "KlingAI Motion Control requires providerOptions.klingai with videoUrl, characterOrientation, and mode."
+            );
         }
 
         var body = new JsonObject
@@ -389,12 +515,22 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
         Copy(options, "elementList", body, "element_list");
         if (!string.IsNullOrEmpty(call.AspectRatio))
         {
-            warnings.Add(OperationWarning.Unsupported("aspectRatio", "KlingAI Motion Control does not support aspectRatio. The output dimensions are determined by the reference image/video."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "aspectRatio",
+                    "KlingAI Motion Control does not support aspectRatio. The output dimensions are determined by the reference image/video."
+                )
+            );
         }
 
         if (call.Duration is { } duration && duration != 0)
         {
-            warnings.Add(OperationWarning.Unsupported("duration", "KlingAI Motion Control does not support custom duration. The output duration matches the reference video duration."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "duration",
+                    "KlingAI Motion Control does not support custom duration. The output duration matches the reference video duration."
+                )
+            );
         }
 
         AddPassthrough(body, options);
@@ -405,22 +541,42 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
     {
         if (!string.IsNullOrEmpty(call.Resolution))
         {
-            warnings.Add(OperationWarning.Unsupported("resolution", "KlingAI video models do not support the resolution option."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "resolution",
+                    "KlingAI video models do not support the resolution option."
+                )
+            );
         }
 
         if (call.Seed is { } seed && seed != 0)
         {
-            warnings.Add(OperationWarning.Unsupported("seed", "KlingAI video models do not support seed for deterministic generation."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "seed",
+                    "KlingAI video models do not support seed for deterministic generation."
+                )
+            );
         }
 
         if (call.Fps is { } fps && fps != 0)
         {
-            warnings.Add(OperationWarning.Unsupported("fps", "KlingAI video models do not support custom FPS."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "fps",
+                    "KlingAI video models do not support custom FPS."
+                )
+            );
         }
 
         if (call.N > 1)
         {
-            warnings.Add(OperationWarning.Unsupported("n", "KlingAI video models do not support generating multiple videos per call. Only 1 video will be generated."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "n",
+                    "KlingAI video models do not support generating multiple videos per call. Only 1 video will be generated."
+                )
+            );
         }
     }
 
@@ -448,13 +604,20 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
     {
         if (options.Get("watermarkEnabled") is { } enabled)
         {
-            body["watermark_info"] = new JsonObject { ["enabled"] = JsonNode.Parse(enabled.GetRawText()) };
+            body["watermark_info"] = new JsonObject
+            {
+                ["enabled"] = JsonNode.Parse(enabled.GetRawText()),
+            };
         }
     }
 
     private static void AddPassthrough(JsonObject body, Options options)
     {
-        foreach (var property in options.Raw.EnumerateObject().Where(property => !HandledOptions.Contains(property.Name)))
+        foreach (
+            var property in options
+                .Raw.EnumerateObject()
+                .Where(property => !HandledOptions.Contains(property.Name))
+        )
         {
             body[property.Name] = JsonNode.Parse(property.Value.GetRawText());
         }
@@ -471,7 +634,9 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
     // KlingAI takes a URL or raw base64 (no data: prefix).
     private static string ImageString(VideoModelFile file)
     {
-        return file.Type == "url" ? file.Url! : Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
+        return file.Type == "url"
+            ? file.Url!
+            : Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
     }
 
     private static bool IsVideo(VideoModelFile file)
@@ -479,9 +644,15 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
         return file.MediaType != null && MediaTypes.GetTopLevelMediaType(file.MediaType) == "video";
     }
 
-    private static IReadOnlyList<VideoModelFile>? GetReferenceImages(VideoModelCall call, List<OperationWarning> warnings)
+    private static IReadOnlyList<VideoModelFile>? GetReferenceImages(
+        VideoModelCall call,
+        List<OperationWarning> warnings
+    )
     {
-        if (call.FrameImages is { Count: > 0 } || call.InputReferences is not { Count: > 0 } references)
+        if (
+            call.FrameImages is { Count: > 0 }
+            || call.InputReferences is not { Count: > 0 } references
+        )
         {
             return null;
         }
@@ -491,7 +662,12 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
         {
             if (IsVideo(reference))
             {
-                warnings.Add(OperationWarning.Unsupported("inputReferences", "KlingAI does not support video reference inputs; the video reference was ignored."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "inputReferences",
+                        "KlingAI does not support video reference inputs; the video reference was ignored."
+                    )
+                );
             }
             else
             {
@@ -502,21 +678,38 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
         return images.Count > 0 ? images : null;
     }
 
-    private static VideoModelFile? ResolveStartImage(VideoModelCall call, List<OperationWarning> warnings)
+    private static VideoModelFile? ResolveStartImage(
+        VideoModelCall call,
+        List<OperationWarning> warnings
+    )
     {
-        var startImage = call.FrameImages?.FirstOrDefault(frame => frame.FrameType == "first_frame")?.Image ?? call.Image;
+        var startImage = call.FrameImages?.FirstOrDefault(frame =>
+            frame.FrameType == "first_frame"
+        )?.Image
+            ?? call.Image;
         if (startImage != null && IsVideo(startImage))
         {
-            warnings.Add(OperationWarning.Unsupported("frameImages", "KlingAI does not accept video as a frame image; it was ignored."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "frameImages",
+                    "KlingAI does not accept video as a frame image; it was ignored."
+                )
+            );
             return null;
         }
 
         return startImage;
     }
 
-    private static string? ResolveImageTail(VideoModelCall call, Options options, List<OperationWarning> warnings)
+    private static string? ResolveImageTail(
+        VideoModelCall call,
+        Options options,
+        List<OperationWarning> warnings
+    )
     {
-        var lastFrame = call.FrameImages?.FirstOrDefault(frame => frame.FrameType == "last_frame")?.Image;
+        var lastFrame = call
+            .FrameImages?.FirstOrDefault(frame => frame.FrameType == "last_frame")
+            ?.Image;
         if (lastFrame == null)
         {
             return options.String("imageTail");
@@ -524,17 +717,30 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
 
         if (IsVideo(lastFrame))
         {
-            warnings.Add(OperationWarning.Unsupported("frameImages", "KlingAI does not accept video as a frame image; it was ignored."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "frameImages",
+                    "KlingAI does not accept video as a frame image; it was ignored."
+                )
+            );
             return null;
         }
 
         return ImageString(lastFrame);
     }
 
-    private VideoStatusResult Completed(JsonElement data, ProviderExchangeResult response, string taskId, DateTimeOffset timestamp)
+    private VideoStatusResult Completed(
+        JsonElement data,
+        ProviderExchangeResult response,
+        string taskId,
+        DateTimeOffset timestamp
+    )
     {
-        var videos = data.TryGetProperty("task_result", out var result) && result.ValueKind == JsonValueKind.Object
-            && result.TryGetProperty("videos", out var list) && list.ValueKind == JsonValueKind.Array
+        var videos =
+            data.TryGetProperty("task_result", out var result)
+            && result.ValueKind == JsonValueKind.Object
+            && result.TryGetProperty("videos", out var list)
+            && list.ValueKind == JsonValueKind.Array
                 ? list.EnumerateArray().ToList()
                 : new List<JsonElement>();
         if (videos.Count == 0)
@@ -552,7 +758,11 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
             }
 
             outputs.Add(new VideoOutput("url", url, mediaType: "video/mp4"));
-            var entry = new JsonObject { ["id"] = String(video, "id") ?? string.Empty, ["url"] = url };
+            var entry = new JsonObject
+            {
+                ["id"] = String(video, "id") ?? string.Empty,
+                ["url"] = url,
+            };
             if (String(video, "watermark_url") is { Length: > 0 } watermarkUrl)
             {
                 entry["watermarkUrl"] = watermarkUrl;
@@ -571,19 +781,38 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
             throw new AiSdkException("No valid video URLs in response");
         }
 
-        var providerMetadata = new JsonObject { ["klingai"] = new JsonObject { ["taskId"] = taskId, ["videos"] = metadata } };
+        var providerMetadata = new JsonObject
+        {
+            ["klingai"] = new JsonObject { ["taskId"] = taskId, ["videos"] = metadata },
+        };
         return new VideoStatusResult(
             "completed",
             outputs,
             providerMetadata: OperationJson.Parse(providerMetadata.ToJsonString()),
-            response: Response(response, timestamp));
+            response: Response(response, timestamp)
+        );
     }
 
-    private async Task<ProviderExchangeResult> SendAsync(HttpMethod method, Uri uri, HttpContent? content, VideoModelCall call, CancellationToken cancellationToken)
+    private async Task<ProviderExchangeResult> SendAsync(
+        HttpMethod method,
+        Uri uri,
+        HttpContent? content,
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
-            return await ProviderExchange.SendAsync(_provider._httpClient, method, uri, content, ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers), cancellationToken).ConfigureAwait(false);
+            return await ProviderExchange
+                .SendAsync(
+                    _provider._httpClient,
+                    method,
+                    uri,
+                    content,
+                    ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
         catch (ApiException exception) when (ErrorMessage(exception.ResponseBody) is { } message)
         {
@@ -591,12 +820,28 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
         }
     }
 
-    private async Task<ProviderExchangeResult> GetAsync(Uri uri, VideoModelCall call, string trustedOrigin, CancellationToken cancellationToken)
+    private async Task<ProviderExchangeResult> GetAsync(
+        Uri uri,
+        VideoModelCall call,
+        string trustedOrigin,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
             var headers = ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers);
-            return await ProviderExchange.GetResponseUrlAsync(_provider._httpClient, uri.AbsoluteUri, trustedOrigin, Download.ValidateDownloadUrl, headers, cancellationToken, ProviderExchange.DownloadClient(_provider.Options), ProviderExchange.UserAgentOnly(headers)).ConfigureAwait(false);
+            return await ProviderExchange
+                .GetResponseUrlAsync(
+                    _provider._httpClient,
+                    uri.AbsoluteUri,
+                    trustedOrigin,
+                    Download.ValidateDownloadUrl,
+                    headers,
+                    cancellationToken,
+                    ProviderExchange.DownloadClient(_provider.Options),
+                    ProviderExchange.UserAgentOnly(headers)
+                )
+                .ConfigureAwait(false);
         }
         catch (ApiException exception) when (ErrorMessage(exception.ResponseBody) is { } message)
         {
@@ -610,10 +855,12 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
         try
         {
             using var document = JsonDocument.Parse(body ?? string.Empty);
-            return document.RootElement.ValueKind == JsonValueKind.Object
-                && document.RootElement.TryGetProperty("code", out var code) && code.ValueKind == JsonValueKind.Number
-                    ? String(document.RootElement, "message")
-                    : null;
+            return
+                document.RootElement.ValueKind == JsonValueKind.Object
+                && document.RootElement.TryGetProperty("code", out var code)
+                && code.ValueKind == JsonValueKind.Number
+                ? String(document.RootElement, "message")
+                : null;
         }
         catch (JsonException)
         {
@@ -624,9 +871,12 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
     // Checks the { code, message, data } envelope and returns data, or null when data is absent.
     private static JsonElement? ReadEnvelope(JsonElement root, string body)
     {
-        if (root.ValueKind != JsonValueKind.Object
-            || !root.TryGetProperty("code", out var code) || code.ValueKind != JsonValueKind.Number
-            || String(root, "message") == null)
+        if (
+            root.ValueKind != JsonValueKind.Object
+            || !root.TryGetProperty("code", out var code)
+            || code.ValueKind != JsonValueKind.Number
+            || String(root, "message") == null
+        )
         {
             throw new ApiException("Invalid JSON response", 200, body);
         }
@@ -646,21 +896,30 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
 
     private ProviderResponse Response(ProviderExchangeResult response, DateTimeOffset timestamp)
     {
-        return new ProviderResponse(response.Headers, timestamp: timestamp.UtcDateTime, modelId: ModelId);
+        return new ProviderResponse(
+            response.Headers,
+            timestamp: timestamp.UtcDateTime,
+            modelId: ModelId
+        );
     }
 
     private static string? String(JsonElement element, string name)
     {
-        return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+        return
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.String
             ? value.GetString()
             : null;
     }
 
     private static Options ReadOptions(JsonElement providerOptions)
     {
-        if (providerOptions.ValueKind != JsonValueKind.Object
+        if (
+            providerOptions.ValueKind != JsonValueKind.Object
             || !providerOptions.TryGetProperty(KlingAIProvider.ProviderId, out var klingai)
-            || klingai.ValueKind == JsonValueKind.Null)
+            || klingai.ValueKind == JsonValueKind.Null
+        )
         {
             return new Options(default);
         }
@@ -695,7 +954,11 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
 
     private static InvalidArgumentException Invalid(string name, string message)
     {
-        return new InvalidArgumentException("providerOptions." + name, null, "Invalid KlingAI provider options: " + message);
+        return new InvalidArgumentException(
+            "providerOptions." + name,
+            null,
+            "Invalid KlingAI provider options: " + message
+        );
     }
 
     // The klingai provider options. A null value counts as not set.
@@ -710,17 +973,27 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
 
         public JsonElement? Get(string name)
         {
-            return Raw.ValueKind == JsonValueKind.Object && Raw.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null ? value : null;
+            return
+                Raw.ValueKind == JsonValueKind.Object
+                && Raw.TryGetProperty(name, out var value)
+                && value.ValueKind != JsonValueKind.Null
+                ? value
+                : null;
         }
 
         public string? String(string name)
         {
-            return Get(name) is { ValueKind: JsonValueKind.String } value ? value.GetString() : null;
+            return Get(name) is { ValueKind: JsonValueKind.String } value
+                ? value.GetString()
+                : null;
         }
 
         public void Enum(string name, params string[] allowed)
         {
-            if (Get(name) is { } value && (value.ValueKind != JsonValueKind.String || !allowed.Contains(value.GetString())))
+            if (
+                Get(name) is { } value
+                && (value.ValueKind != JsonValueKind.String || !allowed.Contains(value.GetString()))
+            )
             {
                 throw Invalid(name, "expected one of " + string.Join(", ", allowed) + ".");
             }

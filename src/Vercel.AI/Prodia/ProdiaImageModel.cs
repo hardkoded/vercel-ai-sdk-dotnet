@@ -17,15 +17,34 @@ public sealed class ProdiaImageModel : IImageModel, IImageCaller
 {
     private static readonly string[] StylePresets =
     {
-        "3d-model", "analog-film", "anime", "cinematic", "comic-book", "digital-art", "enhance", "fantasy-art", "isometric",
-        "line-art", "low-poly", "neon-punk", "origami", "photographic", "pixel-art", "texture", "craft-clay",
+        "3d-model",
+        "analog-film",
+        "anime",
+        "cinematic",
+        "comic-book",
+        "digital-art",
+        "enhance",
+        "fantasy-art",
+        "isometric",
+        "line-art",
+        "low-poly",
+        "neon-punk",
+        "origami",
+        "photographic",
+        "pixel-art",
+        "texture",
+        "craft-clay",
     };
 
     private readonly ProdiaProvider _provider;
     private readonly Func<DateTimeOffset> _clock;
 
     /// <summary>Creates a model. <paramref name="clock"/> sets the response timestamp.</summary>
-    public ProdiaImageModel(ProdiaProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
+    public ProdiaImageModel(
+        ProdiaProvider provider,
+        string modelId,
+        Func<DateTimeOffset>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -48,17 +67,33 @@ public sealed class ProdiaImageModel : IImageModel, IImageCaller
     }
 
     /// <inheritdoc />
-    public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+    public async Task<ImageGenerationResult> DoGenerateAsync(
+        ImageCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
         var call = options.ToModelCall(cancellationToken);
         var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
         var data = (byte[])result.Images[0]!;
-        return new ImageGenerationResult(new[] { new ProviderGeneratedImage(MediaTypes.DetectMediaType(data, "image") ?? "image/png", data, null) }, result.Warnings.Select(warning => warning.ToCallWarning()).ToList());
+        return new ImageGenerationResult(
+            new[]
+            {
+                new ProviderGeneratedImage(
+                    MediaTypes.DetectMediaType(data, "image") ?? "image/png",
+                    data,
+                    null
+                ),
+            },
+            result.Warnings.Select(warning => warning.ToCallWarning()).ToList()
+        );
     }
 
     /// <inheritdoc />
-    public async Task<ImageModelResult> DoGenerateAsync(ImageModelCall call, CancellationToken cancellationToken)
+    public async Task<ImageModelResult> DoGenerateAsync(
+        ImageModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var warnings = new List<OperationWarning>();
@@ -68,16 +103,36 @@ public sealed class ProdiaImageModel : IImageModel, IImageCaller
         if (!string.IsNullOrEmpty(call.Size))
         {
             var size = call.Size!.Split('x');
-            if (size.Length >= 2
-                && int.TryParse(size[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedWidth)
-                && int.TryParse(size[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedHeight))
+            if (
+                size.Length >= 2
+                && int.TryParse(
+                    size[0],
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out var parsedWidth
+                )
+                && int.TryParse(
+                    size[1],
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out var parsedHeight
+                )
+            )
             {
                 width = parsedWidth;
                 height = parsedHeight;
             }
             else
             {
-                warnings.Add(new OperationWarning("unsupported", feature: "size", details: "Invalid size format: " + call.Size + ". Expected format: WIDTHxHEIGHT (e.g., 1024x1024)"));
+                warnings.Add(
+                    new OperationWarning(
+                        "unsupported",
+                        feature: "size",
+                        details: "Invalid size format: "
+                            + call.Size
+                            + ". Expected format: WIDTHxHEIGHT (e.g., 1024x1024)"
+                    )
+                );
             }
         }
 
@@ -106,7 +161,10 @@ public sealed class ProdiaImageModel : IImageModel, IImageCaller
 
         if (options?.TryGetProperty("stylePreset", out var stylePreset) == true)
         {
-            if (stylePreset.ValueKind != JsonValueKind.String || Array.IndexOf(StylePresets, stylePreset.GetString()) < 0)
+            if (
+                stylePreset.ValueKind != JsonValueKind.String
+                || Array.IndexOf(StylePresets, stylePreset.GetString()) < 0
+            )
             {
                 throw Invalid("stylePreset");
             }
@@ -116,7 +174,11 @@ public sealed class ProdiaImageModel : IImageModel, IImageCaller
 
         if (options?.TryGetProperty("loras", out var loras) == true)
         {
-            if (loras.ValueKind != JsonValueKind.Array || loras.GetArrayLength() > 3 || loras.EnumerateArray().Any(lora => lora.ValueKind != JsonValueKind.String))
+            if (
+                loras.ValueKind != JsonValueKind.Array
+                || loras.GetArrayLength() > 3
+                || loras.EnumerateArray().Any(lora => lora.ValueKind != JsonValueKind.String)
+            )
             {
                 throw Invalid("loras");
             }
@@ -138,17 +200,23 @@ public sealed class ProdiaImageModel : IImageModel, IImageCaller
         }
 
         var timestamp = _clock();
-        var (parts, headers) = await ProdiaApi.PostJobAsync(
-            _provider,
-            ProviderExchange.Json(ProdiaApi.Job(ModelId, config)),
-            "multipart/form-data; image/png",
-            call.Headers,
-            cancellationToken).ConfigureAwait(false);
+        var (parts, headers) = await ProdiaApi
+            .PostJobAsync(
+                _provider,
+                ProviderExchange.Json(ProdiaApi.Job(ModelId, config)),
+                "multipart/form-data; image/png",
+                call.Headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var job = ProdiaApi.ReadJob(parts);
         byte[]? image = null;
         foreach (var part in parts)
         {
-            if (part.ContentDisposition.Contains("name=\"output\"") || part.ContentType.StartsWith("image/", StringComparison.Ordinal))
+            if (
+                part.ContentDisposition.Contains("name=\"output\"")
+                || part.ContentType.StartsWith("image/", StringComparison.Ordinal)
+            )
             {
                 image = part.Body;
             }
@@ -156,20 +224,34 @@ public sealed class ProdiaImageModel : IImageModel, IImageCaller
 
         if (image == null)
         {
-            throw new InvalidResponseDataException(null, "Prodia multipart response missing output image");
+            throw new InvalidResponseDataException(
+                null,
+                "Prodia multipart response missing output image"
+            );
         }
 
-        var metadata = new JsonObject { ["prodia"] = new JsonObject { ["images"] = new JsonArray(ProdiaApi.Metadata(job)) } };
+        var metadata = new JsonObject
+        {
+            ["prodia"] = new JsonObject { ["images"] = new JsonArray(ProdiaApi.Metadata(job)) },
+        };
         return new ImageModelResult(
             new object?[] { image },
             warnings,
             providerMetadata: OperationJson.Parse(metadata.ToJsonString()),
-            response: new ProviderResponse(headers, timestamp: timestamp.UtcDateTime, modelId: ModelId));
+            response: new ProviderResponse(
+                headers,
+                timestamp: timestamp.UtcDateTime,
+                modelId: ModelId
+            )
+        );
     }
 
     private static JsonElement? Options(JsonElement? providerOptions)
     {
-        return providerOptions is { ValueKind: JsonValueKind.Object } bag && bag.TryGetProperty("prodia", out var prodia) && prodia.ValueKind == JsonValueKind.Object
+        return
+            providerOptions is { ValueKind: JsonValueKind.Object } bag
+            && bag.TryGetProperty("prodia", out var prodia)
+            && prodia.ValueKind == JsonValueKind.Object
             ? prodia
             : null;
     }
@@ -181,7 +263,12 @@ public sealed class ProdiaImageModel : IImageModel, IImageCaller
             return null;
         }
 
-        if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt32(out var number) || number < min || number > max)
+        if (
+            value.ValueKind != JsonValueKind.Number
+            || !value.TryGetInt32(out var number)
+            || number < min
+            || number > max
+        )
         {
             throw Invalid(name);
         }
@@ -191,6 +278,10 @@ public sealed class ProdiaImageModel : IImageModel, IImageCaller
 
     private static InvalidArgumentException Invalid(string name)
     {
-        return new InvalidArgumentException("providerOptions", null, "Invalid Prodia provider option " + name + ".");
+        return new InvalidArgumentException(
+            "providerOptions",
+            null,
+            "Invalid Prodia provider option " + name + "."
+        );
     }
 }

@@ -9,14 +9,21 @@ namespace Vercel.AI.Tests.ElevenLabsError;
 
 public sealed class ElevenLabsErrorDataSchemaTests
 {
-    private const string Prefix = "packages/elevenlabs/src/elevenlabs-error.test.ts::elevenlabsErrorDataSchema::";
-    private const string ExhaustedMessage = "{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Resource has been exhausted (e.g. check quota).\",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n";
+    private const string Prefix =
+        "packages/elevenlabs/src/elevenlabs-error.test.ts::elevenlabsErrorDataSchema::";
+    private const string ExhaustedMessage =
+        "{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Resource has been exhausted (e.g. check quota).\",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n";
 
     [Fact]
-    [UpstreamTest(Prefix + "should parse ElevenLabs resource exhausted error", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should parse ElevenLabs resource exhausted error",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_parse_ElevenLabs_resource_exhausted_error()
     {
-        var json = JsonSerializer.Serialize(new { error = new { message = ExhaustedMessage, code = 429 } });
+        var json = JsonSerializer.Serialize(
+            new { error = new { message = ExhaustedMessage, code = 429 } }
+        );
 
         var result = global::Vercel.AI.ElevenLabs.ElevenLabsError.Parse(json);
 
@@ -31,7 +38,8 @@ public sealed class ElevenLabsErrorDataSchemaTests
     [UpstreamTest(
         Prefix + "should keep the request id of an object detail in the parsed data",
         Coverage = UpstreamCoverage.Covered,
-        Commit = "7062ab6818c90e135d068433ce99b11ac0dfa081")]
+        Commit = "7062ab6818c90e135d068433ce99b11ac0dfa081"
+    )]
     public void Should_keep_the_request_id_of_an_object_detail_in_the_parsed_data()
     {
         const string body = """

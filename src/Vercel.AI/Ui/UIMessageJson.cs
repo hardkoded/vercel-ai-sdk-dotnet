@@ -85,7 +85,8 @@ internal static class UIMessageJson
     public static bool IsToolPart(JsonObject part)
     {
         var type = (string?)part["type"];
-        return type != null && (type.StartsWith("tool-", StringComparison.Ordinal) || type == "dynamic-tool");
+        return type != null
+            && (type.StartsWith("tool-", StringComparison.Ordinal) || type == "dynamic-tool");
     }
 
     public static bool IsStaticToolPart(JsonObject part)
@@ -120,7 +121,12 @@ internal static class UIMessageJson
                 SetMetadata(json, "providerMetadata", reasoning.ProviderMetadata);
                 break;
             case SourceUrlUIPart sourceUrl:
-                json = new JsonObject { ["type"] = "source-url", ["sourceId"] = sourceUrl.SourceId, ["url"] = sourceUrl.Url };
+                json = new JsonObject
+                {
+                    ["type"] = "source-url",
+                    ["sourceId"] = sourceUrl.SourceId,
+                    ["url"] = sourceUrl.Url,
+                };
                 Set(json, "title", sourceUrl.Title);
                 SetMetadata(json, "providerMetadata", sourceUrl.ProviderMetadata);
                 break;
@@ -136,7 +142,12 @@ internal static class UIMessageJson
                 SetMetadata(json, "providerMetadata", sourceDocument.ProviderMetadata);
                 break;
             case FileUIPart file:
-                json = new JsonObject { ["type"] = "file", ["mediaType"] = file.MediaType, ["url"] = file.Url };
+                json = new JsonObject
+                {
+                    ["type"] = "file",
+                    ["mediaType"] = file.MediaType,
+                    ["url"] = file.Url,
+                };
                 Set(json, "filename", file.Filename);
                 if (file.ProviderReference != null)
                 {
@@ -152,7 +163,12 @@ internal static class UIMessageJson
                 SetMetadata(json, "providerMetadata", file.ProviderMetadata);
                 break;
             case ReasoningFileUIPart reasoningFile:
-                json = new JsonObject { ["type"] = "reasoning-file", ["mediaType"] = reasoningFile.MediaType, ["url"] = reasoningFile.Url };
+                json = new JsonObject
+                {
+                    ["type"] = "reasoning-file",
+                    ["mediaType"] = reasoningFile.MediaType,
+                    ["url"] = reasoningFile.Url,
+                };
                 SetMetadata(json, "providerMetadata", reasoningFile.ProviderMetadata);
                 break;
             case StepStartUIPart:
@@ -169,10 +185,20 @@ internal static class UIMessageJson
                     steeringParts.Add(PartToJson(steeringPart));
                 }
 
-                json = new JsonObject { ["type"] = "steering-message", ["id"] = steering.Id, ["parts"] = steeringParts };
+                json = new JsonObject
+                {
+                    ["type"] = "steering-message",
+                    ["id"] = steering.Id,
+                    ["parts"] = steeringParts,
+                };
                 break;
             case ToolUIPart tool:
-                json = new JsonObject { ["type"] = tool.Type, ["toolCallId"] = tool.ToolCallId, ["state"] = ToolStates[(int)tool.State] };
+                json = new JsonObject
+                {
+                    ["type"] = tool.Type,
+                    ["toolCallId"] = tool.ToolCallId,
+                    ["state"] = ToolStates[(int)tool.State],
+                };
                 if (tool.IsDynamic)
                 {
                     json["toolName"] = tool.ToolName;
@@ -201,7 +227,8 @@ internal static class UIMessageJson
 
                 if (tool.InputEncoding is { } inputEncoding)
                 {
-                    json["inputEncoding"] = inputEncoding == ToolInputEncoding.Text ? "text" : "json";
+                    json["inputEncoding"] =
+                        inputEncoding == ToolInputEncoding.Text ? "text" : "json";
                 }
 
                 if (tool.Output is { } output)
@@ -224,7 +251,9 @@ internal static class UIMessageJson
 
                 break;
             default:
-                throw new NotSupportedException("Unsupported UI message part: " + part.GetType().Name);
+                throw new NotSupportedException(
+                    "Unsupported UI message part: " + part.GetType().Name
+                );
         }
 
         return json;
@@ -238,12 +267,17 @@ internal static class UIMessageJson
             case "text":
                 return new TextUIPart((string?)json["text"] ?? string.Empty)
                 {
-                    Citations = json["citations"] is JsonArray citations ? CitationJson.FromJson(citations) : null,
+                    Citations = json["citations"] is JsonArray citations
+                        ? CitationJson.FromJson(citations)
+                        : null,
                     State = (string?)json["state"],
                     ProviderMetadata = GetMetadata(json["providerMetadata"]),
                 };
             case "custom":
-                return new CustomContentUIPart((string?)json["kind"] ?? string.Empty) { ProviderMetadata = GetMetadata(json["providerMetadata"]) };
+                return new CustomContentUIPart((string?)json["kind"] ?? string.Empty)
+                {
+                    ProviderMetadata = GetMetadata(json["providerMetadata"]),
+                };
             case "reasoning":
                 return new ReasoningUIPart((string?)json["text"] ?? string.Empty)
                 {
@@ -252,13 +286,20 @@ internal static class UIMessageJson
                     ProviderMetadata = GetMetadata(json["providerMetadata"]),
                 };
             case "source-url":
-                return new SourceUrlUIPart((string?)json["sourceId"] ?? string.Empty, (string?)json["url"] ?? string.Empty)
+                return new SourceUrlUIPart(
+                    (string?)json["sourceId"] ?? string.Empty,
+                    (string?)json["url"] ?? string.Empty
+                )
                 {
                     Title = (string?)json["title"],
                     ProviderMetadata = GetMetadata(json["providerMetadata"]),
                 };
             case "source-document":
-                return new SourceDocumentUIPart((string?)json["sourceId"] ?? string.Empty, (string?)json["mediaType"] ?? string.Empty, (string?)json["title"] ?? string.Empty)
+                return new SourceDocumentUIPart(
+                    (string?)json["sourceId"] ?? string.Empty,
+                    (string?)json["mediaType"] ?? string.Empty,
+                    (string?)json["title"] ?? string.Empty
+                )
                 {
                     Filename = (string?)json["filename"],
                     ProviderMetadata = GetMetadata(json["providerMetadata"]),
@@ -274,14 +315,20 @@ internal static class UIMessageJson
                     }
                 }
 
-                return new FileUIPart((string?)json["mediaType"] ?? string.Empty, (string?)json["url"] ?? string.Empty)
+                return new FileUIPart(
+                    (string?)json["mediaType"] ?? string.Empty,
+                    (string?)json["url"] ?? string.Empty
+                )
                 {
                     Filename = (string?)json["filename"],
                     ProviderReference = reference,
                     ProviderMetadata = GetMetadata(json["providerMetadata"]),
                 };
             case "reasoning-file":
-                return new ReasoningFileUIPart((string?)json["mediaType"] ?? string.Empty, (string?)json["url"] ?? string.Empty)
+                return new ReasoningFileUIPart(
+                    (string?)json["mediaType"] ?? string.Empty,
+                    (string?)json["url"] ?? string.Empty
+                )
                 {
                     ProviderMetadata = GetMetadata(json["providerMetadata"]),
                 };
@@ -293,21 +340,30 @@ internal static class UIMessageJson
                 {
                     foreach (var node in steeringArray)
                     {
-                        if (node is JsonObject steeringJson && PartFromJson(steeringJson) is { } steeringPart)
+                        if (
+                            node is JsonObject steeringJson
+                            && PartFromJson(steeringJson) is { } steeringPart
+                        )
                         {
                             steeringParts.Add(steeringPart);
                         }
                     }
                 }
 
-                return new SteeringMessageUIPart((string?)json["id"] ?? string.Empty, steeringParts);
+                return new SteeringMessageUIPart(
+                    (string?)json["id"] ?? string.Empty,
+                    steeringParts
+                );
             case "dynamic-tool":
                 return ToolFromJson(json, (string?)json["toolName"] ?? string.Empty, true);
         }
 
         if (type.StartsWith("data-", StringComparison.Ordinal))
         {
-            return new DataUIPart(type.Substring(5), ToElement(json["data"])) { Id = (string?)json["id"] };
+            return new DataUIPart(type.Substring(5), ToElement(json["data"]))
+            {
+                Id = (string?)json["id"],
+            };
         }
 
         if (type.StartsWith("tool-", StringComparison.Ordinal))
@@ -323,10 +379,20 @@ internal static class UIMessageJson
     {
         var stateName = (string?)json["state"] ?? "input-streaming";
         var state = (ToolUIPartState)Math.Max(0, Array.IndexOf(ToolStates, stateName));
-        return new ToolUIPart(toolName, (string?)json["toolCallId"] ?? string.Empty, state, isDynamic)
+        return new ToolUIPart(
+            toolName,
+            (string?)json["toolCallId"] ?? string.Empty,
+            state,
+            isDynamic
+        )
         {
             Title = (string?)json["title"],
-            Dynamic = isDynamic && json["dynamic"] is JsonValue dyn && dyn.TryGetValue<bool>(out var dynamicValue) ? dynamicValue : null,
+            Dynamic =
+                isDynamic
+                && json["dynamic"] is JsonValue dyn
+                && dyn.TryGetValue<bool>(out var dynamicValue)
+                    ? dynamicValue
+                    : null,
             ToolMetadata = GetMetadata(json["toolMetadata"]),
             InputEncoding = (string?)json["inputEncoding"] switch
             {
@@ -334,12 +400,18 @@ internal static class UIMessageJson
                 "json" => ToolInputEncoding.Json,
                 _ => null,
             },
-            ProviderExecuted = json["providerExecuted"] is JsonValue pe && pe.TryGetValue<bool>(out var executed) ? executed : null,
+            ProviderExecuted =
+                json["providerExecuted"] is JsonValue pe && pe.TryGetValue<bool>(out var executed)
+                    ? executed
+                    : null,
             Input = Element(json, "input"),
             RawInput = Element(json, "rawInput"),
             Output = Element(json, "output"),
             ErrorText = (string?)json["errorText"],
-            Preliminary = json["preliminary"] is JsonValue pre && pre.TryGetValue<bool>(out var preliminary) ? preliminary : null,
+            Preliminary =
+                json["preliminary"] is JsonValue pre && pre.TryGetValue<bool>(out var preliminary)
+                    ? preliminary
+                    : null,
             CallProviderMetadata = GetMetadata(json["callProviderMetadata"]),
             ResultProviderMetadata = GetMetadata(json["resultProviderMetadata"]),
             Approval = json["approval"] is JsonObject approval ? ApprovalFromJson(approval) : null,
@@ -379,24 +451,31 @@ internal static class UIMessageJson
     {
         return new ToolUIApproval((string?)json["id"] ?? string.Empty)
         {
-            Approved = json["approved"] is JsonValue approved && approved.TryGetValue<bool>(out var a) ? a : null,
+            Approved =
+                json["approved"] is JsonValue approved && approved.TryGetValue<bool>(out var a)
+                    ? a
+                    : null,
             RequestReason = (string?)json["requestReason"],
             Reason = (string?)json["reason"],
-            IsAutomatic = json["isAutomatic"] is JsonValue automatic && automatic.TryGetValue<bool>(out var b) ? b : null,
+            IsAutomatic =
+                json["isAutomatic"] is JsonValue automatic && automatic.TryGetValue<bool>(out var b)
+                    ? b
+                    : null,
             Descriptor = Element(json, "descriptor"),
             Signature = (string?)json["signature"],
             InputSchemaInput = Element(json, "inputSchemaInput"),
         };
     }
 
-    private static JsonElement? Element(JsonObject json, string key)
-        => json.ContainsKey(key) ? ToElement(json[key]) : null;
+    private static JsonElement? Element(JsonObject json, string key) =>
+        json.ContainsKey(key) ? ToElement(json[key]) : null;
 
-    private static JsonNode? ToNode(JsonElement element)
-        => JsonNode.Parse(element.GetRawText());
+    private static JsonNode? ToNode(JsonElement element) => JsonNode.Parse(element.GetRawText());
 
-    private static JsonElement ToElement(JsonNode? node)
-        => node == null ? JsonSerializer.SerializeToElement<object?>(null) : JsonSerializer.SerializeToElement(node);
+    private static JsonElement ToElement(JsonNode? node) =>
+        node == null
+            ? JsonSerializer.SerializeToElement<object?>(null)
+            : JsonSerializer.SerializeToElement(node);
 
     private static void Set(JsonObject json, string key, string? value)
     {
@@ -406,7 +485,11 @@ internal static class UIMessageJson
         }
     }
 
-    private static void SetMetadata(JsonObject json, string key, IReadOnlyDictionary<string, JsonElement>? metadata)
+    private static void SetMetadata(
+        JsonObject json,
+        string key,
+        IReadOnlyDictionary<string, JsonElement>? metadata
+    )
     {
         if (metadata == null)
         {

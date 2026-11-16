@@ -12,10 +12,14 @@ namespace Vercel.AI.Tests.Upstream.ProcessUiMessageStream;
 /// <summary>Port of <c>process-ui-message-stream.test.ts</c> &gt; <c>processUIMessageStream</c> &gt; <c>tool input error</c>.</summary>
 public sealed class ToolInputErrorTests
 {
-    private const string Prefix = "packages/ai/src/ui/process-ui-message-stream.test.ts::processUIMessageStream > ";
+    private const string Prefix =
+        "packages/ai/src/ui/process-ui-message-stream.test.ts::processUIMessageStream > ";
 
     [Fact]
-    [UpstreamTest(Prefix + "tool input error::should not warn when creating a static output-error part", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "tool input error::should not warn when creating a static output-error part",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_not_warn_when_creating_a_static_output_error_part()
     {
         var warnings = new List<LogWarningsOptions>();
@@ -25,9 +29,11 @@ public sealed class ToolInputErrorTests
         {
             var harness = new ProcessUIMessageStreamHarness();
             harness.CreateState("msg-123", null);
-            await harness.ProcessAsync("""
-            [{"type":"start"},{"type":"start-step"},{"toolCallId":"call-1","toolName":"cityAttractions","type":"tool-input-start"},{"inputTextDelta":"{ \"cities\": \"San Francisco\" }","toolCallId":"call-1","type":"tool-input-delta"},{"errorText":"Invalid input for tool cityAttractions","input":"{ \"cities\": \"San Francisco\" }","toolCallId":"call-1","toolName":"cityAttractions","type":"tool-input-error"},{"errorText":"Invalid input for tool cityAttractions","toolCallId":"call-1","type":"tool-output-error"},{"type":"finish-step"},{"type":"finish"}]
-            """);
+            await harness.ProcessAsync(
+                """
+                [{"type":"start"},{"type":"start-step"},{"toolCallId":"call-1","toolName":"cityAttractions","type":"tool-input-start"},{"inputTextDelta":"{ \"cities\": \"San Francisco\" }","toolCallId":"call-1","type":"tool-input-delta"},{"errorText":"Invalid input for tool cityAttractions","input":"{ \"cities\": \"San Francisco\" }","toolCallId":"call-1","toolName":"cityAttractions","type":"tool-input-error"},{"errorText":"Invalid input for tool cityAttractions","toolCallId":"call-1","type":"tool-output-error"},{"type":"finish-step"},{"type":"finish"}]
+                """
+            );
 
             Assert.Empty(warnings);
         }
@@ -38,16 +44,22 @@ public sealed class ToolInputErrorTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "tool input error::should call the update function with the correct arguments", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "tool input error::should call the update function with the correct arguments",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_call_the_update_function_with_the_correct_arguments()
     {
         var harness = new ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
-        await harness.ProcessAsync("""
+        await harness.ProcessAsync(
+            """
             [{"type":"start"},{"type":"start-step"},{"toolCallId":"call-1","toolName":"cityAttractions","type":"tool-input-start"},{"inputTextDelta":"{ \"cities\": \"San Francisco\" }","toolCallId":"call-1","type":"tool-input-delta"},{"errorText":"Invalid input for tool cityAttractions","input":"{ \"cities\": \"San Francisco\" }","toolCallId":"call-1","toolName":"cityAttractions","type":"tool-input-error"},{"errorText":"Invalid input for tool cityAttractions","toolCallId":"call-1","type":"tool-output-error"},{"type":"finish-step"},{"type":"finish"}]
-            """);
+            """
+        );
 
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             [
               {
                 "message": {
@@ -122,20 +134,28 @@ public sealed class ToolInputErrorTests
                 }
               }
             ]
-            """, harness.WriteCalls);
+            """,
+            harness.WriteCalls
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "tool input error::should have the correct final message state", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "tool input error::should have the correct final message state",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_have_the_correct_final_message_state()
     {
         var harness = new ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
-        await harness.ProcessAsync("""
+        await harness.ProcessAsync(
+            """
             [{"type":"start"},{"type":"start-step"},{"toolCallId":"call-1","toolName":"cityAttractions","type":"tool-input-start"},{"inputTextDelta":"{ \"cities\": \"San Francisco\" }","toolCallId":"call-1","type":"tool-input-delta"},{"errorText":"Invalid input for tool cityAttractions","input":"{ \"cities\": \"San Francisco\" }","toolCallId":"call-1","toolName":"cityAttractions","type":"tool-input-error"},{"errorText":"Invalid input for tool cityAttractions","toolCallId":"call-1","type":"tool-output-error"},{"type":"finish-step"},{"type":"finish"}]
-            """);
+            """
+        );
 
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             [
               {
                 "type": "step-start"
@@ -148,6 +168,8 @@ public sealed class ToolInputErrorTests
                 "type": "tool-cityAttractions"
               }
             ]
-            """, harness.Parts);
+            """,
+            harness.Parts
+        );
     }
 }

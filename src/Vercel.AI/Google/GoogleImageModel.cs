@@ -32,7 +32,8 @@ public sealed class GoogleImageModel : IImageModel, IImageCaller
     {
         get
         {
-            return _provider.ModelProvider.IndexOf("vertex", StringComparison.OrdinalIgnoreCase) >= 0
+            return
+                _provider.ModelProvider.IndexOf("vertex", StringComparison.OrdinalIgnoreCase) >= 0
                 ? "google.vertex.image"
                 : _provider.ModelProvider;
         }
@@ -47,12 +48,14 @@ public sealed class GoogleImageModel : IImageModel, IImageCaller
     int? IImageCaller.MaxImagesPerCall => MaxImagesPerCall;
 
     /// <summary><see langword="true"/> for Gemini image models that take input images, otherwise <see langword="null"/>. Maps to <c>supportsFileInputs</c>.</summary>
-    public bool? SupportsFileInputs => ModelId is "gemini-2.5-flash-image"
-        or "gemini-3-pro-image-preview"
-        or "gemini-3.1-flash-image-preview"
-        or "gemini-nano-banana-2.1"
-        ? true
-        : null;
+    public bool? SupportsFileInputs =>
+        ModelId
+            is "gemini-2.5-flash-image"
+                or "gemini-3-pro-image-preview"
+                or "gemini-3.1-flash-image-preview"
+                or "gemini-nano-banana-2.1"
+            ? true
+            : null;
 
     /// <summary><see langword="false"/> for Gemini image models that take input images but no mask, otherwise <see langword="null"/>. Maps to <c>supportsMaskInputs</c>.</summary>
     public bool? SupportsMaskInputs => SupportsFileInputs == true ? false : null;
@@ -64,40 +67,67 @@ public sealed class GoogleImageModel : IImageModel, IImageCaller
     }
 
     /// <inheritdoc />
-    public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+    public async Task<ImageGenerationResult> DoGenerateAsync(
+        ImageCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         options ??= new ImageCallOptions(string.Empty);
-        var result = await DoGenerateAsync(options.ToModelCall(cancellationToken), cancellationToken).ConfigureAwait(false);
+        var result = await DoGenerateAsync(
+                options.ToModelCall(cancellationToken),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var images = new List<ProviderGeneratedImage>(result.Images.Count);
         foreach (var image in result.Images)
         {
             var bytes = (byte[])image!;
-            images.Add(new ProviderGeneratedImage(MediaTypes.DetectMediaType(bytes, "image") ?? "image/png", bytes, null));
+            images.Add(
+                new ProviderGeneratedImage(
+                    MediaTypes.DetectMediaType(bytes, "image") ?? "image/png",
+                    bytes,
+                    null
+                )
+            );
         }
 
         var response = result.Response;
-        var usage = result.Usage == null
-            ? null
-            : new LanguageModelUsage(result.Usage.InputTokens, result.Usage.OutputTokens, result.Usage.TotalTokens);
+        var usage =
+            result.Usage == null
+                ? null
+                : new LanguageModelUsage(
+                    result.Usage.InputTokens,
+                    result.Usage.OutputTokens,
+                    result.Usage.TotalTokens
+                );
         return new ImageGenerationResult(
             images,
             result.Warnings.Select(warning => warning.ToCallWarning()).ToList(),
             new ImageResponseInfo(
-                new DateTimeOffset(DateTime.SpecifyKind(response.Timestamp ?? DateTime.UtcNow, DateTimeKind.Utc)),
+                new DateTimeOffset(
+                    DateTime.SpecifyKind(response.Timestamp ?? DateTime.UtcNow, DateTimeKind.Utc)
+                ),
                 response.ModelId,
-                response.Headers),
+                response.Headers
+            ),
             usage,
             result.ProviderMetadata,
-            result.IsRetryable);
+            result.IsRetryable
+        );
     }
 
     /// <inheritdoc />
-    public async Task<ImageModelResult> DoGenerateAsync(ImageModelCall call, CancellationToken cancellationToken)
+    public async Task<ImageModelResult> DoGenerateAsync(
+        ImageModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         if (!ModelId.StartsWith("gemini-", StringComparison.Ordinal))
         {
-            throw new AiSdkException("Google image models other than Gemini are no longer supported. Use a model ID that starts with `gemini-`.");
+            throw new AiSdkException(
+                "Google image models other than Gemini are no longer supported. Use a model ID that starts with `gemini-`."
+            );
         }
 
         var warnings = new List<OperationWarning>();
@@ -105,12 +135,20 @@ public sealed class GoogleImageModel : IImageModel, IImageCaller
         // Gemini does not support mask-based inpainting
         if (call.Mask != null)
         {
-            throw new AiSdkException("Gemini image models do not support mask-based image editing.");
+            throw new AiSdkException(
+                "Gemini image models do not support mask-based image editing."
+            );
         }
 
         if (!string.IsNullOrEmpty(call.Size))
         {
-            warnings.Add(new OperationWarning("unsupported", feature: "size", details: "This model does not support the `size` option. Use `aspectRatio` instead."));
+            warnings.Add(
+                new OperationWarning(
+                    "unsupported",
+                    feature: "size",
+                    details: "This model does not support the `size` option. Use `aspectRatio` instead."
+                )
+            );
         }
 
         var content = new List<UserContentPart>();
@@ -123,9 +161,16 @@ public sealed class GoogleImageModel : IImageModel, IImageCaller
         {
             foreach (var file in call.Files)
             {
-                content.Add(file.Type == "url"
-                    ? new FileContentPart("image/*", new Uri(file.Url!).ToString(), null, null)
-                    : new FileContentPart(file.MediaType!, null, file.Data ?? Array.Empty<byte>(), file.FileName));
+                content.Add(
+                    file.Type == "url"
+                        ? new FileContentPart("image/*", new Uri(file.Url!).ToString(), null, null)
+                        : new FileContentPart(
+                            file.MediaType!,
+                            null,
+                            file.Data ?? Array.Empty<byte>(),
+                            file.FileName
+                        )
+                );
             }
         }
 
@@ -149,7 +194,9 @@ public sealed class GoogleImageModel : IImageModel, IImageCaller
                         userImageConfig = JsonNode.Parse(property.Value.GetRawText());
                         break;
                     default:
-                        languageModelOptions[property.Name] = JsonNode.Parse(property.Value.GetRawText());
+                        languageModelOptions[property.Name] = JsonNode.Parse(
+                            property.Value.GetRawText()
+                        );
                         break;
                 }
             }
@@ -171,7 +218,11 @@ public sealed class GoogleImageModel : IImageModel, IImageCaller
         {
             if (search.ValueKind != JsonValueKind.Object)
             {
-                throw new InvalidArgumentException("providerOptions", null, "Invalid Google image provider option googleSearch.");
+                throw new InvalidArgumentException(
+                    "providerOptions",
+                    null,
+                    "Invalid Google image provider option googleSearch."
+                );
             }
 
             languageModelOptions["providerTools"] = new JsonArray
@@ -190,15 +241,23 @@ public sealed class GoogleImageModel : IImageModel, IImageCaller
             Prompt = new ModelMessage[] { new UserModelMessage(content) },
             Seed = call.Seed,
             Headers = call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
-            ProviderOptions = new Dictionary<string, JsonElement> { ["google"] = JsonSerializer.SerializeToElement(languageModelOptions) },
+            ProviderOptions = new Dictionary<string, JsonElement>
+            {
+                ["google"] = JsonSerializer.SerializeToElement(languageModelOptions),
+            },
         };
 
-        var result = await new GoogleLanguageModel(_provider, ModelId).DoGenerateAsync(languageModelCall, cancellationToken).ConfigureAwait(false);
+        var result = await new GoogleLanguageModel(_provider, ModelId)
+            .DoGenerateAsync(languageModelCall, cancellationToken)
+            .ConfigureAwait(false);
         var timestamp = _provider.Clock();
         var images = new List<object?>();
         foreach (var part in result.Content)
         {
-            if (part is GeneratedFile file && file.MediaType.StartsWith("image/", StringComparison.Ordinal))
+            if (
+                part is GeneratedFile file
+                && file.MediaType.StartsWith("image/", StringComparison.Ordinal)
+            )
             {
                 images.Add(file.Data);
             }
@@ -207,19 +266,27 @@ public sealed class GoogleImageModel : IImageModel, IImageCaller
         var usage = new OperationUsage(
             result.Usage.InputTokens,
             result.Usage.OutputTokens,
-            (result.Usage.InputTokens ?? 0) + (result.Usage.OutputTokens ?? 0));
+            (result.Usage.InputTokens ?? 0) + (result.Usage.OutputTokens ?? 0)
+        );
         return new ImageModelResult(
             images,
             warnings,
             usage,
             ProviderMetadata(result, images.Count),
-            new ProviderResponse(result.ResponseHeaders, timestamp: timestamp.UtcDateTime, modelId: ModelId),
-            result.FinishReason == FinishReason.ContentFilter ? false : null);
+            new ProviderResponse(
+                result.ResponseHeaders,
+                timestamp: timestamp.UtcDateTime,
+                modelId: ModelId
+            ),
+            result.FinishReason == FinishReason.ContentFilter ? false : null
+        );
     }
 
     private static JsonElement? ReadGoogleOptions(JsonElement? providerOptions)
     {
-        return providerOptions is { ValueKind: JsonValueKind.Object } options && options.TryGetProperty("google", out var google)
+        return
+            providerOptions is { ValueKind: JsonValueKind.Object } options
+            && options.TryGetProperty("google", out var google)
             ? google
             : null;
     }
@@ -231,9 +298,10 @@ public sealed class GoogleImageModel : IImageModel, IImageCaller
         {
             foreach (var provider in languageModel.EnumerateObject())
             {
-                var entry = provider.Value.ValueKind == JsonValueKind.Object
-                    ? (JsonObject)JsonNode.Parse(provider.Value.GetRawText())!
-                    : new JsonObject();
+                var entry =
+                    provider.Value.ValueKind == JsonValueKind.Object
+                        ? (JsonObject)JsonNode.Parse(provider.Value.GetRawText())!
+                        : new JsonObject();
                 entry["finishReason"] = result.RawFinishReason;
                 var images = new JsonArray();
                 for (var i = 0; i < imageCount; i++)

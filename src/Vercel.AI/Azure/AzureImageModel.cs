@@ -68,9 +68,15 @@ public sealed class AzureImageModel : IImageModel, IImageCaller
     /// <param name="serialized">The serialized model id and config.</param>
     /// <param name="apiKey">API key. Defaults to the <c>AZURE_API_KEY</c> environment variable.</param>
     /// <param name="handler">HTTP handler. Pass one from tests.</param>
-    public static AzureImageModel Deserialize(SerializedModelOptions serialized, string? apiKey = null, HttpMessageHandler? handler = null)
+    public static AzureImageModel Deserialize(
+        SerializedModelOptions serialized,
+        string? apiKey = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        return AzureOpenAIProvider.DeserializeProvider(serialized, apiKey, handler).Image(serialized.ModelId);
+        return AzureOpenAIProvider
+            .DeserializeProvider(serialized, apiKey, handler)
+            .Image(serialized.ModelId);
     }
 
     /// <inheritdoc />
@@ -80,7 +86,10 @@ public sealed class AzureImageModel : IImageModel, IImageCaller
     }
 
     /// <inheritdoc />
-    public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+    public async Task<ImageGenerationResult> DoGenerateAsync(
+        ImageCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         if (options is null)
         {
@@ -88,17 +97,27 @@ public sealed class AzureImageModel : IImageModel, IImageCaller
         }
 
         var azureOptions = AzureImageModelOptions.Parse(options.ProviderOptionsElement);
-        var maiOptions = new AzureImageModelMaiOptions { AutoAspectRatio = azureOptions.AutoAspectRatio, WebGrounding = azureOptions.WebGrounding };
+        var maiOptions = new AzureImageModelMaiOptions
+        {
+            AutoAspectRatio = azureOptions.AutoAspectRatio,
+            WebGrounding = azureOptions.WebGrounding,
+        };
         if ((azureOptions.Api ?? (IsDefaultMai ? "mai" : "openai")) == "mai")
         {
-            return await _mai.DoGenerateAsync(options, maiOptions, cancellationToken).ConfigureAwait(false);
+            return await _mai.DoGenerateAsync(options, maiOptions, cancellationToken)
+                .ConfigureAwait(false);
         }
 
-        var shape = options.Files is { Count: > 0 } ? OpenAIImageModelOptions.EditOptionsShape() : OpenAIImageModelOptions.GenerationOptionsShape();
+        var shape = options.Files is { Count: > 0 }
+            ? OpenAIImageModelOptions.EditOptionsShape()
+            : OpenAIImageModelOptions.GenerationOptionsShape();
         var providerOptions = AzureProviderOptions.WithAzureOptionsForOpenAI(
             options.ProviderOptionsElement,
-            AzureProviderOptions.PickAzureOptions(options.ProviderOptionsElement, shape));
-        var result = await _openai.DoGenerateAsync(WithProviderOptions(options, providerOptions), cancellationToken).ConfigureAwait(false);
+            AzureProviderOptions.PickAzureOptions(options.ProviderOptionsElement, shape)
+        );
+        var result = await _openai
+            .DoGenerateAsync(WithProviderOptions(options, providerOptions), cancellationToken)
+            .ConfigureAwait(false);
 
         var maiOnly = new JsonObject();
         if (maiOptions.AutoAspectRatio is { } autoAspectRatio)
@@ -111,14 +130,28 @@ public sealed class AzureImageModel : IImageModel, IImageCaller
             maiOnly["webGrounding"] = webGrounding;
         }
 
-        var warnings = result.CallWarnings
-            .Concat(AzureProviderOptions.UnsupportedOptionWarnings(maiOnly, "This option requires the MAI image API.").Select(warning => warning.ToCallWarning()))
+        var warnings = result
+            .CallWarnings.Concat(
+                AzureProviderOptions
+                    .UnsupportedOptionWarnings(maiOnly, "This option requires the MAI image API.")
+                    .Select(warning => warning.ToCallWarning())
+            )
             .ToList();
-        return new ImageGenerationResult(result.Images, warnings, result.Response, result.Usage, result.ProviderMetadata, result.IsRetryable);
+        return new ImageGenerationResult(
+            result.Images,
+            warnings,
+            result.Response,
+            result.Usage,
+            result.ProviderMetadata,
+            result.IsRetryable
+        );
     }
 
     /// <inheritdoc />
-    public async Task<ImageModelResult> DoGenerateAsync(ImageModelCall call, CancellationToken cancellationToken)
+    public async Task<ImageModelResult> DoGenerateAsync(
+        ImageModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (call is null)
         {
@@ -138,19 +171,48 @@ public sealed class AzureImageModel : IImageModel, IImageCaller
         };
         var result = await DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
         var images = result.Images.Select(image => (object?)image.Data).ToList();
-        var warnings = result.CallWarnings
-            .Select(warning => warning.Feature == null
-                ? new OperationWarning(warning.Type, warning.Message)
-                : new OperationWarning(warning.Type, null, warning.Feature, warning.Message == warning.Feature ? null : warning.Message))
+        var warnings = result
+            .CallWarnings.Select(warning =>
+                warning.Feature == null
+                    ? new OperationWarning(warning.Type, warning.Message)
+                    : new OperationWarning(
+                        warning.Type,
+                        null,
+                        warning.Feature,
+                        warning.Message == warning.Feature ? null : warning.Message
+                    )
+            )
             .ToList();
-        var usage = result.Usage == null ? null : new OperationUsage(result.Usage.InputTokens, result.Usage.OutputTokens, result.Usage.TotalTokens);
-        var response = result.Response == null
-            ? null
-            : new ProviderResponse(result.Response.Headers, timestamp: result.Response.Timestamp.UtcDateTime, modelId: result.Response.ModelId);
-        return new ImageModelResult(images, warnings, usage, result.ProviderMetadata, response, result.IsRetryable);
+        var usage =
+            result.Usage == null
+                ? null
+                : new OperationUsage(
+                    result.Usage.InputTokens,
+                    result.Usage.OutputTokens,
+                    result.Usage.TotalTokens
+                );
+        var response =
+            result.Response == null
+                ? null
+                : new ProviderResponse(
+                    result.Response.Headers,
+                    timestamp: result.Response.Timestamp.UtcDateTime,
+                    modelId: result.Response.ModelId
+                );
+        return new ImageModelResult(
+            images,
+            warnings,
+            usage,
+            result.ProviderMetadata,
+            response,
+            result.IsRetryable
+        );
     }
 
-    private static ImageCallOptions WithProviderOptions(ImageCallOptions options, JsonElement? providerOptions)
+    private static ImageCallOptions WithProviderOptions(
+        ImageCallOptions options,
+        JsonElement? providerOptions
+    )
     {
         return new ImageCallOptions(options.Prompt)
         {
@@ -165,7 +227,9 @@ public sealed class AzureImageModel : IImageModel, IImageCaller
         };
     }
 
-    private static IReadOnlyDictionary<string, JsonElement>? ToProviderOptions(JsonElement? providerOptions)
+    private static IReadOnlyDictionary<string, JsonElement>? ToProviderOptions(
+        JsonElement? providerOptions
+    )
     {
         if (providerOptions is not { ValueKind: JsonValueKind.Object } root)
         {

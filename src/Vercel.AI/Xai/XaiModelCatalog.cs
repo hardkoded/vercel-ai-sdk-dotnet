@@ -47,7 +47,11 @@ internal sealed class XaiTranscriptionCapabilities
 /// <summary>A catalog entry of an xAI transcription model. Maps to the result of <c>getXaiTranscriptionModelEntry</c>.</summary>
 internal sealed class XaiTranscriptionModelEntry
 {
-    internal XaiTranscriptionModelEntry(XaiTranscriptionCapabilities capabilities, IReadOnlyDictionary<string, XaiProviderOptionSupport> providerOptions, string? model)
+    internal XaiTranscriptionModelEntry(
+        XaiTranscriptionCapabilities capabilities,
+        IReadOnlyDictionary<string, XaiProviderOptionSupport> providerOptions,
+        string? model
+    )
     {
         Capabilities = capabilities;
         ProviderOptions = providerOptions;
@@ -89,19 +93,35 @@ internal static class XaiModelCatalog
 {
     private static readonly string[] KnownTranscriptionModelIds = { "grok-voice-transcribe-2.0" };
 
-    private static readonly (string Name, string Description, string? Condition)[] TranscriptionOptions =
+    private static readonly (
+        string Name,
+        string Description,
+        string? Condition
+    )[] TranscriptionOptions =
     {
-        ("audioFormat", "Encoding of raw input audio.", "Opus encoding is supported for streaming requests only."),
+        (
+            "audioFormat",
+            "Encoding of raw input audio.",
+            "Opus encoding is supported for streaming requests only."
+        ),
         ("sampleRate", "Input audio sample rate.", null),
         ("language", "Language for inverse text normalization.", null),
-        ("format", "Enable inverse text normalization.", "Requires language and a request/response transcription request."),
+        (
+            "format",
+            "Enable inverse text normalization.",
+            "Requires language and a request/response transcription request."
+        ),
         ("multichannel", "Transcribe each audio channel separately.", null),
         ("channels", "Number of interleaved input audio channels.", null),
         ("diarize", "Enable speaker diarization.", null),
         ("keyterm", "Terms to bias transcription toward.", null),
         ("fillerWords", "Include filler words in the transcript.", null),
         ("vadThreshold", "Voice activity detection threshold.", null),
-        ("streaming", "WebSocket streaming transcription settings.", "Only supported for streaming transcription."),
+        (
+            "streaming",
+            "WebSocket streaming transcription settings.",
+            "Only supported for streaming transcription."
+        ),
     };
 
     /// <summary>
@@ -111,19 +131,31 @@ internal static class XaiModelCatalog
     internal static XaiTranscriptionModelEntry GetXaiTranscriptionModelEntry(string modelId)
     {
         // The empty model id is the default model and is declared.
-        var declared = modelId.Length == 0 || Array.IndexOf(KnownTranscriptionModelIds, modelId) >= 0;
+        var declared =
+            modelId.Length == 0 || Array.IndexOf(KnownTranscriptionModelIds, modelId) >= 0;
         return CreateTranscriptionModelEntry(modelId, declared);
     }
 
-    private static XaiTranscriptionModelEntry CreateTranscriptionModelEntry(string modelId, bool declared)
+    private static XaiTranscriptionModelEntry CreateTranscriptionModelEntry(
+        string modelId,
+        bool declared
+    )
     {
         bool? support = declared ? true : null;
         var options = new Dictionary<string, XaiProviderOptionSupport>(StringComparer.Ordinal);
         foreach (var (name, description, condition) in TranscriptionOptions)
         {
-            options[name] = new XaiProviderOptionSupport(description, condition is null ? support : true, condition);
+            options[name] = new XaiProviderOptionSupport(
+                description,
+                condition is null ? support : true,
+                condition
+            );
         }
 
-        return new XaiTranscriptionModelEntry(new XaiTranscriptionCapabilities(support), options, modelId.Length > 0 ? modelId : null);
+        return new XaiTranscriptionModelEntry(
+            new XaiTranscriptionCapabilities(support),
+            options,
+            modelId.Length > 0 ? modelId : null
+        );
     }
 }

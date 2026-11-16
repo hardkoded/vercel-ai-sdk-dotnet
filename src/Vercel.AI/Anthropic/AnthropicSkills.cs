@@ -30,11 +30,16 @@ public sealed class AnthropicSkillFile
 public sealed class AnthropicSkillUpload
 {
     /// <summary>Creates an upload result.</summary>
-    public AnthropicSkillUpload(string id, string? name, IReadOnlyDictionary<string, string> providerReference)
+    public AnthropicSkillUpload(
+        string id,
+        string? name,
+        IReadOnlyDictionary<string, string> providerReference
+    )
     {
         Id = id;
         Name = name;
-        ProviderReference = providerReference ?? throw new ArgumentNullException(nameof(providerReference));
+        ProviderReference = providerReference
+            ?? throw new ArgumentNullException(nameof(providerReference));
     }
 
     /// <summary>Skill id.</summary>
@@ -55,13 +60,21 @@ public sealed class AnthropicSkills
     private readonly Func<string> _baseUrl;
 
     /// <summary>Creates a skills client.</summary>
-    public AnthropicSkills(ProviderHttp http, Func<string> baseUrl, Func<IReadOnlyDictionary<string, string?>> headers, string provider)
-        : this(http, baseUrl, WrapHeaders(headers), provider)
-    {
-    }
+    public AnthropicSkills(
+        ProviderHttp http,
+        Func<string> baseUrl,
+        Func<IReadOnlyDictionary<string, string?>> headers,
+        string provider
+    )
+        : this(http, baseUrl, WrapHeaders(headers), provider) { }
 
     /// <summary>Creates a skills client whose provider headers resolve asynchronously on every call.</summary>
-    public AnthropicSkills(ProviderHttp http, Func<string> baseUrl, Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> headers, string provider)
+    public AnthropicSkills(
+        ProviderHttp http,
+        Func<string> baseUrl,
+        Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> headers,
+        string provider
+    )
     {
         _http = http ?? throw new ArgumentNullException(nameof(http));
         _baseUrl = baseUrl ?? throw new ArgumentNullException(nameof(baseUrl));
@@ -75,7 +88,9 @@ public sealed class AnthropicSkills
     /// <summary>Provider id.</summary>
     public string Provider { get; }
 
-    private static Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> WrapHeaders(Func<IReadOnlyDictionary<string, string?>> headers)
+    private static Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> WrapHeaders(
+        Func<IReadOnlyDictionary<string, string?>> headers
+    )
     {
         if (headers == null)
         {
@@ -86,7 +101,11 @@ public sealed class AnthropicSkills
     }
 
     /// <summary>Uploads skill files, then reads the latest version metadata.</summary>
-    public async Task<AnthropicSkillUpload> UploadSkillAsync(IReadOnlyList<AnthropicSkillFile> files, string? displayTitle, CancellationToken cancellationToken)
+    public async Task<AnthropicSkillUpload> UploadSkillAsync(
+        IReadOnlyList<AnthropicSkillFile> files,
+        string? displayTitle,
+        CancellationToken cancellationToken
+    )
     {
         using var form = new MultipartFormDataContent();
         if (!string.IsNullOrEmpty(displayTitle))
@@ -102,13 +121,26 @@ public sealed class AnthropicSkills
         }
 
         var headers = WithBeta(await _headers(cancellationToken).ConfigureAwait(false));
-        var created = await _http.SendBytesAsync(HttpMethod.Post, new Uri(ApiKeys.Combine(_baseUrl(), "skills").AbsoluteUri), form, headers, cancellationToken).ConfigureAwait(false);
+        var created = await _http
+            .SendBytesAsync(
+                HttpMethod.Post,
+                new Uri(ApiKeys.Combine(_baseUrl(), "skills").AbsoluteUri),
+                form,
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         using var document = JsonDocument.Parse(System.Text.Encoding.UTF8.GetString(created));
         var root = document.RootElement;
         var id = AnthropicJson.String(root, "id") ?? string.Empty;
         var version = AnthropicJson.String(root, "latest_version") ?? string.Empty;
-        var versionUri = ApiKeys.Combine(_baseUrl(), "skills/" + PathSegments.Encode(id) + "/versions/" + PathSegments.Encode(version));
-        var metadataResponse = await _http.SendJsonStringAsync(HttpMethod.Get, versionUri, null, headers, cancellationToken).ConfigureAwait(false);
+        var versionUri = ApiKeys.Combine(
+            _baseUrl(),
+            "skills/" + PathSegments.Encode(id) + "/versions/" + PathSegments.Encode(version)
+        );
+        var metadataResponse = await _http
+            .SendJsonStringAsync(HttpMethod.Get, versionUri, null, headers, cancellationToken)
+            .ConfigureAwait(false);
         string? name = null;
         var metadata = metadataResponse.Body;
         if (!string.IsNullOrWhiteSpace(metadata))
@@ -117,10 +149,16 @@ public sealed class AnthropicSkills
             name = AnthropicJson.String(versionDocument.RootElement, "name");
         }
 
-        return new AnthropicSkillUpload(id, name, new Dictionary<string, string> { ["anthropic"] = id });
+        return new AnthropicSkillUpload(
+            id,
+            name,
+            new Dictionary<string, string> { ["anthropic"] = id }
+        );
     }
 
-    private static Dictionary<string, string?> WithBeta(IReadOnlyDictionary<string, string?> headers)
+    private static Dictionary<string, string?> WithBeta(
+        IReadOnlyDictionary<string, string?> headers
+    )
     {
         var copy = new Dictionary<string, string?>();
         foreach (var pair in headers)

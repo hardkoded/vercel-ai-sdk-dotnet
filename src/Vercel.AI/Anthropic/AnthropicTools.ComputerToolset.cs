@@ -35,7 +35,8 @@ public static class AnthropicTools
     /// <param name="name">Tool name. Default: <c>computer</c>.</param>
     public static Tool ComputerToolset20260801(
         IReadOnlyDictionary<string, AnthropicComputerToolsetMemberConfig>? configs = null,
-        string name = "computer")
+        string name = "computer"
+    )
     {
         var args = new JsonObject();
         var disabled = new HashSet<string>(StringComparer.Ordinal);
@@ -46,7 +47,10 @@ public static class AnthropicTools
             {
                 if (Array.IndexOf(AnthropicToolset.Members, pair.Key) < 0)
                 {
-                    throw new ArgumentException("Unknown computer toolset member: " + pair.Key + ".", nameof(configs));
+                    throw new ArgumentException(
+                        "Unknown computer toolset member: " + pair.Key + ".",
+                        nameof(configs)
+                    );
                 }
 
                 var config = new JsonObject();
@@ -74,7 +78,8 @@ public static class AnthropicTools
             "anthropic.computer_toolset_20260801",
             name,
             JsonSerializer.SerializeToElement(args),
-            JsonSerializer.SerializeToElement(ComputerToolsetInputSchema(disabled)));
+            JsonSerializer.SerializeToElement(ComputerToolsetInputSchema(disabled))
+        );
     }
 
     private static JsonObject ComputerToolsetInputSchema(HashSet<string> disabled)

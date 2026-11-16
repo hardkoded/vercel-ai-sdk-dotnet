@@ -1,0 +1,6 @@
+# Bulk formatting commits. Run `git config blame.ignoreRevsFile .git-blame-ignore-revs` to use locally.
+
+# Format codebase with CSharpier
+816666f2deaa95bfb6eaa0dfa98327035ed2daa8
+# Update markdown snippets after CSharpier format
+956d9af2c94419cc2abfd3e2351343417939e277

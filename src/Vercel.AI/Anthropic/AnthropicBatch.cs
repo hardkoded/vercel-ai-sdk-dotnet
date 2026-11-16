@@ -37,29 +37,52 @@ public sealed class AnthropicBatchCounts
 /// <summary>Validation and status mapping for the Anthropic Message Batches API.</summary>
 public static class AnthropicBatch
 {
-    private static readonly Regex IdPattern = new Regex(@"^[A-Za-z0-9_-]{1,64}\z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex IdPattern = new Regex(
+        @"^[A-Za-z0-9_-]{1,64}\z",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(100)
+    );
 
     /// <summary>Throws when <paramref name="id"/> is not 1–64 letters, digits, underscores, or hyphens.</summary>
     public static void ValidateRequestId(string id)
     {
         if (id == null || !IdPattern.IsMatch(id))
         {
-            throw new InvalidArgumentException("requests", id, "Anthropic batch request ID \"" + id + "\" must match ^[A-Za-z0-9_-]{1,64}$.");
+            throw new InvalidArgumentException(
+                "requests",
+                id,
+                "Anthropic batch request ID \"" + id + "\" must match ^[A-Za-z0-9_-]{1,64}$."
+            );
         }
     }
 
     /// <summary>Rejects <c>speed</c> and <c>fallbacks[].speed</c>, which Message Batches do not support.</summary>
-    public static void ValidateAnthropicBatchBody(System.Text.Json.Nodes.JsonObject body, string requestId)
+    public static void ValidateAnthropicBatchBody(
+        System.Text.Json.Nodes.JsonObject body,
+        string requestId
+    )
     {
         if (body["speed"] != null)
         {
-            throw new UnsupportedFunctionalityException("providerOptions.anthropic.speed", "Anthropic Message Batches do not support speed (request \"" + requestId + "\").");
+            throw new UnsupportedFunctionalityException(
+                "providerOptions.anthropic.speed",
+                "Anthropic Message Batches do not support speed (request \"" + requestId + "\")."
+            );
         }
 
-        if (body["fallbacks"] is System.Text.Json.Nodes.JsonArray fallbacks
-            && fallbacks.Any(fallback => fallback is System.Text.Json.Nodes.JsonObject entry && entry["speed"] != null))
+        if (
+            body["fallbacks"] is System.Text.Json.Nodes.JsonArray fallbacks
+            && fallbacks.Any(fallback =>
+                fallback is System.Text.Json.Nodes.JsonObject entry && entry["speed"] != null
+            )
+        )
         {
-            throw new UnsupportedFunctionalityException("providerOptions.anthropic.fallbacks[].speed", "Anthropic Message Batches do not support fallback speed (request \"" + requestId + "\").");
+            throw new UnsupportedFunctionalityException(
+                "providerOptions.anthropic.fallbacks[].speed",
+                "Anthropic Message Batches do not support fallback speed (request \""
+                    + requestId
+                    + "\")."
+            );
         }
     }
 
@@ -72,7 +95,11 @@ public static class AnthropicBatch
             ValidateRequestId(id);
             if (!seen.Add(id))
             {
-                throw new InvalidArgumentException("requests", ids, "Anthropic batch request IDs must be unique; duplicate ID \"" + id + "\".");
+                throw new InvalidArgumentException(
+                    "requests",
+                    ids,
+                    "Anthropic batch request IDs must be unique; duplicate ID \"" + id + "\"."
+                );
             }
         }
     }
@@ -84,13 +111,20 @@ public static class AnthropicBatch
     }
 
     /// <summary>Builds SDK counts from the provider request_counts object.</summary>
-    public static AnthropicBatchCounts Count(int processing, int succeeded, int errored, int canceled, int expired)
+    public static AnthropicBatchCounts Count(
+        int processing,
+        int succeeded,
+        int errored,
+        int canceled,
+        int expired
+    )
     {
         return new AnthropicBatchCounts(
             processing + succeeded + errored + canceled + expired,
             processing,
             succeeded,
-            errored + canceled + expired);
+            errored + canceled + expired
+        );
     }
 
     /// <summary>Reads counts from a batch JSON object.</summary>
@@ -106,7 +140,8 @@ public static class AnthropicBatch
             Number(counts, "succeeded"),
             Number(counts, "errored"),
             Number(counts, "canceled"),
-            Number(counts, "expired"));
+            Number(counts, "expired")
+        );
     }
 
     /// <summary>True when a completed batch has no results URL.</summary>
@@ -125,6 +160,8 @@ public static class AnthropicBatch
 
     private static int Number(JsonElement element, string name)
     {
-        return element.TryGetProperty(name, out var value) && value.TryGetInt32(out var number) ? number : 0;
+        return element.TryGetProperty(name, out var value) && value.TryGetInt32(out var number)
+            ? number
+            : 0;
     }
 }

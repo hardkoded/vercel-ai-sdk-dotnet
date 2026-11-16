@@ -23,7 +23,6 @@ public sealed class TogetherAIProvider : OpenAICompatibleProvider
     /// <summary>Environment variable for the API key.</summary>
     public const string PreferredApiKeyVariable = "TOGETHER_API_KEY";
 
-
     // Chat models verified to honor response_format json_schema. Every other model id gets
     // json_object and the schema is dropped, so probe a model with a schema-only enum value
     // before adding it here.
@@ -44,9 +43,7 @@ public sealed class TogetherAIProvider : OpenAICompatibleProvider
 
     /// <summary>Creates a provider.</summary>
     public TogetherAIProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
-        : base(Prepare(options), httpClient)
-    {
-    }
+        : base(Prepare(options), httpClient) { }
 
     /// <summary>Whether <paramref name="modelId"/> should send JSON schema responses.</summary>
     public static bool SupportsStructuredOutputs(string modelId)
@@ -95,30 +92,42 @@ public sealed class TogetherAIProvider : OpenAICompatibleProvider
         var legacy = Environment.GetEnvironmentVariable(ApiKeyVariable);
         if (!string.IsNullOrWhiteSpace(legacy))
         {
-            ApiKeyDeprecationWarning = "TOGETHER_AI_API_KEY is deprecated and will be removed in a future release. Please use TOGETHER_API_KEY instead.";
+            ApiKeyDeprecationWarning =
+                "TOGETHER_AI_API_KEY is deprecated and will be removed in a future release. Please use TOGETHER_API_KEY instead.";
             return legacy;
         }
 
         if (Options.RequireApiKey)
         {
             throw new AiSdkException(
-                "API key is required. Pass it explicitly or set the " + preferredName + " environment variable.");
+                "API key is required. Pass it explicitly or set the "
+                    + preferredName
+                    + " environment variable."
+            );
         }
 
         return null;
     }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static new TogetherAIProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new TogetherAIProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new TogetherAIProvider(client, options);
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
-        if (string.IsNullOrEmpty(options.ProviderName) || options.ProviderName == "openai-compatible")
+        if (
+            string.IsNullOrEmpty(options.ProviderName)
+            || options.ProviderName == "openai-compatible"
+        )
         {
             options.ProviderName = ProviderId;
         }
@@ -128,7 +137,10 @@ public sealed class TogetherAIProvider : OpenAICompatibleProvider
             options.BaseUrl = DefaultBaseUrl;
         }
 
-        if (options.ApiKeyEnvironmentVariable == "OPENAI_API_KEY" || options.ApiKeyEnvironmentVariable == ApiKeyVariable)
+        if (
+            options.ApiKeyEnvironmentVariable == "OPENAI_API_KEY"
+            || options.ApiKeyEnvironmentVariable == ApiKeyVariable
+        )
         {
             options.ApiKeyEnvironmentVariable = PreferredApiKeyVariable;
         }
@@ -150,14 +162,21 @@ public sealed class TogetherAIProvider : OpenAICompatibleProvider
 public static class TogetherAIServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddTogetherAI(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddTogetherAI(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(TogetherAIProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new TogetherAIProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(TogetherAIProvider.ProviderId), options);
+            return new TogetherAIProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(TogetherAIProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

@@ -14,7 +14,10 @@ namespace Vercel.AI.OpenAI;
 /// <summary>Completion request body and warnings.</summary>
 public sealed class OpenAICompletionPreparedRequest
 {
-    internal OpenAICompletionPreparedRequest(JsonObject body, IReadOnlyList<OpenAICallWarning> warnings)
+    internal OpenAICompletionPreparedRequest(
+        JsonObject body,
+        IReadOnlyList<OpenAICallWarning> warnings
+    )
     {
         Body = body;
         Warnings = warnings;
@@ -52,7 +55,11 @@ public sealed class OpenAICompletionLanguageModel : ILanguageModel
     public string ModelId { get; }
 
     /// <summary>Builds the completions body. <paramref name="stream"/> adds streaming fields.</summary>
-    public static OpenAICompletionPreparedRequest Prepare(string modelId, LanguageModelCallOptions options, bool stream)
+    public static OpenAICompletionPreparedRequest Prepare(
+        string modelId,
+        LanguageModelCallOptions options,
+        bool stream
+    )
     {
         options ??= new LanguageModelCallOptions();
         var warnings = new List<OpenAICallWarning>();
@@ -74,15 +81,17 @@ public sealed class OpenAICompletionLanguageModel : ILanguageModel
 
         if (options.JsonSchema != null)
         {
-            warnings.Add(new OpenAICallWarning("unsupported", "responseFormat", "JSON response format is not supported."));
+            warnings.Add(
+                new OpenAICallWarning(
+                    "unsupported",
+                    "responseFormat",
+                    "JSON response format is not supported."
+                )
+            );
         }
 
         var prompt = ConvertPrompt(options.Prompt);
-        var body = new JsonObject
-        {
-            ["model"] = modelId,
-            ["prompt"] = prompt.Prompt,
-        };
+        var body = new JsonObject { ["model"] = modelId, ["prompt"] = prompt.Prompt };
         if (OpenAIJson.Bool(openai, "echo") is { } echo)
         {
             body["echo"] = echo;
@@ -197,7 +206,10 @@ public sealed class OpenAICompletionLanguageModel : ILanguageModel
                     var userText = new StringBuilder();
                     foreach (var part in user.Content)
                     {
-                        if (part is TextContentPart textPart && !string.IsNullOrEmpty(textPart.Text))
+                        if (
+                            part is TextContentPart textPart
+                            && !string.IsNullOrEmpty(textPart.Text)
+                        )
                         {
                             userText.Append(textPart.Text);
                         }
@@ -229,22 +241,39 @@ public sealed class OpenAICompletionLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var prepared = Prepare(ModelId, options, false);
-        var response = await _provider.Http.SendJsonStringAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "completions"),
-            prepared.Body.ToJsonString(),
-            _provider.CreateOpenAIHeaders(options.Headers),
-            cancellationToken).ConfigureAwait(false);
-        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
+        var response = await _provider
+            .Http.SendJsonStringAsync(
+                HttpMethod.Post,
+                ApiKeys.Combine(_provider.Options.BaseUrl, "completions"),
+                prepared.Body.ToJsonString(),
+                _provider.CreateOpenAIHeaders(options.Headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        using var document = JsonDocument.Parse(
+            string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+        );
         var root = document.RootElement;
         var choice = root.GetProperty("choices")[0];
-        var text = choice.TryGetProperty("text", out var textElement) ? textElement.GetString() ?? string.Empty : string.Empty;
-        var rawReason = choice.TryGetProperty("finish_reason", out var finish) && finish.ValueKind == JsonValueKind.String ? finish.GetString() : null;
+        var text = choice.TryGetProperty("text", out var textElement)
+            ? textElement.GetString() ?? string.Empty
+            : string.Empty;
+        var rawReason =
+            choice.TryGetProperty("finish_reason", out var finish)
+            && finish.ValueKind == JsonValueKind.String
+                ? finish.GetString()
+                : null;
         var metadata = new JsonObject();
-        if (choice.TryGetProperty("logprobs", out var logprobs) && logprobs.ValueKind != JsonValueKind.Null)
+        if (
+            choice.TryGetProperty("logprobs", out var logprobs)
+            && logprobs.ValueKind != JsonValueKind.Null
+        )
         {
             metadata["logprobs"] = JsonNode.Parse(logprobs.GetRawText());
         }
@@ -252,7 +281,9 @@ public sealed class OpenAICompletionLanguageModel : ILanguageModel
         return new LanguageModelGenerateResult(
             new GeneratedContent[] { new GeneratedText(text) },
             FinishReasons.Parse(rawReason),
-            OpenAIJson.CompletionUsage(root.TryGetProperty("usage", out var usage) ? usage : (JsonElement?)null),
+            OpenAIJson.CompletionUsage(
+                root.TryGetProperty("usage", out var usage) ? usage : (JsonElement?)null
+            ),
             rawReason,
             ToCallWarnings(prepared.Warnings),
             StringOrNull(root, "id"),
@@ -260,35 +291,49 @@ public sealed class OpenAICompletionLanguageModel : ILanguageModel
             response.Body,
             StringOrNull(root, "model"),
             OpenAIJson.UnixSeconds(OpenAIJson.Unix(root, "created")),
-            response.Headers);
+            response.Headers
+        );
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var prepared = Prepare(ModelId, options, true);
         var json = prepared.Body.ToJsonString();
-        var sse = await _provider.Http.OpenSseResponseAsync(
-            ApiKeys.Combine(_provider.Options.BaseUrl, "completions"),
-            json,
-            _provider.CreateOpenAIHeaders(options.Headers),
-            cancellationToken).ConfigureAwait(false);
-        return sse.ToStreamResult(StreamAsync(options, prepared, sse.Events, cancellationToken), json);
+        var sse = await _provider
+            .Http.OpenSseResponseAsync(
+                ApiKeys.Combine(_provider.Options.BaseUrl, "completions"),
+                json,
+                _provider.CreateOpenAIHeaders(options.Headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        return sse.ToStreamResult(
+            StreamAsync(options, prepared, sse.Events, cancellationToken),
+            json
+        );
     }
 
     private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
         LanguageModelCallOptions options,
         OpenAICompletionPreparedRequest prepared,
         IAsyncEnumerable<string> events,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         var enumerator = events.GetAsyncEnumerator(cancellationToken);
         try
         {
-            var checkedStream = await OpenAIStreamError.ThrowIfErrorBeforeOutputAsync(
-                enumerator,
-                OpenAIChatLanguageModel.ErrorFrame,
-                data => !OpenAIChatLanguageModel.IsJsonObject(data) || IsOutputChunk(data)).ConfigureAwait(false);
+            var checkedStream = await OpenAIStreamError
+                .ThrowIfErrorBeforeOutputAsync(
+                    enumerator,
+                    OpenAIChatLanguageModel.ErrorFrame,
+                    data => !OpenAIChatLanguageModel.IsJsonObject(data) || IsOutputChunk(data)
+                )
+                .ConfigureAwait(false);
             yield return new StreamStartStreamPart(ToCallWarnings(prepared.Warnings));
             var state = new StreamState();
             await foreach (var data in checkedStream.ConfigureAwait(false))
@@ -316,17 +361,23 @@ public sealed class OpenAICompletionLanguageModel : ILanguageModel
         {
             using var document = JsonDocument.Parse(data);
             var root = document.RootElement;
-            if (root.ValueKind != JsonValueKind.Object
+            if (
+                root.ValueKind != JsonValueKind.Object
                 || root.TryGetProperty("error", out _)
                 || !root.TryGetProperty("choices", out var choices)
-                || choices.ValueKind != JsonValueKind.Array)
+                || choices.ValueKind != JsonValueKind.Array
+            )
             {
                 return false;
             }
 
             foreach (var choice in choices.EnumerateArray())
             {
-                if (choice.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String && (text.GetString() ?? string.Empty).Length > 0)
+                if (
+                    choice.TryGetProperty("text", out var text)
+                    && text.ValueKind == JsonValueKind.String
+                    && (text.GetString() ?? string.Empty).Length > 0
+                )
                 {
                     return true;
                 }
@@ -398,10 +449,15 @@ public sealed class OpenAICompletionLanguageModel : ILanguageModel
             using (document)
             {
                 var root = document.RootElement;
-                if (root.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
+                if (
+                    root.TryGetProperty("error", out var error)
+                    && error.ValueKind == JsonValueKind.Object
+                )
                 {
                     Fail();
-                    yield return new ErrorStreamPart(StringOrNull(error, "message") ?? "stream error");
+                    yield return new ErrorStreamPart(
+                        StringOrNull(error, "message") ?? "stream error"
+                    );
                     yield break;
                 }
 
@@ -411,28 +467,42 @@ public sealed class OpenAICompletionLanguageModel : ILanguageModel
                     yield return new ResponseMetadataStreamPart(
                         StringOrNull(root, "id"),
                         StringOrNull(root, "model"),
-                        OpenAIJson.UnixSeconds(OpenAIJson.Unix(root, "created")));
+                        OpenAIJson.UnixSeconds(OpenAIJson.Unix(root, "created"))
+                    );
                     yield return new TextStartStreamPart("0");
                 }
 
-                if (root.TryGetProperty("usage", out var usage) && usage.ValueKind == JsonValueKind.Object)
+                if (
+                    root.TryGetProperty("usage", out var usage)
+                    && usage.ValueKind == JsonValueKind.Object
+                )
                 {
                     _usage = OpenAIJson.CompletionUsage(usage);
                 }
 
-                if (!root.TryGetProperty("choices", out var choices) || choices.ValueKind != JsonValueKind.Array || choices.GetArrayLength() == 0)
+                if (
+                    !root.TryGetProperty("choices", out var choices)
+                    || choices.ValueKind != JsonValueKind.Array
+                    || choices.GetArrayLength() == 0
+                )
                 {
                     yield break;
                 }
 
                 var choice = choices[0];
-                if (choice.TryGetProperty("finish_reason", out var finish) && finish.ValueKind == JsonValueKind.String)
+                if (
+                    choice.TryGetProperty("finish_reason", out var finish)
+                    && finish.ValueKind == JsonValueKind.String
+                )
                 {
                     _rawFinish = finish.GetString();
                     _finish = FinishReasons.Parse(_rawFinish);
                 }
 
-                if (choice.TryGetProperty("logprobs", out var logprobs) && logprobs.ValueKind != JsonValueKind.Null)
+                if (
+                    choice.TryGetProperty("logprobs", out var logprobs)
+                    && logprobs.ValueKind != JsonValueKind.Null
+                )
                 {
                     _metadata["logprobs"] = JsonNode.Parse(logprobs.GetRawText());
                 }
@@ -456,7 +526,8 @@ public sealed class OpenAICompletionLanguageModel : ILanguageModel
                 _finish,
                 _usage ?? new LanguageModelUsage(null, null, null),
                 _rawFinish,
-                OpenAIJson.ProviderMetadata(_metadata));
+                OpenAIJson.ProviderMetadata(_metadata)
+            );
         }
 
         private void Fail()

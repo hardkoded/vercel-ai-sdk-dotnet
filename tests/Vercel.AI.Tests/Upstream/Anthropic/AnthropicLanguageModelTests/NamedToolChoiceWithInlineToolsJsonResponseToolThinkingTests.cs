@@ -12,9 +12,11 @@ namespace Vercel.AI.Tests.AnthropicLanguageModelTests;
 /// <summary>Port of <c>anthropic-language-model.test.ts</c> &gt; <c>AnthropicLanguageModel &gt; named tool choice with inline tools (%s) &gt; JSON response tool (thinking %s)</c>.</summary>
 public sealed class NamedToolChoiceWithInlineToolsJsonResponseToolThinkingTests
 {
-    private const string Prefix = "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > named tool choice with inline tools (%s) > JSON response tool (thinking %s)::";
+    private const string Prefix =
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > named tool choice with inline tools (%s) > JSON response tool (thinking %s)::";
 
-    private const string ProviderTool = "{\"type\":\"provider\",\"id\":\"anthropic.web_fetch_20250910\",\"name\":\"selected\",\"args\":{}}";
+    private const string ProviderTool =
+        "{\"type\":\"provider\",\"id\":\"anthropic.web_fetch_20250910\",\"name\":\"selected\",\"args\":{}}";
 
     public static IEnumerable<object[]> RejectCases()
     {
@@ -50,33 +52,61 @@ public sealed class NamedToolChoiceWithInlineToolsJsonResponseToolThinkingTests
     private static LanguageModelTool ProviderDefined(string toolJson)
     {
         var node = JsonNode.Parse(toolJson)!;
-        return LanguageModelTool.ProviderDefined(node["id"]!.GetValue<string>(), node["name"]!.GetValue<string>(), AnthropicParity.Json("{}"));
+        return LanguageModelTool.ProviderDefined(
+            node["id"]!.GetValue<string>(),
+            node["name"]!.GetValue<string>(),
+            AnthropicParity.Json("{}")
+        );
     }
 
-    private static LanguageModelCallOptions Options(IReadOnlyList<ModelMessage> prompt, LanguageModelTool[] tools, string choice, bool useThinking)
+    private static LanguageModelCallOptions Options(
+        IReadOnlyList<ModelMessage> prompt,
+        LanguageModelTool[] tools,
+        string choice,
+        bool useThinking
+    )
     {
         return new LanguageModelCallOptions
         {
             Prompt = prompt,
             Tools = tools,
-            ToolChoice = choice == "tool" ? ToolChoice.Tool("selected") : choice == "none" ? ToolChoice.None : choice == "auto" ? ToolChoice.Auto : ToolChoice.Required,
+            ToolChoice =
+                choice == "tool" ? ToolChoice.Tool("selected")
+                : choice == "none" ? ToolChoice.None
+                : choice == "auto" ? ToolChoice.Auto
+                : ToolChoice.Required,
             JsonResponse = true,
             JsonSchema = AnthropicParity.Json("{\"type\":\"object\",\"properties\":{}}"),
             ProviderOptions = new Dictionary<string, JsonElement>
             {
                 ["anthropic"] = AnthropicParity.Json(
                     "{\"structuredOutputMode\":\"jsonTool\""
-                    + (useThinking ? ",\"thinking\":{\"type\":\"enabled\",\"budgetTokens\":1024}" : string.Empty)
-                    + "}"),
+                        + (
+                            useThinking
+                                ? ",\"thinking\":{\"type\":\"enabled\",\"budgetTokens\":1024}"
+                                : string.Empty
+                        )
+                        + "}"
+                ),
             },
         };
     }
 
     [Theory]
     [MemberData(nameof(RejectCases))]
-    [UpstreamTest(Prefix + "should reject conflicting inline tools with $choice choice, providerAlias=$providerAlias and reuseSelectedName=$reuseSelectedName before sending a request", Coverage = UpstreamCoverage.Covered,
-        Commit = "ba302a14fcd98fbfa363130a53d46d7b61d22cff")]
-    public async Task Should_reject_conflicting_inline_tools_with_choice_choice_providerAlias_and_reuseSelectedName_before_sending_a_request(string method, bool useThinking, string choice, bool providerAlias, bool reuseSelectedName)
+    [UpstreamTest(
+        Prefix
+            + "should reject conflicting inline tools with $choice choice, providerAlias=$providerAlias and reuseSelectedName=$reuseSelectedName before sending a request",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "ba302a14fcd98fbfa363130a53d46d7b61d22cff"
+    )]
+    public async Task Should_reject_conflicting_inline_tools_with_choice_choice_providerAlias_and_reuseSelectedName_before_sending_a_request(
+        string method,
+        bool useThinking,
+        string choice,
+        bool providerAlias,
+        bool reuseSelectedName
+    )
     {
         var inlineTool = JsonNode.Parse(ProviderTool)!.AsObject();
         if (reuseSelectedName)
@@ -84,13 +114,24 @@ public sealed class NamedToolChoiceWithInlineToolsJsonResponseToolThinkingTests
             inlineTool["id"] = "anthropic.web_search_20250305";
         }
 
-        inlineTool["name"] = reuseSelectedName ? "selected" : providerAlias ? "other" : "web_fetch";
-        var prompt = new ModelMessage[] { new UserModelMessage("Hello"), InlineToolHarness.ToolChange(inlineTool.ToJsonString()) };
+        inlineTool["name"] =
+            reuseSelectedName ? "selected"
+            : providerAlias ? "other"
+            : "web_fetch";
+        var prompt = new ModelMessage[]
+        {
+            new UserModelMessage("Hello"),
+            InlineToolHarness.ToolChange(inlineTool.ToJsonString()),
+        };
         var options = Options(
             prompt,
-            new[] { providerAlias ? ProviderDefined(ProviderTool) : InlineToolHarness.SelectedTool() },
+            new[]
+            {
+                providerAlias ? ProviderDefined(ProviderTool) : InlineToolHarness.SelectedTool(),
+            },
             choice,
-            useThinking);
+            useThinking
+        );
 
         var handler = AnthropicParity.Ok();
         var model = AnthropicParity.Client(handler).LanguageModel("claude-opus-4-8");
@@ -111,33 +152,66 @@ public sealed class NamedToolChoiceWithInlineToolsJsonResponseToolThinkingTests
 
     [Theory]
     [MemberData(nameof(PreserveCases))]
-    [UpstreamTest(Prefix + "should preserve allowed inline tools with $choice choice, providerAlias=$providerAlias and inlineOnly=$inlineOnly", Coverage = UpstreamCoverage.Covered,
-        Commit = "ba302a14fcd98fbfa363130a53d46d7b61d22cff")]
-    public async Task Should_preserve_allowed_inline_tools_with_choice_choice_providerAlias_and_inlineOnly(string method, bool useThinking, string choice, bool providerAlias, bool inlineOnly)
+    [UpstreamTest(
+        Prefix
+            + "should preserve allowed inline tools with $choice choice, providerAlias=$providerAlias and inlineOnly=$inlineOnly",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "ba302a14fcd98fbfa363130a53d46d7b61d22cff"
+    )]
+    public async Task Should_preserve_allowed_inline_tools_with_choice_choice_providerAlias_and_inlineOnly(
+        string method,
+        bool useThinking,
+        string choice,
+        bool providerAlias,
+        bool inlineOnly
+    )
     {
         var inlineTool = providerAlias
             ? "{\"type\":\"provider\",\"id\":\"anthropic.web_search_20250305\",\"name\":\"selected\",\"args\":{}}"
             : InlineToolHarness.Function(choice == "tool" ? "selected" : "other");
-        var prompt = new ModelMessage[] { new UserModelMessage("Hello"), InlineToolHarness.ToolChange(inlineTool) };
+        var prompt = new ModelMessage[]
+        {
+            new UserModelMessage("Hello"),
+            InlineToolHarness.ToolChange(inlineTool),
+        };
         var tools = inlineOnly
             ? Array.Empty<LanguageModelTool>()
-            : new[] { providerAlias ? ProviderDefined(inlineTool) : InlineToolHarness.SelectedTool() };
+            : new[]
+            {
+                providerAlias ? ProviderDefined(inlineTool) : InlineToolHarness.SelectedTool(),
+            };
         var options = Options(prompt, tools, choice, useThinking);
 
-        var (handler, _) = await InlineToolHarness.Run(method, "claude-opus-4-8", options, jsonTool: true);
+        var (handler, _) = await InlineToolHarness.Run(
+            method,
+            "claude-opus-4-8",
+            options,
+            jsonTool: true
+        );
 
         var body = JsonNode.Parse(handler.Body)!;
-        Assert.True(JsonNode.DeepEquals(
-            JsonNode.Parse("{\"type\":\"" + (useThinking ? "auto" : "any") + "\",\"disable_parallel_tool_use\":true}"),
-            body["tool_choice"]));
+        Assert.True(
+            JsonNode.DeepEquals(
+                JsonNode.Parse(
+                    "{\"type\":\""
+                        + (useThinking ? "auto" : "any")
+                        + "\",\"disable_parallel_tool_use\":true}"
+                ),
+                body["tool_choice"]
+            )
+        );
         Assert.Equal(
-            inlineOnly ? new[] { "json" } : new[] { providerAlias ? "web_search" : "selected", "json" },
-            body["tools"]!.AsArray().Select(tool => tool!["name"]!.GetValue<string>()).ToArray());
+            inlineOnly
+                ? new[] { "json" }
+                : new[] { providerAlias ? "web_search" : "selected", "json" },
+            body["tools"]!.AsArray().Select(tool => tool!["name"]!.GetValue<string>()).ToArray()
+        );
         var part = body["messages"]![1]!["content"]![0]!;
         Assert.Equal("tool_addition", part["type"]!.GetValue<string>());
         Assert.Equal("tool_definition", part["tool"]!["type"]!.GetValue<string>());
         Assert.Equal(
             providerAlias ? "web_search" : JsonNode.Parse(inlineTool)!["name"]!.GetValue<string>(),
-            part["tool"]!["definition"]!["name"]!.GetValue<string>());
+            part["tool"]!["definition"]!["name"]!.GetValue<string>()
+        );
     }
 }

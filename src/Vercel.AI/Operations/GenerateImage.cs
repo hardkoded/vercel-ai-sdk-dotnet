@@ -22,13 +22,20 @@ public sealed class ImageModelFile
     /// <summary>Creates a binary image.</summary>
     public static ImageModelFile FromFile(byte[] data, string mediaType, string? fileName = null)
     {
-        return new ImageModelFile("file", null, data ?? Array.Empty<byte>(), mediaType) { FileName = fileName };
+        return new ImageModelFile("file", null, data ?? Array.Empty<byte>(), mediaType)
+        {
+            FileName = fileName,
+        };
     }
 
     /// <summary>Creates an image from base64 text. Providers that send base64 pass the text unchanged.</summary>
     public static ImageModelFile FromBase64(string data, string mediaType, string? fileName = null)
     {
-        return new ImageModelFile("file", null, null, mediaType) { Base64 = data ?? string.Empty, FileName = fileName };
+        return new ImageModelFile("file", null, null, mediaType)
+        {
+            Base64 = data ?? string.Empty,
+            FileName = fileName,
+        };
     }
 
     private ImageModelFile(string type, string? url, byte[]? data, string? mediaType)
@@ -67,7 +74,18 @@ public sealed class ImageModelFile
 public sealed class ImageModelCall
 {
     /// <summary>Creates a call.</summary>
-    public ImageModelCall(string? prompt, IReadOnlyList<ImageModelFile>? files, ImageModelFile? mask, int n, string? size, string? aspectRatio, int? seed, JsonElement? providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
+    public ImageModelCall(
+        string? prompt,
+        IReadOnlyList<ImageModelFile>? files,
+        ImageModelFile? mask,
+        int n,
+        string? size,
+        string? aspectRatio,
+        int? seed,
+        JsonElement? providerOptions,
+        IReadOnlyDictionary<string, string> headers,
+        CancellationToken cancellationToken
+    )
     {
         Prompt = prompt;
         Files = files;
@@ -116,7 +134,14 @@ public sealed class ImageModelCall
 public sealed class ImageModelResult
 {
     /// <summary>Creates a result.</summary>
-    public ImageModelResult(IReadOnlyList<object?> images, IReadOnlyList<OperationWarning>? warnings = null, OperationUsage? usage = null, JsonElement? providerMetadata = null, ProviderResponse? response = null, bool? isRetryable = null)
+    public ImageModelResult(
+        IReadOnlyList<object?> images,
+        IReadOnlyList<OperationWarning>? warnings = null,
+        OperationUsage? usage = null,
+        JsonElement? providerMetadata = null,
+        ProviderResponse? response = null,
+        bool? isRetryable = null
+    )
     {
         Images = images ?? Array.Empty<object?>();
         Warnings = warnings ?? Array.Empty<OperationWarning>();
@@ -161,7 +186,10 @@ public interface IImageCaller
     Task<int?> ResolveMaxImagesPerCallAsync(CancellationToken cancellationToken);
 
     /// <summary>Generates images.</summary>
-    Task<ImageModelResult> DoGenerateAsync(ImageModelCall call, CancellationToken cancellationToken);
+    Task<ImageModelResult> DoGenerateAsync(
+        ImageModelCall call,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>A generated image file.</summary>
@@ -195,7 +223,13 @@ public sealed class GeneratedImage
 public sealed class ImageCallResult
 {
     /// <summary>Creates a call record.</summary>
-    public ImageCallResult(IReadOnlyList<GeneratedImage> images, JsonElement? providerMetadata, ProviderResponse response, IReadOnlyList<OperationWarning> warnings, OperationUsage? usage)
+    public ImageCallResult(
+        IReadOnlyList<GeneratedImage> images,
+        JsonElement? providerMetadata,
+        ProviderResponse response,
+        IReadOnlyList<OperationWarning> warnings,
+        OperationUsage? usage
+    )
     {
         Images = images ?? Array.Empty<GeneratedImage>();
         ProviderMetadata = providerMetadata;
@@ -224,7 +258,10 @@ public sealed class ImageCallResult
 public sealed class NoImageGeneratedException : AiSdkException
 {
     /// <summary>Creates the exception.</summary>
-    public NoImageGeneratedException(IReadOnlyList<ImageCallResult> calls, IReadOnlyList<ProviderResponse> responses)
+    public NoImageGeneratedException(
+        IReadOnlyList<ImageCallResult> calls,
+        IReadOnlyList<ProviderResponse> responses
+    )
         : base("No image generated.")
     {
         Calls = calls ?? Array.Empty<ImageCallResult>();
@@ -242,7 +279,14 @@ public sealed class NoImageGeneratedException : AiSdkException
 public sealed class GenerateImageResult
 {
     /// <summary>Creates a result.</summary>
-    public GenerateImageResult(IReadOnlyList<GeneratedImage> images, IReadOnlyList<ImageCallResult> calls, IReadOnlyList<OperationWarning> warnings, IReadOnlyList<ProviderResponse> responses, JsonElement providerMetadata, OperationUsage usage)
+    public GenerateImageResult(
+        IReadOnlyList<GeneratedImage> images,
+        IReadOnlyList<ImageCallResult> calls,
+        IReadOnlyList<OperationWarning> warnings,
+        IReadOnlyList<ProviderResponse> responses,
+        JsonElement providerMetadata,
+        OperationUsage usage
+    )
     {
         Images = images ?? Array.Empty<GeneratedImage>();
         Calls = calls ?? Array.Empty<ImageCallResult>();
@@ -341,29 +385,50 @@ public static class GenerateImage
 {
     private static readonly string[] GatewayCostKeys =
     {
-        "cost", "gatewayCost", "inferenceCost", "inputInferenceCost", "marketCost", "outputInferenceCost", "surchargeCost",
+        "cost",
+        "gatewayCost",
+        "inferenceCost",
+        "inputInferenceCost",
+        "marketCost",
+        "outputInferenceCost",
+        "surchargeCost",
     };
 
     /// <summary>Generates images and merges parallel calls.</summary>
-    public static async Task<GenerateImageResult> GenerateImageAsync(GenerateImageRequest request, CancellationToken cancellationToken = default)
+    public static async Task<GenerateImageResult> GenerateImageAsync(
+        GenerateImageRequest request,
+        CancellationToken cancellationToken = default
+    )
     {
         if (request == null)
         {
             throw new ArgumentNullException(nameof(request));
         }
 
-        var model = request.Model ?? throw new InvalidArgumentException("model", null, "model is required");
-        var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
+        var model = request.Model
+            ?? throw new InvalidArgumentException("model", null, "model is required");
+        var token = request.CancellationToken.CanBeCanceled
+            ? request.CancellationToken
+            : cancellationToken;
         var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
         var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
-        var maxPerCall = request.MaxImagesPerCall ?? await model.ResolveMaxImagesPerCallAsync(token).ConfigureAwait(false) ?? 1;
+        var maxPerCall = request.MaxImagesPerCall
+            ?? await model.ResolveMaxImagesPerCallAsync(token).ConfigureAwait(false)
+            ?? 1;
         if (maxPerCall < 1)
         {
             maxPerCall = 1;
         }
 
         var counts = CallCounts(request.N, maxPerCall);
-        var groups = await Task.WhenAll(counts.Select(count => GenerateCallAsync(model, request, count, headers, providerOptions, token)).ToArray()).ConfigureAwait(false);
+        var groups = await Task.WhenAll(
+                counts
+                    .Select(count =>
+                        GenerateCallAsync(model, request, count, headers, providerOptions, token)
+                    )
+                    .ToArray()
+            )
+            .ConfigureAwait(false);
         var results = new List<ImageModelResult>();
         foreach (var group in groups)
         {
@@ -382,11 +447,25 @@ public static class GenerateImage
             for (var index = 0; index < result.Images.Count; index++)
             {
                 var bytes = MediaTypeDetector.ToBytes(result.Images[index]);
-                callImages.Add(new GeneratedImage(bytes, MediaTypeDetector.Detect(bytes, "image") ?? "image/png", ImageMetadata(result.ProviderMetadata, index)));
+                callImages.Add(
+                    new GeneratedImage(
+                        bytes,
+                        MediaTypeDetector.Detect(bytes, "image") ?? "image/png",
+                        ImageMetadata(result.ProviderMetadata, index)
+                    )
+                );
             }
 
             images.AddRange(callImages);
-            calls.Add(new ImageCallResult(callImages, result.ProviderMetadata, result.Response, result.Warnings, result.Usage));
+            calls.Add(
+                new ImageCallResult(
+                    callImages,
+                    result.ProviderMetadata,
+                    result.Response,
+                    result.Warnings,
+                    result.Usage
+                )
+            );
             warnings.AddRange(result.Warnings);
             if (result.Usage != null)
             {
@@ -403,7 +482,14 @@ public static class GenerateImage
             throw new NoImageGeneratedException(calls, responses);
         }
 
-        return new GenerateImageResult(images, calls, warnings, responses, OperationJson.Parse(metadata.ToJsonString()), usage);
+        return new GenerateImageResult(
+            images,
+            calls,
+            warnings,
+            responses,
+            OperationJson.Parse(metadata.ToJsonString()),
+            usage
+        );
     }
 
     /// <summary>Normalizes a prompt the way <c>normalizePrompt</c> does.</summary>
@@ -414,31 +500,72 @@ public static class GenerateImage
             return new ImagePromptParts(prompt?.Text ?? text, null, null);
         }
 
-        return new ImagePromptParts(prompt.Text, prompt.Images.Select(ToFile).ToArray(), prompt.Mask == null ? null : ToFile(prompt.Mask));
+        return new ImagePromptParts(
+            prompt.Text,
+            prompt.Images.Select(ToFile).ToArray(),
+            prompt.Mask == null ? null : ToFile(prompt.Mask)
+        );
     }
 
-    private static async Task<IReadOnlyList<ImageModelResult>> GenerateCallAsync(IImageCaller model, GenerateImageRequest request, int count, IReadOnlyDictionary<string, string> headers, JsonElement providerOptions, CancellationToken cancellationToken)
+    private static async Task<IReadOnlyList<ImageModelResult>> GenerateCallAsync(
+        IImageCaller model,
+        GenerateImageRequest request,
+        int count,
+        IReadOnlyDictionary<string, string> headers,
+        JsonElement providerOptions,
+        CancellationToken cancellationToken
+    )
     {
         var collected = new List<ImageModelResult>();
         try
         {
-            await OperationRetry.ExecuteAsync(request.MaxRetries, cancellationToken, request.AbortReason, async ct =>
-            {
-                var parts = NormalizePrompt(request.Prompt, request.Text);
-                var result = await model.DoGenerateAsync(new ImageModelCall(parts.Prompt, parts.Files, parts.Mask, count, request.Size, request.AspectRatio, request.Seed, providerOptions, headers, ct), ct).ConfigureAwait(false);
-                collected.Add(result);
-                if (result.Images.Count == 0 && result.IsRetryable != false)
-                {
-                    throw new RetryableNoImageException();
-                }
+            await OperationRetry
+                .ExecuteAsync(
+                    request.MaxRetries,
+                    cancellationToken,
+                    request.AbortReason,
+                    async ct =>
+                    {
+                        var parts = NormalizePrompt(request.Prompt, request.Text);
+                        var result = await model
+                            .DoGenerateAsync(
+                                new ImageModelCall(
+                                    parts.Prompt,
+                                    parts.Files,
+                                    parts.Mask,
+                                    count,
+                                    request.Size,
+                                    request.AspectRatio,
+                                    request.Seed,
+                                    providerOptions,
+                                    headers,
+                                    ct
+                                ),
+                                ct
+                            )
+                            .ConfigureAwait(false);
+                        collected.Add(result);
+                        if (result.Images.Count == 0 && result.IsRetryable != false)
+                        {
+                            throw new RetryableNoImageException();
+                        }
 
-                return result;
-            }, error => error is RetryableNoImageException).ConfigureAwait(false);
+                        return result;
+                    },
+                    error => error is RetryableNoImageException
+                )
+                .ConfigureAwait(false);
             return collected;
         }
         catch (Exception error)
         {
-            if (error is RetryableNoImageException || (error is OperationRetryException retry && retry.LastError is RetryableNoImageException))
+            if (
+                error is RetryableNoImageException
+                || (
+                    error is OperationRetryException retry
+                    && retry.LastError is RetryableNoImageException
+                )
+            )
             {
                 return collected;
             }
@@ -477,12 +604,21 @@ public static class GenerateImage
         if (data is string dataUrl && dataUrl.StartsWith("data:", StringComparison.Ordinal))
         {
             var split = SplitDataUrl(dataUrl);
-            var bytes = split.Base64 == null ? Array.Empty<byte>() : Convert.FromBase64String(split.Base64);
-            return ImageModelFile.FromFile(bytes, string.IsNullOrEmpty(split.MediaType) ? MediaTypeDetector.Detect(bytes, "image") ?? "image/png" : split.MediaType!);
+            var bytes =
+                split.Base64 == null ? Array.Empty<byte>() : Convert.FromBase64String(split.Base64);
+            return ImageModelFile.FromFile(
+                bytes,
+                string.IsNullOrEmpty(split.MediaType)
+                    ? MediaTypeDetector.Detect(bytes, "image") ?? "image/png"
+                    : split.MediaType!
+            );
         }
 
         var payload = MediaTypeDetector.ToBytes(data);
-        return ImageModelFile.FromFile(payload, MediaTypeDetector.Detect(payload, "image") ?? "image/png");
+        return ImageModelFile.FromFile(
+            payload,
+            MediaTypeDetector.Detect(payload, "image") ?? "image/png"
+        );
     }
 
     private static (string? MediaType, string? Base64) SplitDataUrl(string dataUrl)
@@ -510,7 +646,11 @@ public static class GenerateImage
         var collected = new JsonObject();
         foreach (var provider in root.EnumerateObject())
         {
-            if (!provider.Value.TryGetProperty("images", out var images) || images.ValueKind != JsonValueKind.Array || index >= images.GetArrayLength())
+            if (
+                !provider.Value.TryGetProperty("images", out var images)
+                || images.ValueKind != JsonValueKind.Array
+                || index >= images.GetArrayLength()
+            )
             {
                 continue;
             }
@@ -534,7 +674,8 @@ public static class GenerateImage
 
         foreach (var provider in root.EnumerateObject())
         {
-            var incoming = JsonNode.Parse(provider.Value.GetRawText()) as JsonObject ?? new JsonObject();
+            var incoming =
+                JsonNode.Parse(provider.Value.GetRawText()) as JsonObject ?? new JsonObject();
             if (provider.Name == "gateway")
             {
                 JsonObject merged;
@@ -545,7 +686,10 @@ public static class GenerateImage
                     CopyInto(merged, incoming);
                     foreach (var key in GatewayCostKeys)
                     {
-                        var sum = AddDecimalStrings(ReadString(current[key]), ReadString(incoming[key]));
+                        var sum = AddDecimalStrings(
+                            ReadString(current[key]),
+                            ReadString(incoming[key])
+                        );
                         if (sum != null)
                         {
                             merged[key] = sum;
@@ -611,15 +755,26 @@ public static class GenerateImage
         var fraction1 = leftParts.Length > 1 ? leftParts[1] : string.Empty;
         var fraction2 = rightParts.Length > 1 ? rightParts[1] : string.Empty;
         var precision = Math.Max(fraction1.Length, fraction2.Length);
-        var sum = BigInteger.Parse(leftParts[0] + fraction1.PadRight(precision, '0'), CultureInfo.InvariantCulture)
-            + BigInteger.Parse(rightParts[0] + fraction2.PadRight(precision, '0'), CultureInfo.InvariantCulture);
+        var sum =
+            BigInteger.Parse(
+                leftParts[0] + fraction1.PadRight(precision, '0'),
+                CultureInfo.InvariantCulture
+            )
+            + BigInteger.Parse(
+                rightParts[0] + fraction2.PadRight(precision, '0'),
+                CultureInfo.InvariantCulture
+            );
         var text = sum.ToString(CultureInfo.InvariantCulture).PadLeft(precision + 1, '0');
         if (precision == 0)
         {
             return text;
         }
 
-        return TrimDecimal(text.Substring(0, text.Length - precision) + "." + text.Substring(text.Length - precision));
+        return TrimDecimal(
+            text.Substring(0, text.Length - precision)
+                + "."
+                + text.Substring(text.Length - precision)
+        );
     }
 
     private static bool IsDecimal(string value)
@@ -667,9 +822,7 @@ public static class GenerateImage
     private sealed class RetryableNoImageException : Exception
     {
         public RetryableNoImageException()
-            : base("No image generated.")
-        {
-        }
+            : base("No image generated.") { }
     }
 }
 
@@ -677,7 +830,11 @@ public static class GenerateImage
 public sealed class ImagePromptParts
 {
     /// <summary>Creates normalized prompt fields.</summary>
-    public ImagePromptParts(string? prompt, IReadOnlyList<ImageModelFile>? files, ImageModelFile? mask)
+    public ImagePromptParts(
+        string? prompt,
+        IReadOnlyList<ImageModelFile>? files,
+        ImageModelFile? mask
+    )
     {
         Prompt = prompt;
         Files = files;

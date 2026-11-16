@@ -37,9 +37,14 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider.</summary>
-    public static new ReplicateProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new ReplicateProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         if (handler is not null)
         {
             options = options?.Copy() ?? new OpenAICompatibleOptions();
@@ -53,7 +58,10 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : ProviderValues.ValidateBaseUrl(options.BaseUrl) ?? DefaultBaseUrl;
+        options.BaseUrl =
+            options.BaseUrl == "https://api.openai.com/v1"
+                ? DefaultBaseUrl
+                : ProviderValues.ValidateBaseUrl(options.BaseUrl) ?? DefaultBaseUrl;
         options.ApiKeyEnvironmentVariable = "REPLICATE_API_TOKEN";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
@@ -63,12 +71,26 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
     }
 
     /// <inheritdoc />
-    public override IImageModel ImageModel(string modelId) => new ReplicateImageModel(this, modelId);
+    public override IImageModel ImageModel(string modelId) =>
+        new ReplicateImageModel(this, modelId);
 
     /// <summary>Sends a request with the provider headers. <paramref name="headers"/> override them.</summary>
-    internal Task<ProviderExchangeResult> SendAsync(HttpMethod method, Uri uri, HttpContent? content, IReadOnlyDictionary<string, string>? headers, CancellationToken cancellationToken)
+    internal Task<ProviderExchangeResult> SendAsync(
+        HttpMethod method,
+        Uri uri,
+        HttpContent? content,
+        IReadOnlyDictionary<string, string>? headers,
+        CancellationToken cancellationToken
+    )
     {
-        return ProviderExchange.SendAsync(_httpClient, method, uri, content, ProviderExchange.Merge(CreateHeaders(), headers), cancellationToken);
+        return ProviderExchange.SendAsync(
+            _httpClient,
+            method,
+            uri,
+            content,
+            ProviderExchange.Merge(CreateHeaders(), headers),
+            cancellationToken
+        );
     }
 
     /// <summary>
@@ -80,9 +102,14 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
     {
         try
         {
-            var uri = ApiKeys.Combine(Options.BaseUrl, "/predictions/" + Uri.EscapeDataString(predictionId) + "/cancel");
+            var uri = ApiKeys.Combine(
+                Options.BaseUrl,
+                "/predictions/" + Uri.EscapeDataString(predictionId) + "/cancel"
+            );
             using var timeout = new CancellationTokenSource(CancelTimeout);
-            await ProviderExchange.SendAsync(_httpClient, HttpMethod.Post, uri, null, CreateHeaders(), timeout.Token).ConfigureAwait(false);
+            await ProviderExchange
+                .SendAsync(_httpClient, HttpMethod.Post, uri, null, CreateHeaders(), timeout.Token)
+                .ConfigureAwait(false);
         }
         catch
         {
@@ -94,10 +121,23 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
     /// Gets a URL taken from a response body. A URL off the provider origin must pass download validation.
     /// <paramref name="headers"/> and the provider headers go only to the provider origin; null sends no headers.
     /// </summary>
-    internal Task<ProviderExchangeResult> GetResponseUrlAsync(string url, IReadOnlyDictionary<string, string>? headers, CancellationToken cancellationToken)
+    internal Task<ProviderExchangeResult> GetResponseUrlAsync(
+        string url,
+        IReadOnlyDictionary<string, string>? headers,
+        CancellationToken cancellationToken
+    )
     {
         var outgoing = headers != null ? ProviderExchange.Merge(CreateHeaders(), headers) : null;
-        return ProviderExchange.GetResponseUrlAsync(_httpClient, url, Options.BaseUrl, DownloadUrls.ValidateDownloadUrl, outgoing, cancellationToken, ProviderExchange.DownloadClient(Options), ProviderExchange.UserAgentOnly(CreateHeaders()));
+        return ProviderExchange.GetResponseUrlAsync(
+            _httpClient,
+            url,
+            Options.BaseUrl,
+            DownloadUrls.ValidateDownloadUrl,
+            outgoing,
+            cancellationToken,
+            ProviderExchange.DownloadClient(Options),
+            ProviderExchange.UserAgentOnly(CreateHeaders())
+        );
     }
 }
 
@@ -105,14 +145,21 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
 public static class ReplicateServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddReplicate(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddReplicate(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(ReplicateProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new ReplicateProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(ReplicateProvider.ProviderId), options);
+            return new ReplicateProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(ReplicateProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

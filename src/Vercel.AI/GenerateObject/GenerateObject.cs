@@ -23,7 +23,8 @@ public sealed class NoObjectGeneratedException : AiSdkError
         string? text,
         StepResponse response,
         LanguageModelUsage usage,
-        FinishReason finishReason)
+        FinishReason finishReason
+    )
         : base("AI_NoObjectGeneratedError", message, cause)
     {
         Text = text;
@@ -119,7 +120,11 @@ public sealed class GenerateObjectOptions<T>
     public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
 
     /// <summary>Attempts to repair text that failed JSON parsing or schema validation.</summary>
-    public Func<GenerateObjectRepairContext, CancellationToken, Task<string?>>? RepairText { get; set; }
+    public Func<
+        GenerateObjectRepairContext,
+        CancellationToken,
+        Task<string?>
+    >? RepairText { get; set; }
 
     /// <summary>Called before generation begins.</summary>
     public Func<GenerateObjectStartEvent, CancellationToken, Task>? OnStart { get; set; }
@@ -173,7 +178,13 @@ public abstract class GenerateObjectEvent
 /// <summary>Event sent before object generation begins.</summary>
 public sealed class GenerateObjectStartEvent : GenerateObjectEvent
 {
-    internal GenerateObjectStartEvent(string callId, string provider, string modelId, string? prompt, IReadOnlyList<ModelMessage>? messages)
+    internal GenerateObjectStartEvent(
+        string callId,
+        string provider,
+        string modelId,
+        string? prompt,
+        IReadOnlyList<ModelMessage>? messages
+    )
         : base(callId, provider, modelId)
     {
         Prompt = prompt;
@@ -191,9 +202,7 @@ public sealed class GenerateObjectStartEvent : GenerateObjectEvent
 public sealed class GenerateObjectStepStartEvent : GenerateObjectEvent
 {
     internal GenerateObjectStepStartEvent(string callId, string provider, string modelId)
-        : base(callId, provider, modelId)
-    {
-    }
+        : base(callId, provider, modelId) { }
 
     /// <summary>The only step number made by generateObject.</summary>
     public int StepNumber => 0;
@@ -202,7 +211,12 @@ public sealed class GenerateObjectStepStartEvent : GenerateObjectEvent
 /// <summary>The raw result of the one model step made by <c>generateObject</c>.</summary>
 public sealed class GenerateObjectStepEndEvent : GenerateObjectEvent
 {
-    internal GenerateObjectStepEndEvent(string callId, string provider, string modelId, StepResult step)
+    internal GenerateObjectStepEndEvent(
+        string callId,
+        string provider,
+        string modelId,
+        StepResult step
+    )
         : base(callId, provider, modelId)
     {
         ObjectText = step.Text;
@@ -246,7 +260,12 @@ public sealed class GenerateObjectStepEndEvent : GenerateObjectEvent
 /// <summary>Event sent after the generated object has been parsed and validated.</summary>
 public sealed class GenerateObjectEndEvent<T> : GenerateObjectEvent
 {
-    internal GenerateObjectEndEvent(string callId, string provider, string modelId, GenerateObjectResult<T> result)
+    internal GenerateObjectEndEvent(
+        string callId,
+        string provider,
+        string modelId,
+        GenerateObjectResult<T> result
+    )
         : base(callId, provider, modelId)
     {
         Object = result.Object;

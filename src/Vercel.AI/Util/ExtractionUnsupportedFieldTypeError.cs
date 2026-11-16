@@ -16,10 +16,23 @@ public sealed class ExtractionUnsupportedFieldTypeError : AiSdkError
         string fieldType,
         string provider,
         string modelId,
-        string? message = null)
+        string? message = null
+    )
         : base(
             "AI_ExtractionUnsupportedFieldTypeError",
-            message ?? ("Field \"" + fieldId + "\" has type \"" + fieldType + "\", which is not supported by provider \"" + provider + "\" and model \"" + modelId + "\"."))
+            message
+                ?? (
+                    "Field \""
+                    + fieldId
+                    + "\" has type \""
+                    + fieldType
+                    + "\", which is not supported by provider \""
+                    + provider
+                    + "\" and model \""
+                    + modelId
+                    + "\"."
+                )
+        )
     {
         FieldId = fieldId;
         FieldType = fieldType;

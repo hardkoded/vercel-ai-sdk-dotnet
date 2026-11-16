@@ -17,13 +17,18 @@ internal static class DecisionLanguageModelSupport
     {
         return Q(
             "choice",
-            new Dictionary<string, object?> { ["task"] = new List<object?> { "Pick the exact label" } },
-            criteria ?? new Dictionary<string, object?>
+            new Dictionary<string, object?>
             {
-                ["Needs Review"] = new Dictionary<string, object?> { ["meaning"] = "manual" },
-                ["Needs review"] = new List<object?> { "automatic" },
-                ["other"] = null,
-            });
+                ["task"] = new List<object?> { "Pick the exact label" },
+            },
+            criteria
+                ?? new Dictionary<string, object?>
+                {
+                    ["Needs Review"] = new Dictionary<string, object?> { ["meaning"] = "manual" },
+                    ["Needs review"] = new List<object?> { "automatic" },
+                    ["other"] = null,
+                }
+        );
     }
 
     internal static DecisionQuestion Severity(object? criteria = null)
@@ -31,22 +36,40 @@ internal static class DecisionLanguageModelSupport
         return Q(
             "score",
             new List<object?> { "Rate the impact" },
-            criteria ?? new List<object?> { "low", new Dictionary<string, object?> { ["meaning"] = "medium" }, null });
+            criteria
+                ?? new List<object?>
+                {
+                    "low",
+                    new Dictionary<string, object?> { ["meaning"] = "medium" },
+                    null,
+                }
+        );
     }
 
     internal static Dictionary<string, DecisionQuestion> Questions()
     {
-        return new Dictionary<string, DecisionQuestion> { ["category"] = Category(), ["severity"] = Severity() };
+        return new Dictionary<string, DecisionQuestion>
+        {
+            ["category"] = Category(),
+            ["severity"] = Severity(),
+        };
     }
 
     internal static Dictionary<string, object?> StateValue()
     {
-        return new Dictionary<string, object?> { ["text"] = "test", ["events"] = new List<object?> { 1, null } };
+        return new Dictionary<string, object?>
+        {
+            ["text"] = "test",
+            ["events"] = new List<object?> { 1, null },
+        };
     }
 
     internal static List<object?> State()
     {
-        return new List<object?> { new Dictionary<string, object?> { ["type"] = "json", ["value"] = StateValue() } };
+        return new List<object?>
+        {
+            new Dictionary<string, object?> { ["type"] = "json", ["value"] = StateValue() },
+        };
     }
 
     internal static DecisionModelCall Call(
@@ -56,21 +79,40 @@ internal static class DecisionLanguageModelSupport
         IReadOnlyDictionary<string, string>? headers = null,
         CancellationToken cancellationToken = default,
         double? maxOutputTokens = null,
-        string? reasoning = null)
+        string? reasoning = null
+    )
     {
         using var document = JsonDocument.Parse(providerOptions);
-        return new DecisionModelCall(P(state ?? State()), questions ?? Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), cancellationToken, maxOutputTokens, reasoning);
+        return new DecisionModelCall(
+            P(state ?? State()),
+            questions ?? Questions(),
+            document.RootElement.Clone(),
+            headers ?? new Dictionary<string, string>(),
+            cancellationToken,
+            maxOutputTokens,
+            reasoning
+        );
     }
 
     internal static LanguageModelGenerateResult Result(
         IReadOnlyList<GeneratedContent>? content = null,
-        FinishReason finishReason = FinishReason.Stop)
+        FinishReason finishReason = FinishReason.Stop
+    )
     {
         using var metadata = JsonDocument.Parse("{\"test\":{\"original\":true}}");
         return new LanguageModelGenerateResult(
             content ?? new GeneratedContent[] { new GeneratedText("{\"q1\":1.25,\"q0\":\"c1\"}") },
             finishReason,
-            new LanguageModelUsage(20, 12, 32, cacheReadTokens: 5, cacheWriteTokens: 0, reasoningTokens: 4, noCacheInputTokens: 15, textTokens: 8),
+            new LanguageModelUsage(
+                20,
+                12,
+                32,
+                cacheReadTokens: 5,
+                cacheWriteTokens: 0,
+                reasoningTokens: 4,
+                noCacheInputTokens: 15,
+                textTokens: 8
+            ),
             rawFinishReason: "end",
             warnings: new[] { new CallWarning("other", "test warning") },
             responseId: "response",
@@ -78,15 +120,24 @@ internal static class DecisionLanguageModelSupport
             rawResponse: "{\"raw\":true}",
             responseModelId: "resolved",
             responseTimestamp: DateTimeOffset.FromUnixTimeMilliseconds(0),
-            responseHeaders: new Dictionary<string, string> { ["x-request-id"] = "id" });
+            responseHeaders: new Dictionary<string, string> { ["x-request-id"] = "id" }
+        );
     }
 
-    internal static (DecisionModel Model, RecordingLanguageModel Language, LanguageModelGenerateResult Result) Setup(
+    internal static (
+        DecisionModel Model,
+        RecordingLanguageModel Language,
+        LanguageModelGenerateResult Result
+    ) Setup(
         IReadOnlyList<GeneratedContent>? content = null,
-        FinishReason finishReason = FinishReason.Stop)
+        FinishReason finishReason = FinishReason.Stop
+    )
     {
         var result = Result(content, finishReason);
-        var language = new RecordingLanguageModel { OnGenerate = (_, _) => Task.FromResult(result) };
+        var language = new RecordingLanguageModel
+        {
+            OnGenerate = (_, _) => Task.FromResult(result),
+        };
         return (new DecisionModel(language, "test.decision"), language, result);
     }
 }
@@ -94,7 +145,8 @@ internal static class DecisionLanguageModelSupport
 /// <summary>Language model that records each generate call with its cancellation token.</summary>
 internal sealed class RecordingLanguageModel : ILanguageModel
 {
-    public IReadOnlyDictionary<string, string> SupportedUrls => Vercel.AI.ProviderUtils.UrlSupport.None;
+    public IReadOnlyDictionary<string, string> SupportedUrls =>
+        Vercel.AI.ProviderUtils.UrlSupport.None;
 
     public string SpecificationVersion => "v4";
 
@@ -106,16 +158,26 @@ internal sealed class RecordingLanguageModel : ILanguageModel
 
     public List<CancellationToken> Tokens { get; } = new();
 
-    public Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelGenerateResult>> OnGenerate { get; set; } = (_, _) => throw new InvalidOperationException("No result.");
+    public Func<
+        LanguageModelCallOptions,
+        CancellationToken,
+        Task<LanguageModelGenerateResult>
+    > OnGenerate { get; set; } = (_, _) => throw new InvalidOperationException("No result.");
 
-    public Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         Calls.Add(options);
         Tokens.Add(cancellationToken);
         return OnGenerate(options, cancellationToken);
     }
 
-    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public Task<LanguageModelStreamResult> DoStreamAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         throw new NotSupportedException();
     }

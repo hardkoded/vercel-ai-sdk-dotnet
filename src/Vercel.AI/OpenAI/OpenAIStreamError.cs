@@ -25,7 +25,14 @@ internal static class OpenAIStreamError
         }
 
         var statusCode = StatusCode(code, type);
-        return new ProviderStreamError(message, frame.Clone(), type, code, statusCode, IsRetryable(code, type, statusCode));
+        return new ProviderStreamError(
+            message,
+            frame.Clone(),
+            type,
+            code,
+            statusCode,
+            IsRetryable(code, type, statusCode)
+        );
     }
 
     /// <summary>
@@ -38,7 +45,8 @@ internal static class OpenAIStreamError
         Func<T, JsonElement?> getError,
         Func<T, bool> isOutputChunk,
         Func<T, bool>? isAcceptedChunk = null,
-        int acceptedGraceMs = 50)
+        int acceptedGraceMs = 50
+    )
     {
         var read = new List<T>();
         var accepted = false;
@@ -48,7 +56,8 @@ internal static class OpenAIStreamError
             if (accepted)
             {
                 using var grace = new CancellationTokenSource();
-                var winner = await Task.WhenAny(next, Task.Delay(acceptedGraceMs, grace.Token)).ConfigureAwait(false);
+                var winner = await Task.WhenAny(next, Task.Delay(acceptedGraceMs, grace.Token))
+                    .ConfigureAwait(false);
                 grace.Cancel();
                 if (winner != next)
                 {
@@ -78,7 +87,11 @@ internal static class OpenAIStreamError
         }
     }
 
-    private static async IAsyncEnumerable<T> Replay<T>(List<T> read, Task<bool>? pending, IAsyncEnumerator<T> source)
+    private static async IAsyncEnumerable<T> Replay<T>(
+        List<T> read,
+        Task<bool>? pending,
+        IAsyncEnumerator<T> source
+    )
     {
         foreach (var chunk in read)
         {
@@ -105,10 +118,18 @@ internal static class OpenAIStreamError
     {
         var streamError = CreateProviderStreamError(frame);
         var error = ProviderHttp.MapStatus(streamError?.StatusCode ?? 500, frame.GetRawText());
-        return OpenAICompatibleChat.WithMessage(error, streamError?.Message ?? "OpenAI stream failed before any output was generated");
+        return OpenAICompatibleChat.WithMessage(
+            error,
+            streamError?.Message ?? "OpenAI stream failed before any output was generated"
+        );
     }
 
-    private static bool TryParse(JsonElement frame, out string message, out object? code, out string? type)
+    private static bool TryParse(
+        JsonElement frame,
+        out string message,
+        out object? code,
+        out string? type
+    )
     {
         message = string.Empty;
         code = null;
@@ -120,11 +141,13 @@ internal static class OpenAIStreamError
 
         if (String(frame, "type") == "response.failed")
         {
-            if (!frame.TryGetProperty("response", out var response)
+            if (
+                !frame.TryGetProperty("response", out var response)
                 || response.ValueKind != JsonValueKind.Object
                 || !response.TryGetProperty("error", out var responseError)
                 || responseError.ValueKind != JsonValueKind.Object
-                || String(responseError, "message") is not string responseMessage)
+                || String(responseError, "message") is not string responseMessage
+            )
             {
                 return false;
             }
@@ -135,10 +158,18 @@ internal static class OpenAIStreamError
             return true;
         }
 
-        var nested = frame.TryGetProperty("error", out var inner) && inner.ValueKind == JsonValueKind.Object;
+        var nested =
+            frame.TryGetProperty("error", out var inner) && inner.ValueKind == JsonValueKind.Object;
         var error = nested ? inner : frame;
-        if (String(error, "message") is not string errorMessage
-            || !(nested || String(error, "type") != null || error.TryGetProperty("code", out _) || error.TryGetProperty("param", out _)))
+        if (
+            String(error, "message") is not string errorMessage
+            || !(
+                nested
+                || String(error, "type") != null
+                || error.TryGetProperty("code", out _)
+                || error.TryGetProperty("param", out _)
+            )
+        )
         {
             return false;
         }
@@ -153,7 +184,10 @@ internal static class OpenAIStreamError
     {
         var explicitStatus = code switch
         {
-            string text when text.Length == 3 && text.All(char.IsDigit) => int.Parse(text, System.Globalization.CultureInfo.InvariantCulture),
+            string text when text.Length == 3 && text.All(char.IsDigit) => int.Parse(
+                text,
+                System.Globalization.CultureInfo.InvariantCulture
+            ),
             long number when number >= 400 && number <= 599 => (int)number,
             _ => 0,
         };
@@ -162,7 +196,11 @@ internal static class OpenAIStreamError
             return explicitStatus;
         }
 
-        var discriminator = string.Join(" ", new[] { code?.ToString(), type }.Where(value => value != null)).ToLowerInvariant();
+        var discriminator = string.Join(
+                " ",
+                new[] { code?.ToString(), type }.Where(value => value != null)
+            )
+            .ToLowerInvariant();
         if (discriminator.Contains("insufficient_quota") || discriminator.Contains("rate_limit"))
         {
             return 429;
@@ -183,7 +221,11 @@ internal static class OpenAIStreamError
             return 404;
         }
 
-        if (discriminator.Contains("invalid") || discriminator.Contains("bad_request") || discriminator.Contains("context_length"))
+        if (
+            discriminator.Contains("invalid")
+            || discriminator.Contains("bad_request")
+            || discriminator.Contains("context_length")
+        )
         {
             return 400;
         }
@@ -216,13 +258,18 @@ internal static class OpenAIStreamError
         return code.ValueKind switch
         {
             JsonValueKind.String => code.GetString(),
-            JsonValueKind.Number => code.TryGetInt64(out var number) ? (object)number : code.GetDouble(),
+            JsonValueKind.Number => code.TryGetInt64(out var number)
+                ? (object)number
+                : code.GetDouble(),
             _ => null,
         };
     }
 
     private static string? String(JsonElement element, string name)
     {
-        return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        return
+            element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
     }
 }

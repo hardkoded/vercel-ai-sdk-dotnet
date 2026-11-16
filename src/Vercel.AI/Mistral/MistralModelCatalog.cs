@@ -25,7 +25,10 @@ internal sealed class MistralReasoningCapabilities
 internal sealed class MistralLanguageModelEntry
 {
     /// <summary>Creates an entry.</summary>
-    public MistralLanguageModelEntry(MistralReasoningCapabilities reasoning, MistralReasoningCapabilities conversationReasoning)
+    public MistralLanguageModelEntry(
+        MistralReasoningCapabilities reasoning,
+        MistralReasoningCapabilities conversationReasoning
+    )
     {
         Reasoning = reasoning;
         ConversationReasoning = conversationReasoning;
@@ -43,7 +46,9 @@ internal static class MistralModelCatalog
 {
     // Known non-reasoning models from https://api.mistral.ai/v1/models (2026-10-06).
     // Unknown IDs inherit current reasoning configuration support.
-    private static readonly HashSet<string> ModelsWithoutReasoningEffort = new(StringComparer.Ordinal)
+    private static readonly HashSet<string> ModelsWithoutReasoningEffort = new(
+        StringComparer.Ordinal
+    )
     {
         "codestral-2508",
         "codestral-latest",
@@ -63,7 +68,9 @@ internal static class MistralModelCatalog
 
     // GLM-5.3 models accept only low, high, and max reasoning effort and cannot disable reasoning.
     // Omitting reasoning_effort uses max. https://docs.mistral.ai/studio/conversations/reasoning (2026-10-26)
-    private static readonly HashSet<string> ModelsWithLowHighMaxReasoningEffort = new(StringComparer.Ordinal)
+    private static readonly HashSet<string> ModelsWithLowHighMaxReasoningEffort = new(
+        StringComparer.Ordinal
+    )
     {
         "zai-glm-5",
         "zai-glm-5-3",
@@ -72,7 +79,9 @@ internal static class MistralModelCatalog
     };
 
     // Mistral Large 4 Chat models accept low, medium, and high reasoning effort and cannot disable reasoning (see #24350).
-    private static readonly HashSet<string> ModelsWithLowMediumHighReasoningEffort = new(StringComparer.Ordinal)
+    private static readonly HashSet<string> ModelsWithLowMediumHighReasoningEffort = new(
+        StringComparer.Ordinal
+    )
     {
         "mistral-large-4",
         "mistral-large-4-0",
@@ -106,15 +115,17 @@ internal static class MistralModelCatalog
     public static MistralLanguageModelEntry GetMistralLanguageModelEntry(string modelId)
     {
         var reasoning = new MistralReasoningCapabilities(
-            ModelsWithoutReasoningEffort.Contains(modelId)
-                ? Array.Empty<string>()
-                : ModelsWithLowHighMaxReasoningEffort.Contains(modelId)
-                    ? new[] { "low", "high", "max" }
-                    : ModelsWithLowMediumHighReasoningEffort.Contains(modelId)
-                        ? new[] { "low", "medium", "high" }
-                        : new[] { "none", "high" });
+            ModelsWithoutReasoningEffort.Contains(modelId) ? Array.Empty<string>()
+            : ModelsWithLowHighMaxReasoningEffort.Contains(modelId) ? new[] { "low", "high", "max" }
+            : ModelsWithLowMediumHighReasoningEffort.Contains(modelId)
+                ? new[] { "low", "medium", "high" }
+            : new[] { "none", "high" }
+        );
         var conversationReasoning = new MistralReasoningCapabilities(
-            ReasoningEffortModelIds.Contains(modelId) ? new[] { "none", "high" } : Array.Empty<string>());
+            ReasoningEffortModelIds.Contains(modelId)
+                ? new[] { "none", "high" }
+                : Array.Empty<string>()
+        );
         return new MistralLanguageModelEntry(reasoning, conversationReasoning);
     }
 }

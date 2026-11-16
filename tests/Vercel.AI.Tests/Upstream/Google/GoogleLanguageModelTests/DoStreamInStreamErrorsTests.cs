@@ -16,21 +16,38 @@ public sealed class DoStreamInStreamErrorsTests
     [InlineData(true, 503, "UNAVAILABLE", true)]
     [InlineData(false, 400, "INVALID_ARGUMENT", false)]
     [InlineData(false, null, "UNKNOWN", false)]
-    [UpstreamTest("packages/google/src/google-language-model.test.ts::doStream > in-stream errors::should surface $status and finish with error (partial text: $partialText)", Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_surface_status_and_finish_with_error_partial_text(bool partialText, int? code, string status, bool isRetryable)
+    [UpstreamTest(
+        "packages/google/src/google-language-model.test.ts::doStream > in-stream errors::should surface $status and finish with error (partial text: $partialText)",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_surface_status_and_finish_with_error_partial_text(
+        bool partialText,
+        int? code,
+        string status,
+        bool isRetryable
+    )
     {
-        var error = $"{{\"code\":{(code?.ToString() ?? "null")},\"message\":\"Provider error\",\"status\":\"{status}\",\"details\":[{{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\"}}]}}";
+        var error =
+            $"{{\"code\":{(code?.ToString() ?? "null")},\"message\":\"Provider error\",\"status\":\"{status}\",\"details\":[{{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\"}}]}}";
         var sse = string.Empty;
         if (partialText)
         {
-            sse += "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Partial answer\"}]}}],\"usageMetadata\":{\"promptTokenCount\":10,\"candidatesTokenCount\":2,\"totalTokenCount\":12}}\n\n";
+            sse +=
+                "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Partial answer\"}]}}],\"usageMetadata\":{\"promptTokenCount\":10,\"candidatesTokenCount\":2,\"totalTokenCount\":12}}\n\n";
         }
 
         sse += "data: {\"error\":" + error + "}\n\n";
         var handler = new RecordingHandler { ResponseText = sse, MediaType = "text/event-stream" };
-        var provider = GoogleProvider.Create(new GoogleOptions { ApiKey = "test-api-key", GenerateId = () => "test-id" }, handler);
+        var provider = GoogleProvider.Create(
+            new GoogleOptions { ApiKey = "test-api-key", GenerateId = () => "test-id" },
+            handler
+        );
 
-        var events = await GoogleUpstream.Collect(await provider.LanguageModel("gemini-pro").DoStreamAsync(GoogleUpstream.Hello(), CancellationToken.None));
+        var events = await GoogleUpstream.Collect(
+            await provider
+                .LanguageModel("gemini-pro")
+                .DoStreamAsync(GoogleUpstream.Hello(), CancellationToken.None)
+        );
 
         var expected = new List<string> { "stream-start" };
         if (partialText)
@@ -47,7 +64,9 @@ public sealed class DoStreamInStreamErrorsTests
         expected.Add("finish");
         Assert.Equal(expected, events.Select(part => part.Type).ToList());
 
-        var errorEvent = Assert.IsType<ErrorStreamPart>(events.Single(part => part is ErrorStreamPart));
+        var errorEvent = Assert.IsType<ErrorStreamPart>(
+            events.Single(part => part is ErrorStreamPart)
+        );
         var providerError = errorEvent.Error!;
         Assert.Equal("Provider error", providerError.Message);
         Assert.Equal(status, providerError.Type);

@@ -9,9 +9,7 @@ public sealed class DelayAbortedException : OperationCanceledException
 {
     /// <summary>Creates the exception.</summary>
     public DelayAbortedException()
-        : base("Delay was aborted")
-    {
-    }
+        : base("Delay was aborted") { }
 
     /// <summary>Abort error name.</summary>
     public string Name
@@ -48,7 +46,11 @@ public static class AbortErrors
             return false;
         }
 
-        if (error is DelayAbortedException || error is OperationCanceledException || error is TimeoutException)
+        if (
+            error is DelayAbortedException
+            || error is OperationCanceledException
+            || error is TimeoutException
+        )
         {
             return true;
         }

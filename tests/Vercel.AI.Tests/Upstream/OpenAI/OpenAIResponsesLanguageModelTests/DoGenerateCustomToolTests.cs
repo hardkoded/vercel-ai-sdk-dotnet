@@ -13,18 +13,30 @@ namespace Vercel.AI.Tests.OpenAIResponsesLanguageModelTests;
 /// <summary>Port of <c>openai-responses-language-model.test.ts</c> &gt; <c>OpenAIResponsesLanguageModel &gt; doGenerate &gt; custom tool</c>.</summary>
 public sealed class DoGenerateCustomToolTests
 {
-    private const string Id = "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > custom tool::";
+    private const string Id =
+        "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > custom tool::";
 
     [Fact]
-    [UpstreamTest(Id + "should send request body with custom tool", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should send request body with custom tool",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_send_request_body_with_custom_tool()
     {
         using var args = JsonDocument.Parse(
-            """{"description":"Write a SQL SELECT query to answer the user question.","format":{"type":"grammar","syntax":"regex","definition":"SELECT .+"}}""");
+            """{"description":"Write a SQL SELECT query to answer the user question.","format":{"type":"grammar","syntax":"regex","definition":"SELECT .+"}}"""
+        );
         var options = new LanguageModelCallOptions
         {
             Prompt = new ModelMessage[] { new UserModelMessage("Hello") },
-            Tools = new[] { LanguageModelTool.ProviderDefined("openai.custom", "write_sql", args.RootElement.Clone()) },
+            Tools = new[]
+            {
+                LanguageModelTool.ProviderDefined(
+                    "openai.custom",
+                    "write_sql",
+                    args.RootElement.Clone()
+                ),
+            },
         };
 
         var request = OpenAIResponsesLanguageModel.Prepare("gpt-5.2-codex", options, false);
@@ -41,22 +53,32 @@ public sealed class DoGenerateCustomToolTests
                 "format": {"type":"grammar","syntax":"regex","definition":"SELECT .+"}
               }]
             }
-            """);
+            """
+        );
         Assert.True(JsonNode.DeepEquals(expected, request.Body), request.Body.ToJsonString());
     }
 
     private static async Task<LanguageModelGenerateResult> Generate()
     {
-        var capture = new OpenAICapture { ResponseJson = OpenAIResponsesSupport.Fixture("openai-custom-tool.1.json") };
+        var capture = new OpenAICapture
+        {
+            ResponseJson = OpenAIResponsesSupport.Fixture("openai-custom-tool.1.json"),
+        };
         var options = OpenAIUpstream.Hello();
         options.Tools = new[]
         {
             LanguageModelTool.ProviderDefined(
                 "openai.custom",
                 "write_sql",
-                OpenAIUpstream.Json("""{"description":"Write a SQL SELECT query to answer the user question.","format":{"type":"grammar","syntax":"regex","definition":"SELECT .+"}}""")),
+                OpenAIUpstream.Json(
+                    """{"description":"Write a SQL SELECT query to answer the user question.","format":{"type":"grammar","syntax":"regex","definition":"SELECT .+"}}"""
+                )
+            ),
         };
-        return await OpenAIUpstream.Provider(capture).ResponsesModel("gpt-5.2-codex").DoGenerateAsync(options, CancellationToken.None);
+        return await OpenAIUpstream
+            .Provider(capture)
+            .ResponsesModel("gpt-5.2-codex")
+            .DoGenerateAsync(options, CancellationToken.None);
     }
 
     [Fact]
@@ -69,7 +91,10 @@ public sealed class DoGenerateCustomToolTests
         Assert.Equal("call_custom_sql_001", call.ToolCallId);
         Assert.Equal("write_sql", call.ToolName);
         Assert.Equal("\"SELECT * FROM users WHERE age > 25\"", call.ArgumentsJson);
-        JsonAssert.Equal(call.ProviderMetadata!.Value, """{"openai":{"itemId":"ct_abc123def456"}}""");
+        JsonAssert.Equal(
+            call.ProviderMetadata!.Value,
+            """{"openai":{"itemId":"ct_abc123def456"}}"""
+        );
     }
 
     [Fact]

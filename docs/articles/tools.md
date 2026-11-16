@@ -15,17 +15,20 @@ var weather = Tool.Function(
     {
         var city = arguments.GetProperty("city").GetString();
         return Task.FromResult(JsonSerializer.Serialize(new { city, forecast = "sunny" }));
-    });
+    }
+);
 
-var result = await client.GenerateTextAsync(new GenerateTextOptions
-{
-    ModelId = "openai/gpt-6-astra",
-    Prompt = "Weather in Lisbon?",
-    Tools = new[] { weather },
-    StopWhen = StopWhen.IsStepCount(4),
-});
+var result = await client.GenerateTextAsync(
+    new GenerateTextOptions
+    {
+        ModelId = "openai/gpt-6-astra",
+        Prompt = "Weather in Lisbon?",
+        Tools = new[] { weather },
+        StopWhen = StopWhen.IsStepCount(4),
+    }
+);
 ```
-<sup><a href='/examples/Tools/Program.cs#L15-L35' title='Snippet source file'>snippet source</a> | <a href='#snippet-tools' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/examples/Tools/Program.cs#L15-L38' title='Snippet source file'>snippet source</a> | <a href='#snippet-tools' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The default stop condition is one step. That step’s tool calls still run, and the loop stops before a second model call. Raise `IsStepCount`, or use `HasToolCall` / `IsLoopFinished`, when the model should see the tool result.

@@ -10,7 +10,10 @@ namespace Vercel.AI.Tests.Upstream.Gateway.GatewayDecisionModel;
 public sealed class GatewayDecisionModelUrlConstructionTests
 {
     [Fact]
-    [UpstreamTest("packages/gateway/src/gateway-decision-model.test.ts::GatewayDecisionModel > URL construction::should post to /decision-model endpoint", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/gateway/src/gateway-decision-model.test.ts::GatewayDecisionModel > URL construction::should post to /decision-model endpoint",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_post_to_decision_model_endpoint()
     {
         var (model, capture) = Setup();

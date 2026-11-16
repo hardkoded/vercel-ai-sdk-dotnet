@@ -14,7 +14,12 @@ public sealed class ToolCallConcurrencyTypesTests
     [Fact]
     public void Should_accept_toolCallConcurrency_on_GenerateTextOptions()
     {
-        var options = new GenerateTextOptions { Model = new TestLanguageModel(), Prompt = "Hello", ToolCallConcurrency = 1 };
+        var options = new GenerateTextOptions
+        {
+            Model = new TestLanguageModel(),
+            Prompt = "Hello",
+            ToolCallConcurrency = 1,
+        };
 
         Assert.Equal(1, options.ToolCallConcurrency);
     }
@@ -23,7 +28,12 @@ public sealed class ToolCallConcurrencyTypesTests
     [Fact]
     public void Should_accept_toolCallConcurrency_on_StreamTextOptions()
     {
-        var options = new StreamTextOptions { Model = new TestLanguageModel(), Prompt = "Hello", ToolCallConcurrency = 1 };
+        var options = new StreamTextOptions
+        {
+            Model = new TestLanguageModel(),
+            Prompt = "Hello",
+            ToolCallConcurrency = 1,
+        };
 
         Assert.Equal(1, options.ToolCallConcurrency);
     }
@@ -32,16 +42,18 @@ public sealed class ToolCallConcurrencyTypesTests
     [Fact]
     public void Should_accept_toolCallConcurrency_in_settings_and_prepareCall()
     {
-        var agent = new Agent(new AgentOptions
-        {
-            Model = new TestLanguageModel(),
-            ToolCallConcurrency = 1,
-            PrepareCall = options =>
+        var agent = new Agent(
+            new AgentOptions
             {
-                options.ToolCallConcurrency = 2;
-                return options;
-            },
-        });
+                Model = new TestLanguageModel(),
+                ToolCallConcurrency = 1,
+                PrepareCall = options =>
+                {
+                    options.ToolCallConcurrency = 2;
+                    return options;
+                },
+            }
+        );
 
         Assert.Equal(1, agent.Options.ToolCallConcurrency);
     }

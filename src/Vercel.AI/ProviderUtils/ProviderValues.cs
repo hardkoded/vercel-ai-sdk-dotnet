@@ -46,7 +46,9 @@ public static class ProviderValues
     }
 
     /// <summary>Copies entries whose values are not null.</summary>
-    public static Dictionary<string, T> RemoveUndefinedEntries<T>(IReadOnlyDictionary<string, T?> record)
+    public static Dictionary<string, T> RemoveUndefinedEntries<T>(
+        IReadOnlyDictionary<string, T?> record
+    )
     {
         var result = new Dictionary<string, T>(StringComparer.Ordinal);
         if (record == null)
@@ -84,8 +86,17 @@ public static class ProviderValues
             return true;
         }
 
-        if (value is byte || value is sbyte || value is short || value is ushort || value is int || value is uint
-            || value is long || value is ulong || value is decimal)
+        if (
+            value is byte
+            || value is sbyte
+            || value is short
+            || value is ushort
+            || value is int
+            || value is uint
+            || value is long
+            || value is ulong
+            || value is decimal
+        )
         {
             return true;
         }
@@ -163,7 +174,9 @@ public static class ProviderValues
     }
 
     /// <summary>Lower-cases header names and drops null values.</summary>
-    public static Dictionary<string, string> NormalizeHeaders(IEnumerable<KeyValuePair<string, string?>>? headers)
+    public static Dictionary<string, string> NormalizeHeaders(
+        IEnumerable<KeyValuePair<string, string?>>? headers
+    )
     {
         var normalized = new Dictionary<string, string>(StringComparer.Ordinal);
         if (headers == null)
@@ -183,7 +196,10 @@ public static class ProviderValues
     }
 
     /// <summary>Appends <paramref name="suffixParts"/> to the user-agent header, creating it when needed.</summary>
-    public static Dictionary<string, string> WithUserAgentSuffix(IEnumerable<KeyValuePair<string, string?>>? headers, params string[] suffixParts)
+    public static Dictionary<string, string> WithUserAgentSuffix(
+        IEnumerable<KeyValuePair<string, string?>>? headers,
+        params string[] suffixParts
+    )
     {
         var normalized = NormalizeHeaders(headers);
         string? current;
@@ -241,7 +257,12 @@ public static class ProviderValues
     {
         Uri? left;
         Uri? right;
-        if (!Uri.TryCreate(url, UriKind.Absolute, out left) || !Uri.TryCreate(baseUrl, UriKind.Absolute, out right) || left == null || right == null)
+        if (
+            !Uri.TryCreate(url, UriKind.Absolute, out left)
+            || !Uri.TryCreate(baseUrl, UriKind.Absolute, out right)
+            || left == null
+            || right == null
+        )
         {
             return false;
         }
@@ -375,12 +396,19 @@ public static class ProviderValues
     /// <summary>
     /// Returns counts when every value is a non-negative safe integer and the parts add up to the total.
     /// </summary>
-    public static BatchRequestCounts? NormalizeBatchRequestCounts(double? total, double? pending, double? completed, double? failed)
+    public static BatchRequestCounts? NormalizeBatchRequestCounts(
+        double? total,
+        double? pending,
+        double? completed,
+        double? failed
+    )
     {
-        if (!IsNonNegativeSafeInteger(total)
+        if (
+            !IsNonNegativeSafeInteger(total)
             || !IsNonNegativeSafeInteger(pending)
             || !IsNonNegativeSafeInteger(completed)
-            || !IsNonNegativeSafeInteger(failed))
+            || !IsNonNegativeSafeInteger(failed)
+        )
         {
             return null;
         }
@@ -413,13 +441,11 @@ public static class ProviderValues
             return text;
         }
 
-        var lineEnding = text.IndexOf("\r\n", StringComparison.Ordinal) >= 0
-            ? "\r\n"
-            : text.IndexOf('\n') >= 0
-                ? "\n"
-                : text.IndexOf('\r') >= 0
-                    ? "\r"
-                    : "\n";
+        var lineEnding =
+            text.IndexOf("\r\n", StringComparison.Ordinal) >= 0 ? "\r\n"
+            : text.IndexOf('\n') >= 0 ? "\n"
+            : text.IndexOf('\r') >= 0 ? "\r"
+            : "\n";
         var lines = Split(text, lineEnding);
         var start = Math.Max(1, startLine ?? 1) - 1;
         var end = Math.Min(lines.Count, endLine ?? lines.Count);
@@ -444,7 +470,9 @@ public static class ProviderValues
 
     private static string Origin(Uri uri)
     {
-        var port = uri.IsDefaultPort ? string.Empty : ":" + uri.Port.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var port = uri.IsDefaultPort
+            ? string.Empty
+            : ":" + uri.Port.ToString(System.Globalization.CultureInfo.InvariantCulture);
         return uri.Scheme + "://" + uri.Host + port;
     }
 
@@ -569,7 +597,10 @@ public static class ToolExecution
     }
 
     /// <summary>Yields each streamed value as preliminary, then repeats the last value as final.</summary>
-    public static async IAsyncEnumerable<ToolStep<T>> ExecuteStreamAsync<T>(IAsyncEnumerable<T> outputs, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public static async IAsyncEnumerable<ToolStep<T>> ExecuteStreamAsync<T>(
+        IAsyncEnumerable<T> outputs,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
     {
         if (outputs is null)
         {
@@ -578,7 +609,9 @@ public static class ToolExecution
 
         var hasLast = false;
         T last = default!;
-        await foreach (var output in outputs.WithCancellation(cancellationToken).ConfigureAwait(false))
+        await foreach (
+            var output in outputs.WithCancellation(cancellationToken).ConfigureAwait(false)
+        )
         {
             cancellationToken.ThrowIfCancellationRequested();
             hasLast = true;

@@ -20,8 +20,12 @@ public sealed class DeepgramTranscriptionCapabilities
 public static class DeepgramModelCatalog
 {
     /// <summary>Returns the capabilities of a transcription model id.</summary>
-    public static DeepgramTranscriptionCapabilities GetDeepgramTranscriptionModelEntry(string modelId)
+    public static DeepgramTranscriptionCapabilities GetDeepgramTranscriptionModelEntry(
+        string modelId
+    )
     {
-        return new DeepgramTranscriptionCapabilities(!(modelId ?? string.Empty).StartsWith("flux", StringComparison.Ordinal));
+        return new DeepgramTranscriptionCapabilities(
+            !(modelId ?? string.Empty).StartsWith("flux", StringComparison.Ordinal)
+        );
     }
 }

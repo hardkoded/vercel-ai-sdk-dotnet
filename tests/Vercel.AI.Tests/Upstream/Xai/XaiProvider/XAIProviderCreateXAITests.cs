@@ -11,10 +11,14 @@ namespace Vercel.AI.Tests.Upstream.Xai.XaiProvider;
 /// <summary>Port of <c>xai-provider.test.ts</c> &gt; <c>xAIProvider &gt; createXAI</c>.</summary>
 public sealed class XAIProviderCreateXAITests
 {
-    private const string Prefix = "packages/xai/src/xai-provider.test.ts::xAIProvider > createXAI::";
+    private const string Prefix =
+        "packages/xai/src/xai-provider.test.ts::xAIProvider > createXAI::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should return a responses model when called as a function", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should return a responses model when called as a function",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_return_a_responses_model_when_called_as_a_function()
     {
         var provider = XaiProviderType.Create(new OpenAICompatibleOptions { ApiKey = "test-key" });

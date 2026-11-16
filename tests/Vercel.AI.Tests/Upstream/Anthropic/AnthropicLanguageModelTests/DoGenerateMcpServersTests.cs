@@ -14,12 +14,16 @@ public sealed class DoGenerateMcpServersTests
     [UpstreamTest(
         "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > mcp servers::should include mcp tool call and result in content",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Asserts the dynamic, provider-executed call and the result by property. Upstream compares a whole-content snapshot.")]
+        Note = "Asserts the dynamic, provider-executed call and the result by property. Upstream compares a whole-content snapshot."
+    )]
     public void Should_include_mcp_tool_call_and_result_in_content()
     {
         var result = AnthropicResponse.Parse(
-            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "anthropic-mcp.1.json")),
-            new AnthropicParseContext(false, "anthropic", false));
+            File.ReadAllText(
+                Path.Combine(AppContext.BaseDirectory, "Fixtures", "anthropic-mcp.1.json")
+            ),
+            new AnthropicParseContext(false, "anthropic", false)
+        );
 
         var call = Assert.IsType<GeneratedToolCall>(result.Content[0]);
         Assert.Equal("mcptoolu_015oTj2fXVKLrDohFetJd5UL", call.ToolCallId);

@@ -20,7 +20,8 @@ public class ApiCallError : AiSdkError
         string? responseBody = null,
         Exception? cause = null,
         bool? isRetryable = null,
-        object? data = null)
+        object? data = null
+    )
         : base("AI_APICallError", message, cause)
     {
         Url = url;
@@ -90,7 +91,13 @@ internal abstract class GatewayError : Exception
     public const string ErrorMarker = "vercel.ai.gateway.error";
 
     /// <summary>Creates a gateway error.</summary>
-    protected GatewayError(string message, int statusCode, Exception? cause, string? generationId, bool? isRetryable)
+    protected GatewayError(
+        string message,
+        int statusCode,
+        Exception? cause,
+        string? generationId,
+        bool? isRetryable
+    )
         : base(generationId == null ? message : message + " [" + generationId + "]", cause)
     {
         StatusCode = statusCode;
@@ -128,10 +135,13 @@ internal abstract class GatewayError : Exception
 internal sealed class GatewayInternalServerError : GatewayError
 {
     /// <summary>Creates the error.</summary>
-    public GatewayInternalServerError(string message = "Internal server error", int statusCode = 500, Exception? cause = null, string? generationId = null)
-        : base(message, statusCode, cause, generationId, null)
-    {
-    }
+    public GatewayInternalServerError(
+        string message = "Internal server error",
+        int statusCode = 500,
+        Exception? cause = null,
+        string? generationId = null
+    )
+        : base(message, statusCode, cause, generationId, null) { }
 
     /// <inheritdoc />
     public override string ErrorName
@@ -156,10 +166,13 @@ internal sealed class GatewayInternalServerError : GatewayError
 internal sealed class GatewayRateLimitError : GatewayError
 {
     /// <summary>Creates the error.</summary>
-    public GatewayRateLimitError(string message = "Rate limit exceeded", int statusCode = 429, Exception? cause = null, string? generationId = null)
-        : base(message, statusCode, cause, generationId, null)
-    {
-    }
+    public GatewayRateLimitError(
+        string message = "Rate limit exceeded",
+        int statusCode = 429,
+        Exception? cause = null,
+        string? generationId = null
+    )
+        : base(message, statusCode, cause, generationId, null) { }
 
     /// <inheritdoc />
     public override string ErrorName
@@ -184,10 +197,13 @@ internal sealed class GatewayRateLimitError : GatewayError
 internal sealed class GatewayAuthenticationError : GatewayError
 {
     /// <summary>Creates the error.</summary>
-    public GatewayAuthenticationError(string message = "Authentication failed", int statusCode = 401, Exception? cause = null, string? generationId = null)
-        : base(message, statusCode, cause, generationId, null)
-    {
-    }
+    public GatewayAuthenticationError(
+        string message = "Authentication failed",
+        int statusCode = 401,
+        Exception? cause = null,
+        string? generationId = null
+    )
+        : base(message, statusCode, cause, generationId, null) { }
 
     /// <inheritdoc />
     public override string ErrorName

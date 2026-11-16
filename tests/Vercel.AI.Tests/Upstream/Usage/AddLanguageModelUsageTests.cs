@@ -10,11 +10,20 @@ namespace Vercel.AI.Tests.Upstream.Usage;
 public sealed class AddLanguageModelUsageTests
 {
     [Fact]
-    [UpstreamTest("packages/ai/src/types/usage.test.ts::addLanguageModelUsage::should preserve raw usage when aggregating a single step", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/types/usage.test.ts::addLanguageModelUsage::should preserve raw usage when aggregating a single step",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_preserve_raw_usage_when_aggregating_a_single_step()
     {
         using var raw = JsonDocument.Parse("""{ "totalTokens": 20 }""");
-        var usage = new LanguageModelUsage(10, 5, 15, reasoningTokens: 5, raw: raw.RootElement.Clone());
+        var usage = new LanguageModelUsage(
+            10,
+            5,
+            15,
+            reasoningTokens: 5,
+            raw: raw.RootElement.Clone()
+        );
 
         var result = LanguageModelUsage.Add(LanguageModelUsage.Null, usage);
 

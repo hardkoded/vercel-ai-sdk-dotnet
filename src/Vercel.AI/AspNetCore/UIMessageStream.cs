@@ -44,14 +44,21 @@ public static class UIMessageStreamExtensions
         int? keepAliveMs = null,
         Func<Exception, string>? onError = null,
         bool? redactToolErrors = null,
-        bool sendSources = false)
+        bool sendSources = false
+    )
     {
         if (result is null)
         {
             throw new ArgumentNullException(nameof(result));
         }
 
-        return new UIMessageStreamResult(result, keepAliveMs, onError, redactToolErrors, sendSources);
+        return new UIMessageStreamResult(
+            result,
+            keepAliveMs,
+            onError,
+            redactToolErrors,
+            sendSources
+        );
     }
 
     /// <summary>
@@ -79,7 +86,8 @@ public static class UIMessageStreamExtensions
         Func<Exception, string>? onError = null,
         bool? redactToolErrors = null,
         CancellationToken cancellationToken = default,
-        bool sendSources = false)
+        bool sendSources = false
+    )
     {
         if (result is null)
         {
@@ -94,17 +102,40 @@ public static class UIMessageStreamExtensions
         UIMessageStreamResult.ValidateKeepAlive(keepAliveMs);
         var prepared = PrepareHeaders.Apply(headers, UIMessageStreamResult.ProtocolHeaders);
         var sse = UIMessageStreamResult.CreateSseStreamWithKeepAlive(
-            UIMessageStreamResult.ReadSseChunks(result, onError, redactToolErrors, cancellationToken, sendSources),
+            UIMessageStreamResult.ReadSseChunks(
+                result,
+                onError,
+                redactToolErrors,
+                cancellationToken,
+                sendSources
+            ),
             keepAliveMs,
-            cancellationToken);
-        return WriteEncodedAsync(response, UIMessageStreamResult.Encode(sse, cancellationToken), status, statusText, prepared, cancellationToken);
+            cancellationToken
+        );
+        return WriteEncodedAsync(
+            response,
+            UIMessageStreamResult.Encode(sse, cancellationToken),
+            status,
+            statusText,
+            prepared,
+            cancellationToken
+        );
     }
 
-    private static async Task WriteEncodedAsync(ServerResponse response, ReadableStream<byte[]> encoded, int? status, string? statusText, HeaderCollection headers, CancellationToken cancellationToken)
+    private static async Task WriteEncodedAsync(
+        ServerResponse response,
+        ReadableStream<byte[]> encoded,
+        int? status,
+        string? statusText,
+        HeaderCollection headers,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
-            await ServerResponseWriter.WriteAsync(response, encoded, status, statusText, headers, cancellationToken).ConfigureAwait(false);
+            await ServerResponseWriter
+                .WriteAsync(response, encoded, status, statusText, headers, cancellationToken)
+                .ConfigureAwait(false);
         }
         catch
         {
@@ -122,7 +153,10 @@ public sealed class UIMessageStreamResult : IResult
     private const string StreamOpenComment = ": stream-open\n\n";
     private const string KeepAliveComment = ": keep-alive\n\n";
 
-    internal static readonly IReadOnlyDictionary<string, string> ProtocolHeaders = new Dictionary<string, string>
+    internal static readonly IReadOnlyDictionary<string, string> ProtocolHeaders = new Dictionary<
+        string,
+        string
+    >
     {
         { "content-type", "text/event-stream" },
         { "cache-control", "no-cache" },
@@ -143,7 +177,13 @@ public sealed class UIMessageStreamResult : IResult
     /// <param name="onError">Optional mapper from the error to the <c>error</c> chunk text. Null writes <c>An error occurred.</c>. It also formats failed tool calls when <c>redactToolErrors</c> is enabled.</param>
     /// <param name="redactToolErrors">Replaces the error text of failed tool calls with the result of <c>onError</c>. Defaults to <c>true</c> when <c>onError</c> is provided and to <c>false</c> otherwise.</param>
     /// <param name="sendSources">Whether source parts are sent to the client. Defaults to <c>false</c>. Maps to <c>sendSources</c>.</param>
-    public UIMessageStreamResult(StreamTextResult result, int? keepAliveMs = null, Func<Exception, string>? onError = null, bool? redactToolErrors = null, bool sendSources = false)
+    public UIMessageStreamResult(
+        StreamTextResult result,
+        int? keepAliveMs = null,
+        Func<Exception, string>? onError = null,
+        bool? redactToolErrors = null,
+        bool sendSources = false
+    )
     {
         _result = result ?? throw new ArgumentNullException(nameof(result));
         ValidateKeepAlive(keepAliveMs);
@@ -162,7 +202,16 @@ public sealed class UIMessageStreamResult : IResult
         }
 
         ApplyProtocolHeaders(httpContext.Response);
-        await WriteAsync(_result, httpContext.Response.Body, _keepAliveMs, httpContext.RequestAborted, _onError, _redactToolErrors, _sendSources).ConfigureAwait(false);
+        await WriteAsync(
+                _result,
+                httpContext.Response.Body,
+                _keepAliveMs,
+                httpContext.RequestAborted,
+                _onError,
+                _redactToolErrors,
+                _sendSources
+            )
+            .ConfigureAwait(false);
     }
 
     /// <summary>Writes the UI message stream to <paramref name="destination"/>.</summary>
@@ -183,7 +232,8 @@ public sealed class UIMessageStreamResult : IResult
         CancellationToken cancellationToken = default,
         Func<Exception, string>? onError = null,
         bool? redactToolErrors = null,
-        bool sendSources = false)
+        bool sendSources = false
+    )
     {
         if (result is null)
         {
@@ -199,8 +249,17 @@ public sealed class UIMessageStreamResult : IResult
 
         // Not disposed on purpose: every chunk is flushed asynchronously, and StreamWriter.Dispose flushes the
         // destination synchronously, which Kestrel rejects. The writer owns no other resources (leaveOpen).
-        var writer = new StreamWriter(destination, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 1024, leaveOpen: true);
-        var chunks = CreateSseStreamWithKeepAlive(ReadSseChunks(result, onError, redactToolErrors, cancellationToken, sendSources), keepAliveMs, cancellationToken);
+        var writer = new StreamWriter(
+            destination,
+            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+            bufferSize: 1024,
+            leaveOpen: true
+        );
+        var chunks = CreateSseStreamWithKeepAlive(
+            ReadSseChunks(result, onError, redactToolErrors, cancellationToken, sendSources),
+            keepAliveMs,
+            cancellationToken
+        );
         await foreach (var chunk in chunks.ConfigureAwait(false))
         {
             await writer.WriteAsync(chunk.AsMemory(), cancellationToken).ConfigureAwait(false);
@@ -215,7 +274,8 @@ public sealed class UIMessageStreamResult : IResult
     internal static IAsyncEnumerable<string> CreateSseStreamWithKeepAlive(
         IAsyncEnumerable<string> source,
         int? keepAliveMs,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         if (source is null)
         {
@@ -232,7 +292,10 @@ public sealed class UIMessageStreamResult : IResult
     }
 
     /// <summary>Encodes an SSE chunk stream as UTF-8 bytes, one body chunk per SSE chunk.</summary>
-    internal static ReadableStream<byte[]> Encode(IAsyncEnumerable<string> source, CancellationToken cancellationToken)
+    internal static ReadableStream<byte[]> Encode(
+        IAsyncEnumerable<string> source,
+        CancellationToken cancellationToken
+    )
     {
         var enumerator = source.GetAsyncEnumerator(cancellationToken);
         var utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
@@ -262,7 +325,8 @@ public sealed class UIMessageStreamResult : IResult
                 await enumerator.DisposeAsync().ConfigureAwait(false);
                 controller.Close();
             },
-            cancel: () => enumerator.DisposeAsync().AsTask());
+            cancel: () => enumerator.DisposeAsync().AsTask()
+        );
     }
 
     /// <summary>Writes protocol headers for an AI SDK UI message response.</summary>
@@ -290,7 +354,8 @@ public sealed class UIMessageStreamResult : IResult
     public static async Task WriteChunksAsync(
         IReadOnlyList<JsonObject> chunks,
         Stream destination,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         if (chunks is null)
         {
@@ -302,7 +367,12 @@ public sealed class UIMessageStreamResult : IResult
             throw new ArgumentNullException(nameof(destination));
         }
 
-        using var writer = new StreamWriter(destination, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 1024, leaveOpen: true);
+        using var writer = new StreamWriter(
+            destination,
+            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+            bufferSize: 1024,
+            leaveOpen: true
+        );
         foreach (var chunk in chunks)
         {
             if (chunk is null)
@@ -310,11 +380,15 @@ public sealed class UIMessageStreamResult : IResult
                 throw new ArgumentException("Chunks cannot contain null.", nameof(chunks));
             }
 
-            await writer.WriteAsync(Frame(chunk).AsMemory(), cancellationToken).ConfigureAwait(false);
+            await writer
+                .WriteAsync(Frame(chunk).AsMemory(), cancellationToken)
+                .ConfigureAwait(false);
             await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        await writer.WriteAsync("data: [DONE]\n\n".AsMemory(), cancellationToken).ConfigureAwait(false);
+        await writer
+            .WriteAsync("data: [DONE]\n\n".AsMemory(), cancellationToken)
+            .ConfigureAwait(false);
         await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -323,10 +397,21 @@ public sealed class UIMessageStreamResult : IResult
         Func<Exception, string>? onError,
         bool? redactToolErrors,
         [EnumeratorCancellation] CancellationToken cancellationToken,
-        bool sendSources = false)
+        bool sendSources = false
+    )
     {
-        var options = new ToUIMessageChunkOptions { OnError = onError, RedactToolErrors = redactToolErrors, SendSources = sendSources, Tools = result.Tools };
-        await foreach (var chunk in UIMessageStreamConverter.ToUIMessageStream(result.Stream(cancellationToken), options, cancellationToken).ConfigureAwait(false))
+        var options = new ToUIMessageChunkOptions
+        {
+            OnError = onError,
+            RedactToolErrors = redactToolErrors,
+            SendSources = sendSources,
+            Tools = result.Tools,
+        };
+        await foreach (
+            var chunk in UIMessageStreamConverter
+                .ToUIMessageStream(result.Stream(cancellationToken), options, cancellationToken)
+                .ConfigureAwait(false)
+        )
         {
             yield return Frame(chunk);
         }
@@ -339,9 +424,12 @@ public sealed class UIMessageStreamResult : IResult
     private static async IAsyncEnumerable<string> KeepAlive(
         IAsyncEnumerable<string> source,
         int keepAliveMs,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
-        using var readCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        using var readCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken
+        );
         var enumerator = source.GetAsyncEnumerator(readCancellation.Token);
         Task<bool>? pending = null;
         CancellationTokenSource? timer = null;
@@ -421,7 +509,8 @@ public sealed class UIMessageStreamResult : IResult
             throw new ArgumentOutOfRangeException(
                 nameof(keepAliveMs),
                 milliseconds,
-                "keepAliveMs must be a positive duration no greater than 2147483647 ms.");
+                "keepAliveMs must be a positive duration no greater than 2147483647 ms."
+            );
         }
     }
 
@@ -442,7 +531,8 @@ public sealed class UIMessageStreamResult : IResult
             static completed => _ = completed.Exception,
             CancellationToken.None,
             TaskContinuationOptions.ExecuteSynchronously,
-            TaskScheduler.Default);
+            TaskScheduler.Default
+        );
     }
 
     private static string Frame(JsonObject payload)

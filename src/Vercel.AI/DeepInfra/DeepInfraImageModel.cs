@@ -20,7 +20,11 @@ public sealed class DeepInfraImageModel : IImageModel
     private readonly Func<DateTimeOffset>? _clock;
 
     /// <summary>Creates an image model. <paramref name="clock"/> sets the response timestamp and defaults to UTC now.</summary>
-    public DeepInfraImageModel(DeepInfraProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
+    public DeepInfraImageModel(
+        DeepInfraProvider provider,
+        string modelId,
+        Func<DateTimeOffset>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -37,22 +41,32 @@ public sealed class DeepInfraImageModel : IImageModel
     public int MaxImagesPerCall => 1;
 
     /// <inheritdoc />
-    public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+    public async Task<ImageGenerationResult> DoGenerateAsync(
+        ImageCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
         var timestamp = _clock?.Invoke() ?? DateTimeOffset.UtcNow;
         var warnings = new List<CallWarning>();
         if (options.Files != null && options.Files.Count > 0)
         {
-            var edited = await _provider.PostMultipartAsync(EditUri(), BuildEditForm(options, warnings), _provider.CreateHeaders(options.Headers), cancellationToken).ConfigureAwait(false);
-            return ReadEditedImages(edited.Body, warnings, new ImageResponseInfo(timestamp, ModelId, edited.Headers));
+            var edited = await _provider
+                .PostMultipartAsync(
+                    EditUri(),
+                    BuildEditForm(options, warnings),
+                    _provider.CreateHeaders(options.Headers),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+            return ReadEditedImages(
+                edited.Body,
+                warnings,
+                new ImageResponseInfo(timestamp, ModelId, edited.Headers)
+            );
         }
 
-        var body = new JsonObject
-        {
-            ["prompt"] = options.Prompt,
-            ["num_images"] = options.Count,
-        };
+        var body = new JsonObject { ["prompt"] = options.Prompt, ["num_images"] = options.Count };
         if (!string.IsNullOrEmpty(options.AspectRatio))
         {
             body["aspect_ratio"] = options.AspectRatio;
@@ -74,8 +88,19 @@ public sealed class DeepInfraImageModel : IImageModel
         var origin = string.IsNullOrEmpty(_provider.Options.ImageBaseUrl)
             ? "https://api.deepinfra.com/v1/inference"
             : _provider.Options.ImageBaseUrl!.TrimEnd('/');
-        var response = await _provider.PostJsonAsync(new Uri(origin + "/" + ModelId), body.ToJsonString(), _provider.CreateHeaders(options.Headers), cancellationToken).ConfigureAwait(false);
-        return ReadImages(response.Body, warnings, new ImageResponseInfo(timestamp, ModelId, response.Headers));
+        var response = await _provider
+            .PostJsonAsync(
+                new Uri(origin + "/" + ModelId),
+                body.ToJsonString(),
+                _provider.CreateHeaders(options.Headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        return ReadImages(
+            response.Body,
+            warnings,
+            new ImageResponseInfo(timestamp, ModelId, response.Headers)
+        );
     }
 
     /// <summary>Reads <c>detail.error</c>, then the shared OpenAI-compatible error message.</summary>
@@ -86,14 +111,17 @@ public sealed class DeepInfraImageModel : IImageModel
             try
             {
                 var root = JsonNode.Parse(body!) as JsonObject;
-                if (root?["detail"] is JsonObject detail && detail["error"] is JsonValue value && value.TryGetValue<string>(out var text) && !string.IsNullOrEmpty(text))
+                if (
+                    root?["detail"] is JsonObject detail
+                    && detail["error"] is JsonValue value
+                    && value.TryGetValue<string>(out var text)
+                    && !string.IsNullOrEmpty(text)
+                )
                 {
                     return text;
                 }
             }
-            catch (JsonException)
-            {
-            }
+            catch (JsonException) { }
         }
 
         return OpenAICompatibleChat.ReadErrorMessage(body);
@@ -107,7 +135,10 @@ public sealed class DeepInfraImageModel : IImageModel
         return new Uri(origin.Replace("/inference", "/openai") + "/images/edits");
     }
 
-    private MultipartFormDataContent BuildEditForm(ImageCallOptions options, List<CallWarning> warnings)
+    private MultipartFormDataContent BuildEditForm(
+        ImageCallOptions options,
+        List<CallWarning> warnings
+    )
     {
         var form = new MultipartFormDataContent();
         form.Add(new StringContent(ModelId), "model");
@@ -115,13 +146,21 @@ public sealed class DeepInfraImageModel : IImageModel
         var index = 0;
         foreach (var file in options.Files!)
         {
-            form.Add(OpenAICompatibleImages.FileContent(file), "image", file.FileName ?? ("image-" + index.ToString(CultureInfo.InvariantCulture) + ".png"));
+            form.Add(
+                OpenAICompatibleImages.FileContent(file),
+                "image",
+                file.FileName ?? ("image-" + index.ToString(CultureInfo.InvariantCulture) + ".png")
+            );
             index++;
         }
 
         if (options.Mask != null)
         {
-            form.Add(OpenAICompatibleImages.FileContent(options.Mask), "mask", options.Mask.FileName ?? "mask.png");
+            form.Add(
+                OpenAICompatibleImages.FileContent(options.Mask),
+                "mask",
+                options.Mask.FileName ?? "mask.png"
+            );
         }
 
         form.Add(new StringContent(options.Count.ToString(CultureInfo.InvariantCulture)), "n");
@@ -136,24 +175,47 @@ public sealed class DeepInfraImageModel : IImageModel
         {
             if (pair.Value != null)
             {
-                form.Add(new StringContent(pair.Value is JsonValue value && value.TryGetValue<string>(out var text) ? text : pair.Value.ToJsonString()), pair.Key);
+                form.Add(
+                    new StringContent(
+                        pair.Value is JsonValue value && value.TryGetValue<string>(out var text)
+                            ? text
+                            : pair.Value.ToJsonString()
+                    ),
+                    pair.Key
+                );
             }
         }
 
         return form;
     }
 
-    private static ImageGenerationResult ReadEditedImages(string? json, IReadOnlyList<CallWarning> warnings, ImageResponseInfo response)
+    private static ImageGenerationResult ReadEditedImages(
+        string? json,
+        IReadOnlyList<CallWarning> warnings,
+        ImageResponseInfo response
+    )
     {
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json!);
         var images = new List<GeneratedImage>();
-        if (document.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
+        if (
+            document.RootElement.TryGetProperty("data", out var data)
+            && data.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var item in data.EnumerateArray())
             {
-                if (item.TryGetProperty("b64_json", out var b64) && b64.ValueKind == JsonValueKind.String)
+                if (
+                    item.TryGetProperty("b64_json", out var b64)
+                    && b64.ValueKind == JsonValueKind.String
+                )
                 {
-                    images.Add(new GeneratedImage("image/png", Convert.FromBase64String(b64.GetString() ?? string.Empty), null));
+                    images.Add(
+                        new GeneratedImage(
+                            "image/png",
+                            Convert.FromBase64String(b64.GetString() ?? string.Empty),
+                            null
+                        )
+                    );
                 }
             }
         }
@@ -177,11 +239,18 @@ public sealed class DeepInfraImageModel : IImageModel
         return (parts[0], parts[1]);
     }
 
-    private static ImageGenerationResult ReadImages(string? json, IReadOnlyList<CallWarning> warnings, ImageResponseInfo response)
+    private static ImageGenerationResult ReadImages(
+        string? json,
+        IReadOnlyList<CallWarning> warnings,
+        ImageResponseInfo response
+    )
     {
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json!);
         var images = new List<GeneratedImage>();
-        if (!document.RootElement.TryGetProperty("images", out var items) || items.ValueKind != JsonValueKind.Array)
+        if (
+            !document.RootElement.TryGetProperty("images", out var items)
+            || items.ValueKind != JsonValueKind.Array
+        )
         {
             return new ImageGenerationResult(images, warnings, response);
         }

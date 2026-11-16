@@ -44,7 +44,13 @@ internal static class AlibabaPrepareTools
         {
             if (tool.IsProviderDefined)
             {
-                toolWarnings.Add(new CallWarning("unsupported", "provider-defined tool " + tool.ProviderToolId, null));
+                toolWarnings.Add(
+                    new CallWarning(
+                        "unsupported",
+                        "provider-defined tool " + tool.ProviderToolId,
+                        null
+                    )
+                );
                 continue;
             }
 
@@ -63,7 +69,11 @@ internal static class AlibabaPrepareTools
             alibabaTools.Add(new JsonObject { ["type"] = "function", ["function"] = function });
         }
 
-        return new Prepared(alibabaTools, toolChoice == null ? null : MapToolChoice(toolChoice), toolWarnings);
+        return new Prepared(
+            alibabaTools,
+            toolChoice == null ? null : MapToolChoice(toolChoice),
+            toolWarnings
+        );
     }
 
     private static JsonNode MapToolChoice(ToolChoice toolChoice)

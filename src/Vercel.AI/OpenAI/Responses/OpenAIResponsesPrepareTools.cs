@@ -54,20 +54,38 @@ public sealed class PrepareResponsesToolsOptions
 /// <summary>Maps to <c>prepareResponsesTools</c>.</summary>
 internal static class OpenAIResponsesPrepareTools
 {
-    private const string NamespaceUnsupported = "tools inside an OpenAI tool namespace are not visible to tool_choice.allowed_tools";
-    private const string DeferredUnsupported = "deferred tools are not visible to tool_choice.allowed_tools";
-    private const string OmittedUnsupported = "tools omitted from the request tools array cannot be allow-listed";
+    private const string NamespaceUnsupported =
+        "tools inside an OpenAI tool namespace are not visible to tool_choice.allowed_tools";
+    private const string DeferredUnsupported =
+        "deferred tools are not visible to tool_choice.allowed_tools";
+    private const string OmittedUnsupported =
+        "tools omitted from the request tools array cannot be allow-listed";
 
     private static readonly string[] AllowedBuiltInTypes =
     {
-        "file_search", "web_search", "web_search_preview", "image_generation", "code_interpreter", "computer",
-        "apply_patch", "shell", "local_shell", "programmatic_tool_calling",
+        "file_search",
+        "web_search",
+        "web_search_preview",
+        "image_generation",
+        "code_interpreter",
+        "computer",
+        "apply_patch",
+        "shell",
+        "local_shell",
+        "programmatic_tool_calling",
     };
 
     private static readonly string[] HostedChoiceTypes =
     {
-        "code_interpreter", "file_search", "image_generation", "web_search_preview", "web_search", "mcp",
-        "apply_patch", "computer", "programmatic_tool_calling",
+        "code_interpreter",
+        "file_search",
+        "image_generation",
+        "web_search_preview",
+        "web_search",
+        "mcp",
+        "apply_patch",
+        "computer",
+        "programmatic_tool_calling",
     };
 
     private sealed class AllowedResolution
@@ -111,7 +129,11 @@ internal static class OpenAIResponsesPrepareTools
 
     /// <exception cref="TypeValidationException">The arguments of a provider-defined tool are invalid.</exception>
     /// <exception cref="UnsupportedFunctionalityException">The tools or the tool choice cannot be expressed for OpenAI.</exception>
-    public static PreparedResponsesTools Prepare(IReadOnlyList<LanguageModelTool>? tools, ToolChoice? toolChoice, PrepareResponsesToolsOptions? options)
+    public static PreparedResponsesTools Prepare(
+        IReadOnlyList<LanguageModelTool>? tools,
+        ToolChoice? toolChoice,
+        PrepareResponsesToolsOptions? options
+    )
     {
         if (tools == null || tools.Count == 0)
         {
@@ -160,7 +182,11 @@ internal static class OpenAIResponsesPrepareTools
                     customToolNames.Add(tool.Name);
                 }
 
-                Record(tool.Name, ToAllowedResolution(mapped), options.ToolNameMapping?.ToProviderToolName(tool.Name));
+                Record(
+                    tool.Name,
+                    ToAllowedResolution(mapped),
+                    options.ToolNameMapping?.ToProviderToolName(tool.Name)
+                );
                 continue;
             }
 
@@ -174,9 +200,17 @@ internal static class OpenAIResponsesPrepareTools
             if (OpenAIJson.Bool(openaiOptions, "omitFromRequestTools") == true)
             {
                 Record(tool.Name, AllowedResolution.Reject(OmittedUnsupported), null);
-                if (options.AllowedTools == null && toolChoice is ToolChoice.NamedChoice forced && forced.ToolName == tool.Name)
+                if (
+                    options.AllowedTools == null
+                    && toolChoice is ToolChoice.NamedChoice forced
+                    && forced.ToolName == tool.Name
+                )
                 {
-                    throw Unsupported("forcing tool \"" + tool.Name + "\" omitted from the request tools array; use automatic tool choice for history-loaded tools");
+                    throw Unsupported(
+                        "forcing tool \""
+                            + tool.Name
+                            + "\" omitted from the request tools array; use automatic tool choice for history-loaded tools"
+                    );
                 }
 
                 continue;
@@ -186,8 +220,14 @@ internal static class OpenAIResponsesPrepareTools
                 tool,
                 openaiOptions,
                 outputSchema,
-                ResolveAsync(OpenAIJson.Bool(openaiOptions, "async"), options.SupportsAsyncToolCalling, tool.Name, warnings),
-                warnings);
+                ResolveAsync(
+                    OpenAIJson.Bool(openaiOptions, "async"),
+                    options.SupportsAsyncToolCalling,
+                    tool.Name,
+                    warnings
+                ),
+                warnings
+            );
             var toolNamespace = OpenAIJson.Child(openaiOptions, "namespace");
             if (toolNamespace == null)
             {
@@ -211,7 +251,11 @@ internal static class OpenAIResponsesPrepareTools
                 }
                 else if (namespaceTool["description"]?.GetValue<string>() != namespaceDescription)
                 {
-                    throw Unsupported("conflicting descriptions for OpenAI tool namespace \"" + namespaceName + "\"");
+                    throw Unsupported(
+                        "conflicting descriptions for OpenAI tool namespace \""
+                            + namespaceName
+                            + "\""
+                    );
                 }
 
                 namespaceTool["tools"]!.AsArray().Add(function);
@@ -219,20 +263,36 @@ internal static class OpenAIResponsesPrepareTools
 
             Record(
                 tool.Name,
-                toolNamespace != null
-                    ? AllowedResolution.Reject(NamespaceUnsupported)
+                toolNamespace != null ? AllowedResolution.Reject(NamespaceUnsupported)
                     : OpenAIJson.Bool(openaiOptions, "deferLoading") == true
                         ? AllowedResolution.Reject(DeferredUnsupported)
-                        : AllowedResolution.Allow(new JsonObject { ["type"] = "function", ["name"] = tool.Name }),
-                null);
+                    : AllowedResolution.Allow(
+                        new JsonObject { ["type"] = "function", ["name"] = tool.Name }
+                    ),
+                null
+            );
         }
 
         if (options.AllowedTools != null)
         {
-            return new PreparedResponsesTools(openaiTools, AllowedToolChoice(options.AllowedTools, resolutions, aliases, options.ToolNameMapping, warnings), warnings);
+            return new PreparedResponsesTools(
+                openaiTools,
+                AllowedToolChoice(
+                    options.AllowedTools,
+                    resolutions,
+                    aliases,
+                    options.ToolNameMapping,
+                    warnings
+                ),
+                warnings
+            );
         }
 
-        return new PreparedResponsesTools(openaiTools, MapChoice(toolChoice, options.ToolNameMapping, customToolNames), warnings);
+        return new PreparedResponsesTools(
+            openaiTools,
+            MapChoice(toolChoice, options.ToolNameMapping, customToolNames),
+            warnings
+        );
     }
 
     private static JsonNode AllowedToolChoice(
@@ -240,7 +300,8 @@ internal static class OpenAIResponsesPrepareTools
         Dictionary<string, AllowedResolution> resolutions,
         Dictionary<string, AllowedResolution> aliases,
         ToolNameMapping? toolNameMapping,
-        List<CallWarning> warnings)
+        List<CallWarning> warnings
+    )
     {
         var entries = new JsonArray();
         var dropped = new List<string>();
@@ -248,35 +309,59 @@ internal static class OpenAIResponsesPrepareTools
         {
             var hasDirect = resolutions.TryGetValue(name, out var direct);
             var hasAlias = aliases.TryGetValue(name, out var alias);
-            var resolution = hasDirect ? direct : hasAlias ? alias : null;
+            var resolution =
+                hasDirect ? direct
+                : hasAlias ? alias
+                : null;
             var feature = "allowedTools entry \"" + name + "\"";
             if (hasDirect && hasAlias)
             {
-                warnings.Add(new CallWarning(
-                    "unsupported",
-                    feature,
-                    "this name is both a tool name and the provider tool name of another tool in this request; the tool with this name is allowed"));
+                warnings.Add(
+                    new CallWarning(
+                        "unsupported",
+                        feature,
+                        "this name is both a tool name and the provider tool name of another tool in this request; the tool with this name is allowed"
+                    )
+                );
             }
 
             if (resolution == AllowedResolution.Ambiguous)
             {
-                warnings.Add(new CallWarning(
-                    "unsupported",
-                    feature,
-                    "several tools in this request share this provider tool name; use the tool name from the tools for this request instead"));
+                warnings.Add(
+                    new CallWarning(
+                        "unsupported",
+                        feature,
+                        "several tools in this request share this provider tool name; use the tool name from the tools for this request instead"
+                    )
+                );
                 dropped.Add(name);
             }
             else if (resolution == null)
             {
-                warnings.Add(new CallWarning(
-                    "unsupported",
-                    feature,
-                    "the tool is not part of the tools for this request and is sent as a function tool"));
-                entries.Add(new JsonObject { ["type"] = "function", ["name"] = toolNameMapping?.ToProviderToolName(name) ?? name });
+                warnings.Add(
+                    new CallWarning(
+                        "unsupported",
+                        feature,
+                        "the tool is not part of the tools for this request and is sent as a function tool"
+                    )
+                );
+                entries.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "function",
+                        ["name"] = toolNameMapping?.ToProviderToolName(name) ?? name,
+                    }
+                );
             }
             else if (!resolution.Supported)
             {
-                warnings.Add(new CallWarning("unsupported", feature, resolution.Reason + "; the tool is removed from the allowed tools"));
+                warnings.Add(
+                    new CallWarning(
+                        "unsupported",
+                        feature,
+                        resolution.Reason + "; the tool is removed from the allowed tools"
+                    )
+                );
                 dropped.Add(name);
             }
             else
@@ -287,7 +372,11 @@ internal static class OpenAIResponsesPrepareTools
 
         if (entries.Count == 0)
         {
-            throw Unsupported("allowedTools with only tools that cannot be allow-listed (" + string.Join(", ", dropped) + ")");
+            throw Unsupported(
+                "allowedTools with only tools that cannot be allow-listed ("
+                    + string.Join(", ", dropped)
+                    + ")"
+            );
         }
 
         return new JsonObject
@@ -303,20 +392,34 @@ internal static class OpenAIResponsesPrepareTools
         var type = tool["type"]!.GetValue<string>();
         if (type == "custom")
         {
-            return AllowedResolution.Allow(new JsonObject { ["type"] = "custom", ["name"] = tool["name"]!.GetValue<string>() });
+            return AllowedResolution.Allow(
+                new JsonObject { ["type"] = "custom", ["name"] = tool["name"]!.GetValue<string>() }
+            );
         }
 
         if (type == "mcp")
         {
-            return AllowedResolution.Allow(new JsonObject { ["type"] = "mcp", ["server_label"] = tool["server_label"]!.GetValue<string>() });
+            return AllowedResolution.Allow(
+                new JsonObject
+                {
+                    ["type"] = "mcp",
+                    ["server_label"] = tool["server_label"]!.GetValue<string>(),
+                }
+            );
         }
 
         return Array.IndexOf(AllowedBuiltInTypes, type) >= 0
             ? AllowedResolution.Allow(new JsonObject { ["type"] = type })
-            : AllowedResolution.Reject("OpenAI does not support " + type + " tools in tool_choice.allowed_tools");
+            : AllowedResolution.Reject(
+                "OpenAI does not support " + type + " tools in tool_choice.allowed_tools"
+            );
     }
 
-    private static JsonNode? MapChoice(ToolChoice? toolChoice, ToolNameMapping? toolNameMapping, ISet<string> customToolNames)
+    private static JsonNode? MapChoice(
+        ToolChoice? toolChoice,
+        ToolNameMapping? toolNameMapping,
+        ISet<string> customToolNames
+    )
     {
         if (toolChoice == null)
         {
@@ -346,12 +449,17 @@ internal static class OpenAIResponsesPrepareTools
 
     private static UnsupportedFunctionalityException Unsupported(string functionality)
     {
-        return new UnsupportedFunctionalityException(functionality, "functionality not supported: " + functionality);
+        return new UnsupportedFunctionalityException(
+            functionality,
+            "functionality not supported: " + functionality
+        );
     }
 
     private static JsonElement? OpenAIToolOptions(LanguageModelTool tool)
     {
-        return tool.ProviderOptions is { } providerOptions ? OpenAIJson.Child(providerOptions, "openai") : null;
+        return tool.ProviderOptions is { } providerOptions
+            ? OpenAIJson.Child(providerOptions, "openai")
+            : null;
     }
 
     private static JsonObject PrepareFunctionTool(
@@ -359,11 +467,16 @@ internal static class OpenAIResponsesPrepareTools
         JsonElement? openaiOptions,
         JsonElement? outputSchema,
         bool? async,
-        List<CallWarning> warnings)
+        List<CallWarning> warnings
+    )
     {
         var input = OpenAIJsonSchema.Normalize(tool.InputSchema);
         var output = outputSchema is { } schema ? OpenAIJsonSchema.Normalize(schema) : null;
-        foreach (var warning in input.Warnings.Concat(output?.Warnings ?? Array.Empty<OpenAICallWarning>()))
+        foreach (
+            var warning in input.Warnings.Concat(
+                output?.Warnings ?? Array.Empty<OpenAICallWarning>()
+            )
+        )
         {
             warnings.Add(warning.ToCallWarning());
         }
@@ -386,7 +499,10 @@ internal static class OpenAIResponsesPrepareTools
             function["defer_loading"] = deferLoading;
         }
 
-        if (OpenAIJson.Child(openaiOptions, "allowedCallers") is { ValueKind: JsonValueKind.Array } allowedCallers)
+        if (
+            OpenAIJson.Child(openaiOptions, "allowedCallers") is
+            { ValueKind: JsonValueKind.Array } allowedCallers
+        )
         {
             function["allowed_callers"] = JsonNode.Parse(allowedCallers.GetRawText());
         }
@@ -399,23 +515,36 @@ internal static class OpenAIResponsesPrepareTools
         return function;
     }
 
-    private static bool? ResolveAsync(bool? value, bool supportsAsyncToolCalling, string toolName, List<CallWarning> warnings)
+    private static bool? ResolveAsync(
+        bool? value,
+        bool supportsAsyncToolCalling,
+        string toolName,
+        List<CallWarning> warnings
+    )
     {
         if (value != true || supportsAsyncToolCalling)
         {
             return value;
         }
 
-        warnings.Add(new CallWarning(
-            "unsupported",
-            "async tool calling for \"" + toolName + "\"",
-            "Async tool calling is only supported by GPT-6 and later models."));
+        warnings.Add(
+            new CallWarning(
+                "unsupported",
+                "async tool calling for \"" + toolName + "\"",
+                "Async tool calling is only supported by GPT-6 and later models."
+            )
+        );
         return null;
     }
 
-    private static JsonObject? MapProviderTool(LanguageModelTool tool, PrepareResponsesToolsOptions options, List<CallWarning> warnings)
+    private static JsonObject? MapProviderTool(
+        LanguageModelTool tool,
+        PrepareResponsesToolsOptions options,
+        List<CallWarning> warnings
+    )
     {
-        var args = OpenAIResponsesToolArgs.Validate(tool.ProviderToolId!, tool.Args) ?? new JsonObject();
+        var args = OpenAIResponsesToolArgs.Validate(tool.ProviderToolId!, tool.Args)
+            ?? new JsonObject();
 
         JsonNode? Arg(string name) => args[name]?.DeepClone();
 
@@ -540,7 +669,10 @@ internal static class OpenAIResponsesPrepareTools
                 {
                     requireApproval = approval;
                 }
-                else if (approval is JsonObject approvalObject && approvalObject["never"] is JsonObject never)
+                else if (
+                    approval is JsonObject approvalObject
+                    && approvalObject["never"] is JsonObject never
+                )
                 {
                     var names = new JsonObject();
                     Set(names, "tool_names", never["toolNames"]?.DeepClone());
@@ -556,7 +688,14 @@ internal static class OpenAIResponsesPrepareTools
                 result["type"] = "custom";
                 result["name"] = tool.Name;
                 Set(result, "description", Arg("description"));
-                if (ResolveAsync(args["async"]?.GetValue<bool>(), options.SupportsAsyncToolCalling, tool.Name, warnings) != null)
+                if (
+                    ResolveAsync(
+                        args["async"]?.GetValue<bool>(),
+                        options.SupportsAsyncToolCalling,
+                        tool.Name,
+                        warnings
+                    ) != null
+                )
                 {
                     result["async"] = args["async"]!.DeepClone();
                 }
@@ -622,7 +761,9 @@ internal static class OpenAIResponsesPrepareTools
 
             if (environment["skills"] is JsonArray skills)
             {
-                result["skills"] = new JsonArray(skills.Select(skill => MapShellSkill(skill!.AsObject())).ToArray());
+                result["skills"] = new JsonArray(
+                    skills.Select(skill => MapShellSkill(skill!.AsObject())).ToArray()
+                );
             }
 
             return result;
@@ -641,9 +782,12 @@ internal static class OpenAIResponsesPrepareTools
     {
         if (skill["type"]!.GetValue<string>() == "skillReference")
         {
-            var reference = skill["providerReference"]!.AsObject().ToDictionary(
-                property => property.Key,
-                property => property.Value!.GetValue<string>());
+            var reference = skill["providerReference"]!
+                .AsObject()
+                .ToDictionary(
+                    property => property.Key,
+                    property => property.Value!.GetValue<string>()
+                );
             return new JsonObject
             {
                 ["type"] = "skill_reference",

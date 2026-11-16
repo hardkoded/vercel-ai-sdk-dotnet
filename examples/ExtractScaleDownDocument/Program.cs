@@ -21,26 +21,35 @@ if (!File.Exists(path))
 }
 
 #region extract-scaledown-document
-var result = await Extract.ExtractAsync(new ExtractRequest
-{
-    Model = ScaleDownProvider.Default.ExtractionModel("extract-1"),
-    State = DecisionState.From(
-    [
-        new DecisionFilePart("application/pdf", FilePartInput.FromBytes(File.ReadAllBytes(path))),
-    ]),
-    Fields = new Dictionary<string, ExtractionField>
+var result = await Extract.ExtractAsync(
+    new ExtractRequest
     {
-        ["title"] = new("text", DecisionInput.From("The document title")),
-        ["topics"] = new("list", DecisionInput.From("Named AI techniques")) { Items = "text" },
-    },
-    ProviderOptions = JsonDocument.Parse("""{"scaledown":{"threshold":0.5}}""").RootElement.Clone(),
-});
+        Model = ScaleDownProvider.Default.ExtractionModel("extract-1"),
+        State = DecisionState.From([
+            new DecisionFilePart(
+                "application/pdf",
+                FilePartInput.FromBytes(File.ReadAllBytes(path))
+            ),
+        ]),
+        Fields = new Dictionary<string, ExtractionField>
+        {
+            ["title"] = new("text", DecisionInput.From("The document title")),
+            ["topics"] = new("list", DecisionInput.From("Named AI techniques")) { Items = "text" },
+        },
+        ProviderOptions = JsonDocument
+            .Parse("""{"scaledown":{"threshold":0.5}}""")
+            .RootElement.Clone(),
+    }
+);
 #endregion
 
 foreach (var answer in result.Answers)
 {
-    var value = answer.Value.Text ?? (answer.Value.TextItems == null ? "null" : string.Join(", ", answer.Value.TextItems));
+    var value = answer.Value.Text
+        ?? (answer.Value.TextItems == null ? "null" : string.Join(", ", answer.Value.TextItems));
     Console.WriteLine($"{answer.Key}: {answer.Value.Type} = {value}");
 }
 
-Console.WriteLine("OCR text: " + result.ProviderMetadata?.GetProperty("scaledown").GetProperty("ocrText"));
+Console.WriteLine(
+    "OCR text: " + result.ProviderMetadata?.GetProperty("scaledown").GetProperty("ocrText")
+);

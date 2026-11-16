@@ -120,13 +120,15 @@ internal static class OpenAIClientTools
         Tool tool,
         Func<TInput, ToolExecutionOptions, Task<TOutput>>? execute,
         bool needsApproval,
-        Func<TInput, ToolNeedsApprovalOptions, Task<bool>>? needsApprovalFunction)
+        Func<TInput, ToolNeedsApprovalOptions, Task<bool>>? needsApprovalFunction
+    )
     {
         if (execute != null)
         {
             tool.ExecuteWithOptions = async (input, options) =>
             {
-                var output = await execute(Deserialize<TInput>(input), options).ConfigureAwait(false);
+                var output = await execute(Deserialize<TInput>(input), options)
+                    .ConfigureAwait(false);
                 return JsonSerializer.Serialize(output, Json);
             };
         }
@@ -134,7 +136,8 @@ internal static class OpenAIClientTools
         tool.NeedsApproval = needsApproval;
         if (needsApprovalFunction != null)
         {
-            tool.NeedsApprovalFunction = (input, options) => needsApprovalFunction(Deserialize<TInput>(input), options);
+            tool.NeedsApprovalFunction = (input, options) =>
+                needsApprovalFunction(Deserialize<TInput>(input), options);
         }
 
         return tool;

@@ -14,74 +14,142 @@ namespace Vercel.AI.Tests.Upstream.ProviderUtils;
 
 public sealed class ReasoningAndModelOptionsTests
 {
-    private const string Reasoning = "packages/provider-utils/src/map-reasoning-to-provider.test.ts::";
+    private const string Reasoning =
+        "packages/provider-utils/src/map-reasoning-to-provider.test.ts::";
 
-    private const string Serialize = "packages/provider-utils/src/serialize-model-options.test.ts::serializeModelOptions::";
+    private const string Serialize =
+        "packages/provider-utils/src/serialize-model-options.test.ts::serializeModelOptions::";
 
     [Fact]
-    [UpstreamTest(Reasoning + "mapReasoningToProviderEffort::returns mapped value with no warning for direct match", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Reasoning
+            + "mapReasoningToProviderEffort::returns mapped value with no warning for direct match",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Direct_effort_match_has_no_warning()
     {
         var warnings = new List<ModelWarning>();
-        Assert.Equal("medium", ReasoningMap.MapReasoningToProviderEffort("medium", EffortMap(), warnings));
+        Assert.Equal(
+            "medium",
+            ReasoningMap.MapReasoningToProviderEffort("medium", EffortMap(), warnings)
+        );
         Assert.Empty(warnings);
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "mapReasoningToProviderEffort::returns mapped value with compatibility warning for renamed match", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Reasoning
+            + "mapReasoningToProviderEffort::returns mapped value with compatibility warning for renamed match",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Renamed_effort_adds_a_compatibility_warning()
     {
         var warnings = new List<ModelWarning>();
-        Assert.Equal("low", ReasoningMap.MapReasoningToProviderEffort("minimal", EffortMap(), warnings));
+        Assert.Equal(
+            "low",
+            ReasoningMap.MapReasoningToProviderEffort("minimal", EffortMap(), warnings)
+        );
         var warning = Assert.IsType<CompatibilityWarning>(Assert.Single(warnings));
         Assert.Equal("compatibility", warning.Type);
         Assert.Equal("reasoning", warning.Feature);
-        Assert.Equal("reasoning \"minimal\" is not directly supported by this model. mapped to effort \"low\".", warning.Details);
+        Assert.Equal(
+            "reasoning \"minimal\" is not directly supported by this model. mapped to effort \"low\".",
+            warning.Details
+        );
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "mapReasoningToProviderEffort::returns mapped value with compatibility warning for \"xhigh\"", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Reasoning
+            + "mapReasoningToProviderEffort::returns mapped value with compatibility warning for \"xhigh\"",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Xhigh_effort_maps_to_max_with_a_compatibility_warning()
     {
         var warnings = new List<ModelWarning>();
-        Assert.Equal("max", ReasoningMap.MapReasoningToProviderEffort("xhigh", EffortMap(), warnings));
+        Assert.Equal(
+            "max",
+            ReasoningMap.MapReasoningToProviderEffort("xhigh", EffortMap(), warnings)
+        );
         var warning = Assert.IsType<CompatibilityWarning>(Assert.Single(warnings));
         Assert.Equal("reasoning", warning.Feature);
-        Assert.Equal("reasoning \"xhigh\" is not directly supported by this model. mapped to effort \"max\".", warning.Details);
+        Assert.Equal(
+            "reasoning \"xhigh\" is not directly supported by this model. mapped to effort \"max\".",
+            warning.Details
+        );
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "mapReasoningToProviderEffort::maps an unsupported level to the next lower supported level", Coverage = UpstreamCoverage.Covered, Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2")]
+    [UpstreamTest(
+        Reasoning
+            + "mapReasoningToProviderEffort::maps an unsupported level to the next lower supported level",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
     public void Maps_an_unsupported_level_to_the_next_lower_supported_level()
     {
         var warnings = new List<ModelWarning>();
-        var map = new Dictionary<string, string> { ["low"] = "low", ["medium"] = "medium", ["high"] = "high", ["max"] = "max" };
+        var map = new Dictionary<string, string>
+        {
+            ["low"] = "low",
+            ["medium"] = "medium",
+            ["high"] = "high",
+            ["max"] = "max",
+        };
         Assert.Equal("high", ReasoningMap.MapReasoningToProviderEffort("xhigh", map, warnings));
         var warning = Assert.IsType<CompatibilityWarning>(Assert.Single(warnings));
-        Assert.Equal("reasoning \"xhigh\" is not directly supported by this model. mapped to effort \"high\".", warning.Details);
+        Assert.Equal(
+            "reasoning \"xhigh\" is not directly supported by this model. mapped to effort \"high\".",
+            warning.Details
+        );
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "mapReasoningToProviderEffort::maps to the next higher supported level when no lower level is supported", Coverage = UpstreamCoverage.Covered, Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2")]
+    [UpstreamTest(
+        Reasoning
+            + "mapReasoningToProviderEffort::maps to the next higher supported level when no lower level is supported",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
     public void Maps_to_the_next_higher_supported_level_when_no_lower_level_is_supported()
     {
         var warnings = new List<ModelWarning>();
         var map = new Dictionary<string, string> { ["low"] = "low", ["high"] = "high" };
         Assert.Equal("low", ReasoningMap.MapReasoningToProviderEffort("minimal", map, warnings));
         var warning = Assert.IsType<CompatibilityWarning>(Assert.Single(warnings));
-        Assert.Equal("reasoning \"minimal\" is not directly supported by this model. mapped to effort \"low\".", warning.Details);
+        Assert.Equal(
+            "reasoning \"minimal\" is not directly supported by this model. mapped to effort \"low\".",
+            warning.Details
+        );
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "mapReasoningToProviderEffort::does not round a reasoning level down to \"none\"", Coverage = UpstreamCoverage.Covered, Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2")]
+    [UpstreamTest(
+        Reasoning
+            + "mapReasoningToProviderEffort::does not round a reasoning level down to \"none\"",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
     public void Does_not_round_a_reasoning_level_down_to_none()
     {
-        var map = new Dictionary<string, string> { ["none"] = "none", ["low"] = "low", ["high"] = "high" };
-        Assert.Equal("low", ReasoningMap.MapReasoningToProviderEffort("minimal", map, new List<ModelWarning>()));
+        var map = new Dictionary<string, string>
+        {
+            ["none"] = "none",
+            ["low"] = "low",
+            ["high"] = "high",
+        };
+        Assert.Equal(
+            "low",
+            ReasoningMap.MapReasoningToProviderEffort("minimal", map, new List<ModelWarning>())
+        );
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "mapReasoningToProviderEffort::maps \"none\" directly when supported", Coverage = UpstreamCoverage.Covered, Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2")]
+    [UpstreamTest(
+        Reasoning + "mapReasoningToProviderEffort::maps \"none\" directly when supported",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
     public void Maps_none_directly_when_supported()
     {
         var warnings = new List<ModelWarning>();
@@ -91,25 +159,44 @@ public sealed class ReasoningAndModelOptionsTests
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "mapReasoningToProviderEffort::maps an unsupported \"none\" to the lowest supported level", Coverage = UpstreamCoverage.Covered, Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2")]
+    [UpstreamTest(
+        Reasoning
+            + "mapReasoningToProviderEffort::maps an unsupported \"none\" to the lowest supported level",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
     public void Maps_an_unsupported_none_to_the_lowest_supported_level()
     {
         var warnings = new List<ModelWarning>();
-        var map = new Dictionary<string, string> { ["low"] = "low", ["medium"] = "medium", ["high"] = "high" };
+        var map = new Dictionary<string, string>
+        {
+            ["low"] = "low",
+            ["medium"] = "medium",
+            ["high"] = "high",
+        };
         Assert.Equal("low", ReasoningMap.MapReasoningToProviderEffort("none", map, warnings));
         var warning = Assert.IsType<CompatibilityWarning>(Assert.Single(warnings));
-        Assert.Equal("reasoning \"none\" is not directly supported by this model. mapped to effort \"low\".", warning.Details);
+        Assert.Equal(
+            "reasoning \"none\" is not directly supported by this model. mapped to effort \"low\".",
+            warning.Details
+        );
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "mapReasoningToProviderEffort::returns undefined with unsupported warning for an empty effortMap", Coverage = UpstreamCoverage.Covered, Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2")]
+    [UpstreamTest(
+        Reasoning
+            + "mapReasoningToProviderEffort::returns undefined with unsupported warning for an empty effortMap",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
     public void Empty_effort_map_returns_null_and_an_unsupported_warning()
     {
         var warnings = new List<ModelWarning>();
         var result = ReasoningMap.MapReasoningToProviderEffort(
             "high",
             new Dictionary<string, string>(),
-            warnings);
+            warnings
+        );
         Assert.Null(result);
         var warning = Assert.IsType<UnsupportedWarning>(Assert.Single(warnings));
         Assert.Equal("unsupported", warning.Type);
@@ -118,28 +205,40 @@ public sealed class ReasoningAndModelOptionsTests
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "isCustomReasoning::returns false for undefined", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Reasoning + "isCustomReasoning::returns false for undefined",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Omitted_reasoning_is_not_custom()
     {
         Assert.False(ReasoningMap.IsCustomReasoning(null));
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "isCustomReasoning::returns false for provider-default", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Reasoning + "isCustomReasoning::returns false for provider-default",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Provider_default_reasoning_is_not_custom()
     {
         Assert.False(ReasoningMap.IsCustomReasoning("provider-default"));
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "isCustomReasoning::returns true for none", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Reasoning + "isCustomReasoning::returns true for none",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void None_reasoning_is_custom()
     {
         Assert.True(ReasoningMap.IsCustomReasoning("none"));
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "isCustomReasoning::returns true for all reasoning levels", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Reasoning + "isCustomReasoning::returns true for all reasoning levels",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Named_reasoning_levels_are_custom()
     {
         foreach (var value in new[] { "minimal", "low", "medium", "high", "xhigh", "max" })
@@ -149,43 +248,77 @@ public sealed class ReasoningAndModelOptionsTests
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "mapReasoningToProviderBudget::returns correct budget for known key", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Reasoning + "mapReasoningToProviderBudget::returns correct budget for known key",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Medium_budget_is_thirty_percent()
     {
         var warnings = new List<ModelWarning>();
-        Assert.Equal(19200, ReasoningMap.MapReasoningToProviderBudget("medium", 64000, 64000, warnings));
+        Assert.Equal(
+            19200,
+            ReasoningMap.MapReasoningToProviderBudget("medium", 64000, 64000, warnings)
+        );
         Assert.Empty(warnings);
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "mapReasoningToProviderBudget::caps result at maxReasoningBudget", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Reasoning + "mapReasoningToProviderBudget::caps result at maxReasoningBudget",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Budget_is_capped_at_the_provider_maximum()
     {
         var warnings = new List<ModelWarning>();
-        Assert.Equal(50000, ReasoningMap.MapReasoningToProviderBudget("xhigh", 64000, 50000, warnings));
+        Assert.Equal(
+            50000,
+            ReasoningMap.MapReasoningToProviderBudget("xhigh", 64000, 50000, warnings)
+        );
         Assert.Empty(warnings);
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "mapReasoningToProviderBudget::floors result at default minReasoningBudget of 1024", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Reasoning
+            + "mapReasoningToProviderBudget::floors result at default minReasoningBudget of 1024",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Budget_is_floored_at_1024()
     {
         var warnings = new List<ModelWarning>();
-        Assert.Equal(1024, ReasoningMap.MapReasoningToProviderBudget("minimal", 10000, 10000, warnings));
+        Assert.Equal(
+            1024,
+            ReasoningMap.MapReasoningToProviderBudget("minimal", 10000, 10000, warnings)
+        );
         Assert.Empty(warnings);
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "mapReasoningToProviderBudget::respects custom minReasoningBudget", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Reasoning + "mapReasoningToProviderBudget::respects custom minReasoningBudget",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Custom_minimum_budget_is_used()
     {
         var warnings = new List<ModelWarning>();
-        Assert.Equal(512, ReasoningMap.MapReasoningToProviderBudget("minimal", 10000, 10000, warnings, minReasoningBudget: 512));
+        Assert.Equal(
+            512,
+            ReasoningMap.MapReasoningToProviderBudget(
+                "minimal",
+                10000,
+                10000,
+                warnings,
+                minReasoningBudget: 512
+            )
+        );
         Assert.Empty(warnings);
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "mapReasoningToProviderBudget::respects custom budgetPercentages", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Reasoning + "mapReasoningToProviderBudget::respects custom budgetPercentages",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Custom_budget_percentage_is_used()
     {
         var warnings = new List<ModelWarning>();
@@ -196,12 +329,18 @@ public sealed class ReasoningAndModelOptionsTests
                 10000,
                 10000,
                 warnings,
-                budgetPercentages: new Dictionary<string, double> { ["medium"] = 0.5 }));
+                budgetPercentages: new Dictionary<string, double> { ["medium"] = 0.5 }
+            )
+        );
         Assert.Empty(warnings);
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "mapReasoningToProviderBudget::returns undefined with unsupported warning for key missing from custom budgetPercentages", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Reasoning
+            + "mapReasoningToProviderBudget::returns undefined with unsupported warning for key missing from custom budgetPercentages",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Missing_custom_budget_key_returns_null()
     {
         var warnings = new List<ModelWarning>();
@@ -210,14 +349,18 @@ public sealed class ReasoningAndModelOptionsTests
             64000,
             64000,
             warnings,
-            budgetPercentages: new Dictionary<string, double> { ["medium"] = 0.5 });
+            budgetPercentages: new Dictionary<string, double> { ["medium"] = 0.5 }
+        );
         Assert.Null(result);
         var warning = Assert.IsType<UnsupportedWarning>(Assert.Single(warnings));
         Assert.Equal("reasoning \"high\" is not supported by this model.", warning.Details);
     }
 
     [Fact]
-    [UpstreamTest(Serialize + "returns modelId and serializable config", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Serialize + "returns modelId and serializable config",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Serializes_model_id_and_drops_non_json_config()
     {
         var result = ModelOptionsSerialization.SerializeModelOptions(
@@ -226,17 +369,30 @@ public sealed class ReasoningAndModelOptionsTests
             {
                 ["provider"] = "anthropic.messages",
                 ["baseURL"] = "https://api.anthropic.com/v1",
-                ["headers"] = new Func<Dictionary<string, string>>(() => new Dictionary<string, string> { ["x-api-key"] = "sk-test" }),
+                ["headers"] = new Func<Dictionary<string, string>>(() =>
+                    new Dictionary<string, string> { ["x-api-key"] = "sk-test" }
+                ),
                 ["fetch"] = JsUndefined.Value,
                 ["generateId"] = new Func<string>(() => "id"),
-                ["supportedUrls"] = new Func<Dictionary<string, object?>>(() => new Dictionary<string, object?>()),
+                ["supportedUrls"] = new Func<Dictionary<string, object?>>(() =>
+                    new Dictionary<string, object?>()
+                ),
                 ["supportsNativeStructuredOutput"] = true,
                 ["supportsStrictTools"] = false,
-            });
+            }
+        );
         Assert.Equal("claude-sonnet-4-20250514", result.ModelId);
         Assert.Equal(
-            new[] { "baseURL", "headers", "provider", "supportsNativeStructuredOutput", "supportsStrictTools" },
-            result.Config.Keys.OrderBy(key => key, StringComparer.Ordinal).ToArray());
+            new[]
+            {
+                "baseURL",
+                "headers",
+                "provider",
+                "supportsNativeStructuredOutput",
+                "supportsStrictTools",
+            },
+            result.Config.Keys.OrderBy(key => key, StringComparer.Ordinal).ToArray()
+        );
         Assert.Equal("anthropic.messages", result.Config["provider"]);
         Assert.Equal("https://api.anthropic.com/v1", result.Config["baseURL"]);
         Assert.Equal(true, result.Config["supportsNativeStructuredOutput"]);
@@ -246,7 +402,10 @@ public sealed class ReasoningAndModelOptionsTests
     }
 
     [Fact]
-    [UpstreamTest(Serialize + "resolves headers functions but filters out other functions", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Serialize + "resolves headers functions but filters out other functions",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Header_functions_are_invoked_and_other_functions_are_dropped()
     {
         var result = ModelOptionsSerialization.SerializeModelOptions(
@@ -254,16 +413,25 @@ public sealed class ReasoningAndModelOptionsTests
             new Dictionary<string, object?>
             {
                 ["provider"] = "openai",
-                ["headers"] = new Func<Dictionary<string, string>>(() => new Dictionary<string, string> { ["authorization"] = "Bearer sk-test" }),
+                ["headers"] = new Func<Dictionary<string, string>>(() =>
+                    new Dictionary<string, string> { ["authorization"] = "Bearer sk-test" }
+                ),
                 ["url"] = new Func<string>(() => "https://api.openai.com/v1/chat/completions"),
-            });
-        Assert.Equal(new[] { "headers", "provider" }, result.Config.Keys.OrderBy(key => key, StringComparer.Ordinal).ToArray());
+            }
+        );
+        Assert.Equal(
+            new[] { "headers", "provider" },
+            result.Config.Keys.OrderBy(key => key, StringComparer.Ordinal).ToArray()
+        );
         var headers = Assert.IsType<Dictionary<string, object?>>(result.Config["headers"]);
         Assert.Equal("Bearer sk-test", headers["authorization"]);
     }
 
     [Fact]
-    [UpstreamTest(Serialize + "filters out objects containing functions", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Serialize + "filters out objects containing functions",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Objects_that_contain_functions_are_dropped()
     {
         var result = ModelOptionsSerialization.SerializeModelOptions(
@@ -279,9 +447,12 @@ public sealed class ReasoningAndModelOptionsTests
                 ["metadataExtractor"] = new Dictionary<string, object?>
                 {
                     ["extractMetadata"] = new Func<Task>(() => Task.CompletedTask),
-                    ["createStreamExtractor"] = new Func<object?>(() => new Dictionary<string, object?>()),
+                    ["createStreamExtractor"] = new Func<object?>(() =>
+                        new Dictionary<string, object?>()
+                    ),
                 },
-            });
+            }
+        );
         Assert.Equal(new[] { "provider" }, result.Config.Keys.ToArray());
         Assert.Equal("openai-compatible", result.Config["provider"]);
     }
@@ -298,45 +469,65 @@ public sealed class ReasoningAndModelOptionsTests
                 ["provider"] = "test",
                 ["tags"] = tags,
                 ["fn"] = new Action(() => { }),
-            });
+            }
+        );
         Assert.Same(tags, result.Config["tags"]);
         Assert.False(result.Config.ContainsKey("fn"));
     }
 
     [Fact]
-    [UpstreamTest(Serialize + "throws when headers resolve asynchronously", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Serialize + "throws when headers resolve asynchronously",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Async_headers_throw_serialization_error()
     {
-        var error = Assert.Throws<SerializationError>(() => ModelOptionsSerialization.SerializeModelOptions(
-            "model",
-            new Dictionary<string, object?>
-            {
-                ["provider"] = "test",
-                ["headers"] = new Func<Task<Dictionary<string, string>>>(async () =>
+        var error = Assert.Throws<SerializationError>(() =>
+            ModelOptionsSerialization.SerializeModelOptions(
+                "model",
+                new Dictionary<string, object?>
                 {
-                    await Task.Yield();
-                    return new Dictionary<string, string> { ["x-api-key"] = "sk-test" };
-                }),
-            }));
+                    ["provider"] = "test",
+                    ["headers"] = new Func<Task<Dictionary<string, string>>>(async () =>
+                    {
+                        await Task.Yield();
+                        return new Dictionary<string, string> { ["x-api-key"] = "sk-test" };
+                    }),
+                }
+            )
+        );
         Assert.Equal("Cannot serialize asynchronous model options.", error.Message);
     }
 
     [Fact]
-    [UpstreamTest(Serialize + "throws when headers is a function returning a Promise", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Serialize + "throws when headers is a function returning a Promise",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Headers_that_return_a_task_throw()
     {
-        var error = Assert.Throws<SerializationError>(() => ModelOptionsSerialization.SerializeModelOptions(
-            "model",
-            new Dictionary<string, object?>
-            {
-                ["provider"] = "test",
-                ["headers"] = new Func<Task<Dictionary<string, string>>>(() => Task.FromResult(new Dictionary<string, string> { ["x-api-key"] = "sk-test" })),
-            }));
+        var error = Assert.Throws<SerializationError>(() =>
+            ModelOptionsSerialization.SerializeModelOptions(
+                "model",
+                new Dictionary<string, object?>
+                {
+                    ["provider"] = "test",
+                    ["headers"] = new Func<Task<Dictionary<string, string>>>(() =>
+                        Task.FromResult(
+                            new Dictionary<string, string> { ["x-api-key"] = "sk-test" }
+                        )
+                    ),
+                }
+            )
+        );
         Assert.Equal("Cannot serialize asynchronous model options.", error.Message);
     }
 
     [Fact]
-    [UpstreamTest(Serialize + "marks serialization errors for cross-realm detection", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Serialize + "marks serialization errors for cross-realm detection",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Serialization_errors_are_detectable()
     {
         object? serializationError = null;
@@ -346,8 +537,11 @@ public sealed class ReasoningAndModelOptionsTests
                 "model",
                 new Dictionary<string, object?>
                 {
-                    ["headers"] = new Func<Task<Dictionary<string, string>>>(() => Task.FromResult(new Dictionary<string, string>())),
-                });
+                    ["headers"] = new Func<Task<Dictionary<string, string>>>(() =>
+                        Task.FromResult(new Dictionary<string, string>())
+                    ),
+                }
+            );
         }
         catch (Exception error)
         {
@@ -368,7 +562,8 @@ public sealed class ReasoningAndModelOptionsTests
                 ["provider"] = "test",
                 ["date"] = DateTime.UtcNow,
                 ["regex"] = new Regex("test"),
-            });
+            }
+        );
         Assert.Equal(new[] { "provider" }, result.Config.Keys.ToArray());
         Assert.Equal("test", result.Config["provider"]);
     }

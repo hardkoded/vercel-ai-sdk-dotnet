@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <Description>Generates a video from a text prompt with grok-imagine-video-1.5.</Description>
-  </PropertyGroup>
+    <PropertyGroup>
+        <Description>Generates a video from a text prompt with grok-imagine-video-1.5.</Description>
+    </PropertyGroup>
 </Project>

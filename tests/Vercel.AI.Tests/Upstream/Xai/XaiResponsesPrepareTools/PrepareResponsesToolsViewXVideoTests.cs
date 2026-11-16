@@ -17,7 +17,10 @@ public sealed class PrepareResponsesToolsViewXVideoTests
     [UpstreamTest(Prefix + "should prepare view_x_video tool", Coverage = UpstreamCoverage.Covered)]
     public void Should_prepare_view_x_video_tool()
     {
-        var result = XaiResponsesTools.Prepare(new[] { ProviderTool("xai.view_x_video", "view_x_video") }, null);
+        var result = XaiResponsesTools.Prepare(
+            new[] { ProviderTool("xai.view_x_video", "view_x_video") },
+            null
+        );
 
         JsonAssert.Equal(result.Tools, """[{"type":"view_x_video"}]""");
     }

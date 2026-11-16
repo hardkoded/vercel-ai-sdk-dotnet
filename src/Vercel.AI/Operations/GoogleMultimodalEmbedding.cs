@@ -50,7 +50,13 @@ public sealed class GoogleMultimodalEmbedding : IEmbeddingCaller
     public bool SupportsParallelCalls => true;
 
     /// <inheritdoc />
-    public Task<JsonElement?> TransformProviderOptionsAsync(JsonElement? providerOptions, IReadOnlyList<string> values, int startIndex, int endIndex, CancellationToken cancellationToken)
+    public Task<JsonElement?> TransformProviderOptionsAsync(
+        JsonElement? providerOptions,
+        IReadOnlyList<string> values,
+        int startIndex,
+        int endIndex,
+        CancellationToken cancellationToken
+    )
     {
         var content = ContentArray(providerOptions);
         if (content == null)
@@ -61,7 +67,12 @@ public sealed class GoogleMultimodalEmbedding : IEmbeddingCaller
         if (content.Value.GetArrayLength() != values.Count)
         {
             throw new InvalidOperationException(
-                "The number of multimodal content entries (" + content.Value.GetArrayLength().ToString(CultureInfo.InvariantCulture) + ") must match the number of values (" + values.Count.ToString(CultureInfo.InvariantCulture) + ").");
+                "The number of multimodal content entries ("
+                    + content.Value.GetArrayLength().ToString(CultureInfo.InvariantCulture)
+                    + ") must match the number of values ("
+                    + values.Count.ToString(CultureInfo.InvariantCulture)
+                    + ")."
+            );
         }
 
         var sliced = new JsonArray();
@@ -78,14 +89,22 @@ public sealed class GoogleMultimodalEmbedding : IEmbeddingCaller
     }
 
     /// <inheritdoc />
-    public async Task<EmbeddingModelResponse> DoEmbedAsync(EmbeddingModelCall call, CancellationToken cancellationToken)
+    public async Task<EmbeddingModelResponse> DoEmbedAsync(
+        EmbeddingModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         var google = GoogleOptions(call.ProviderOptions);
         var content = google == null ? null : ContentProperty(google.Value);
         if (content != null && content.Value.GetArrayLength() != call.Values.Count)
         {
             throw new InvalidOperationException(
-                "The number of multimodal content entries (" + content.Value.GetArrayLength().ToString(CultureInfo.InvariantCulture) + ") must match the number of values (" + call.Values.Count.ToString(CultureInfo.InvariantCulture) + ").");
+                "The number of multimodal content entries ("
+                    + content.Value.GetArrayLength().ToString(CultureInfo.InvariantCulture)
+                    + ") must match the number of values ("
+                    + call.Values.Count.ToString(CultureInfo.InvariantCulture)
+                    + ")."
+            );
         }
 
         ValidateContent(content);
@@ -95,17 +114,33 @@ public sealed class GoogleMultimodalEmbedding : IEmbeddingCaller
             ? SingleBody(call.Values[0], content, dimensionality)
             : BatchBody(call.Values, content, dimensionality);
         var path = single ? ":embedContent" : ":batchEmbedContents";
-        using (var request = new HttpRequestMessage(HttpMethod.Post, _baseUrl + "/models/" + ModelId + path))
+        using (
+            var request = new HttpRequestMessage(
+                HttpMethod.Post,
+                _baseUrl + "/models/" + ModelId + path
+            )
+        )
         {
-            request.Content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json");
+            request.Content = new StringContent(
+                body.ToJsonString(),
+                Encoding.UTF8,
+                "application/json"
+            );
             foreach (var header in call.Headers)
             {
                 request.Headers.TryAddWithoutValidation(header.Key, header.Value);
             }
 
-            using (var response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false))
+            using (
+                var response = await _http
+                    .SendAsync(request, cancellationToken)
+                    .ConfigureAwait(false)
+            )
             {
-                var payload = response.Content == null ? string.Empty : await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var payload =
+                    response.Content == null
+                        ? string.Empty
+                        : await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 if (!response.IsSuccessStatusCode)
                 {
                     var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -114,25 +149,46 @@ public sealed class GoogleMultimodalEmbedding : IEmbeddingCaller
                         headers[header.Key.ToLowerInvariant()] = string.Join(",", header.Value);
                     }
 
-                    throw new RetryableCallException("Google embedding request failed.", (int)response.StatusCode, headers);
+                    throw new RetryableCallException(
+                        "Google embedding request failed.",
+                        (int)response.StatusCode,
+                        headers
+                    );
                 }
 
-                using (var document = JsonDocument.Parse(string.IsNullOrEmpty(payload) ? "{}" : payload))
+                using (
+                    var document = JsonDocument.Parse(
+                        string.IsNullOrEmpty(payload) ? "{}" : payload
+                    )
+                )
                 {
                     var embeddings = new List<double[]>();
                     if (single)
                     {
-                        embeddings.Add(ReadVector(document.RootElement.GetProperty("embedding").GetProperty("values")));
+                        embeddings.Add(
+                            ReadVector(
+                                document.RootElement.GetProperty("embedding").GetProperty("values")
+                            )
+                        );
                     }
                     else
                     {
-                        foreach (var item in document.RootElement.GetProperty("embeddings").EnumerateArray())
+                        foreach (
+                            var item in document
+                                .RootElement.GetProperty("embeddings")
+                                .EnumerateArray()
+                        )
                         {
                             embeddings.Add(ReadVector(item.GetProperty("values")));
                         }
                     }
 
-                    return new EmbeddingModelResponse(embeddings, usageOmitted: true, warnings: Array.Empty<OperationWarning>(), response: new ProviderResponse(body: document.RootElement.Clone()));
+                    return new EmbeddingModelResponse(
+                        embeddings,
+                        usageOmitted: true,
+                        warnings: Array.Empty<OperationWarning>(),
+                        response: new ProviderResponse(body: document.RootElement.Clone())
+                    );
                 }
             }
         }
@@ -140,7 +196,12 @@ public sealed class GoogleMultimodalEmbedding : IEmbeddingCaller
 
     private JsonObject SingleBody(string value, JsonElement? content, int? dimensionality)
     {
-        var parts = Parts(value, content == null || content.Value.GetArrayLength() == 0 ? (JsonElement?)null : content.Value[0]);
+        var parts = Parts(
+            value,
+            content == null || content.Value.GetArrayLength() == 0
+                ? (JsonElement?)null
+                : content.Value[0]
+        );
         var body = new JsonObject
         {
             ["model"] = "models/" + ModelId,
@@ -154,7 +215,11 @@ public sealed class GoogleMultimodalEmbedding : IEmbeddingCaller
         return body;
     }
 
-    private JsonObject BatchBody(IReadOnlyList<string> values, JsonElement? content, int? dimensionality)
+    private JsonObject BatchBody(
+        IReadOnlyList<string> values,
+        JsonElement? content,
+        int? dimensionality
+    )
     {
         var requests = new JsonArray();
         for (var i = 0; i < values.Count; i++)
@@ -200,7 +265,11 @@ public sealed class GoogleMultimodalEmbedding : IEmbeddingCaller
 
         if (entry.Value.ValueKind != JsonValueKind.Array)
         {
-            throw new InvalidArgumentException("providerOptions", entry, "invalid google provider options");
+            throw new InvalidArgumentException(
+                "providerOptions",
+                entry,
+                "invalid google provider options"
+            );
         }
 
         foreach (var part in entry.Value.EnumerateArray())
@@ -227,14 +296,22 @@ public sealed class GoogleMultimodalEmbedding : IEmbeddingCaller
 
             if (entry.ValueKind != JsonValueKind.Array || entry.GetArrayLength() == 0)
             {
-                throw new InvalidArgumentException("providerOptions", content, "invalid google provider options");
+                throw new InvalidArgumentException(
+                    "providerOptions",
+                    content,
+                    "invalid google provider options"
+                );
             }
 
             foreach (var part in entry.EnumerateArray())
             {
                 if (!IsValidPart(part))
                 {
-                    throw new InvalidArgumentException("providerOptions", content, "invalid google provider options");
+                    throw new InvalidArgumentException(
+                        "providerOptions",
+                        content,
+                        "invalid google provider options"
+                    );
                 }
             }
         }
@@ -259,16 +336,23 @@ public sealed class GoogleMultimodalEmbedding : IEmbeddingCaller
             return text.ValueKind == JsonValueKind.String && properties == 1;
         }
 
-        if (part.TryGetProperty("inlineData", out var inline) && inline.ValueKind == JsonValueKind.Object)
+        if (
+            part.TryGetProperty("inlineData", out var inline)
+            && inline.ValueKind == JsonValueKind.Object
+        )
         {
-            return inline.TryGetProperty("mimeType", out var mime) && mime.ValueKind == JsonValueKind.String
-                && inline.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.String;
+            return inline.TryGetProperty("mimeType", out var mime)
+                && mime.ValueKind == JsonValueKind.String
+                && inline.TryGetProperty("data", out var data)
+                && data.ValueKind == JsonValueKind.String;
         }
 
         if (part.TryGetProperty("fileData", out var file) && file.ValueKind == JsonValueKind.Object)
         {
-            return file.TryGetProperty("fileUri", out var uri) && uri.ValueKind == JsonValueKind.String
-                && file.TryGetProperty("mimeType", out var fileType) && fileType.ValueKind == JsonValueKind.String;
+            return file.TryGetProperty("fileUri", out var uri)
+                && uri.ValueKind == JsonValueKind.String
+                && file.TryGetProperty("mimeType", out var fileType)
+                && fileType.ValueKind == JsonValueKind.String;
         }
 
         return false;
@@ -283,7 +367,11 @@ public sealed class GoogleMultimodalEmbedding : IEmbeddingCaller
 
         if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt32(out var number))
         {
-            throw new InvalidArgumentException("providerOptions", google, "invalid google provider options");
+            throw new InvalidArgumentException(
+                "providerOptions",
+                google,
+                "invalid google provider options"
+            );
         }
 
         return number;
@@ -291,7 +379,11 @@ public sealed class GoogleMultimodalEmbedding : IEmbeddingCaller
 
     private static JsonElement? GoogleOptions(JsonElement? providerOptions)
     {
-        if (providerOptions == null || providerOptions.Value.ValueKind != JsonValueKind.Object || !providerOptions.Value.TryGetProperty("google", out var google))
+        if (
+            providerOptions == null
+            || providerOptions.Value.ValueKind != JsonValueKind.Object
+            || !providerOptions.Value.TryGetProperty("google", out var google)
+        )
         {
             return null;
         }
@@ -302,7 +394,11 @@ public sealed class GoogleMultimodalEmbedding : IEmbeddingCaller
     private static JsonElement? ContentArray(JsonElement? providerOptions)
     {
         var google = GoogleOptions(providerOptions);
-        if (google == null || !google.Value.TryGetProperty("content", out var content) || content.ValueKind != JsonValueKind.Array)
+        if (
+            google == null
+            || !google.Value.TryGetProperty("content", out var content)
+            || content.ValueKind != JsonValueKind.Array
+        )
         {
             return null;
         }
@@ -312,14 +408,22 @@ public sealed class GoogleMultimodalEmbedding : IEmbeddingCaller
 
     private static JsonElement? ContentProperty(JsonElement google)
     {
-        if (!google.TryGetProperty("content", out var content) || content.ValueKind == JsonValueKind.Null || content.ValueKind == JsonValueKind.Undefined)
+        if (
+            !google.TryGetProperty("content", out var content)
+            || content.ValueKind == JsonValueKind.Null
+            || content.ValueKind == JsonValueKind.Undefined
+        )
         {
             return null;
         }
 
         if (content.ValueKind != JsonValueKind.Array)
         {
-            throw new InvalidArgumentException("providerOptions", google, "invalid google provider options");
+            throw new InvalidArgumentException(
+                "providerOptions",
+                google,
+                "invalid google provider options"
+            );
         }
 
         return content;

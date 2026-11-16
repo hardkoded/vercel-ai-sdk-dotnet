@@ -12,7 +12,15 @@ namespace Vercel.AI.Google;
 public sealed class GoogleTokenUsage
 {
     /// <summary>Creates converted usage. <see cref="CacheWrite"/> stays null because Gemini does not report cache writes.</summary>
-    public GoogleTokenUsage(int inputTotal, int noCache, int cacheRead, int outputTotal, int text, int reasoning, JsonElement? raw)
+    public GoogleTokenUsage(
+        int inputTotal,
+        int noCache,
+        int cacheRead,
+        int outputTotal,
+        int text,
+        int reasoning,
+        JsonElement? raw
+    )
     {
         InputTotal = inputTotal;
         NoCache = noCache;
@@ -53,7 +61,17 @@ public sealed class GoogleTokenUsage
     /// <summary>Maps onto the shared usage type. Cache writes stay unset.</summary>
     public LanguageModelUsage ToLanguageModelUsage()
     {
-        return new LanguageModelUsage(InputTotal, OutputTotal, InputTotal + OutputTotal, CacheRead, null, Reasoning, Raw, NoCache, Text);
+        return new LanguageModelUsage(
+            InputTotal,
+            OutputTotal,
+            InputTotal + OutputTotal,
+            CacheRead,
+            null,
+            Reasoning,
+            Raw,
+            NoCache,
+            Text
+        );
     }
 }
 
@@ -66,7 +84,10 @@ public static class GoogleUsage
     /// </summary>
     public static GoogleTokenUsage? Convert(JsonElement? usage)
     {
-        if (usage is not { } element || element.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        if (
+            usage is not { } element
+            || element.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined
+        )
         {
             return null;
         }
@@ -77,7 +98,15 @@ public static class GoogleUsage
         var cached = Count(element, "cachedContentTokenCount");
         var thoughts = Count(element, "thoughtsTokenCount");
         var input = prompt + toolUse;
-        return new GoogleTokenUsage(input, input - cached, cached, candidates + thoughts, candidates, thoughts, element.Clone());
+        return new GoogleTokenUsage(
+            input,
+            input - cached,
+            cached,
+            candidates + thoughts,
+            candidates,
+            thoughts,
+            element.Clone()
+        );
     }
 
     /// <summary>
@@ -150,7 +179,12 @@ public static class GoogleUsage
 
     private static long? Number(JsonElement element, string name)
     {
-        return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out var count) ? count : null;
+        return
+            element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Number
+            && value.TryGetInt64(out var count)
+            ? count
+            : null;
     }
 
     private static JsonNode? AddCounts(JsonElement a, JsonElement b, string name)
@@ -168,7 +202,8 @@ public static class GoogleUsage
     private static JsonNode? AddDetails(JsonElement a, JsonElement b, string name)
     {
         var hasLeft = a.TryGetProperty(name, out var left) && left.ValueKind == JsonValueKind.Array;
-        var hasRight = b.TryGetProperty(name, out var right) && right.ValueKind == JsonValueKind.Array;
+        var hasRight =
+            b.TryGetProperty(name, out var right) && right.ValueKind == JsonValueKind.Array;
         if (!hasLeft || !hasRight)
         {
             return null;
@@ -177,7 +212,10 @@ public static class GoogleUsage
         var totals = new List<KeyValuePair<string, long>>();
         foreach (var item in left.EnumerateArray().Concat(right.EnumerateArray()))
         {
-            var modality = item.TryGetProperty("modality", out var m) && m.ValueKind == JsonValueKind.String ? m.GetString() ?? string.Empty : string.Empty;
+            var modality =
+                item.TryGetProperty("modality", out var m) && m.ValueKind == JsonValueKind.String
+                    ? m.GetString() ?? string.Empty
+                    : string.Empty;
             var count = Number(item, "tokenCount") ?? 0;
             var index = totals.FindIndex(entry => entry.Key == modality);
             if (index < 0)
@@ -186,7 +224,10 @@ public static class GoogleUsage
             }
             else
             {
-                totals[index] = new KeyValuePair<string, long>(modality, totals[index].Value + count);
+                totals[index] = new KeyValuePair<string, long>(
+                    modality,
+                    totals[index].Value + count
+                );
             }
         }
 

@@ -38,16 +38,24 @@ internal static class GladiaTranscriptionOptionsResolution
         {
             return new ResolvedLanguageConfig
             {
-                Languages = Present(languageConfig, "languages", out var configured) ? Strings(configured) : null,
-                CodeSwitching = Present(languageConfig, "codeSwitching", out var switching) ? switching.GetBoolean() : null,
+                Languages = Present(languageConfig, "languages", out var configured)
+                    ? Strings(configured)
+                    : null,
+                CodeSwitching = Present(languageConfig, "codeSwitching", out var switching)
+                    ? switching.GetBoolean()
+                    : null,
             };
         }
 
-        bool? codeSwitching = Present(options, "enableCodeSwitching", out var enabled) ? enabled.GetBoolean() : null;
+        bool? codeSwitching = Present(options, "enableCodeSwitching", out var enabled)
+            ? enabled.GetBoolean()
+            : null;
         string[]? languages;
-        if (codeSwitching == true
+        if (
+            codeSwitching == true
             && Present(options, "codeSwitchingConfig", out var codeSwitchingConfig)
-            && Present(codeSwitchingConfig, "languages", out var candidates))
+            && Present(codeSwitchingConfig, "languages", out var candidates)
+        )
         {
             languages = Strings(candidates);
         }
@@ -70,17 +78,33 @@ internal static class GladiaTranscriptionOptionsResolution
     }
 
     /// <summary>Maps to <c>resolveCustomVocabulary</c>.</summary>
-    public static ResolvedCustomVocabulary ResolveCustomVocabulary(JsonElement options, List<ModelWarning>? warnings = null)
+    public static ResolvedCustomVocabulary ResolveCustomVocabulary(
+        JsonElement options,
+        List<ModelWarning>? warnings = null
+    )
     {
         warnings ??= [];
-        if (Present(options, "customVocabulary", out var customVocabulary) && customVocabulary.ValueKind == JsonValueKind.Array)
+        if (
+            Present(options, "customVocabulary", out var customVocabulary)
+            && customVocabulary.ValueKind == JsonValueKind.Array
+        )
         {
-            warnings.Add(new DeprecatedWarning(
-                "customVocabulary",
-                "Use customVocabulary: true with customVocabularyConfig instead of an array."));
-            if (Present(options, "customVocabularyConfig", out var config) && Present(config, "vocabulary", out _))
+            warnings.Add(
+                new DeprecatedWarning(
+                    "customVocabulary",
+                    "Use customVocabulary: true with customVocabularyConfig instead of an array."
+                )
+            );
+            if (
+                Present(options, "customVocabularyConfig", out var config)
+                && Present(config, "vocabulary", out _)
+            )
             {
-                warnings.Add(new OtherWarning("customVocabularyConfig.vocabulary overrides the deprecated customVocabulary array."));
+                warnings.Add(
+                    new OtherWarning(
+                        "customVocabularyConfig.vocabulary overrides the deprecated customVocabulary array."
+                    )
+                );
                 return new ResolvedCustomVocabulary { CustomVocabulary = true };
             }
 
@@ -97,16 +121,25 @@ internal static class GladiaTranscriptionOptionsResolution
 
             if (vocabulary.Count != total)
             {
-                warnings.Add(new OtherWarning(
-                    "Invalid customVocabulary entries were ignored; use strings or objects with a string value and correctly typed optional fields."));
+                warnings.Add(
+                    new OtherWarning(
+                        "Invalid customVocabulary entries were ignored; use strings or objects with a string value and correctly typed optional fields."
+                    )
+                );
             }
 
-            return vocabulary.Count > 0 ? new ResolvedCustomVocabulary { CustomVocabulary = true, Vocabulary = vocabulary } : new ResolvedCustomVocabulary();
+            return vocabulary.Count > 0
+                ? new ResolvedCustomVocabulary { CustomVocabulary = true, Vocabulary = vocabulary }
+                : new ResolvedCustomVocabulary();
         }
 
         return new ResolvedCustomVocabulary
         {
-            CustomVocabulary = customVocabulary.ValueKind is JsonValueKind.True or JsonValueKind.False ? customVocabulary.GetBoolean() : null,
+            CustomVocabulary = customVocabulary.ValueKind
+                is JsonValueKind.True
+                    or JsonValueKind.False
+                ? customVocabulary.GetBoolean()
+                : null,
         };
     }
 
@@ -117,25 +150,38 @@ internal static class GladiaTranscriptionOptionsResolution
             return true;
         }
 
-        if (item.ValueKind != JsonValueKind.Object
+        if (
+            item.ValueKind != JsonValueKind.Object
             || !item.TryGetProperty("value", out var value)
-            || value.ValueKind != JsonValueKind.String)
+            || value.ValueKind != JsonValueKind.String
+        )
         {
             return false;
         }
 
-        if (Present(item, "intensity", out var intensity) && intensity.ValueKind != JsonValueKind.Number)
+        if (
+            Present(item, "intensity", out var intensity)
+            && intensity.ValueKind != JsonValueKind.Number
+        )
         {
             return false;
         }
 
-        if (Present(item, "pronunciations", out var pronunciations)
-            && (pronunciations.ValueKind != JsonValueKind.Array || pronunciations.EnumerateArray().Any(entry => entry.ValueKind != JsonValueKind.String)))
+        if (
+            Present(item, "pronunciations", out var pronunciations)
+            && (
+                pronunciations.ValueKind != JsonValueKind.Array
+                || pronunciations
+                    .EnumerateArray()
+                    .Any(entry => entry.ValueKind != JsonValueKind.String)
+            )
+        )
         {
             return false;
         }
 
-        return !Present(item, "language", out var language) || language.ValueKind == JsonValueKind.String;
+        return !Present(item, "language", out var language)
+            || language.ValueKind == JsonValueKind.String;
     }
 
     private static string[] Strings(JsonElement array)

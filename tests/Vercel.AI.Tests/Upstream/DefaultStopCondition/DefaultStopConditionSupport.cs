@@ -16,7 +16,9 @@ internal static class DefaultStopConditionSupport
 
     internal static Tool ExecutableTool()
     {
-        return Tool.Function("test", null, "{\"type\":\"object\",\"properties\":{}}", (_, _) => Task.FromResult("\"result\""));
+        return Tool.Function("test", null, "{\"type\":\"object\",\"properties\":{}}", (_, _) =>
+            Task.FromResult("\"result\"")
+        );
     }
 
     internal static Tool ToolWithoutExecute()
@@ -33,7 +35,8 @@ internal static class DefaultStopConditionSupport
 
         public int Calls { get; private set; }
 
-        public IReadOnlyDictionary<string, string> SupportedUrls => Vercel.AI.ProviderUtils.UrlSupport.None;
+        public IReadOnlyDictionary<string, string> SupportedUrls =>
+            Vercel.AI.ProviderUtils.UrlSupport.None;
 
         public string SpecificationVersion => "V4";
 
@@ -41,26 +44,39 @@ internal static class DefaultStopConditionSupport
 
         public string ModelId => DefaultStopConditionSupport.ModelId;
 
-        public Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        public Task<LanguageModelGenerateResult> DoGenerateAsync(
+            LanguageModelCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
             var step = ++Calls;
-            GeneratedContent content = step == FinishAtStep
-                ? new GeneratedText("done")
-                : new GeneratedToolCall("call-" + step, "test", "{}");
-            return Task.FromResult(new LanguageModelGenerateResult(
-                new[] { content },
-                step == FinishAtStep ? FinishReason.Stop : FinishReason.ToolCalls,
-                Usage));
+            GeneratedContent content =
+                step == FinishAtStep
+                    ? new GeneratedText("done")
+                    : new GeneratedToolCall("call-" + step, "test", "{}");
+            return Task.FromResult(
+                new LanguageModelGenerateResult(
+                    new[] { content },
+                    step == FinishAtStep ? FinishReason.Stop : FinishReason.ToolCalls,
+                    Usage
+                )
+            );
         }
 
-        public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        public Task<LanguageModelStreamResult> DoStreamAsync(
+            LanguageModelCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
-            return Task.FromResult(new LanguageModelStreamResult(StreamAsync(options, cancellationToken)));
+            return Task.FromResult(
+                new LanguageModelStreamResult(StreamAsync(options, cancellationToken))
+            );
         }
 
         private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
             LanguageModelCallOptions options,
-            [EnumeratorCancellation] CancellationToken cancellationToken)
+            [EnumeratorCancellation] CancellationToken cancellationToken
+        )
         {
             var step = ++Calls;
             yield return new StreamStartStreamPart(null);
@@ -177,28 +193,71 @@ internal static class DefaultStopConditionSupport
         ToolLoopModel model,
         Tool tool,
         StopCondition? stopWhen = null,
-        Func<GenerateTextOptions, GenerateTextOptions?>? prepareCall = null)
+        Func<GenerateTextOptions, GenerateTextOptions?>? prepareCall = null
+    )
     {
         var tools = new[] { tool };
         const string prompt = "Call the test tool.";
         switch (method)
         {
             case "generateText":
-                return (await Client().GenerateTextAsync(new GenerateTextOptions { Model = model, Tools = tools, StopWhen = stopWhen, Prompt = prompt })).Steps;
+                return (
+                    await Client()
+                        .GenerateTextAsync(
+                            new GenerateTextOptions
+                            {
+                                Model = model,
+                                Tools = tools,
+                                StopWhen = stopWhen,
+                                Prompt = prompt,
+                            }
+                        )
+                ).Steps;
             case "streamText":
-                return await Consume(Client().StreamTextAsync(new StreamTextOptions { Model = model, Tools = tools, StopWhen = stopWhen, Prompt = prompt }));
+                return await Consume(
+                    Client()
+                        .StreamTextAsync(
+                            new StreamTextOptions
+                            {
+                                Model = model,
+                                Tools = tools,
+                                StopWhen = stopWhen,
+                                Prompt = prompt,
+                            }
+                        )
+                );
             case "agent.generate":
-                return (await new Agent(new AgentOptions { Model = model, Tools = tools, StopWhen = stopWhen, PrepareCall = prepareCall }, Client()).GenerateAsync(prompt)).Steps;
+                return (
+                    await new Agent(
+                        new AgentOptions
+                        {
+                            Model = model,
+                            Tools = tools,
+                            StopWhen = stopWhen,
+                            PrepareCall = prepareCall,
+                        },
+                        Client()
+                    ).GenerateAsync(prompt)
+                ).Steps;
             default:
-                return await Consume(new Agent(new AgentOptions { Model = model, Tools = tools, StopWhen = stopWhen, PrepareCall = prepareCall }, Client()).Stream(prompt));
+                return await Consume(
+                    new Agent(
+                        new AgentOptions
+                        {
+                            Model = model,
+                            Tools = tools,
+                            StopWhen = stopWhen,
+                            PrepareCall = prepareCall,
+                        },
+                        Client()
+                    ).Stream(prompt)
+                );
         }
     }
 
     private static async Task<IReadOnlyList<StepResult>> Consume(StreamTextResult result)
     {
-        await foreach (var _ in result.Stream())
-        {
-        }
+        await foreach (var _ in result.Stream()) { }
 
         return await result.Steps;
     }

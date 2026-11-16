@@ -14,12 +14,22 @@ internal static class OpenAIImageModelOptions
     // Shared by generations and edits: the base object of the upstream shape.
     private static readonly string[] BaseKeys =
     {
-        "quality", "background", "outputFormat", "complexity", "outputCompression", "user", "safetyIdentifier",
+        "quality",
+        "background",
+        "outputFormat",
+        "complexity",
+        "outputCompression",
+        "user",
+        "safetyIdentifier",
     };
 
-    private static readonly string[] GenerationKeys = BaseKeys.Concat(new[] { "style", "frameCount", "frameDurationMs", "moderation" }).ToArray();
+    private static readonly string[] GenerationKeys = BaseKeys
+        .Concat(new[] { "style", "frameCount", "frameDurationMs", "moderation" })
+        .ToArray();
 
-    private static readonly string[] EditKeys = BaseKeys.Concat(new[] { "inputFidelity", "markup", "moderation" }).ToArray();
+    private static readonly string[] EditKeys = BaseKeys
+        .Concat(new[] { "inputFidelity", "markup", "moderation" })
+        .ToArray();
 
     /// <summary>Keys of the image generation options. Maps to <c>openaiImageModelGenerationOptionsShape</c>.</summary>
     public static IReadOnlyList<string> GenerationOptionsShape()

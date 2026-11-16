@@ -16,10 +16,23 @@ public class DecisionUnsupportedQuestionTypeError : AiSdkError
         string questionType,
         string provider,
         string modelId,
-        string? message = null)
+        string? message = null
+    )
         : base(
             "AI_DecisionUnsupportedQuestionTypeError",
-            message ?? ("Question \"" + questionId + "\" has type \"" + questionType + "\", which is not supported by provider \"" + provider + "\" and model \"" + modelId + "\"."))
+            message
+                ?? (
+                    "Question \""
+                    + questionId
+                    + "\" has type \""
+                    + questionType
+                    + "\", which is not supported by provider \""
+                    + provider
+                    + "\" and model \""
+                    + modelId
+                    + "\"."
+                )
+        )
     {
         QuestionId = questionId;
         QuestionType = questionType;
@@ -60,8 +73,7 @@ public sealed class EvaluationUnsupportedQuestionTypeError : DecisionUnsupported
         string questionType,
         string provider,
         string modelId,
-        string? message = null)
-        : base(questionId, questionType, provider, modelId, message)
-    {
-    }
+        string? message = null
+    )
+        : base(questionId, questionType, provider, modelId, message) { }
 }

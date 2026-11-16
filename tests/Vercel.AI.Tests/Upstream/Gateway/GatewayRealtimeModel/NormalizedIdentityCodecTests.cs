@@ -12,10 +12,14 @@ namespace Vercel.AI.Tests.Upstream.Gateway.GatewayRealtimeModel;
 /// <summary>Port of <c>gateway-realtime-model.test.ts</c> &gt; <c>GatewayRealtimeModel</c> &gt; <c>normalized identity codec</c>.</summary>
 public sealed class NormalizedIdentityCodecTests
 {
-    private const string Prefix = "packages/gateway/src/gateway-realtime-model.test.ts::GatewayRealtimeModel > normalized identity codec::";
+    private const string Prefix =
+        "packages/gateway/src/gateway-realtime-model.test.ts::GatewayRealtimeModel > normalized identity codec::";
 
     [Fact]
-    [UpstreamTest(Prefix + "passes server events through unchanged", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "passes server events through unchanged",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Passes_server_events_through_unchanged()
     {
         var @event = new RealtimeModelV4ServerEvent("response-created")
@@ -27,7 +31,10 @@ public sealed class NormalizedIdentityCodecTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "passes client events through unchanged", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "passes client events through unchanged",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Passes_client_events_through_unchanged()
     {
         var @event = new RealtimeModelV4ClientEvent("response-create");
@@ -35,15 +42,25 @@ public sealed class NormalizedIdentityCodecTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "passes session config through unchanged", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "passes session config through unchanged",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Passes_session_config_through_unchanged()
     {
-        var config = new RealtimeModelV4SessionConfig { Instructions = "be concise", Voice = "alloy" };
+        var config = new RealtimeModelV4SessionConfig
+        {
+            Instructions = "be concise",
+            Voice = "alloy",
+        };
         Assert.Same(config, CreateTestModel().BuildSessionConfig(config));
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "passes session-update provider options through unchanged", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "passes session-update provider options through unchanged",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Passes_session_update_provider_options_through_unchanged()
     {
         // "Support all the things": gateway provider options (tags/user/byok/...) ride session.update exactly as they ride
@@ -55,7 +72,11 @@ public sealed class NormalizedIdentityCodecTests
                 Instructions = "be concise",
                 ProviderOptions = new JsonObject
                 {
-                    ["gateway"] = new JsonObject { ["tags"] = new JsonArray("demo"), ["user"] = "user-1" },
+                    ["gateway"] = new JsonObject
+                    {
+                        ["tags"] = new JsonArray("demo"),
+                        ["user"] = "user-1",
+                    },
                 },
             },
         };

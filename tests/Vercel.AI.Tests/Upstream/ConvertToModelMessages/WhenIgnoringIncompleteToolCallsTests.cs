@@ -13,14 +13,25 @@ namespace Vercel.AI.Tests.ConvertToModelMessages;
 [Collection("LogWarnings")]
 public sealed class WhenIgnoringIncompleteToolCallsTests : WarningsOff
 {
-    private const string Suite = Prefix + "convertToModelMessages > when ignoring incomplete tool calls::";
+    private const string Suite =
+        Prefix + "convertToModelMessages > when ignoring incomplete tool calls::";
 
-    [UpstreamTest(Suite + "should ignore preliminary tool outputs", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Suite + "should ignore preliminary tool outputs",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Should_ignore_preliminary_tool_outputs()
     {
         var toModelOutputCalls = 0;
-        var streamingTool = new Tool("streamingTool", null, Json("{\"type\":\"object\",\"properties\":{\"task\":{\"type\":\"string\"}},\"required\":[\"task\"]}"), null)
+        var streamingTool = new Tool(
+            "streamingTool",
+            null,
+            Json(
+                "{\"type\":\"object\",\"properties\":{\"task\":{\"type\":\"string\"}},\"required\":[\"task\"]}"
+            ),
+            null
+        )
         {
             ToModelOutput = call =>
             {
@@ -32,19 +43,26 @@ public sealed class WhenIgnoringIncompleteToolCallsTests : WarningsOff
         var result = Convert(
             new[]
             {
-                Assistant(new ToolUIPart("streamingTool", "call-preliminary", ToolUIPartState.OutputAvailable)
-                {
-                    Input = Json("{\"task\":\"finish the work\"}"),
-                    Output = Json("{\"complete\":false,\"progress\":\"half finished\"}"),
-                    Preliminary = true,
-                }),
+                Assistant(
+                    new ToolUIPart(
+                        "streamingTool",
+                        "call-preliminary",
+                        ToolUIPartState.OutputAvailable
+                    )
+                    {
+                        Input = Json("{\"task\":\"finish the work\"}"),
+                        Output = Json("{\"complete\":false,\"progress\":\"half finished\"}"),
+                        Preliminary = true,
+                    }
+                ),
                 User(new TextUIPart("Continue.")),
             },
             new ConvertToModelMessagesOptions
             {
                 IgnoreIncompleteToolCalls = true,
                 Tools = new Dictionary<string, Tool> { ["streamingTool"] = streamingTool },
-            });
+            }
+        );
 
         Assert.Equal(0, toModelOutputCalls);
         AssertEqual(
@@ -56,13 +74,15 @@ public sealed class WhenIgnoringIncompleteToolCallsTests : WarningsOff
               }
             ]
             """,
-            result);
+            result
+        );
     }
 
     [UpstreamTest(
         Suite + "should preserve transformed approval input through a UI message round trip",
         Coverage = UpstreamCoverage.Partial,
-        Note = "A JSON Schema has no transform, so the input schema of the tool is a string count and ExperimentalRefineToolInput turns it into a number, as upstream's z.string().transform(Number) does.")]
+        Note = "A JSON Schema has no transform, so the input schema of the tool is a string count and ExperimentalRefineToolInput turns it into a number, as upstream's z.string().transform(Number) does."
+    )]
     [Fact]
     public async Task Should_preserve_transformed_approval_input_through_a_UI_message_round_trip()
     {
@@ -71,8 +91,11 @@ public sealed class WhenIgnoringIncompleteToolCallsTests : WarningsOff
             ["count"] = new Tool(
                 "count",
                 null,
-                Json("""{"type":"object","properties":{"count":{"type":"string"}},"required":["count"]}"""),
-                null),
+                Json(
+                    """{"type":"object","properties":{"count":{"type":"string"}},"required":["count"]}"""
+                ),
+                null
+            ),
         };
         var assistantMessage = await RecordAssistantMessageFromChunks(
             """
@@ -81,19 +104,31 @@ public sealed class WhenIgnoringIncompleteToolCallsTests : WarningsOff
               { "type": "tool-approval-request", "approvalId": "approval-1", "toolCallId": "count-call", "inputSchemaInput": { "count": "3" } },
               { "type": "tool-approval-response", "approvalId": "approval-1", "approved": true }
             ]
-            """);
+            """
+        );
         var persistedMessage = Reload(new[] { assistantMessage });
 
-        var validatedMessages = await Ai.ValidateUIMessagesAsync(new ValidateUIMessagesOptions
-        {
-            Messages = persistedMessage,
-            Tools = tools,
-            ExperimentalRefineToolInput = new Dictionary<string, Func<JsonElement, Task<JsonElement>>>
+        var validatedMessages = await Ai.ValidateUIMessagesAsync(
+            new ValidateUIMessagesOptions
             {
-                ["count"] = input => Task.FromResult(Json("{\"count\":" + input.GetProperty("count").GetString() + "}")),
-            },
-        });
-        var result = Convert(validatedMessages, new ConvertToModelMessagesOptions { Tools = tools });
+                Messages = persistedMessage,
+                Tools = tools,
+                ExperimentalRefineToolInput = new Dictionary<
+                    string,
+                    Func<JsonElement, Task<JsonElement>>
+                >
+                {
+                    ["count"] = input =>
+                        Task.FromResult(
+                            Json("{\"count\":" + input.GetProperty("count").GetString() + "}")
+                        ),
+                },
+            }
+        );
+        var result = Convert(
+            validatedMessages,
+            new ConvertToModelMessagesOptions { Tools = tools }
+        );
 
         AssertEqual(
             """
@@ -113,6 +148,7 @@ public sealed class WhenIgnoringIncompleteToolCallsTests : WarningsOff
               }
             ]
             """,
-            result);
+            result
+        );
     }
 }

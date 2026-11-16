@@ -57,7 +57,8 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
     public string SpecificationVersion => "v4";
 
     /// <inheritdoc />
-    public IReadOnlyList<string> SupportedQuestionTypes { get; } = new[] { "choice", "score", "boolean", "box" };
+    public IReadOnlyList<string> SupportedQuestionTypes { get; } =
+        new[] { "choice", "score", "boolean", "box" };
 
     /// <summary>Serializes the model id and the JSON-serializable part of the config for a workflow boundary.</summary>
     public SerializedModelOptions Serialize()
@@ -88,7 +89,10 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
     /// Restores a model from <see cref="Serialize"/>. When no headers were serialized, authentication is read from
     /// <c>TYPESAFE_AI_API_KEY</c> at call time. The HTTP client is not serialized, so pass one to use a custom handler.
     /// </summary>
-    public static TypeSafeAiDecisionModel Deserialize(SerializedModelOptions options, HttpClient? httpClient = null)
+    public static TypeSafeAiDecisionModel Deserialize(
+        SerializedModelOptions options,
+        HttpClient? httpClient = null
+    )
     {
         if (options == null)
         {
@@ -99,10 +103,16 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
     }
 
     /// <summary>Reads the config written by <see cref="Serialize"/>.</summary>
-    internal static TypeSafeAiDecisionModelConfig DeserializeConfig(SerializedModelOptions options, HttpClient? httpClient)
+    internal static TypeSafeAiDecisionModelConfig DeserializeConfig(
+        SerializedModelOptions options,
+        HttpClient? httpClient
+    )
     {
         var config = new TypeSafeAiDecisionModelConfig { HttpClient = httpClient };
-        if (options.Config.TryGetValue("provider", out var provider) && provider is string providerId)
+        if (
+            options.Config.TryGetValue("provider", out var provider)
+            && provider is string providerId
+        )
         {
             config.Provider = providerId;
         }
@@ -112,9 +122,14 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
             config.BaseUrl = url;
         }
 
-        if (options.Config.TryGetValue("headers", out var headers) && headers is IDictionary<string, object?> values)
+        if (
+            options.Config.TryGetValue("headers", out var headers)
+            && headers is IDictionary<string, object?> values
+        )
         {
-            var copy = values.Where(pair => pair.Value is string).ToDictionary(pair => pair.Key, pair => (string)pair.Value!);
+            var copy = values
+                .Where(pair => pair.Value is string)
+                .ToDictionary(pair => pair.Key, pair => (string)pair.Value!);
             config.Headers = () => copy;
         }
 
@@ -123,13 +138,21 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
 
     /// <summary>Deprecated. Use <see cref="DoDecideAsync(DecisionModelCall, CancellationToken)"/>.</summary>
     [Obsolete("Use DoDecideAsync instead.")]
-    public async Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken)
+    public async Task<EvaluationModelResult> DoEvaluateAsync(
+        EvaluationModelCall call,
+        CancellationToken cancellationToken
+    )
     {
-        return EvaluationModelResult.From(await DoDecideAsync(call, cancellationToken).ConfigureAwait(false));
+        return EvaluationModelResult.From(
+            await DoDecideAsync(call, cancellationToken).ConfigureAwait(false)
+        );
     }
 
     /// <inheritdoc />
-    public async Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken)
+    public async Task<DecisionModelResult> DoDecideAsync(
+        DecisionModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (call == null)
         {
@@ -141,13 +164,30 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
             var count = pair.Value.Criteria?.Count ?? 0;
             if (pair.Value.Type == "choice" && (count == 0 || count > 255))
             {
-                throw new InvalidArgumentError("questions." + pair.Key + ".criteria", pair.Value.Criteria, "TypeSafe Choice questions require 1 to 255 options.");
+                throw new InvalidArgumentError(
+                    "questions." + pair.Key + ".criteria",
+                    pair.Value.Criteria,
+                    "TypeSafe Choice questions require 1 to 255 options."
+                );
             }
 
-            if (pair.Value.Type == "score"
-                && (count == 0 || count > 10 || (pair.Value.Criteria is DecisionScoreCriteria score && score.Levels.Any(level => level == null))))
+            if (
+                pair.Value.Type == "score"
+                && (
+                    count == 0
+                    || count > 10
+                    || (
+                        pair.Value.Criteria is DecisionScoreCriteria score
+                        && score.Levels.Any(level => level == null)
+                    )
+                )
+            )
             {
-                throw new InvalidArgumentError("questions." + pair.Key + ".criteria", pair.Value.Criteria, "TypeSafe Score questions require 1 to 10 non-null levels.");
+                throw new InvalidArgumentError(
+                    "questions." + pair.Key + ".criteria",
+                    pair.Value.Criteria,
+                    "TypeSafe Score questions require 1 to 10 non-null levels."
+                );
             }
         }
 
@@ -163,31 +203,48 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         }
 
         var longContext = false;
-        if (call.ProviderOptions.ValueKind == JsonValueKind.Object
+        if (
+            call.ProviderOptions.ValueKind == JsonValueKind.Object
             && call.ProviderOptions.TryGetProperty("typesafe", out var options)
-            && options.ValueKind == JsonValueKind.Object)
+            && options.ValueKind == JsonValueKind.Object
+        )
         {
             foreach (var option in options.EnumerateObject())
             {
                 if (option.Name == "longContext")
                 {
-                    if (option.Value.ValueKind != JsonValueKind.True && option.Value.ValueKind != JsonValueKind.False)
+                    if (
+                        option.Value.ValueKind != JsonValueKind.True
+                        && option.Value.ValueKind != JsonValueKind.False
+                    )
                     {
-                        throw new InvalidArgumentError("providerOptions.typesafe.longContext", option.Value.ToString(), "TypeSafe longContext must be a boolean.");
+                        throw new InvalidArgumentError(
+                            "providerOptions.typesafe.longContext",
+                            option.Value.ToString(),
+                            "TypeSafe longContext must be a boolean."
+                        );
                     }
 
                     longContext = option.Value.ValueKind == JsonValueKind.True;
                     continue;
                 }
 
-                warnings.Add(new OperationWarning("unsupported", feature: "providerOptions.typesafe." + option.Name));
+                warnings.Add(
+                    new OperationWarning(
+                        "unsupported",
+                        feature: "providerOptions.typesafe." + option.Name
+                    )
+                );
             }
         }
 
         var questions = new JsonObject();
         foreach (var pair in call.Questions)
         {
-            var question = new JsonObject { ["type"] = pair.Value.Type == "boolean" ? "noul" : pair.Value.Type };
+            var question = new JsonObject
+            {
+                ["type"] = pair.Value.Type == "boolean" ? "noul" : pair.Value.Type,
+            };
             if (pair.Value.HasInstructions)
             {
                 question["instructions"] = pair.Value.Instructions?.ToNode();
@@ -202,11 +259,7 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         }
 
         var state = BuildState(call.State, out var images, out var assets);
-        var body = new JsonObject
-        {
-            ["model"] = ModelId,
-            ["state"] = state,
-        };
+        var body = new JsonObject { ["model"] = ModelId, ["state"] = state };
         if (images.Count > 0)
         {
             body["assets"] = assets;
@@ -224,7 +277,8 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         }
         else
         {
-            headers["Authorization"] = "Bearer " + ApiKeys.Require(null, TypeSafeAiProvider.ApiKeyEnvironmentVariable);
+            headers["Authorization"] =
+                "Bearer " + ApiKeys.Require(null, TypeSafeAiProvider.ApiKeyEnvironmentVariable);
             headers["User-Agent"] = ProviderExchange.UserAgent("typesafe-ai");
         }
 
@@ -245,10 +299,16 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
 
         var uri = ApiKeys.Combine(_config.BaseUrl, "/systemone");
         var requestBody = body.ToJsonString();
-        using var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = RequestContent(requestBody, images) };
+        using var request = new HttpRequestMessage(HttpMethod.Post, uri)
+        {
+            Content = RequestContent(requestBody, images),
+        };
         foreach (var pair in headers)
         {
-            if (!string.IsNullOrEmpty(pair.Value) && !pair.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
+            if (
+                !string.IsNullOrEmpty(pair.Value)
+                && !pair.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase)
+            )
             {
                 request.Headers.TryAddWithoutValidation(pair.Key, pair.Value);
             }
@@ -257,7 +317,9 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         HttpResponseMessage response;
         try
         {
-            response = await (_config.HttpClient ?? SharedClient).SendAsync(request, cancellationToken).ConfigureAwait(false);
+            response = await (_config.HttpClient ?? SharedClient)
+                .SendAsync(request, cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -265,24 +327,46 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         }
         catch (HttpRequestException exception)
         {
-            throw new ApiCallError("Cannot connect to API: " + exception.Message, uri.ToString(), body, cause: exception, isRetryable: true);
+            throw new ApiCallError(
+                "Cannot connect to API: " + exception.Message,
+                uri.ToString(),
+                body,
+                cause: exception,
+                isRetryable: true
+            );
         }
 
         using (response)
         {
-            var text = await ProviderUtils.CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
+            var text = await ProviderUtils
+                .CancellableReads.ReadAsStringAsync(response.Content, cancellationToken)
+                .ConfigureAwait(false);
             var responseHeaders = CopyHeaders(response);
             var status = (int)response.StatusCode;
             if (!response.IsSuccessStatusCode)
             {
-                throw FailedResponse(uri.ToString(), body, status, response.ReasonPhrase, responseHeaders, text);
+                throw FailedResponse(
+                    uri.ToString(),
+                    body,
+                    status,
+                    response.ReasonPhrase,
+                    responseHeaders,
+                    text
+                );
             }
 
             return ParseResponse(uri.ToString(), body, status, responseHeaders, text, warnings);
         }
     }
 
-    private DecisionModelResult ParseResponse(string url, JsonObject requestBody, int status, IReadOnlyDictionary<string, string> headers, string text, IReadOnlyList<OperationWarning> warnings)
+    private DecisionModelResult ParseResponse(
+        string url,
+        JsonObject requestBody,
+        int status,
+        IReadOnlyDictionary<string, string> headers,
+        string text,
+        IReadOnlyList<OperationWarning> warnings
+    )
     {
         try
         {
@@ -310,16 +394,21 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
                         answers[pair.Name] = new DecisionAnswer(
                             "choice",
                             choice: Property(answer, "choice", JsonValueKind.String).GetString(),
-                            probabilities: Probabilities(answer));
+                            probabilities: Probabilities(answer)
+                        );
                         AddConfidence(confidence, pair.Name, answer);
                         break;
                     case "score":
                         answers[pair.Name] = new DecisionAnswer(
                             "score",
                             score: Property(answer, "score", JsonValueKind.Number).GetDouble(),
-                            probabilities: Probabilities(answer));
+                            probabilities: Probabilities(answer)
+                        );
                         AddConfidence(confidence, pair.Name, answer);
-                        if (answer.TryGetProperty("legend", out var legendValue) && legendValue.ValueKind != JsonValueKind.Null)
+                        if (
+                            answer.TryGetProperty("legend", out var legendValue)
+                            && legendValue.ValueKind != JsonValueKind.Null
+                        )
                         {
                             if (legendValue.ValueKind != JsonValueKind.Object)
                             {
@@ -338,11 +427,16 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
                                 Property(box, "top", JsonValueKind.Number).GetDouble(),
                                 Property(box, "bottom", JsonValueKind.Number).GetDouble(),
                                 Property(box, "left", JsonValueKind.Number).GetDouble(),
-                                Property(box, "right", JsonValueKind.Number).GetDouble()));
+                                Property(box, "right", JsonValueKind.Number).GetDouble()
+                            )
+                        );
                         AddConfidence(confidence, pair.Name, answer);
                         break;
                     case "noul":
-                        answers[pair.Name] = new DecisionAnswer("boolean", probability: Property(answer, "noul", JsonValueKind.Number).GetDouble());
+                        answers[pair.Name] = new DecisionAnswer(
+                            "boolean",
+                            probability: Property(answer, "noul", JsonValueKind.Number).GetDouble()
+                        );
                         break;
                     default:
                         throw new FormatException("Unknown answer type.");
@@ -350,14 +444,20 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
             }
 
             string? model = null;
-            if (root.TryGetProperty("model", out var modelElement) && modelElement.ValueKind != JsonValueKind.Null)
+            if (
+                root.TryGetProperty("model", out var modelElement)
+                && modelElement.ValueKind != JsonValueKind.Null
+            )
             {
                 model = Property(root, "model", JsonValueKind.String).GetString();
             }
 
             int? inputTokens = null;
             int? outputTokens = null;
-            if (root.TryGetProperty("usage", out var usage) && usage.ValueKind != JsonValueKind.Null)
+            if (
+                root.TryGetProperty("usage", out var usage)
+                && usage.ValueKind != JsonValueKind.Null
+            )
             {
                 if (usage.ValueKind != JsonValueKind.Object)
                 {
@@ -368,22 +468,53 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
                 outputTokens = OptionalInteger(usage, "output_tokens");
             }
 
-            var metadata = JsonDocument.Parse(new JsonObject { ["typesafe"] = new JsonObject { ["confidence"] = confidence, ["legend"] = legend } }.ToJsonString()).RootElement.Clone();
+            var metadata = JsonDocument
+                .Parse(
+                    new JsonObject
+                    {
+                        ["typesafe"] = new JsonObject
+                        {
+                            ["confidence"] = confidence,
+                            ["legend"] = legend,
+                        },
+                    }.ToJsonString()
+                )
+                .RootElement.Clone();
             return new DecisionModelResult(
                 answers,
                 warnings: warnings,
                 usage: new OperationUsage(inputTokens, outputTokens),
                 rounding: new DecisionRounding(2, 2),
                 providerMetadata: metadata,
-                response: new ProviderResponse(headers, root, modelId: model ?? ModelId));
+                response: new ProviderResponse(headers, root, modelId: model ?? ModelId)
+            );
         }
-        catch (Exception exception) when (exception is JsonException || exception is FormatException || exception is InvalidOperationException)
+        catch (Exception exception)
+            when (exception is JsonException
+                || exception is FormatException
+                || exception is InvalidOperationException
+            )
         {
-            throw new ApiCallError("Invalid JSON response", url, requestBody, status, headers, text, exception);
+            throw new ApiCallError(
+                "Invalid JSON response",
+                url,
+                requestBody,
+                status,
+                headers,
+                text,
+                exception
+            );
         }
     }
 
-    private static ApiCallError FailedResponse(string url, JsonObject requestBody, int status, string? statusText, IReadOnlyDictionary<string, string> headers, string text)
+    private static ApiCallError FailedResponse(
+        string url,
+        JsonObject requestBody,
+        int status,
+        string? statusText,
+        IReadOnlyDictionary<string, string> headers,
+        string text
+    )
     {
         var message = statusText ?? string.Empty;
         object? data = null;
@@ -397,11 +528,18 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
                 data = root.Clone();
             }
         }
-        catch (JsonException)
-        {
-        }
+        catch (JsonException) { }
 
-        return new ApiCallError(message, url, requestBody, status, headers, text, isRetryable: status == 408 || status == 409 || status == 429 || status >= 500, data: data);
+        return new ApiCallError(
+            message,
+            url,
+            requestBody,
+            status,
+            headers,
+            text,
+            isRetryable: status == 408 || status == 409 || status == 429 || status >= 500,
+            data: data
+        );
     }
 
     /// <summary>Mirrors the upstream error schema: every field is optional, but a present field must have its declared type.</summary>
@@ -409,15 +547,22 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
     {
         return Nullish(root, "message", JsonValueKind.String)
             && Nullish(root, "error_type", JsonValueKind.String)
-            && (!root.TryGetProperty("error", out var error)
+            && (
+                !root.TryGetProperty("error", out var error)
                 || error.ValueKind == JsonValueKind.Null
                 || error.ValueKind == JsonValueKind.String
-                || (error.ValueKind == JsonValueKind.Object && Nullish(error, "message", JsonValueKind.String)));
+                || (
+                    error.ValueKind == JsonValueKind.Object
+                    && Nullish(error, "message", JsonValueKind.String)
+                )
+            );
     }
 
     private static bool Nullish(JsonElement element, string name, JsonValueKind kind)
     {
-        return !element.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null || value.ValueKind == kind;
+        return !element.TryGetProperty(name, out var value)
+            || value.ValueKind == JsonValueKind.Null
+            || value.ValueKind == kind;
     }
 
     private static string ErrorMessage(JsonElement root)
@@ -442,7 +587,9 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
 
         if (root.TryGetProperty("detail", out var detail))
         {
-            return detail.ValueKind == JsonValueKind.String ? detail.GetString()! : detail.GetRawText();
+            return detail.ValueKind == JsonValueKind.String
+                ? detail.GetString()!
+                : detail.GetRawText();
         }
 
         return Text(root, "error_type") ?? "TypeSafe request failed";
@@ -450,7 +597,10 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
 
     private static string? Text(JsonElement element, string name)
     {
-        return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        return
+            element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
     }
 
     private static JsonElement Property(JsonElement element, string name, JsonValueKind kind)
@@ -481,7 +631,9 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
     private static IReadOnlyDictionary<string, double> Probabilities(JsonElement answer)
     {
         var values = new Dictionary<string, double>();
-        foreach (var item in Property(answer, "probabilities", JsonValueKind.Object).EnumerateObject())
+        foreach (
+            var item in Property(answer, "probabilities", JsonValueKind.Object).EnumerateObject()
+        )
         {
             if (item.Value.ValueKind != JsonValueKind.Number)
             {
@@ -496,7 +648,10 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
 
     private static void AddConfidence(JsonObject confidence, string id, JsonElement answer)
     {
-        if (answer.TryGetProperty("confidence", out var value) && value.ValueKind != JsonValueKind.Null)
+        if (
+            answer.TryGetProperty("confidence", out var value)
+            && value.ValueKind != JsonValueKind.Null
+        )
         {
             confidence[id] = Property(answer, "confidence", JsonValueKind.Number).GetDouble();
         }
@@ -520,7 +675,14 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
 
     private sealed class StateImage
     {
-        public StateImage(int index, string reference, bool insertReference, string mediaType, string fileName, byte[] bytes)
+        public StateImage(
+            int index,
+            string reference,
+            bool insertReference,
+            string mediaType,
+            string fileName,
+            byte[] bytes
+        )
         {
             Index = index;
             InsertReference = insertReference;
@@ -555,7 +717,9 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         foreach (var image in images)
         {
             var part = new ByteArrayContent(image.Bytes);
-            part.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(image.MediaType);
+            part.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+                image.MediaType
+            );
             form.Add(part, "image-" + image.Index, image.FileName);
         }
 
@@ -566,7 +730,11 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
     /// TypeSafe takes the state as a string, a JSON object, or a list. A single text or JSON part is sent as its value.
     /// With images, the parts are joined with a newline and each image is replaced by its asset reference.
     /// </summary>
-    private static JsonNode? BuildState(IReadOnlyList<DecisionModelStatePart> items, out List<StateImage> images, out JsonObject assets)
+    private static JsonNode? BuildState(
+        IReadOnlyList<DecisionModelStatePart> items,
+        out List<StateImage> images,
+        out JsonObject assets
+    )
     {
         images = new List<StateImage>();
         assets = new JsonObject();
@@ -609,13 +777,24 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         }
 
         // A single string, object, or array JSON part keeps its native value. Everything else, primitives included, is text.
-        if (stateParts.Count == 1 && !stateParts[0].IsText
-            && (stateParts[0].Value is JsonObject or JsonArray || (stateParts[0].Value is JsonValue single && single.TryGetValue<string>(out _))))
+        if (
+            stateParts.Count == 1
+            && !stateParts[0].IsText
+            && (
+                stateParts[0].Value is JsonObject or JsonArray
+                || (stateParts[0].Value is JsonValue single && single.TryGetValue<string>(out _))
+            )
+        )
         {
             return stateParts[0].Value;
         }
 
-        return string.Join("\n", stateParts.Select(part => part.IsText ? part.Value!.GetValue<string>() : part.Value?.ToJsonString() ?? "null"));
+        return string.Join(
+            "\n",
+            stateParts.Select(part =>
+                part.IsText ? part.Value!.GetValue<string>() : part.Value?.ToJsonString() ?? "null"
+            )
+        );
     }
 
     private static void JsonStrings(JsonNode? node, List<string> strings)
@@ -642,7 +821,12 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         }
     }
 
-    private static StateImage ImagePart(DecisionModelFilePart part, int index, JsonObject assets, List<string> stateStrings)
+    private static StateImage ImagePart(
+        DecisionModelFilePart part,
+        int index,
+        JsonObject assets,
+        List<string> stateStrings
+    )
     {
         var mediaType = part.MediaType;
         var dataType = part.Data.DataType;
@@ -650,7 +834,12 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         {
             throw new UnsupportedFunctionalityException(
                 "TypeSafe AI decision file input: " + mediaType + " (" + dataType + ")",
-                "'TypeSafe AI decision file input: " + mediaType + " (" + dataType + ")' functionality not supported.");
+                "'TypeSafe AI decision file input: "
+                    + mediaType
+                    + " ("
+                    + dataType
+                    + ")' functionality not supported."
+            );
         }
 
         string extension;
@@ -665,29 +854,52 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
             default:
                 throw new UnsupportedFunctionalityException(
                     "TypeSafe AI decision image media type: " + mediaType,
-                    "'TypeSafe AI decision image media type: " + mediaType + "' functionality not supported.");
+                    "'TypeSafe AI decision image media type: "
+                        + mediaType
+                        + "' functionality not supported."
+                );
         }
 
         string? reference = null;
         bool? insertOption = null;
-        if (part.ProviderOptions != null
+        if (
+            part.ProviderOptions != null
             && part.ProviderOptions.TryGetValue("typesafe", out var typesafeOptions)
             && typesafeOptions.ValueKind == JsonValueKind.Object
-            && JsonNode.Parse(typesafeOptions.GetRawText()) is JsonObject typesafe)
+            && JsonNode.Parse(typesafeOptions.GetRawText()) is JsonObject typesafe
+        )
         {
             if (typesafe.TryGetPropertyValue("reference", out var node))
             {
-                if (node is not JsonValue value || !value.TryGetValue<string>(out reference) || string.IsNullOrWhiteSpace(reference))
+                if (
+                    node is not JsonValue value
+                    || !value.TryGetValue<string>(out reference)
+                    || string.IsNullOrWhiteSpace(reference)
+                )
                 {
-                    throw new InvalidArgumentError("providerOptions.typesafe.reference", node?.ToJsonString(), "TypeSafe image reference must be a non-empty string.");
+                    throw new InvalidArgumentError(
+                        "providerOptions.typesafe.reference",
+                        node?.ToJsonString(),
+                        "TypeSafe image reference must be a non-empty string."
+                    );
                 }
             }
 
-            if (typesafe.TryGetPropertyValue("insertReference", out var insertNode) && insertNode is not null)
+            if (
+                typesafe.TryGetPropertyValue("insertReference", out var insertNode)
+                && insertNode is not null
+            )
             {
-                if (insertNode is not JsonValue insertValue || !insertValue.TryGetValue<bool>(out var insert))
+                if (
+                    insertNode is not JsonValue insertValue
+                    || !insertValue.TryGetValue<bool>(out var insert)
+                )
                 {
-                    throw new InvalidArgumentError("providerOptions.typesafe.insertReference", insertNode.ToJsonString(), "TypeSafe image insertReference must be a boolean.");
+                    throw new InvalidArgumentError(
+                        "providerOptions.typesafe.insertReference",
+                        insertNode.ToJsonString(),
+                        "TypeSafe image insertReference must be a boolean."
+                    );
                 }
 
                 insertOption = insert;
@@ -699,7 +911,8 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
             throw new InvalidArgumentError(
                 "providerOptions.typesafe.reference",
                 null,
-                "TypeSafe images with insertReference: false need an explicit reference.");
+                "TypeSafe images with insertReference: false need an explicit reference."
+            );
         }
 
         // Default to random IDs to avoid accidental text matches.
@@ -707,13 +920,26 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         var insertReference = insertOption ?? !stateStrings.Any(text => text.Contains(reference));
         if (assets.ContainsKey(reference))
         {
-            throw new InvalidArgumentError("providerOptions.typesafe.reference", reference, "Duplicate TypeSafe image reference: " + reference);
+            throw new InvalidArgumentError(
+                "providerOptions.typesafe.reference",
+                reference,
+                "Duplicate TypeSafe image reference: " + reference
+            );
         }
 
-        var bytes = part.Data.Bytes ?? (part.Data.Base64 != null
-            ? Convert.FromBase64String(part.Data.Base64)
-            : throw new InvalidArgumentError("data", null, "TypeSafe image data must be a base64 string or bytes."));
-        var fileName = part.FileName is { Length: > 0 } name ? name : "image-" + index + "." + extension;
+        var bytes = part.Data.Bytes
+            ?? (
+                part.Data.Base64 != null
+                    ? Convert.FromBase64String(part.Data.Base64)
+                    : throw new InvalidArgumentError(
+                        "data",
+                        null,
+                        "TypeSafe image data must be a base64 string or bytes."
+                    )
+            );
+        var fileName = part.FileName is { Length: > 0 } name
+            ? name
+            : "image-" + index + "." + extension;
         assets[reference] = new JsonObject { ["type"] = "image", ["part"] = "image-" + index };
         return new StateImage(index, reference, insertReference, mediaType, fileName, bytes);
     }
@@ -721,9 +947,7 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
 
 /// <summary>Deprecated alias of <see cref="TypeSafeAiDecisionModelConfig"/>.</summary>
 [Obsolete("Use TypeSafeAiDecisionModelConfig instead.")]
-public sealed class TypeSafeAiEvaluationModelConfig : TypeSafeAiDecisionModelConfig
-{
-}
+public sealed class TypeSafeAiEvaluationModelConfig : TypeSafeAiDecisionModelConfig { }
 
 /// <summary>Deprecated alias of <see cref="TypeSafeAiDecisionModel"/>.</summary>
 [Obsolete("Use TypeSafeAiDecisionModel instead.")]
@@ -731,18 +955,22 @@ public sealed class TypeSafeAiEvaluationModel : TypeSafeAiDecisionModel
 {
     /// <summary>Creates a decision model. <paramref name="modelId"/> may be a model id this library does not know yet.</summary>
     public TypeSafeAiEvaluationModel(string modelId, TypeSafeAiDecisionModelConfig? config = null)
-        : base(modelId, config)
-    {
-    }
+        : base(modelId, config) { }
 
     /// <summary>Deprecated alias of <see cref="TypeSafeAiDecisionModel.Deserialize"/>.</summary>
-    public static new TypeSafeAiEvaluationModel Deserialize(SerializedModelOptions options, HttpClient? httpClient = null)
+    public static new TypeSafeAiEvaluationModel Deserialize(
+        SerializedModelOptions options,
+        HttpClient? httpClient = null
+    )
     {
         if (options == null)
         {
             throw new ArgumentNullException(nameof(options));
         }
 
-        return new TypeSafeAiEvaluationModel(options.ModelId, DeserializeConfig(options, httpClient));
+        return new TypeSafeAiEvaluationModel(
+            options.ModelId,
+            DeserializeConfig(options, httpClient)
+        );
     }
 }

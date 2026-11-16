@@ -14,16 +14,19 @@ namespace Vercel.AI.Tests.Upstream.GenerateText.StreamText;
 /// <summary>Port of <c>stream-text.test.ts</c> &gt; <c>streamText &gt; invalid tool calls &gt; single invalid tool call</c>.</summary>
 public sealed class SingleInvalidToolCallTests
 {
-    private const string Prefix = "packages/ai/src/generate-text/stream-text.test.ts::streamText > invalid tool calls > single invalid tool call::";
+    private const string Prefix =
+        "packages/ai/src/generate-text/stream-text.test.ts::streamText > invalid tool calls > single invalid tool call::";
 
-    private const string ErrorStart = "AI_InvalidToolInputError: Invalid input for tool cityAttractions: ";
+    private const string ErrorStart =
+        "AI_InvalidToolInputError: Invalid input for tool cityAttractions: ";
     private const string Input = "{ \"cities\": \"San Francisco\" }";
 
     [Fact]
     [UpstreamTest(
         Prefix + "should add tool call and result error parts to the content",
         Coverage = UpstreamCoverage.Partial,
-        Note = "The error text carries the built-in JSON Schema validator message, not the Zod error list. See #604.")]
+        Note = "The error text carries the built-in JSON Schema validator message, not the Zod error list. See #604."
+    )]
     public async Task Should_add_tool_call_and_result_error_parts_to_the_content()
     {
         var step = Assert.Single(await Run().Steps);
@@ -50,7 +53,8 @@ public sealed class SingleInvalidToolCallTests
     [UpstreamTest(
         Prefix + "should add tool call and result error parts to the full stream",
         Coverage = UpstreamCoverage.Partial,
-        Note = "The error text carries the built-in JSON Schema validator message, not the Zod error list. See #604.")]
+        Note = "The error text carries the built-in JSON Schema validator message, not the Zod error list. See #604."
+    )]
     public async Task Should_add_tool_call_and_result_error_parts_to_the_full_stream()
     {
         var parts = new List<TextStreamPart>();
@@ -60,8 +64,20 @@ public sealed class SingleInvalidToolCallTests
         }
 
         Assert.Equal(
-            new[] { "start", "start-step", "tool-input-start", "tool-input-delta", "tool-input-end", "tool-call", "tool-error", "finish-step", "finish" },
-            parts.Select(part => part.Type).ToArray());
+            new[]
+            {
+                "start",
+                "start-step",
+                "tool-input-start",
+                "tool-input-delta",
+                "tool-input-end",
+                "tool-call",
+                "tool-error",
+                "finish-step",
+                "finish",
+            },
+            parts.Select(part => part.Type).ToArray()
+        );
         var inputStart = Assert.IsType<ToolInputStartPart>(parts[2]);
         Assert.False(inputStart.Dynamic);
         Assert.Equal("call-1", inputStart.Id);
@@ -96,7 +112,8 @@ public sealed class SingleInvalidToolCallTests
     [UpstreamTest(
         Prefix + "should add a tool input error part to the ui message stream",
         Coverage = UpstreamCoverage.Partial,
-        Note = "The errorText is checked by its prefix, because the .NET schema validator words the validation message differently from zod.")]
+        Note = "The errorText is checked by its prefix, because the .NET schema validator words the validation message differently from zod."
+    )]
     public async Task Should_add_a_tool_input_error_part_to_the_ui_message_stream()
     {
         var chunks = await SingleProviderExecutedToolCallAndResultTests.ReadUiChunks(Run());
@@ -104,7 +121,8 @@ public sealed class SingleInvalidToolCallTests
         // The .NET stream always sends a generated messageId on start.
         Assert.NotNull(chunks[0]!["messageId"]);
         chunks[0]!.AsObject().Remove("messageId");
-        var expected = JsonNode.Parse("""
+        var expected = JsonNode.Parse(
+            """
             [
               { "type": "start" },
               { "type": "start-step" },
@@ -119,14 +137,18 @@ public sealed class SingleInvalidToolCallTests
               { "type": "finish-step" },
               { "finishReason": "stop", "type": "finish" }
             ]
-            """);
-        var inputError = chunks.Single(chunk => (string?)chunk!["type"] == "tool-input-error")!.AsObject();
+            """
+        );
+        var inputError = chunks
+            .Single(chunk => (string?)chunk!["type"] == "tool-input-error")!
+            .AsObject();
         Assert.StartsWith(ErrorStart, (string?)inputError["errorText"], StringComparison.Ordinal);
         inputError.Remove("errorText");
         Assert.True(JsonNode.DeepEquals(expected, chunks), chunks.ToJsonString());
     }
 
-    private static string Compact(string json) => JsonSerializer.Serialize(JsonDocument.Parse(json).RootElement);
+    private static string Compact(string json) =>
+        JsonSerializer.Serialize(JsonDocument.Parse(json).RootElement);
 
     private static StreamTextResult Run()
     {
@@ -134,25 +156,41 @@ public sealed class SingleInvalidToolCallTests
         {
             StreamParts = new LanguageModelStreamPart[]
             {
-                new ResponseMetadataStreamPart("id-0", "mock-model-id", DateTimeOffset.FromUnixTimeMilliseconds(0)),
+                new ResponseMetadataStreamPart(
+                    "id-0",
+                    "mock-model-id",
+                    DateTimeOffset.FromUnixTimeMilliseconds(0)
+                ),
                 new ToolInputStartStreamPart("call-1", "cityAttractions"),
                 new ToolInputDeltaStreamPart("call-1", Input),
                 new ToolInputEndStreamPart("call-1"),
-
                 // wrong tool call arguments (city vs cities):
                 new ToolCallStreamPart("call-1", "cityAttractions", Input),
-                new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(3, 10, 13, noCacheInputTokens: 3, textTokens: 10), "stop"),
+                new FinishStreamPart(
+                    FinishReason.Stop,
+                    new LanguageModelUsage(3, 10, 13, noCacheInputTokens: 3, textTokens: 10),
+                    "stop"
+                ),
             },
         };
-        return new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })).StreamTextAsync(new StreamTextOptions
-        {
-            Model = model,
-            Prompt = "test-input",
-            Tools = new[]
+        return new AiClient(
+            GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })
+        ).StreamTextAsync(
+            new StreamTextOptions
             {
-                Tool.Function("cityAttractions", null, "{\"type\":\"object\",\"properties\":{\"city\":{\"type\":\"string\"}},\"required\":[\"city\"],\"additionalProperties\":false}", null),
-            },
-            NowMs = () => 0,
-        });
+                Model = model,
+                Prompt = "test-input",
+                Tools = new[]
+                {
+                    Tool.Function(
+                        "cityAttractions",
+                        null,
+                        "{\"type\":\"object\",\"properties\":{\"city\":{\"type\":\"string\"}},\"required\":[\"city\"],\"additionalProperties\":false}",
+                        null
+                    ),
+                },
+                NowMs = () => 0,
+            }
+        );
     }
 }

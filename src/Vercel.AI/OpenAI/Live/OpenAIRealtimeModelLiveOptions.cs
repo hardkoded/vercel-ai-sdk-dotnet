@@ -71,7 +71,11 @@ public sealed class OpenAIRealtimeModelLiveOptions
             }
             else if (Client.AllowedClientEvents != null)
             {
-                channel["allowedClientEvents"] = new JsonArray(Client.AllowedClientEvents.Select(value => (JsonNode?)JsonValue.Create(value)).ToArray());
+                channel["allowedClientEvents"] = new JsonArray(
+                    Client
+                        .AllowedClientEvents.Select(value => (JsonNode?)JsonValue.Create(value))
+                        .ToArray()
+                );
             }
 
             if (Client.AllowAllServerEvents)
@@ -109,7 +113,9 @@ public sealed class OpenAIRealtimeModelLiveOptions
 
         if (Input != null)
         {
-            result["input"] = new JsonArray(Input.Select(item => (JsonNode?)item.DeepClone()).ToArray());
+            result["input"] = new JsonArray(
+                Input.Select(item => (JsonNode?)item.DeepClone()).ToArray()
+            );
         }
 
         if (Store != null)
@@ -138,13 +144,24 @@ public sealed class OpenAIRealtimeModelLiveOptions
         }
 
         var root = AsObject(node, "providerOptions.openai");
-        StrictKeys(root, "providerOptions.openai", "client", "delegation", "input", "store", "voice");
+        StrictKeys(
+            root,
+            "providerOptions.openai",
+            "client",
+            "delegation",
+            "input",
+            "store",
+            "voice"
+        );
 
         if (root.TryGetPropertyValue("client", out var client) && client != null)
         {
             var clientObject = AsObject(client, "client");
             StrictKeys(clientObject, "client", "dataChannel");
-            if (!clientObject.TryGetPropertyValue("dataChannel", out var dataChannel) || dataChannel == null)
+            if (
+                !clientObject.TryGetPropertyValue("dataChannel", out var dataChannel)
+                || dataChannel == null
+            )
             {
                 throw Invalid("client.dataChannel", "is required.");
             }
@@ -178,7 +195,10 @@ public sealed class OpenAIRealtimeModelLiveOptions
 
         if (root.TryGetPropertyValue("store", out var store) && store != null)
         {
-            if (store is not JsonValue storeValue || !storeValue.TryGetValue<bool>(out var storeFlag))
+            if (
+                store is not JsonValue storeValue
+                || !storeValue.TryGetValue<bool>(out var storeFlag)
+            )
             {
                 throw Invalid("store", "must be a boolean.");
             }
@@ -190,7 +210,11 @@ public sealed class OpenAIRealtimeModelLiveOptions
         {
             var voiceObject = AsObject(voice, "voice");
             StrictKeys(voiceObject, "voice", "id");
-            if (voiceObject["id"] is not JsonValue id || !id.TryGetValue<string>(out var voiceId) || voiceId.Length == 0)
+            if (
+                voiceObject["id"] is not JsonValue id
+                || !id.TryGetValue<string>(out var voiceId)
+                || voiceId.Length == 0
+            )
             {
                 throw Invalid("voice.id", "must be a non-empty string.");
             }
@@ -205,7 +229,10 @@ public sealed class OpenAIRealtimeModelLiveOptions
     {
         StrictKeys(channel, "client.dataChannel", "allowedClientEvents", "allowedServerEvents");
         var result = new OpenAIRealtimeModelLiveDataChannel();
-        if (channel.TryGetPropertyValue("allowedClientEvents", out var clientEvents) && clientEvents != null)
+        if (
+            channel.TryGetPropertyValue("allowedClientEvents", out var clientEvents)
+            && clientEvents != null
+        )
         {
             if (IsString(clientEvents, "all"))
             {
@@ -213,11 +240,17 @@ public sealed class OpenAIRealtimeModelLiveOptions
             }
             else
             {
-                result.AllowedClientEvents = ParseStrings(clientEvents, "client.dataChannel.allowedClientEvents");
+                result.AllowedClientEvents = ParseStrings(
+                    clientEvents,
+                    "client.dataChannel.allowedClientEvents"
+                );
             }
         }
 
-        if (channel.TryGetPropertyValue("allowedServerEvents", out var serverEvents) && serverEvents != null)
+        if (
+            channel.TryGetPropertyValue("allowedServerEvents", out var serverEvents)
+            && serverEvents != null
+        )
         {
             if (IsString(serverEvents, "all"))
             {
@@ -228,25 +261,53 @@ public sealed class OpenAIRealtimeModelLiveOptions
                 var selectors = new List<OpenAIRealtimeModelLiveServerEventSelector>();
                 if (serverEvents is not JsonArray array)
                 {
-                    throw Invalid("client.dataChannel.allowedServerEvents", "must be 'all' or an array.");
+                    throw Invalid(
+                        "client.dataChannel.allowedServerEvents",
+                        "must be 'all' or an array."
+                    );
                 }
 
                 foreach (var entry in array)
                 {
-                    var selectorObject = AsObject(entry, "client.dataChannel.allowedServerEvents[]");
-                    StrictKeys(selectorObject, "client.dataChannel.allowedServerEvents[]", "type", "responseEvent");
-                    var type = RequiredString(selectorObject, "type", "client.dataChannel.allowedServerEvents[].type");
-                    var responseEvent = selectorObject.TryGetPropertyValue("responseEvent", out var responseNode) && responseNode != null
-                        ? RequiredString(selectorObject, "responseEvent", "client.dataChannel.allowedServerEvents[].responseEvent")
-                        : null;
+                    var selectorObject = AsObject(
+                        entry,
+                        "client.dataChannel.allowedServerEvents[]"
+                    );
+                    StrictKeys(
+                        selectorObject,
+                        "client.dataChannel.allowedServerEvents[]",
+                        "type",
+                        "responseEvent"
+                    );
+                    var type = RequiredString(
+                        selectorObject,
+                        "type",
+                        "client.dataChannel.allowedServerEvents[].type"
+                    );
+                    var responseEvent =
+                        selectorObject.TryGetPropertyValue("responseEvent", out var responseNode)
+                        && responseNode != null
+                            ? RequiredString(
+                                selectorObject,
+                                "responseEvent",
+                                "client.dataChannel.allowedServerEvents[].responseEvent"
+                            )
+                            : null;
                     if ((type == "response.event") != (responseEvent != null))
                     {
                         throw Invalid(
                             "client.dataChannel.allowedServerEvents[]",
-                            "responseEvent is required for response.event and forbidden for other event types.");
+                            "responseEvent is required for response.event and forbidden for other event types."
+                        );
                     }
 
-                    selectors.Add(new OpenAIRealtimeModelLiveServerEventSelector { Type = type, ResponseEvent = responseEvent });
+                    selectors.Add(
+                        new OpenAIRealtimeModelLiveServerEventSelector
+                        {
+                            Type = type,
+                            ResponseEvent = responseEvent,
+                        }
+                    );
                 }
 
                 result.AllowedServerEvents = selectors;
@@ -336,15 +397,24 @@ public sealed class OpenAIRealtimeModelLiveOptions
 
     private static bool IsString(JsonNode? node, string expected)
     {
-        return node is JsonValue value && value.TryGetValue<string>(out var text) && text == expected;
+        return node is JsonValue value
+            && value.TryGetValue<string>(out var text)
+            && text == expected;
     }
 
-    private static string RequiredString(JsonObject parent, string key, string path, bool allowEmpty = false)
+    private static string RequiredString(
+        JsonObject parent,
+        string key,
+        string path,
+        bool allowEmpty = false
+    )
     {
-        if (!parent.TryGetPropertyValue(key, out var node)
+        if (
+            !parent.TryGetPropertyValue(key, out var node)
             || node is not JsonValue value
             || !value.TryGetValue<string>(out var text)
-            || (!allowEmpty && text.Length == 0))
+            || (!allowEmpty && text.Length == 0)
+        )
         {
             throw Invalid(path, "must be a string.");
         }

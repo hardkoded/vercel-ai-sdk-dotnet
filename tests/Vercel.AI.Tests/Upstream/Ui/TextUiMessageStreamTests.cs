@@ -13,7 +13,8 @@ public sealed class TextUiMessageStreamTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/ui/transform-text-to-ui-message-stream.test.ts::transformTextToUiMessageStream::should transform text stream into UI message stream with correct sequence",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Transforms_text_into_the_ui_message_sequence()
     {
         var chunks = await Read(TextUIMessageStream.TransformAsync(Text("Hello", " ", "World")));
@@ -31,9 +32,16 @@ public sealed class TextUiMessageStreamTests
                 "finish-step",
                 "finish",
             },
-            chunks.Select(chunk => chunk["type"]!.GetValue<string>()).ToArray());
+            chunks.Select(chunk => chunk["type"]!.GetValue<string>()).ToArray()
+        );
         Assert.Equal("text-1", chunks[2]["id"]!.GetValue<string>());
-        Assert.Equal(new[] { "Hello", " ", "World" }, chunks.Where(chunk => chunk["type"]!.GetValue<string>() == "text-delta").Select(chunk => chunk["delta"]!.GetValue<string>()).ToArray());
+        Assert.Equal(
+            new[] { "Hello", " ", "World" },
+            chunks
+                .Where(chunk => chunk["type"]!.GetValue<string>() == "text-delta")
+                .Select(chunk => chunk["delta"]!.GetValue<string>())
+                .ToArray()
+        );
         Assert.Equal("text-1", chunks[6]["id"]!.GetValue<string>());
         Assert.False(chunks[8].ContainsKey("finishReason"));
     }
@@ -41,14 +49,16 @@ public sealed class TextUiMessageStreamTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/ui/transform-text-to-ui-message-stream.test.ts::transformTextToUiMessageStream::should handle empty streams correctly",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Transforms_an_empty_text_stream_without_deltas()
     {
         var chunks = await Read(TextUIMessageStream.TransformAsync(Text()));
 
         Assert.Equal(
             new[] { "start", "start-step", "text-start", "text-end", "finish-step", "finish" },
-            chunks.Select(chunk => chunk["type"]!.GetValue<string>()).ToArray());
+            chunks.Select(chunk => chunk["type"]!.GetValue<string>()).ToArray()
+        );
         Assert.Equal("text-1", chunks[2]["id"]!.GetValue<string>());
         Assert.Equal("text-1", chunks[3]["id"]!.GetValue<string>());
     }
@@ -56,7 +66,8 @@ public sealed class TextUiMessageStreamTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/ui/transform-text-to-ui-message-stream.test.ts::transformTextToUiMessageStream::should handle single chunk streams",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Transforms_a_single_text_chunk()
     {
         var chunks = await Read(TextUIMessageStream.TransformAsync(Text("Complete message")));
@@ -70,7 +81,8 @@ public sealed class TextUiMessageStreamTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/ui/process-text-stream.test.ts::processTextStream::should process stream chunks correctly",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Processes_text_chunks_in_order()
     {
         var seen = new List<string>();
@@ -86,7 +98,8 @@ public sealed class TextUiMessageStreamTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/ui/process-text-stream.test.ts::processTextStream::should handle empty streams",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Processes_an_empty_byte_stream_without_calling_back()
     {
         var calls = 0;

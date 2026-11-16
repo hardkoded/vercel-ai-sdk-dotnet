@@ -16,7 +16,8 @@ internal sealed class RecordedAzureRequest
 {
     public string Url { get; init; } = string.Empty;
 
-    public Dictionary<string, string> Headers { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string> Headers { get; init; } =
+        new(StringComparer.OrdinalIgnoreCase);
 
     public Dictionary<string, RecordedPart> Parts { get; init; } = new(StringComparer.Ordinal);
 }
@@ -46,7 +47,10 @@ internal sealed class AzureTranscriptionHandler : HttpMessageHandler
 
     public RecordedAzureRequest Last => Requests[^1];
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         var record = new RecordedAzureRequest { Url = request.RequestUri!.AbsoluteUri };
         foreach (var header in request.Headers)
@@ -79,7 +83,10 @@ internal sealed class AzureTranscriptionHandler : HttpMessageHandler
 
 internal sealed class AzureTranscriptionHarness
 {
-    public AzureTranscriptionHarness(AzureOpenAIProvider provider, AzureTranscriptionHandler handler)
+    public AzureTranscriptionHarness(
+        AzureOpenAIProvider provider,
+        AzureTranscriptionHandler handler
+    )
     {
         Provider = provider;
         Handler = handler;
@@ -100,30 +107,39 @@ internal static class AzureTranscriptionTestSupport
 {
     public static readonly byte[] Input = { 1, 2, 3 };
 
-    public static readonly JsonObject Response = (JsonObject)JsonNode.Parse(
-        """
-        {
-          "durationMilliseconds": 2000,
-          "combinedPhrases": [{ "text": "Hello world." }],
-          "phrases": [
+    public static readonly JsonObject Response = (JsonObject)
+        JsonNode.Parse(
+            """
             {
-              "text": "Hello world.",
-              "offsetMilliseconds": 40,
-              "durationMilliseconds": 1500,
-              "locale": "en-US",
-              "speaker": 1,
-              "confidence": 0.9,
-              "words": [{ "text": "Hello", "offsetMilliseconds": 40, "durationMilliseconds": 400 }]
+              "durationMilliseconds": 2000,
+              "combinedPhrases": [{ "text": "Hello world." }],
+              "phrases": [
+                {
+                  "text": "Hello world.",
+                  "offsetMilliseconds": 40,
+                  "durationMilliseconds": 1500,
+                  "locale": "en-US",
+                  "speaker": 1,
+                  "confidence": 0.9,
+                  "words": [{ "text": "Hello", "offsetMilliseconds": 40, "durationMilliseconds": 400 }]
+                }
+              ]
             }
-          ]
-        }
-        """)!;
+            """
+        )!;
 
-    public static AzureTranscriptionHarness Setup(Action<AzureOpenAIOptions>? configure = null, JsonNode? body = null, bool defaultResource = true)
+    public static AzureTranscriptionHarness Setup(
+        Action<AzureOpenAIOptions>? configure = null,
+        JsonNode? body = null,
+        bool defaultResource = true
+    )
     {
         var handler = new AzureTranscriptionHandler(request =>
         {
-            var openai = request.RequestUri!.AbsoluteUri.Contains("/audio/transcriptions", StringComparison.Ordinal);
+            var openai = request.RequestUri!.AbsoluteUri.Contains(
+                "/audio/transcriptions",
+                StringComparison.Ordinal
+            );
             return Json(openai ? "{\"text\":\"OpenAI\"}" : (body ?? Response).ToJsonString());
         });
         var options = new AzureOpenAIOptions { ApiKey = "test-key" };
@@ -138,7 +154,10 @@ internal static class AzureTranscriptionTestSupport
 
     public static HttpResponseMessage Json(string body, HttpStatusCode status = HttpStatusCode.OK)
     {
-        return new HttpResponseMessage(status) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
+        return new HttpResponseMessage(status)
+        {
+            Content = new StringContent(body, Encoding.UTF8, "application/json"),
+        };
     }
 
     public static TranscriptionModelCall Call(
@@ -146,14 +165,16 @@ internal static class AzureTranscriptionTestSupport
         byte[]? audio = null,
         string[]? timestampGranularities = null,
         IReadOnlyDictionary<string, string>? headers = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         return new TranscriptionModelCall(
             audio ?? Input,
             "audio/wav",
             JsonSerializer.Deserialize<JsonElement>(providerOptions ?? "{}"),
             headers ?? new Dictionary<string, string>(),
-            cancellationToken)
+            cancellationToken
+        )
         {
             TimestampGranularities = timestampGranularities,
         };
@@ -164,9 +185,13 @@ internal static class AzureTranscriptionTestSupport
         return File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", name + ".json"));
     }
 
-    public static IReadOnlyList<(string Type, string? Feature, string? Details)> Warnings(TranscriptionModelResult result)
+    public static IReadOnlyList<(string Type, string? Feature, string? Details)> Warnings(
+        TranscriptionModelResult result
+    )
     {
-        return result.Warnings.Select(warning => (warning.Type, warning.Feature, warning.Details)).ToList();
+        return result
+            .Warnings.Select(warning => (warning.Type, warning.Feature, warning.Details))
+            .ToList();
     }
 
     public static void AssertJson(string expected, JsonNode? actual)

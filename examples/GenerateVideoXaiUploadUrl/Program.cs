@@ -26,14 +26,23 @@ var xai = XaiProvider.Create();
 try
 {
     #region generate-video-xai-upload-url
-    var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
-    {
-        Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
-        Prompt = new VideoPrompt("A blue ball rolls across a plain white surface."),
-        Duration = 5,
-        ProviderOptions = OperationJson.Parse(
-            new JsonObject { ["xai"] = new JsonObject { ["output"] = new JsonObject { ["uploadUrl"] = uploadUrl } } }.ToJsonString()),
-    });
+    var result = await GenerateVideo.GenerateVideoAsync(
+        new GenerateVideoRequest
+        {
+            Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
+            Prompt = new VideoPrompt("A blue ball rolls across a plain white surface."),
+            Duration = 5,
+            ProviderOptions = OperationJson.Parse(
+                new JsonObject
+                {
+                    ["xai"] = new JsonObject
+                    {
+                        ["output"] = new JsonObject { ["uploadUrl"] = uploadUrl },
+                    },
+                }.ToJsonString()
+            ),
+        }
+    );
     #endregion
 
     // Upload-only results have no local video bytes. Do not read result.Video.

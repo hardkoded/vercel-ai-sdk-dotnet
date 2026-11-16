@@ -11,17 +11,23 @@ namespace Vercel.AI.Tests.FireworksChatLanguageModelTests;
 public sealed class FireworksChatPrepareRequestTests
 {
     private const string UpstreamCommit = "c9c6402cbdfce3f82b36b4073236043b1946dd06";
-    private const string Prefix = "packages/fireworks/src/fireworks-chat-language-model.test.ts::Fireworks chat prepareRequest::";
+    private const string Prefix =
+        "packages/fireworks/src/fireworks-chat-language-model.test.ts::Fireworks chat prepareRequest::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should apply the Fireworks request body transform", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        Prefix + "should apply the Fireworks request body transform",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public void Should_apply_the_Fireworks_request_body_transform()
     {
         var capture = new UpstreamCapture();
         var options = UpstreamChat.Prompt();
         options.ProviderOptions = UpstreamChat.Bag(
             "fireworks",
-            "{\"promptCacheKey\":\"cache-key\",\"serviceTier\":\"priority\",\"thinking\":{\"type\":\"enabled\",\"budgetTokens\":1024},\"reasoningHistory\":\"interleaved\"}");
+            "{\"promptCacheKey\":\"cache-key\",\"serviceTier\":\"priority\",\"thinking\":{\"type\":\"enabled\",\"budgetTokens\":1024},\"reasoningHistory\":\"interleaved\"}"
+        );
 
         var body = Model(capture).PrepareRequest(options).Body;
 
@@ -37,7 +43,11 @@ public sealed class FireworksChatPrepareRequestTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should map reasoning with the compatibility warning", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        Prefix + "should map reasoning with the compatibility warning",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public void Should_map_reasoning_with_the_compatibility_warning()
     {
         var capture = new UpstreamCapture();
@@ -50,12 +60,18 @@ public sealed class FireworksChatPrepareRequestTests
         var warning = Assert.Single(prepared.Warnings);
         Assert.Equal("compatibility", warning.Type);
         Assert.Equal("reasoning", warning.Feature);
-        Assert.Equal("reasoning \"none\" is not directly supported by this model. mapped to effort \"minimal\".", warning.Message);
+        Assert.Equal(
+            "reasoning \"none\" is not directly supported by this model. mapped to effort \"minimal\".",
+            warning.Message
+        );
         Assert.Empty(capture.Requests);
     }
 
     private static OpenAICompatibleLanguageModel Model(UpstreamCapture capture)
     {
-        return (OpenAICompatibleLanguageModel)FireworksProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-key" }, capture).LanguageModel("accounts/fireworks/models/gpt-oss-120b");
+        return (OpenAICompatibleLanguageModel)
+            FireworksProvider
+                .Create(new OpenAICompatibleOptions { ApiKey = "test-key" }, capture)
+                .LanguageModel("accounts/fireworks/models/gpt-oss-120b");
     }
 }

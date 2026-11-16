@@ -41,40 +41,66 @@ public sealed class DecisionTypesTests
     public void Boolean_criteria_send_only_the_sides_that_were_set()
     {
         Assert.Equal("{}", new DecisionBooleanCriteria().ToNode().ToJsonString());
-        Assert.Equal("{\"true\":null}", new DecisionBooleanCriteria { True = null }.ToNode().ToJsonString());
-        Assert.Equal("{\"true\":\"yes\",\"false\":null}", new DecisionBooleanCriteria { True = "yes", False = null }.ToNode().ToJsonString());
+        Assert.Equal(
+            "{\"true\":null}",
+            new DecisionBooleanCriteria { True = null }
+                .ToNode()
+                .ToJsonString()
+        );
+        Assert.Equal(
+            "{\"true\":\"yes\",\"false\":null}",
+            new DecisionBooleanCriteria { True = "yes", False = null }
+                .ToNode()
+                .ToJsonString()
+        );
     }
 
     [Fact]
     public async Task PrepareDecisionState_turns_text_and_a_JSON_object_into_one_part()
     {
-        var text = Assert.IsType<DecisionModelTextPart>(Assert.Single(await DecisionState.PrepareDecisionStateAsync("hello")));
+        var text = Assert.IsType<DecisionModelTextPart>(
+            Assert.Single(await DecisionState.PrepareDecisionStateAsync("hello"))
+        );
         Assert.Equal("hello", text.Text);
 
         using var document = JsonDocument.Parse("{\"a\":1}");
-        var json = Assert.IsType<DecisionModelJsonPart>(Assert.Single(await DecisionState.PrepareDecisionStateAsync(DecisionState.FromJson(document.RootElement))));
+        var json = Assert.IsType<DecisionModelJsonPart>(
+            Assert.Single(
+                await DecisionState.PrepareDecisionStateAsync(
+                    DecisionState.FromJson(document.RootElement)
+                )
+            )
+        );
         Assert.Equal("{\"a\":1}", json.Value.GetRawText());
     }
 
     [Fact]
     public void StandardizePrompt_rejects_a_prompt_together_with_messages()
     {
-        Assert.Throws<InvalidPromptException>(() => Prompts.StandardizePrompt(new StandardizePromptInput
-        {
-            Prompt = "hello",
-            Messages = new ModelMessage[] { new UserModelMessage("hi") },
-        }));
+        Assert.Throws<InvalidPromptException>(() =>
+            Prompts.StandardizePrompt(
+                new StandardizePromptInput
+                {
+                    Prompt = "hello",
+                    Messages = new ModelMessage[] { new UserModelMessage("hi") },
+                }
+            )
+        );
     }
 
     [Fact]
     public void StandardizePrompt_rejects_a_missing_prompt()
     {
-        Assert.Throws<InvalidPromptException>(() => Prompts.StandardizePrompt(new StandardizePromptInput()));
+        Assert.Throws<InvalidPromptException>(() =>
+            Prompts.StandardizePrompt(new StandardizePromptInput())
+        );
     }
 
     [Fact]
     public void Instructions_reject_a_null_system_message_in_a_list()
     {
-        Assert.Throws<InvalidPromptException>(() => Instructions.From(new SystemModelMessage[] { null! }));
+        Assert.Throws<InvalidPromptException>(() =>
+            Instructions.From(new SystemModelMessage[] { null! })
+        );
     }
 }

@@ -13,11 +13,17 @@ public sealed class ResolveCustomVocabularyTests
     private static ResolvedCustomVocabulary Resolve(string json)
     {
         using var document = JsonDocument.Parse(json);
-        return Vercel.AI.Gladia.GladiaTranscriptionOptionsResolution.ResolveCustomVocabulary(document.RootElement);
+        return Vercel.AI.Gladia.GladiaTranscriptionOptionsResolution.ResolveCustomVocabulary(
+            document.RootElement
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-options-resolution.test.ts::resolveCustomVocabulary::maps a vocabulary array to customVocabularyConfig vocabulary", Coverage = UpstreamCoverage.Covered, Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb")]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-options-resolution.test.ts::resolveCustomVocabulary::maps a vocabulary array to customVocabularyConfig vocabulary",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb"
+    )]
     public void MapsAVocabularyArrayToCustomVocabularyConfigVocabulary()
     {
         var result = Resolve("""{"customVocabulary":["Gladia","AI SDK"]}""");
@@ -26,7 +32,11 @@ public sealed class ResolveCustomVocabularyTests
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-options-resolution.test.ts::resolveCustomVocabulary::passes through boolean customVocabulary values", Coverage = UpstreamCoverage.Covered, Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb")]
+    [UpstreamTest(
+        "packages/gladia/src/gladia-transcription-options-resolution.test.ts::resolveCustomVocabulary::passes through boolean customVocabulary values",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb"
+    )]
     public void PassesThroughBooleanCustomVocabularyValues()
     {
         var result = Resolve("""{"customVocabulary":true}""");

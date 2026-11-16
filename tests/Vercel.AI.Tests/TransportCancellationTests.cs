@@ -59,9 +59,18 @@ public sealed class TransportCancellationTests
     public async Task ProviderHttp_stops_reading_a_stalled_body_when_the_caller_cancels()
     {
         using var source = new CancellationTokenSource();
-        var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(new StalledStream(string.Empty)) });
+        var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StreamContent(new StalledStream(string.Empty)),
+        });
         var http = new ProviderHttp(new HttpClient(handler), RetryPolicy.Default);
-        var call = http.SendJsonAsync(HttpMethod.Post, new Uri("https://example.test/x"), "{}", null, source.Token);
+        var call = http.SendJsonAsync(
+            HttpMethod.Post,
+            new Uri("https://example.test/x"),
+            "{}",
+            null,
+            source.Token
+        );
         source.CancelAfter(50);
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => call.WaitAsync(Limit));
@@ -71,10 +80,19 @@ public sealed class TransportCancellationTests
     public async Task ProviderHttp_disposes_the_response_after_a_json_read()
     {
         var content = new TrackingContent("{}");
-        var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = content });
+        var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = content,
+        });
         var http = new ProviderHttp(new HttpClient(handler), RetryPolicy.Default);
 
-        using var document = await http.SendJsonAsync(HttpMethod.Post, new Uri("https://example.test/x"), "{}", null, CancellationToken.None);
+        using var document = await http.SendJsonAsync(
+            HttpMethod.Post,
+            new Uri("https://example.test/x"),
+            "{}",
+            null,
+            CancellationToken.None
+        );
 
         Assert.True(content.Disposed);
     }
@@ -83,10 +101,18 @@ public sealed class TransportCancellationTests
     public async Task OpenAICompatible_disposes_the_response_when_the_body_read_fails()
     {
         var content = new TrackingContent(null);
-        var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = content });
-        var provider = new OpenAICompatibleProvider(new OpenAICompatibleOptions { ApiKey = "secret", ProviderName = "p" }, new HttpClient(handler));
+        var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = content,
+        });
+        var provider = new OpenAICompatibleProvider(
+            new OpenAICompatibleOptions { ApiKey = "secret", ProviderName = "p" },
+            new HttpClient(handler)
+        );
 
-        await Assert.ThrowsAsync<HttpRequestException>(() => provider.GetBinaryAsync(new Uri("https://example.test/x"), null, CancellationToken.None));
+        await Assert.ThrowsAsync<HttpRequestException>(() =>
+            provider.GetBinaryAsync(new Uri("https://example.test/x"), null, CancellationToken.None)
+        );
 
         Assert.True(content.Disposed);
     }
@@ -95,8 +121,14 @@ public sealed class TransportCancellationTests
     public async Task OpenAICompatible_stops_reading_a_stalled_body_when_the_caller_cancels()
     {
         using var source = new CancellationTokenSource();
-        var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(new StalledStream(string.Empty)) });
-        var provider = new OpenAICompatibleProvider(new OpenAICompatibleOptions { ApiKey = "secret", ProviderName = "p" }, new HttpClient(handler));
+        var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StreamContent(new StalledStream(string.Empty)),
+        });
+        var provider = new OpenAICompatibleProvider(
+            new OpenAICompatibleOptions { ApiKey = "secret", ProviderName = "p" },
+            new HttpClient(handler)
+        );
         var call = provider.GetBinaryAsync(new Uri("https://example.test/x"), null, source.Token);
         source.CancelAfter(50);
 
@@ -119,7 +151,16 @@ public sealed class TransportCancellationTests
         source.Cancel();
         var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK));
 
-        var error = await Record.ExceptionAsync(() => ProviderExchange.SendAsync(new HttpClient(handler), HttpMethod.Get, new Uri("https://example.test/x"), null, null, source.Token));
+        var error = await Record.ExceptionAsync(() =>
+            ProviderExchange.SendAsync(
+                new HttpClient(handler),
+                HttpMethod.Get,
+                new Uri("https://example.test/x"),
+                null,
+                null,
+                source.Token
+            )
+        );
 
         Assert.IsType<ApiUserAbortException>(error);
     }
@@ -128,8 +169,18 @@ public sealed class TransportCancellationTests
     public async Task ProviderExchange_surfaces_a_cancel_during_the_body_read_as_ApiUserAbortException()
     {
         using var source = new CancellationTokenSource();
-        var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(new StalledStream(string.Empty)) });
-        var call = ProviderExchange.SendAsync(new HttpClient(handler), HttpMethod.Get, new Uri("https://example.test/x"), null, null, source.Token);
+        var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StreamContent(new StalledStream(string.Empty)),
+        });
+        var call = ProviderExchange.SendAsync(
+            new HttpClient(handler),
+            HttpMethod.Get,
+            new Uri("https://example.test/x"),
+            null,
+            null,
+            source.Token
+        );
         source.CancelAfter(50);
 
         var error = await Record.ExceptionAsync(() => call.WaitAsync(Limit));
@@ -140,14 +191,33 @@ public sealed class TransportCancellationTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task ProviderHttp_surfaces_a_cancel_during_the_retry_delay_as_ApiUserAbortException(bool connectionFailure)
+    public async Task ProviderHttp_surfaces_a_cancel_during_the_retry_delay_as_ApiUserAbortException(
+        bool connectionFailure
+    )
     {
         using var source = new CancellationTokenSource();
-        var handler = new DelegateHandler(_ => connectionFailure
-            ? throw new HttpRequestException("down")
-            : new HttpResponseMessage(HttpStatusCode.InternalServerError));
-        var http = new ProviderHttp(new HttpClient(handler), new RetryPolicy { MaxRetries = 2, InitialDelay = TimeSpan.FromMinutes(1), MaxDelay = TimeSpan.FromMinutes(1), Jitter = 0 });
-        var call = http.SendJsonAsync(HttpMethod.Post, new Uri("https://example.test/x"), "{}", null, source.Token);
+        var handler = new DelegateHandler(_ =>
+            connectionFailure
+                ? throw new HttpRequestException("down")
+                : new HttpResponseMessage(HttpStatusCode.InternalServerError)
+        );
+        var http = new ProviderHttp(
+            new HttpClient(handler),
+            new RetryPolicy
+            {
+                MaxRetries = 2,
+                InitialDelay = TimeSpan.FromMinutes(1),
+                MaxDelay = TimeSpan.FromMinutes(1),
+                Jitter = 0,
+            }
+        );
+        var call = http.SendJsonAsync(
+            HttpMethod.Post,
+            new Uri("https://example.test/x"),
+            "{}",
+            null,
+            source.Token
+        );
         source.CancelAfter(100);
 
         var error = await Record.ExceptionAsync(() => call.WaitAsync(Limit));
@@ -160,11 +230,27 @@ public sealed class TransportCancellationTests
     {
         using var source = new CancellationTokenSource();
         source.Cancel();
-        var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(string.Empty) });
-        var provider = GatewayProvider.Create(new GatewayOptions { ApiKey = "key", BaseUrl = "https://api.test.com" }, handler);
+        var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(string.Empty),
+        });
+        var provider = GatewayProvider.Create(
+            new GatewayOptions { ApiKey = "key", BaseUrl = "https://api.test.com" },
+            handler
+        );
         var batch = provider.ExperimentalBatch()!;
 
-        var error = await Record.ExceptionAsync(() => batch.DoGetResultsAsync(new BatchOperationCall("job_1", null, new Dictionary<string, string>(), CancellationToken.None), source.Token));
+        var error = await Record.ExceptionAsync(() =>
+            batch.DoGetResultsAsync(
+                new BatchOperationCall(
+                    "job_1",
+                    null,
+                    new Dictionary<string, string>(),
+                    CancellationToken.None
+                ),
+                source.Token
+            )
+        );
 
         Assert.IsType<Vercel.AI.Provider.ApiUserAbortException>(error);
     }
@@ -173,12 +259,12 @@ public sealed class TransportCancellationTests
     public async Task AsyncIterableStream_enumeration_honors_the_cancellation_token()
     {
         using var source = new CancellationTokenSource();
-        var stream = new AsyncIterableStream<int>(new ReadableStream<int>(pull: _ => Task.Delay(Timeout.Infinite)));
+        var stream = new AsyncIterableStream<int>(
+            new ReadableStream<int>(pull: _ => Task.Delay(Timeout.Infinite))
+        );
         var read = Task.Run(async () =>
         {
-            await foreach (var _ in stream.WithCancellation(source.Token))
-            {
-            }
+            await foreach (var _ in stream.WithCancellation(source.Token)) { }
         });
         source.CancelAfter(50);
 
@@ -188,9 +274,15 @@ public sealed class TransportCancellationTests
     [Fact]
     public async Task ReadableStream_fails_the_read_when_the_pull_throws_synchronously()
     {
-        var stream = new ReadableStream<int>(pull: new Func<ReadableStreamController<int>, Task>(_ => throw new InvalidOperationException("boom")));
+        var stream = new ReadableStream<int>(
+            pull: new Func<ReadableStreamController<int>, Task>(_ =>
+                throw new InvalidOperationException("boom")
+            )
+        );
 
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => stream.ToArrayAsync().WaitAsync(Limit));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            stream.ToArrayAsync().WaitAsync(Limit)
+        );
 
         Assert.Equal("boom", error.Message);
     }
@@ -199,13 +291,17 @@ public sealed class TransportCancellationTests
     public async Task ReadableStream_fails_the_read_when_the_pull_is_cancelled()
     {
         var pulls = 0;
-        var stream = new ReadableStream<int>(pull: new Func<ReadableStreamController<int>, Task>(_ =>
-        {
-            Interlocked.Increment(ref pulls);
-            return Task.FromCanceled(new CancellationToken(true));
-        }));
+        var stream = new ReadableStream<int>(
+            pull: new Func<ReadableStreamController<int>, Task>(_ =>
+            {
+                Interlocked.Increment(ref pulls);
+                return Task.FromCanceled(new CancellationToken(true));
+            })
+        );
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => stream.ToArrayAsync().WaitAsync(Limit));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            stream.ToArrayAsync().WaitAsync(Limit)
+        );
 
         Assert.Equal(1, pulls);
     }
@@ -254,13 +350,24 @@ public sealed class TransportCancellationTests
     [Fact]
     public async Task HttpMcpTransport_skips_notifications_and_returns_the_response_for_the_request_id()
     {
-        var body = "data: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\",\"params\":{}}\n\n"
+        var body =
+            "data: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\",\"params\":{}}\n\n"
             + "data: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"ok\":true}}\n\n";
-        var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "text/event-stream") });
-        var transport = new HttpMcpTransport(new HttpClient(handler), new Uri("https://example.test/mcp"));
+        var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(body, Encoding.UTF8, "text/event-stream"),
+        });
+        var transport = new HttpMcpTransport(
+            new HttpClient(handler),
+            new Uri("https://example.test/mcp")
+        );
         using var parameters = JsonDocument.Parse("{}");
 
-        var result = await transport.CallAsync("tools/list", parameters.RootElement, CancellationToken.None);
+        var result = await transport.CallAsync(
+            "tools/list",
+            parameters.RootElement,
+            CancellationToken.None
+        );
 
         Assert.True(result.GetProperty("ok").GetBoolean());
     }
@@ -271,12 +378,24 @@ public sealed class TransportCancellationTests
         using var source = new CancellationTokenSource();
         var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StreamContent(new StalledStream("data: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\"}\n\n"))
+            Content = new StreamContent(
+                new StalledStream(
+                    "data: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\"}\n\n"
+                )
+            )
             {
-                Headers = { ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/event-stream") },
+                Headers =
+                {
+                    ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+                        "text/event-stream"
+                    ),
+                },
             },
         });
-        var transport = new HttpMcpTransport(new HttpClient(handler), new Uri("https://example.test/mcp"));
+        var transport = new HttpMcpTransport(
+            new HttpClient(handler),
+            new Uri("https://example.test/mcp")
+        );
         using var parameters = JsonDocument.Parse("{}");
         var call = transport.CallAsync("tools/list", parameters.RootElement, source.Token);
         source.CancelAfter(100);
@@ -289,12 +408,21 @@ public sealed class TransportCancellationTests
     {
         var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent("data: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\"}\n\n", Encoding.UTF8, "text/event-stream"),
+            Content = new StringContent(
+                "data: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\"}\n\n",
+                Encoding.UTF8,
+                "text/event-stream"
+            ),
         });
-        var transport = new HttpMcpTransport(new HttpClient(handler), new Uri("https://example.test/mcp"));
+        var transport = new HttpMcpTransport(
+            new HttpClient(handler),
+            new Uri("https://example.test/mcp")
+        );
         using var parameters = JsonDocument.Parse("{}");
 
-        await Assert.ThrowsAsync<MCPClientError>(() => transport.CallAsync("tools/list", parameters.RootElement, CancellationToken.None));
+        await Assert.ThrowsAsync<MCPClientError>(() =>
+            transport.CallAsync("tools/list", parameters.RootElement, CancellationToken.None)
+        );
     }
 
     [Fact]
@@ -306,7 +434,9 @@ public sealed class TransportCancellationTests
         await McpNdjson.WriteAsync(output, document.RootElement, CancellationToken.None);
 
         Assert.Equal("{\"id\":1}\n", Encoding.UTF8.GetString(output.ToArray()));
-        await Assert.ThrowsAsync<MCPClientError>(() => McpNdjson.WriteAsync(null, document.RootElement, CancellationToken.None));
+        await Assert.ThrowsAsync<MCPClientError>(() =>
+            McpNdjson.WriteAsync(null, document.RootElement, CancellationToken.None)
+        );
     }
 
     /// <summary>Yields a prefix, then waits for the token like a socket whose server went quiet.</summary>
@@ -329,21 +459,27 @@ public sealed class TransportCancellationTests
             set => throw new NotSupportedException();
         }
 
-        public override void Flush()
-        {
-        }
+        public override void Flush() { }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
             throw new NotSupportedException();
         }
 
-        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(
+            byte[] buffer,
+            int offset,
+            int count,
+            CancellationToken cancellationToken
+        )
         {
             return await ReadAsync(buffer.AsMemory(offset, count), cancellationToken);
         }
 
-        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask<int> ReadAsync(
+            Memory<byte> buffer,
+            CancellationToken cancellationToken = default
+        )
         {
             if (_position < _prefix.Length)
             {
@@ -402,9 +538,13 @@ public sealed class TransportCancellationTests
         }
     }
 
-    private sealed class DelegateHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
+    private sealed class DelegateHandler(Func<HttpRequestMessage, HttpResponseMessage> respond)
+        : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
         {
             cancellationToken.ThrowIfCancellationRequested();
             return Task.FromResult(respond(request));

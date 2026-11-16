@@ -57,7 +57,8 @@ public static class MediaTypes
 
     private static readonly Signature[] AudioSignatures = Concat(
         AudioSignaturesWithoutMp4,
-        new[] { Sig("audio/mp4", 0x00, 0x00, 0x00, null, 0x66, 0x74, 0x79, 0x70) });
+        new[] { Sig("audio/mp4", 0x00, 0x00, 0x00, null, 0x66, 0x74, 0x79, 0x70) }
+    );
 
     private static readonly Signature[] VideoSignatures =
     {
@@ -86,7 +87,15 @@ public static class MediaTypes
     {
         if (topLevelType is null)
         {
-            return Match(data, Concat(ImageSignatures, DocumentSignatures, AudioSignaturesWithoutMp4, VideoSignatures));
+            return Match(
+                data,
+                Concat(
+                    ImageSignatures,
+                    DocumentSignatures,
+                    AudioSignaturesWithoutMp4,
+                    VideoSignatures
+                )
+            );
         }
 
         Signature[]? table = null;
@@ -183,11 +192,17 @@ public static class MediaTypes
                 return detected;
             }
 
-            functionality = "file of media type \"" + mediaType + "\" must specify subtype since it could not be auto-detected";
+            functionality =
+                "file of media type \""
+                + mediaType
+                + "\" must specify subtype since it could not be auto-detected";
         }
         else
         {
-            functionality = "file of media type \"" + mediaType + "\" must specify subtype since it is not passed as inline bytes";
+            functionality =
+                "file of media type \""
+                + mediaType
+                + "\" must specify subtype since it is not passed as inline bytes";
         }
 
         throw new UnsupportedFunctionalityException(functionality, functionality);
@@ -249,7 +264,8 @@ public static class MediaTypes
 
     private static byte[] StripId3(byte[] bytes)
     {
-        var id3Size = ((bytes[6] & 0x7f) << 21)
+        var id3Size =
+            ((bytes[6] & 0x7f) << 21)
             | ((bytes[7] & 0x7f) << 14)
             | ((bytes[8] & 0x7f) << 7)
             | (bytes[9] & 0x7f);

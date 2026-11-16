@@ -12,9 +12,12 @@ namespace Vercel.AI.Operations;
 public static class DecisionModels
 {
     /// <summary>Message thrown when the default provider has no decision models.</summary>
-    public const string MissingProviderMessage = "The default provider does not support decision models.";
+    public const string MissingProviderMessage =
+        "The default provider does not support decision models.";
 
-    private static readonly Lazy<GatewayProvider> SharedGateway = new(() => GatewayProvider.Create());
+    private static readonly Lazy<GatewayProvider> SharedGateway = new(() =>
+        GatewayProvider.Create()
+    );
 
     /// <summary>
     /// The global default provider (<c>AI_SDK_DEFAULT_PROVIDER</c>). A string model id is resolved through it. It must
@@ -41,7 +44,8 @@ public static class DecisionModels
             throw new AiSdkException("Model or ModelId is required.");
         }
 
-        var provider = DefaultProvider ?? (GatewayFactory != null ? GatewayFactory() : SharedGateway.Value);
+        var provider = DefaultProvider
+            ?? (GatewayFactory != null ? GatewayFactory() : SharedGateway.Value);
 #pragma warning disable CS0618 // IEvaluationProvider is the deprecated factory that string ids still resolve through.
         if (provider is not (IDecisionProvider or IEvaluationProvider))
 #pragma warning restore CS0618
@@ -49,7 +53,10 @@ public static class DecisionModels
             throw new InvalidOperationException(MissingProviderMessage);
         }
 
-        return Validate(FromProvider(provider, modelId!) ?? throw new NoSuchModelError(modelId!, "decisionModel"));
+        return Validate(
+            FromProvider(provider, modelId!)
+                ?? throw new NoSuchModelError(modelId!, "decisionModel")
+        );
     }
 
 #pragma warning disable CS0618
@@ -61,7 +68,11 @@ public static class DecisionModels
             return decision.DecisionModel(modelId);
         }
 
-        return provider is IEvaluationProvider evaluation && evaluation.EvaluationModel(modelId) is { } legacy ? DecisionCaller.FromLegacy(legacy) : null;
+        return
+            provider is IEvaluationProvider evaluation
+            && evaluation.EvaluationModel(modelId) is { } legacy
+            ? DecisionCaller.FromLegacy(legacy)
+            : null;
     }
 #pragma warning restore CS0618
 
@@ -76,7 +87,13 @@ public static class DecisionModels
     // Maps to resolveDecisionModel for a model instance.
     internal static IDecisionCaller Validate(IDecisionCaller model)
     {
-        return model.SpecificationVersion == "v4" ? model : throw new UnsupportedModelVersionException(model.SpecificationVersion, model.Provider, model.ModelId);
+        return model.SpecificationVersion == "v4"
+            ? model
+            : throw new UnsupportedModelVersionException(
+                model.SpecificationVersion,
+                model.Provider,
+                model.ModelId
+            );
     }
 
     /// <summary>Maps to <c>resolveExtractionModel</c>. Only model instances are accepted. A model that is not <c>v4</c> throws.</summary>
@@ -87,6 +104,12 @@ public static class DecisionModels
             throw new InvalidArgumentException("model", null, "must be an extraction model");
         }
 
-        return model.SpecificationVersion == "v4" ? model : throw new UnsupportedModelVersionException(model.SpecificationVersion, model.Provider, model.ModelId);
+        return model.SpecificationVersion == "v4"
+            ? model
+            : throw new UnsupportedModelVersionException(
+                model.SpecificationVersion,
+                model.Provider,
+                model.ModelId
+            );
     }
 }

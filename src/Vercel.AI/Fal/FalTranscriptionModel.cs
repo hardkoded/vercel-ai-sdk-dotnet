@@ -42,20 +42,32 @@ public sealed class FalTranscriptionModel : ITranscriptionModel, ITranscriptionC
     public bool CanStream => false;
 
     /// <inheritdoc />
-    public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+    public async Task<TranscriptionResult> DoTranscribeAsync(
+        AudioInput audio,
+        CancellationToken cancellationToken
+    )
     {
         if (audio is null)
         {
             throw new ArgumentNullException(nameof(audio));
         }
 
-        var call = new TranscriptionModelCall(audio.Data, audio.MediaType, JsonValues.EmptyObject(), new Dictionary<string, string>(), cancellationToken);
+        var call = new TranscriptionModelCall(
+            audio.Data,
+            audio.MediaType,
+            JsonValues.EmptyObject(),
+            new Dictionary<string, string>(),
+            cancellationToken
+        );
         var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
         return new TranscriptionResult(result.Text ?? string.Empty);
     }
 
     /// <inheritdoc />
-    public async Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
+    public async Task<TranscriptionModelResult> DoGenerateAsync(
+        TranscriptionModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (call is null)
         {
@@ -64,34 +76,66 @@ public sealed class FalTranscriptionModel : ITranscriptionModel, ITranscriptionC
 
         var timestamp = _clock?.Invoke() ?? DateTime.UtcNow;
         var body = CreateBody(FalProvider.FalOptions(call.ProviderOptions));
-        body["audio_url"] = "data:" + call.MediaType + ";base64," + ByteEncoding.ToBase64(call.Audio);
-        var queued = await _provider.SendAsync(HttpMethod.Post, QueueUri(string.Empty), ProviderExchange.Json(body.ToJsonString()), call.Headers, cancellationToken).ConfigureAwait(false);
+        body["audio_url"] =
+            "data:" + call.MediaType + ";base64," + ByteEncoding.ToBase64(call.Audio);
+        var queued = await _provider
+            .SendAsync(
+                HttpMethod.Post,
+                QueueUri(string.Empty),
+                ProviderExchange.Json(body.ToJsonString()),
+                call.Headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         string requestId;
         using (var document = JsonDocument.Parse(queued.Body))
         {
-            requestId = document.RootElement.TryGetProperty("request_id", out var id) && id.ValueKind == JsonValueKind.String
-                ? id.GetString()!
-                : throw new InvalidResponseDataException(queued.Body, "Fal queue response has no request_id.");
+            requestId =
+                document.RootElement.TryGetProperty("request_id", out var id)
+                && id.ValueKind == JsonValueKind.String
+                    ? id.GetString()!
+                    : throw new InvalidResponseDataException(
+                        queued.Body,
+                        "Fal queue response has no request_id."
+                    );
         }
 
-        var response = await PollAsync(QueueUri("/requests/" + PathSegments.Encode(requestId)), call.Headers, cancellationToken).ConfigureAwait(false);
+        var response = await PollAsync(
+                QueueUri("/requests/" + PathSegments.Encode(requestId)),
+                call.Headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         using var result = JsonDocument.Parse(response.Body);
         var root = result.RootElement;
         var segments = new List<TranscriptSegment>();
         double? duration = null;
-        if (root.TryGetProperty("chunks", out var chunks) && chunks.ValueKind == JsonValueKind.Array)
+        if (
+            root.TryGetProperty("chunks", out var chunks)
+            && chunks.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var chunk in chunks.EnumerateArray())
             {
                 var start = Timestamp(chunk, 0);
                 var end = Timestamp(chunk, 1);
-                segments.Add(new TranscriptSegment(chunk.GetProperty("text").GetString() ?? string.Empty, start ?? 0, end ?? 0));
+                segments.Add(
+                    new TranscriptSegment(
+                        chunk.GetProperty("text").GetString() ?? string.Empty,
+                        start ?? 0,
+                        end ?? 0
+                    )
+                );
                 duration = end;
             }
         }
 
         string? language = null;
-        if (root.TryGetProperty("inferred_languages", out var languages) && languages.ValueKind == JsonValueKind.Array && languages.GetArrayLength() > 0)
+        if (
+            root.TryGetProperty("inferred_languages", out var languages)
+            && languages.ValueKind == JsonValueKind.Array
+            && languages.GetArrayLength() > 0
+        )
         {
             language = languages[0].GetString();
         }
@@ -102,11 +146,20 @@ public sealed class FalTranscriptionModel : ITranscriptionModel, ITranscriptionC
             language,
             duration,
             Array.Empty<OperationWarning>(),
-            response: new ProviderResponse(response.Headers, root.Clone(), timestamp: timestamp, modelId: ModelId));
+            response: new ProviderResponse(
+                response.Headers,
+                root.Clone(),
+                timestamp: timestamp,
+                modelId: ModelId
+            )
+        );
     }
 
     /// <inheritdoc />
-    public Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+    public Task<TranscriptionStreamStart?> DoStreamAsync(
+        TranscriptionStreamCall call,
+        CancellationToken cancellationToken
+    )
     {
         return Task.FromResult<TranscriptionStreamStart?>(null);
     }
@@ -125,11 +178,16 @@ public sealed class FalTranscriptionModel : ITranscriptionModel, ITranscriptionC
             return body;
         }
 
-        body["language"] = options.TryGetProperty("language", out var language) ? JsonNode.Parse(language.GetRawText()) : "en";
+        body["language"] = options.TryGetProperty("language", out var language)
+            ? JsonNode.Parse(language.GetRawText())
+            : "en";
         SetUnlessNull(body, "version", options, "version", "3");
         SetUnlessNull(body, "batch_size", options, "batchSize", 64);
         SetUnlessNull(body, "num_speakers", options, "numSpeakers", null);
-        if (options.TryGetProperty("diarize", out var diarize) && (diarize.ValueKind == JsonValueKind.True || diarize.ValueKind == JsonValueKind.False))
+        if (
+            options.TryGetProperty("diarize", out var diarize)
+            && (diarize.ValueKind == JsonValueKind.True || diarize.ValueKind == JsonValueKind.False)
+        )
         {
             body["diarize"] = diarize.GetBoolean();
         }
@@ -147,7 +205,13 @@ public sealed class FalTranscriptionModel : ITranscriptionModel, ITranscriptionC
     }
 
     // A missing option takes its default; an explicit null leaves the field out.
-    private static void SetUnlessNull(JsonObject body, string field, JsonElement options, string option, JsonNode? fallback)
+    private static void SetUnlessNull(
+        JsonObject body,
+        string field,
+        JsonElement options,
+        string option,
+        JsonNode? fallback
+    )
     {
         if (!options.TryGetProperty(option, out var value))
         {
@@ -162,18 +226,22 @@ public sealed class FalTranscriptionModel : ITranscriptionModel, ITranscriptionC
         }
     }
 
-    private async Task<ProviderExchangeResult> PollAsync(Uri statusUri, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
+    private async Task<ProviderExchangeResult> PollAsync(
+        Uri statusUri,
+        IReadOnlyDictionary<string, string> headers,
+        CancellationToken cancellationToken
+    )
     {
         var elapsed = Stopwatch.StartNew();
         while (true)
         {
             try
             {
-                return await _provider.SendAsync(HttpMethod.Get, statusUri, null, headers, cancellationToken).ConfigureAwait(false);
+                return await _provider
+                    .SendAsync(HttpMethod.Get, statusUri, null, headers, cancellationToken)
+                    .ConfigureAwait(false);
             }
-            catch (ApiException error) when (IsInProgress(error.ResponseBody))
-            {
-            }
+            catch (ApiException error) when (IsInProgress(error.ResponseBody)) { }
 
             if (elapsed.Elapsed > Timeout)
             {
@@ -202,7 +270,11 @@ public sealed class FalTranscriptionModel : ITranscriptionModel, ITranscriptionC
 
     private static double? Timestamp(JsonElement chunk, int index)
     {
-        return chunk.TryGetProperty("timestamp", out var timestamp) && timestamp.ValueKind == JsonValueKind.Array && index < timestamp.GetArrayLength() && timestamp[index].ValueKind == JsonValueKind.Number
+        return
+            chunk.TryGetProperty("timestamp", out var timestamp)
+            && timestamp.ValueKind == JsonValueKind.Array
+            && index < timestamp.GetArrayLength()
+            && timestamp[index].ValueKind == JsonValueKind.Number
             ? timestamp[index].GetDouble()
             : null;
     }

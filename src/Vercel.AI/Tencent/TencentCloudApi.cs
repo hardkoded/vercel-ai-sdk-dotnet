@@ -49,15 +49,28 @@ public static class TencentCloudApi
     /// Builds the TC3 canonical request for a POST to <c>/</c> with an empty query.
     /// Header names are lowercased and sorted.
     /// </summary>
-    public static (string CanonicalRequest, string SignedHeaders) BuildTc3CanonicalRequest(string payload, IReadOnlyDictionary<string, string> headers)
+    public static (string CanonicalRequest, string SignedHeaders) BuildTc3CanonicalRequest(
+        string payload,
+        IReadOnlyDictionary<string, string> headers
+    )
     {
         var entries = headers
             .Select(pair => (Name: pair.Key.ToLowerInvariant(), Value: pair.Value.Trim()))
             .OrderBy(entry => entry.Name, StringComparer.Ordinal)
             .ToList();
-        var canonicalHeaders = string.Concat(entries.Select(entry => entry.Name + ":" + entry.Value + "\n"));
+        var canonicalHeaders = string.Concat(
+            entries.Select(entry => entry.Name + ":" + entry.Value + "\n")
+        );
         var signedHeaders = string.Join(";", entries.Select(entry => entry.Name));
-        var canonicalRequest = string.Join("\n", "POST", "/", string.Empty, canonicalHeaders, signedHeaders, Sha256Hex(payload));
+        var canonicalRequest = string.Join(
+            "\n",
+            "POST",
+            "/",
+            string.Empty,
+            canonicalHeaders,
+            signedHeaders,
+            Sha256Hex(payload)
+        );
         return (canonicalRequest, signedHeaders);
     }
 
@@ -65,17 +78,40 @@ public static class TencentCloudApi
     /// Computes the <c>Authorization</c> header value for a Tencent Cloud API 3.0 request signed with TC3-HMAC-SHA256.
     /// <paramref name="timestamp"/> is a Unix time in seconds and must match the <c>X-TC-Timestamp</c> header.
     /// </summary>
-    public static string CreateTc3Authorization(string secretId, string secretKey, string service, long timestamp, string payload, IReadOnlyDictionary<string, string> headers)
+    public static string CreateTc3Authorization(
+        string secretId,
+        string secretKey,
+        string service,
+        long timestamp,
+        string payload,
+        IReadOnlyDictionary<string, string> headers
+    )
     {
-        var date = DateTimeOffset.FromUnixTimeSeconds(timestamp).UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var date = DateTimeOffset
+            .FromUnixTimeSeconds(timestamp)
+            .UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         var credentialScope = date + "/" + service + "/tc3_request";
         var (canonicalRequest, signedHeaders) = BuildTc3CanonicalRequest(payload, headers);
-        var stringToSign = string.Join("\n", Tc3Algorithm, timestamp.ToString(CultureInfo.InvariantCulture), credentialScope, Sha256Hex(canonicalRequest));
+        var stringToSign = string.Join(
+            "\n",
+            Tc3Algorithm,
+            timestamp.ToString(CultureInfo.InvariantCulture),
+            credentialScope,
+            Sha256Hex(canonicalRequest)
+        );
         var secretDate = HmacSha256(Encoding.UTF8.GetBytes("TC3" + secretKey), date);
         var secretService = HmacSha256(secretDate, service);
         var secretSigning = HmacSha256(secretService, "tc3_request");
         var signature = ToHex(HmacSha256(secretSigning, stringToSign));
-        return Tc3Algorithm + " Credential=" + secretId + "/" + credentialScope + ", SignedHeaders=" + signedHeaders + ", Signature=" + signature;
+        return Tc3Algorithm
+            + " Credential="
+            + secretId
+            + "/"
+            + credentialScope
+            + ", SignedHeaders="
+            + signedHeaders
+            + ", Signature="
+            + signature;
     }
 
     /// <summary>
@@ -134,7 +170,8 @@ public static class TencentCloudApi
         System.Text.Json.Nodes.JsonObject body,
         IReadOnlyDictionary<string, string?>? headers,
         long timestamp,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var payload = body.ToJsonString();
         var authorization = CreateTc3Authorization(
@@ -148,7 +185,8 @@ public static class TencentCloudApi
                 ["content-type"] = Tc3ContentType,
                 ["host"] = new Uri(url).Authority,
                 ["x-tc-action"] = action.ToLowerInvariant(),
-            });
+            }
+        );
         var protocolHeaders = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
             ["authorization"] = authorization,
@@ -171,7 +209,10 @@ public static class TencentCloudApi
         var requestHeaders = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         foreach (var pair in headers ?? new Dictionary<string, string?>())
         {
-            if (!protocolHeaders.ContainsKey(pair.Key) && !string.Equals(pair.Key, "content-type", StringComparison.OrdinalIgnoreCase))
+            if (
+                !protocolHeaders.ContainsKey(pair.Key)
+                && !string.Equals(pair.Key, "content-type", StringComparison.OrdinalIgnoreCase)
+            )
             {
                 requestHeaders[pair.Key] = pair.Value;
             }
@@ -187,25 +228,45 @@ public static class TencentCloudApi
         ProviderExchangeResult exchange;
         try
         {
-            exchange = await ProviderExchange.SendAsync(httpClient, HttpMethod.Post, new Uri(url), content, requestHeaders, cancellationToken).ConfigureAwait(false);
+            exchange = await ProviderExchange
+                .SendAsync(
+                    httpClient,
+                    HttpMethod.Post,
+                    new Uri(url),
+                    content,
+                    requestHeaders,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
         catch (ApiException exception) when (ReadError(exception.ResponseBody) is { } error)
         {
-            throw ProviderHttp.MapStatusWithHeaders(exception.StatusCode, error, exception.ResponseBody, exception.ResponseHeaders);
+            throw ProviderHttp.MapStatusWithHeaders(
+                exception.StatusCode,
+                error,
+                exception.ResponseBody,
+                exception.ResponseHeaders
+            );
         }
 
         return ReadResponse(exchange, url, body);
     }
 
-    private static TencentCloudResponse ReadResponse(ProviderExchangeResult exchange, string url, System.Text.Json.Nodes.JsonObject requestBody)
+    private static TencentCloudResponse ReadResponse(
+        ProviderExchangeResult exchange,
+        string url,
+        System.Text.Json.Nodes.JsonObject requestBody
+    )
     {
         JsonElement response;
         try
         {
             using var document = JsonDocument.Parse(exchange.Body);
-            if (document.RootElement.ValueKind != JsonValueKind.Object
+            if (
+                document.RootElement.ValueKind != JsonValueKind.Object
                 || !document.RootElement.TryGetProperty("Response", out var inner)
-                || inner.ValueKind != JsonValueKind.Object)
+                || inner.ValueKind != JsonValueKind.Object
+            )
             {
                 throw Invalid(exchange, url, requestBody);
             }
@@ -217,24 +278,49 @@ public static class TencentCloudApi
             throw Invalid(exchange, url, requestBody);
         }
 
-        if (response.TryGetProperty("Error", out var error) && error.ValueKind == JsonValueKind.Object)
+        if (
+            response.TryGetProperty("Error", out var error)
+            && error.ValueKind == JsonValueKind.Object
+        )
         {
-            var code = error.TryGetProperty("Code", out var codeValue) && codeValue.ValueKind == JsonValueKind.String ? codeValue.GetString() : null;
-            var message = error.TryGetProperty("Message", out var messageValue) && messageValue.ValueKind == JsonValueKind.String ? messageValue.GetString() : null;
+            var code =
+                error.TryGetProperty("Code", out var codeValue)
+                && codeValue.ValueKind == JsonValueKind.String
+                    ? codeValue.GetString()
+                    : null;
+            var message =
+                error.TryGetProperty("Message", out var messageValue)
+                && messageValue.ValueKind == JsonValueKind.String
+                    ? messageValue.GetString()
+                    : null;
             if (code == null || message == null)
             {
                 throw Invalid(exchange, url, requestBody);
             }
 
-            throw ProviderHttp.MapStatusWithHeaders(GetTencentCloudErrorStatusCode(code), code + ": " + message, exchange.Body, exchange.Headers);
+            throw ProviderHttp.MapStatusWithHeaders(
+                GetTencentCloudErrorStatusCode(code),
+                code + ": " + message,
+                exchange.Body,
+                exchange.Headers
+            );
         }
 
         return new TencentCloudResponse(response, exchange.Headers);
     }
 
-    private static ApiException Invalid(ProviderExchangeResult exchange, string url, System.Text.Json.Nodes.JsonObject requestBody)
+    private static ApiException Invalid(
+        ProviderExchangeResult exchange,
+        string url,
+        System.Text.Json.Nodes.JsonObject requestBody
+    )
     {
-        return new ApiException("Invalid JSON response", 200, exchange.Body) { Url = url, RequestBodyValues = requestBody, ResponseHeaders = exchange.Headers };
+        return new ApiException("Invalid JSON response", 200, exchange.Body)
+        {
+            Url = url,
+            RequestBodyValues = requestBody,
+            ResponseHeaders = exchange.Headers,
+        };
     }
 
     // A failed HTTP response carries { Response: { Error: { Code, Message } } }.
@@ -243,18 +329,22 @@ public static class TencentCloudApi
         try
         {
             using var document = JsonDocument.Parse(body ?? string.Empty);
-            if (document.RootElement.ValueKind == JsonValueKind.Object
-                && document.RootElement.TryGetProperty("Response", out var response) && response.ValueKind == JsonValueKind.Object
-                && response.TryGetProperty("Error", out var error) && error.ValueKind == JsonValueKind.Object
-                && error.TryGetProperty("Code", out var code) && code.ValueKind == JsonValueKind.String
-                && error.TryGetProperty("Message", out var message) && message.ValueKind == JsonValueKind.String)
+            if (
+                document.RootElement.ValueKind == JsonValueKind.Object
+                && document.RootElement.TryGetProperty("Response", out var response)
+                && response.ValueKind == JsonValueKind.Object
+                && response.TryGetProperty("Error", out var error)
+                && error.ValueKind == JsonValueKind.Object
+                && error.TryGetProperty("Code", out var code)
+                && code.ValueKind == JsonValueKind.String
+                && error.TryGetProperty("Message", out var message)
+                && message.ValueKind == JsonValueKind.String
+            )
             {
                 return code.GetString() + ": " + message.GetString();
             }
         }
-        catch (JsonException)
-        {
-        }
+        catch (JsonException) { }
 
         return null;
     }

@@ -32,18 +32,31 @@ internal static class GoogleToolChoiceNoneSupport
             : "{\"retrieval\":{\"vertex_rag_store\":{\"rag_resources\":{\"rag_corpus\":\"projects/synthetic/locations/us-central1/ragCorpora/unused\"}}}}";
     }
 
-    public static LanguageModelCallOptions Options(string provider, bool withFunction, ToolChoice choice)
+    public static LanguageModelCallOptions Options(
+        string provider,
+        bool withFunction,
+        ToolChoice choice
+    )
     {
         var key = provider == "google.generative-ai" ? "google" : "googleVertex";
         var options = new LanguageModelCallOptions
         {
             Prompt = new ModelMessage[] { new UserModelMessage("Say hello.") },
             ToolChoice = choice,
-            ProviderOptions = GoogleUpstream.ProviderOptions("{\"" + key + "\":{\"providerTools\":[" + ProviderToolJson(provider) + "]}}"),
+            ProviderOptions = GoogleUpstream.ProviderOptions(
+                "{\"" + key + "\":{\"providerTools\":[" + ProviderToolJson(provider) + "]}}"
+            ),
         };
         if (withFunction)
         {
-            options.Tools = new[] { GoogleUpstream.Function("lookup", "{\"type\":\"object\",\"properties\":{}}", "Synthetic function") };
+            options.Tools = new[]
+            {
+                GoogleUpstream.Function(
+                    "lookup",
+                    "{\"type\":\"object\",\"properties\":{}}",
+                    "Synthetic function"
+                ),
+            };
         }
 
         return options;
@@ -53,7 +66,17 @@ internal static class GoogleToolChoiceNoneSupport
     {
         return provider == "google.generative-ai"
             ? GoogleUpstream.Client(handler).LanguageModel(modelId)
-            : GoogleVertexProvider.Create(new VertexOptions { Project = "synthetic", Region = "us-central1", ApiKey = "test-api-key" }, handler).LanguageModel(modelId);
+            : GoogleVertexProvider
+                .Create(
+                    new VertexOptions
+                    {
+                        Project = "synthetic",
+                        Region = "us-central1",
+                        ApiKey = "test-api-key",
+                    },
+                    handler
+                )
+                .LanguageModel(modelId);
     }
 
     public static RecordingHandler Handler(string mode, JsonArray parts)
@@ -71,6 +94,10 @@ internal static class GoogleToolChoiceNoneSupport
         };
         return mode == "generate"
             ? new RecordingHandler { ResponseText = body.ToJsonString() }
-            : new RecordingHandler { ResponseText = "data: " + body.ToJsonString() + "\n\n", MediaType = "text/event-stream" };
+            : new RecordingHandler
+            {
+                ResponseText = "data: " + body.ToJsonString() + "\n\n",
+                MediaType = "text/event-stream",
+            };
     }
 }

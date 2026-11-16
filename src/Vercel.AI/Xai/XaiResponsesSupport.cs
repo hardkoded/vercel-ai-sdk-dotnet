@@ -15,7 +15,8 @@ internal static class XaiReasoningEffort
     private static readonly Regex ModelsWithoutReasoningEffort = new Regex(
         @"^grok-4\.20(-[0-9]{4})?-(non-)?reasoning\z",
         RegexOptions.CultureInvariant,
-        TimeSpan.FromMilliseconds(100));
+        TimeSpan.FromMilliseconds(100)
+    );
 
     /// <summary>False for models that reject the reasoning effort parameter. Maps to <c>supportsReasoningEffort</c>.</summary>
     public static bool Supports(string modelId)
@@ -30,7 +31,16 @@ internal static class XaiResponsesResults
     /// <summary>Usage reported when the response has none.</summary>
     public static LanguageModelUsage MissingUsage()
     {
-        return new LanguageModelUsage(0, 0, 0, cacheReadTokens: 0, cacheWriteTokens: 0, reasoningTokens: 0, noCacheInputTokens: 0, textTokens: 0);
+        return new LanguageModelUsage(
+            0,
+            0,
+            0,
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+            reasoningTokens: 0,
+            noCacheInputTokens: 0,
+            textTokens: 0
+        );
     }
 
     /// <summary>Converts a Responses <c>usage</c> object. Maps to <c>convertXaiResponsesUsage</c>.</summary>
@@ -57,7 +67,8 @@ internal static class XaiResponsesResults
             reasoningTokens: reasoning,
             raw: usage.Clone(),
             noCacheInputTokens: inputIncludesCached ? inputTokens - cacheRead : inputTokens,
-            textTokens: outputTokens - reasoning);
+            textTokens: outputTokens - reasoning
+        );
     }
 
     /// <summary>Maps a Responses status or incomplete reason. Maps to <c>mapXaiResponsesFinishReason</c>.</summary>
@@ -83,7 +94,8 @@ internal static class XaiResponsesResults
 
     private static int RequiredInt(JsonElement element, string name)
     {
-        return OptionalInt(element, name) ?? throw new InvalidOperationException("The xAI usage is missing " + name + ".");
+        return OptionalInt(element, name)
+            ?? throw new InvalidOperationException("The xAI usage is missing " + name + ".");
     }
 
     private static int? OptionalInt(JsonElement element, string name)
@@ -95,7 +107,9 @@ internal static class XaiResponsesResults
 
         if (value.ValueKind != JsonValueKind.Number || !value.TryGetDouble(out var number))
         {
-            throw new InvalidOperationException("The xAI usage field " + name + " must be a number.");
+            throw new InvalidOperationException(
+                "The xAI usage field " + name + " must be a number."
+            );
         }
 
         return (int)number;
@@ -103,7 +117,10 @@ internal static class XaiResponsesResults
 
     private static int? NestedInt(JsonElement element, string objectName, string name)
     {
-        if (!element.TryGetProperty(objectName, out var child) || child.ValueKind != JsonValueKind.Object)
+        if (
+            !element.TryGetProperty(objectName, out var child)
+            || child.ValueKind != JsonValueKind.Object
+        )
         {
             return null;
         }

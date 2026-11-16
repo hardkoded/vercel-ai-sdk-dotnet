@@ -21,6 +21,7 @@ internal sealed class XaiResponsesStream
     private readonly Dictionary<int, string> _ongoingToolCalls = new();
     private bool _responseMetadataSent;
     private bool _hasFunctionCall;
+
     // A clean end without the provider's completion signal is interrupted.
     private FinishReason _finish = FinishReason.Interrupted;
     private string? _rawFinish;
@@ -54,9 +55,19 @@ internal sealed class XaiResponsesStream
     }
 
     /// <summary>Call-level provider metadata, or null when the response reports none.</summary>
-    public static JsonElement? ProviderMetadata(JsonNode? costInUsdTicks, string? serviceTier, string? promptCacheKey, string? safetyIdentifier)
+    public static JsonElement? ProviderMetadata(
+        JsonNode? costInUsdTicks,
+        string? serviceTier,
+        string? promptCacheKey,
+        string? safetyIdentifier
+    )
     {
-        if (costInUsdTicks == null && serviceTier == null && promptCacheKey == null && safetyIdentifier == null)
+        if (
+            costInUsdTicks == null
+            && serviceTier == null
+            && promptCacheKey == null
+            && safetyIdentifier == null
+        )
         {
             return null;
         }
@@ -88,18 +99,27 @@ internal sealed class XaiResponsesStream
     /// <summary>The URL source of a <c>url_citation</c> annotation, or null for other annotations.</summary>
     public static GeneratedSource? Citation(JsonElement annotation, Func<string> generateId)
     {
-        if (OpenAIJson.String(annotation, "type") != "url_citation" || OpenAIJson.String(annotation, "url") is not { } url)
+        if (
+            OpenAIJson.String(annotation, "type") != "url_citation"
+            || OpenAIJson.String(annotation, "url") is not { } url
+        )
         {
             return null;
         }
 
-        return new GeneratedSource(generateId(), url, OpenAIJson.String(annotation, "title") ?? url);
+        return new GeneratedSource(
+            generateId(),
+            url,
+            OpenAIJson.String(annotation, "title") ?? url
+        );
     }
 
     /// <summary>The <c>created_at</c> time of a response. Zero is a valid time, so it gives the Unix epoch.</summary>
     public static DateTimeOffset? CreatedAt(JsonElement response)
     {
-        return OpenAIJson.Child(response, "created_at") is { ValueKind: JsonValueKind.Number } created && created.TryGetInt64(out var seconds)
+        return
+            OpenAIJson.Child(response, "created_at") is { ValueKind: JsonValueKind.Number } created
+            && created.TryGetInt64(out var seconds)
             ? DateTimeOffset.FromUnixTimeSeconds(seconds)
             : null;
     }
@@ -127,7 +147,10 @@ internal sealed class XaiResponsesStream
         using (document)
         {
             var root = document.RootElement;
-            if (root.ValueKind != JsonValueKind.Object || OpenAIJson.String(root, "type") is not { } type)
+            if (
+                root.ValueKind != JsonValueKind.Object
+                || OpenAIJson.String(root, "type") is not { } type
+            )
             {
                 _finish = FinishReason.Error;
                 parts.Add(new ErrorStreamPart("Invalid xAI Responses stream chunk."));
@@ -141,7 +164,9 @@ internal sealed class XaiResponsesStream
             catch (InvalidOperationException exception)
             {
                 _finish = FinishReason.Error;
-                parts.Add(new ErrorStreamPart("Invalid xAI Responses stream chunk: " + exception.Message));
+                parts.Add(
+                    new ErrorStreamPart("Invalid xAI Responses stream chunk: " + exception.Message)
+                );
             }
         }
 
@@ -156,11 +181,14 @@ internal sealed class XaiResponsesStream
             parts.Add(new TextEndStreamPart(id));
         }
 
-        parts.Add(new FinishStreamPart(
-            _finish,
-            _usage ?? XaiResponsesResults.MissingUsage(),
-            _rawFinish,
-            ProviderMetadata(_costInUsdTicks, _serviceTier, _promptCacheKey, _safetyIdentifier)));
+        parts.Add(
+            new FinishStreamPart(
+                _finish,
+                _usage ?? XaiResponsesResults.MissingUsage(),
+                _rawFinish,
+                ProviderMetadata(_costInUsdTicks, _serviceTier, _promptCacheKey, _safetyIdentifier)
+            )
+        );
         return parts;
     }
 
@@ -173,10 +201,13 @@ internal sealed class XaiResponsesStream
                 if (!_responseMetadataSent && OpenAIJson.Child(root, "response") is { } response)
                 {
                     _responseMetadataSent = true;
-                    parts.Add(new ResponseMetadataStreamPart(
-                        OpenAIJson.String(response, "id"),
-                        OpenAIJson.String(response, "model"),
-                        CreatedAt(response)));
+                    parts.Add(
+                        new ResponseMetadataStreamPart(
+                            OpenAIJson.String(response, "id"),
+                            OpenAIJson.String(response, "model"),
+                            CreatedAt(response)
+                        )
+                    );
                 }
 
                 break;
@@ -185,12 +216,24 @@ internal sealed class XaiResponsesStream
                 break;
             case "response.reasoning_summary_text.delta":
                 var summaryItem = Required(root, "item_id");
-                parts.Add(new ReasoningDeltaStreamPart(ReasoningId(summaryItem), Required(root, "delta"), ReasoningMetadata(summaryItem, null)));
+                parts.Add(
+                    new ReasoningDeltaStreamPart(
+                        ReasoningId(summaryItem),
+                        Required(root, "delta"),
+                        ReasoningMetadata(summaryItem, null)
+                    )
+                );
                 break;
             case "response.reasoning_text.delta":
                 var reasoningItem = Required(root, "item_id");
                 StartReasoning(reasoningItem, parts);
-                parts.Add(new ReasoningDeltaStreamPart(ReasoningId(reasoningItem), Required(root, "delta"), ReasoningMetadata(reasoningItem, null)));
+                parts.Add(
+                    new ReasoningDeltaStreamPart(
+                        ReasoningId(reasoningItem),
+                        Required(root, "delta"),
+                        ReasoningMetadata(reasoningItem, null)
+                    )
+                );
                 break;
             case "response.output_text.delta":
                 var blockId = TextId(Required(root, "item_id"));
@@ -201,7 +244,10 @@ internal sealed class XaiResponsesStream
                 AddSources(OpenAIJson.Child(root, "annotations"), parts);
                 break;
             case "response.output_text.annotation.added":
-                if (OpenAIJson.Child(root, "annotation") is { } annotation && Citation(annotation, _generateId) is { } source)
+                if (
+                    OpenAIJson.Child(root, "annotation") is { } annotation
+                    && Citation(annotation, _generateId) is { } source
+                )
                 {
                     parts.Add(ToPart(source));
                 }
@@ -210,7 +256,11 @@ internal sealed class XaiResponsesStream
             case "response.done":
             case "response.completed":
             case "response.incomplete":
-                Finish(type, OpenAIJson.Child(root, "response") ?? throw new InvalidOperationException("missing response"));
+                Finish(
+                    type,
+                    OpenAIJson.Child(root, "response")
+                        ?? throw new InvalidOperationException("missing response")
+                );
                 break;
             case "response.failed":
                 Fail(root, parts);
@@ -230,7 +280,12 @@ internal sealed class XaiResponsesStream
             case "response.image_generation_call.generating":
             case "response.image_generation_call.completed":
                 var imageItem = Required(root, "item_id");
-                StartProviderToolCall(imageItem, _toolNames.Resolve("image_generation_call", null), "{}", parts);
+                StartProviderToolCall(
+                    imageItem,
+                    _toolNames.Resolve("image_generation_call", null),
+                    "{}",
+                    parts
+                );
                 break;
             case "response.output_item.added":
             case "response.output_item.done":
@@ -241,7 +296,8 @@ internal sealed class XaiResponsesStream
 
     private void Item(bool done, JsonElement root, List<LanguageModelStreamPart> parts)
     {
-        var item = OpenAIJson.Child(root, "item") ?? throw new InvalidOperationException("missing item");
+        var item = OpenAIJson.Child(root, "item")
+            ?? throw new InvalidOperationException("missing item");
         var itemType = OpenAIJson.String(item, "type");
         if (XaiResponsesOutput.IsProviderToolItem(itemType))
         {
@@ -256,7 +312,12 @@ internal sealed class XaiResponsesStream
                 {
                     var id = Required(item, "id");
                     StartReasoning(id, parts);
-                    parts.Add(new ReasoningEndStreamPart(ReasoningId(id), ReasoningMetadata(id, OpenAIJson.String(item, "encrypted_content"))));
+                    parts.Add(
+                        new ReasoningEndStreamPart(
+                            ReasoningId(id),
+                            ReasoningMetadata(id, OpenAIJson.String(item, "encrypted_content"))
+                        )
+                    );
                     _activeReasoning.Remove(id);
                 }
 
@@ -277,14 +338,25 @@ internal sealed class XaiResponsesStream
                     _hasFunctionCall = true;
                     _ongoingToolCalls.Remove(OutputIndex(root));
                     parts.Add(new ToolInputEndStreamPart(callId));
-                    parts.Add(new ToolCallStreamPart(callId, Required(item, "name"), Required(item, "arguments")));
+                    parts.Add(
+                        new ToolCallStreamPart(
+                            callId,
+                            Required(item, "name"),
+                            Required(item, "arguments")
+                        )
+                    );
                 }
 
                 break;
         }
     }
 
-    private void ProviderToolItem(bool done, string itemType, JsonElement item, List<LanguageModelStreamPart> parts)
+    private void ProviderToolItem(
+        bool done,
+        string itemType,
+        JsonElement item,
+        List<LanguageModelStreamPart> parts
+    )
     {
         var id = Required(item, "id");
         var toolName = _toolNames.Resolve(itemType, OpenAIJson.String(item, "name"));
@@ -292,7 +364,12 @@ internal sealed class XaiResponsesStream
         // A custom tool call has its final input only when the item is done.
         if (itemType != "custom_tool_call" || done)
         {
-            StartProviderToolCall(id, toolName, XaiResponsesOutput.ToolInput(itemType, item), parts);
+            StartProviderToolCall(
+                id,
+                toolName,
+                XaiResponsesOutput.ToolInput(itemType, item),
+                parts
+            );
         }
 
         if (!done)
@@ -303,23 +380,49 @@ internal sealed class XaiResponsesStream
         switch (itemType)
         {
             case "file_search_call":
-                parts.Add(new ToolResultStreamPart(id, toolName, OpenAIJson.Element(XaiResponsesOutput.FileSearchResult(item))));
+                parts.Add(
+                    new ToolResultStreamPart(
+                        id,
+                        toolName,
+                        OpenAIJson.Element(XaiResponsesOutput.FileSearchResult(item))
+                    )
+                );
                 break;
             case "image_generation_call":
                 var (result, isError) = XaiResponsesOutput.ImageGenerationResult(item);
-                parts.Add(new ToolResultStreamPart(id, toolName, OpenAIJson.Element(result)) { IsError = isError });
+                parts.Add(
+                    new ToolResultStreamPart(id, toolName, OpenAIJson.Element(result))
+                    {
+                        IsError = isError,
+                    }
+                );
                 break;
             case "web_search_call":
-                parts.Add(new ToolResultStreamPart(id, toolName, OpenAIJson.Element(XaiResponsesOutput.WebSearchResult(OpenAIJson.Child(item, "action")))));
+                parts.Add(
+                    new ToolResultStreamPart(
+                        id,
+                        toolName,
+                        OpenAIJson.Element(
+                            XaiResponsesOutput.WebSearchResult(OpenAIJson.Child(item, "action"))
+                        )
+                    )
+                );
                 break;
             default:
-                parts.Add(new ToolResultStreamPart(id, toolName, OpenAIJson.Element(new JsonObject())));
+                parts.Add(
+                    new ToolResultStreamPart(id, toolName, OpenAIJson.Element(new JsonObject()))
+                );
                 break;
         }
     }
 
     /// <summary>Sends the input and the call of a provider-executed tool once per item id.</summary>
-    private void StartProviderToolCall(string id, string toolName, string input, List<LanguageModelStreamPart> parts)
+    private void StartProviderToolCall(
+        string id,
+        string toolName,
+        string input,
+        List<LanguageModelStreamPart> parts
+    )
     {
         if (!_seenToolCalls.Add(id))
         {
@@ -334,7 +437,9 @@ internal sealed class XaiResponsesStream
 
     private void Message(JsonElement item, List<LanguageModelStreamPart> parts)
     {
-        if (OpenAIJson.Child(item, "content") is not { ValueKind: JsonValueKind.Array } contentParts)
+        if (
+            OpenAIJson.Child(item, "content") is not { ValueKind: JsonValueKind.Array } contentParts
+        )
         {
             return;
         }
@@ -372,12 +477,15 @@ internal sealed class XaiResponsesStream
         if (type == "response.incomplete")
         {
             var reason = IncompleteReason(response);
-            _finish = reason != null ? XaiResponsesResults.MapFinishReason(reason) : FinishReason.Other;
+            _finish =
+                reason != null ? XaiResponsesResults.MapFinishReason(reason) : FinishReason.Other;
             _rawFinish = reason ?? "incomplete";
         }
         else if (OpenAIJson.String(response, "status") is { Length: > 0 } status)
         {
-            _finish = _hasFunctionCall ? FinishReason.ToolCalls : XaiResponsesResults.MapFinishReason(status);
+            _finish = _hasFunctionCall
+                ? FinishReason.ToolCalls
+                : XaiResponsesResults.MapFinishReason(status);
             _rawFinish = status;
         }
         else if (_finish == FinishReason.Interrupted)
@@ -389,7 +497,8 @@ internal sealed class XaiResponsesStream
 
     private void Fail(JsonElement root, List<LanguageModelStreamPart> parts)
     {
-        var response = OpenAIJson.Child(root, "response") ?? throw new InvalidOperationException("missing response");
+        var response = OpenAIJson.Child(root, "response")
+            ?? throw new InvalidOperationException("missing response");
         var reason = IncompleteReason(response);
         _finish = reason != null ? XaiResponsesResults.MapFinishReason(reason) : FinishReason.Error;
         _rawFinish = reason ?? "error";
@@ -413,7 +522,9 @@ internal sealed class XaiResponsesStream
     {
         if (_activeReasoning.Add(itemId))
         {
-            parts.Add(new ReasoningStartStreamPart(ReasoningId(itemId), ReasoningMetadata(itemId, null)));
+            parts.Add(
+                new ReasoningStartStreamPart(ReasoningId(itemId), ReasoningMetadata(itemId, null))
+            );
         }
     }
 
@@ -459,7 +570,8 @@ internal sealed class XaiResponsesStream
 
     private static int OutputIndex(JsonElement element)
     {
-        return OpenAIJson.Int(element, "output_index") ?? throw new InvalidOperationException("missing output_index");
+        return OpenAIJson.Int(element, "output_index")
+            ?? throw new InvalidOperationException("missing output_index");
     }
 
     private static ErrorStreamPart StreamError(JsonElement root, string message)
@@ -471,6 +583,7 @@ internal sealed class XaiResponsesStream
 
     private static string Required(JsonElement element, string name)
     {
-        return OpenAIJson.String(element, name) ?? throw new InvalidOperationException("missing " + name);
+        return OpenAIJson.String(element, name)
+            ?? throw new InvalidOperationException("missing " + name);
     }
 }

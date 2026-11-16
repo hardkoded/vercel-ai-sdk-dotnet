@@ -14,7 +14,10 @@ public sealed class JsonParseException : Exception
 {
     /// <summary>Creates the exception.</summary>
     public JsonParseException(string text, Exception innerException)
-        : base("JSON parsing failed: Text: " + text + ". Error message: " + innerException.Message, innerException)
+        : base(
+            "JSON parsing failed: Text: " + text + ". Error message: " + innerException.Message,
+            innerException
+        )
     {
         Text = text ?? string.Empty;
     }
@@ -34,7 +37,11 @@ public sealed class TypeValidationException : Exception
     }
 
     /// <summary>Creates the exception with the location of the failed value. Maps to the <c>TypeValidationError</c> constructor.</summary>
-    public TypeValidationException(JsonElement? value, Exception cause, TypeValidationContext? context)
+    public TypeValidationException(
+        JsonElement? value,
+        Exception cause,
+        TypeValidationContext? context
+    )
         : base(BuildMessage(value, cause, context), cause)
     {
         Value = value;
@@ -47,7 +54,11 @@ public sealed class TypeValidationException : Exception
     /// <summary>Where the value was found. Maps to <c>context</c>.</summary>
     public TypeValidationContext? Context { get; }
 
-    private static string BuildMessage(JsonElement? value, Exception cause, TypeValidationContext? context)
+    private static string BuildMessage(
+        JsonElement? value,
+        Exception cause,
+        TypeValidationContext? context
+    )
     {
         var prefix = new StringBuilder("Type validation failed");
         if (!string.IsNullOrEmpty(context?.Field))
@@ -71,7 +82,15 @@ public sealed class TypeValidationException : Exception
             prefix.Append(" (").Append(string.Join(", ", parts)).Append(')');
         }
 
-        return prefix + ": Value: " + (value is { ValueKind: not JsonValueKind.Undefined } json ? json.GetRawText() : "undefined") + ".\nError message: " + cause.Message;
+        return prefix
+            + ": Value: "
+            + (
+                value is { ValueKind: not JsonValueKind.Undefined } json
+                    ? json.GetRawText()
+                    : "undefined"
+            )
+            + ".\nError message: "
+            + cause.Message;
     }
 }
 
@@ -91,7 +110,12 @@ public sealed class TypeValidationContext
 /// <summary>Success or failure of a JSON parse, including the raw value when parsing succeeded.</summary>
 public sealed class JsonParseResult
 {
-    private JsonParseResult(bool success, JsonElement? value, JsonElement? rawValue, Exception? error)
+    private JsonParseResult(
+        bool success,
+        JsonElement? value,
+        JsonElement? rawValue,
+        Exception? error
+    )
     {
         Success = success;
         Value = value;
@@ -130,12 +154,14 @@ public static class SecureJson
     private static readonly Regex SuspectProto = new Regex(
         "\"(?:_|\\\\u005[Ff])(?:_|\\\\u005[Ff])(?:p|\\\\u0070)(?:r|\\\\u0072)(?:o|\\\\u006[Ff])(?:t|\\\\u0074)(?:o|\\\\u006[Ff])(?:_|\\\\u005[Ff])(?:_|\\\\u005[Ff])\"\\s*:",
         RegexOptions.CultureInvariant,
-        TimeSpan.FromSeconds(1));
+        TimeSpan.FromSeconds(1)
+    );
 
     private static readonly Regex SuspectConstructor = new Regex(
         "\"(?:c|\\\\u0063)(?:o|\\\\u006[Ff])(?:n|\\\\u006[Ee])(?:s|\\\\u0073)(?:t|\\\\u0074)(?:r|\\\\u0072)(?:u|\\\\u0075)(?:c|\\\\u0063)(?:t|\\\\u0074)(?:o|\\\\u006[Ff])(?:r|\\\\u0072)\"\\s*:",
         RegexOptions.CultureInvariant,
-        TimeSpan.FromSeconds(1));
+        TimeSpan.FromSeconds(1)
+    );
 
     /// <summary>Parses <paramref name="text"/> and returns a detached element.</summary>
     public static JsonElement Parse(string text)
@@ -167,9 +193,11 @@ public static class SecureJson
                     throw new JsonException("Object contains forbidden prototype property");
                 }
 
-                if (property.NameEquals("constructor")
+                if (
+                    property.NameEquals("constructor")
                     && property.Value.ValueKind == JsonValueKind.Object
-                    && property.Value.TryGetProperty("prototype", out _))
+                    && property.Value.TryGetProperty("prototype", out _)
+                )
                 {
                     throw new JsonException("Object contains forbidden prototype property");
                 }
@@ -177,7 +205,10 @@ public static class SecureJson
 
             foreach (var property in node.EnumerateObject())
             {
-                if (property.Value.ValueKind == JsonValueKind.Object || property.Value.ValueKind == JsonValueKind.Array)
+                if (
+                    property.Value.ValueKind == JsonValueKind.Object
+                    || property.Value.ValueKind == JsonValueKind.Array
+                )
                 {
                     RejectForbidden(property.Value);
                 }
@@ -260,11 +291,19 @@ public static class JsonParsing
 
     /// <summary>Returns <paramref name="value"/> projected through <paramref name="schema"/> and reports a failure with <paramref name="context"/>. Maps to <c>validateTypes</c> with a context.</summary>
     /// <exception cref="TypeValidationException">The value does not match the schema.</exception>
-    public static JsonElement ValidateTypes(JsonElement value, JsonNode schema, TypeValidationContext context)
+    public static JsonElement ValidateTypes(
+        JsonElement value,
+        JsonNode schema,
+        TypeValidationContext context
+    )
     {
         if (!JsonSchemaValidator.TryApply(value, schema, out var projected, out var errorMessage))
         {
-            throw new TypeValidationException(value, new Exception(errorMessage ?? "Schema validation failed."), context);
+            throw new TypeValidationException(
+                value,
+                new Exception(errorMessage ?? "Schema validation failed."),
+                context
+            );
         }
 
         return projected;
@@ -275,7 +314,10 @@ public static class JsonParsing
     {
         if (!JsonSchemaValidator.TryApply(value, schema, out var projected, out var errorMessage))
         {
-            return JsonParseResult.Fail(new TypeValidationException(errorMessage ?? "Schema validation failed.", value), value);
+            return JsonParseResult.Fail(
+                new TypeValidationException(errorMessage ?? "Schema validation failed.", value),
+                value
+            );
         }
 
         return JsonParseResult.Ok(projected, value);
@@ -286,7 +328,12 @@ public static class JsonParsing
 public static class JsonSchemaValidator
 {
     /// <summary>Projects <paramref name="value"/> through <paramref name="schema"/>.</summary>
-    public static bool TryApply(JsonElement value, JsonNode schema, out JsonElement projected, out string? error)
+    public static bool TryApply(
+        JsonElement value,
+        JsonNode schema,
+        out JsonElement projected,
+        out string? error
+    )
     {
         if (schema is null)
         {
@@ -303,7 +350,12 @@ public static class JsonSchemaValidator
         return true;
     }
 
-    private static bool TryProject(JsonElement value, JsonNode schemaNode, out JsonNode? projected, out string? error)
+    private static bool TryProject(
+        JsonElement value,
+        JsonNode schemaNode,
+        out JsonNode? projected,
+        out string? error
+    )
     {
         projected = null;
         error = null;
@@ -334,7 +386,10 @@ public static class JsonSchemaValidator
             return false;
         }
 
-        if (schema["const"] is JsonNode constant && !JsonNode.DeepEquals(constant, JsonNode.Parse(value.GetRawText())))
+        if (
+            schema["const"] is JsonNode constant
+            && !JsonNode.DeepEquals(constant, JsonNode.Parse(value.GetRawText()))
+        )
         {
             error = "Value does not match const.";
             return false;
@@ -376,13 +431,19 @@ public static class JsonSchemaValidator
                 return false;
             }
 
-            if (TryReadDouble(schema["exclusiveMinimum"], out var exclusiveMinimum) && number <= exclusiveMinimum)
+            if (
+                TryReadDouble(schema["exclusiveMinimum"], out var exclusiveMinimum)
+                && number <= exclusiveMinimum
+            )
             {
                 error = "Number is below exclusiveMinimum.";
                 return false;
             }
 
-            if (TryReadDouble(schema["exclusiveMaximum"], out var exclusiveMaximum) && number >= exclusiveMaximum)
+            if (
+                TryReadDouble(schema["exclusiveMaximum"], out var exclusiveMaximum)
+                && number >= exclusiveMaximum
+            )
             {
                 error = "Number is above exclusiveMaximum.";
                 return false;
@@ -391,13 +452,19 @@ public static class JsonSchemaValidator
 
         if (value.ValueKind == JsonValueKind.Array)
         {
-            if (TryReadInt(schema["minItems"], out var minItems) && value.GetArrayLength() < minItems)
+            if (
+                TryReadInt(schema["minItems"], out var minItems)
+                && value.GetArrayLength() < minItems
+            )
             {
                 error = "Array is shorter than minItems.";
                 return false;
             }
 
-            if (TryReadInt(schema["maxItems"], out var maxItems) && value.GetArrayLength() > maxItems)
+            if (
+                TryReadInt(schema["maxItems"], out var maxItems)
+                && value.GetArrayLength() > maxItems
+            )
             {
                 error = "Array is longer than maxItems.";
                 return false;
@@ -459,7 +526,10 @@ public static class JsonSchemaValidator
             return true;
         }
 
-        if (value.ValueKind == JsonValueKind.Object && schema["properties"] is JsonObject properties)
+        if (
+            value.ValueKind == JsonValueKind.Object
+            && schema["properties"] is JsonObject properties
+        )
         {
             var result = new JsonObject();
             var required = new HashSet<string>(StringComparer.Ordinal);
@@ -511,7 +581,14 @@ public static class JsonSchemaValidator
                         continue;
                     }
 
-                    if (!TryProject(child.Value, additionalSchema, out var projectedChild, out error))
+                    if (
+                        !TryProject(
+                            child.Value,
+                            additionalSchema,
+                            out var projectedChild,
+                            out error
+                        )
+                    )
                     {
                         return false;
                     }
@@ -519,7 +596,11 @@ public static class JsonSchemaValidator
                     result[child.Name] = projectedChild;
                 }
             }
-            else if (schema["additionalProperties"] is JsonValue flag && flag.TryGetValue<bool>(out var allowed) && allowed)
+            else if (
+                schema["additionalProperties"] is JsonValue flag
+                && flag.TryGetValue<bool>(out var allowed)
+                && allowed
+            )
             {
                 foreach (var child in value.EnumerateObject())
                 {
@@ -566,7 +647,11 @@ public static class JsonSchemaValidator
             var expected = single.GetValue<string>();
             if (expected == "integer")
             {
-                if (value.ValueKind != JsonValueKind.Number || value.TryGetInt64(out _) == false || value.GetRawText().IndexOf('.') >= 0)
+                if (
+                    value.ValueKind != JsonValueKind.Number
+                    || value.TryGetInt64(out _) == false
+                    || value.GetRawText().IndexOf('.') >= 0
+                )
                 {
                     error = "Expected integer.";
                     return false;
@@ -589,7 +674,11 @@ public static class JsonSchemaValidator
             foreach (var type in types)
             {
                 var expected = type?.GetValue<string>();
-                if (expected == "integer" && value.ValueKind == JsonValueKind.Number && value.GetRawText().IndexOf('.') < 0)
+                if (
+                    expected == "integer"
+                    && value.ValueKind == JsonValueKind.Number
+                    && value.GetRawText().IndexOf('.') < 0
+                )
                 {
                     return true;
                 }
@@ -631,7 +720,12 @@ public static class JsonSchemaValidator
 
     private static bool TryReadInt(JsonNode? node, out int number)
     {
-        if (TryReadDouble(node, out var value) && value == Math.Floor(value) && value <= int.MaxValue && value >= int.MinValue)
+        if (
+            TryReadDouble(node, out var value)
+            && value == Math.Floor(value)
+            && value <= int.MaxValue
+            && value >= int.MinValue
+        )
         {
             number = (int)value;
             return true;

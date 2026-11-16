@@ -21,7 +21,16 @@ public sealed class RepeatedApprovalResponsesTests
     {
         var response = new ApprovalResponsePart("approval-1", approved);
 
-        Assert.Equal(new[] { response }, Collect(new ApprovalHistoryPart[] { response, new ApprovalResponsePart("approval-1", approved) }));
+        Assert.Equal(
+            new[] { response },
+            Collect(
+                new ApprovalHistoryPart[]
+                {
+                    response,
+                    new ApprovalResponsePart("approval-1", approved),
+                }
+            )
+        );
     }
 
     [Fact]
@@ -29,7 +38,16 @@ public sealed class RepeatedApprovalResponsesTests
     {
         var response1 = new ApprovalResponsePart("approval-1", true);
 
-        Assert.Equal(new[] { response1 }, Collect(new ApprovalHistoryPart[] { response1, new ApprovalResponsePart("approval-1", true, "replayed") }));
+        Assert.Equal(
+            new[] { response1 },
+            Collect(
+                new ApprovalHistoryPart[]
+                {
+                    response1,
+                    new ApprovalResponsePart("approval-1", true, "replayed"),
+                }
+            )
+        );
     }
 
     [Fact]
@@ -48,7 +66,10 @@ public sealed class RepeatedApprovalResponsesTests
         var response1 = new ApprovalResponsePart("approval-1", true);
         var response2 = new ApprovalResponsePart("approval-2", true);
 
-        Assert.Equal(new[] { response1 }, Collect(new ApprovalHistoryPart[] { response1, response2 }));
+        Assert.Equal(
+            new[] { response1 },
+            Collect(new ApprovalHistoryPart[] { response1, response2 })
+        );
     }
 
     [Fact]
@@ -60,23 +81,40 @@ public sealed class RepeatedApprovalResponsesTests
             new[] { denial },
             Collect(
                 new ApprovalHistoryPart[] { denial, new ApprovalResponsePart("approval-1", false) },
-                new ApprovalHistoryPart[] { new ApprovalToolResultPart("call-1", "tool1", "execution-denied") }));
+                new ApprovalHistoryPart[]
+                {
+                    new ApprovalToolResultPart("call-1", "tool1", "execution-denied"),
+                }
+            )
+        );
     }
 
-    private static ApprovalResponsePart[] Collect(ApprovalHistoryPart[] responses, ApprovalHistoryPart[]? results = null)
+    private static ApprovalResponsePart[] Collect(
+        ApprovalHistoryPart[] responses,
+        ApprovalHistoryPart[]? results = null
+    )
     {
         using var input = JsonDocument.Parse("{}");
         var messages = new[]
         {
-            new ApprovalHistoryMessage("assistant", parts: new ApprovalHistoryPart[]
-            {
-                new ApprovalToolCallPart("call-1", "tool1", input.RootElement.Clone()),
-                new ApprovalRequestPart("approval-1", "call-1"),
-                new ApprovalRequestPart("approval-2", "call-1"),
-            }),
-            new ApprovalHistoryMessage("tool", parts: responses.Concat(results ?? Array.Empty<ApprovalHistoryPart>()).ToArray()),
+            new ApprovalHistoryMessage(
+                "assistant",
+                parts: new ApprovalHistoryPart[]
+                {
+                    new ApprovalToolCallPart("call-1", "tool1", input.RootElement.Clone()),
+                    new ApprovalRequestPart("approval-1", "call-1"),
+                    new ApprovalRequestPart("approval-2", "call-1"),
+                }
+            ),
+            new ApprovalHistoryMessage(
+                "tool",
+                parts: responses.Concat(results ?? Array.Empty<ApprovalHistoryPart>()).ToArray()
+            ),
         };
         var result = ToolApprovalCollection.CollectToolApprovals(messages);
-        return result.ApprovedToolApprovals.Concat(result.DeniedToolApprovals).Select(approval => approval.ApprovalResponse).ToArray();
+        return result
+            .ApprovedToolApprovals.Concat(result.DeniedToolApprovals)
+            .Select(approval => approval.ApprovalResponse)
+            .ToArray();
     }
 }

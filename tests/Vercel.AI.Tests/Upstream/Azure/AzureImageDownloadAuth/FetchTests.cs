@@ -26,27 +26,44 @@ public sealed class FetchTests
     [InlineData("global", "token", "gpt-image-1")]
     [InlineData("global", "api-key", "MAI-Image-2.6")]
     [InlineData("global", "api-key", "gpt-image-1")]
-    [UpstreamTest("packages/azure/src/azure-image-download-auth.test.ts::%s fetch > %s authentication::keeps credentials off %s image downloads and redirects", Coverage = UpstreamCoverage.Covered, Commit = Commit,
-        Note = "The global transport variant replaces Download.Fetch. A redirect is an observable second request in the custom variant, and the redirect mode is asserted in the global variant.")]
-    public async Task KeepsCredentialsOffImageDownloadsAndRedirects(string transport, string auth, string modelId)
+    [UpstreamTest(
+        "packages/azure/src/azure-image-download-auth.test.ts::%s fetch > %s authentication::keeps credentials off %s image downloads and redirects",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit,
+        Note = "The global transport variant replaces Download.Fetch. A redirect is an observable second request in the custom variant, and the redirect mode is asserted in the global variant."
+    )]
+    public async Task KeepsCredentialsOffImageDownloadsAndRedirects(
+        string transport,
+        string auth,
+        string modelId
+    )
     {
-        var handler = new AzureImageHandler((request, _) =>
-        {
-            switch (request.Url)
+        var handler = new AzureImageHandler(
+            (request, _) =>
             {
-                case "https://files.example.com/image.png":
-                    var redirect = new HttpResponseMessage(HttpStatusCode.Found);
-                    redirect.Headers.Location = new Uri("https://cdn.example.com/image.png");
-                    return Task.FromResult(redirect);
-                case "https://cdn.example.com/image.png":
-                case "https://files.example.com/mask.png":
-                    var image = new HttpResponseMessage { Content = new ByteArrayContent(new byte[] { 0x89, 0x50, 0x4e, 0x47 }) };
-                    image.Content.Headers.ContentType = new MediaTypeHeaderValue("image/png");
-                    return Task.FromResult(image);
-                default:
-                    return Task.FromResult(AzureImageHandler.JsonResponse(new { data = new[] { new { b64_json = "iVBORw0KGgo=" } } }));
+                switch (request.Url)
+                {
+                    case "https://files.example.com/image.png":
+                        var redirect = new HttpResponseMessage(HttpStatusCode.Found);
+                        redirect.Headers.Location = new Uri("https://cdn.example.com/image.png");
+                        return Task.FromResult(redirect);
+                    case "https://cdn.example.com/image.png":
+                    case "https://files.example.com/mask.png":
+                        var image = new HttpResponseMessage
+                        {
+                            Content = new ByteArrayContent(new byte[] { 0x89, 0x50, 0x4e, 0x47 }),
+                        };
+                        image.Content.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+                        return Task.FromResult(image);
+                    default:
+                        return Task.FromResult(
+                            AzureImageHandler.JsonResponse(
+                                new { data = new[] { new { b64_json = "iVBORw0KGgo=" } } }
+                            )
+                        );
+                }
             }
-        });
+        );
         var redirectModes = new List<string>();
         var previousFetch = Download.Fetch;
         using var invoker = new HttpMessageInvoker(handler, disposeHandler: false);
@@ -72,7 +89,9 @@ public sealed class FetchTests
                         message.Content = new ByteArrayContent(init.Body);
                     }
 
-                    using var response = await invoker.SendAsync(message, init.AbortSignal).ConfigureAwait(false);
+                    using var response = await invoker
+                        .SendAsync(message, init.AbortSignal)
+                        .ConfigureAwait(false);
                     var headers = new HeaderCollection();
                     foreach (var header in response.Headers)
                     {
@@ -85,7 +104,12 @@ public sealed class FetchTests
                     }
 
                     var body = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-                    return new DownloadResponse((int)response.StatusCode, response.ReasonPhrase, headers, body);
+                    return new DownloadResponse(
+                        (int)response.StatusCode,
+                        response.ReasonPhrase,
+                        headers,
+                        body
+                    );
                 };
             }
 
@@ -97,7 +121,13 @@ public sealed class FetchTests
         }
     }
 
-    private static async Task RunAsync(string transport, string auth, string modelId, AzureImageHandler handler, List<string> redirectModes)
+    private static async Task RunAsync(
+        string transport,
+        string auth,
+        string modelId,
+        AzureImageHandler handler,
+        List<string> redirectModes
+    )
     {
         var tokenCalls = 0;
         var provider = CreateProvider(transport == "custom" ? handler : null, options =>
@@ -129,13 +159,20 @@ public sealed class FetchTests
         await provider.Image(modelId).DoGenerateAsync(call, CancellationToken.None);
 
         var downloads = handler.Requests.Take(handler.Requests.Count - 1).ToList();
-        var expectedDownloads = new List<string> { "https://files.example.com/image.png", "https://cdn.example.com/image.png" };
+        var expectedDownloads = new List<string>
+        {
+            "https://files.example.com/image.png",
+            "https://cdn.example.com/image.png",
+        };
         if (!isMai)
         {
             expectedDownloads.Add("https://files.example.com/mask.png");
         }
 
-        Assert.Equal(expectedDownloads.OrderBy(url => url), downloads.Select(download => download.Url).OrderBy(url => url));
+        Assert.Equal(
+            expectedDownloads.OrderBy(url => url),
+            downloads.Select(download => download.Url).OrderBy(url => url)
+        );
         foreach (var download in downloads)
         {
             Assert.False(download.Headers.ContainsKey("authorization"));
@@ -154,7 +191,8 @@ public sealed class FetchTests
             isMai
                 ? "https://test-resource.services.ai.azure.com/mai/v1/images/edits"
                 : "https://test-resource.openai.azure.com/openai/v1/images/edits?api-version=v1",
-            api.Url);
+            api.Url
+        );
         Assert.Equal("provider-secret", api.Headers["x-provider-secret"]);
         if (auth == "token")
         {

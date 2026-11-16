@@ -31,7 +31,10 @@ public static class UIMessageConversion
     /// <param name="messages">The UI messages to convert.</param>
     /// <param name="options">Conversion options.</param>
     /// <returns>The model messages.</returns>
-    public static IReadOnlyList<ModelMessage> ConvertToModelMessages(IReadOnlyList<UIMessage> messages, ConvertToModelMessagesOptions? options = null)
+    public static IReadOnlyList<ModelMessage> ConvertToModelMessages(
+        IReadOnlyList<UIMessage> messages,
+        ConvertToModelMessagesOptions? options = null
+    )
     {
         if (messages is null)
         {
@@ -63,13 +66,25 @@ public static class UIMessageConversion
                 var kept = new List<UIMessagePart>();
                 foreach (var part in parts)
                 {
-                    if (part is not ToolUIPart tool
-                        || ((tool.State != ToolUIPartState.ApprovalRequested || messageIndex >= lastUserMessageIndex)
-                            && (!ignoreIncomplete
+                    if (
+                        part is not ToolUIPart tool
+                        || (
+                            (
+                                tool.State != ToolUIPartState.ApprovalRequested
+                                || messageIndex >= lastUserMessageIndex
+                            )
+                            && (
+                                !ignoreIncomplete
                                 || tool.State == ToolUIPartState.ApprovalResponded
-                                || (tool.State == ToolUIPartState.OutputAvailable && tool.Preliminary != true)
+                                || (
+                                    tool.State == ToolUIPartState.OutputAvailable
+                                    && tool.Preliminary != true
+                                )
                                 || tool.State == ToolUIPartState.OutputError
-                                || tool.State == ToolUIPartState.OutputDenied)))
+                                || tool.State == ToolUIPartState.OutputDenied
+                            )
+                        )
+                    )
                     {
                         kept.Add(part);
                     }
@@ -97,7 +112,10 @@ public static class UIMessageConversion
                     ConvertAssistant(parts, options, modelMessages);
                     break;
                 default:
-                    throw new MessageConversionException(message, "Unsupported role: " + message.Role);
+                    throw new MessageConversionException(
+                        message,
+                        "Unsupported role: " + message.Role
+                    );
             }
         }
 
@@ -123,10 +141,16 @@ public static class UIMessageConversion
             }
         }
 
-        return new SystemModelMessage(text.ToString(), providerOptions.Count > 0 ? providerOptions : null);
+        return new SystemModelMessage(
+            text.ToString(),
+            providerOptions.Count > 0 ? providerOptions : null
+        );
     }
 
-    private static UserModelMessage ConvertUser(IReadOnlyList<UIMessagePart> parts, ConvertToModelMessagesOptions? options)
+    private static UserModelMessage ConvertUser(
+        IReadOnlyList<UIMessagePart> parts,
+        ConvertToModelMessagesOptions? options
+    )
     {
         var content = new List<UserContentPart>();
         foreach (var part in parts)
@@ -134,7 +158,9 @@ public static class UIMessageConversion
             switch (part)
             {
                 case TextUIPart text:
-                    content.Add(new TextContentPart(text.Text) { ProviderOptions = text.ProviderMetadata });
+                    content.Add(
+                        new TextContentPart(text.Text) { ProviderOptions = text.ProviderMetadata }
+                    );
                     break;
                 case FileUIPart file:
                     content.Add(ToFileContentPart(file));
@@ -155,18 +181,41 @@ public static class UIMessageConversion
     private static FileContentPart ToFileContentPart(FileUIPart file)
     {
         return file.ProviderReference != null
-            ? FileContentPart.FromProviderReference(file.MediaType, file.ProviderReference, file.Filename, file.ProviderMetadata)
-            : new FileContentPart(file.MediaType, file.Url, null, file.Filename) { ProviderOptions = file.ProviderMetadata };
+            ? FileContentPart.FromProviderReference(
+                file.MediaType,
+                file.ProviderReference,
+                file.Filename,
+                file.ProviderMetadata
+            )
+            : new FileContentPart(file.MediaType, file.Url, null, file.Filename)
+            {
+                ProviderOptions = file.ProviderMetadata,
+            };
     }
 
     private static AssistantFilePart ToAssistantFilePart(FileUIPart file)
     {
         return file.ProviderReference != null
-            ? AssistantFilePart.FromProviderReference(file.MediaType, file.ProviderReference, file.Filename, file.ProviderMetadata)
-            : new AssistantFilePart(file.MediaType, file.Url, null, file.Filename, file.ProviderMetadata);
+            ? AssistantFilePart.FromProviderReference(
+                file.MediaType,
+                file.ProviderReference,
+                file.Filename,
+                file.ProviderMetadata
+            )
+            : new AssistantFilePart(
+                file.MediaType,
+                file.Url,
+                null,
+                file.Filename,
+                file.ProviderMetadata
+            );
     }
 
-    private static void ConvertAssistant(IReadOnlyList<UIMessagePart> parts, ConvertToModelMessagesOptions? options, List<ModelMessage> modelMessages)
+    private static void ConvertAssistant(
+        IReadOnlyList<UIMessagePart> parts,
+        ConvertToModelMessagesOptions? options,
+        List<ModelMessage> modelMessages
+    )
     {
         var block = new List<UIMessagePart>();
 
@@ -184,7 +233,16 @@ public static class UIMessageConversion
                 block = new List<UIMessagePart>();
                 modelMessages.Add(new UserModelMessage(ConvertUserContentUIParts(steering.Parts)));
             }
-            else if (part is CustomContentUIPart or TextUIPart or ReasoningUIPart or ReasoningFileUIPart or FileUIPart or ToolUIPart or DataUIPart)
+            else if (
+                part
+                is CustomContentUIPart
+                    or TextUIPart
+                    or ReasoningUIPart
+                    or ReasoningFileUIPart
+                    or FileUIPart
+                    or ToolUIPart
+                    or DataUIPart
+            )
             {
                 block.Add(part);
             }
@@ -193,7 +251,9 @@ public static class UIMessageConversion
         ProcessBlock(block, options, modelMessages);
     }
 
-    private static List<UserContentPart> ConvertUserContentUIParts(IReadOnlyList<UIMessagePart> parts)
+    private static List<UserContentPart> ConvertUserContentUIParts(
+        IReadOnlyList<UIMessagePart> parts
+    )
     {
         var content = new List<UserContentPart>();
         foreach (var part in parts)
@@ -201,7 +261,9 @@ public static class UIMessageConversion
             switch (part)
             {
                 case TextUIPart text:
-                    content.Add(new TextContentPart(text.Text) { ProviderOptions = text.ProviderMetadata });
+                    content.Add(
+                        new TextContentPart(text.Text) { ProviderOptions = text.ProviderMetadata }
+                    );
                     break;
                 case FileUIPart file:
                     content.Add(ToFileContentPart(file));
@@ -212,7 +274,11 @@ public static class UIMessageConversion
         return content;
     }
 
-    private static void ProcessBlock(List<UIMessagePart> block, ConvertToModelMessagesOptions? options, List<ModelMessage> modelMessages)
+    private static void ProcessBlock(
+        List<UIMessagePart> block,
+        ConvertToModelMessagesOptions? options,
+        List<ModelMessage> modelMessages
+    )
     {
         if (block.Count == 0)
         {
@@ -235,10 +301,19 @@ public static class UIMessageConversion
                     content.Add(ToAssistantFilePart(file));
                     break;
                 case ReasoningFileUIPart reasoningFile:
-                    content.Add(new AssistantReasoningFilePart(reasoningFile.MediaType, reasoningFile.Url, null, reasoningFile.ProviderMetadata));
+                    content.Add(
+                        new AssistantReasoningFilePart(
+                            reasoningFile.MediaType,
+                            reasoningFile.Url,
+                            null,
+                            reasoningFile.ProviderMetadata
+                        )
+                    );
                     break;
                 case ReasoningUIPart reasoning:
-                    content.Add(new AssistantReasoningPart(reasoning.Text, reasoning.ProviderMetadata));
+                    content.Add(
+                        new AssistantReasoningPart(reasoning.Text, reasoning.ProviderMetadata)
+                    );
                     break;
                 case ToolUIPart tool when tool.State != ToolUIPartState.InputStreaming:
                     AddToolContent(tool, options, content);
@@ -262,14 +337,21 @@ public static class UIMessageConversion
         // Include non-provider-executed tools, OR provider-executed tools with approval responses
         foreach (var part in block)
         {
-            if (part is ToolUIPart tool && (tool.ProviderExecuted != true || tool.Approval?.Approved != null))
+            if (
+                part is ToolUIPart tool
+                && (tool.ProviderExecuted != true || tool.Approval?.Approved != null)
+            )
             {
                 AddToolResults(tool, options, modelMessages);
             }
         }
     }
 
-    private static void AddToolContent(ToolUIPart tool, ConvertToModelMessagesOptions? options, List<AssistantContentPart> content)
+    private static void AddToolContent(
+        ToolUIPart tool,
+        ConvertToModelMessagesOptions? options,
+        List<AssistantContentPart> content
+    )
     {
         var callProviderMetadata = tool.CallProviderMetadata
             ?? (tool.State == ToolUIPartState.OutputError ? tool.ResultProviderMetadata : null);
@@ -278,7 +360,9 @@ public static class UIMessageConversion
         if (tool.State == ToolUIPartState.OutputError && !HasValue(tool.Input))
         {
             // The deprecated rawInput fallback. A string is the tool-call input itself, not JSON-quoted text.
-            arguments = tool.RawInput is { ValueKind: JsonValueKind.String } rawText ? rawText.GetString() : tool.RawInput?.GetRawText();
+            arguments = tool.RawInput is { ValueKind: JsonValueKind.String } rawText
+                ? rawText.GetString()
+                : tool.RawInput?.GetRawText();
         }
         else
         {
@@ -294,44 +378,82 @@ public static class UIMessageConversion
 
         if (tool.Approval != null)
         {
-            content.Add(new AssistantToolApprovalRequestPart(tool.Approval.Id, tool.ToolCallId, tool.Approval.IsAutomatic)
-            {
-                Reason = tool.Approval.RequestReason,
-                InputSchemaInput = tool.Approval.InputSchemaInput,
-                Signature = tool.Approval.Signature,
-            });
+            content.Add(
+                new AssistantToolApprovalRequestPart(
+                    tool.Approval.Id,
+                    tool.ToolCallId,
+                    tool.Approval.IsAutomatic
+                )
+                {
+                    Reason = tool.Approval.RequestReason,
+                    InputSchemaInput = tool.Approval.InputSchemaInput,
+                    Signature = tool.Approval.Signature,
+                }
+            );
         }
 
-        if (tool.ProviderExecuted == true
+        if (
+            tool.ProviderExecuted == true
             && tool.State != ToolUIPartState.ApprovalResponded
-            && (tool.State == ToolUIPartState.OutputAvailable || tool.State == ToolUIPartState.OutputError))
+            && (
+                tool.State == ToolUIPartState.OutputAvailable
+                || tool.State == ToolUIPartState.OutputError
+            )
+        )
         {
             var resultProviderMetadata = tool.ResultProviderMetadata ?? tool.CallProviderMetadata;
             var isError = tool.State == ToolUIPartState.OutputError;
-            var output = CreateModelOutput(tool, options, isError ? JsonString(tool.ErrorText) : tool.Output, isError ? "json" : "none");
-            content.Add(new AssistantToolResultPart(tool.ToolCallId, tool.ToolName, ToResultMessage(tool, output, null), resultProviderMetadata));
+            var output = CreateModelOutput(
+                tool,
+                options,
+                isError ? JsonString(tool.ErrorText) : tool.Output,
+                isError ? "json" : "none"
+            );
+            content.Add(
+                new AssistantToolResultPart(
+                    tool.ToolCallId,
+                    tool.ToolName,
+                    ToResultMessage(tool, output, null),
+                    resultProviderMetadata
+                )
+            );
         }
     }
 
-    private static void AddToolResults(ToolUIPart tool, ConvertToModelMessagesOptions? options, List<ModelMessage> modelMessages)
+    private static void AddToolResults(
+        ToolUIPart tool,
+        ConvertToModelMessagesOptions? options,
+        List<ModelMessage> modelMessages
+    )
     {
         // add approval response for approved tool calls:
         if (tool.Approval?.Approved != null)
         {
-            modelMessages.Add(new ToolApprovalResponseModelMessage(
-                tool.Approval.Id,
-                tool.Approval.Approved.Value,
-                tool.Approval.Reason,
-                tool.ProviderExecuted == true));
+            modelMessages.Add(
+                new ToolApprovalResponseModelMessage(
+                    tool.Approval.Id,
+                    tool.Approval.Approved.Value,
+                    tool.Approval.Reason,
+                    tool.ProviderExecuted == true
+                )
+            );
         }
 
         // add synthetic execution-denied result for denied tool approvals
         if (tool.State == ToolUIPartState.ApprovalResponded && tool.Approval?.Approved == false)
         {
-            modelMessages.Add(new ToolModelMessage(tool.ToolCallId, tool.ToolName, tool.Approval.Reason, false, "execution-denied")
-            {
-                ProviderOptions = tool.CallProviderMetadata,
-            });
+            modelMessages.Add(
+                new ToolModelMessage(
+                    tool.ToolCallId,
+                    tool.ToolName,
+                    tool.Approval.Reason,
+                    false,
+                    "execution-denied"
+                )
+                {
+                    ProviderOptions = tool.CallProviderMetadata,
+                }
+            );
         }
 
         // For provider-executed tools, the tool result is already in the
@@ -345,24 +467,32 @@ public static class UIMessageConversion
         switch (tool.State)
         {
             case ToolUIPartState.OutputDenied:
-                modelMessages.Add(new ToolModelMessage(
-                    tool.ToolCallId,
-                    tool.ToolName,
-                    tool.Approval?.Reason ?? "Tool call execution denied.",
-                    true,
-                    "error-text")
-                {
-                    ProviderOptions = tool.CallProviderMetadata,
-                });
+                modelMessages.Add(
+                    new ToolModelMessage(
+                        tool.ToolCallId,
+                        tool.ToolName,
+                        tool.Approval?.Reason ?? "Tool call execution denied.",
+                        true,
+                        "error-text"
+                    )
+                    {
+                        ProviderOptions = tool.CallProviderMetadata,
+                    }
+                );
                 break;
             case ToolUIPartState.OutputError:
             case ToolUIPartState.OutputAvailable:
-                {
-                    var isError = tool.State == ToolUIPartState.OutputError;
-                    var output = CreateModelOutput(tool, options, isError ? JsonString(tool.ErrorText) : tool.Output, isError ? "text" : "none");
-                    modelMessages.Add(ToResultMessage(tool, output, tool.CallProviderMetadata));
-                    break;
-                }
+            {
+                var isError = tool.State == ToolUIPartState.OutputError;
+                var output = CreateModelOutput(
+                    tool,
+                    options,
+                    isError ? JsonString(tool.ErrorText) : tool.Output,
+                    isError ? "text" : "none"
+                );
+                modelMessages.Add(ToResultMessage(tool, output, tool.CallProviderMetadata));
+                break;
+            }
         }
     }
 
@@ -371,13 +501,21 @@ public static class UIMessageConversion
         return value is null ? null : JsonSerializer.SerializeToElement(value);
     }
 
-    private static ToolModelMessage ToResultMessage(ToolUIPart tool, ToolModelOutput output, IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    private static ToolModelMessage ToResultMessage(
+        ToolUIPart tool,
+        ToolModelOutput output,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
+    )
     {
         string value;
         switch (output)
         {
             case ContentToolModelOutput content:
-                return new ToolModelMessage(tool.ToolCallId, tool.ToolName, Generation.ToUserContent(content.Value))
+                return new ToolModelMessage(
+                    tool.ToolCallId,
+                    tool.ToolName,
+                    Generation.ToUserContent(content.Value)
+                )
                 {
                     ProviderOptions = providerOptions,
                 };
@@ -394,31 +532,59 @@ public static class UIMessageConversion
                 value = errorJson.Value.GetRawText();
                 break;
             default:
-                throw new NotSupportedException("Tool output type '" + output.Type + "' is not supported.");
+                throw new NotSupportedException(
+                    "Tool output type '" + output.Type + "' is not supported."
+                );
         }
 
-        return new ToolModelMessage(tool.ToolCallId, tool.ToolName, value, output.Type.StartsWith("error", StringComparison.Ordinal), output.Type)
+        return new ToolModelMessage(
+            tool.ToolCallId,
+            tool.ToolName,
+            value,
+            output.Type.StartsWith("error", StringComparison.Ordinal),
+            output.Type
+        )
         {
             ProviderOptions = providerOptions,
         };
     }
 
-    private static ToolModelOutput CreateModelOutput(ToolUIPart tool, ConvertToModelMessagesOptions? options, JsonElement? output, string errorMode)
+    private static ToolModelOutput CreateModelOutput(
+        ToolUIPart tool,
+        ConvertToModelMessagesOptions? options,
+        JsonElement? output,
+        string errorMode
+    )
     {
         Tool? definition = null;
         options?.Tools?.TryGetValue(tool.ToolName, out definition);
 
-        if (errorMode == "none" && definition == null && UnavailableTool.IsToolPartFromUnavailableTool(tool))
+        if (
+            errorMode == "none"
+            && definition == null
+            && UnavailableTool.IsToolPartFromUnavailableTool(tool)
+        )
         {
-            return new TextToolModelOutput("Tool output omitted because the tool is no longer available.");
+            return new TextToolModelOutput(
+                "Tool output omitted because the tool is no longer available."
+            );
         }
 
         // Tool.ToModelOutput receives the JSON text of the output, as the loop passes it.
-        Func<ToolModelOutputCall, ToolModelOutput>? toModelOutput = definition?.ToModelOutput is { } convert
-            ? call => convert(new ToolModelOutputCall(call.ToolCallId, call.Input, output?.GetRawText()))
+        Func<ToolModelOutputCall, ToolModelOutput>? toModelOutput = definition?.ToModelOutput
+            is { } convert
+            ? call =>
+                convert(new ToolModelOutputCall(call.ToolCallId, call.Input, output?.GetRawText()))
             : null;
         object? value = output is { } element ? JsonElementValue(element) : null;
-        return ToolOutputs.CreateToolModelOutput(tool.ToolCallId, tool.Input, value, output != null, toModelOutput, errorMode);
+        return ToolOutputs.CreateToolModelOutput(
+            tool.ToolCallId,
+            tool.Input,
+            value,
+            output != null,
+            toModelOutput,
+            errorMode
+        );
     }
 
     private static bool HasValue(JsonElement? element)

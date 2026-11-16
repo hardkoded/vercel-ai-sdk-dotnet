@@ -14,14 +14,16 @@ namespace Vercel.AI.Tests.OpenResponsesLanguageModelTests;
 /// <summary>Port of <c>open-responses-language-model.test.ts</c> &gt; <c>OpenResponsesLanguageModel &gt; doStream</c>.</summary>
 public sealed class DoStreamTests
 {
-    private const string Prefix = "packages/open-responses/src/responses/open-responses-language-model.test.ts::OpenResponsesLanguageModel > doStream::";
+    private const string Prefix =
+        "packages/open-responses/src/responses/open-responses-language-model.test.ts::OpenResponsesLanguageModel > doStream::";
 
     [Theory]
     [InlineData("throw")]
     [UpstreamTest(
         Prefix + "preserves extension item decoding errors when the stream ends (%s)",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Only the throw case: DecodeItem is synchronous, so there is no rejected-promise case. ErrorStreamPart carries the error message, not the Error instance.")]
+        Note = "Only the throw case: DecodeItem is synchronous, so there is no rejected-promise case. ErrorStreamPart carries the error message, not the Error instance."
+    )]
     public async Task Preserves_extension_item_decoding_errors_when_the_stream_ends(string failure)
     {
         Assert.Equal("throw", failure);
@@ -31,7 +33,10 @@ public sealed class DoStreamTests
         var capture = new UpstreamCapture();
         PrepareStreamChunks(
             capture,
-            Obj("{\"type\":\"response.output_item.done\",\"sequence_number\":0,\"output_index\":0,\"item\":{\"id\":\"search-1\",\"type\":\"acme:document_search_receipt\",\"status\":\"completed\",\"call_id\":\"call-1\",\"name\":\"documentSearch\"}}"));
+            Obj(
+                "{\"type\":\"response.output_item.done\",\"sequence_number\":0,\"output_index\":0,\"item\":{\"id\":\"search-1\",\"type\":\"acme:document_search_receipt\",\"status\":\"completed\",\"call_id\":\"call-1\",\"name\":\"documentSearch\"}}"
+            )
+        );
 
         var parts = await Collect(CreateModel(capture, "test-model", extension), TestPrompt());
 
@@ -45,7 +50,8 @@ public sealed class DoStreamTests
     [UpstreamTest(
         Prefix + "preserves extension errors when the stream ends",
         Coverage = UpstreamCoverage.Partial,
-        Note = "ErrorStreamPart carries the error message, not the Error instance.")]
+        Note = "ErrorStreamPart carries the error message, not the Error instance."
+    )]
     public async Task Preserves_extension_errors_when_the_stream_ends()
     {
         var error = new InvalidOperationException("Extension failed");
@@ -54,7 +60,10 @@ public sealed class DoStreamTests
         var capture = new UpstreamCapture();
         PrepareStreamChunks(
             capture,
-            Obj("{\"type\":\"acme:document_search_input\",\"sequence_number\":0,\"call_id\":\"call-1\",\"name\":\"documentSearch\",\"delta\":\"{}\"}"));
+            Obj(
+                "{\"type\":\"acme:document_search_input\",\"sequence_number\":0,\"call_id\":\"call-1\",\"name\":\"documentSearch\",\"delta\":\"{}\"}"
+            )
+        );
 
         var parts = await Collect(CreateModel(capture, "test-model", extension), TestPrompt());
 
@@ -67,13 +76,24 @@ public sealed class DoStreamTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    [UpstreamTest(Prefix + "handles a truncated stream (with error: %s)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "handles a truncated stream (with error: %s)",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Handles_a_truncated_stream_with_error(bool withError)
     {
-        var events = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", "open-responses-lmstudio-basic.1.chunks.txt"))
+        var events = File.ReadAllLines(
+                Path.Combine(
+                    AppContext.BaseDirectory,
+                    "Fixtures",
+                    "open-responses-lmstudio-basic.1.chunks.txt"
+                )
+            )
             .Where(line => line.Trim().Length > 0)
             .ToList();
-        var firstText = events.FindIndex(line => JsonNode.Parse(line)!["type"]!.GetValue<string>() == "response.output_text.delta");
+        var firstText = events.FindIndex(line =>
+            JsonNode.Parse(line)!["type"]!.GetValue<string>() == "response.output_text.delta"
+        );
         Assert.True(firstText >= 0);
         var chunks = events.Take(firstText + 1).ToList();
         if (withError)
@@ -86,51 +106,100 @@ public sealed class DoStreamTests
         Assert.Contains(parts, part => part is TextDeltaStreamPart);
         Assert.Equal(withError ? 1 : 0, parts.OfType<ErrorStreamPart>().Count());
         var finish = Assert.Single(parts.OfType<FinishStreamPart>());
-        Assert.Equal(withError ? FinishReason.Error : FinishReason.Interrupted, finish.FinishReason);
+        Assert.Equal(
+            withError ? FinishReason.Error : FinishReason.Interrupted,
+            finish.FinishReason
+        );
         Assert.Null(finish.RawFinishReason);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should stream reasoning summary text deltas", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should stream reasoning summary text deltas",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_stream_reasoning_summary_text_deltas()
     {
-        var parts = await Collect(Model(ChunksFixture("openai-reasoning-summary-text.1")), UpstreamChat.Prompt());
+        var parts = await Collect(
+            Model(ChunksFixture("openai-reasoning-summary-text.1")),
+            UpstreamChat.Prompt()
+        );
 
-        JsonAssert.Equal(ToJson(parts.Where(part => part.Type.StartsWith("reasoning", StringComparison.Ordinal))), """
+        JsonAssert.Equal(
+            ToJson(
+                parts.Where(part => part.Type.StartsWith("reasoning", StringComparison.Ordinal))
+            ),
+            """
             [
               {"type":"reasoning-start","id":"rs_1"},
               {"type":"reasoning-delta","id":"rs_1","delta":"Think"},
               {"type":"reasoning-delta","id":"rs_1","delta":"ing."},
               {"type":"reasoning-end","id":"rs_1","providerMetadata":{"lmstudio":{"itemId":"rs_1","reasoningSummary":[{"type":"summary_text","text":"Thinking."}],"reasoningContent":null}}}
             ]
-            """);
+            """
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should decode registered extension events and completed items", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should decode registered extension events and completed items",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_decode_registered_extension_events_and_completed_items()
     {
-        const string receiptJson = "{\"id\":\"search_stream_1\",\"type\":\"acme:document_search_receipt\",\"status\":\"completed\",\"call_id\":\"call_stream_1\",\"name\":\"documentSearch\",\"query\":{\"text\":\"streamed query\"},\"result\":{\"documents\":[\"doc_1\"]},\"opaque_receipt\":{\"cursor\":\"cursor_1\"}}";
-        const string reference = "{\"lmstudio\":{\"openResponsesExtension\":{\"id\":\"acme.document_search\",\"itemId\":\"search_stream_1\"}}}";
+        const string receiptJson =
+            "{\"id\":\"search_stream_1\",\"type\":\"acme:document_search_receipt\",\"status\":\"completed\",\"call_id\":\"call_stream_1\",\"name\":\"documentSearch\",\"query\":{\"text\":\"streamed query\"},\"result\":{\"documents\":[\"doc_1\"]},\"opaque_receipt\":{\"cursor\":\"cursor_1\"}}";
+        const string reference =
+            "{\"lmstudio\":{\"openResponsesExtension\":{\"id\":\"acme.document_search\",\"itemId\":\"search_stream_1\"}}}";
         var capture = new UpstreamCapture();
         PrepareStreamChunks(
             capture,
-            Obj("{\"type\":\"acme:document_search_input\",\"sequence_number\":0,\"call_id\":\"call_stream_1\",\"name\":\"documentSearch\",\"delta\":\"{\\\"text\\\":\\\"streamed query\\\"}\"}"),
-            Obj("{\"type\":\"response.output_item.done\",\"sequence_number\":1,\"output_index\":0,\"item\":" + receiptJson + "}"),
-            Obj("{\"type\":\"response.completed\",\"sequence_number\":2,\"response\":{\"id\":\"response_stream_1\",\"object\":\"response\",\"created_at\":0,\"status\":\"completed\",\"model\":\"test-model\",\"output\":[" + receiptJson + "],\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}"));
+            Obj(
+                "{\"type\":\"acme:document_search_input\",\"sequence_number\":0,\"call_id\":\"call_stream_1\",\"name\":\"documentSearch\",\"delta\":\"{\\\"text\\\":\\\"streamed query\\\"}\"}"
+            ),
+            Obj(
+                "{\"type\":\"response.output_item.done\",\"sequence_number\":1,\"output_index\":0,\"item\":"
+                    + receiptJson
+                    + "}"
+            ),
+            Obj(
+                "{\"type\":\"response.completed\",\"sequence_number\":2,\"response\":{\"id\":\"response_stream_1\",\"object\":\"response\",\"created_at\":0,\"status\":\"completed\",\"model\":\"test-model\",\"output\":["
+                    + receiptJson
+                    + "],\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}"
+            )
+        );
 
         var parts = await UpstreamChat.Read(
-            (await CreateModel(capture, "gemma-7b-it", CreateDocumentSearchExtension(providerExecuted: true)).DoStreamAsync(TestPrompt(), CancellationToken.None)));
+            (
+                await CreateModel(
+                        capture,
+                        "gemma-7b-it",
+                        CreateDocumentSearchExtension(providerExecuted: true)
+                    )
+                    .DoStreamAsync(TestPrompt(), CancellationToken.None)
+            )
+        );
 
         var start = Assert.Single(parts.OfType<ToolInputStartStreamPart>());
-        Assert.Equal(("call_stream_1", "documentSearch", true), (start.Id, start.ToolName, start.ProviderExecuted));
+        Assert.Equal(
+            ("call_stream_1", "documentSearch", true),
+            (start.Id, start.ToolName, start.ProviderExecuted)
+        );
         var delta = Assert.Single(parts.OfType<ToolInputDeltaStreamPart>());
         Assert.Equal(("call_stream_1", "{\"text\":\"streamed query\"}"), (delta.Id, delta.Delta));
         var replay = Assert.Single(parts.OfType<CustomStreamPart>());
         Assert.Equal("open-responses.extension-replay", replay.Kind);
-        AssertMetadata("{\"lmstudio\":{\"openResponsesExtension\":{\"id\":\"acme.document_search\",\"item\":" + receiptJson + "}}}", replay.ProviderMetadata);
+        AssertMetadata(
+            "{\"lmstudio\":{\"openResponsesExtension\":{\"id\":\"acme.document_search\",\"item\":"
+                + receiptJson
+                + "}}}",
+            replay.ProviderMetadata
+        );
         var call = Assert.Single(parts.OfType<ToolCallStreamPart>());
-        Assert.Equal(("call_stream_1", "documentSearch", "{\"text\":\"streamed query\"}", true), (call.ToolCallId, call.ToolName, call.ArgumentsJson, call.ProviderExecuted));
+        Assert.Equal(
+            ("call_stream_1", "documentSearch", "{\"text\":\"streamed query\"}", true),
+            (call.ToolCallId, call.ToolName, call.ArgumentsJson, call.ProviderExecuted)
+        );
         AssertMetadata(reference, call.ProviderMetadata);
         var result = Assert.Single(parts.OfType<ToolResultStreamPart>());
         Assert.Equal(("call_stream_1", "documentSearch"), (result.ToolCallId, result.ToolName));
@@ -141,39 +210,81 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should decode explicitly registered bare extension events and completed items", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should decode explicitly registered bare extension events and completed items",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_decode_explicitly_registered_bare_extension_events_and_completed_items()
     {
-        const string receiptJson = "{\"id\":\"search_stream_1\",\"type\":\"web_search_call\",\"status\":\"completed\",\"call_id\":\"call_stream_1\",\"name\":\"documentSearch\",\"query\":{\"text\":\"streamed query\"},\"result\":{\"documents\":[\"doc_1\"]}}";
+        const string receiptJson =
+            "{\"id\":\"search_stream_1\",\"type\":\"web_search_call\",\"status\":\"completed\",\"call_id\":\"call_stream_1\",\"name\":\"documentSearch\",\"query\":{\"text\":\"streamed query\"},\"result\":{\"documents\":[\"doc_1\"]}}";
         var capture = new UpstreamCapture();
         PrepareStreamChunks(
             capture,
-            Obj("{\"type\":\"response.unregistered.delta\",\"sequence_number\":0,\"call_id\":\"ignored_call\",\"name\":\"ignoredTool\",\"delta\":\"ignored\"}"),
-            Obj("{\"type\":\"response.custom_tool_call_input.delta\",\"sequence_number\":1,\"call_id\":\"call_stream_1\",\"name\":\"documentSearch\",\"delta\":\"{\\\"text\\\":\\\"streamed query\\\"}\"}"),
-            Obj("{\"type\":\"response.output_item.done\",\"sequence_number\":2,\"output_index\":0,\"item\":" + receiptJson + "}"),
-            Obj("{\"type\":\"response.completed\",\"sequence_number\":3,\"response\":{\"id\":\"response_stream_1\",\"object\":\"response\",\"created_at\":0,\"status\":\"completed\",\"model\":\"test-model\",\"output\":[" + receiptJson + "],\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}"));
+            Obj(
+                "{\"type\":\"response.unregistered.delta\",\"sequence_number\":0,\"call_id\":\"ignored_call\",\"name\":\"ignoredTool\",\"delta\":\"ignored\"}"
+            ),
+            Obj(
+                "{\"type\":\"response.custom_tool_call_input.delta\",\"sequence_number\":1,\"call_id\":\"call_stream_1\",\"name\":\"documentSearch\",\"delta\":\"{\\\"text\\\":\\\"streamed query\\\"}\"}"
+            ),
+            Obj(
+                "{\"type\":\"response.output_item.done\",\"sequence_number\":2,\"output_index\":0,\"item\":"
+                    + receiptJson
+                    + "}"
+            ),
+            Obj(
+                "{\"type\":\"response.completed\",\"sequence_number\":3,\"response\":{\"id\":\"response_stream_1\",\"object\":\"response\",\"created_at\":0,\"status\":\"completed\",\"model\":\"test-model\",\"output\":["
+                    + receiptJson
+                    + "],\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}"
+            )
+        );
 
         var parts = await UpstreamChat.Read(
-            (await CreateModel(capture, "gemma-7b-it", CreateBareDocumentSearchExtension()).DoStreamAsync(TestPrompt(), CancellationToken.None)));
+            (
+                await CreateModel(capture, "gemma-7b-it", CreateBareDocumentSearchExtension())
+                    .DoStreamAsync(TestPrompt(), CancellationToken.None)
+            )
+        );
 
         var delta = Assert.Single(parts.OfType<ToolInputDeltaStreamPart>());
         Assert.Equal(("call_stream_1", "{\"text\":\"streamed query\"}"), (delta.Id, delta.Delta));
         var call = Assert.Single(parts.OfType<ToolCallStreamPart>());
-        Assert.Equal(("call_stream_1", "documentSearch", "{\"text\":\"streamed query\"}", true), (call.ToolCallId, call.ToolName, call.ArgumentsJson, call.ProviderExecuted));
-        AssertMetadata("{\"lmstudio\":{\"openResponsesExtension\":{\"id\":\"acme.document_search\",\"itemId\":\"search_stream_1\"}}}", call.ProviderMetadata);
+        Assert.Equal(
+            ("call_stream_1", "documentSearch", "{\"text\":\"streamed query\"}", true),
+            (call.ToolCallId, call.ToolName, call.ArgumentsJson, call.ProviderExecuted)
+        );
+        AssertMetadata(
+            "{\"lmstudio\":{\"openResponsesExtension\":{\"id\":\"acme.document_search\",\"itemId\":\"search_stream_1\"}}}",
+            call.ProviderMetadata
+        );
         var finish = Assert.IsType<FinishStreamPart>(parts[parts.Count - 1]);
         Assert.Equal(FinishReason.ToolCalls, finish.FinishReason);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves $expectedType stream errors", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "preserves $expectedType stream errors",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Preserves_expectedType_stream_errors()
     {
-        foreach (var (json, expectedType, expectedMessage, expectedCode) in new[]
-        {
-            ("{\"type\":\"response.failed\",\"sequence_number\":1,\"response\":{\"status\":\"failed\",\"error\":{\"code\":\"429\",\"message\":\"Rate limit reached\"}}}", "response.failed", "Rate limit reached", "429"),
-            ("{\"type\":\"error\",\"sequence_number\":1,\"error\":{\"code\":\"503\",\"message\":\"Service unavailable\"}}", "error", "Service unavailable", "503"),
-        })
+        foreach (
+            var (json, expectedType, expectedMessage, expectedCode) in new[]
+            {
+                (
+                    "{\"type\":\"response.failed\",\"sequence_number\":1,\"response\":{\"status\":\"failed\",\"error\":{\"code\":\"429\",\"message\":\"Rate limit reached\"}}}",
+                    "response.failed",
+                    "Rate limit reached",
+                    "429"
+                ),
+                (
+                    "{\"type\":\"error\",\"sequence_number\":1,\"error\":{\"code\":\"503\",\"message\":\"Service unavailable\"}}",
+                    "error",
+                    "Service unavailable",
+                    "503"
+                ),
+            }
+        )
         {
             var parts = await Collect(Model(StreamResponse(json)), UpstreamChat.Prompt());
 
@@ -183,47 +294,74 @@ public sealed class DoStreamTests
             Assert.Equal(expectedType, error.Type);
             Assert.Equal(expectedCode, error.Code);
             JsonAssert.Equal((JsonElement)error.Data!, json);
-            Assert.Equal(FinishReason.Error, Assert.IsType<FinishStreamPart>(parts[^1]).FinishReason);
+            Assert.Equal(
+                FinishReason.Error,
+                Assert.IsType<FinishStreamPart>(parts[^1]).FinishReason
+            );
         }
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should preserve output text annotations in stream metadata", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should preserve output text annotations in stream metadata",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_preserve_output_text_annotations_in_stream_metadata()
     {
-        const string annotation = """{"type":"url_citation","start_index":0,"end_index":7,"url":"https://example.com/source","title":"Example source"}""";
+        const string annotation =
+            """{"type":"url_citation","start_index":0,"end_index":7,"url":"https://example.com/source","title":"Example source"}""";
         var capture = StreamResponse(
             """{"type":"response.output_item.added","sequence_number":0,"output_index":0,"item":{"id":"msg_annotated","type":"message","role":"assistant","status":"in_progress","content":[]}}""",
             """{"type":"response.output_text.delta","sequence_number":1,"item_id":"msg_annotated","output_index":0,"content_index":0,"delta":"Sourced answer"}""",
-            """{"type":"response.output_item.done","sequence_number":2,"output_index":0,"item":{"id":"msg_annotated","type":"message","role":"assistant","status":"completed","content":[{"type":"output_text","text":"Sourced answer","annotations":[ANNOTATION]}]}}""".Replace("ANNOTATION", annotation));
+            """{"type":"response.output_item.done","sequence_number":2,"output_index":0,"item":{"id":"msg_annotated","type":"message","role":"assistant","status":"completed","content":[{"type":"output_text","text":"Sourced answer","annotations":[ANNOTATION]}]}}""".Replace(
+                "ANNOTATION",
+                annotation
+            )
+        );
 
         var parts = await Collect(Model(capture), UpstreamChat.Prompt());
 
         JsonAssert.Equal(
             ToJson(parts.OfType<TextEndStreamPart>().Single()),
-            """{"type":"text-end","id":"msg_annotated","providerMetadata":{"lmstudio":{"itemId":"msg_annotated","annotations":[ANNOTATION]}}}""".Replace("ANNOTATION", annotation));
+            """{"type":"text-end","id":"msg_annotated","providerMetadata":{"lmstudio":{"itemId":"msg_annotated","annotations":[ANNOTATION]}}}""".Replace(
+                "ANNOTATION",
+                annotation
+            )
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should send provider-native reasoning effort when streaming", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should send provider-native reasoning effort when streaming",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_send_provider_native_reasoning_effort_when_streaming()
     {
         var capture = ChunksFixture("lmstudio-basic.1");
         var options = UpstreamChat.Prompt();
         options.ProviderOptions = UpstreamChat.Bag("lmstudio", "{\"reasoningEffort\":\"max\"}");
 
-        await UpstreamChat.Read((await Model(capture).DoStreamAsync(options, CancellationToken.None)));
+        await UpstreamChat.Read(
+            (await Model(capture).DoStreamAsync(options, CancellationToken.None))
+        );
 
-        Assert.Equal("{\"effort\":\"max\"}", UpstreamChat.Body(capture)["reasoning"]!.ToJsonString());
+        Assert.Equal(
+            "{\"effort\":\"max\"}",
+            UpstreamChat.Body(capture)["reasoning"]!.ToJsonString()
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should close unfinished reasoning items with their original ids", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should close unfinished reasoning items with their original ids",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_close_unfinished_reasoning_items_with_their_original_ids()
     {
         var capture = StreamResponse(
             """{"type":"response.output_item.added","sequence_number":0,"output_index":0,"item":{"id":"rs_reasoning_item","type":"reasoning","summary":[]}}""",
-            """{"type":"response.incomplete","sequence_number":1,"response":{"status":"incomplete","incomplete_details":{"reason":"max_output_tokens"},"usage":{"input_tokens":1,"input_tokens_details":{"cached_tokens":0},"output_tokens":1,"output_tokens_details":{"reasoning_tokens":1},"total_tokens":2}}}""");
+            """{"type":"response.incomplete","sequence_number":1,"response":{"status":"incomplete","incomplete_details":{"reason":"max_output_tokens"},"usage":{"input_tokens":1,"input_tokens_details":{"cached_tokens":0},"output_tokens":1,"output_tokens_details":{"reasoning_tokens":1},"total_tokens":2}}}"""
+        );
 
         var parts = await Collect(Model(capture), UpstreamChat.Prompt());
 
@@ -236,12 +374,17 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should not pollute Object.prototype from tool call item ids", Coverage = UpstreamCoverage.Covered, Note = "C# has no object prototype. The case checks that a __proto__ item id is an ordinary key: the stream finishes and emits no tool call.")]
+    [UpstreamTest(
+        Prefix + "should not pollute Object.prototype from tool call item ids",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "C# has no object prototype. The case checks that a __proto__ item id is an ordinary key: the stream finishes and emits no tool call."
+    )]
     public async Task Should_not_pollute_Object_prototype_from_tool_call_item_ids()
     {
         var capture = StreamResponse(
             """{"type":"response.function_call_arguments.done","item_id":"__proto__","output_index":0,"arguments":"polluted","sequence_number":0}""",
-            """{"type":"response.completed","response":{"incomplete_details":null,"status":"completed","usage":{"input_tokens":0,"input_tokens_details":{"cached_tokens":0},"output_tokens":0,"output_tokens_details":{"reasoning_tokens":0},"total_tokens":0}},"sequence_number":1}""");
+            """{"type":"response.completed","response":{"incomplete_details":null,"status":"completed","usage":{"input_tokens":0,"input_tokens_details":{"cached_tokens":0},"output_tokens":0,"output_tokens_details":{"reasoning_tokens":0},"total_tokens":0}},"sequence_number":1}"""
+        );
 
         var parts = await Collect(Model(capture), UpstreamChat.Prompt());
 

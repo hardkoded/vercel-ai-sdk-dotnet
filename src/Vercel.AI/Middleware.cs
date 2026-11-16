@@ -17,13 +17,15 @@ public interface ILanguageModelMiddleware
     Task<LanguageModelGenerateResult> WrapGenerateAsync(
         LanguageModelCallOptions options,
         Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelGenerateResult>> next,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken
+    );
 
     /// <summary>Wraps a stream call.</summary>
     Task<LanguageModelStreamResult> WrapStreamAsync(
         LanguageModelCallOptions options,
         Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>> next,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>Passes both operations through.</summary>
@@ -33,7 +35,8 @@ public abstract class LanguageModelMiddleware : ILanguageModelMiddleware
     public virtual Task<LanguageModelGenerateResult> WrapGenerateAsync(
         LanguageModelCallOptions options,
         Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelGenerateResult>> next,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         return next(options, cancellationToken);
     }
@@ -42,7 +45,8 @@ public abstract class LanguageModelMiddleware : ILanguageModelMiddleware
     public virtual Task<LanguageModelStreamResult> WrapStreamAsync(
         LanguageModelCallOptions options,
         Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>> next,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         return next(options, cancellationToken);
     }
@@ -52,7 +56,10 @@ public abstract class LanguageModelMiddleware : ILanguageModelMiddleware
 public static class LanguageModelMiddlewareExtensions
 {
     /// <summary>Wraps <paramref name="model"/> so middleware runs outside-in.</summary>
-    public static ILanguageModel WrapLanguageModel(this ILanguageModel model, params ILanguageModelMiddleware[] middleware)
+    public static ILanguageModel WrapLanguageModel(
+        this ILanguageModel model,
+        params ILanguageModelMiddleware[] middleware
+    )
     {
         if (model is null)
         {
@@ -85,27 +92,41 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
     /// <param name="tagName">Tag name without angle brackets.</param>
     /// <param name="separator">Joins reasoning blocks, and the text around them.</param>
     /// <param name="startWithReasoning">Prepends the opening tag when the model omits it.</param>
-    public ExtractReasoningMiddleware(string tagName = "think", string separator = "\n", bool startWithReasoning = false)
-        : this(("<" + tagName + ">", "</" + tagName + ">"), separator, startWithReasoning)
-    {
-    }
+    public ExtractReasoningMiddleware(
+        string tagName = "think",
+        string separator = "\n",
+        bool startWithReasoning = false
+    )
+        : this(("<" + tagName + ">", "</" + tagName + ">"), separator, startWithReasoning) { }
 
     /// <summary>Creates middleware for literal delimiters, such as Gemma's thought channel.</summary>
     /// <param name="tagName">Literal opening and closing delimiters.</param>
     /// <param name="separator">Joins reasoning blocks, and the text around them.</param>
     /// <param name="startWithReasoning">Prepends the opening delimiter when the model omits it.</param>
-    public ExtractReasoningMiddleware((string Opening, string Closing) tagName, string separator = "\n", bool startWithReasoning = false)
+    public ExtractReasoningMiddleware(
+        (string Opening, string Closing) tagName,
+        string separator = "\n",
+        bool startWithReasoning = false
+    )
     {
         if (string.IsNullOrEmpty(tagName.Opening) || string.IsNullOrEmpty(tagName.Closing))
         {
-            throw new InvalidArgumentError(nameof(tagName), tagName, "Reasoning delimiters must not be empty.");
+            throw new InvalidArgumentError(
+                nameof(tagName),
+                tagName,
+                "Reasoning delimiters must not be empty."
+            );
         }
 
         _opening = tagName.Opening;
         _closing = tagName.Closing;
         _separator = separator;
         _startWithReasoning = startWithReasoning;
-        _reasoning = new Regex(Regex.Escape(_opening) + "(.*?)" + Regex.Escape(_closing), RegexOptions.Singleline, SafeRegex.LargeInputTimeout);
+        _reasoning = new Regex(
+            Regex.Escape(_opening) + "(.*?)" + Regex.Escape(_closing),
+            RegexOptions.Singleline,
+            SafeRegex.LargeInputTimeout
+        );
     }
 
     // A match timeout counts as no reasoning block, so the text passes through unchanged.
@@ -128,7 +149,8 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
     public override async Task<LanguageModelGenerateResult> WrapGenerateAsync(
         LanguageModelCallOptions options,
         Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelGenerateResult>> next,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var result = await next(options, cancellationToken).ConfigureAwait(false);
         var content = new List<GeneratedContent>();
@@ -151,7 +173,10 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
             content.Add(new GeneratedText(remaining));
         }
 
-        var structuredOutputText = result.StructuredOutputText == null ? null : ExtractReasoning(result.StructuredOutputText).Text;
+        var structuredOutputText =
+            result.StructuredOutputText == null
+                ? null
+                : ExtractReasoning(result.StructuredOutputText).Text;
         return MiddlewareResults.CopyResult(content, result, structuredOutputText);
     }
 
@@ -172,7 +197,10 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
             reasoning[i] = match.Groups[1].Value;
             var before = remaining.Substring(0, match.Index);
             var after = remaining.Substring(match.Index + match.Length);
-            remaining = before + (before.Length > 0 && after.Length > 0 ? _separator : string.Empty) + after;
+            remaining =
+                before
+                + (before.Length > 0 && after.Length > 0 ? _separator : string.Empty)
+                + after;
         }
 
         return (remaining, string.Join(_separator, reasoning));
@@ -182,15 +210,22 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
     public override async Task<LanguageModelStreamResult> WrapStreamAsync(
         LanguageModelCallOptions options,
         Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>> next,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var inner = await next(options, cancellationToken).ConfigureAwait(false);
-        return new LanguageModelStreamResult(Extract(inner.Stream, cancellationToken), inner.Request, inner.Response, inner);
+        return new LanguageModelStreamResult(
+            Extract(inner.Stream, cancellationToken),
+            inner.Request,
+            inner.Response,
+            inner
+        );
     }
 
     private async IAsyncEnumerable<LanguageModelStreamPart> Extract(
         IAsyncEnumerable<LanguageModelStreamPart> source,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         var extractions = new Dictionary<string, StreamExtraction>();
 
@@ -284,7 +319,9 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
                 return;
             }
 
-            var isFirst = extraction.IsReasoning ? extraction.IsFirstReasoning : extraction.IsFirstText;
+            var isFirst = extraction.IsReasoning
+                ? extraction.IsFirstReasoning
+                : extraction.IsFirstText;
             var prefix = extraction.AfterSwitch && !isFirst ? _separator : string.Empty;
             if (extraction.IsReasoning)
             {
@@ -352,7 +389,8 @@ public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
     public override async Task<LanguageModelGenerateResult> WrapGenerateAsync(
         LanguageModelCallOptions options,
         Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelGenerateResult>> next,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var result = await next(options, cancellationToken).ConfigureAwait(false);
         var content = new List<GeneratedContent>();
@@ -368,7 +406,8 @@ public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
             }
         }
 
-        var structuredOutputText = result.StructuredOutputText == null ? null : StripFence(result.StructuredOutputText);
+        var structuredOutputText =
+            result.StructuredOutputText == null ? null : StripFence(result.StructuredOutputText);
         return MiddlewareResults.CopyResult(content, result, structuredOutputText);
     }
 
@@ -398,7 +437,11 @@ public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
 
 internal static class MiddlewareResults
 {
-    public static LanguageModelGenerateResult CopyResult(IReadOnlyList<GeneratedContent> content, LanguageModelGenerateResult result, string? structuredOutputText)
+    public static LanguageModelGenerateResult CopyResult(
+        IReadOnlyList<GeneratedContent> content,
+        LanguageModelGenerateResult result,
+        string? structuredOutputText
+    )
     {
         return new LanguageModelGenerateResult(
             content,
@@ -412,7 +455,8 @@ internal static class MiddlewareResults
             result.ResponseModelId,
             result.ResponseTimestamp,
             result.ResponseHeaders,
-            structuredOutputText);
+            structuredOutputText
+        );
     }
 }
 
@@ -423,21 +467,28 @@ public sealed class SimulateStreamingMiddleware : LanguageModelMiddleware
     public async Task<LanguageModelStreamResult> Simulate(
         ILanguageModel model,
         LanguageModelCallOptions options,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var result = await model.DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
         return new LanguageModelStreamResult(
             Parts(result),
-            response: new LanguageModelStreamResponse(result.ResponseHeaders));
+            response: new LanguageModelStreamResponse(result.ResponseHeaders)
+        );
     }
 
-    private static async IAsyncEnumerable<LanguageModelStreamPart> Parts(LanguageModelGenerateResult result)
+    private static async IAsyncEnumerable<LanguageModelStreamPart> Parts(
+        LanguageModelGenerateResult result
+    )
     {
         await Task.CompletedTask.ConfigureAwait(false);
         var id = 0;
         foreach (var part in result.Content)
         {
-            if (part is GeneratedText generatedText && (generatedText.Text.Length > 0 || (generatedText.Citations?.Count ?? 0) > 0))
+            if (
+                part is GeneratedText generatedText
+                && (generatedText.Text.Length > 0 || (generatedText.Citations?.Count ?? 0) > 0)
+            )
             {
                 var textId = id.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 yield return new TextStartStreamPart(textId);
@@ -451,7 +502,12 @@ public sealed class SimulateStreamingMiddleware : LanguageModelMiddleware
             }
         }
 
-        yield return new FinishStreamPart(result.FinishReason, result.Usage, result.RawFinishReason, result.ProviderMetadata);
+        yield return new FinishStreamPart(
+            result.FinishReason,
+            result.Usage,
+            result.RawFinishReason,
+            result.ProviderMetadata
+        );
     }
 }
 
@@ -475,7 +531,8 @@ public sealed class DefaultSettingsMiddleware : LanguageModelMiddleware
     public override Task<LanguageModelGenerateResult> WrapGenerateAsync(
         LanguageModelCallOptions options,
         Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelGenerateResult>> next,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         Apply(options);
         return next(options, cancellationToken);
@@ -485,7 +542,8 @@ public sealed class DefaultSettingsMiddleware : LanguageModelMiddleware
     public override Task<LanguageModelStreamResult> WrapStreamAsync(
         LanguageModelCallOptions options,
         Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>> next,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         Apply(options);
         return next(options, cancellationToken);
@@ -514,7 +572,8 @@ public sealed class DefaultInstructionsMiddleware : LanguageModelMiddleware
     public override Task<LanguageModelGenerateResult> WrapGenerateAsync(
         LanguageModelCallOptions options,
         Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelGenerateResult>> next,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         Apply(options);
         return next(options, cancellationToken);
@@ -565,12 +624,18 @@ internal sealed class MiddlewareLanguageModel : ILanguageModel
 
     public string ModelId => _inner.ModelId;
 
-    public Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         return _middleware.WrapGenerateAsync(options, _inner.DoGenerateAsync, cancellationToken);
     }
 
-    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public Task<LanguageModelStreamResult> DoStreamAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         if (_middleware is SimulateStreamingMiddleware simulate)
         {
@@ -580,4 +645,3 @@ internal sealed class MiddlewareLanguageModel : ILanguageModel
         return _middleware.WrapStreamAsync(options, _inner.DoStreamAsync, cancellationToken);
     }
 }
-

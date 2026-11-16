@@ -97,7 +97,8 @@ public sealed class OpenAIImageGeneration
         JsonElement providerMetadata,
         DateTimeOffset timestamp,
         string modelId,
-        IReadOnlyDictionary<string, string> headers)
+        IReadOnlyDictionary<string, string> headers
+    )
     {
         Images = images;
         Warnings = warnings;
@@ -145,16 +146,24 @@ public sealed class OpenAIImageModel : IImageModel
     private static readonly Regex MarkupDataUrl = new(
         "^data:([^;,]*)(;base64)?,(.*)$",
         RegexOptions.Singleline | RegexOptions.CultureInvariant,
-        TimeSpan.FromSeconds(5));
+        TimeSpan.FromSeconds(5)
+    );
 
     private readonly OpenAICompatibleProvider _provider;
     private readonly string _providerId;
     private readonly Func<string, Uri> _url;
-    private readonly Func<IReadOnlyDictionary<string, string?>?, Dictionary<string, string?>> _headers;
+    private readonly Func<
+        IReadOnlyDictionary<string, string?>?,
+        Dictionary<string, string?>
+    > _headers;
     private readonly Func<DateTimeOffset>? _clock;
 
     /// <summary>Creates an image model.</summary>
-    public OpenAIImageModel(OpenAIProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
+    public OpenAIImageModel(
+        OpenAIProvider provider,
+        string modelId,
+        Func<DateTimeOffset>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -168,7 +177,11 @@ public sealed class OpenAIImageModel : IImageModel
     /// Creates an Azure OpenAI image model for a deployment. The provider id is <c>azure.image</c>. Requests use the
     /// Azure routes and headers of <paramref name="provider"/>, and file URLs are downloaded without its credentials.
     /// </summary>
-    public OpenAIImageModel(AzureOpenAIProvider provider, string deploymentId, Func<DateTimeOffset>? clock = null)
+    public OpenAIImageModel(
+        AzureOpenAIProvider provider,
+        string deploymentId,
+        Func<DateTimeOffset>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = deploymentId ?? throw new ArgumentNullException(nameof(deploymentId));
@@ -207,7 +220,10 @@ public sealed class OpenAIImageModel : IImageModel
             return 10;
         }
 
-        if (modelId.StartsWith("gpt-image-", StringComparison.Ordinal) || modelId.StartsWith("chatgpt-image-", StringComparison.Ordinal))
+        if (
+            modelId.StartsWith("gpt-image-", StringComparison.Ordinal)
+            || modelId.StartsWith("chatgpt-image-", StringComparison.Ordinal)
+        )
         {
             return 10;
         }
@@ -228,41 +244,59 @@ public sealed class OpenAIImageModel : IImageModel
     }
 
     /// <inheritdoc />
-    public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+    public async Task<ImageGenerationResult> DoGenerateAsync(
+        ImageCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var result = await GenerateAsync(
-            new OpenAIImageCall(options.Prompt)
-            {
-                Count = options.Count,
-                Size = options.Size,
-                AspectRatio = options.AspectRatio,
-                Seed = options.Seed,
-                ProviderOptions = OpenAIProviderOptions(options.ProviderOptions),
-                Files = options.Files?.Select(ToOpenAIFile).ToList(),
-                Mask = options.Mask == null ? null : ToOpenAIFile(options.Mask),
-                Headers = options.Headers,
-            },
-            cancellationToken).ConfigureAwait(false);
-        var usage = result.InputTokens == null && result.OutputTokens == null && result.TotalTokens == null
-            ? null
-            : new LanguageModelUsage(result.InputTokens, result.OutputTokens, result.TotalTokens);
+                new OpenAIImageCall(options.Prompt)
+                {
+                    Count = options.Count,
+                    Size = options.Size,
+                    AspectRatio = options.AspectRatio,
+                    Seed = options.Seed,
+                    ProviderOptions = OpenAIProviderOptions(options.ProviderOptions),
+                    Files = options.Files?.Select(ToOpenAIFile).ToList(),
+                    Mask = options.Mask == null ? null : ToOpenAIFile(options.Mask),
+                    Headers = options.Headers,
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        var usage =
+            result.InputTokens == null && result.OutputTokens == null && result.TotalTokens == null
+                ? null
+                : new LanguageModelUsage(
+                    result.InputTokens,
+                    result.OutputTokens,
+                    result.TotalTokens
+                );
         return new ImageGenerationResult(
             result.Images,
             result.Warnings.Select(warning => warning.ToCallWarning()).ToList(),
             new ImageResponseInfo(result.Timestamp, result.ModelId, result.Headers),
             usage,
-            result.ProviderMetadata);
+            result.ProviderMetadata
+        );
     }
 
     private static bool? EditingSupport(string modelId)
     {
         return modelId switch
         {
-            "dall-e-2" or "gpt-image-1" or "gpt-image-1-mini" or "gpt-image-1.5" or "gpt-image-2"
-                or "gpt-image-2.6-flare" or "gpt-image-2.6-sunburst"
-                or "gpt-image-2.5-flare" or "gpt-image-2.5-flare-2026-09-08"
-                or "gpt-image-2.5-sunburst" or "gpt-image-2.5-sunburst-2026-09-08"
-                or "chatgpt-image-latest" => true,
+            "dall-e-2"
+            or "gpt-image-1"
+            or "gpt-image-1-mini"
+            or "gpt-image-1.5"
+            or "gpt-image-2"
+            or "gpt-image-2.6-flare"
+            or "gpt-image-2.6-sunburst"
+            or "gpt-image-2.5-flare"
+            or "gpt-image-2.5-flare-2026-09-08"
+            or "gpt-image-2.5-sunburst"
+            or "gpt-image-2.5-sunburst-2026-09-08"
+            or "chatgpt-image-latest" => true,
             "dall-e-3" => false,
             _ => null,
         };
@@ -273,7 +307,11 @@ public sealed class OpenAIImageModel : IImageModel
     {
         if (value is { } number && (number < min || number > max))
         {
-            throw new Operations.InvalidArgumentException("providerOptions.openai." + name, number, name + " must be between " + min + " and " + max + ".");
+            throw new Operations.InvalidArgumentException(
+                "providerOptions.openai." + name,
+                number,
+                name + " must be between " + min + " and " + max + "."
+            );
         }
     }
 
@@ -282,32 +320,55 @@ public sealed class OpenAIImageModel : IImageModel
     {
         if (safetyIdentifier is { Length: > 128 })
         {
-            throw new Operations.InvalidArgumentException("providerOptions.openai.safetyIdentifier", safetyIdentifier, "safetyIdentifier must be at most 128 characters.");
+            throw new Operations.InvalidArgumentException(
+                "providerOptions.openai.safetyIdentifier",
+                safetyIdentifier,
+                "safetyIdentifier must be at most 128 characters."
+            );
         }
     }
 
-    private static JsonElement? OpenAIProviderOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    private static JsonElement? OpenAIProviderOptions(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
+    )
     {
-        return providerOptions != null && providerOptions.TryGetValue("openai", out var openai) ? openai : null;
+        return providerOptions != null && providerOptions.TryGetValue("openai", out var openai)
+            ? openai
+            : null;
     }
 
     private static OpenAIImageFile ToOpenAIFile(Operations.ImageModelFile file)
     {
         if (file.Type == "url")
         {
-            return OpenAIImageFile.FromUrl(file.Url ?? throw new AiSdkException("A URL image needs a url."));
+            return OpenAIImageFile.FromUrl(
+                file.Url ?? throw new AiSdkException("A URL image needs a url.")
+            );
         }
 
-        return new OpenAIImageFile(file.Data ?? throw new AiSdkException("OpenAI image edits need image data."), file.MediaType ?? "image/png", file.FileName);
+        return new OpenAIImageFile(
+            file.Data ?? throw new AiSdkException("OpenAI image edits need image data."),
+            file.MediaType ?? "image/png",
+            file.FileName
+        );
     }
 
     /// <summary>Generates or edits images.</summary>
-    public async Task<OpenAIImageGeneration> GenerateAsync(OpenAIImageCall call, CancellationToken cancellationToken)
+    public async Task<OpenAIImageGeneration> GenerateAsync(
+        OpenAIImageCall call,
+        CancellationToken cancellationToken
+    )
     {
         var warnings = new List<OpenAICallWarning>();
         if (call.AspectRatio != null)
         {
-            warnings.Add(new OpenAICallWarning("unsupported", "aspectRatio", "This model does not support aspect ratio. Use `size` instead."));
+            warnings.Add(
+                new OpenAICallWarning(
+                    "unsupported",
+                    "aspectRatio",
+                    "This model does not support aspect ratio. Use `size` instead."
+                )
+            );
         }
 
         if (call.Seed != null)
@@ -318,7 +379,8 @@ public sealed class OpenAIImageModel : IImageModel
         var timestamp = OpenAIClock.Now(_clock);
         if (call.Files is { Count: > 0 })
         {
-            return await EditAsync(call, warnings, timestamp, cancellationToken).ConfigureAwait(false);
+            return await EditAsync(call, warnings, timestamp, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         var openai = OpenAIJson.OpenAIObject(call.ProviderOptions);
@@ -364,13 +426,18 @@ public sealed class OpenAIImageModel : IImageModel
             body["response_format"] = "b64_json";
         }
 
-        var response = await _provider.Http.SendJsonStringAsync(
-            HttpMethod.Post,
-            _url("images/generations"),
-            body.ToJsonString(),
-            _headers(call.Headers),
-            cancellationToken).ConfigureAwait(false);
-        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
+        var response = await _provider
+            .Http.SendJsonStringAsync(
+                HttpMethod.Post,
+                _url("images/generations"),
+                body.ToJsonString(),
+                _headers(call.Headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        using var document = JsonDocument.Parse(
+            string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+        );
         return Read(document.RootElement, warnings, timestamp, response.Headers);
     }
 
@@ -378,7 +445,8 @@ public sealed class OpenAIImageModel : IImageModel
         OpenAIImageCall call,
         List<OpenAICallWarning> warnings,
         DateTimeOffset timestamp,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var openai = OpenAIJson.OpenAIObject(call.ProviderOptions);
         ValidateSafetyIdentifier(OpenAIJson.String(openai, "safetyIdentifier"));
@@ -386,19 +454,32 @@ public sealed class OpenAIImageModel : IImageModel
         if (outputFormat == "gif")
         {
             // The edit options accept png, jpeg and webp only. GIF output is generation only.
-            throw new Operations.InvalidArgumentException("providerOptions.openai.outputFormat", outputFormat, "`gif` output is only supported for image generation, not edits.");
+            throw new Operations.InvalidArgumentException(
+                "providerOptions.openai.outputFormat",
+                outputFormat,
+                "`gif` output is only supported for image generation, not edits."
+            );
         }
 
         var markup = OpenAIJson.String(openai, "markup");
         if (call.Mask != null && markup != null)
         {
-            throw new Operations.InvalidArgumentException("providerOptions.openai.markup", markup, "`markup` cannot be combined with `mask`.");
+            throw new Operations.InvalidArgumentException(
+                "providerOptions.openai.markup",
+                markup,
+                "`markup` cannot be combined with `mask`."
+            );
         }
 
         using var content = new MultipartFormDataContent();
         content.Add(new StringContent(ModelId), "model");
         content.Add(new StringContent(call.Prompt), "prompt");
-        content.Add(new StringContent(call.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)), "n");
+        content.Add(
+            new StringContent(
+                call.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            ),
+            "n"
+        );
         if (call.Size != null)
         {
             content.Add(new StringContent(call.Size), "size");
@@ -407,7 +488,13 @@ public sealed class OpenAIImageModel : IImageModel
         Add(content, "quality", OpenAIJson.String(openai, "quality"));
         Add(content, "background", OpenAIJson.String(openai, "background"));
         Add(content, "output_format", OpenAIJson.String(openai, "outputFormat"));
-        Add(content, "output_compression", OpenAIJson.Int(openai, "outputCompression")?.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Add(
+            content,
+            "output_compression",
+            OpenAIJson
+                .Int(openai, "outputCompression")
+                ?.ToString(System.Globalization.CultureInfo.InvariantCulture)
+        );
         Add(content, "complexity", OpenAIJson.String(openai, "complexity"));
         Add(content, "input_fidelity", OpenAIJson.String(openai, "inputFidelity"));
         Add(content, "moderation", OpenAIJson.String(openai, "moderation"));
@@ -416,7 +503,10 @@ public sealed class OpenAIImageModel : IImageModel
 
         // Several source images are sent as an image[] array.
         var imageField = call.Files!.Count > 1 ? "image[]" : "image";
-        var images = await Task.WhenAll(call.Files!.Select(file => ResolveFileAsync(file, "image.png", cancellationToken))).ConfigureAwait(false);
+        var images = await Task.WhenAll(
+                call.Files!.Select(file => ResolveFileAsync(file, "image.png", cancellationToken))
+            )
+            .ConfigureAwait(false);
         foreach (var image in images)
         {
             content.Add(ToContent(image), imageField, image.FileName);
@@ -424,7 +514,8 @@ public sealed class OpenAIImageModel : IImageModel
 
         if (call.Mask != null)
         {
-            var mask = await ResolveFileAsync(call.Mask, "mask.png", cancellationToken).ConfigureAwait(false);
+            var mask = await ResolveFileAsync(call.Mask, "mask.png", cancellationToken)
+                .ConfigureAwait(false);
             content.Add(ToContent(mask), "mask", mask.FileName);
         }
 
@@ -434,49 +525,70 @@ public sealed class OpenAIImageModel : IImageModel
             content.Add(ToContent(blob), "markup", blob.FileName);
         }
 
-        var response = await _provider.Http.SendBinaryAsync(
-            HttpMethod.Post,
-            _url("images/edits"),
-            content,
-            _headers(call.Headers),
-            cancellationToken).ConfigureAwait(false);
-        using var document = OpenAIJson.ParseResponse(System.Text.Encoding.UTF8.GetString(response.Body));
+        var response = await _provider
+            .Http.SendBinaryAsync(
+                HttpMethod.Post,
+                _url("images/edits"),
+                content,
+                _headers(call.Headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        using var document = OpenAIJson.ParseResponse(
+            System.Text.Encoding.UTF8.GetString(response.Body)
+        );
         return Read(document.RootElement, warnings, timestamp, response.Headers);
     }
 
     private static ByteArrayContent ToContent(ImageBlob blob)
     {
         var bytes = new ByteArrayContent(blob.Data);
-        bytes.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.TryParse(blob.MediaType, out var type)
+        bytes.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.TryParse(
+            blob.MediaType,
+            out var type
+        )
             ? type
             : new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
         return bytes;
     }
 
-    private async Task<ImageBlob> ResolveFileAsync(OpenAIImageFile file, string defaultName, CancellationToken cancellationToken)
+    private async Task<ImageBlob> ResolveFileAsync(
+        OpenAIImageFile file,
+        string defaultName,
+        CancellationToken cancellationToken
+    )
     {
         if (file.Url == null)
         {
             return new ImageBlob(file.Data!, file.MediaType, file.FileName ?? defaultName);
         }
 
-        return await DownloadBlobAsync(file.Url, defaultName, cancellationToken).ConfigureAwait(false);
+        return await DownloadBlobAsync(file.Url, defaultName, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <summary>
     /// Maps to <c>markupToBlob</c>: a base64 <c>data:</c> URL is decoded, any other value is downloaded.
     /// </summary>
-    private async Task<ImageBlob> MarkupToBlobAsync(string markup, CancellationToken cancellationToken)
+    private async Task<ImageBlob> MarkupToBlobAsync(
+        string markup,
+        CancellationToken cancellationToken
+    )
     {
         var dataUrl = MarkupDataUrl.Match(markup);
         if (!dataUrl.Success)
         {
-            return await DownloadBlobAsync(markup, "markup.png", cancellationToken).ConfigureAwait(false);
+            return await DownloadBlobAsync(markup, "markup.png", cancellationToken)
+                .ConfigureAwait(false);
         }
 
         if (!dataUrl.Groups[2].Success)
         {
-            throw new Operations.InvalidArgumentException("providerOptions.openai.markup", markup, "`markup` data URLs must be base64 encoded.");
+            throw new Operations.InvalidArgumentException(
+                "providerOptions.openai.markup",
+                markup,
+                "`markup` data URLs must be base64 encoded."
+            );
         }
 
         var mediaType = dataUrl.Groups[1].Value.Length == 0 ? "image/png" : dataUrl.Groups[1].Value;
@@ -487,7 +599,11 @@ public sealed class OpenAIImageModel : IImageModel
         }
         catch (FormatException)
         {
-            throw new Operations.InvalidArgumentException("providerOptions.openai.markup", markup, "`markup` data URLs must contain valid base64.");
+            throw new Operations.InvalidArgumentException(
+                "providerOptions.openai.markup",
+                markup,
+                "`markup` data URLs must contain valid base64."
+            );
         }
 
         return new ImageBlob(decoded, mediaType, "markup.png");
@@ -497,17 +613,31 @@ public sealed class OpenAIImageModel : IImageModel
     /// Maps to <c>downloadBlob</c> with <c>downloadFetch</c>: the URL is untrusted, so the request carries only the user agent,
     /// never the provider credentials, and every redirect hop is validated before it is requested.
     /// </summary>
-    private async Task<ImageBlob> DownloadBlobAsync(string url, string defaultName, CancellationToken cancellationToken)
+    private async Task<ImageBlob> DownloadBlobAsync(
+        string url,
+        string defaultName,
+        CancellationToken cancellationToken
+    )
     {
-        var (data, mediaType) = await ImageFileDownload.DownloadBlobAsync(_provider, _headers(null), url, cancellationToken).ConfigureAwait(false);
+        var (data, mediaType) = await ImageFileDownload
+            .DownloadBlobAsync(_provider, _headers(null), url, cancellationToken)
+            .ConfigureAwait(false);
         return new ImageBlob(data, mediaType, defaultName);
     }
 
-    private OpenAIImageGeneration Read(JsonElement root, IReadOnlyList<OpenAICallWarning> warnings, DateTimeOffset timestamp, IReadOnlyDictionary<string, string> headers)
+    private OpenAIImageGeneration Read(
+        JsonElement root,
+        IReadOnlyList<OpenAICallWarning> warnings,
+        DateTimeOffset timestamp,
+        IReadOnlyDictionary<string, string> headers
+    )
     {
         var images = new List<GeneratedImage>();
         var metadataImages = new JsonArray();
-        var count = root.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array ? data.GetArrayLength() : 0;
+        var count =
+            root.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array
+                ? data.GetArrayLength()
+                : 0;
         int? imageTokens = Nested(root, "image_tokens");
         int? textTokens = Nested(root, "text_tokens");
         if (data.ValueKind == JsonValueKind.Array)
@@ -515,22 +645,40 @@ public sealed class OpenAIImageModel : IImageModel
             var index = 0;
             foreach (var item in data.EnumerateArray())
             {
-                if (item.TryGetProperty("b64_json", out var b64) && b64.ValueKind == JsonValueKind.String)
+                if (
+                    item.TryGetProperty("b64_json", out var b64)
+                    && b64.ValueKind == JsonValueKind.String
+                )
                 {
-                    images.Add(new GeneratedImage("image/png", Convert.FromBase64String(b64.GetString() ?? string.Empty), null));
+                    images.Add(
+                        new GeneratedImage(
+                            "image/png",
+                            Convert.FromBase64String(b64.GetString() ?? string.Empty),
+                            null
+                        )
+                    );
                 }
-                else if (item.TryGetProperty("url", out var url) && url.ValueKind == JsonValueKind.String)
+                else if (
+                    item.TryGetProperty("url", out var url)
+                    && url.ValueKind == JsonValueKind.String
+                )
                 {
                     images.Add(new GeneratedImage("image/png", null, url.GetString()));
                 }
 
                 var entry = new JsonObject();
-                if (item.TryGetProperty("revised_prompt", out var revised) && revised.ValueKind == JsonValueKind.String)
+                if (
+                    item.TryGetProperty("revised_prompt", out var revised)
+                    && revised.ValueKind == JsonValueKind.String
+                )
                 {
                     entry["revisedPrompt"] = revised.GetString();
                 }
 
-                if (root.TryGetProperty("created", out var created) && created.TryGetInt64(out var createdSeconds))
+                if (
+                    root.TryGetProperty("created", out var created)
+                    && created.TryGetInt64(out var createdSeconds)
+                )
                 {
                     entry["created"] = createdSeconds;
                 }
@@ -567,12 +715,21 @@ public sealed class OpenAIImageModel : IImageModel
             OpenAIJson.ProviderMetadata(new JsonObject { ["images"] = metadataImages }),
             timestamp,
             ModelId,
-            headers);
+            headers
+        );
     }
 
-    private static void CopyString(JsonElement source, string sourceName, JsonObject target, string targetName)
+    private static void CopyString(
+        JsonElement source,
+        string sourceName,
+        JsonObject target,
+        string targetName
+    )
     {
-        if (source.TryGetProperty(sourceName, out var value) && value.ValueKind == JsonValueKind.String)
+        if (
+            source.TryGetProperty(sourceName, out var value)
+            && value.ValueKind == JsonValueKind.String
+        )
         {
             target[targetName] = value.GetString();
         }
@@ -597,17 +754,25 @@ public sealed class OpenAIImageModel : IImageModel
             return null;
         }
 
-        return usage.TryGetProperty(name, out var value) && value.TryGetInt32(out var number) ? number : null;
+        return usage.TryGetProperty(name, out var value) && value.TryGetInt32(out var number)
+            ? number
+            : null;
     }
 
     private static int? Nested(JsonElement root, string name)
     {
-        if (!root.TryGetProperty("usage", out var usage) || !usage.TryGetProperty("input_tokens_details", out var details))
+        if (
+            !root.TryGetProperty("usage", out var usage)
+            || !usage.TryGetProperty("input_tokens_details", out var details)
+        )
         {
             return null;
         }
 
-        return details.ValueKind == JsonValueKind.Object && details.TryGetProperty(name, out var value) && value.TryGetInt32(out var number)
+        return
+            details.ValueKind == JsonValueKind.Object
+            && details.TryGetProperty(name, out var value)
+            && value.TryGetInt32(out var number)
             ? number
             : null;
     }

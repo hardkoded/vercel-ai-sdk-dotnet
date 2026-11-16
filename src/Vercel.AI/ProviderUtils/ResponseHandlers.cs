@@ -42,7 +42,8 @@ public static class ResponseHandlers
         HttpResponseMessage response,
         string url,
         object? requestBodyValues = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         if (response is null)
         {
@@ -60,13 +61,17 @@ public static class ResponseHandlers
             };
         }
 
-        var bytes = await ResponseBodies.ReadResponseWithSizeLimitAsync(response, url, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var bytes = await ResponseBodies
+            .ReadResponseWithSizeLimitAsync(response, url, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
         return new ResponseHandlerResult<byte[]>(bytes, headers);
     }
 
     /// <summary>Passes the body through as a stream. Maps to <c>createBinaryStreamResponseHandler</c>.</summary>
     /// <exception cref="InvalidOperationException">The response has no body.</exception>
-    public static async Task<ResponseHandlerResult<Stream>> CreateBinaryStreamResponseAsync(HttpResponseMessage response)
+    public static async Task<ResponseHandlerResult<Stream>> CreateBinaryStreamResponseAsync(
+        HttpResponseMessage response
+    )
     {
         if (response is null)
         {
@@ -79,7 +84,10 @@ public static class ResponseHandlers
         }
 
         var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-        return new ResponseHandlerResult<Stream>(stream, JsonStreams.ExtractResponseHeaders(response));
+        return new ResponseHandlerResult<Stream>(
+            stream,
+            JsonStreams.ExtractResponseHeaders(response)
+        );
     }
 
     /// <summary>
@@ -88,12 +96,15 @@ public static class ResponseHandlers
     /// Maps to <c>createEventSourceResponseHandler</c>.
     /// </summary>
     /// <exception cref="InvalidOperationException">The response has no body.</exception>
-    public static async Task<ResponseHandlerResult<IAsyncEnumerable<JsonParseResult>>> CreateEventSourceResponseAsync(
+    public static async Task<
+        ResponseHandlerResult<IAsyncEnumerable<JsonParseResult>>
+    > CreateEventSourceResponseAsync(
         HttpResponseMessage response,
         string url,
         object? requestBodyValues,
         JsonNode? schema,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         if (response is null)
         {
@@ -108,8 +119,17 @@ public static class ResponseHandlers
         var headers = JsonStreams.ExtractResponseHeaders(response);
         var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
         return new ResponseHandlerResult<IAsyncEnumerable<JsonParseResult>>(
-            ReadEvents(stream, schema, (int)response.StatusCode, url, requestBodyValues, headers, cancellationToken),
-            headers);
+            ReadEvents(
+                stream,
+                schema,
+                (int)response.StatusCode,
+                url,
+                requestBodyValues,
+                headers,
+                cancellationToken
+            ),
+            headers
+        );
     }
 
     /// <summary>
@@ -124,7 +144,8 @@ public static class ResponseHandlers
         object? requestBodyValues,
         JsonNode? errorSchema,
         Func<JsonElement, string> errorToMessage,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         if (response is null)
         {
@@ -151,7 +172,15 @@ public static class ResponseHandlers
             return Create(statusText, statusCode, body, url, requestBodyValues, headers);
         }
 
-        return Create(errorToMessage(parsed.Value.Value), statusCode, body, url, requestBodyValues, headers, parsed.Value.Value.Clone());
+        return Create(
+            errorToMessage(parsed.Value.Value),
+            statusCode,
+            body,
+            url,
+            requestBodyValues,
+            headers,
+            parsed.Value.Value.Clone()
+        );
     }
 
     /// <summary>
@@ -163,7 +192,8 @@ public static class ResponseHandlers
         HttpResponseMessage response,
         string url,
         object? requestBodyValues = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         if (response is null)
         {
@@ -177,7 +207,8 @@ public static class ResponseHandlers
             body,
             url,
             requestBodyValues,
-            JsonStreams.ExtractResponseHeaders(response));
+            JsonStreams.ExtractResponseHeaders(response)
+        );
     }
 
     private static async IAsyncEnumerable<JsonParseResult> ReadEvents(
@@ -187,11 +218,14 @@ public static class ResponseHandlers
         string url,
         object? requestBodyValues,
         IReadOnlyDictionary<string, string> headers,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         using (stream)
         {
-            var enumerator = JsonStreams.ReadJsonEventsAsync(stream, schema, cancellationToken).GetAsyncEnumerator(cancellationToken);
+            var enumerator = JsonStreams
+                .ReadJsonEventsAsync(stream, schema, cancellationToken)
+                .GetAsyncEnumerator(cancellationToken);
             try
             {
                 while (true)
@@ -201,9 +235,15 @@ public static class ResponseHandlers
                     {
                         hasNext = await enumerator.MoveNextAsync().ConfigureAwait(false);
                     }
-                    catch (Exception exception) when (exception is IOException || exception is HttpRequestException)
+                    catch (Exception exception)
+                        when (exception is IOException || exception is HttpRequestException)
                     {
-                        throw new ApiException("Failed to process successful response", statusCode, null, exception)
+                        throw new ApiException(
+                            "Failed to process successful response",
+                            statusCode,
+                            null,
+                            exception
+                        )
                         {
                             Url = url,
                             RequestBodyValues = requestBodyValues,
@@ -234,7 +274,8 @@ public static class ResponseHandlers
         string url,
         object? requestBodyValues,
         IReadOnlyDictionary<string, string> headers,
-        object? errorData = null)
+        object? errorData = null
+    )
     {
         return new ApiException(message, statusCode, body)
         {
@@ -245,9 +286,15 @@ public static class ResponseHandlers
         };
     }
 
-    private static async Task<string> ReadTextAsync(HttpResponseMessage response, string url, CancellationToken cancellationToken)
+    private static async Task<string> ReadTextAsync(
+        HttpResponseMessage response,
+        string url,
+        CancellationToken cancellationToken
+    )
     {
-        var bytes = await ResponseBodies.ReadResponseWithSizeLimitAsync(response, url, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var bytes = await ResponseBodies
+            .ReadResponseWithSizeLimitAsync(response, url, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
         return Encoding.UTF8.GetString(bytes);
     }
 

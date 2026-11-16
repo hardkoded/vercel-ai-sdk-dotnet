@@ -7,12 +7,11 @@ namespace Vercel.AI.Util;
 /// <summary>Case-insensitive header list that preserves repeated values such as <c>Set-Cookie</c>.</summary>
 public sealed class HeaderCollection
 {
-    private readonly List<KeyValuePair<string, string>> _items = new List<KeyValuePair<string, string>>();
+    private readonly List<KeyValuePair<string, string>> _items =
+        new List<KeyValuePair<string, string>>();
 
     /// <summary>Creates an empty collection.</summary>
-    public HeaderCollection()
-    {
-    }
+    public HeaderCollection() { }
 
     /// <summary>Copies <paramref name="headers"/>.</summary>
     public HeaderCollection(IEnumerable<KeyValuePair<string, string>>? headers)
@@ -91,7 +90,10 @@ public static class PrepareHeaders
     /// Copies <paramref name="headers"/> and sets each default that is not already present.
     /// Header names are compared case-insensitively.
     /// </summary>
-    public static HeaderCollection Apply(HeaderCollection? headers, IReadOnlyDictionary<string, string>? defaultHeaders)
+    public static HeaderCollection Apply(
+        HeaderCollection? headers,
+        IReadOnlyDictionary<string, string>? defaultHeaders
+    )
     {
         var result = new HeaderCollection(headers == null ? null : headers.Entries());
         if (defaultHeaders == null)

@@ -7,8 +7,10 @@ using Vercel.AI.Azure;
 using Vercel.AI.OpenAI;
 using Vercel.AI.Provider;
 
-if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AZURE_API_KEY"))
-    || string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AZURE_RESOURCE_NAME")))
+if (
+    string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AZURE_API_KEY"))
+    || string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AZURE_RESOURCE_NAME"))
+)
 {
     Console.WriteLine("Set AZURE_API_KEY and AZURE_RESOURCE_NAME to run this example.");
     return;
@@ -18,131 +20,165 @@ var azure = AzureOpenAIProvider.Create();
 
 // generate-text/azure/responses-custom-tool.ts
 #region azure-responses-custom-tool-generate
-var customTool = await Ai.GenerateTextAsync(new GenerateTextOptions
-{
-    // Replace with your Azure deployment name that supports custom tools.
-    Model = azure.ResponsesModel("gpt-5.3-codex"),
-    Tools = new[]
+var customTool = await Ai.GenerateTextAsync(
+    new GenerateTextOptions
     {
-        ToTool(AzureOpenAITools.CustomTool(new OpenAICustomToolOptions
+        // Replace with your Azure deployment name that supports custom tools.
+        Model = azure.ResponsesModel("gpt-5.3-codex"),
+        Tools = new[]
         {
-            Name = "write_sql",
-            Description = "Write a SQL SELECT query to answer the user question.",
-            GrammarSyntax = "regex",
-            GrammarDefinition = "SELECT .+",
-        })),
-    },
-    ToolChoice = ToolChoice.Required,
-    Prompt = "Write a SQL query to get all users older than 25.",
-});
+            ToTool(
+                AzureOpenAITools.CustomTool(
+                    new OpenAICustomToolOptions
+                    {
+                        Name = "write_sql",
+                        Description = "Write a SQL SELECT query to answer the user question.",
+                        GrammarSyntax = "regex",
+                        GrammarDefinition = "SELECT .+",
+                    }
+                )
+            ),
+        },
+        ToolChoice = ToolChoice.Required,
+        Prompt = "Write a SQL query to get all users older than 25.",
+    }
+);
 #endregion
 
-Console.WriteLine("Tool calls: " + string.Join(", ", customTool.ToolCalls.Select(call => call.ToolName + " " + call.ArgumentsJson)));
+Console.WriteLine(
+    "Tool calls: "
+        + string.Join(
+            ", ",
+            customTool.ToolCalls.Select(call => call.ToolName + " " + call.ArgumentsJson)
+        )
+);
 Console.WriteLine("Finish reason: " + customTool.FinishReason);
 Console.WriteLine("Usage: " + customTool.Usage);
 
 // stream-text/azure/responses-custom-tool.ts
-var customToolStream = Ai.StreamTextAsync(new StreamTextOptions
-{
-    Model = azure.ResponsesModel("gpt-5.3-codex"),
-    Tools = new[]
+var customToolStream = Ai.StreamTextAsync(
+    new StreamTextOptions
     {
-        ToTool(AzureOpenAITools.CustomTool(new OpenAICustomToolOptions
+        Model = azure.ResponsesModel("gpt-5.3-codex"),
+        Tools = new[]
         {
-            Name = "write_sql",
-            Description = "Write a SQL SELECT query to answer the user question.",
-            GrammarSyntax = "regex",
-            GrammarDefinition = "SELECT .+",
-        })),
-    },
-    ToolChoice = ToolChoice.Required,
-    Prompt = "Write a SQL query to get all users older than 25.",
-});
+            ToTool(
+                AzureOpenAITools.CustomTool(
+                    new OpenAICustomToolOptions
+                    {
+                        Name = "write_sql",
+                        Description = "Write a SQL SELECT query to answer the user question.",
+                        GrammarSyntax = "regex",
+                        GrammarDefinition = "SELECT .+",
+                    }
+                )
+            ),
+        },
+        ToolChoice = ToolChoice.Required,
+        Prompt = "Write a SQL query to get all users older than 25.",
+    }
+);
 
 await PrintStream(customToolStream);
 
 // generate-text/azure/responses-shell-container.ts
 #region azure-responses-shell-container-generate
-var shell = await Ai.GenerateTextAsync(new GenerateTextOptions
-{
-    // Replace with your Azure deployment name that supports this shell mode.
-    Model = azure.ResponsesModel("gpt-5.4-mini"),
-    Tools = new[]
+var shell = await Ai.GenerateTextAsync(
+    new GenerateTextOptions
     {
-        AzureOpenAITools.Shell(new OpenAIShellToolOptions
+        // Replace with your Azure deployment name that supports this shell mode.
+        Model = azure.ResponsesModel("gpt-5.4-mini"),
+        Tools = new[]
         {
-            Environment = new OpenAIShellEnvironment { Type = "containerAuto" },
-        }),
-    },
-    StopWhen = StopWhen.IsStepCount(20),
-    Prompt = "Print \"Hello from container!\" and show the system info using uname -a",
-});
+            AzureOpenAITools.Shell(
+                new OpenAIShellToolOptions
+                {
+                    Environment = new OpenAIShellEnvironment { Type = "containerAuto" },
+                }
+            ),
+        },
+        StopWhen = StopWhen.IsStepCount(20),
+        Prompt = "Print \"Hello from container!\" and show the system info using uname -a",
+    }
+);
 #endregion
 
 Console.WriteLine("Result: " + shell.Text);
 
 // stream-text/azure/responses-shell-container.ts
-var shellStream = Ai.StreamTextAsync(new StreamTextOptions
-{
-    Model = azure.ResponsesModel("gpt-5.4-mini"),
-    Tools = new[]
+var shellStream = Ai.StreamTextAsync(
+    new StreamTextOptions
     {
-        AzureOpenAITools.Shell(new OpenAIShellToolOptions
+        Model = azure.ResponsesModel("gpt-5.4-mini"),
+        Tools = new[]
         {
-            Environment = new OpenAIShellEnvironment { Type = "containerAuto" },
-        }),
-    },
-    StopWhen = StopWhen.IsStepCount(20),
-    Prompt = "Print \"Hello from container!\" and show the system info using uname -a",
-});
+            AzureOpenAITools.Shell(
+                new OpenAIShellToolOptions
+                {
+                    Environment = new OpenAIShellEnvironment { Type = "containerAuto" },
+                }
+            ),
+        },
+        StopWhen = StopWhen.IsStepCount(20),
+        Prompt = "Print \"Hello from container!\" and show the system info using uname -a",
+    }
+);
 
 await PrintStream(shellStream);
 
 // generate-text/azure/responses-shell-container-skills.ts
-var skillZip = Convert.ToBase64String(File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "data", "island-rescue-skill.zip")));
+var skillZip = Convert.ToBase64String(
+    File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "data", "island-rescue-skill.zip"))
+);
 
-OpenAIShellToolOptions IslandRescueShell() => new()
-{
-    Environment = new OpenAIShellEnvironment
+OpenAIShellToolOptions IslandRescueShell() =>
+    new()
     {
-        Type = "containerAuto",
-        ContainerSkills =
-        [
-            new OpenAIShellInlineSkill
-            {
-                Name = "island-rescue",
-                Description = "How to be rescued from a lonely island",
-                Data = skillZip,
-            },
-        ],
-    },
-};
+        Environment = new OpenAIShellEnvironment
+        {
+            Type = "containerAuto",
+            ContainerSkills =
+            [
+                new OpenAIShellInlineSkill
+                {
+                    Name = "island-rescue",
+                    Description = "How to be rescued from a lonely island",
+                    Data = skillZip,
+                },
+            ],
+        },
+    };
 
 #region azure-responses-shell-container-skills-generate
-var skills = await Ai.GenerateTextAsync(new GenerateTextOptions
-{
-    // Replace with your Azure deployment name that supports this shell mode.
-    Model = azure.ResponsesModel("gpt-5.4-mini"),
-    Tools = new[] { AzureOpenAITools.Shell(IslandRescueShell()) },
-    StopWhen = StopWhen.IsStepCount(20),
-    Prompt = "You are trapped and lost on a lonely island in 1895. Find a way to get rescued!",
-});
+var skills = await Ai.GenerateTextAsync(
+    new GenerateTextOptions
+    {
+        // Replace with your Azure deployment name that supports this shell mode.
+        Model = azure.ResponsesModel("gpt-5.4-mini"),
+        Tools = new[] { AzureOpenAITools.Shell(IslandRescueShell()) },
+        StopWhen = StopWhen.IsStepCount(20),
+        Prompt = "You are trapped and lost on a lonely island in 1895. Find a way to get rescued!",
+    }
+);
 #endregion
 
 Console.WriteLine("Result: " + skills.Text);
 
 // stream-text/azure/responses-shell-container-skills.ts
-var skillsStream = Ai.StreamTextAsync(new StreamTextOptions
-{
-    Model = azure.ResponsesModel("gpt-5.4-mini"),
-    Tools = new[] { AzureOpenAITools.Shell(IslandRescueShell()) },
-    StopWhen = StopWhen.IsStepCount(20),
-    Prompt = "You are trapped and lost on a lonely island in 1895. Find a way to get rescued!",
-});
+var skillsStream = Ai.StreamTextAsync(
+    new StreamTextOptions
+    {
+        Model = azure.ResponsesModel("gpt-5.4-mini"),
+        Tools = new[] { AzureOpenAITools.Shell(IslandRescueShell()) },
+        StopWhen = StopWhen.IsStepCount(20),
+        Prompt = "You are trapped and lost on a lonely island in 1895. Find a way to get rescued!",
+    }
+);
 
 await PrintStream(skillsStream);
 
-static Tool ToTool(LanguageModelTool tool) => Tool.ProviderDefined(tool.ProviderToolId!, tool.Name, tool.Args);
+static Tool ToTool(LanguageModelTool tool) =>
+    Tool.ProviderDefined(tool.ProviderToolId!, tool.Name, tool.Args);
 
 static async Task PrintStream(StreamTextResult stream)
 {
@@ -154,10 +190,14 @@ static async Task PrintStream(StreamTextResult stream)
                 Console.Write(delta.Text);
                 break;
             case ToolCallPart call:
-                Console.WriteLine($"\nTool call: {call.ToolCall.ToolName} {call.ToolCall.ArgumentsJson}");
+                Console.WriteLine(
+                    $"\nTool call: {call.ToolCall.ToolName} {call.ToolCall.ArgumentsJson}"
+                );
                 break;
             case ToolResultPart result:
-                Console.WriteLine($"\nTool result: {result.Result.ToolName} {result.Result.OutputJson}");
+                Console.WriteLine(
+                    $"\nTool result: {result.Result.ToolName} {result.Result.OutputJson}"
+                );
                 break;
             case ErrorPart error:
                 Console.Error.WriteLine("Error: " + error.Message);

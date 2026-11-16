@@ -19,26 +19,57 @@ internal static class DecideSupport
                 "Pick a \"team\".\nKeep this string.",
                 new Dictionary<string, object?>
                 {
-                    ["billing"] = new Dictionary<string, object?> { ["includes"] = new List<object?> { "charges" } },
-                    ["support"] = new List<object?> { "help", new Dictionary<string, object?> { ["urgent"] = true } },
+                    ["billing"] = new Dictionary<string, object?>
+                    {
+                        ["includes"] = new List<object?> { "charges" },
+                    },
+                    ["support"] = new List<object?>
+                    {
+                        "help",
+                        new Dictionary<string, object?> { ["urgent"] = true },
+                    },
                     ["other"] = null,
-                }),
+                }
+            ),
             ["severity"] = Q(
                 "score",
                 new Dictionary<string, object?> { ["task"] = "Rate severity" },
-                new List<object?> { new Dictionary<string, object?> { ["level"] = "low" }, new List<object?> { "medium", "high" }, null }),
+                new List<object?>
+                {
+                    new Dictionary<string, object?> { ["level"] = "low" },
+                    new List<object?> { "medium", "high" },
+                    null,
+                }
+            ),
             ["refund"] = Q(
                 "boolean",
-                new List<object?> { "Refund?", new Dictionary<string, object?> { ["locale"] = "en" } },
+                new List<object?>
+                {
+                    "Refund?",
+                    new Dictionary<string, object?> { ["locale"] = "en" },
+                },
                 new Dictionary<string, object?>
                 {
                     ["true"] = new Dictionary<string, object?> { ["requested"] = true },
                     ["false"] = new List<object?> { "status only" },
-                }),
+                }
+            ),
             ["noCriteria"] = Q("boolean", "No criteria."),
             ["emptyCriteria"] = Q("boolean", "Empty criteria.", new Dictionary<string, object?>()),
-            ["nullCriteria"] = Q("boolean", "Null criteria.", new Dictionary<string, object?> { ["true"] = null, ["false"] = null }),
-            ["falseCriteria"] = Q("boolean", "False criteria.", new Dictionary<string, object?> { ["true"] = null, ["false"] = "No refund requested" }),
+            ["nullCriteria"] = Q(
+                "boolean",
+                "Null criteria.",
+                new Dictionary<string, object?> { ["true"] = null, ["false"] = null }
+            ),
+            ["falseCriteria"] = Q(
+                "boolean",
+                "False criteria.",
+                new Dictionary<string, object?>
+                {
+                    ["true"] = null,
+                    ["false"] = "No refund requested",
+                }
+            ),
         };
     }
 
@@ -52,9 +83,18 @@ internal static class DecideSupport
         return new Dictionary<string, object?> { ["type"] = "json", ["value"] = value };
     }
 
-    internal static Dictionary<string, object?> FilePart(string mediaType, object data, string? filename)
+    internal static Dictionary<string, object?> FilePart(
+        string mediaType,
+        object data,
+        string? filename
+    )
     {
-        var part = new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = mediaType, ["data"] = new Dictionary<string, object?> { ["type"] = "data", ["data"] = data } };
+        var part = new Dictionary<string, object?>
+        {
+            ["type"] = "file",
+            ["mediaType"] = mediaType,
+            ["data"] = new Dictionary<string, object?> { ["type"] = "data", ["data"] = data },
+        };
         if (filename != null)
         {
             part["filename"] = filename;
@@ -67,9 +107,28 @@ internal static class DecideSupport
     {
         return new Dictionary<string, DecisionQuestion>
         {
-            ["topic"] = Q("choice", "Team?", new Dictionary<string, object?> { ["billing"] = null, ["support"] = new Dictionary<string, object?> { ["includes"] = new List<object?> { "help" } } }),
-            ["severity"] = Q("score", new List<object?> { "Severity?" }, new List<object?> { "Low", "Medium", "High" }),
-            ["refund"] = Q("boolean", "Refund?", new Dictionary<string, object?> { ["true"] = "Money back", ["false"] = null }),
+            ["topic"] = Q(
+                "choice",
+                "Team?",
+                new Dictionary<string, object?>
+                {
+                    ["billing"] = null,
+                    ["support"] = new Dictionary<string, object?>
+                    {
+                        ["includes"] = new List<object?> { "help" },
+                    },
+                }
+            ),
+            ["severity"] = Q(
+                "score",
+                new List<object?> { "Severity?" },
+                new List<object?> { "Low", "Medium", "High" }
+            ),
+            ["refund"] = Q(
+                "boolean",
+                "Refund?",
+                new Dictionary<string, object?> { ["true"] = "Money back", ["false"] = null }
+            ),
         };
     }
 
@@ -78,8 +137,25 @@ internal static class DecideSupport
         return new Dictionary<string, DecisionAnswer>
         {
             ["refund"] = new DecisionAnswer("boolean", probability: 0.92),
-            ["severity"] = new DecisionAnswer("score", score: 1.6, probabilities: new Dictionary<string, double> { ["0"] = 0, ["1"] = 0.4, ["2"] = 0.6 }),
-            ["topic"] = new DecisionAnswer("choice", choice: "billing", probabilities: new Dictionary<string, double> { ["billing"] = 0.9, ["support"] = 0.1 }),
+            ["severity"] = new DecisionAnswer(
+                "score",
+                score: 1.6,
+                probabilities: new Dictionary<string, double>
+                {
+                    ["0"] = 0,
+                    ["1"] = 0.4,
+                    ["2"] = 0.6,
+                }
+            ),
+            ["topic"] = new DecisionAnswer(
+                "choice",
+                choice: "billing",
+                probabilities: new Dictionary<string, double>
+                {
+                    ["billing"] = 0.9,
+                    ["support"] = 0.1,
+                }
+            ),
         };
     }
 
@@ -104,7 +180,8 @@ internal sealed class DecideModel : IDecisionCaller
 
     public IReadOnlyList<string> SupportedQuestionTypes => Supported;
 
-    public DecisionModelResult Result { get; set; } = new DecisionModelResult(DecideSupport.SampleAnswers());
+    public DecisionModelResult Result { get; set; } =
+        new DecisionModelResult(DecideSupport.SampleAnswers());
 
     public bool ReturnNullAnswers { get; set; }
 
@@ -118,7 +195,10 @@ internal sealed class DecideModel : IDecisionCaller
 
     public List<DecisionModelCall> Calls { get; } = new List<DecisionModelCall>();
 
-    public Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken)
+    public Task<DecisionModelResult> DoDecideAsync(
+        DecisionModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         Calls.Add(call);
         if (AbortDuringCall is { } abort)
@@ -136,12 +216,18 @@ internal sealed class DecideModel : IDecisionCaller
         {
             Failures--;
             var message = FailureStatus == 529 ? "Overloaded" : "Rate limited";
-            throw new RetryableCallException(message, FailureStatus, new Dictionary<string, string> { ["retry-after-ms"] = "0" });
+            throw new RetryableCallException(
+                message,
+                FailureStatus,
+                new Dictionary<string, string> { ["retry-after-ms"] = "0" }
+            );
         }
 
         if (ReturnNullAnswers)
         {
-            return Task.FromResult(new DecisionModelResult(new Dictionary<string, DecisionAnswer>()));
+            return Task.FromResult(
+                new DecisionModelResult(new Dictionary<string, DecisionAnswer>())
+            );
         }
 
         return Task.FromResult(Result);

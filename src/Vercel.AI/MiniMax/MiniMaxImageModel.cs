@@ -16,7 +16,13 @@ namespace Vercel.AI.MiniMax;
 public sealed class MiniMaxImageModelConfig
 {
     /// <summary>Creates a configuration.</summary>
-    public MiniMaxImageModelConfig(string provider, string baseUrl, Func<Dictionary<string, string>> headers, HttpClient httpClient, Func<DateTime>? currentDate = null)
+    public MiniMaxImageModelConfig(
+        string provider,
+        string baseUrl,
+        Func<Dictionary<string, string>> headers,
+        HttpClient httpClient,
+        Func<DateTime>? currentDate = null
+    )
     {
         Provider = provider ?? throw new ArgumentNullException(nameof(provider));
         BaseUrl = baseUrl ?? throw new ArgumentNullException(nameof(baseUrl));
@@ -84,31 +90,63 @@ public sealed class MiniMaxImageModel : IImageModel, IImageCaller
     }
 
     /// <inheritdoc />
-    public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+    public async Task<ImageGenerationResult> DoGenerateAsync(
+        ImageCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         if (options is null)
         {
             throw new ArgumentNullException(nameof(options));
         }
 
-        var result = await DoGenerateAsync(options.ToModelCall(cancellationToken), cancellationToken).ConfigureAwait(false);
+        var result = await DoGenerateAsync(
+                options.ToModelCall(cancellationToken),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var images = new List<ProviderImage>();
         foreach (var image in result.Images)
         {
             var bytes = (byte[])image!;
-            images.Add(new ProviderImage(MediaTypes.DetectMediaType(bytes, "image") ?? "image/png", bytes, null));
+            images.Add(
+                new ProviderImage(
+                    MediaTypes.DetectMediaType(bytes, "image") ?? "image/png",
+                    bytes,
+                    null
+                )
+            );
         }
 
-        var usage = result.Usage == null ? null : new LanguageModelUsage(result.Usage.InputTokens, result.Usage.OutputTokens, result.Usage.TotalTokens);
+        var usage =
+            result.Usage == null
+                ? null
+                : new LanguageModelUsage(
+                    result.Usage.InputTokens,
+                    result.Usage.OutputTokens,
+                    result.Usage.TotalTokens
+                );
         var response = new ImageResponseInfo(
-            result.Response.Timestamp is { } timestamp ? new DateTimeOffset(timestamp) : DateTimeOffset.UtcNow,
+            result.Response.Timestamp is { } timestamp
+                ? new DateTimeOffset(timestamp)
+                : DateTimeOffset.UtcNow,
             result.Response.ModelId,
-            result.Response.Headers);
-        return new ImageGenerationResult(images, result.Warnings.Select(warning => warning.ToCallWarning()).ToList(), response, usage, result.ProviderMetadata);
+            result.Response.Headers
+        );
+        return new ImageGenerationResult(
+            images,
+            result.Warnings.Select(warning => warning.ToCallWarning()).ToList(),
+            response,
+            usage,
+            result.ProviderMetadata
+        );
     }
 
     /// <inheritdoc />
-    public async Task<ImageModelResult> DoGenerateAsync(ImageModelCall call, CancellationToken cancellationToken)
+    public async Task<ImageModelResult> DoGenerateAsync(
+        ImageModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (call is null)
         {
@@ -123,22 +161,40 @@ public sealed class MiniMaxImageModel : IImageModel, IImageCaller
 
         if (call.Mask != null)
         {
-            throw new UnsupportedFunctionalityException("MiniMax image masks", "'MiniMax image masks' functionality not supported.");
+            throw new UnsupportedFunctionalityException(
+                "MiniMax image masks",
+                "'MiniMax image masks' functionality not supported."
+            );
         }
 
         var minimax = MiniMaxOptions(call.ProviderOptions);
         var area = ReadString(minimax, "area", MiniMaxImageModelOptions.MiniMaxImageAreas);
-        var outputFormat = ReadString(minimax, "outputFormat", MiniMaxImageModelOptions.MiniMaxImageOutputFormats);
+        var outputFormat = ReadString(
+            minimax,
+            "outputFormat",
+            MiniMaxImageModelOptions.MiniMaxImageOutputFormats
+        );
         var outputCompression = ReadCompression(minimax);
         var disablePromptEnhanced = ReadBool(minimax, "disablePromptEnhanced");
         var hasFiles = call.Files is { Count: > 0 };
         if (hasFiles && disablePromptEnhanced != null)
         {
-            warnings.Add(new OperationWarning("unsupported", feature: "disablePromptEnhanced", details: "MiniMax image edits always apply prompt enhancement."));
+            warnings.Add(
+                new OperationWarning(
+                    "unsupported",
+                    feature: "disablePromptEnhanced",
+                    details: "MiniMax image edits always apply prompt enhancement."
+                )
+            );
         }
 
         var timestamp = Config.CurrentDate?.Invoke() ?? DateTime.UtcNow;
-        var body = new JsonObject { ["model"] = ModelId, ["prompt"] = call.Prompt, ["n"] = call.N };
+        var body = new JsonObject
+        {
+            ["model"] = ModelId,
+            ["prompt"] = call.Prompt,
+            ["n"] = call.N,
+        };
         AddIfNotNull(body, "size", call.Size);
         AddIfNotNull(body, "aspect_ratio", call.AspectRatio);
         AddIfNotNull(body, "area", area);
@@ -158,7 +214,12 @@ public sealed class MiniMaxImageModel : IImageModel, IImageCaller
             var images = new JsonArray();
             foreach (var file in call.Files!)
             {
-                images.Add(new JsonObject { ["image_url"] = FileDataConversions.ConvertImageModelFileToDataUri(file) });
+                images.Add(
+                    new JsonObject
+                    {
+                        ["image_url"] = FileDataConversions.ConvertImageModelFileToDataUri(file),
+                    }
+                );
             }
 
             body["images"] = images;
@@ -166,14 +227,32 @@ public sealed class MiniMaxImageModel : IImageModel, IImageCaller
 
         // URL output supports the full batch size without the base64 area limit.
         body["response_format"] = "url";
-        var headers = ProviderExchange.Merge(Config.Headers().ToDictionary(pair => pair.Key, pair => (string?)pair.Value), call.Headers);
-        var uri = ApiKeys.Combine(Config.BaseUrl, "/images/" + (hasFiles ? "edits" : "generations"));
-        var exchange = await ProviderExchange.SendAsync(Config.HttpClient, HttpMethod.Post, uri, ProviderExchange.Json(body.ToJsonString()), headers, cancellationToken).ConfigureAwait(false);
+        var headers = ProviderExchange.Merge(
+            Config.Headers().ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
+            call.Headers
+        );
+        var uri = ApiKeys.Combine(
+            Config.BaseUrl,
+            "/images/" + (hasFiles ? "edits" : "generations")
+        );
+        var exchange = await ProviderExchange
+            .SendAsync(
+                Config.HttpClient,
+                HttpMethod.Post,
+                uri,
+                ProviderExchange.Json(body.ToJsonString()),
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         using var document = JsonDocument.Parse(exchange.Body);
         var root = document.RootElement;
         if (!root.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array)
         {
-            throw new InvalidResponseDataException(exchange.Body, "MiniMax image response has no data array.");
+            throw new InvalidResponseDataException(
+                exchange.Body,
+                "MiniMax image response has no data array."
+            );
         }
 
         var successful = new List<JsonElement>();
@@ -181,10 +260,22 @@ public sealed class MiniMaxImageModel : IImageModel, IImageCaller
         foreach (var image in data.EnumerateArray())
         {
             position++;
-            if (image.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
+            if (
+                image.TryGetProperty("error", out var error)
+                && error.ValueKind == JsonValueKind.Object
+            )
             {
-                var message = error.TryGetProperty("message", out var text) && text.ValueKind == JsonValueKind.String ? text.GetString() : null;
-                warnings.Add(new OperationWarning("other", message: "Image " + position + " failed: " + message));
+                var message =
+                    error.TryGetProperty("message", out var text)
+                    && text.ValueKind == JsonValueKind.String
+                        ? text.GetString()
+                        : null;
+                warnings.Add(
+                    new OperationWarning(
+                        "other",
+                        message: "Image " + position + " failed: " + message
+                    )
+                );
                 continue;
             }
 
@@ -194,16 +285,36 @@ public sealed class MiniMaxImageModel : IImageModel, IImageCaller
         var downloads = new List<object?>();
         foreach (var image in successful)
         {
-            var url = ReadOptionalString(image, "url") ?? throw new AiSdkException("MiniMax returned an image without a URL.");
-            var response = await ProviderExchange.GetResponseUrlAsync(Config.HttpClient, url, Config.BaseUrl, DownloadUrls.ValidateDownloadUrl, null, cancellationToken, null, ProviderExchange.UserAgentOnly(headers)).ConfigureAwait(false);
+            var url = ReadOptionalString(image, "url")
+                ?? throw new AiSdkException("MiniMax returned an image without a URL.");
+            var response = await ProviderExchange
+                .GetResponseUrlAsync(
+                    Config.HttpClient,
+                    url,
+                    Config.BaseUrl,
+                    DownloadUrls.ValidateDownloadUrl,
+                    null,
+                    cancellationToken,
+                    null,
+                    ProviderExchange.UserAgentOnly(headers)
+                )
+                .ConfigureAwait(false);
             downloads.Add(response.Bytes);
         }
 
         OperationUsage? usage = null;
-        JsonElement? rawUsage = root.TryGetProperty("usage", out var usageElement) && usageElement.ValueKind == JsonValueKind.Object ? usageElement : null;
+        JsonElement? rawUsage =
+            root.TryGetProperty("usage", out var usageElement)
+            && usageElement.ValueKind == JsonValueKind.Object
+                ? usageElement
+                : null;
         if (rawUsage is { } counts)
         {
-            usage = new OperationUsage(ReadOptionalInt(counts, "input_tokens"), ReadOptionalInt(counts, "output_tokens"), ReadOptionalInt(counts, "total_tokens"));
+            usage = new OperationUsage(
+                ReadOptionalInt(counts, "input_tokens"),
+                ReadOptionalInt(counts, "output_tokens"),
+                ReadOptionalInt(counts, "total_tokens")
+            );
         }
 
         var outputFormatReported = ReadOptionalString(root, "output_format");
@@ -235,17 +346,29 @@ public sealed class MiniMaxImageModel : IImageModel, IImageCaller
             imageMetadata.Add(entry);
         }
 
-        var providerMetadata = JsonSerializer.SerializeToElement(new JsonObject { [MiniMaxProvider.ProviderId] = new JsonObject { ["images"] = imageMetadata } });
-        return new ImageModelResult(downloads, warnings, usage, providerMetadata, new ProviderResponse(exchange.Headers, timestamp: timestamp, modelId: ModelId));
+        var providerMetadata = JsonSerializer.SerializeToElement(
+            new JsonObject
+            {
+                [MiniMaxProvider.ProviderId] = new JsonObject { ["images"] = imageMetadata },
+            }
+        );
+        return new ImageModelResult(
+            downloads,
+            warnings,
+            usage,
+            providerMetadata,
+            new ProviderResponse(exchange.Headers, timestamp: timestamp, modelId: ModelId)
+        );
     }
 
     private static JsonElement? MiniMaxOptions(JsonElement? providerOptions)
     {
-        return providerOptions is { ValueKind: JsonValueKind.Object } options
+        return
+            providerOptions is { ValueKind: JsonValueKind.Object } options
             && options.TryGetProperty(MiniMaxProvider.ProviderId, out var minimax)
             && minimax.ValueKind == JsonValueKind.Object
-                ? minimax
-                : null;
+            ? minimax
+            : null;
     }
 
     private static void AddIfNotNull(JsonObject body, string name, string? value)
@@ -256,16 +379,28 @@ public sealed class MiniMaxImageModel : IImageModel, IImageCaller
         }
     }
 
-    private static string? ReadString(JsonElement? options, string name, IReadOnlyList<string> allowed)
+    private static string? ReadString(
+        JsonElement? options,
+        string name,
+        IReadOnlyList<string> allowed
+    )
     {
-        if (options is not { } bag || !bag.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null)
+        if (
+            options is not { } bag
+            || !bag.TryGetProperty(name, out var value)
+            || value.ValueKind == JsonValueKind.Null
+        )
         {
             return null;
         }
 
         if (value.ValueKind != JsonValueKind.String || !allowed.Contains(value.GetString()!))
         {
-            throw new InvalidArgumentException("providerOptions.minimax." + name, value.GetRawText(), "must be one of " + string.Join(", ", allowed) + ".");
+            throw new InvalidArgumentException(
+                "providerOptions.minimax." + name,
+                value.GetRawText(),
+                "must be one of " + string.Join(", ", allowed) + "."
+            );
         }
 
         return value.GetString();
@@ -273,14 +408,22 @@ public sealed class MiniMaxImageModel : IImageModel, IImageCaller
 
     private static bool? ReadBool(JsonElement? options, string name)
     {
-        if (options is not { } bag || !bag.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null)
+        if (
+            options is not { } bag
+            || !bag.TryGetProperty(name, out var value)
+            || value.ValueKind == JsonValueKind.Null
+        )
         {
             return null;
         }
 
         if (value.ValueKind != JsonValueKind.True && value.ValueKind != JsonValueKind.False)
         {
-            throw new InvalidArgumentException("providerOptions.minimax." + name, value.GetRawText(), "must be a boolean.");
+            throw new InvalidArgumentException(
+                "providerOptions.minimax." + name,
+                value.GetRawText(),
+                "must be a boolean."
+            );
         }
 
         return value.GetBoolean();
@@ -288,14 +431,27 @@ public sealed class MiniMaxImageModel : IImageModel, IImageCaller
 
     private static int? ReadCompression(JsonElement? options)
     {
-        if (options is not { } bag || !bag.TryGetProperty("outputCompression", out var value) || value.ValueKind == JsonValueKind.Null)
+        if (
+            options is not { } bag
+            || !bag.TryGetProperty("outputCompression", out var value)
+            || value.ValueKind == JsonValueKind.Null
+        )
         {
             return null;
         }
 
-        if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt32(out var number) || number < 0 || number > 100)
+        if (
+            value.ValueKind != JsonValueKind.Number
+            || !value.TryGetInt32(out var number)
+            || number < 0
+            || number > 100
+        )
         {
-            throw new InvalidArgumentException("providerOptions.minimax.outputCompression", value.GetRawText(), "must be an integer from 0 to 100.");
+            throw new InvalidArgumentException(
+                "providerOptions.minimax.outputCompression",
+                value.GetRawText(),
+                "must be an integer from 0 to 100."
+            );
         }
 
         return number;
@@ -303,11 +459,19 @@ public sealed class MiniMaxImageModel : IImageModel, IImageCaller
 
     private static string? ReadOptionalString(JsonElement element, string name)
     {
-        return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        return
+            element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
     }
 
     private static int? ReadOptionalInt(JsonElement element, string name)
     {
-        return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number) ? number : null;
+        return
+            element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Number
+            && value.TryGetInt32(out var number)
+            ? number
+            : null;
     }
 }
