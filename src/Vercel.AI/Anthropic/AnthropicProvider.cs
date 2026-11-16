@@ -585,7 +585,7 @@ public class AnthropicLanguageModel : ILanguageModel
         try
         {
             // The first chunk needs to be pulled immediately to check if it is an error.
-            var events = await ThrowIfFirstChunkIsErrorAsync(sse, cancellationToken).ConfigureAwait(false);
+            var events = await ThrowIfFirstChunkIsErrorAsync(sse, _provider.RequestUri(ModelId, true), prepared.Body, cancellationToken).ConfigureAwait(false);
             return sse.ToStreamResult(StreamAsync(options, prepared, events, cancellationToken), body);
         }
         catch
@@ -602,6 +602,8 @@ public class AnthropicLanguageModel : ILanguageModel
     /// </summary>
     private static async Task<IAsyncEnumerable<string>> ThrowIfFirstChunkIsErrorAsync(
         ProviderSseResponse sse,
+        Uri url,
+        JsonObject requestBodyValues,
         CancellationToken cancellationToken)
     {
         var read = new List<string>();
@@ -634,7 +636,7 @@ public class AnthropicLanguageModel : ILanguageModel
                     var errorType = error["type"] is JsonValue kind && kind.TryGetValue<string>(out var kindText) ? kindText : null;
                     var message = error["message"] is JsonValue messageValue && messageValue.TryGetValue<string>(out var messageText) ? messageText : "Unknown provider error.";
                     var statusCode = AnthropicStreamError.StatusCode(errorType) ?? 500;
-                    throw ProviderHttp.MapStatusWithHeaders(statusCode, message, error.ToJsonString(), sse.Headers);
+                    throw ProviderHttp.MapStatusWithHeaders(statusCode, message, error.ToJsonString(), sse.Headers, url.ToString(), requestBodyValues);
                 }
 
                 break;

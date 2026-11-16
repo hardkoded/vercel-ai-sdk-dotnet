@@ -425,7 +425,7 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should throw an api error when the first stream chunk is an overloaded error", Coverage = UpstreamCoverage.Partial, Note = "The exception does not carry the request URL or the request body values.")]
+    [UpstreamTest(Prefix + "should throw an api error when the first stream chunk is an overloaded error")]
     public async Task Should_throw_an_api_error_when_the_first_stream_chunk_is_an_overloaded_error()
     {
         var handler = new SseStreamHandler(new[]
@@ -439,6 +439,12 @@ public sealed class DoStreamTests
         var exception = await Assert.ThrowsAsync<InternalServerException>(() => provider.LanguageModel("claude-3-haiku-20240307").DoStreamAsync(AnthropicParity.Hello(), CancellationToken.None));
 
         Assert.Equal("Overloaded", exception.Message);
+        Assert.Equal("https://api.anthropic.com/v1/messages", exception.Url);
+        var requestBody = Assert.IsAssignableFrom<JsonNode>(exception.RequestBodyValues);
+        Assert.Equal("claude-3-haiku-20240307", (string?)requestBody["model"]);
+        Assert.Equal(4096, (int?)requestBody["max_tokens"]);
+        Assert.True((bool?)requestBody["stream"]);
+        Assert.Equal("Hello", (string?)requestBody["messages"]![0]!["content"]![0]!["text"]);
         Assert.Equal(529, exception.StatusCode);
         Assert.True(ProviderHttp.IsRetryable(exception.StatusCode));
         Assert.True(JsonNode.DeepEquals(JsonNode.Parse("{\"details\":null,\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}"), JsonNode.Parse(exception.ResponseBody!)));
