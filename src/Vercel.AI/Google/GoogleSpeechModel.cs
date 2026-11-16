@@ -30,7 +30,7 @@ public sealed class GoogleSpeechCall
     /// <summary>Speaking rate. Gemini TTS ignores it.</summary>
     public double? Speed { get; set; }
 
-    /// <summary>Language. Gemini TTS ignores it.</summary>
+    /// <summary>Language code forwarded as <c>speechConfig.languageCode</c>. <c>auto</c> lets Gemini detect it.</summary>
     public string? Language { get; set; }
 
     /// <summary>Output format such as <c>wav</c> or <c>pcm</c>.</summary>
@@ -208,6 +208,7 @@ public sealed class GoogleSpeechModel : ISpeechModel
 
         var structured = !modelId.StartsWith("gemini-2.5-", StringComparison.Ordinal) && !modelId.StartsWith("gemini-3.1-", StringComparison.Ordinal);
         var voice = string.IsNullOrEmpty(call.Voice) ? "Kore" : call.Voice!;
+        var languageCode = call.Language == "auto" ? null : call.Language;
         JsonObject speechConfig;
         if (google.ValueKind == JsonValueKind.Object && google.TryGetProperty("multiSpeakerVoiceConfig", out var multi))
         {
@@ -216,6 +217,11 @@ public sealed class GoogleSpeechModel : ISpeechModel
         else
         {
             speechConfig = new JsonObject { ["voiceConfig"] = new JsonObject { ["prebuiltVoiceConfig"] = new JsonObject { ["voiceName"] = voice } } };
+        }
+
+        if (languageCode != null)
+        {
+            speechConfig["languageCode"] = languageCode;
         }
 
         var prompt = call.Text;
@@ -234,11 +240,6 @@ public sealed class GoogleSpeechModel : ISpeechModel
         if (call.Speed != null)
         {
             warnings.Add(GoogleWarning.Unsupported("speed", "Google Gemini TTS models do not support the speed option. It was ignored."));
-        }
-
-        if (call.Language != null)
-        {
-            warnings.Add(GoogleWarning.Unsupported("language", "Google Gemini TTS models do not support the language option."));
         }
 
         var part = new JsonObject { ["text"] = prompt };

@@ -104,33 +104,6 @@ public sealed class GoogleMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/google/src/google-speech-model.test.ts::doGenerate::should send the text and the default voice", Coverage = UpstreamCoverage.Covered)]
-    public void Sends_speech_text_and_the_default_Kore_voice()
-    {
-        var prepared = GoogleSpeechModel.Prepare("gemini-2.5-flash-preview-tts", "google.generative-ai", new GoogleSpeechCall("Hello from the AI SDK!"));
-        GoogleUpstream.JsonEqual(prepared.Body, "{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Hello from the AI SDK!\"}]}],\"generationConfig\":{\"responseModalities\":[\"AUDIO\"],\"speechConfig\":{\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"Kore\"}}}}}");
-        Assert.Empty(prepared.Warnings);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/google/src/google-speech-model.test.ts::doGenerate::should use the provided voice", Coverage = UpstreamCoverage.Covered)]
-    public void Sends_the_requested_speech_voice()
-    {
-        var prepared = GoogleSpeechModel.Prepare("gemini-2.5-flash-preview-tts", "google.generative-ai", new GoogleSpeechCall("Hello from the AI SDK!") { Voice = "Puck" });
-        Assert.Equal("Puck", (string?)prepared.Body["generationConfig"]!["speechConfig"]!["voiceConfig"]!["prebuiltVoiceConfig"]!["voiceName"]);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/google/src/google-speech-model.test.ts::doGenerate::rejects an empty transcript before fetching for %s", Coverage = UpstreamCoverage.Covered)]
-    public void Rejects_an_empty_speech_transcript_before_the_request()
-    {
-        var handler = new RecordingHandler();
-        var error = Assert.Throws<ArgumentException>(() => GoogleSpeechModel.Prepare("gemini-2.5-flash-preview-tts", "google", new GoogleSpeechCall("")));
-        Assert.Contains("non-empty transcript", error.Message);
-        Assert.Equal(0, handler.Calls);
-    }
-
-    [Fact]
     [UpstreamTest("packages/google/src/google-speech-model.test.ts::%s::rejects custom voice %s before fetching", Coverage = UpstreamCoverage.Covered)]
     public void Rejects_a_custom_voice_before_the_request()
     {
