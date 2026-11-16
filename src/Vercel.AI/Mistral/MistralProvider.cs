@@ -35,6 +35,12 @@ public sealed class MistralProvider : OpenAICompatibleProvider
         return new MistralProvider(client, options);
     }
 
+    /// <summary>Creates a model that uses the Conversations API, with support for web search. Maps to <c>conversation</c>.</summary>
+    public MistralConversationLanguageModel Conversation(string modelId)
+    {
+        return new MistralConversationLanguageModel(this, modelId);
+    }
+
     private static readonly HashSet<string> ModelsWithoutReasoningEffort = new HashSet<string>
     {
         "codestral-2508",

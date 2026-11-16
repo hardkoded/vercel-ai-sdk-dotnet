@@ -101,6 +101,29 @@ Provider id.
 
 ## Methods
 
+<a id="Vercel_AI_Mistral_MistralProvider_Conversation_"></a>
+<a id="Vercel_AI_Mistral_MistralProvider_Conversation_System_String_"></a>
+
+### Conversation(string)
+
+
+```csharp
+public MistralConversationLanguageModel Conversation(string modelId)
+```
+
+
+Creates a model that uses the Conversations API, with support for web search. Maps to `conversation`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [MistralConversationLanguageModel](/api/Vercel.AI.Mistral/MistralConversationLanguageModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L39)
+
 <a id="Vercel_AI_Mistral_MistralProvider_Create_"></a>
 <a id="Vercel_AI_Mistral_MistralProvider_Create_Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_System_Net_Http_HttpMessageHandler_"></a>
 
