@@ -353,6 +353,7 @@ internal static class Generation
                 var text = new StringBuilder();
                 var textBlocks = new List<TextBlock>();
                 var reasoningBlocks = new List<ReasoningBlock>();
+                var contentOrder = new List<object>();
                 var toolCalls = new List<GeneratedToolCall>();
                 var toolContent = new List<GeneratedContent>();
                 var sources = new List<GeneratedSource>();
@@ -457,12 +458,12 @@ internal static class Generation
                         switch (part)
                         {
                             case TextStartStreamPart textStart:
-                                var startedText = TextBlock.Start(textBlocks, textStart.Id, textPartIds);
+                                var startedText = TextBlock.Start(textBlocks, textStart.Id, textPartIds, contentOrder);
                                 startedText.ProviderMetadata = textStart.ProviderMetadata;
                                 buffer.Add(new TextStartPart(startedText.PartId, textStart.ProviderMetadata));
                                 break;
                             case TextDeltaStreamPart delta:
-                                var activeText = TextBlock.Find(textBlocks, delta.Id, textPartIds, buffer);
+                                var activeText = TextBlock.Find(textBlocks, delta.Id, textPartIds, buffer, contentOrder);
                                 text.Append(delta.Delta);
                                 activeText.Text.Append(delta.Delta);
                                 if (delta.Delta.Length > 0 || delta.ProviderMetadata != null)
@@ -473,7 +474,7 @@ internal static class Generation
 
                                 break;
                             case TextEndStreamPart textEnd:
-                                var ended = TextBlock.Find(textBlocks, textEnd.Id, textPartIds, buffer);
+                                var ended = TextBlock.Find(textBlocks, textEnd.Id, textPartIds, buffer, contentOrder);
                                 ended.Citations = textEnd.Citations;
                                 ended.ProviderMetadata = textEnd.ProviderMetadata ?? ended.ProviderMetadata;
                                 ended.Open = false;
@@ -489,18 +490,18 @@ internal static class Generation
                                 buffer.Add(new DocumentSourcePart(documentSources[documentSources.Count - 1]));
                                 break;
                             case ReasoningStartStreamPart reasoningStart:
-                                var startedReasoning = ReasoningBlock.Start(reasoningBlocks, reasoningStart.Id, reasoningPartIds);
+                                var startedReasoning = ReasoningBlock.Start(reasoningBlocks, reasoningStart.Id, reasoningPartIds, contentOrder);
                                 startedReasoning.ProviderMetadata = reasoningStart.ProviderMetadata;
                                 buffer.Add(new ReasoningStartPart(startedReasoning.PartId, reasoningStart.ProviderMetadata));
                                 break;
                             case ReasoningEndStreamPart reasoningEnd:
-                                var endedReasoning = ReasoningBlock.Find(reasoningBlocks, reasoningEnd.Id, reasoningPartIds, buffer);
+                                var endedReasoning = ReasoningBlock.Find(reasoningBlocks, reasoningEnd.Id, reasoningPartIds, buffer, contentOrder);
                                 endedReasoning.ProviderMetadata = reasoningEnd.ProviderMetadata ?? endedReasoning.ProviderMetadata;
                                 endedReasoning.Open = false;
                                 buffer.Add(new ReasoningEndPart(endedReasoning.PartId, reasoningEnd.ProviderMetadata));
                                 break;
                             case ReasoningDeltaStreamPart reasoningDelta:
-                                var activeReasoning = ReasoningBlock.Find(reasoningBlocks, reasoningDelta.Id, reasoningPartIds, buffer);
+                                var activeReasoning = ReasoningBlock.Find(reasoningBlocks, reasoningDelta.Id, reasoningPartIds, buffer, contentOrder);
                                 activeReasoning.Text.Append(reasoningDelta.Delta);
                                 activeReasoning.ProviderMetadata = reasoningDelta.ProviderMetadata ?? activeReasoning.ProviderMetadata;
                                 outputChunkTimes.Add(ElapsedMs());
@@ -592,7 +593,8 @@ internal static class Generation
                                 var generatedReasoningFile = reasoningFilePart.Url is null
                                     ? new GeneratedFile(reasoningFilePart.Data!, reasoningFilePart.MediaType)
                                     : await ResolveGeneratedFileDataAsync(new GeneratedFileUrl(reasoningFilePart.Url, reasoningFilePart.MediaType), options.ExperimentalDownload, cancellationToken).ConfigureAwait(false);
-                                toolContent.Add(new GeneratedReasoningFile(generatedReasoningFile.Data, generatedReasoningFile.MediaType, reasoningFilePart.ProviderMetadata));
+                                var recordedReasoningFile = new GeneratedReasoningFile(generatedReasoningFile.Data, generatedReasoningFile.MediaType, reasoningFilePart.ProviderMetadata);
+                                contentOrder.Add(recordedReasoningFile);
                                 buffer.Add(new ReasoningFilePart(generatedReasoningFile, reasoningFilePart.ProviderMetadata));
                                 break;
                             case FinishStreamPart done:
@@ -682,7 +684,7 @@ internal static class Generation
                 }
 
                 var generated = new LanguageModelGenerateResult(
-                    BuildContent(textBlocks, reasoningBlocks, toolContent, sources, documentSources),
+                    BuildContent(contentOrder, toolContent, sources, documentSources),
                     finish ?? FinishReason.Other,
                     usage,
                     rawFinish,
@@ -872,23 +874,25 @@ internal static class Generation
     }
 
     private static List<GeneratedContent> BuildContent(
-        List<TextBlock> textBlocks,
-        List<ReasoningBlock> reasoningBlocks,
+        List<object> contentOrder,
         List<GeneratedContent> toolContent,
         List<GeneratedSource> sources,
         List<GeneratedDocumentSource> documentSources)
     {
         var content = new List<GeneratedContent>();
-        foreach (var block in reasoningBlocks)
+        foreach (var entry in contentOrder)
         {
-            content.Add(new GeneratedReasoning(block.Text.ToString(), block.ProviderMetadata));
-        }
-
-        foreach (var block in textBlocks)
-        {
-            if (block.Text.Length > 0 || (block.Citations?.Count ?? 0) > 0)
+            switch (entry)
             {
-                content.Add(new GeneratedText(block.Text.ToString(), block.Citations, block.ProviderMetadata));
+                case ReasoningBlock block:
+                    content.Add(new GeneratedReasoning(block.Text.ToString(), block.ProviderMetadata));
+                    break;
+                case TextBlock block when block.Text.Length > 0 || (block.Citations?.Count ?? 0) > 0:
+                    content.Add(new GeneratedText(block.Text.ToString(), block.Citations, block.ProviderMetadata));
+                    break;
+                case GeneratedReasoningFile reasoningFile:
+                    content.Add(reasoningFile);
+                    break;
             }
         }
 
@@ -920,15 +924,16 @@ internal static class Generation
 
         public JsonElement? ProviderMetadata { get; set; }
 
-        public static TextBlock Start(List<TextBlock> blocks, string id, PartIdReserver reserver)
+        public static TextBlock Start(List<TextBlock> blocks, string id, PartIdReserver reserver, List<object> contentOrder)
         {
             var block = new TextBlock(id, reserver.Reserve(id));
             blocks.Add(block);
+            contentOrder.Add(block);
             return block;
         }
 
         // Deltas and ends belong to the latest block with their id. Providers that skip text-start get one here, with its text-start part.
-        public static TextBlock Find(List<TextBlock> blocks, string id, PartIdReserver reserver, PartBuffer buffer)
+        public static TextBlock Find(List<TextBlock> blocks, string id, PartIdReserver reserver, PartBuffer buffer, List<object> contentOrder)
         {
             for (var i = blocks.Count - 1; i >= 0; i--)
             {
@@ -938,7 +943,7 @@ internal static class Generation
                 }
             }
 
-            var block = Start(blocks, id, reserver);
+            var block = Start(blocks, id, reserver, contentOrder);
             buffer.Add(new TextStartPart(block.PartId));
             return block;
         }
@@ -964,15 +969,16 @@ internal static class Generation
 
         public JsonElement? ProviderMetadata { get; set; }
 
-        public static ReasoningBlock Start(List<ReasoningBlock> blocks, string id, PartIdReserver reserver)
+        public static ReasoningBlock Start(List<ReasoningBlock> blocks, string id, PartIdReserver reserver, List<object> contentOrder)
         {
             var block = new ReasoningBlock(id, reserver.Reserve(id));
             blocks.Add(block);
+            contentOrder.Add(block);
             return block;
         }
 
         // Deltas and ends belong to the latest block with their id. Providers that skip reasoning-start get one here, with its reasoning-start part.
-        public static ReasoningBlock Find(List<ReasoningBlock> blocks, string id, PartIdReserver reserver, PartBuffer buffer)
+        public static ReasoningBlock Find(List<ReasoningBlock> blocks, string id, PartIdReserver reserver, PartBuffer buffer, List<object> contentOrder)
         {
             for (var i = blocks.Count - 1; i >= 0; i--)
             {
@@ -982,7 +988,7 @@ internal static class Generation
                 }
             }
 
-            var block = Start(blocks, id, reserver);
+            var block = Start(blocks, id, reserver, contentOrder);
             buffer.Add(new ReasoningStartPart(block.PartId));
             return block;
         }
