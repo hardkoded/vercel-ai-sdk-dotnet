@@ -1147,10 +1147,23 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
         var responseId = root.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.String ? idValue.GetString() : null;
         var responseModel = root.TryGetProperty("model", out var modelValue) && modelValue.ValueKind == JsonValueKind.String ? modelValue.GetString() : null;
-        var providerMetadata = new JsonObject();
+        var providerMetadata = new JsonObject { ["responseId"] = responseId };
         if (logprobs.Count > 0)
         {
             providerMetadata["logprobs"] = logprobs;
+        }
+
+        if (root.TryGetProperty("service_tier", out var serviceTierValue) && serviceTierValue.ValueKind == JsonValueKind.String)
+        {
+            providerMetadata["serviceTier"] = serviceTierValue.GetString();
+        }
+
+        if (root.TryGetProperty("reasoning", out var reasoningValue)
+            && reasoningValue.ValueKind == JsonValueKind.Object
+            && reasoningValue.TryGetProperty("context", out var reasoningContextValue)
+            && reasoningContextValue.ValueKind != JsonValueKind.Null)
+        {
+            providerMetadata["reasoningContext"] = JsonNode.Parse(reasoningContextValue.GetRawText());
         }
 
         if (PromptCacheDiagnostics(root) is { } promptCacheDiagnostics)
