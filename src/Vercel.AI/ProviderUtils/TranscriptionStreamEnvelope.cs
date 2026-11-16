@@ -315,30 +315,30 @@ public static class TranscriptionStreamEnvelope
         switch (type)
         {
             case "stream-start":
-            {
-                if (!part.TryGetProperty("warnings", out var warnings) || warnings.ValueKind != JsonValueKind.Array)
                 {
-                    return null;
-                }
-
-                var result = new List<OperationWarning>();
-                foreach (var warning in warnings.EnumerateArray())
-                {
-                    if (warning.ValueKind != JsonValueKind.Object || GetString(warning, "type") is not { } warningType)
+                    if (!part.TryGetProperty("warnings", out var warnings) || warnings.ValueKind != JsonValueKind.Array)
                     {
                         return null;
                     }
 
-                    result.Add(new OperationWarning(
-                        warningType,
-                        message: GetString(warning, "message"),
-                        feature: GetString(warning, "feature"),
-                        details: GetString(warning, "details"),
-                        setting: GetString(warning, "setting")));
-                }
+                    var result = new List<OperationWarning>();
+                    foreach (var warning in warnings.EnumerateArray())
+                    {
+                        if (warning.ValueKind != JsonValueKind.Object || GetString(warning, "type") is not { } warningType)
+                        {
+                            return null;
+                        }
 
-                return new ModelStreamPart { Type = type, Warnings = result };
-            }
+                        result.Add(new OperationWarning(
+                            warningType,
+                            message: GetString(warning, "message"),
+                            feature: GetString(warning, "feature"),
+                            details: GetString(warning, "details"),
+                            setting: GetString(warning, "setting")));
+                    }
+
+                    return new ModelStreamPart { Type = type, Warnings = result };
+                }
 
             case "transcript-delta":
                 if (GetString(part, "delta") is not { } delta
@@ -394,101 +394,101 @@ public static class TranscriptionStreamEnvelope
                     },
                     part);
             case "finish":
-            {
-                if (GetString(part, "text") is not { } text2
-                    || !part.TryGetProperty("segments", out var segments)
-                    || segments.ValueKind != JsonValueKind.Array
-                    || !IsOptional(part, "language", JsonValueKind.String)
-                    || !IsOptional(part, "durationInSeconds", JsonValueKind.Number)
-                    || !IsOptional(part, "usage", JsonValueKind.Object)
-                    || !IsOptional(part, "providerMetadata", JsonValueKind.Object))
                 {
-                    return null;
-                }
-
-                var parsed = new List<TranscriptSegment>();
-                foreach (var segment in segments.EnumerateArray())
-                {
-                    if (segment.ValueKind != JsonValueKind.Object
-                        || GetString(segment, "text") is not { } segmentText
-                        || GetNumber(segment, "startSecond") is not { } start
-                        || GetNumber(segment, "endSecond") is not { } end)
+                    if (GetString(part, "text") is not { } text2
+                        || !part.TryGetProperty("segments", out var segments)
+                        || segments.ValueKind != JsonValueKind.Array
+                        || !IsOptional(part, "language", JsonValueKind.String)
+                        || !IsOptional(part, "durationInSeconds", JsonValueKind.Number)
+                        || !IsOptional(part, "usage", JsonValueKind.Object)
+                        || !IsOptional(part, "providerMetadata", JsonValueKind.Object))
                     {
                         return null;
                     }
 
-                    parsed.Add(new TranscriptSegment(segmentText, start, end));
-                }
-
-                OperationUsage? usage = null;
-                if (part.TryGetProperty("usage", out var usageValue) && usageValue.ValueKind == JsonValueKind.Object)
-                {
-                    usage = new OperationUsage(
-                        GetInt(usageValue, "inputTokens"),
-                        GetInt(usageValue, "outputTokens"),
-                        GetInt(usageValue, "totalTokens"),
-                        GetNumber(usageValue, "tokens"),
-                        GetNumber(usageValue, "seconds"));
-                }
-
-                return WithMetadata(
-                    new ModelStreamPart
+                    var parsed = new List<TranscriptSegment>();
+                    foreach (var segment in segments.EnumerateArray())
                     {
-                        Type = type,
-                        Text = text2,
-                        Segments = parsed,
-                        Language = GetString(part, "language"),
-                        DurationInSeconds = GetNumber(part, "durationInSeconds"),
-                        Usage = usage,
-                    },
-                    part);
-            }
+                        if (segment.ValueKind != JsonValueKind.Object
+                            || GetString(segment, "text") is not { } segmentText
+                            || GetNumber(segment, "startSecond") is not { } start
+                            || GetNumber(segment, "endSecond") is not { } end)
+                        {
+                            return null;
+                        }
+
+                        parsed.Add(new TranscriptSegment(segmentText, start, end));
+                    }
+
+                    OperationUsage? usage = null;
+                    if (part.TryGetProperty("usage", out var usageValue) && usageValue.ValueKind == JsonValueKind.Object)
+                    {
+                        usage = new OperationUsage(
+                            GetInt(usageValue, "inputTokens"),
+                            GetInt(usageValue, "outputTokens"),
+                            GetInt(usageValue, "totalTokens"),
+                            GetNumber(usageValue, "tokens"),
+                            GetNumber(usageValue, "seconds"));
+                    }
+
+                    return WithMetadata(
+                        new ModelStreamPart
+                        {
+                            Type = type,
+                            Text = text2,
+                            Segments = parsed,
+                            Language = GetString(part, "language"),
+                            DurationInSeconds = GetNumber(part, "durationInSeconds"),
+                            Usage = usage,
+                        },
+                        part);
+                }
 
             case "response-metadata":
-            {
-                if (!IsOptional(part, "modelId", JsonValueKind.String) || !IsOptional(part, "headers", JsonValueKind.Object))
                 {
-                    return null;
-                }
-
-                var result = new ModelStreamPart { Type = type, ModelId = GetString(part, "modelId") };
-                if (part.TryGetProperty("headers", out var headers) && headers.ValueKind == JsonValueKind.Object)
-                {
-                    var map = new Dictionary<string, string>();
-                    foreach (var header in headers.EnumerateObject())
-                    {
-                        map[header.Name] = header.Value.ValueKind == JsonValueKind.String ? header.Value.GetString()! : header.Value.GetRawText();
-                    }
-
-                    result.Headers = map;
-                }
-
-                // Envelope rule 4: timestamps ride as ISO 8601 strings.
-                if (part.TryGetProperty("timestamp", out var timestamp) && timestamp.ValueKind != JsonValueKind.Null)
-                {
-                    if (timestamp.ValueKind != JsonValueKind.String
-                        || !DateTimeOffset.TryParse(timestamp.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var revived))
+                    if (!IsOptional(part, "modelId", JsonValueKind.String) || !IsOptional(part, "headers", JsonValueKind.Object))
                     {
                         return null;
                     }
 
-                    result.Timestamp = revived.UtcDateTime;
-                }
+                    var result = new ModelStreamPart { Type = type, ModelId = GetString(part, "modelId") };
+                    if (part.TryGetProperty("headers", out var headers) && headers.ValueKind == JsonValueKind.Object)
+                    {
+                        var map = new Dictionary<string, string>();
+                        foreach (var header in headers.EnumerateObject())
+                        {
+                            map[header.Name] = header.Value.ValueKind == JsonValueKind.String ? header.Value.GetString()! : header.Value.GetRawText();
+                        }
 
-                return result;
-            }
+                        result.Headers = map;
+                    }
+
+                    // Envelope rule 4: timestamps ride as ISO 8601 strings.
+                    if (part.TryGetProperty("timestamp", out var timestamp) && timestamp.ValueKind != JsonValueKind.Null)
+                    {
+                        if (timestamp.ValueKind != JsonValueKind.String
+                            || !DateTimeOffset.TryParse(timestamp.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var revived))
+                        {
+                            return null;
+                        }
+
+                        result.Timestamp = revived.UtcDateTime;
+                    }
+
+                    return result;
+                }
 
             case "raw":
                 return part.TryGetProperty("rawValue", out var rawValue) ? new ModelStreamPart { Type = type, Raw = rawValue.Clone() } : null;
             case "error":
-            {
-                if (!part.TryGetProperty("error", out var error))
                 {
-                    return null;
-                }
+                    if (!part.TryGetProperty("error", out var error))
+                    {
+                        return null;
+                    }
 
-                return new ModelStreamPart { Type = type, ErrorValue = error.Clone(), Error = new AiSdkException(DescribeError(error)) };
-            }
+                    return new ModelStreamPart { Type = type, ErrorValue = error.Clone(), Error = new AiSdkException(DescribeError(error)) };
+                }
 
             default:
                 return null;
