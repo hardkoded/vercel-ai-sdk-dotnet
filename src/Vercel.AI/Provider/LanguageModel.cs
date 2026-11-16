@@ -248,6 +248,9 @@ public class GeneratedToolCall : GeneratedContent
 
     /// <summary>Metadata of the tool, kept apart from <see cref="ProviderMetadata"/>. Maps to <c>toolMetadata</c>.</summary>
     public IReadOnlyDictionary<string, JsonElement>? ToolMetadata { get; init; }
+
+    /// <summary>The input of the call before its input schema transformed it. Maps to <c>getToolCallInputSchemaInput</c> and <c>setToolCallInputSchemaInput</c>.</summary>
+    public JsonElement? InputSchemaInput { get; init; }
 }
 
 /// <summary>
