@@ -17,7 +17,16 @@ internal static class SecureJsonParse
     {
         using var document = JsonDocument.Parse(text);
         var root = document.RootElement;
-        Scan(root);
+        try
+        {
+            Scan(root);
+        }
+        catch (InvalidOperationException error)
+        {
+            // A string with an invalid escape (a lone surrogate, for example) only fails when it is decoded.
+            throw new JsonException(error.Message, error);
+        }
+
         return root.Clone();
     }
 
@@ -25,6 +34,9 @@ internal static class SecureJsonParse
     {
         switch (value.ValueKind)
         {
+            case JsonValueKind.String:
+                _ = value.GetString();
+                break;
             case JsonValueKind.Array:
                 foreach (var item in value.EnumerateArray())
                 {

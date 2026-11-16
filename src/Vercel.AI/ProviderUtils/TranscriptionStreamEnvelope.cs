@@ -528,7 +528,14 @@ public static class TranscriptionStreamEnvelope
     // A number that is not a 32-bit integer is dropped rather than wrapped or truncated.
     private static int? GetInt(JsonElement value, string name)
     {
-        return value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.Number && property.TryGetInt32(out var number) ? number : null;
+        if (!value.TryGetProperty(name, out var property) || property.ValueKind != JsonValueKind.Number)
+        {
+            return null;
+        }
+
+        // Integer-valued numbers written as 1.0 or 3e0 count; fractional and out-of-range values do not.
+        var number = property.GetDouble();
+        return number == Math.Floor(number) && number >= int.MinValue && number <= int.MaxValue ? (int)number : null;
     }
 
     // An absent property is valid. Upstream treats `undefined` as absent, and JSON has no `undefined`, so null counts as mistyped.

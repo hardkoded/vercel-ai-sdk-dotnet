@@ -336,7 +336,7 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
 
         public void Start(Uri url, IReadOnlyList<string> protocols, IReadOnlyDictionary<string, string?> headers, string startFrame, WebSocketFactory? webSocket)
         {
-            _connection = ConnectToWebSocket.Connect(new ConnectToWebSocketOptions
+            var connection = ConnectToWebSocket.Connect(new ConnectToWebSocketOptions
             {
                 Url = url,
                 Protocols = protocols,
@@ -378,6 +378,22 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
                     FinishWithError(new AiSdkException("AI Gateway transcription stream closed before a finish part was received"));
                 },
             });
+
+            // An abort during `Connect` finishes the session before the connection exists; close it then.
+            bool finished;
+            lock (_gate)
+            {
+                finished = _finished;
+                if (!finished)
+                {
+                    _connection = connection;
+                }
+            }
+
+            if (finished)
+            {
+                connection.Close(null);
+            }
         }
 
         public void Cancel()
