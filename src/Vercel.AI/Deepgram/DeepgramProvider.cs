@@ -87,17 +87,26 @@ public static class DeepgramError
             {
                 using var document = JsonDocument.Parse(json!);
                 var root = document.RootElement;
-                if (root.ValueKind == JsonValueKind.Object
-                    && root.TryGetProperty("err_code", out var code) && code.ValueKind == JsonValueKind.String
-                    && root.TryGetProperty("err_msg", out var message) && message.ValueKind == JsonValueKind.String)
+                if (
+                    root.ValueKind == JsonValueKind.Object
+                    && root.TryGetProperty("err_code", out var code)
+                    && code.ValueKind == JsonValueKind.String
+                    && root.TryGetProperty("err_msg", out var message)
+                    && message.ValueKind == JsonValueKind.String
+                )
                 {
-                    var requestId = root.TryGetProperty("request_id", out var id) && id.ValueKind == JsonValueKind.String ? id.GetString() : null;
-                    return new DeepgramErrorParseResult(true, new DeepgramErrorData(code.GetString()!, message.GetString()!, requestId));
+                    var requestId =
+                        root.TryGetProperty("request_id", out var id)
+                        && id.ValueKind == JsonValueKind.String
+                            ? id.GetString()
+                            : null;
+                    return new DeepgramErrorParseResult(
+                        true,
+                        new DeepgramErrorData(code.GetString()!, message.GetString()!, requestId)
+                    );
                 }
             }
-            catch (JsonException)
-            {
-            }
+            catch (JsonException) { }
         }
 
         return new DeepgramErrorParseResult(false, null);
@@ -108,7 +117,12 @@ public static class DeepgramError
 public sealed class DeepgramResponse
 {
     /// <summary>Creates response metadata.</summary>
-    public DeepgramResponse(DateTimeOffset timestamp, string modelId, IReadOnlyDictionary<string, string> headers, JsonElement? body)
+    public DeepgramResponse(
+        DateTimeOffset timestamp,
+        string modelId,
+        IReadOnlyDictionary<string, string> headers,
+        JsonElement? body
+    )
     {
         Timestamp = timestamp;
         ModelId = modelId ?? string.Empty;
@@ -167,7 +181,14 @@ public sealed class DeepgramSpeechRequest
 public sealed class DeepgramSpeechResult
 {
     /// <summary>Creates a speech result.</summary>
-    public DeepgramSpeechResult(byte[] audio, string mediaType, IReadOnlyList<ModelWarning> warnings, string requestBody, DeepgramResponse response, JsonElement providerMetadata)
+    public DeepgramSpeechResult(
+        byte[] audio,
+        string mediaType,
+        IReadOnlyList<ModelWarning> warnings,
+        string requestBody,
+        DeepgramResponse response,
+        JsonElement providerMetadata
+    )
     {
         Audio = audio ?? Array.Empty<byte>();
         MediaType = mediaType ?? "audio/mpeg";
@@ -210,7 +231,14 @@ public sealed class DeepgramTranscriptionRequest
 public sealed class DeepgramTranscriptionResult
 {
     /// <summary>Creates a transcription result.</summary>
-    public DeepgramTranscriptionResult(string text, IReadOnlyList<TranscriptSegment> segments, string? language, double? durationInSeconds, IReadOnlyList<ModelWarning> warnings, DeepgramResponse response)
+    public DeepgramTranscriptionResult(
+        string text,
+        IReadOnlyList<TranscriptSegment> segments,
+        string? language,
+        double? durationInSeconds,
+        IReadOnlyList<ModelWarning> warnings,
+        DeepgramResponse response
+    )
     {
         Text = text ?? string.Empty;
         Segments = segments ?? Array.Empty<TranscriptSegment>();
@@ -264,9 +292,14 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider.</summary>
-    public static new DeepgramProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new DeepgramProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new DeepgramProvider(client, options);
     }
 
@@ -274,7 +307,10 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
+        options.BaseUrl =
+            string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
+                ? DefaultBaseUrl
+                : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "DEEPGRAM_API_KEY";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
@@ -284,25 +320,44 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
     }
 
     /// <inheritdoc />
-    public override ITranscriptionModel TranscriptionModel(string modelId) => new DeepgramTranscriptionModel(this, modelId);
+    public override ITranscriptionModel TranscriptionModel(string modelId) =>
+        new DeepgramTranscriptionModel(this, modelId);
 
     /// <inheritdoc />
-    public override ISpeechModel SpeechModel(string modelId) => new DeepgramSpeechModel(this, modelId);
+    public override ISpeechModel SpeechModel(string modelId) =>
+        new DeepgramSpeechModel(this, modelId);
 
     /// <summary>Posts raw audio to <c>/v1/listen?model=</c>.</summary>
-    public Task<DeepgramTranscriptionResult> TranscribeAsync(string modelId, AudioInput audio, DeepgramTranscriptionRequest? request, CancellationToken cancellationToken)
+    public Task<DeepgramTranscriptionResult> TranscribeAsync(
+        string modelId,
+        AudioInput audio,
+        DeepgramTranscriptionRequest? request,
+        CancellationToken cancellationToken
+    )
     {
-        return new DeepgramTranscriptionModel(this, modelId).TranscribeAsync(audio, request, cancellationToken);
+        return new DeepgramTranscriptionModel(this, modelId).TranscribeAsync(
+            audio,
+            request,
+            cancellationToken
+        );
     }
 
     /// <summary>The WebSocket factory for streaming transcription.</summary>
     internal WebSocketFactory? WebSocket => (Options as DeepgramOptions)?.WebSocket;
 
     /// <summary>Provider headers with the key from <see cref="DeepgramOptions.ApiKeyProvider"/> resolved.</summary>
-    internal async Task<Dictionary<string, string?>> CreateHeadersAsync(CancellationToken cancellationToken)
+    internal async Task<Dictionary<string, string?>> CreateHeadersAsync(
+        CancellationToken cancellationToken
+    )
     {
         var headers = CreateHeaders();
-        if ((Options as DeepgramOptions)?.ApiKeyProvider is { } provider && !Options.Headers.Any(pair => !string.IsNullOrEmpty(pair.Value) && string.Equals(pair.Key, "Authorization", StringComparison.OrdinalIgnoreCase)))
+        if (
+            (Options as DeepgramOptions)?.ApiKeyProvider is { } provider
+            && !Options.Headers.Any(pair =>
+                !string.IsNullOrEmpty(pair.Value)
+                && string.Equals(pair.Key, "Authorization", StringComparison.OrdinalIgnoreCase)
+            )
+        )
         {
             var key = await provider(cancellationToken).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(key))
@@ -322,14 +377,40 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
         return clock != null ? clock() : DateTimeOffset.UtcNow;
     }
 
-    private async Task<ProviderExchangeResult> SendAsync(string path, IReadOnlyList<KeyValuePair<string, string>> query, HttpContent content, IDictionary<string, string>? headers, CancellationToken cancellationToken)
+    private async Task<ProviderExchangeResult> SendAsync(
+        string path,
+        IReadOnlyList<KeyValuePair<string, string>> query,
+        HttpContent content,
+        IDictionary<string, string>? headers,
+        CancellationToken cancellationToken
+    )
     {
-        var uri = new Uri(ApiKeys.Combine(Options.BaseUrl, path).AbsoluteUri + "?" + string.Join("&", query.Select(pair => pair.Key + "=" + Uri.EscapeDataString(pair.Value))));
+        var uri = new Uri(
+            ApiKeys.Combine(Options.BaseUrl, path).AbsoluteUri
+                + "?"
+                + string.Join(
+                    "&",
+                    query.Select(pair => pair.Key + "=" + Uri.EscapeDataString(pair.Value))
+                )
+        );
         try
         {
-            return await ProviderExchange.SendAsync(_httpClient, HttpMethod.Post, uri, content, ProviderExchange.Merge(await CreateHeadersAsync(cancellationToken).ConfigureAwait(false), headers), cancellationToken).ConfigureAwait(false);
+            return await ProviderExchange
+                .SendAsync(
+                    _httpClient,
+                    HttpMethod.Post,
+                    uri,
+                    content,
+                    ProviderExchange.Merge(
+                        await CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+                        headers
+                    ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
-        catch (ApiException exception) when (DeepgramError.Parse(exception.ResponseBody).Value is { } error)
+        catch (ApiException exception)
+            when (DeepgramError.Parse(exception.ResponseBody).Value is { } error)
         {
             throw OpenAICompatibleChat.WithMessage(exception, error.ErrMsg);
         }
@@ -337,14 +418,23 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
 
     private static JsonElement? DeepgramObject(JsonElement? providerOptions)
     {
-        return providerOptions is { ValueKind: JsonValueKind.Object } bag && bag.TryGetProperty("deepgram", out var value) && value.ValueKind == JsonValueKind.Object
+        return
+            providerOptions is { ValueKind: JsonValueKind.Object } bag
+            && bag.TryGetProperty("deepgram", out var value)
+            && value.ValueKind == JsonValueKind.Object
             ? value
             : null;
     }
 
     private static JsonElement? Child(JsonElement? parent, string name)
     {
-        return parent != null && parent.Value.ValueKind == JsonValueKind.Object && parent.Value.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null ? value : null;
+        return
+            parent != null
+            && parent.Value.ValueKind == JsonValueKind.Object
+            && parent.Value.TryGetProperty(name, out var value)
+            && value.ValueKind != JsonValueKind.Null
+            ? value
+            : null;
     }
 
     private static string QueryValue(JsonElement value)
@@ -384,10 +474,17 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
         public string ModelId { get; }
 
         /// <inheritdoc />
-        public async Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
+        public async Task<SpeechResult> DoGenerateAsync(
+            SpeechCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
             options = options ?? throw new ArgumentNullException(nameof(options));
-            var result = await GenerateAsync(new DeepgramSpeechRequest(options.Text) { Voice = options.Voice }, cancellationToken).ConfigureAwait(false);
+            var result = await GenerateAsync(
+                    new DeepgramSpeechRequest(options.Text) { Voice = options.Voice },
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             return new SpeechResult(result.Audio, result.MediaType);
         }
 
@@ -396,7 +493,10 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
         /// <c>providerOptions.deepgram.callback</c> is rejected with an <see cref="Vercel.AI.Operations.InvalidArgumentException"/>: with a callback URL
         /// Deepgram answers with a JSON acknowledgement instead of audio. <c>callbackMethod</c> is ignored with an unsupported warning.
         /// </remarks>
-        public async Task<DeepgramSpeechResult> GenerateAsync(DeepgramSpeechRequest request, CancellationToken cancellationToken)
+        public async Task<DeepgramSpeechResult> GenerateAsync(
+            DeepgramSpeechRequest request,
+            CancellationToken cancellationToken
+        )
         {
             request = request ?? throw new ArgumentNullException(nameof(request));
             var timestamp = _provider.Now();
@@ -405,17 +505,32 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
 
             // With a `callback` URL Deepgram processes the request asynchronously and answers with a JSON
             // acknowledgement ({"request_id": "..."}) instead of audio, so the audio can never be returned.
-            if (deepgram != null && Child(deepgram.Value, "callback") is { ValueKind: not JsonValueKind.Null } callback)
+            if (
+                deepgram != null
+                && Child(deepgram.Value, "callback")
+                    is { ValueKind: not JsonValueKind.Null } callback
+            )
             {
                 throw new Vercel.AI.Operations.InvalidArgumentException(
                     "providerOptions.deepgram.callback",
-                    callback.ValueKind == JsonValueKind.String ? callback.GetString() : callback.ToString(),
-                    "Deepgram processes speech requests with a `callback` URL asynchronously: it returns a JSON acknowledgement instead of audio and delivers the audio to the callback URL. `generateSpeech` requires the audio response, so `providerOptions.deepgram.callback` is not supported. Remove the option to receive the audio, or call the Deepgram REST API directly when you need asynchronous callback delivery.");
+                    callback.ValueKind == JsonValueKind.String
+                        ? callback.GetString()
+                        : callback.ToString(),
+                    "Deepgram processes speech requests with a `callback` URL asynchronously: it returns a JSON acknowledgement instead of audio and delivers the audio to the callback URL. `generateSpeech` requires the audio response, so `providerOptions.deepgram.callback` is not supported. Remove the option to receive the audio, or call the Deepgram REST API directly when you need asynchronous callback delivery."
+                );
             }
 
-            if (deepgram != null && Child(deepgram.Value, "callbackMethod") is { ValueKind: not JsonValueKind.Null })
+            if (
+                deepgram != null
+                && Child(deepgram.Value, "callbackMethod") is { ValueKind: not JsonValueKind.Null }
+            )
             {
-                warnings.Add(new UnsupportedWarning("providerOptions.deepgram.callbackMethod", "providerOptions.deepgram.callbackMethod is only used together with `callback`, which is not supported by the AI SDK. Callback method was ignored."));
+                warnings.Add(
+                    new UnsupportedWarning(
+                        "providerOptions.deepgram.callbackMethod",
+                        "providerOptions.deepgram.callbackMethod is only used together with `callback`, which is not supported by the AI SDK. Callback method was ignored."
+                    )
+                );
             }
 
             // Deepgram embeds voice and language in the model id (aura-2-thalia-en). Family ids compose it from the call.
@@ -425,15 +540,33 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
                 var voice = request.Voice?.Trim();
                 if (string.IsNullOrEmpty(voice))
                 {
-                    throw new AiSdkException("Deepgram speech model \"" + ModelId + "\" requires a `voice` to be set (e.g. voice: 'thalia').");
+                    throw new AiSdkException(
+                        "Deepgram speech model \""
+                            + ModelId
+                            + "\" requires a `voice` to be set (e.g. voice: 'thalia')."
+                    );
                 }
 
                 if (request.Language == "auto")
                 {
-                    warnings.Add(new CompatibilityWarning("language", "Deepgram TTS models do not support automatic language detection. Language \"en\" was used instead."));
+                    warnings.Add(
+                        new CompatibilityWarning(
+                            "language",
+                            "Deepgram TTS models do not support automatic language detection. Language \"en\" was used instead."
+                        )
+                    );
                 }
 
-                upstreamModelId = ModelId + "-" + voice + "-" + (!string.IsNullOrEmpty(request.Language) && request.Language != "auto" ? request.Language : "en");
+                upstreamModelId =
+                    ModelId
+                    + "-"
+                    + voice
+                    + "-"
+                    + (
+                        !string.IsNullOrEmpty(request.Language) && request.Language != "auto"
+                            ? request.Language
+                            : "en"
+                    );
             }
 
             var query = new Dictionary<string, string> { ["model"] = upstreamModelId };
@@ -443,9 +576,20 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
                 ApplyProviderOptions(query, deepgram.Value, warnings);
             }
 
-            if (upstreamModelId == ModelId && !string.IsNullOrEmpty(request.Voice) && request.Voice != ModelId)
+            if (
+                upstreamModelId == ModelId
+                && !string.IsNullOrEmpty(request.Voice)
+                && request.Voice != ModelId
+            )
             {
-                warnings.Add(new UnsupportedWarning("voice", "Deepgram TTS models embed the voice in the model ID. The voice parameter \"" + request.Voice + "\" was ignored. Use the model ID to select a voice (e.g., \"aura-2-helena-en\")."));
+                warnings.Add(
+                    new UnsupportedWarning(
+                        "voice",
+                        "Deepgram TTS models embed the voice in the model ID. The voice parameter \""
+                            + request.Voice
+                            + "\" was ignored. Use the model ID to select a voice (e.g., \"aura-2-helena-en\")."
+                    )
+                );
             }
 
             if (request.Speed is { } speed)
@@ -455,27 +599,62 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
 
             if (upstreamModelId == ModelId && !string.IsNullOrEmpty(request.Language))
             {
-                warnings.Add(new UnsupportedWarning("language", "Deepgram TTS models are language-specific via the model ID. Language parameter \"" + request.Language + "\" was ignored. Select a model with the appropriate language suffix (e.g., \"-en\" for English)."));
+                warnings.Add(
+                    new UnsupportedWarning(
+                        "language",
+                        "Deepgram TTS models are language-specific via the model ID. Language parameter \""
+                            + request.Language
+                            + "\" was ignored. Select a model with the appropriate language suffix (e.g., \"-en\" for English)."
+                    )
+                );
             }
 
             if (!string.IsNullOrEmpty(request.Instructions))
             {
-                warnings.Add(new UnsupportedWarning("instructions", "Deepgram TTS REST API does not support instructions. Instructions parameter was ignored."));
+                warnings.Add(
+                    new UnsupportedWarning(
+                        "instructions",
+                        "Deepgram TTS REST API does not support instructions. Instructions parameter was ignored."
+                    )
+                );
             }
 
             var json = new JsonObject { ["text"] = request.Text }.ToJsonString();
-            var response = await _provider.SendAsync("/v1/speak", query.ToList(), ProviderExchange.Json(json), request.Headers, cancellationToken).ConfigureAwait(false);
+            var response = await _provider
+                .SendAsync(
+                    "/v1/speak",
+                    query.ToList(),
+                    ProviderExchange.Json(json),
+                    request.Headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             var mediaType = "audio/mpeg";
-            if (response.Headers.TryGetValue("Content-Type", out var contentType) && contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase))
+            if (
+                response.Headers.TryGetValue("Content-Type", out var contentType)
+                && contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase)
+            )
             {
                 var separator = contentType.IndexOf(';');
-                mediaType = (separator >= 0 ? contentType.Substring(0, separator) : contentType).Trim();
+                mediaType = (
+                    separator >= 0 ? contentType.Substring(0, separator) : contentType
+                ).Trim();
             }
 
-            return new DeepgramSpeechResult(response.Bytes, mediaType, warnings, json, new DeepgramResponse(timestamp, ModelId, response.Headers, null), Metadata(response.Headers));
+            return new DeepgramSpeechResult(
+                response.Bytes,
+                mediaType,
+                warnings,
+                json,
+                new DeepgramResponse(timestamp, ModelId, response.Headers, null),
+                Metadata(response.Headers)
+            );
         }
 
-        private static void ApplyOutputFormat(Dictionary<string, string> query, string? outputFormat)
+        private static void ApplyOutputFormat(
+            Dictionary<string, string> query,
+            string? outputFormat
+        )
         {
             if (string.IsNullOrEmpty(outputFormat))
             {
@@ -514,8 +693,18 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
             }
 
             var encoding = parts[0];
-            var hasRate = int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var rate);
-            if (Array.IndexOf(new[] { "linear16", "mulaw", "alaw", "mp3", "opus", "flac", "aac" }, encoding) >= 0)
+            var hasRate = int.TryParse(
+                parts[1],
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out var rate
+            );
+            if (
+                Array.IndexOf(
+                    new[] { "linear16", "mulaw", "alaw", "mp3", "opus", "flac", "aac" },
+                    encoding
+                ) >= 0
+            )
             {
                 query["encoding"] = encoding;
                 if (Array.IndexOf(Pcm, encoding) >= 0)
@@ -543,7 +732,11 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
             }
         }
 
-        private static void ApplyProviderOptions(Dictionary<string, string> query, JsonElement deepgram, List<ModelWarning> warnings)
+        private static void ApplyProviderOptions(
+            Dictionary<string, string> query,
+            JsonElement deepgram,
+            List<ModelWarning> warnings
+        )
         {
             var container = Child(deepgram, "container")?.GetString();
             if (Child(deepgram, "encoding")?.GetString() is { Length: > 0 } requested)
@@ -560,7 +753,16 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
                         }
                         else
                         {
-                            warnings.Add(new UnsupportedWarning("providerOptions", "Encoding \"" + encoding + "\" only supports containers \"wav\" or \"none\". Container \"" + container + "\" was ignored."));
+                            warnings.Add(
+                                new UnsupportedWarning(
+                                    "providerOptions",
+                                    "Encoding \""
+                                        + encoding
+                                        + "\" only supports containers \"wav\" or \"none\". Container \""
+                                        + container
+                                        + "\" was ignored."
+                                )
+                            );
                         }
                     }
                     else if (encoding == "opus")
@@ -569,7 +771,16 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
                     }
                     else if (Array.IndexOf(NoContainer, encoding) >= 0)
                     {
-                        warnings.Add(new UnsupportedWarning("providerOptions", "Encoding \"" + encoding + "\" does not support container parameter. Container \"" + container + "\" was ignored."));
+                        warnings.Add(
+                            new UnsupportedWarning(
+                                "providerOptions",
+                                "Encoding \""
+                                    + encoding
+                                    + "\" does not support container parameter. Container \""
+                                    + container
+                                    + "\" was ignored."
+                            )
+                        );
                         query.Remove("container");
                     }
                 }
@@ -617,9 +828,16 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
             if (Child(deepgram, "sampleRate") is { } sampleRateValue)
             {
                 var sampleRate = sampleRateValue.GetDouble();
-                var encoding = query.TryGetValue("encoding", out var current) ? current.ToLowerInvariant() : string.Empty;
+                var encoding = query.TryGetValue("encoding", out var current)
+                    ? current.ToLowerInvariant()
+                    : string.Empty;
                 var text = sampleRate.ToString(CultureInfo.InvariantCulture);
-                if (encoding == "linear16" || encoding == "mulaw" || encoding == "alaw" || encoding == "flac")
+                if (
+                    encoding == "linear16"
+                    || encoding == "mulaw"
+                    || encoding == "alaw"
+                    || encoding == "flac"
+                )
                 {
                     if (SupportsRate(encoding, sampleRate))
                     {
@@ -627,13 +845,36 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
                     }
                     else
                     {
-                        var rates = encoding == "linear16" ? "8000, 16000, 24000, 32000, 48000" : encoding == "flac" ? "8000, 16000, 22050, 32000, 48000" : "8000, 16000";
-                        warnings.Add(new UnsupportedWarning("providerOptions", "Encoding \"" + encoding + "\" only supports sample rates: " + rates + ". Sample rate " + text + " was ignored."));
+                        var rates =
+                            encoding == "linear16" ? "8000, 16000, 24000, 32000, 48000"
+                            : encoding == "flac" ? "8000, 16000, 22050, 32000, 48000"
+                            : "8000, 16000";
+                        warnings.Add(
+                            new UnsupportedWarning(
+                                "providerOptions",
+                                "Encoding \""
+                                    + encoding
+                                    + "\" only supports sample rates: "
+                                    + rates
+                                    + ". Sample rate "
+                                    + text
+                                    + " was ignored."
+                            )
+                        );
                     }
                 }
                 else if (Array.IndexOf(FixedRate, encoding) >= 0)
                 {
-                    warnings.Add(new UnsupportedWarning("providerOptions", "Encoding \"" + encoding + "\" has a fixed sample rate and does not support sample_rate parameter. Sample rate " + text + " was ignored."));
+                    warnings.Add(
+                        new UnsupportedWarning(
+                            "providerOptions",
+                            "Encoding \""
+                                + encoding
+                                + "\" has a fixed sample rate and does not support sample_rate parameter. Sample rate "
+                                + text
+                                + " was ignored."
+                        )
+                    );
                 }
                 else
                 {
@@ -644,23 +885,63 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
             if (Child(deepgram, "bitRate") is { } bitRateValue)
             {
                 var text = QueryValue(bitRateValue);
-                var encoding = query.TryGetValue("encoding", out var current) ? current.ToLowerInvariant() : string.Empty;
-                double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var bitRate);
+                var encoding = query.TryGetValue("encoding", out var current)
+                    ? current.ToLowerInvariant()
+                    : string.Empty;
+                double.TryParse(
+                    text,
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out var bitRate
+                );
                 if (encoding == "mp3")
                 {
-                    AddBitRate(query, warnings, text, bitRate == 32000 || bitRate == 48000, "Encoding \"mp3\" only supports bit rates: 32000, 48000. Bit rate " + text + " was ignored.");
+                    AddBitRate(
+                        query,
+                        warnings,
+                        text,
+                        bitRate == 32000 || bitRate == 48000,
+                        "Encoding \"mp3\" only supports bit rates: 32000, 48000. Bit rate "
+                            + text
+                            + " was ignored."
+                    );
                 }
                 else if (encoding == "opus")
                 {
-                    AddBitRate(query, warnings, text, bitRate >= 4000 && bitRate <= 650000, "Encoding \"opus\" supports bit rates between 4000 and 650000. Bit rate " + text + " was ignored.");
+                    AddBitRate(
+                        query,
+                        warnings,
+                        text,
+                        bitRate >= 4000 && bitRate <= 650000,
+                        "Encoding \"opus\" supports bit rates between 4000 and 650000. Bit rate "
+                            + text
+                            + " was ignored."
+                    );
                 }
                 else if (encoding == "aac")
                 {
-                    AddBitRate(query, warnings, text, bitRate >= 4000 && bitRate <= 192000, "Encoding \"aac\" supports bit rates between 4000 and 192000. Bit rate " + text + " was ignored.");
+                    AddBitRate(
+                        query,
+                        warnings,
+                        text,
+                        bitRate >= 4000 && bitRate <= 192000,
+                        "Encoding \"aac\" supports bit rates between 4000 and 192000. Bit rate "
+                            + text
+                            + " was ignored."
+                    );
                 }
                 else if (Array.IndexOf(NoBitRate, encoding) >= 0)
                 {
-                    warnings.Add(new UnsupportedWarning("providerOptions", "Encoding \"" + encoding + "\" does not support bit_rate parameter. Bit rate " + text + " was ignored."));
+                    warnings.Add(
+                        new UnsupportedWarning(
+                            "providerOptions",
+                            "Encoding \""
+                                + encoding
+                                + "\" does not support bit_rate parameter. Bit rate "
+                                + text
+                                + " was ignored."
+                        )
+                    );
                 }
                 else
                 {
@@ -679,7 +960,13 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
             }
         }
 
-        private static void AddBitRate(Dictionary<string, string> query, List<ModelWarning> warnings, string text, bool valid, string warning)
+        private static void AddBitRate(
+            Dictionary<string, string> query,
+            List<ModelWarning> warnings,
+            string text,
+            bool valid,
+            string warning
+        )
         {
             if (valid)
             {
@@ -723,7 +1010,12 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
             AddText(deepgram, headers, "dg-model-uuid", "modelUuid");
             if (headers.TryGetValue("dg-additional-model-uuids", out var additional))
             {
-                deepgram["additionalModelUuids"] = new JsonArray(additional.Split(',').Select(uuid => (JsonNode?)JsonValue.Create(uuid)).ToArray());
+                deepgram["additionalModelUuids"] = new JsonArray(
+                    additional
+                        .Split(',')
+                        .Select(uuid => (JsonNode?)JsonValue.Create(uuid))
+                        .ToArray()
+                );
             }
 
             AddNumber(deepgram, headers, "dg-char-count", "charCount");
@@ -731,11 +1023,18 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
             AddNumber(deepgram, headers, "dg-pronunciations-applied", "pronunciationsApplied");
             AddText(deepgram, headers, "dg-pronunciation-warnings", "pronunciationWarnings");
             AddText(deepgram, headers, "dg-request-id", "requestId");
-            using var document = JsonDocument.Parse(new JsonObject { ["deepgram"] = deepgram }.ToJsonString());
+            using var document = JsonDocument.Parse(
+                new JsonObject { ["deepgram"] = deepgram }.ToJsonString()
+            );
             return document.RootElement.Clone();
         }
 
-        private static void AddText(JsonObject target, IReadOnlyDictionary<string, string> headers, string header, string name)
+        private static void AddText(
+            JsonObject target,
+            IReadOnlyDictionary<string, string> headers,
+            string header,
+            string name
+        )
         {
             if (headers.TryGetValue(header, out var value) && value.Length > 0)
             {
@@ -743,9 +1042,22 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
             }
         }
 
-        private static void AddNumber(JsonObject target, IReadOnlyDictionary<string, string> headers, string header, string name)
+        private static void AddNumber(
+            JsonObject target,
+            IReadOnlyDictionary<string, string> headers,
+            string header,
+            string name
+        )
         {
-            if (headers.TryGetValue(header, out var value) && double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
+            if (
+                headers.TryGetValue(header, out var value)
+                && double.TryParse(
+                    value,
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out var number
+                )
+            )
             {
                 target[name] = number;
             }
@@ -799,37 +1111,78 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
         public bool CanStream => true;
 
         /// <inheritdoc />
-        public Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
+        public Task<TranscriptionModelResult> DoGenerateAsync(
+            TranscriptionModelCall call,
+            CancellationToken cancellationToken
+        )
         {
-            return GenerateAsync(call ?? throw new ArgumentNullException(nameof(call)), cancellationToken);
+            return GenerateAsync(
+                call ?? throw new ArgumentNullException(nameof(call)),
+                cancellationToken
+            );
         }
 
         /// <inheritdoc />
-        public Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+        public Task<TranscriptionStreamStart?> DoStreamAsync(
+            TranscriptionStreamCall call,
+            CancellationToken cancellationToken
+        )
         {
-            return StreamAsync(call ?? throw new ArgumentNullException(nameof(call)), cancellationToken);
+            return StreamAsync(
+                call ?? throw new ArgumentNullException(nameof(call)),
+                cancellationToken
+            );
         }
 
         /// <inheritdoc />
-        public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+        public async Task<TranscriptionResult> DoTranscribeAsync(
+            AudioInput audio,
+            CancellationToken cancellationToken
+        )
         {
-            var result = await TranscribeAsync(audio, null, cancellationToken).ConfigureAwait(false);
+            var result = await TranscribeAsync(audio, null, cancellationToken)
+                .ConfigureAwait(false);
             return new TranscriptionResult(result.Text);
         }
 
-        private async Task<TranscriptionStreamStart?> StreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+        private async Task<TranscriptionStreamStart?> StreamAsync(
+            TranscriptionStreamCall call,
+            CancellationToken cancellationToken
+        )
         {
-            return await DeepgramStreamingTranscription.StreamAsync(ModelId, _provider, call, cancellationToken).ConfigureAwait(false);
+            return await DeepgramStreamingTranscription
+                .StreamAsync(ModelId, _provider, call, cancellationToken)
+                .ConfigureAwait(false);
         }
 
-        private async Task<TranscriptionModelResult> GenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
+        private async Task<TranscriptionModelResult> GenerateAsync(
+            TranscriptionModelCall call,
+            CancellationToken cancellationToken
+        )
         {
-            var request = new DeepgramTranscriptionRequest { ProviderOptions = call.ProviderOptions, Headers = call.Headers.ToDictionary(pair => pair.Key, pair => pair.Value) };
-            var result = await TranscribeAsync(new AudioInput(call.Audio, call.MediaType, null), request, cancellationToken).ConfigureAwait(false);
-            var warnings = new List<OperationWarning>();
-            if (DeepgramObject(call.ProviderOptions) is { } options && Child(options, "streaming") is not null)
+            var request = new DeepgramTranscriptionRequest
             {
-                warnings.Add(OperationWarning.Unsupported("providerOptions.deepgram.streaming", "Deepgram batch transcription does not support streaming options."));
+                ProviderOptions = call.ProviderOptions,
+                Headers = call.Headers.ToDictionary(pair => pair.Key, pair => pair.Value),
+            };
+            var result = await TranscribeAsync(
+                    new AudioInput(call.Audio, call.MediaType, null),
+                    request,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+            var warnings = new List<OperationWarning>();
+            if (
+                DeepgramObject(call.ProviderOptions) is { } options
+                && Child(options, "streaming") is not null
+            )
+            {
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "providerOptions.deepgram.streaming",
+                        "Deepgram batch transcription does not support streaming options."
+                    )
+                );
             }
 
             return new TranscriptionModelResult(
@@ -838,16 +1191,29 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
                 result.Language,
                 result.DurationInSeconds,
                 warnings,
-                response: new ProviderResponse(result.Response.Headers, result.Response.Body, timestamp: result.Response.Timestamp.UtcDateTime, modelId: ModelId));
+                response: new ProviderResponse(
+                    result.Response.Headers,
+                    result.Response.Body,
+                    timestamp: result.Response.Timestamp.UtcDateTime,
+                    modelId: ModelId
+                )
+            );
         }
 
         /// <summary>Posts raw audio to <c>/v1/listen</c>. Provider options become query parameters.</summary>
-        public async Task<DeepgramTranscriptionResult> TranscribeAsync(AudioInput audio, DeepgramTranscriptionRequest? request, CancellationToken cancellationToken)
+        public async Task<DeepgramTranscriptionResult> TranscribeAsync(
+            AudioInput audio,
+            DeepgramTranscriptionRequest? request,
+            CancellationToken cancellationToken
+        )
         {
             audio = audio ?? throw new ArgumentNullException(nameof(audio));
             var timestamp = _provider.Now();
             var deepgram = DeepgramObject(request?.ProviderOptions);
-            var query = new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>("model", ModelId) };
+            var query = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("model", ModelId),
+            };
             foreach (var (option, name) in QueryOptions)
             {
                 if (Child(deepgram, option) is { } value)
@@ -857,22 +1223,37 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
             }
 
             var content = new ByteArrayContent(audio.Data);
-            content.Headers.ContentType = MediaTypeHeaderValue.Parse(string.IsNullOrEmpty(audio.MediaType) ? "application/octet-stream" : audio.MediaType);
-            var response = await _provider.SendAsync("/v1/listen", query, content, request?.Headers, cancellationToken).ConfigureAwait(false);
+            content.Headers.ContentType = MediaTypeHeaderValue.Parse(
+                string.IsNullOrEmpty(audio.MediaType) ? "application/octet-stream" : audio.MediaType
+            );
+            var response = await _provider
+                .SendAsync("/v1/listen", query, content, request?.Headers, cancellationToken)
+                .ConfigureAwait(false);
             using var document = JsonDocument.Parse(response.Body);
             var root = document.RootElement;
-            var channel = Child(root, "results") is { } results && Child(results, "channels") is { ValueKind: JsonValueKind.Array } channels && channels.GetArrayLength() > 0
-                ? channels[0]
-                : (JsonElement?)null;
-            var alternative = Child(channel, "alternatives") is { ValueKind: JsonValueKind.Array } alternatives && alternatives.GetArrayLength() > 0
-                ? alternatives[0]
-                : (JsonElement?)null;
+            var channel =
+                Child(root, "results") is { } results
+                && Child(results, "channels") is { ValueKind: JsonValueKind.Array } channels
+                && channels.GetArrayLength() > 0
+                    ? channels[0]
+                    : (JsonElement?)null;
+            var alternative =
+                Child(channel, "alternatives") is { ValueKind: JsonValueKind.Array } alternatives
+                && alternatives.GetArrayLength() > 0
+                    ? alternatives[0]
+                    : (JsonElement?)null;
             var segments = new List<TranscriptSegment>();
             if (Child(alternative, "words") is { ValueKind: JsonValueKind.Array } words)
             {
                 foreach (var word in words.EnumerateArray())
                 {
-                    segments.Add(new TranscriptSegment(Child(word, "word")?.GetString() ?? string.Empty, Child(word, "start")?.GetDouble() ?? 0, Child(word, "end")?.GetDouble() ?? 0));
+                    segments.Add(
+                        new TranscriptSegment(
+                            Child(word, "word")?.GetString() ?? string.Empty,
+                            Child(word, "start")?.GetDouble() ?? 0,
+                            Child(word, "end")?.GetDouble() ?? 0
+                        )
+                    );
                 }
             }
 
@@ -882,7 +1263,8 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
                 Child(channel, "detected_language")?.GetString(),
                 Child(Child(root, "metadata"), "duration")?.GetDouble(),
                 Array.Empty<ModelWarning>(),
-                new DeepgramResponse(timestamp, ModelId, response.Headers, root.Clone()));
+                new DeepgramResponse(timestamp, ModelId, response.Headers, root.Clone())
+            );
         }
     }
 }
@@ -891,14 +1273,21 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
 public static class DeepgramServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddDeepgram(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddDeepgram(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(DeepgramProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new DeepgramProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(DeepgramProvider.ProviderId), options);
+            return new DeepgramProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(DeepgramProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

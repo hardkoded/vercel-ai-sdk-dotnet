@@ -12,16 +12,28 @@ namespace Vercel.AI.Tests.Upstream.Google.GoogleImageModel;
 /// <summary>Shared setup for <c>google-image-model.test.ts</c>.</summary>
 internal static class GoogleImageModelTestSupport
 {
-    public const string TestUrl = "https://api.example.com/v1beta/models/gemini-2.5-flash-image:generateContent";
+    public const string TestUrl =
+        "https://api.example.com/v1beta/models/gemini-2.5-flash-image:generateContent";
 
-    public static GoogleProvider CreateProvider(RecordingHandler handler, Action<GoogleOptions>? configure = null)
+    public static GoogleProvider CreateProvider(
+        RecordingHandler handler,
+        Action<GoogleOptions>? configure = null
+    )
     {
-        var options = new GoogleOptions { ApiKey = "test-api-key", BaseUrl = "https://api.example.com/v1beta" };
+        var options = new GoogleOptions
+        {
+            ApiKey = "test-api-key",
+            BaseUrl = "https://api.example.com/v1beta",
+        };
         configure?.Invoke(options);
         return GoogleProvider.Create(options, handler);
     }
 
-    public static Vercel.AI.Google.GoogleImageModel Model(RecordingHandler handler, string modelId = "gemini-2.5-flash-image", Action<GoogleOptions>? configure = null)
+    public static Vercel.AI.Google.GoogleImageModel Model(
+        RecordingHandler handler,
+        string modelId = "gemini-2.5-flash-image",
+        Action<GoogleOptions>? configure = null
+    )
     {
         return new Vercel.AI.Google.GoogleImageModel(CreateProvider(handler, configure), modelId);
     }
@@ -34,21 +46,44 @@ internal static class GoogleImageModelTestSupport
         string? aspectRatio = null,
         int? seed = null,
         string providerOptions = "{}",
-        IReadOnlyDictionary<string, string>? headers = null)
+        IReadOnlyDictionary<string, string>? headers = null
+    )
     {
-        return new ImageModelCall(prompt, files, mask, 1, size, aspectRatio, seed, GoogleUpstream.Element(providerOptions), headers ?? new Dictionary<string, string>(), CancellationToken.None);
+        return new ImageModelCall(
+            prompt,
+            files,
+            mask,
+            1,
+            size,
+            aspectRatio,
+            seed,
+            GoogleUpstream.Element(providerOptions),
+            headers ?? new Dictionary<string, string>(),
+            CancellationToken.None
+        );
     }
 
     public static RecordingHandler Response(
         string images = "[{\"mimeType\":\"image/png\",\"data\":\"AQID\"}]",
-        string usage = "{\"promptTokenCount\":10,\"candidatesTokenCount\":100,\"totalTokenCount\":110}",
+        string usage =
+            "{\"promptTokenCount\":10,\"candidatesTokenCount\":100,\"totalTokenCount\":110}",
         string finishReason = "STOP",
-        string? groundingMetadata = null)
+        string? groundingMetadata = null
+    )
     {
         var parts = new JsonArray();
         foreach (var image in JsonNode.Parse(images)!.AsArray())
         {
-            parts.Add(new JsonObject { ["inlineData"] = new JsonObject { ["mimeType"] = (string?)image!["mimeType"], ["data"] = (string?)image["data"] } });
+            parts.Add(
+                new JsonObject
+                {
+                    ["inlineData"] = new JsonObject
+                    {
+                        ["mimeType"] = (string?)image!["mimeType"],
+                        ["data"] = (string?)image["data"],
+                    },
+                }
+            );
         }
 
         var candidate = new JsonObject
@@ -61,7 +96,11 @@ internal static class GoogleImageModelTestSupport
             candidate["groundingMetadata"] = JsonNode.Parse(groundingMetadata);
         }
 
-        var body = new JsonObject { ["candidates"] = new JsonArray(candidate), ["usageMetadata"] = JsonNode.Parse(usage) };
+        var body = new JsonObject
+        {
+            ["candidates"] = new JsonArray(candidate),
+            ["usageMetadata"] = JsonNode.Parse(usage),
+        };
         return new RecordingHandler { ResponseText = body.ToJsonString() };
     }
 }

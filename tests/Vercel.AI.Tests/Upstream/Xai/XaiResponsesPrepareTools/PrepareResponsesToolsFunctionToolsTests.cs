@@ -20,13 +20,19 @@ public sealed class PrepareResponsesToolsFunctionToolsTests
         var tool = new LanguageModelTool(
             "weather",
             "get weather information",
-            UpstreamChat.Json("""{"type":"object","properties":{"location":{"type":"string"}},"required":["location"],"additionalProperties":false}"""));
+            UpstreamChat.Json(
+                """{"type":"object","properties":{"location":{"type":"string"}},"required":["location"],"additionalProperties":false}"""
+            )
+        );
 
         var result = XaiResponsesTools.Prepare(new[] { tool }, null);
 
-        JsonAssert.Equal(result.Tools, """
+        JsonAssert.Equal(
+            result.Tools,
+            """
             [{"description":"get weather information","name":"weather","type":"function",
               "parameters":{"additionalProperties":false,"properties":{"location":{"type":"string"}},"required":["location"],"type":"object"}}]
-            """);
+            """
+        );
     }
 }

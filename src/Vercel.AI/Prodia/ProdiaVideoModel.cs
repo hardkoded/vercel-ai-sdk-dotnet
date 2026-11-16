@@ -20,7 +20,11 @@ public sealed class ProdiaVideoModel : IVideoModel, IVideoCaller
     private readonly Func<DateTimeOffset> _clock;
 
     /// <summary>Creates a model. <paramref name="clock"/> sets the response timestamp.</summary>
-    public ProdiaVideoModel(ProdiaProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
+    public ProdiaVideoModel(
+        ProdiaProvider provider,
+        string modelId,
+        Func<DateTimeOffset>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -58,16 +62,39 @@ public sealed class ProdiaVideoModel : IVideoModel, IVideoCaller
     }
 
     /// <inheritdoc />
-    public async Task<VideoResult> DoGenerateAsync(VideoCallOptions options, CancellationToken cancellationToken)
+    public async Task<VideoResult> DoGenerateAsync(
+        VideoCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
-        var call = new VideoModelCall(options.Prompt, 1, null, null, options.DurationSeconds, null, null, null, null, null, null, OperationJson.Parse("{}"), new Dictionary<string, string>(), cancellationToken);
-        var video = (await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false)).Videos[0];
+        var call = new VideoModelCall(
+            options.Prompt,
+            1,
+            null,
+            null,
+            options.DurationSeconds,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            OperationJson.Parse("{}"),
+            new Dictionary<string, string>(),
+            cancellationToken
+        );
+        var video = (await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false)).Videos[
+            0
+        ];
         return new VideoResult(null, (byte[])video.Data!, video.MediaType!);
     }
 
     /// <inheritdoc />
-    public async Task<VideoModelResult> DoGenerateAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public async Task<VideoModelResult> DoGenerateAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var config = new JsonObject();
@@ -81,14 +108,20 @@ public sealed class ProdiaVideoModel : IVideoModel, IVideoCaller
             config["seed"] = call.Seed;
         }
 
-        if (call.ProviderOptions.ValueKind == JsonValueKind.Object
+        if (
+            call.ProviderOptions.ValueKind == JsonValueKind.Object
             && call.ProviderOptions.TryGetProperty("prodia", out var prodia)
             && prodia.ValueKind == JsonValueKind.Object
-            && prodia.TryGetProperty("resolution", out var resolution))
+            && prodia.TryGetProperty("resolution", out var resolution)
+        )
         {
             if (resolution.ValueKind != JsonValueKind.String)
             {
-                throw new InvalidArgumentException("providerOptions", null, "Invalid Prodia provider option resolution.");
+                throw new InvalidArgumentException(
+                    "providerOptions",
+                    null,
+                    "Invalid Prodia provider option resolution."
+                );
             }
 
             config["resolution"] = resolution.GetString();
@@ -98,7 +131,8 @@ public sealed class ProdiaVideoModel : IVideoModel, IVideoCaller
         HttpContent content;
         if (call.Image != null)
         {
-            var (bytes, mediaType) = await ImageAsync(call.Image, cancellationToken).ConfigureAwait(false);
+            var (bytes, mediaType) = await ImageAsync(call.Image, cancellationToken)
+                .ConfigureAwait(false);
             content = ProdiaApi.Form(job, bytes, mediaType, Extension(mediaType));
         }
         else
@@ -107,7 +141,15 @@ public sealed class ProdiaVideoModel : IVideoModel, IVideoCaller
         }
 
         var timestamp = _clock();
-        var (parts, headers) = await ProdiaApi.PostJobAsync(_provider, content, "multipart/form-data; video/mp4", call.Headers, cancellationToken).ConfigureAwait(false);
+        var (parts, headers) = await ProdiaApi
+            .PostJobAsync(
+                _provider,
+                content,
+                "multipart/form-data; video/mp4",
+                call.Headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var jobResult = ProdiaApi.ReadJob(parts);
         byte[]? video = null;
         var videoMediaType = "video/mp4";
@@ -130,43 +172,82 @@ public sealed class ProdiaVideoModel : IVideoModel, IVideoCaller
 
         if (video == null)
         {
-            throw new InvalidResponseDataException(null, "Prodia multipart response missing output video");
+            throw new InvalidResponseDataException(
+                null,
+                "Prodia multipart response missing output video"
+            );
         }
 
-        var metadata = new JsonObject { ["prodia"] = new JsonObject { ["videos"] = new JsonArray(ProdiaApi.Metadata(jobResult)) } };
+        var metadata = new JsonObject
+        {
+            ["prodia"] = new JsonObject
+            {
+                ["videos"] = new JsonArray(ProdiaApi.Metadata(jobResult)),
+            },
+        };
         return new VideoModelResult(
             new[] { new VideoOutput("binary", data: video, mediaType: videoMediaType) },
             providerMetadata: OperationJson.Parse(metadata.ToJsonString()),
-            response: new ProviderResponse(headers, timestamp: timestamp.UtcDateTime, modelId: ModelId));
+            response: new ProviderResponse(
+                headers,
+                timestamp: timestamp.UtcDateTime,
+                modelId: ModelId
+            )
+        );
     }
 
     /// <inheritdoc />
-    public Task<VideoStartResult> DoStartAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public Task<VideoStartResult> DoStartAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         throw new NotSupportedException("Prodia generates videos in one call.");
     }
 
     /// <inheritdoc />
-    public Task<VideoStatusResult> DoStatusAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public Task<VideoStatusResult> DoStatusAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         throw new NotSupportedException("Prodia generates videos in one call.");
     }
 
     /// <inheritdoc />
-    public Task<VideoWebhook> HandleWebhookAsync(Func<Task<VideoWebhook>> webhook, CancellationToken cancellationToken)
+    public Task<VideoWebhook> HandleWebhookAsync(
+        Func<Task<VideoWebhook>> webhook,
+        CancellationToken cancellationToken
+    )
     {
         throw new NotSupportedException("Prodia does not support video webhooks.");
     }
 
-    private async Task<(byte[] Bytes, string MediaType)> ImageAsync(VideoModelFile image, CancellationToken cancellationToken)
+    private async Task<(byte[] Bytes, string MediaType)> ImageAsync(
+        VideoModelFile image,
+        CancellationToken cancellationToken
+    )
     {
         if (image.Type == "file")
         {
             return (image.Data!, image.MediaType!);
         }
 
-        var response = await ProviderExchange.GetResponseUrlAsync(_provider.HttpClient, image.Url!, null, Download.ValidateDownloadUrl, null, cancellationToken, ProviderExchange.DownloadClient(_provider.Options)).ConfigureAwait(false);
-        var mediaType = response.Headers.TryGetValue("Content-Type", out var value) && value.Length > 0 ? value : "application/octet-stream";
+        var response = await ProviderExchange
+            .GetResponseUrlAsync(
+                _provider.HttpClient,
+                image.Url!,
+                null,
+                Download.ValidateDownloadUrl,
+                null,
+                cancellationToken,
+                ProviderExchange.DownloadClient(_provider.Options)
+            )
+            .ConfigureAwait(false);
+        var mediaType =
+            response.Headers.TryGetValue("Content-Type", out var value) && value.Length > 0
+                ? value
+                : "application/octet-stream";
         return (response.Bytes, mediaType);
     }
 

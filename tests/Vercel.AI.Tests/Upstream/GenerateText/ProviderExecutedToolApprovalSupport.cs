@@ -16,7 +16,10 @@ internal static class ProviderExecutedToolApprovalSupport
         return Tool.ProviderDefined("test.mcp_tool", "mcp_tool", args.RootElement.Clone());
     }
 
-    public static GenerateTextOptions Options(ILanguageModel model, IReadOnlyList<ModelMessage>? messages)
+    public static GenerateTextOptions Options(
+        ILanguageModel model,
+        IReadOnlyList<ModelMessage>? messages
+    )
     {
         return new GenerateTextOptions
         {
@@ -38,11 +41,18 @@ internal static class ProviderExecutedToolApprovalSupport
         return new ModelMessage[]
         {
             new UserModelMessage("Shorten this URL: https://example.com"),
-            new AssistantModelMessage(new AssistantContentPart[]
-            {
-                new AssistantToolCallPart(new GeneratedToolCall("mcp-call-1", "mcp_tool", "{ \"query\": \"test\" }") { ProviderExecuted = true }),
-                new AssistantToolApprovalRequestPart("mcp-approval-1", "mcp-call-1"),
-            }),
+            new AssistantModelMessage(
+                new AssistantContentPart[]
+                {
+                    new AssistantToolCallPart(
+                        new GeneratedToolCall("mcp-call-1", "mcp_tool", "{ \"query\": \"test\" }")
+                        {
+                            ProviderExecuted = true,
+                        }
+                    ),
+                    new AssistantToolApprovalRequestPart("mcp-approval-1", "mcp-call-1"),
+                }
+            ),
             response,
         };
     }
@@ -52,7 +62,10 @@ internal static class ProviderExecutedToolApprovalSupport
     {
         Assert.Equal(3, prompt.Count);
         var user = Assert.IsType<UserModelMessage>(prompt[0]);
-        Assert.Equal("Shorten this URL: https://example.com", Assert.IsType<TextContentPart>(Assert.Single(user.Content)).Text);
+        Assert.Equal(
+            "Shorten this URL: https://example.com",
+            Assert.IsType<TextContentPart>(Assert.Single(user.Content)).Text
+        );
         var assistant = Assert.IsType<AssistantModelMessage>(prompt[1]);
         var call = Assert.IsType<AssistantToolCallPart>(Assert.Single(assistant.Parts));
         Assert.True(call.ToolCall.ProviderExecuted);

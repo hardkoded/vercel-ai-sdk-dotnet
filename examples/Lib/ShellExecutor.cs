@@ -29,7 +29,8 @@ public static class ShellExecutor
     public static async Task<ShellCommandResult> ExecuteShellCommandAsync(
         string command,
         int? timeoutMs = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var timeout = timeoutMs ?? 60_000; // Default 60 seconds
 
@@ -53,7 +54,9 @@ public static class ShellExecutor
             return new ShellCommandResult(string.Empty, error.ToString(), new ShellOutcome.Exit(1));
         }
 
-        using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken
+        );
         timeoutSource.CancelAfter(timeout);
 
         var stdout = ReadBoundedAsync(process.StandardOutput, process, timeoutSource.Token);
@@ -70,7 +73,8 @@ public static class ShellExecutor
             return new ShellCommandResult(
                 await SafeAsync(stdout).ConfigureAwait(false),
                 await SafeAsync(stderr).ConfigureAwait(false),
-                new ShellOutcome.Timeout());
+                new ShellOutcome.Timeout()
+            );
         }
         catch (OperationCanceledException)
         {
@@ -81,7 +85,8 @@ public static class ShellExecutor
         return new ShellCommandResult(
             await stdout.ConfigureAwait(false),
             await stderr.ConfigureAwait(false),
-            new ShellOutcome.Exit(process.ExitCode));
+            new ShellOutcome.Exit(process.ExitCode)
+        );
     }
 
     private static async Task<string> SafeAsync(Task<string> read)
@@ -96,14 +101,24 @@ public static class ShellExecutor
         }
     }
 
-    private static async Task<string> ReadBoundedAsync(StreamReader reader, Process process, CancellationToken cancellationToken)
+    private static async Task<string> ReadBoundedAsync(
+        StreamReader reader,
+        Process process,
+        CancellationToken cancellationToken
+    )
     {
         var builder = new StringBuilder();
         var buffer = new char[4096];
         try
         {
             int read;
-            while ((read = await reader.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false)) > 0)
+            while (
+                (
+                    read = await reader
+                        .ReadAsync(buffer.AsMemory(), cancellationToken)
+                        .ConfigureAwait(false)
+                ) > 0
+            )
             {
                 builder.Append(buffer, 0, read);
                 if (builder.Length > MaxBuffer)

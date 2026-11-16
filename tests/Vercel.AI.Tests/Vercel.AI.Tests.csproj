@@ -1,26 +1,38 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFrameworks>net10.0</TargetFrameworks>
-    <IsPackable>false</IsPackable>
-    <IsTestProject>true</IsTestProject>
-  </PropertyGroup>
-  <ItemGroup>
-    <Using Include="Xunit" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Vercel.AI\Vercel.AI.csproj" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
-    <PackageReference Include="Xunit.SkippableFact" Version="1.4.13" />
-  </ItemGroup>
-  <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="..\..\COMPATIBILITY.md" Link="parity\COMPATIBILITY.md" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="..\parity\manifest.json" Link="parity\manifest.json" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="..\parity\upstream-unit-tests.jsonl" Link="parity\upstream-unit-tests.jsonl" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
+    <PropertyGroup>
+        <TargetFrameworks>net10.0</TargetFrameworks>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+    </PropertyGroup>
+    <ItemGroup>
+        <Using Include="Xunit" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Vercel.AI\Vercel.AI.csproj" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+        <PackageReference Include="xunit" Version="2.9.3" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+        <PackageReference Include="Xunit.SkippableFact" Version="1.4.13" />
+    </ItemGroup>
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+    <ItemGroup>
+        <None Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+        <Content
+            Include="..\..\COMPATIBILITY.md"
+            Link="parity\COMPATIBILITY.md"
+            CopyToOutputDirectory="PreserveNewest"
+        />
+        <Content
+            Include="..\parity\manifest.json"
+            Link="parity\manifest.json"
+            CopyToOutputDirectory="PreserveNewest"
+        />
+        <Content
+            Include="..\parity\upstream-unit-tests.jsonl"
+            Link="parity\upstream-unit-tests.jsonl"
+            CopyToOutputDirectory="PreserveNewest"
+        />
+    </ItemGroup>
 </Project>

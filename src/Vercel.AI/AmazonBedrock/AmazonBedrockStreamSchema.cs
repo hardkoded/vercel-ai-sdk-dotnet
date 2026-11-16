@@ -75,7 +75,10 @@ internal static class AmazonBedrockStreamSchema
 
             if (Has(delta, "delta") && !ValidDelta(delta.GetProperty("delta")))
             {
-                return Invalid("contentBlockDelta.delta", "a text, citation, toolUse, or reasoningContent delta");
+                return Invalid(
+                    "contentBlockDelta.delta",
+                    "a text, citation, toolUse, or reasoningContent delta"
+                );
             }
         }
 
@@ -92,12 +95,18 @@ internal static class AmazonBedrockStreamSchema
                 var toolUse = start.GetProperty("start").GetProperty("toolUse");
                 if (!HasString(toolUse, "toolUseId") || !HasString(toolUse, "name"))
                 {
-                    return Invalid("contentBlockStart.start.toolUse", "an object with toolUseId and name");
+                    return Invalid(
+                        "contentBlockStart.start.toolUse",
+                        "an object with toolUseId and name"
+                    );
                 }
             }
         }
 
-        if (Has(chunk, "contentBlockStop") && !HasNumber(chunk.GetProperty("contentBlockStop"), "contentBlockIndex"))
+        if (
+            Has(chunk, "contentBlockStop")
+            && !HasNumber(chunk.GetProperty("contentBlockStop"), "contentBlockIndex")
+        )
         {
             return Invalid("contentBlockStop.contentBlockIndex", "a number");
         }
@@ -144,7 +153,10 @@ internal static class AmazonBedrockStreamSchema
         if (Has(delta, "reasoningContent"))
         {
             var reasoning = delta.GetProperty("reasoningContent");
-            return HasString(reasoning, "text") || HasString(reasoning, "signature") || HasString(reasoning, "data") || HasString(reasoning, "redactedContent");
+            return HasString(reasoning, "text")
+                || HasString(reasoning, "signature")
+                || HasString(reasoning, "data")
+                || HasString(reasoning, "redactedContent");
         }
 
         return false;

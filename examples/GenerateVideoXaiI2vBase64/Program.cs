@@ -21,13 +21,18 @@ if (!File.Exists(path))
 var xai = XaiProvider.Create();
 
 #region generate-video-xai-i2v-base64
-var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
-{
-    Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
-    Prompt = new VideoPrompt("The cat slowly turns its head and blinks", File.ReadAllBytes(path)),
-    Duration = 5,
-    ProviderOptions = OperationJson.Parse("""{ "xai": { "pollTimeoutMs": 600000 } }"""),
-});
+var result = await GenerateVideo.GenerateVideoAsync(
+    new GenerateVideoRequest
+    {
+        Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
+        Prompt = new VideoPrompt(
+            "The cat slowly turns its head and blinks",
+            File.ReadAllBytes(path)
+        ),
+        Duration = 5,
+        ProviderOptions = OperationJson.Parse("""{ "xai": { "pollTimeoutMs": 600000 } }"""),
+    }
+);
 #endregion
 
 await File.WriteAllBytesAsync("video.mp4", result.Video.Data);

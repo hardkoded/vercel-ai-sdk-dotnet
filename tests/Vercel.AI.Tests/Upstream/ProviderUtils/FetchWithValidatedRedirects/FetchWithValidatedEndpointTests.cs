@@ -11,10 +11,14 @@ namespace Vercel.AI.Tests.Upstream.ProviderUtils.FetchWithValidatedRedirects;
 [Collection("DownloadFetch")]
 public sealed class FetchWithValidatedEndpointTests
 {
-    private const string Prefix = "packages/provider-utils/src/fetch-with-validated-redirects.test.ts::fetchWithValidatedEndpoint::";
+    private const string Prefix =
+        "packages/provider-utils/src/fetch-with-validated-redirects.test.ts::fetchWithValidatedEndpoint::";
 
     [Fact]
-    [UpstreamTest(Prefix + "validates the URL before issuing the request", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "validates the URL before issuing the request",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Validates_the_URL_before_issuing_the_request()
     {
         var calls = 0;
@@ -24,10 +28,15 @@ public sealed class FetchWithValidatedEndpointTests
             return Task.FromResult(OkResponse());
         };
 
-        await Assert.ThrowsAsync<DownloadError>(delegate
-        {
-            return Download.FetchWithValidatedEndpointAsync("http://169.254.169.254/token", fetch: fetch);
-        });
+        await Assert.ThrowsAsync<DownloadError>(
+            delegate
+            {
+                return Download.FetchWithValidatedEndpointAsync(
+                    "http://169.254.169.254/token",
+                    fetch: fetch
+                );
+            }
+        );
         Assert.Equal(0, calls);
     }
 
@@ -35,7 +44,11 @@ public sealed class FetchWithValidatedEndpointTests
     [InlineData("default")]
     [InlineData("forwarded global")]
     [InlineData("custom")]
-    [UpstreamTest(Prefix + "uses the selected runtime transport (%s)", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
+    [UpstreamTest(
+        Prefix + "uses the selected runtime transport (%s)",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "2ebc78b65435926718879f85a1a85687b053c542"
+    )]
     public async Task Uses_the_selected_runtime_transport(string mode)
     {
         var runtimeCalls = new List<(string Url, string Redirect)>();
@@ -56,7 +69,10 @@ public sealed class FetchWithValidatedEndpointTests
             Download.Fetch = runtimeFetch;
             await Download.FetchWithValidatedEndpointAsync(
                 "https://files.example.com/file",
-                fetch: mode == "default" ? null : mode == "custom" ? customFetch : runtimeFetch);
+                fetch: mode == "default" ? null
+                    : mode == "custom" ? customFetch
+                    : runtimeFetch
+            );
         }
         finally
         {
@@ -72,7 +88,11 @@ public sealed class FetchWithValidatedEndpointTests
     [Theory]
     [InlineData("default")]
     [InlineData("forwarded global")]
-    [UpstreamTest(Prefix + "rejects the runtime fetch with strict DNS validation enabled (%s)", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
+    [UpstreamTest(
+        Prefix + "rejects the runtime fetch with strict DNS validation enabled (%s)",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "2ebc78b65435926718879f85a1a85687b053c542"
+    )]
     public async Task Rejects_the_runtime_fetch_with_strict_DNS_validation_enabled(string mode)
     {
         var calls = 0;
@@ -85,14 +105,20 @@ public sealed class FetchWithValidatedEndpointTests
         try
         {
             Download.Fetch = runtimeFetch;
-            var error = await Assert.ThrowsAsync<DownloadError>(delegate
-            {
-                return Download.FetchWithValidatedEndpointAsync(
-                    "https://example.com/metadata",
-                    fetch: mode == "default" ? null : runtimeFetch,
-                    requireDnsValidation: true);
-            });
-            Assert.Contains("This server runtime requires a custom fetch with connect-time DNS validation for untrusted URLs", error.Message);
+            var error = await Assert.ThrowsAsync<DownloadError>(
+                delegate
+                {
+                    return Download.FetchWithValidatedEndpointAsync(
+                        "https://example.com/metadata",
+                        fetch: mode == "default" ? null : runtimeFetch,
+                        requireDnsValidation: true
+                    );
+                }
+            );
+            Assert.Contains(
+                "This server runtime requires a custom fetch with connect-time DNS validation for untrusted URLs",
+                error.Message
+            );
         }
         finally
         {
@@ -103,7 +129,11 @@ public sealed class FetchWithValidatedEndpointTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "uses a custom fetch with strict DNS validation enabled", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
+    [UpstreamTest(
+        Prefix + "uses a custom fetch with strict DNS validation enabled",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "2ebc78b65435926718879f85a1a85687b053c542"
+    )]
     public async Task Uses_a_custom_fetch_with_strict_DNS_validation_enabled()
     {
         var runtimeCalls = 0;
@@ -123,7 +153,8 @@ public sealed class FetchWithValidatedEndpointTests
                     customCalls++;
                     return Task.FromResult(OkResponse());
                 },
-                requireDnsValidation: true);
+                requireDnsValidation: true
+            );
         }
         finally
         {
@@ -135,7 +166,12 @@ public sealed class FetchWithValidatedEndpointTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "allows the trusted origin through the runtime fetch with strict DNS validation enabled", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
+    [UpstreamTest(
+        Prefix
+            + "allows the trusted origin through the runtime fetch with strict DNS validation enabled",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "2ebc78b65435926718879f85a1a85687b053c542"
+    )]
     public async Task Allows_the_trusted_origin_through_the_runtime_fetch_with_strict_DNS_validation_enabled()
     {
         var calls = 0;
@@ -150,7 +186,8 @@ public sealed class FetchWithValidatedEndpointTests
             await Download.FetchWithValidatedEndpointAsync(
                 "http://localhost:3000/metadata",
                 trustedOrigin: "http://localhost:3000",
-                requireDnsValidation: true);
+                requireDnsValidation: true
+            );
         }
         finally
         {
@@ -161,7 +198,11 @@ public sealed class FetchWithValidatedEndpointTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves browser fetch with strict DNS validation enabled", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
+    [UpstreamTest(
+        Prefix + "preserves browser fetch with strict DNS validation enabled",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "2ebc78b65435926718879f85a1a85687b053c542"
+    )]
     public async Task Preserves_browser_fetch_with_strict_DNS_validation_enabled()
     {
         var calls = 0;
@@ -175,7 +216,10 @@ public sealed class FetchWithValidatedEndpointTests
                 calls++;
                 return Task.FromResult(OkResponse());
             };
-            await Download.FetchWithValidatedEndpointAsync("https://example.com/metadata", requireDnsValidation: true);
+            await Download.FetchWithValidatedEndpointAsync(
+                "https://example.com/metadata",
+                requireDnsValidation: true
+            );
         }
         finally
         {
@@ -187,13 +231,16 @@ public sealed class FetchWithValidatedEndpointTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "uses redirect: error for credential-bearing requests", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "uses redirect: error for credential-bearing requests",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Uses_redirect_error_for_credential_bearing_requests()
     {
         string? calledUrl = null;
         DownloadRequest? calledRequest = null;
         var calls = 0;
-        DownloadFetch fetch = delegate (string url, DownloadRequest request)
+        DownloadFetch fetch = delegate(string url, DownloadRequest request)
         {
             calls++;
             calledUrl = url;
@@ -207,7 +254,8 @@ public sealed class FetchWithValidatedEndpointTests
         await Download.FetchWithValidatedEndpointAsync(
             "https://auth.example.com/token",
             new DownloadRequest(headers, default, "manual") { Method = "POST", Body = body },
-            fetch);
+            fetch
+        );
 
         Assert.Equal(1, calls);
         Assert.Equal("https://auth.example.com/token", calledUrl);
@@ -215,13 +263,18 @@ public sealed class FetchWithValidatedEndpointTests
         Assert.Equal("POST", calledRequest!.Method);
         Assert.Equal(
             new[] { new KeyValuePair<string, string>("authorization", "Basic secret") },
-            calledRequest.Headers.Entries());
+            calledRequest.Headers.Entries()
+        );
         Assert.Same(body, calledRequest.Body);
         Assert.Equal("error", calledRequest.Redirect);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves the default native-fetch behavior without strict DNS validation", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
+    [UpstreamTest(
+        Prefix + "preserves the default native-fetch behavior without strict DNS validation",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "2ebc78b65435926718879f85a1a85687b053c542"
+    )]
     public async Task Preserves_the_default_native_fetch_behavior_without_strict_DNS_validation()
     {
         var calls = 0;

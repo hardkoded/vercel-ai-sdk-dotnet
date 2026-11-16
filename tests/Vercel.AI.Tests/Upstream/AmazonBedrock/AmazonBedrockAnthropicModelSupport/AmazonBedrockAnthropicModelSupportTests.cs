@@ -32,8 +32,15 @@ public sealed class AmazonBedrockAnthropicModelSupportTests
     [InlineData("global.anthropic.claude-future-v1:0", false, false)]
     [InlineData("anthropic.claude-opus-4-60-v1", false, false)]
     [InlineData("meta.llama3-70b-instruct-v1:0", true, true)]
-    [InlineData("arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/custom", true, true)]
-    [UpstreamTest("packages/amazon-bedrock/src/amazon-bedrock-anthropic-model-support.test.ts::preserves Bedrock capabilities for %s", Coverage = UpstreamCoverage.Covered)]
+    [InlineData(
+        "arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/custom",
+        true,
+        true
+    )]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-anthropic-model-support.test.ts::preserves Bedrock capabilities for %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Preserves_Bedrock_capabilities_for(string modelId, bool native, bool strict)
     {
         Assert.Equal(native, AmazonBedrockModelSupport.SupportsNativeStructuredOutput(modelId));

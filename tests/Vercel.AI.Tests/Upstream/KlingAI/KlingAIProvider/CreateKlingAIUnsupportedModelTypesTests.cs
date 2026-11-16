@@ -11,10 +11,14 @@ namespace Vercel.AI.Tests.Upstream.KlingAI.KlingAIProvider;
 /// <summary>Port of <c>klingai-provider.test.ts</c> &gt; <c>createKlingAI &gt; unsupported model types</c>.</summary>
 public sealed class CreateKlingAIUnsupportedModelTypesTests
 {
-    private const string Prefix = "packages/klingai/src/klingai-provider.test.ts::createKlingAI > unsupported model types::";
+    private const string Prefix =
+        "packages/klingai/src/klingai-provider.test.ts::createKlingAI > unsupported model types::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should throw NoSuchModelError for languageModel", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should throw NoSuchModelError for languageModel",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_throw_NoSuchModelError_for_languageModel()
     {
         var provider = KlingAIProviderType.Create();
@@ -23,7 +27,10 @@ public sealed class CreateKlingAIUnsupportedModelTypesTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should throw NoSuchModelError for embeddingModel", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should throw NoSuchModelError for embeddingModel",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_throw_NoSuchModelError_for_embeddingModel()
     {
         var provider = KlingAIProviderType.Create();
@@ -32,7 +39,10 @@ public sealed class CreateKlingAIUnsupportedModelTypesTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should throw NoSuchModelError for imageModel", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should throw NoSuchModelError for imageModel",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_throw_NoSuchModelError_for_imageModel()
     {
         var provider = KlingAIProviderType.Create();

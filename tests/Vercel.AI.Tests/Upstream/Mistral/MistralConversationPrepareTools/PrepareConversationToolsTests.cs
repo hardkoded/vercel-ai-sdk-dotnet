@@ -11,18 +11,24 @@ namespace Vercel.AI.Tests.Upstream.Mistral.MistralConversationPrepareTools;
 /// <summary>Port of <c>mistral-conversation-prepare-tools.test.ts</c> &gt; <c>prepareConversationTools</c>.</summary>
 public sealed class PrepareConversationToolsTests
 {
-    private const string Prefix = "packages/mistral/src/mistral-conversation-prepare-tools.test.ts::prepareConversationTools::";
+    private const string Prefix =
+        "packages/mistral/src/mistral-conversation-prepare-tools.test.ts::prepareConversationTools::";
 
     [Fact]
-    [UpstreamTest(Prefix + "maps both search tools and warns about unsupported provider tools", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "maps both search tools and warns about unsupported provider tools",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Maps_both_search_tools_and_warns_about_unsupported_provider_tools()
     {
-        var result = Vercel.AI.Mistral.MistralConversationPrepareTools.PrepareConversationTools(new[]
-        {
-            Search(),
-            Search("mistral.web_search_premium", "news"),
-            Search("mistral.unknown", "unknown"),
-        });
+        var result = Vercel.AI.Mistral.MistralConversationPrepareTools.PrepareConversationTools(
+            new[]
+            {
+                Search(),
+                Search("mistral.web_search_premium", "news"),
+                Search("mistral.unknown", "unknown"),
+            }
+        );
 
         AssertJson("[{\"type\":\"web_search\"},{\"type\":\"web_search_premium\"}]", result.Tools);
         Assert.Null(result.ToolChoice);
@@ -32,14 +38,25 @@ public sealed class PrepareConversationToolsTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "forces a function tool when search is also available", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "forces a function tool when search is also available",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Forces_a_function_tool_when_search_is_also_available()
     {
         var result = Vercel.AI.Mistral.MistralConversationPrepareTools.PrepareConversationTools(
-            new[] { Search(), new LanguageModelTool("weather", null, Node("{\"type\":\"object\"}")) },
-            ToolChoice.Tool("weather"));
+            new[]
+            {
+                Search(),
+                new LanguageModelTool("weather", null, Node("{\"type\":\"object\"}")),
+            },
+            ToolChoice.Tool("weather")
+        );
 
-        AssertJson("[{\"type\":\"function\",\"function\":{\"name\":\"weather\",\"parameters\":{\"type\":\"object\"}}}]", result.Tools);
+        AssertJson(
+            "[{\"type\":\"function\",\"function\":{\"name\":\"weather\",\"parameters\":{\"type\":\"object\"}}}]",
+            result.Tools
+        );
         Assert.Equal("any", result.ToolChoice);
         Assert.Empty(result.ToolWarnings);
     }

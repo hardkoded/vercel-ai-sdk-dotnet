@@ -11,11 +11,19 @@ namespace Vercel.AI.Tests.PruneMessages;
 /// <summary>Port of <c>prune-messages.test.ts</c> &gt; <c>pruneMessages &gt; toolCalls &gt; before-last-2-messages</c>.</summary>
 public sealed class ToolCallsBeforeLast2MessagesTests
 {
-    [UpstreamTest(Prefix + "pruneMessages > toolCalls > before-last-2-messages::should prune all tool calls, results, errors, and approvals", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "pruneMessages > toolCalls > before-last-2-messages::should prune all tool calls, results, errors, and approvals",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Should_prune_all_tool_calls_results_errors_and_approvals()
     {
-        var result = Prune(MessagesFixture1, PruneReasoning.None, PruneToolCallsRule.BeforeLastMessages(2));
+        var result = Prune(
+            MessagesFixture1,
+            PruneReasoning.None,
+            PruneToolCallsRule.BeforeLastMessages(2)
+        );
 
         // there is backwards tracing from the included tool results to ensure
         // that the tool calls are included and there are no unassociated tool
@@ -105,6 +113,7 @@ public sealed class ToolCallsBeforeLast2MessagesTests
               }
             ]
             """,
-            result);
+            result
+        );
     }
 }

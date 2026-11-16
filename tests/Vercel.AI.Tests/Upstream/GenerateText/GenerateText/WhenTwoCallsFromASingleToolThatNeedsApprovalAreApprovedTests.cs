@@ -12,10 +12,14 @@ namespace Vercel.AI.Tests.Upstream.GenerateText.GenerateText;
 /// <summary>Port of <c>generate-text.test.ts</c> &gt; <c>generateText &gt; tool execution approval &gt; when two calls from a single tool that needs approval are approved</c>.</summary>
 public sealed class WhenTwoCallsFromASingleToolThatNeedsApprovalAreApprovedTests
 {
-    private const string Id = "packages/ai/src/generate-text/generate-text.test.ts::generateText > tool execution approval > when two calls from a single tool that needs approval are approved::";
+    private const string Id =
+        "packages/ai/src/generate-text/generate-text.test.ts::generateText > tool execution approval > when two calls from a single tool that needs approval are approved::";
 
     [Fact]
-    [UpstreamTest(Id + "should call the model with a prompt that includes the tool results", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should call the model with a prompt that includes the tool results",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_call_the_model_with_a_prompt_that_includes_the_tool_results()
     {
         var (_, model) = await RunAsync();
@@ -34,7 +38,10 @@ public sealed class WhenTwoCallsFromASingleToolThatNeedsApprovalAreApprovedTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should include the tool results in the response messages", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should include the tool results in the response messages",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_include_the_tool_results_in_the_response_messages()
     {
         var (result, _) = await RunAsync();
@@ -49,20 +56,31 @@ public sealed class WhenTwoCallsFromASingleToolThatNeedsApprovalAreApprovedTests
 
     private static async Task<(GenerateTextResult Result, TestLanguageModel Model)> RunAsync()
     {
-        var model = new TestLanguageModel { OnGenerate = _ => Text("Hello, world!", FinishReason.ToolCalls) };
-        var result = await Client().GenerateTextAsync(new GenerateTextOptions
+        var model = new TestLanguageModel
         {
-            Model = model,
-            Tools = new[] { ValueTool((_, _) => Task.FromResult("result1")) },
-            ToolApproval = new ToolApprovalConfiguration { { "tool1", "user-approval" } },
-            StopWhen = StopWhen.IsStepCount(3),
-            GenerateId = MockId("id"),
-            Messages = History(
-                "tool1",
-                new[] { ("call-1", "{\"value\":\"value1\"}", "id-1"), ("call-2", "{\"value\":\"value2\"}", "id-2") },
-                new ToolApprovalResponseModelMessage("id-1", true),
-                new ToolApprovalResponseModelMessage("id-2", true)),
-        });
+            OnGenerate = _ => Text("Hello, world!", FinishReason.ToolCalls),
+        };
+        var result = await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = model,
+                    Tools = new[] { ValueTool((_, _) => Task.FromResult("result1")) },
+                    ToolApproval = new ToolApprovalConfiguration { { "tool1", "user-approval" } },
+                    StopWhen = StopWhen.IsStepCount(3),
+                    GenerateId = MockId("id"),
+                    Messages = History(
+                        "tool1",
+                        new[]
+                        {
+                            ("call-1", "{\"value\":\"value1\"}", "id-1"),
+                            ("call-2", "{\"value\":\"value2\"}", "id-2"),
+                        },
+                        new ToolApprovalResponseModelMessage("id-1", true),
+                        new ToolApprovalResponseModelMessage("id-2", true)
+                    ),
+                }
+            );
         return (result, model);
     }
 }

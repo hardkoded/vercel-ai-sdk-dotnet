@@ -13,28 +13,42 @@ public sealed class DoGenerateSettingsAndOptionsTests
     private const string Prefix = TestFile + " > doGenerate > settings and options::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should send model id and settings", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should send model id and settings",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_send_model_id_and_settings()
     {
         var capture = EmptyResponse();
         var options = new LanguageModelCallOptions
         {
-            Prompt = new ModelMessage[] { new SystemModelMessage("you are helpful"), new UserModelMessage("hello") },
+            Prompt = new ModelMessage[]
+            {
+                new SystemModelMessage("you are helpful"),
+                new UserModelMessage("hello"),
+            },
             Temperature = 0.5,
             TopP = 0.9,
             MaxOutputTokens = 100,
         };
 
-        await Model(capture, "grok-4-fast-non-reasoning").DoGenerateAsync(options, CancellationToken.None);
+        await Model(capture, "grok-4-fast-non-reasoning")
+            .DoGenerateAsync(options, CancellationToken.None);
 
-        JsonAssert.Equal(Body(capture), """
+        JsonAssert.Equal(
+            Body(capture),
+            """
             {"input":[{"content":"you are helpful","role":"system"},{"content":[{"text":"hello","type":"input_text"}],"role":"user"}],
              "max_output_tokens":100,"model":"grok-4-fast-non-reasoning","temperature":0.5,"top_p":0.9}
-            """);
+            """
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should warn about unsupported stopSequences", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should warn about unsupported stopSequences",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_warn_about_unsupported_stopSequences()
     {
         var options = HelloPrompt();
@@ -49,7 +63,10 @@ public sealed class DoGenerateSettingsAndOptionsTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should warn about unsupported sampling settings", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should warn about unsupported sampling settings",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_warn_about_unsupported_sampling_settings()
     {
         var options = HelloPrompt();
@@ -59,7 +76,10 @@ public sealed class DoGenerateSettingsAndOptionsTests
 
         var result = await Model(EmptyResponse()).DoGenerateAsync(options, CancellationToken.None);
 
-        Assert.Equal(new[] { "frequencyPenalty", "presencePenalty" }, result.Warnings.Select(warning => warning.Feature));
+        Assert.Equal(
+            new[] { "frequencyPenalty", "presencePenalty" },
+            result.Warnings.Select(warning => warning.Feature)
+        );
         Assert.All(result.Warnings, warning => Assert.Equal("unsupported", warning.Type));
     }
 }

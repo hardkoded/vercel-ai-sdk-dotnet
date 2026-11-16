@@ -12,10 +12,15 @@ namespace Vercel.AI.Tests.OpenAIResponsesLanguageModelTests;
 /// <summary>Fixtures and helpers shared by the <c>openai-responses-language-model.test.ts</c> ports.</summary>
 internal static class OpenAIResponsesSupport
 {
-    internal static string Fixture(string name) => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", name));
+    internal static string Fixture(string name) =>
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", name));
 
     // Parses a Responses body with predictable source ids: id-0, id-1, and so on.
-    internal static LanguageModelGenerateResult Generate(JsonNode body, IReadOnlyList<LanguageModelTool>? tools = null, bool jsonResponse = false)
+    internal static LanguageModelGenerateResult Generate(
+        JsonNode body,
+        IReadOnlyList<LanguageModelTool>? tools = null,
+        bool jsonResponse = false
+    )
     {
         var raw = body.ToJsonString();
         using var document = JsonDocument.Parse(raw);
@@ -29,7 +34,8 @@ internal static class OpenAIResponsesSupport
             OpenAIParallelToolCall.FunctionToolNames(tools),
             toolNameMapping: OpenAIResponsesLanguageModel.CreateToolNameMapping(tools),
             jsonResponse: jsonResponse,
-            webSearchToolName: OpenAIResponsesLanguageModel.WebSearchToolName(tools));
+            webSearchToolName: OpenAIResponsesLanguageModel.WebSearchToolName(tools)
+        );
     }
 
     internal static JsonNode FixtureBody(string name) => JsonNode.Parse(Fixture(name))!;
@@ -43,18 +49,35 @@ internal static class OpenAIResponsesSupport
         new LanguageModelTool(
             "weather",
             null,
-            OpenAIUpstream.Json("""{"type":"object","properties":{"location":{"type":"string"}},"required":["location"],"additionalProperties":false}""")),
+            OpenAIUpstream.Json(
+                """{"type":"object","properties":{"location":{"type":"string"}},"required":["location"],"additionalProperties":false}"""
+            )
+        ),
         new LanguageModelTool(
             "cityAttractions",
             null,
-            OpenAIUpstream.Json("""{"type":"object","properties":{"city":{"type":"string"}},"required":["city"],"additionalProperties":false}""")),
+            OpenAIUpstream.Json(
+                """{"type":"object","properties":{"city":{"type":"string"}},"required":["city"],"additionalProperties":false}"""
+            )
+        ),
     };
 
-    internal static async Task<List<LanguageModelStreamPart>> Stream(string serverSentEvents, IReadOnlyList<LanguageModelTool>? tools = null)
+    internal static async Task<List<LanguageModelStreamPart>> Stream(
+        string serverSentEvents,
+        IReadOnlyList<LanguageModelTool>? tools = null
+    )
     {
         var capture = new OpenAICapture { ServerSentEvents = serverSentEvents };
-        return await OpenAIUpstream.Read(
-            (await OpenAIUpstream.Provider(capture).ResponsesModel("gpt-5-nano").DoStreamAsync(WithTools(tools), CancellationToken.None))).ConfigureAwait(false);
+        return await OpenAIUpstream
+            .Read(
+                (
+                    await OpenAIUpstream
+                        .Provider(capture)
+                        .ResponsesModel("gpt-5-nano")
+                        .DoStreamAsync(WithTools(tools), CancellationToken.None)
+                )
+            )
+            .ConfigureAwait(false);
     }
 
     private static LanguageModelCallOptions WithTools(IReadOnlyList<LanguageModelTool>? tools)
@@ -68,7 +91,10 @@ internal static class OpenAIResponsesSupport
         CitationJson.ToJson(citations ?? Array.Empty<Citation>());
 
     /// <summary>Asserts a stream against an upstream <c>toMatchSnapshot()</c> entry, which the port keeps as JSON in <c>Fixtures</c>.</summary>
-    internal static void AssertStreamSnapshot(IReadOnlyList<LanguageModelStreamPart> parts, string fixture)
+    internal static void AssertStreamSnapshot(
+        IReadOnlyList<LanguageModelStreamPart> parts,
+        string fixture
+    )
     {
         var expected = JsonNode.Parse(Fixture(fixture + ".stream.snap.json"))!.AsArray();
         var actual = new JsonArray();
@@ -81,14 +107,23 @@ internal static class OpenAIResponsesSupport
         {
             Assert.True(
                 JsonNode.DeepEquals(expected[index], actual[index]),
-                "Part " + index + ": expected " + expected[index]!.ToJsonString() + " but got " + actual[index]!.ToJsonString());
+                "Part "
+                    + index
+                    + ": expected "
+                    + expected[index]!.ToJsonString()
+                    + " but got "
+                    + actual[index]!.ToJsonString()
+            );
         }
 
         Assert.Equal(expected.Count, actual.Count);
     }
 
     /// <summary>Asserts generated content against an upstream <c>toMatchSnapshot()</c> entry, which the port keeps as JSON in <c>Fixtures</c>.</summary>
-    internal static void AssertContentSnapshot(IReadOnlyList<GeneratedContent> content, string fixture)
+    internal static void AssertContentSnapshot(
+        IReadOnlyList<GeneratedContent> content,
+        string fixture
+    )
     {
         var expected = JsonNode.Parse(Fixture(fixture + ".generate.snap.json"))!.AsArray();
         var actual = new JsonArray();
@@ -99,7 +134,10 @@ internal static class OpenAIResponsesSupport
             {
                 case GeneratedText text:
                     node["text"] = text.Text;
-                    SetMetadata(node, (text as OpenAIText)?.ProviderMetadata ?? text.ProviderMetadata);
+                    SetMetadata(
+                        node,
+                        (text as OpenAIText)?.ProviderMetadata ?? text.ProviderMetadata
+                    );
                     break;
                 case GeneratedReasoning reasoning:
                     node["text"] = reasoning.Text;
@@ -138,7 +176,10 @@ internal static class OpenAIResponsesSupport
             actual.Add(node);
         }
 
-        Assert.True(JsonNode.DeepEquals(expected, actual), "Expected " + expected.ToJsonString() + " but got " + actual.ToJsonString());
+        Assert.True(
+            JsonNode.DeepEquals(expected, actual),
+            "Expected " + expected.ToJsonString() + " but got " + actual.ToJsonString()
+        );
     }
 
     private static JsonNode SnapshotOf(LanguageModelStreamPart part)
@@ -147,12 +188,19 @@ internal static class OpenAIResponsesSupport
         switch (part)
         {
             case StreamStartStreamPart start:
-                node["warnings"] = new JsonArray(start.Warnings.Select(warning => (JsonNode?)JsonValue.Create(warning.Message)).ToArray());
+                node["warnings"] = new JsonArray(
+                    start
+                        .Warnings.Select(warning => (JsonNode?)JsonValue.Create(warning.Message))
+                        .ToArray()
+                );
                 break;
             case ResponseMetadataStreamPart metadata:
                 node["id"] = metadata.Id;
                 node["modelId"] = metadata.ModelId;
-                node["timestamp"] = metadata.Timestamp!.Value.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", System.Globalization.CultureInfo.InvariantCulture);
+                node["timestamp"] = metadata.Timestamp!.Value.UtcDateTime.ToString(
+                    "yyyy-MM-dd'T'HH:mm:ss.fff'Z'",
+                    System.Globalization.CultureInfo.InvariantCulture
+                );
                 break;
             case TextStartStreamPart textStart:
                 node["id"] = textStart.Id;
@@ -219,7 +267,10 @@ internal static class OpenAIResponsesSupport
                 node["toolCallId"] = approvalRequest.ToolCallId;
                 break;
             case FinishStreamPart finish:
-                var finishReason = new JsonObject { ["unified"] = KebabCase(finish.FinishReason.ToString()) };
+                var finishReason = new JsonObject
+                {
+                    ["unified"] = KebabCase(finish.FinishReason.ToString()),
+                };
                 if (finish.RawFinishReason != null)
                 {
                     finishReason["raw"] = finish.RawFinishReason;
@@ -273,5 +324,12 @@ internal static class OpenAIResponsesSupport
     }
 
     private static string KebabCase(string name) =>
-        string.Concat(name.Select((c, index) => char.IsUpper(c) ? (index > 0 ? "-" : string.Empty) + char.ToLowerInvariant(c) : c.ToString()));
+        string.Concat(
+            name.Select(
+                (c, index) =>
+                    char.IsUpper(c)
+                        ? (index > 0 ? "-" : string.Empty) + char.ToLowerInvariant(c)
+                        : c.ToString()
+            )
+        );
 }

@@ -75,33 +75,38 @@ public sealed class GoogleVertexAnthropicProvider : AnthropicProvider
     /// <summary>Provider id reported by language models.</summary>
     public const string ModelProviderName = "googleVertex.anthropic.messages";
 
-    private static readonly IReadOnlyDictionary<string, string> NoUrls = new Dictionary<string, string>();
+    private static readonly IReadOnlyDictionary<string, string> NoUrls =
+        new Dictionary<string, string>();
 
     private const string LabelsHeader = "x-vertex-ai-labels";
 
     private readonly GoogleVertexAnthropicOptions _vertex;
 
     /// <summary>Creates a provider.</summary>
-    public GoogleVertexAnthropicProvider(HttpClient httpClient, GoogleVertexAnthropicOptions? options = null)
+    public GoogleVertexAnthropicProvider(
+        HttpClient httpClient,
+        GoogleVertexAnthropicOptions? options = null
+    )
         : base(httpClient, Anthropic(options ??= new GoogleVertexAnthropicOptions()))
     {
         _vertex = options;
     }
 
     /// <summary>Provider tool ids that Vertex accepts. A subset of the Anthropic tools.</summary>
-    public static new IReadOnlyList<string> Tools { get; } = new[]
-    {
-        "anthropic.bash_20241022",
-        "anthropic.bash_20250124",
-        "anthropic.text_editor_20241022",
-        "anthropic.text_editor_20250124",
-        "anthropic.text_editor_20250429",
-        "anthropic.text_editor_20250728",
-        "anthropic.computer_20241022",
-        "anthropic.web_search_20250305",
-        "anthropic.tool_search_regex_20251119",
-        "anthropic.tool_search_bm25_20251119",
-    };
+    public static new IReadOnlyList<string> Tools { get; } =
+        new[]
+        {
+            "anthropic.bash_20241022",
+            "anthropic.bash_20250124",
+            "anthropic.text_editor_20241022",
+            "anthropic.text_editor_20250124",
+            "anthropic.text_editor_20250429",
+            "anthropic.text_editor_20250728",
+            "anthropic.computer_20241022",
+            "anthropic.web_search_20250305",
+            "anthropic.tool_search_regex_20251119",
+            "anthropic.tool_search_bm25_20251119",
+        };
 
     /// <summary>Project id.</summary>
     public string? Project => _vertex.Project;
@@ -113,13 +118,15 @@ public sealed class GoogleVertexAnthropicProvider : AnthropicProvider
     public string BaseUrl => Options.BaseUrl;
 
     /// <inheritdoc />
-    protected internal override bool SupportsNativeStructuredOutput => _vertex.SupportsNativeStructuredOutput;
+    protected internal override bool SupportsNativeStructuredOutput =>
+        _vertex.SupportsNativeStructuredOutput;
 
     /// <inheritdoc />
     // Native output is default-denied by GCP policy and requires Claude 4.5+.
     protected internal override bool SupportsNativeStructuredOutputFor(string modelId)
     {
-        return _vertex.SupportsNativeStructuredOutput && SupportsNativeStructuredOutputModel(modelId);
+        return _vertex.SupportsNativeStructuredOutput
+            && SupportsNativeStructuredOutputModel(modelId);
     }
 
     /// <inheritdoc />
@@ -129,16 +136,25 @@ public sealed class GoogleVertexAnthropicProvider : AnthropicProvider
     protected internal override IReadOnlyDictionary<string, string> SupportedUrls => NoUrls;
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static GoogleVertexAnthropicProvider Create(GoogleVertexAnthropicOptions? options = null, HttpMessageHandler? handler = null)
+    public static GoogleVertexAnthropicProvider Create(
+        GoogleVertexAnthropicOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new GoogleVertexAnthropicProvider(client, options);
     }
 
     /// <summary><c>rawPredict</c> or <c>streamRawPredict</c> URL for a model.</summary>
     public string PredictUrl(string modelId, bool streaming)
     {
-        return BaseUrl.TrimEnd('/') + "/" + modelId + ":" + (streaming ? "streamRawPredict" : "rawPredict");
+        return BaseUrl.TrimEnd('/')
+            + "/"
+            + modelId
+            + ":"
+            + (streaming ? "streamRawPredict" : "rawPredict");
     }
 
     /// <summary>Removes <c>model</c> and sets <c>anthropic_version</c>.</summary>
@@ -151,26 +167,39 @@ public sealed class GoogleVertexAnthropicProvider : AnthropicProvider
     }
 
     /// <summary>Sends <c>providerOptions.vertex.labels</c> as the <c>x-vertex-ai-labels</c> header. An explicit header wins.</summary>
-    public static Dictionary<string, string?> TransformHeaders(Dictionary<string, string?> headers, IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    public static Dictionary<string, string?> TransformHeaders(
+        Dictionary<string, string?> headers,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
+    )
     {
-        if (providerOptions == null
+        if (
+            providerOptions == null
             || !providerOptions.TryGetValue("vertex", out var vertex)
             || vertex.ValueKind != JsonValueKind.Object
-            || !vertex.TryGetProperty("labels", out var labels))
+            || !vertex.TryGetProperty("labels", out var labels)
+        )
         {
             return headers;
         }
 
         if (labels.ValueKind != JsonValueKind.Object)
         {
-            throw new InvalidArgumentError("providerOptions.vertex.labels", labels.ToString(), "labels must be an object with string values.");
+            throw new InvalidArgumentError(
+                "providerOptions.vertex.labels",
+                labels.ToString(),
+                "labels must be an object with string values."
+            );
         }
 
         foreach (var property in labels.EnumerateObject())
         {
             if (property.Value.ValueKind != JsonValueKind.String)
             {
-                throw new InvalidArgumentError("providerOptions.vertex.labels", labels.ToString(), "labels must be an object with string values.");
+                throw new InvalidArgumentError(
+                    "providerOptions.vertex.labels",
+                    labels.ToString(),
+                    "labels must be an object with string values."
+                );
             }
         }
 
@@ -187,7 +216,15 @@ public sealed class GoogleVertexAnthropicProvider : AnthropicProvider
     private static string Compact(JsonElement labels)
     {
         using var stream = new MemoryStream();
-        using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }))
+        using (
+            var writer = new Utf8JsonWriter(
+                stream,
+                new JsonWriterOptions
+                {
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                }
+            )
+        )
         {
             labels.WriteTo(writer);
         }
@@ -196,12 +233,19 @@ public sealed class GoogleVertexAnthropicProvider : AnthropicProvider
     }
 
     /// <summary>Generated bearer token, then configured headers, call headers, and beta flags.</summary>
-    public override async Task<Dictionary<string, string?>> CreateHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, CancellationToken cancellationToken)
+    public override async Task<Dictionary<string, string?>> CreateHeadersAsync(
+        IReadOnlyList<string> betas,
+        IReadOnlyDictionary<string, string?>? callHeaders,
+        string? body,
+        CancellationToken cancellationToken
+    )
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         if (_vertex.GenerateAuthToken != null)
         {
-            headers["Authorization"] = "Bearer " + await _vertex.GenerateAuthToken(cancellationToken).ConfigureAwait(false);
+            headers["Authorization"] =
+                "Bearer "
+                + await _vertex.GenerateAuthToken(cancellationToken).ConfigureAwait(false);
         }
 
         foreach (var pair in Options.Headers)
@@ -228,7 +272,9 @@ public sealed class GoogleVertexAnthropicProvider : AnthropicProvider
     /// <summary>Embedding models are not available on this provider.</summary>
     public override IEmbeddingModel EmbeddingModel(string modelId)
     {
-        throw new AiSdkException("Provider 'google.vertex.anthropic' does not support embedding model '" + modelId + "'.");
+        throw new AiSdkException(
+            "Provider 'google.vertex.anthropic' does not support embedding model '" + modelId + "'."
+        );
     }
 
     /// <inheritdoc />
@@ -239,14 +285,21 @@ public sealed class GoogleVertexAnthropicProvider : AnthropicProvider
 
     private static bool SupportsNativeStructuredOutputModel(string modelId)
     {
-        var match = Regex.Match(modelId, @"^claude-[a-z]+-(\d+)(?:-(\d+))?(?:@|\z)", RegexOptions.None, TimeSpan.FromSeconds(1));
+        var match = Regex.Match(
+            modelId,
+            @"^claude-[a-z]+-(\d+)(?:-(\d+))?(?:@|\z)",
+            RegexOptions.None,
+            TimeSpan.FromSeconds(1)
+        );
         if (!match.Success)
         {
             return false;
         }
 
         var major = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
-        var minor = match.Groups[2].Success ? int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture) : 0;
+        var minor = match.Groups[2].Success
+            ? int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture)
+            : 0;
         return major > 4 || (major == 4 && minor >= 5);
     }
 
@@ -254,7 +307,11 @@ public sealed class GoogleVertexAnthropicProvider : AnthropicProvider
     {
         var options = new AnthropicOptions
         {
-            BaseUrl = GoogleVertexEndpoints.AnthropicBaseUrl(vertex.Project, vertex.Location, vertex.BaseUrl),
+            BaseUrl = GoogleVertexEndpoints.AnthropicBaseUrl(
+                vertex.Project,
+                vertex.Location,
+                vertex.BaseUrl
+            ),
             Name = ModelProviderName,
             TransformRequestBody = TransformBody,
             TransformRequestHeaders = TransformHeaders,
@@ -280,16 +337,31 @@ public sealed class GoogleVertexMaasProvider
     private readonly GoogleVertexPartnerOptions _options;
 
     /// <summary>Creates a provider. The OpenAI-compatible client is created on first use.</summary>
-    public GoogleVertexMaasProvider(string project, string? location, string? baseUrl = null, HttpMessageHandler? handler = null)
-        : this(new GoogleVertexPartnerOptions { Project = project, Location = location, BaseUrl = baseUrl }, handler)
-    {
-    }
+    public GoogleVertexMaasProvider(
+        string project,
+        string? location,
+        string? baseUrl = null,
+        HttpMessageHandler? handler = null
+    )
+        : this(
+            new GoogleVertexPartnerOptions
+            {
+                Project = project,
+                Location = location,
+                BaseUrl = baseUrl,
+            },
+            handler
+        ) { }
 
     /// <summary>Creates a provider. <paramref name="handler"/> sends the request after the auth headers are added.</summary>
-    public GoogleVertexMaasProvider(GoogleVertexPartnerOptions options, HttpMessageHandler? handler = null)
+    public GoogleVertexMaasProvider(
+        GoogleVertexPartnerOptions options,
+        HttpMessageHandler? handler = null
+    )
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
-        Project = options.Project ?? throw new ArgumentNullException(nameof(options), "A Vertex project is required.");
+        Project = options.Project
+            ?? throw new ArgumentNullException(nameof(options), "A Vertex project is required.");
         Location = string.IsNullOrEmpty(options.Location) ? "global" : options.Location!;
         BaseUrl = GoogleVertexEndpoints.MaasBaseUrl(Project, Location, options.BaseUrl);
         Handler = handler;
@@ -329,13 +401,17 @@ public sealed class GoogleVertexMaasProvider
     {
         lock (_clientGate)
         {
-            return _client ??= new GoogleVertexOpenAICompatibleProvider(new OpenAICompatibleOptions
-            {
-                BaseUrl = BaseUrl,
-                ProviderName = "vertex.maas",
-                SupportsImages = true,
-                DownloadHttpClient = _options.DownloadHttpClient,
-            }, _options, Handler);
+            return _client ??= new GoogleVertexOpenAICompatibleProvider(
+                new OpenAICompatibleOptions
+                {
+                    BaseUrl = BaseUrl,
+                    ProviderName = "vertex.maas",
+                    SupportsImages = true,
+                    DownloadHttpClient = _options.DownloadHttpClient,
+                },
+                _options,
+                Handler
+            );
         }
     }
 
@@ -358,16 +434,31 @@ public sealed class GoogleVertexXaiProvider
     private readonly GoogleVertexPartnerOptions _options;
 
     /// <summary>Creates a provider.</summary>
-    public GoogleVertexXaiProvider(string project, string? location, string? baseUrl = null, HttpMessageHandler? handler = null)
-        : this(new GoogleVertexPartnerOptions { Project = project, Location = location, BaseUrl = baseUrl }, handler)
-    {
-    }
+    public GoogleVertexXaiProvider(
+        string project,
+        string? location,
+        string? baseUrl = null,
+        HttpMessageHandler? handler = null
+    )
+        : this(
+            new GoogleVertexPartnerOptions
+            {
+                Project = project,
+                Location = location,
+                BaseUrl = baseUrl,
+            },
+            handler
+        ) { }
 
     /// <summary>Creates a provider. <paramref name="handler"/> sends the request after the auth headers are added.</summary>
-    public GoogleVertexXaiProvider(GoogleVertexPartnerOptions options, HttpMessageHandler? handler = null)
+    public GoogleVertexXaiProvider(
+        GoogleVertexPartnerOptions options,
+        HttpMessageHandler? handler = null
+    )
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
-        Project = options.Project ?? throw new ArgumentNullException(nameof(options), "A Vertex project is required.");
+        Project = options.Project
+            ?? throw new ArgumentNullException(nameof(options), "A Vertex project is required.");
         Location = string.IsNullOrEmpty(options.Location) ? "global" : options.Location!;
         BaseUrl = GoogleVertexEndpoints.XaiBaseUrl(Project, Location, options.BaseUrl);
         Handler = handler;
@@ -401,15 +492,22 @@ public sealed class GoogleVertexXaiProvider
     {
         lock (_clientGate)
         {
-            return _client ??= new GoogleVertexOpenAICompatibleProvider(new OpenAICompatibleOptions
-            {
-                BaseUrl = BaseUrl,
-                ProviderName = "googleVertex.xai",
-                IncludeUsage = true,
-                SupportsStructuredOutputs = true,
-                SupportedUrls = new Dictionary<string, string> { ["image/*"] = "^https?://.*\\z" },
-                TransformRequestBody = (body, _) => TransformBody(body),
-            }, _options, Handler);
+            return _client ??= new GoogleVertexOpenAICompatibleProvider(
+                new OpenAICompatibleOptions
+                {
+                    BaseUrl = BaseUrl,
+                    ProviderName = "googleVertex.xai",
+                    IncludeUsage = true,
+                    SupportsStructuredOutputs = true,
+                    SupportedUrls = new Dictionary<string, string>
+                    {
+                        ["image/*"] = "^https?://.*\\z",
+                    },
+                    TransformRequestBody = (body, _) => TransformBody(body),
+                },
+                _options,
+                Handler
+            );
         }
     }
 
@@ -424,29 +522,55 @@ public sealed class GoogleVertexXaiProvider
     /// <summary>
     /// Counts Grok reasoning tokens separately. Output total is completion tokens plus reasoning tokens.
     /// </summary>
-    public static GoogleTokenUsage ConvertUsage(int? promptTokens, int? completionTokens, int? cachedTokens, int? reasoningTokens)
+    public static GoogleTokenUsage ConvertUsage(
+        int? promptTokens,
+        int? completionTokens,
+        int? cachedTokens,
+        int? reasoningTokens
+    )
     {
         var prompt = promptTokens ?? 0;
         var completion = completionTokens ?? 0;
         var cached = cachedTokens ?? 0;
         var reasoning = reasoningTokens ?? 0;
-        return new GoogleTokenUsage(prompt, prompt - cached, cached, completion + reasoning, completion, reasoning, null);
+        return new GoogleTokenUsage(
+            prompt,
+            prompt - cached,
+            cached,
+            completion + reasoning,
+            completion,
+            reasoning,
+            null
+        );
     }
 
     /// <summary>Embedding and image models are not available.</summary>
     public IEmbeddingModel EmbeddingModel(string modelId)
     {
-        throw new AiSdkException("Provider 'google.vertex.xai' does not support embedding model '" + modelId + "'.");
+        throw new AiSdkException(
+            "Provider 'google.vertex.xai' does not support embedding model '" + modelId + "'."
+        );
     }
 }
 
 /// <summary>OpenAI-compatible client for Vertex. Vertex authenticates with <see cref="GoogleVertexAuthHandler"/>, never an API key.</summary>
 internal sealed class GoogleVertexOpenAICompatibleProvider : OpenAICompatibleProvider
 {
-    public GoogleVertexOpenAICompatibleProvider(OpenAICompatibleOptions options, GoogleVertexPartnerOptions vertex, HttpMessageHandler? handler)
-        : base(options, new HttpClient(new GoogleVertexAuthHandler(vertex, handler ?? new GlobalFetchHandler(allowAutoRedirect: true)), disposeHandler: false))
-    {
-    }
+    public GoogleVertexOpenAICompatibleProvider(
+        OpenAICompatibleOptions options,
+        GoogleVertexPartnerOptions vertex,
+        HttpMessageHandler? handler
+    )
+        : base(
+            options,
+            new HttpClient(
+                new GoogleVertexAuthHandler(
+                    vertex,
+                    handler ?? new GlobalFetchHandler(allowAutoRedirect: true)
+                ),
+                disposeHandler: false
+            )
+        ) { }
 
     /// <summary>Returns no key, so an <c>OPENAI_API_KEY</c> in the environment is never sent to Vertex.</summary>
     protected override string? ResolveApiKey()
@@ -466,9 +590,15 @@ internal sealed class GoogleVertexAuthHandler : DelegatingHandler
         _options = options;
     }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
-        var token = _options.GenerateAuthToken == null ? null : await _options.GenerateAuthToken(cancellationToken).ConfigureAwait(false);
+        var token =
+            _options.GenerateAuthToken == null
+                ? null
+                : await _options.GenerateAuthToken(cancellationToken).ConfigureAwait(false);
         foreach (var pair in _options.Headers)
         {
             Set(request, pair.Key, pair.Value);

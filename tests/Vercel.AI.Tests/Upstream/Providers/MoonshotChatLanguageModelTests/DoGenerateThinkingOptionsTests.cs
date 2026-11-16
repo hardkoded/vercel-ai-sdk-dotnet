@@ -14,18 +14,24 @@ public sealed class DoGenerateThinkingOptionsTests
     [UpstreamTest(
         "packages/moonshotai/src/moonshotai-chat-language-model.test.ts::doGenerate > thinking options::should map generic reasoning levels to reasoning_effort",
         Coverage = UpstreamCoverage.Partial,
-        Note = "The port sends reasoning xhigh unchanged. Upstream maps it to max, so the xhigh step is not asserted.")]
+        Note = "The port sends reasoning xhigh unchanged. Upstream maps it to max, so the xhigh step is not asserted."
+    )]
     public async Task Should_map_generic_reasoning_levels_to_reasoning_effort()
     {
         var capture = new UpstreamCapture();
-        var provider = MoonshotProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture);
+        var provider = MoonshotProvider.Create(
+            new OpenAICompatibleOptions { ApiKey = "secret" },
+            capture
+        );
         var expected = new[] { ("low", "low"), ("max", "max") };
 
         foreach (var (reasoning, effort) in expected)
         {
             var options = UpstreamChat.Prompt();
             options.Reasoning = reasoning;
-            await ((OpenAICompatibleLanguageModel)provider.LanguageModel("kimi-k3")).DoGenerateAsync(options, CancellationToken.None);
+            await (
+                (OpenAICompatibleLanguageModel)provider.LanguageModel("kimi-k3")
+            ).DoGenerateAsync(options, CancellationToken.None);
         }
 
         for (var index = 0; index < expected.Length; index++)

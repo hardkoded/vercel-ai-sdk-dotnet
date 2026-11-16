@@ -48,7 +48,9 @@ internal static class GoogleInteractionsStreaming
 
     internal static string? String(JsonObject? node, string name)
     {
-        return node?[name] is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
+        return node?[name] is JsonValue value && value.TryGetValue<string>(out var text)
+            ? text
+            : null;
     }
 
     /// <summary>
@@ -65,14 +67,25 @@ internal static class GoogleInteractionsStreaming
         IReadOnlyDictionary<string, string?> headers,
         int maxRetries,
         TimeSpan retryDelay,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         if (string.IsNullOrEmpty(interactionId))
         {
-            throw new InvalidOperationException("google.interactions: cannot stream a background interaction without an id.");
+            throw new InvalidOperationException(
+                "google.interactions: cannot stream a background interaction without an id."
+            );
         }
 
-        return StreamEventsCore(http, baseUrl, interactionId!, headers, maxRetries, retryDelay, cancellationToken);
+        return StreamEventsCore(
+            http,
+            baseUrl,
+            interactionId!,
+            headers,
+            maxRetries,
+            retryDelay,
+            cancellationToken
+        );
     }
 
     private static async IAsyncEnumerable<GoogleInteractionsEvent> StreamEventsCore(
@@ -82,7 +95,8 @@ internal static class GoogleInteractionsStreaming
         IReadOnlyDictionary<string, string?> headers,
         int maxRetries,
         TimeSpan retryDelay,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         var eventHeaders = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         foreach (var pair in headers)
@@ -107,7 +121,14 @@ internal static class GoogleInteractionsStreaming
                 {
                     try
                     {
-                        var opened = await http.OpenSseResponseAsync(HttpMethod.Get, Url(baseUrl, id, lastEventId), null, eventHeaders, cancellationToken).ConfigureAwait(false);
+                        var opened = await http.OpenSseResponseAsync(
+                                HttpMethod.Get,
+                                Url(baseUrl, id, lastEventId),
+                                null,
+                                eventHeaders,
+                                cancellationToken
+                            )
+                            .ConfigureAwait(false);
                         reader = opened.Events.GetAsyncEnumerator(cancellationToken);
                         receivedAny = false;
                     }
@@ -120,7 +141,11 @@ internal static class GoogleInteractionsStreaming
                             throw;
                         }
 
-                        await Task.Delay(TimeSpan.FromTicks(retryDelay.Ticks * attempt), cancellationToken).ConfigureAwait(false);
+                        await Task.Delay(
+                                TimeSpan.FromTicks(retryDelay.Ticks * attempt),
+                                cancellationToken
+                            )
+                            .ConfigureAwait(false);
                         continue;
                     }
                 }
@@ -141,7 +166,11 @@ internal static class GoogleInteractionsStreaming
                         throw;
                     }
 
-                    await Task.Delay(TimeSpan.FromTicks(retryDelay.Ticks * attempt), cancellationToken).ConfigureAwait(false);
+                    await Task.Delay(
+                            TimeSpan.FromTicks(retryDelay.Ticks * attempt),
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false);
                     continue;
                 }
 
@@ -161,10 +190,16 @@ internal static class GoogleInteractionsStreaming
                     if (attempt >= maxRetries)
                     {
                         failed = true;
-                        throw new AiSdkException("google.interactions: SSE stream closed without producing any events.");
+                        throw new AiSdkException(
+                            "google.interactions: SSE stream closed without producing any events."
+                        );
                     }
 
-                    await Task.Delay(TimeSpan.FromTicks(retryDelay.Ticks * attempt), cancellationToken).ConfigureAwait(false);
+                    await Task.Delay(
+                            TimeSpan.FromTicks(retryDelay.Ticks * attempt),
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false);
                     continue;
                 }
 
@@ -178,7 +213,10 @@ internal static class GoogleInteractionsStreaming
                     lastEventId = eventId;
                 }
 
-                if (streamEvent.EventType == "interaction.completed" || streamEvent.EventType == "error")
+                if (
+                    streamEvent.EventType == "interaction.completed"
+                    || streamEvent.EventType == "error"
+                )
                 {
                     complete = true;
                 }
@@ -196,7 +234,9 @@ internal static class GoogleInteractionsStreaming
             // The caller cancelled, or stopped reading before the agent finished.
             if (!complete && !failed)
             {
-                await GoogleInteractionsPolling.CancelOnServerAsync(http, baseUrl, id, headers).ConfigureAwait(false);
+                await GoogleInteractionsPolling
+                    .CancelOnServerAsync(http, baseUrl, id, headers)
+                    .ConfigureAwait(false);
             }
         }
     }
@@ -215,7 +255,9 @@ internal static class GoogleInteractionsStreaming
 
     private static Uri Url(string baseUrl, string id, string? lastEventId)
     {
-        var url = ApiKeys.Combine(baseUrl, "interactions/" + Uri.EscapeDataString(id)).AbsoluteUri + "?stream=true";
+        var url =
+            ApiKeys.Combine(baseUrl, "interactions/" + Uri.EscapeDataString(id)).AbsoluteUri
+            + "?stream=true";
         if (lastEventId != null)
         {
             url += "&last_event_id=" + Uri.EscapeDataString(lastEventId);
@@ -269,7 +311,12 @@ internal sealed class GoogleInteractionsStreamTransform
     /// <param name="includeRawChunks">Whether to emit a raw part for every event.</param>
     /// <param name="generateId">Makes the id of a source. Defaults to a random id.</param>
     /// <param name="serviceTier">The tier from the <c>x-gemini-service-tier</c> response header. The tier in the <c>interaction.completed</c> body wins over it.</param>
-    internal GoogleInteractionsStreamTransform(IReadOnlyList<CallWarning> warnings, bool includeRawChunks, Func<string>? generateId = null, string? serviceTier = null)
+    internal GoogleInteractionsStreamTransform(
+        IReadOnlyList<CallWarning> warnings,
+        bool includeRawChunks,
+        Func<string>? generateId = null,
+        string? serviceTier = null
+    )
     {
         _warnings = warnings;
         _includeRawChunks = includeRawChunks;
@@ -283,14 +330,19 @@ internal sealed class GoogleInteractionsStreamTransform
     }
 
     /// <summary>Streams the parts of a live event feed, from stream-start to finish.</summary>
-    internal async IAsyncEnumerable<LanguageModelStreamPart> Pipe(IAsyncEnumerable<GoogleInteractionsEvent> events, [EnumeratorCancellation] CancellationToken cancellationToken)
+    internal async IAsyncEnumerable<LanguageModelStreamPart> Pipe(
+        IAsyncEnumerable<GoogleInteractionsEvent> events,
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         foreach (var part in Start())
         {
             yield return part;
         }
 
-        await foreach (var streamEvent in events.WithCancellation(cancellationToken).ConfigureAwait(false))
+        await foreach (
+            var streamEvent in events.WithCancellation(cancellationToken).ConfigureAwait(false)
+        )
         {
             foreach (var part in Transform(streamEvent))
             {
@@ -320,8 +372,19 @@ internal sealed class GoogleInteractionsStreamTransform
         _finishStatus = GoogleInteractionsStreaming.String(response, "status");
         _usage = response["usage"] as JsonObject;
         _serviceTier = GoogleInteractionsStreaming.String(response, "service_tier") ?? _serviceTier;
-        DateTimeOffset? timestamp = DateTimeOffset.TryParse(GoogleInteractionsStreaming.String(response, "created"), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsed) ? parsed : null;
-        yield return new ResponseMetadataStreamPart(_interactionId, GoogleInteractionsStreaming.String(response, "model"), timestamp);
+        DateTimeOffset? timestamp = DateTimeOffset.TryParse(
+            GoogleInteractionsStreaming.String(response, "created"),
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.RoundtripKind,
+            out var parsed
+        )
+            ? parsed
+            : null;
+        yield return new ResponseMetadataStreamPart(
+            _interactionId,
+            GoogleInteractionsStreaming.String(response, "model"),
+            timestamp
+        );
         if (_includeRawChunks)
         {
             yield return new RawStreamPart(response.ToJsonString());
@@ -334,7 +397,10 @@ internal sealed class GoogleInteractionsStreamTransform
         {
             if (item is GeneratedText text)
             {
-                var blockId = (_interactionId ?? "agent") + ":" + (block++).ToString(CultureInfo.InvariantCulture);
+                var blockId =
+                    (_interactionId ?? "agent")
+                    + ":"
+                    + (block++).ToString(CultureInfo.InvariantCulture);
                 yield return new TextStartStreamPart(blockId);
                 if (text.Text.Length > 0)
                 {
@@ -348,7 +414,11 @@ internal sealed class GoogleInteractionsStreamTransform
                 yield return new ToolInputStartStreamPart(call.ToolCallId, call.ToolName);
                 yield return new ToolInputDeltaStreamPart(call.ToolCallId, call.ArgumentsJson);
                 yield return new ToolInputEndStreamPart(call.ToolCallId);
-                yield return new ToolCallStreamPart(call.ToolCallId, call.ToolName, call.ArgumentsJson);
+                yield return new ToolCallStreamPart(
+                    call.ToolCallId,
+                    call.ToolName,
+                    call.ArgumentsJson
+                );
             }
         }
 
@@ -366,7 +436,11 @@ internal sealed class GoogleInteractionsStreamTransform
         if (streamEvent.Value == null)
         {
             _finishStatus = "failed";
-            parts.Add(new ErrorStreamPart("google.interactions: the stream sent data that is not a JSON object."));
+            parts.Add(
+                new ErrorStreamPart(
+                    "google.interactions: the stream sent data that is not a JSON object."
+                )
+            );
             return parts;
         }
 
@@ -389,7 +463,11 @@ internal sealed class GoogleInteractionsStreamTransform
             case "interaction.in_progress":
             case "interaction.requires_action":
                 _finishStatus = GoogleInteractionsStreaming.String(value, "status")
-                    ?? (streamEvent.EventType == "interaction.requires_action" ? "requires_action" : "in_progress");
+                    ?? (
+                        streamEvent.EventType == "interaction.requires_action"
+                            ? "requires_action"
+                            : "in_progress"
+                    );
                 break;
             case "interaction.completed":
                 Completed(value);
@@ -397,11 +475,17 @@ internal sealed class GoogleInteractionsStreamTransform
             case "error":
                 _finishStatus = "failed";
                 var error = value["error"] as JsonObject;
-                parts.Add(new ErrorStreamPart(new ProviderStreamError(
-                    GoogleInteractionsStreaming.String(error, "message") ?? "Unknown interaction error",
-                    value,
-                    "error",
-                    Code(error))));
+                parts.Add(
+                    new ErrorStreamPart(
+                        new ProviderStreamError(
+                            GoogleInteractionsStreaming.String(error, "message")
+                                ?? "Unknown interaction error",
+                            value,
+                            "error",
+                            Code(error)
+                        )
+                    )
+                );
                 break;
         }
 
@@ -411,7 +495,12 @@ internal sealed class GoogleInteractionsStreamTransform
     internal IEnumerable<LanguageModelStreamPart> Flush()
     {
         // A feed that ends or fails mid-block leaves text blocks open. Close them so consumers see matching start and end parts.
-        foreach (var open in _openBlocks.OrderBy(pair => pair.Key).Select(pair => pair.Value).Where(block => block.Kind == OpenBlockKind.Text))
+        foreach (
+            var open in _openBlocks
+                .OrderBy(pair => pair.Key)
+                .Select(pair => pair.Value)
+                .Where(block => block.Kind == OpenBlockKind.Text)
+        )
         {
             yield return new TextEndStreamPart(open.Id, null, GoogleMetadata());
         }
@@ -426,7 +515,12 @@ internal sealed class GoogleInteractionsStreamTransform
             GoogleInteractionsFinish.Map(_finishStatus, _hasFunctionCall),
             GoogleInteractionsModel.Usage(_usage),
             _finishStatus,
-            GoogleInteractionsModel.ProviderMetadata(_interactionId, _serviceTier, GoogleInteractionsModel.OutputTokensByModality(_usage)));
+            GoogleInteractionsModel.ProviderMetadata(
+                _interactionId,
+                _serviceTier,
+                GoogleInteractionsModel.OutputTokensByModality(_usage)
+            )
+        );
     }
 
     // The provider metadata of a part: the interaction id and, where the part has one, its signature.
@@ -443,7 +537,9 @@ internal sealed class GoogleInteractionsStreamTransform
             google["interactionId"] = _interactionId;
         }
 
-        return google.Count == 0 ? null : JsonSerializer.SerializeToElement(new JsonObject { ["google"] = google });
+        return google.Count == 0
+            ? null
+            : JsonSerializer.SerializeToElement(new JsonObject { ["google"] = google });
     }
 
     private void Created(JsonObject value, List<LanguageModelStreamPart> parts)
@@ -452,8 +548,21 @@ internal sealed class GoogleInteractionsStreamTransform
         // The API sends id "" when store is false. Treat that as no id.
         var id = GoogleInteractionsStreaming.String(interaction, "id");
         _interactionId = string.IsNullOrEmpty(id) ? null : id;
-        DateTimeOffset? timestamp = DateTimeOffset.TryParse(GoogleInteractionsStreaming.String(interaction, "created"), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsed) ? parsed : null;
-        parts.Add(new ResponseMetadataStreamPart(_interactionId, GoogleInteractionsStreaming.String(interaction, "model"), timestamp));
+        DateTimeOffset? timestamp = DateTimeOffset.TryParse(
+            GoogleInteractionsStreaming.String(interaction, "created"),
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.RoundtripKind,
+            out var parsed
+        )
+            ? parsed
+            : null;
+        parts.Add(
+            new ResponseMetadataStreamPart(
+                _interactionId,
+                GoogleInteractionsStreaming.String(interaction, "model"),
+                timestamp
+            )
+        );
     }
 
     private void StepStart(JsonObject value, List<LanguageModelStreamPart> parts)
@@ -463,7 +572,8 @@ internal sealed class GoogleInteractionsStreamTransform
             return;
         }
 
-        var blockId = (_interactionId ?? "interaction") + ":" + index.ToString(CultureInfo.InvariantCulture);
+        var blockId =
+            (_interactionId ?? "interaction") + ":" + index.ToString(CultureInfo.InvariantCulture);
         var step = value["step"] as JsonObject;
         var stepType = GoogleInteractionsStreaming.String(step, "type");
         switch (stepType)
@@ -475,7 +585,13 @@ internal sealed class GoogleInteractionsStreamTransform
                 {
                     _openBlocks[index] = new OpenBlock(blockId, OpenBlockKind.Text);
                     parts.Add(new TextStartStreamPart(blockId));
-                    AddSources(GoogleInteractionsSources.AnnotationsToSources(first!["annotations"] as JsonArray, _generateId), parts);
+                    AddSources(
+                        GoogleInteractionsSources.AnnotationsToSources(
+                            first!["annotations"] as JsonArray,
+                            _generateId
+                        ),
+                        parts
+                    );
                 }
                 else
                 {
@@ -484,13 +600,23 @@ internal sealed class GoogleInteractionsStreamTransform
 
                 break;
             case "thought":
-                _openBlocks[index] = new OpenBlock(blockId, OpenBlockKind.Reasoning) { Signature = GoogleInteractionsStreaming.String(step, "signature") };
+                _openBlocks[index] = new OpenBlock(blockId, OpenBlockKind.Reasoning)
+                {
+                    Signature = GoogleInteractionsStreaming.String(step, "signature"),
+                };
                 parts.Add(new ReasoningStartStreamPart(blockId));
 
                 // The summary of a thought can already hold text when the step starts.
-                foreach (var item in (step?["summary"] as JsonArray ?? new JsonArray()).OfType<JsonObject>())
+                foreach (
+                    var item in (
+                        step?["summary"] as JsonArray ?? new JsonArray()
+                    ).OfType<JsonObject>()
+                )
                 {
-                    if (GoogleInteractionsStreaming.String(item, "type") == "text" && GoogleInteractionsStreaming.String(item, "text") is { } text)
+                    if (
+                        GoogleInteractionsStreaming.String(item, "type") == "text"
+                        && GoogleInteractionsStreaming.String(item, "text") is { } text
+                    )
                     {
                         parts.Add(new ReasoningDeltaStreamPart(blockId, text));
                     }
@@ -512,17 +638,26 @@ internal sealed class GoogleInteractionsStreamTransform
 
                 if (stepType == "processing_call")
                 {
-                    google["processingId"] = NonEmpty(GoogleInteractionsStreaming.String(step, "id")) ?? blockId;
+                    google["processingId"] = NonEmpty(
+                        GoogleInteractionsStreaming.String(step, "id")
+                    ) ?? blockId;
                 }
                 else
                 {
-                    google["processingCallId"] = NonEmpty(GoogleInteractionsStreaming.String(step, "call_id")) ?? blockId;
+                    google["processingCallId"] = NonEmpty(
+                        GoogleInteractionsStreaming.String(step, "call_id")
+                    ) ?? blockId;
                 }
 
-                _openBlocks[index] = new OpenBlock(blockId, OpenBlockKind.Custom) { CustomKind = "google." + stepType, Google = google };
+                _openBlocks[index] = new OpenBlock(blockId, OpenBlockKind.Custom)
+                {
+                    CustomKind = "google." + stepType,
+                    Google = google,
+                };
                 break;
             case "function_call":
-                var toolCallId = NonEmpty(GoogleInteractionsStreaming.String(step, "id")) ?? blockId;
+                var toolCallId = NonEmpty(GoogleInteractionsStreaming.String(step, "id"))
+                    ?? blockId;
                 var toolName = GoogleInteractionsStreaming.String(step, "name") ?? "unknown";
                 _hasFunctionCall = true;
                 _openBlocks[index] = new OpenBlock(blockId, OpenBlockKind.FunctionCall)
@@ -537,8 +672,12 @@ internal sealed class GoogleInteractionsStreamTransform
                 _openBlocks[index] = new OpenBlock(blockId, OpenBlockKind.BuiltinToolCall)
                 {
                     BlockType = type,
-                    ToolCallId = NonEmpty(GoogleInteractionsStreaming.String(step, "id")) ?? blockId,
-                    ToolName = type == "mcp_server_tool_call" ? GoogleInteractionsStreaming.String(step, "name") ?? "mcp_server_tool" : Strip(type, "_call"),
+                    ToolCallId = NonEmpty(GoogleInteractionsStreaming.String(step, "id"))
+                        ?? blockId,
+                    ToolName =
+                        type == "mcp_server_tool_call"
+                            ? GoogleInteractionsStreaming.String(step, "name") ?? "mcp_server_tool"
+                            : Strip(type, "_call"),
                     Arguments = step!["arguments"] as JsonObject ?? new JsonObject(),
                 };
                 break;
@@ -546,8 +685,12 @@ internal sealed class GoogleInteractionsStreamTransform
                 _openBlocks[index] = new OpenBlock(blockId, OpenBlockKind.BuiltinToolResult)
                 {
                     BlockType = type,
-                    ToolCallId = NonEmpty(GoogleInteractionsStreaming.String(step, "call_id")) ?? blockId,
-                    ToolName = type == "mcp_server_tool_result" ? GoogleInteractionsStreaming.String(step, "name") ?? "mcp_server_tool" : Strip(type, "_result"),
+                    ToolCallId = NonEmpty(GoogleInteractionsStreaming.String(step, "call_id"))
+                        ?? blockId,
+                    ToolName =
+                        type == "mcp_server_tool_result"
+                            ? GoogleInteractionsStreaming.String(step, "name") ?? "mcp_server_tool"
+                            : Strip(type, "_result"),
                     Result = step!["result"]?.DeepClone(),
                 };
                 break;
@@ -568,7 +711,10 @@ internal sealed class GoogleInteractionsStreamTransform
         var type = GoogleInteractionsStreaming.String(delta, "type");
 
         // The first text-shaped delta promotes a bare model output step to a text block.
-        if (open.Kind == OpenBlockKind.PendingModelOutput && (type == "text" || type == "text_annotation" || type == "text_annotation_delta"))
+        if (
+            open.Kind == OpenBlockKind.PendingModelOutput
+            && (type == "text" || type == "text_annotation" || type == "text_annotation_delta")
+        )
         {
             open.Kind = OpenBlockKind.Text;
             parts.Add(new TextStartStreamPart(open.Id));
@@ -588,12 +734,19 @@ internal sealed class GoogleInteractionsStreamTransform
                     open.Google!["signature"] = signature;
                 }
 
-                if (type == "processing_call" && NonEmpty(GoogleInteractionsStreaming.String(delta, "id")) is { } processingId)
+                if (
+                    type == "processing_call"
+                    && NonEmpty(GoogleInteractionsStreaming.String(delta, "id")) is { } processingId
+                )
                 {
                     open.Google!["processingId"] = processingId;
                 }
 
-                if (type == "processing_result" && NonEmpty(GoogleInteractionsStreaming.String(delta, "call_id")) is { } processingCallId)
+                if (
+                    type == "processing_result"
+                    && NonEmpty(GoogleInteractionsStreaming.String(delta, "call_id"))
+                        is { } processingCallId
+                )
                 {
                     open.Google!["processingCallId"] = processingCallId;
                 }
@@ -607,44 +760,64 @@ internal sealed class GoogleInteractionsStreamTransform
                 }
 
                 break;
-            case OpenBlockKind.Text when type == "text_annotation" || type == "text_annotation_delta":
-                AddSources(GoogleInteractionsSources.AnnotationsToSources(delta!["annotations"] as JsonArray, _generateId), parts);
+            case OpenBlockKind.Text
+                when type == "text_annotation" || type == "text_annotation_delta":
+                AddSources(
+                    GoogleInteractionsSources.AnnotationsToSources(
+                        delta!["annotations"] as JsonArray,
+                        _generateId
+                    ),
+                    parts
+                );
                 break;
             case OpenBlockKind.Reasoning when type == "thought_summary":
                 var item = delta!["content"] as JsonObject;
-                if (GoogleInteractionsStreaming.String(item, "type") == "text" && GoogleInteractionsStreaming.String(item, "text") is { } summary)
+                if (
+                    GoogleInteractionsStreaming.String(item, "type") == "text"
+                    && GoogleInteractionsStreaming.String(item, "text") is { } summary
+                )
                 {
                     parts.Add(new ReasoningDeltaStreamPart(open.Id, summary));
                 }
 
                 break;
             case OpenBlockKind.Reasoning when type == "thought_signature":
-                open.Signature = GoogleInteractionsStreaming.String(delta, "signature") ?? open.Signature;
+                open.Signature = GoogleInteractionsStreaming.String(delta, "signature")
+                    ?? open.Signature;
                 break;
             case OpenBlockKind.FunctionCall when type == "arguments_delta":
                 // The arguments arrive as slices of one JSON string. The full object is emitted at step.stop.
-                var slice = delta!["arguments"] is JsonValue argument && argument.TryGetValue<string>(out var sliceText) ? sliceText : string.Empty;
+                var slice =
+                    delta!["arguments"] is JsonValue argument
+                    && argument.TryGetValue<string>(out var sliceText)
+                        ? sliceText
+                        : string.Empty;
                 if (slice.Length > 0)
                 {
                     open.ArgumentsAccum.Append(slice);
                     parts.Add(new ToolInputDeltaStreamPart(open.ToolCallId!, slice));
                 }
 
-                open.ToolCallId = NonEmpty(GoogleInteractionsStreaming.String(delta, "id")) ?? open.ToolCallId;
-                open.Signature = GoogleInteractionsStreaming.String(delta, "signature") ?? open.Signature;
+                open.ToolCallId = NonEmpty(GoogleInteractionsStreaming.String(delta, "id"))
+                    ?? open.ToolCallId;
+                open.Signature = GoogleInteractionsStreaming.String(delta, "signature")
+                    ?? open.Signature;
                 _hasFunctionCall = true;
                 break;
             case OpenBlockKind.BuiltinToolCall when type == open.BlockType:
-                open.ToolCallId = NonEmpty(GoogleInteractionsStreaming.String(delta, "id")) ?? open.ToolCallId;
+                open.ToolCallId = NonEmpty(GoogleInteractionsStreaming.String(delta, "id"))
+                    ?? open.ToolCallId;
                 open.Arguments = delta!["arguments"] as JsonObject ?? open.Arguments;
                 if (open.BlockType == "mcp_server_tool_call")
                 {
-                    open.ToolName = GoogleInteractionsStreaming.String(delta, "name") ?? open.ToolName;
+                    open.ToolName = GoogleInteractionsStreaming.String(delta, "name")
+                        ?? open.ToolName;
                 }
 
                 break;
             case OpenBlockKind.BuiltinToolResult when type == open.BlockType:
-                open.ToolCallId = NonEmpty(GoogleInteractionsStreaming.String(delta, "call_id")) ?? open.ToolCallId;
+                open.ToolCallId = NonEmpty(GoogleInteractionsStreaming.String(delta, "call_id"))
+                    ?? open.ToolCallId;
                 if (delta!.ContainsKey("result"))
                 {
                     open.Result = delta["result"]?.DeepClone();
@@ -652,7 +825,8 @@ internal sealed class GoogleInteractionsStreamTransform
 
                 if (open.BlockType == "mcp_server_tool_result")
                 {
-                    open.ToolName = GoogleInteractionsStreaming.String(delta, "name") ?? open.ToolName;
+                    open.ToolName = GoogleInteractionsStreaming.String(delta, "name")
+                        ?? open.ToolName;
                 }
 
                 break;
@@ -676,26 +850,67 @@ internal sealed class GoogleInteractionsStreamTransform
                 break;
             case OpenBlockKind.FunctionCall:
                 parts.Add(new ToolInputEndStreamPart(open.ToolCallId!));
-                var arguments = open.ArgumentsAccum.Length > 0 ? open.ArgumentsAccum.ToString() : "{}";
-                parts.Add(new ToolCallStreamPart(open.ToolCallId!, open.ToolName!, arguments, GoogleMetadata(open.Signature)));
+                var arguments =
+                    open.ArgumentsAccum.Length > 0 ? open.ArgumentsAccum.ToString() : "{}";
+                parts.Add(
+                    new ToolCallStreamPart(
+                        open.ToolCallId!,
+                        open.ToolName!,
+                        arguments,
+                        GoogleMetadata(open.Signature)
+                    )
+                );
                 break;
             case OpenBlockKind.Custom:
-                parts.Add(new CustomStreamPart(open.CustomKind!, JsonSerializer.SerializeToElement(new JsonObject { ["google"] = open.Google!.DeepClone() })));
+                parts.Add(
+                    new CustomStreamPart(
+                        open.CustomKind!,
+                        JsonSerializer.SerializeToElement(
+                            new JsonObject { ["google"] = open.Google!.DeepClone() }
+                        )
+                    )
+                );
                 break;
             case OpenBlockKind.BuiltinToolCall:
-                parts.Add(new ToolCallStreamPart(open.ToolCallId!, open.ToolName!, (open.Arguments ?? new JsonObject()).ToJsonString()) { ProviderExecuted = true });
+                parts.Add(
+                    new ToolCallStreamPart(
+                        open.ToolCallId!,
+                        open.ToolName!,
+                        (open.Arguments ?? new JsonObject()).ToJsonString()
+                    )
+                    {
+                        ProviderExecuted = true,
+                    }
+                );
                 break;
             case OpenBlockKind.BuiltinToolResult:
-                parts.Add(new ToolResultStreamPart(open.ToolCallId!, open.ToolName!, JsonSerializer.SerializeToElement(open.Result)));
-                var block = new JsonObject { ["type"] = open.BlockType, ["call_id"] = open.ToolCallId, ["result"] = open.Result?.DeepClone() };
-                AddSources(GoogleInteractionsSources.BuiltinToolResultToSources(block, _generateId), parts);
+                parts.Add(
+                    new ToolResultStreamPart(
+                        open.ToolCallId!,
+                        open.ToolName!,
+                        JsonSerializer.SerializeToElement(open.Result)
+                    )
+                );
+                var block = new JsonObject
+                {
+                    ["type"] = open.BlockType,
+                    ["call_id"] = open.ToolCallId,
+                    ["result"] = open.Result?.DeepClone(),
+                };
+                AddSources(
+                    GoogleInteractionsSources.BuiltinToolResultToSources(block, _generateId),
+                    parts
+                );
                 break;
         }
 
         _openBlocks.Remove(index);
     }
 
-    private void AddSources(IReadOnlyList<LanguageModelStreamPart> sources, List<LanguageModelStreamPart> parts)
+    private void AddSources(
+        IReadOnlyList<LanguageModelStreamPart> sources,
+        List<LanguageModelStreamPart> parts
+    )
     {
         foreach (var source in sources)
         {
@@ -721,19 +936,26 @@ internal sealed class GoogleInteractionsStreamTransform
 
         _finishStatus = GoogleInteractionsStreaming.String(interaction, "status") ?? _finishStatus;
         _usage = interaction["usage"] as JsonObject ?? _usage;
-        _serviceTier = GoogleInteractionsStreaming.String(interaction, "service_tier") ?? _serviceTier;
+        _serviceTier = GoogleInteractionsStreaming.String(interaction, "service_tier")
+            ?? _serviceTier;
     }
 
     private static object? Code(JsonObject? error)
     {
         return error?["code"] is JsonValue code
-            ? code.TryGetValue<string>(out var text) ? text : code.TryGetValue<int>(out var number) ? number : null
+            ? code.TryGetValue<string>(out var text)
+                ? text
+                : code.TryGetValue<int>(out var number)
+                    ? number
+                    : null
             : null;
     }
 
     private static int? Index(JsonObject value)
     {
-        return value["index"] is JsonValue number && number.TryGetValue<int>(out var index) ? index : null;
+        return value["index"] is JsonValue number && number.TryGetValue<int>(out var index)
+            ? index
+            : null;
     }
 
     // The API sends an empty id for a step it did not name. Upstream falls back to the block id for an empty id too.
@@ -744,7 +966,9 @@ internal sealed class GoogleInteractionsStreamTransform
 
     private static string Strip(string value, string suffix)
     {
-        return value.EndsWith(suffix, StringComparison.Ordinal) ? value.Substring(0, value.Length - suffix.Length) : value;
+        return value.EndsWith(suffix, StringComparison.Ordinal)
+            ? value.Substring(0, value.Length - suffix.Length)
+            : value;
     }
 
     private enum OpenBlockKind

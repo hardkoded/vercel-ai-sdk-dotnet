@@ -15,7 +15,10 @@ public sealed class DimensionsForAspectRatioTests
     [InlineData("21:9", 1792, 768)]
     [InlineData("0:1", null, null)]
     [InlineData("wide", null, null)]
-    [UpstreamTest("packages/azure/src/azure-mai-image-model.test.ts::dimensionsForAspectRatio::maps %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/azure/src/azure-mai-image-model.test.ts::dimensionsForAspectRatio::maps %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Maps(string aspectRatio, int? width, int? height)
     {
         var dimensions = Vercel.AI.Azure.AzureMaiImageModel.DimensionsForAspectRatio(aspectRatio);

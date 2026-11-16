@@ -35,23 +35,73 @@ public sealed class InputValidationTests
         "packages/ai/src/extract/extract.test.ts::input validation::rejects %s before any provider I/O",
         Coverage = UpstreamCoverage.Covered,
         Commit = UpstreamCommit,
-        Note = "The non-finite instruction is the JSON text {\"max\":1e999}, which is infinite on .NET Core.")]
+        Note = "The non-finite instruction is the JSON text {\"max\":1e999}, which is infinite on .NET Core."
+    )]
     public async Task Rejects_before_any_provider_IO(string name)
     {
         var (input, referenceDate) = name switch
         {
             "an empty field map" => (new Dictionary<string, ExtractionField>(), (string?)null),
-            "decimals above 6" => (new Dictionary<string, ExtractionField> { ["total"] = new ExtractionField("number") { Decimals = 7 } }, null),
-            "fractional decimals" => (new Dictionary<string, ExtractionField> { ["total"] = new ExtractionField("duration") { Decimals = 1.5 } }, null),
-            "an unknown duration unit" => (new Dictionary<string, ExtractionField> { ["wait"] = new ExtractionField("duration") { Unit = "fortnights" } }, null),
-            "an unknown list item type" => (new Dictionary<string, ExtractionField> { ["names"] = new ExtractionField("list") { Items = "time" } }, null),
-            "non-finite instructions" => (new Dictionary<string, ExtractionField> { ["total"] = new ExtractionField("number", DecisionInput.Parse("{\"max\":1e999}")) }, null),
-            "a malformed reference date" => (new Dictionary<string, ExtractionField> { ["name"] = new ExtractionField("text") }, "11/11/2026"),
-            "an impossible reference date" => (new Dictionary<string, ExtractionField> { ["name"] = new ExtractionField("text") }, "2026-02-30"),
+            "decimals above 6" => (
+                new Dictionary<string, ExtractionField>
+                {
+                    ["total"] = new ExtractionField("number") { Decimals = 7 },
+                },
+                null
+            ),
+            "fractional decimals" => (
+                new Dictionary<string, ExtractionField>
+                {
+                    ["total"] = new ExtractionField("duration") { Decimals = 1.5 },
+                },
+                null
+            ),
+            "an unknown duration unit" => (
+                new Dictionary<string, ExtractionField>
+                {
+                    ["wait"] = new ExtractionField("duration") { Unit = "fortnights" },
+                },
+                null
+            ),
+            "an unknown list item type" => (
+                new Dictionary<string, ExtractionField>
+                {
+                    ["names"] = new ExtractionField("list") { Items = "time" },
+                },
+                null
+            ),
+            "non-finite instructions" => (
+                new Dictionary<string, ExtractionField>
+                {
+                    ["total"] = new ExtractionField(
+                        "number",
+                        DecisionInput.Parse("{\"max\":1e999}")
+                    ),
+                },
+                null
+            ),
+            "a malformed reference date" => (
+                new Dictionary<string, ExtractionField> { ["name"] = new ExtractionField("text") },
+                "11/11/2026"
+            ),
+            "an impossible reference date" => (
+                new Dictionary<string, ExtractionField> { ["name"] = new ExtractionField("text") },
+                "2026-02-30"
+            ),
             _ => throw new ArgumentOutOfRangeException(nameof(name)),
         };
         var model = Setup();
-        await Assert.ThrowsAsync<InvalidArgumentException>(() => ExtractOperation.ExtractAsync(new ExtractRequest { Model = model, State = State, Fields = input, ReferenceDate = referenceDate }));
+        await Assert.ThrowsAsync<InvalidArgumentException>(() =>
+            ExtractOperation.ExtractAsync(
+                new ExtractRequest
+                {
+                    Model = model,
+                    State = State,
+                    Fields = input,
+                    ReferenceDate = referenceDate,
+                }
+            )
+        );
         Assert.Empty(model.Calls);
     }
 
@@ -60,13 +110,23 @@ public sealed class InputValidationTests
         "packages/ai/src/extract/extract.test.ts::input validation::rejects state with array holes",
         Coverage = UpstreamCoverage.Partial,
         Commit = UpstreamCommit,
-        Note = "A C# array has no holes. A null part stands in for the hole.")]
+        Note = "A C# array has no holes. A null part stands in for the hole."
+    )]
     public async Task Rejects_state_with_array_holes()
     {
         var model = Setup();
         var holes = new DecisionStatePart[2];
         holes[1] = new DecisionTextPart("b");
-        await Assert.ThrowsAsync<InvalidArgumentException>(() => ExtractOperation.ExtractAsync(new ExtractRequest { Model = model, State = holes, Fields = Fields() }));
+        await Assert.ThrowsAsync<InvalidArgumentException>(() =>
+            ExtractOperation.ExtractAsync(
+                new ExtractRequest
+                {
+                    Model = model,
+                    State = holes,
+                    Fields = Fields(),
+                }
+            )
+        );
         Assert.Empty(model.Calls);
     }
 }

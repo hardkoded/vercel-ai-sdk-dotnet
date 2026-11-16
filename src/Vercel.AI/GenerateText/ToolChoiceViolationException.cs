@@ -16,7 +16,8 @@ public sealed class ToolChoiceViolationException : AiSdkException
         FinishReason finishReason,
         string provider,
         string modelId,
-        IReadOnlyList<GeneratedContent> content)
+        IReadOnlyList<GeneratedContent> content
+    )
         : base(message)
     {
         ToolChoice = toolChoice ?? throw new ArgumentNullException(nameof(toolChoice));

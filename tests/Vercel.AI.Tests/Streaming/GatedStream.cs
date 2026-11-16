@@ -27,9 +27,17 @@ internal sealed class GatedStream : Stream
 
     public void Complete() => _chunks.Writer.TryComplete();
 
-    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    public override async Task<int> ReadAsync(
+        byte[] buffer,
+        int offset,
+        int count,
+        CancellationToken cancellationToken
+    )
     {
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _closed.Token);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _closed.Token
+        );
         while (_offset >= _current.Length)
         {
             if (!await _chunks.Reader.WaitToReadAsync(linked.Token).ConfigureAwait(false))
@@ -57,7 +65,8 @@ internal sealed class GatedStream : Stream
         base.Dispose(disposing);
     }
 
-    public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException("Reads must be asynchronous.");
+    public override int Read(byte[] buffer, int offset, int count) =>
+        throw new NotSupportedException("Reads must be asynchronous.");
 
     public override bool CanRead => true;
 
@@ -73,15 +82,14 @@ internal sealed class GatedStream : Stream
         set => throw new NotSupportedException();
     }
 
-    public override void Flush()
-    {
-    }
+    public override void Flush() { }
 
     public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 
     public override void SetLength(long value) => throw new NotSupportedException();
 
-    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    public override void Write(byte[] buffer, int offset, int count) =>
+        throw new NotSupportedException();
 }
 
 /// <summary>Answers every request with a <see cref="GatedStream"/> body, so the test decides when each chunk arrives.</summary>
@@ -100,12 +108,18 @@ internal sealed class GatedStreamHandler : HttpMessageHandler
 
     public string RequestUri { get; private set; } = string.Empty;
 
-    public Dictionary<string, string> RequestHeaders { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string> RequestHeaders { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         RequestUri = request.RequestUri?.AbsoluteUri ?? string.Empty;
-        RequestBody = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+        RequestBody = request.Content is null
+            ? string.Empty
+            : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
         foreach (var header in request.Headers)
         {
             RequestHeaders[header.Key] = string.Join(",", header.Value);

@@ -15,20 +15,27 @@ namespace Vercel.AI.Tests.Upstream.Xai.XaiResponsesLanguageModel;
 /// <summary>Fixtures and helpers shared by the <c>xai-responses-language-model.test.ts</c> ports.</summary>
 internal static class XaiResponsesLanguageModelSupport
 {
-    internal const string TestFile = "packages/xai/src/responses/xai-responses-language-model.test.ts::XaiResponsesLanguageModel";
+    internal const string TestFile =
+        "packages/xai/src/responses/xai-responses-language-model.test.ts::XaiResponsesLanguageModel";
 
     /// <summary>The <c>response.created</c> event that starts most upstream stream cases.</summary>
-    internal const string Created = """{"type":"response.created","response":{"id":"resp_123","object":"response","model":"grok-4-fast-non-reasoning","status":"in_progress","output":[]}}""";
+    internal const string Created =
+        """{"type":"response.created","response":{"id":"resp_123","object":"response","model":"grok-4-fast-non-reasoning","status":"in_progress","output":[]}}""";
 
     /// <summary>The <c>response.done</c> event that ends most upstream stream cases.</summary>
-    internal const string Done = """{"type":"response.done","response":{"id":"resp_123","object":"response","status":"completed","output":[],"usage":{"input_tokens":10,"output_tokens":5}}}""";
+    internal const string Done =
+        """{"type":"response.done","response":{"id":"resp_123","object":"response","status":"completed","output":[],"usage":{"input_tokens":10,"output_tokens":5}}}""";
 
     /// <summary>Creates a model whose generated ids are <c>id-0</c>, <c>id-1</c>, and so on, like the upstream <c>mockId</c>.</summary>
-    internal static XaiResponsesLanguageModelType Model(UpstreamCapture capture, string modelId = "grok-4-fast-non-reasoning")
+    internal static XaiResponsesLanguageModelType Model(
+        UpstreamCapture capture,
+        string modelId = "grok-4-fast-non-reasoning"
+    )
     {
         var provider = XaiProviderType.Create(
             new OpenAICompatibleOptions { ApiKey = "test-key", BaseUrl = "https://api.x.ai/v1" },
-            capture);
+            capture
+        );
         var counter = 0;
         return new XaiResponsesLanguageModelType(provider, modelId, () => "id-" + counter++);
     }
@@ -45,21 +52,35 @@ internal static class XaiResponsesLanguageModelSupport
     }
 
     /// <summary>A completed response with no output and a small usage.</summary>
-    internal static UpstreamCapture EmptyResponse(string model = "grok-4-fast-non-reasoning", string extra = "")
+    internal static UpstreamCapture EmptyResponse(
+        string model = "grok-4-fast-non-reasoning",
+        string extra = ""
+    )
     {
-        return JsonResponse("{\"id\":\"resp_123\",\"object\":\"response\",\"status\":\"completed\",\"model\":\"" + model + "\",\"output\":[],\"usage\":{\"input_tokens\":10,\"output_tokens\":5}" + extra + "}");
+        return JsonResponse(
+            "{\"id\":\"resp_123\",\"object\":\"response\",\"status\":\"completed\",\"model\":\""
+                + model
+                + "\",\"output\":[],\"usage\":{\"input_tokens\":10,\"output_tokens\":5}"
+                + extra
+                + "}"
+        );
     }
 
     /// <summary>A server-sent-event response. Each argument is the JSON of one event.</summary>
     internal static UpstreamCapture StreamResponse(params string[] events)
     {
-        return new UpstreamCapture { MediaType = "text/event-stream", ResponseBody = UpstreamChat.Sse(events) };
+        return new UpstreamCapture
+        {
+            MediaType = "text/event-stream",
+            ResponseBody = UpstreamChat.Sse(events),
+        };
     }
 
     /// <summary>A server-sent-event response that replays a recorded <c>.chunks.txt</c> fixture.</summary>
     internal static UpstreamCapture ChunksFixture(string name)
     {
-        var lines = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", name)).Where(line => line.Trim().Length > 0);
+        var lines = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", name))
+            .Where(line => line.Trim().Length > 0);
         return StreamResponse(lines.ToArray());
     }
 
@@ -110,7 +131,9 @@ internal static class XaiResponsesLanguageModelSupport
                 var warnings = new JsonArray();
                 foreach (var warning in start.Warnings)
                 {
-                    warnings.Add(new JsonObject { ["type"] = warning.Type, ["message"] = warning.Message });
+                    warnings.Add(
+                        new JsonObject { ["type"] = warning.Type, ["message"] = warning.Message }
+                    );
                 }
 
                 json["warnings"] = warnings;
@@ -118,7 +141,14 @@ internal static class XaiResponsesLanguageModelSupport
             case ResponseMetadataStreamPart metadata:
                 Set(json, "id", metadata.Id);
                 Set(json, "modelId", metadata.ModelId);
-                Set(json, "timestamp", metadata.Timestamp?.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture));
+                Set(
+                    json,
+                    "timestamp",
+                    metadata.Timestamp?.UtcDateTime.ToString(
+                        "yyyy-MM-dd'T'HH:mm:ss.fff'Z'",
+                        CultureInfo.InvariantCulture
+                    )
+                );
                 break;
             case TextStartStreamPart text:
                 json["id"] = text.Id;
@@ -263,7 +293,8 @@ internal static class XaiResponsesLanguageModelSupport
         var node = JsonNode.Parse(expected);
         Assert.True(
             actual.Any(item => JsonNode.DeepEquals(item, node)),
-            "Expected an item equal to " + node!.ToJsonString() + " in " + actual.ToJsonString());
+            "Expected an item equal to " + node!.ToJsonString() + " in " + actual.ToJsonString()
+        );
     }
 
     internal static string Unified(FinishReason finishReason)
@@ -333,9 +364,14 @@ internal static class XaiResponsesLanguageModelSupport
         return UpstreamChat.Body(capture);
     }
 
-    internal static async Task<List<LanguageModelStreamPart>> Collect(XaiResponsesLanguageModelType model, LanguageModelCallOptions options)
+    internal static async Task<List<LanguageModelStreamPart>> Collect(
+        XaiResponsesLanguageModelType model,
+        LanguageModelCallOptions options
+    )
     {
-        return await UpstreamChat.Read((await model.DoStreamAsync(options, CancellationToken.None)));
+        return await UpstreamChat.Read(
+            (await model.DoStreamAsync(options, CancellationToken.None))
+        );
     }
 
     internal static LanguageModelTool WeatherTool()
@@ -343,7 +379,10 @@ internal static class XaiResponsesLanguageModelSupport
         return new LanguageModelTool(
             "weather",
             "get weather",
-            UpstreamChat.Json("{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}}}"));
+            UpstreamChat.Json(
+                "{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}}}"
+            )
+        );
     }
 
     /// <summary>The first stream part of type <typeparamref name="T"/>.</summary>
@@ -352,5 +391,4 @@ internal static class XaiResponsesLanguageModelSupport
     {
         return parts.OfType<T>().First();
     }
-
 }

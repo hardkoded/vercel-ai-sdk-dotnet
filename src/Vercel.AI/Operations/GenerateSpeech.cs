@@ -10,7 +10,17 @@ namespace Vercel.AI.Operations;
 public sealed class SpeechModelCall
 {
     /// <summary>Creates a speech call.</summary>
-    public SpeechModelCall(string text, string? voice, string? outputFormat, string? instructions, double? speed, string? language, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
+    public SpeechModelCall(
+        string text,
+        string? voice,
+        string? outputFormat,
+        string? instructions,
+        double? speed,
+        string? language,
+        JsonElement providerOptions,
+        IReadOnlyDictionary<string, string> headers,
+        CancellationToken cancellationToken
+    )
     {
         Text = text ?? string.Empty;
         Voice = voice;
@@ -55,7 +65,12 @@ public sealed class SpeechModelCall
 public sealed class SpeechModelResult
 {
     /// <summary>Creates a speech result.</summary>
-    public SpeechModelResult(byte[]? audio, IReadOnlyList<OperationWarning>? warnings = null, JsonElement? providerMetadata = null, ProviderResponse? response = null)
+    public SpeechModelResult(
+        byte[]? audio,
+        IReadOnlyList<OperationWarning>? warnings = null,
+        JsonElement? providerMetadata = null,
+        ProviderResponse? response = null
+    )
     {
         Audio = audio ?? Array.Empty<byte>();
         Warnings = warnings ?? Array.Empty<OperationWarning>();
@@ -86,7 +101,10 @@ public interface ISpeechCaller
     string ModelId { get; }
 
     /// <summary>Generates speech audio.</summary>
-    Task<SpeechModelResult> DoGenerateAsync(SpeechModelCall call, CancellationToken cancellationToken);
+    Task<SpeechModelResult> DoGenerateAsync(
+        SpeechModelCall call,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>Generated speech audio.</summary>
@@ -104,7 +122,10 @@ public sealed class GeneratedAudio
         {
             if (parts[1].Length == 0)
             {
-                throw new InvalidResponseDataException(MediaType, "Could not determine audio format from media type: " + MediaType);
+                throw new InvalidResponseDataException(
+                    MediaType,
+                    "Could not determine audio format from media type: " + MediaType
+                );
             }
 
             Format = parts[1];
@@ -125,7 +146,12 @@ public sealed class GeneratedAudio
 public sealed class GenerateSpeechResult
 {
     /// <summary>Creates a speech result.</summary>
-    public GenerateSpeechResult(GeneratedAudio audio, IReadOnlyList<OperationWarning> warnings, IReadOnlyList<ProviderResponse> responses, JsonElement providerMetadata)
+    public GenerateSpeechResult(
+        GeneratedAudio audio,
+        IReadOnlyList<OperationWarning> warnings,
+        IReadOnlyList<ProviderResponse> responses,
+        JsonElement providerMetadata
+    )
     {
         Audio = audio;
         Warnings = warnings ?? Array.Empty<OperationWarning>();
@@ -175,18 +201,46 @@ public sealed class GenerateSpeechRequest : OperationRequest
 public static class GenerateSpeech
 {
     /// <summary>Generates speech audio.</summary>
-    public static async Task<GenerateSpeechResult> GenerateSpeechAsync(GenerateSpeechRequest request, CancellationToken cancellationToken = default)
+    public static async Task<GenerateSpeechResult> GenerateSpeechAsync(
+        GenerateSpeechRequest request,
+        CancellationToken cancellationToken = default
+    )
     {
         if (request == null)
         {
             throw new ArgumentNullException(nameof(request));
         }
 
-        var model = request.Model ?? throw new InvalidArgumentException("model", null, "model is required");
-        var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
+        var model = request.Model
+            ?? throw new InvalidArgumentException("model", null, "model is required");
+        var token = request.CancellationToken.CanBeCanceled
+            ? request.CancellationToken
+            : cancellationToken;
         var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
         var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
-        var result = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, ct => model.DoGenerateAsync(new SpeechModelCall(request.Text, request.Voice, request.OutputFormat, request.Instructions, request.Speed, request.Language, providerOptions, headers, ct), ct), null).ConfigureAwait(false);
+        var result = await OperationRetry
+            .ExecuteAsync(
+                request.MaxRetries,
+                token,
+                request.AbortReason,
+                ct =>
+                    model.DoGenerateAsync(
+                        new SpeechModelCall(
+                            request.Text,
+                            request.Voice,
+                            request.OutputFormat,
+                            request.Instructions,
+                            request.Speed,
+                            request.Language,
+                            providerOptions,
+                            headers,
+                            ct
+                        ),
+                        ct
+                    ),
+                null
+            )
+            .ConfigureAwait(false);
         if (result.Audio == null || result.Audio.Length == 0)
         {
             throw new NoSpeechGeneratedException(new[] { result.Response });
@@ -197,7 +251,12 @@ public static class GenerateSpeech
             ?? OperationHeaders.MediaTypeFromContentType(result.Response.Headers, "audio/")
             ?? OutputFormatMediaType(request.OutputFormat)
             ?? "audio/mp3";
-        return new GenerateSpeechResult(new GeneratedAudio(result.Audio, mediaType), result.Warnings, new[] { result.Response }, result.ProviderMetadata ?? OperationJson.Parse("{}"));
+        return new GenerateSpeechResult(
+            new GeneratedAudio(result.Audio, mediaType),
+            result.Warnings,
+            new[] { result.Response },
+            result.ProviderMetadata ?? OperationJson.Parse("{}")
+        );
     }
 
     private static string? OutputFormatMediaType(string? outputFormat)

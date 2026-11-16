@@ -18,8 +18,11 @@ public sealed class DoGenerateImageEditingTests
     [UpstreamTest(
         "packages/openai/src/image/openai-image-model.test.ts::doGenerate - image editing::should use the configured fetch and abort signal when downloading a URL %s",
         Coverage = UpstreamCoverage.Covered,
-        Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
-    public async Task Should_use_the_configured_fetch_and_abort_signal_when_downloading_a_url(string downloadTarget)
+        Commit = "2ebc78b65435926718879f85a1a85687b053c542"
+    )]
+    public async Task Should_use_the_configured_fetch_and_abort_signal_when_downloading_a_url(
+        string downloadTarget
+    )
     {
         using var controller = new CancellationTokenSource();
         var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"}]}" };
@@ -27,18 +30,31 @@ public sealed class DoGenerateImageEditingTests
         var png = new byte[] { 137, 80, 78, 71 };
         var model = new Vercel.AI.OpenAI.OpenAIImageModel(
             OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key" }, downloadHandler),
-            "gpt-image-1");
+            "gpt-image-1"
+        );
         var call = new OpenAIImageCall("edit")
         {
-            Files = downloadTarget == "image"
-                ? new[] { OpenAIImageFile.FromUrl("https://example.com/image.png") }
-                : new[] { new OpenAIImageFile(png, "image/png", "image.png") },
-            Mask = downloadTarget == "mask" ? OpenAIImageFile.FromUrl("https://example.com/mask.png") : null,
-            ProviderOptions = downloadTarget == "markup" ? OpenAIUpstream.Json("{\"openai\":{\"markup\":\"https://example.com/markup.png\"}}") : null,
+            Files =
+                downloadTarget == "image"
+                    ? new[] { OpenAIImageFile.FromUrl("https://example.com/image.png") }
+                    : new[] { new OpenAIImageFile(png, "image/png", "image.png") },
+            Mask =
+                downloadTarget == "mask"
+                    ? OpenAIImageFile.FromUrl("https://example.com/mask.png")
+                    : null,
+            ProviderOptions =
+                downloadTarget == "markup"
+                    ? OpenAIUpstream.Json(
+                        "{\"openai\":{\"markup\":\"https://example.com/markup.png\"}}"
+                    )
+                    : null,
         };
 
         var operation = model.GenerateAsync(call, controller.Token);
-        var observed = operation.ContinueWith(task => task.IsFaulted || task.IsCanceled, TaskScheduler.Default);
+        var observed = operation.ContinueWith(
+            task => task.IsFaulted || task.IsCanceled,
+            TaskScheduler.Default
+        );
         var signal = await downloadHandler.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
         controller.Cancel();
 
@@ -49,13 +65,19 @@ public sealed class DoGenerateImageEditingTests
 
     private sealed class BlockingHandler(HttpMessageHandler api) : HttpMessageHandler
     {
-        public TaskCompletionSource<CancellationToken> Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource<CancellationToken> Started { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
         {
             if (request.RequestUri!.Host != "example.com")
             {
-                return await new HttpMessageInvoker(api, disposeHandler: false).SendAsync(request, cancellationToken).ConfigureAwait(false);
+                return await new HttpMessageInvoker(api, disposeHandler: false)
+                    .SendAsync(request, cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             Started.TrySetResult(cancellationToken);

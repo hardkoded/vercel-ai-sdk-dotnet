@@ -22,7 +22,10 @@ internal static class OpenAIUpstream
     internal const string ResponsesEmpty =
         "{\"id\":\"resp_test\",\"object\":\"response\",\"created_at\":1,\"status\":\"completed\",\"model\":\"gpt-99\",\"output\":[],\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}";
 
-    internal static OpenAIProvider Provider(OpenAICapture capture, Action<OpenAIOptions>? configure = null)
+    internal static OpenAIProvider Provider(
+        OpenAICapture capture,
+        Action<OpenAIOptions>? configure = null
+    )
     {
         var options = new OpenAIOptions { ApiKey = "test-api-key" };
         configure?.Invoke(options);
@@ -48,7 +51,12 @@ internal static class OpenAIUpstream
         return new Dictionary<string, JsonElement> { ["openai"] = Json(openaiObject) };
     }
 
-    internal static LanguageModelTool Tool(string name, string? description, bool? strict = null, string schema = "{\"type\":\"object\",\"properties\":{}}")
+    internal static LanguageModelTool Tool(
+        string name,
+        string? description,
+        bool? strict = null,
+        string schema = "{\"type\":\"object\",\"properties\":{}}"
+    )
     {
         return new LanguageModelTool(name, description, Json(schema), strict);
     }
@@ -70,10 +78,15 @@ internal static class OpenAIUpstream
         Assert.Equal("test-project", Header(capture, "OpenAI-Project"));
         Assert.Equal("provider-header-value", Header(capture, "Custom-Provider-Header"));
         Assert.Equal("request-header-value", Header(capture, "Custom-Request-Header"));
-        Assert.Equal("application/json", MediaTypeHeaderValue.Parse(Header(capture, "Content-Type")).MediaType);
+        Assert.Equal(
+            "application/json",
+            MediaTypeHeaderValue.Parse(Header(capture, "Content-Type")).MediaType
+        );
     }
 
-    internal static async Task<List<LanguageModelStreamPart>> Read(IAsyncEnumerable<LanguageModelStreamPart> parts)
+    internal static async Task<List<LanguageModelStreamPart>> Read(
+        IAsyncEnumerable<LanguageModelStreamPart> parts
+    )
     {
         var list = new List<LanguageModelStreamPart>();
         await foreach (var part in parts.ConfigureAwait(false))
@@ -84,7 +97,9 @@ internal static class OpenAIUpstream
         return list;
     }
 
-    internal static async Task<Dictionary<string, List<string>>> Fields(MultipartFormDataContent content)
+    internal static async Task<Dictionary<string, List<string>>> Fields(
+        MultipartFormDataContent content
+    )
     {
         var fields = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         foreach (var part in content)
@@ -107,12 +122,15 @@ internal static class OpenAIUpstream
 
 /// <summary>Keeps tests that set <c>OPENAI_BASE_URL</c> from racing other OpenAI tests.</summary>
 [CollectionDefinition("OpenAIEnvironment", DisableParallelization = true)]
-public sealed class OpenAIEnvironmentCollection
-{
-}
+public sealed class OpenAIEnvironmentCollection { }
 
 /// <summary>One part of a captured multipart request.</summary>
-internal sealed record OpenAIMultipartPart(string Name, string? FileName, string? MediaType, byte[] Data);
+internal sealed record OpenAIMultipartPart(
+    string Name,
+    string? FileName,
+    string? MediaType,
+    byte[] Data
+);
 
 /// <summary>Records one OpenAI HTTP call and returns a scripted body.</summary>
 internal sealed class OpenAICapture : HttpMessageHandler
@@ -139,14 +157,20 @@ internal sealed class OpenAICapture : HttpMessageHandler
 
     public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
 
-    public Dictionary<string, string> ResponseHeaders { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string> ResponseHeaders { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         Calls++;
         Method = request.Method.Method;
         Uri = request.RequestUri?.AbsoluteUri ?? string.Empty;
-        Body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        Body = request.Content is null
+            ? string.Empty
+            : await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         Headers.Clear();
         foreach (var header in request.Headers)
         {
@@ -172,11 +196,14 @@ internal sealed class OpenAICapture : HttpMessageHandler
             foreach (var part in multipart)
             {
                 var disposition = part.Headers.ContentDisposition;
-                Parts.Add(new OpenAIMultipartPart(
-                    disposition?.Name?.Trim('"') ?? string.Empty,
-                    disposition?.FileName?.Trim('"'),
-                    part.Headers.ContentType?.MediaType,
-                    await part.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false)));
+                Parts.Add(
+                    new OpenAIMultipartPart(
+                        disposition?.Name?.Trim('"') ?? string.Empty,
+                        disposition?.FileName?.Trim('"'),
+                        part.Headers.ContentType?.MediaType,
+                        await part.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false)
+                    )
+                );
             }
         }
 

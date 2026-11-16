@@ -37,7 +37,13 @@ internal static class RedirectGuard
                 default:
                     // Covers SocketsHttpHandler on netstandard2.0 (a .NET runtime can still supply one) and custom handlers that expose the same property.
                     var property = handler.GetType().GetProperty("AllowAutoRedirect", typeof(bool));
-                    if (property?.SetMethod?.IsPublic == true && (property.GetMethod?.IsPublic != true || property.GetValue(handler) is true))
+                    if (
+                        property?.SetMethod?.IsPublic == true
+                        && (
+                            property.GetMethod?.IsPublic != true
+                            || property.GetValue(handler) is true
+                        )
+                    )
                     {
                         property.SetValue(handler, false);
                     }

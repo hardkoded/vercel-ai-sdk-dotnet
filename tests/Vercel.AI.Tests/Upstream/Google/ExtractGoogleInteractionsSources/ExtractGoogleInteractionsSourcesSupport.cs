@@ -25,13 +25,19 @@ internal static class SourceAssert
         Assert.NotNull(actual);
         var node = GoogleInteractionsStreamSupport.Snapshot(actual!);
         var expectedNode = JsonNode.Parse(expected)!.AsObject();
-        Assert.True(JsonNode.DeepEquals(expectedNode, node), node.ToJsonString() + " != " + expected);
+        Assert.True(
+            JsonNode.DeepEquals(expectedNode, node),
+            node.ToJsonString() + " != " + expected
+        );
     }
 
     public static void Equal(string expected, IEnumerable<LanguageModelStreamPart> actual)
     {
         var node = GoogleInteractionsStreamSupport.Snapshot(actual);
-        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expected), node), node.ToJsonString() + " != " + expected);
+        Assert.True(
+            JsonNode.DeepEquals(JsonNode.Parse(expected), node),
+            node.ToJsonString() + " != " + expected
+        );
     }
 
     public static List<string?> Urls(IEnumerable<LanguageModelStreamPart> sources)

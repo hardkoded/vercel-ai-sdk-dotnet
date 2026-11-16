@@ -29,7 +29,10 @@ public static class FileDataConversions
             case "data":
                 return part.Bytes ?? ByteEncoding.FromBase64(part.Base64 ?? string.Empty);
             default:
-                throw new ArgumentException("File part of type '" + part.DataType + "' is not inline data.", nameof(part));
+                throw new ArgumentException(
+                    "File part of type '" + part.DataType + "' is not inline data.",
+                    nameof(part)
+                );
         }
     }
 
@@ -49,6 +52,9 @@ public static class FileDataConversions
             return file.Url;
         }
 
-        return "data:" + file.MediaType + ";base64," + ByteEncoding.ToBase64(file.Data ?? Array.Empty<byte>());
+        return "data:"
+            + file.MediaType
+            + ";base64,"
+            + ByteEncoding.ToBase64(file.Data ?? Array.Empty<byte>());
     }
 }

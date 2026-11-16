@@ -13,17 +13,35 @@ public sealed class DecisionRefusalError : AiSdkError
     /// <summary>Marker for <see cref="IsInstance(object)"/>.</summary>
     public const string ErrorMarker = "vercel.ai.error.AI_DecisionRefusalError";
 
-    private static readonly JsonSerializerOptions Quote = new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    private static readonly JsonSerializerOptions Quote = new JsonSerializerOptions
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     /// <summary>Creates the error for the refused questions.</summary>
     public DecisionRefusalError(
         IReadOnlyList<string> questionIds,
         string provider,
         string modelId,
-        string? message = null)
+        string? message = null
+    )
         : base(
             "AI_DecisionRefusalError",
-            message ?? ("Decision model \"" + modelId + "\" from provider \"" + provider + "\" refused " + (questionIds.Count == 1 ? "question " : "questions ") + string.Join(", ", questionIds.Select(id => JsonSerializer.Serialize(id, Quote))) + "."))
+            message
+                ?? (
+                    "Decision model \""
+                    + modelId
+                    + "\" from provider \""
+                    + provider
+                    + "\" refused "
+                    + (questionIds.Count == 1 ? "question " : "questions ")
+                    + string.Join(
+                        ", ",
+                        questionIds.Select(id => JsonSerializer.Serialize(id, Quote))
+                    )
+                    + "."
+                )
+        )
     {
         QuestionIds = questionIds;
         Provider = provider;

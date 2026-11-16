@@ -18,7 +18,11 @@ internal static class OpenResponsesLanguageModelTestSupport
         return UpstreamChat.Prompt("Hello");
     }
 
-    public static OpenResponsesLanguageModel CreateModel(UpstreamCapture capture, string modelId = "gemma-7b-it", params OpenResponsesExtension[] extensions)
+    public static OpenResponsesLanguageModel CreateModel(
+        UpstreamCapture capture,
+        string modelId = "gemma-7b-it",
+        params OpenResponsesExtension[] extensions
+    )
     {
         var options = new OpenResponsesOptions
         {
@@ -27,12 +31,15 @@ internal static class OpenResponsesLanguageModelTestSupport
             BaseUrl = "https://localhost:1234/v1",
             Extensions = extensions,
         };
-        return (OpenResponsesLanguageModel)OpenResponsesProvider.Create(options, capture).LanguageModel(modelId);
+        return (OpenResponsesLanguageModel)
+            OpenResponsesProvider.Create(options, capture).LanguageModel(modelId);
     }
 
     public static string ReadFixture(string name)
     {
-        return File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "open-responses-" + name));
+        return File.ReadAllText(
+            Path.Combine(AppContext.BaseDirectory, "Fixtures", "open-responses-" + name)
+        );
     }
 
     public static void PrepareJsonFixtureResponse(UpstreamCapture capture, string filename)
@@ -66,13 +73,20 @@ internal static class OpenResponsesLanguageModelTestSupport
             ["model"] = "test-model",
             ["status"] = "completed",
             ["output"] = new JsonArray(output.Select(item => (JsonNode)item.DeepClone()).ToArray()),
-            ["usage"] = new JsonObject { ["input_tokens"] = 0, ["output_tokens"] = 0, ["total_tokens"] = 0 },
+            ["usage"] = new JsonObject
+            {
+                ["input_tokens"] = 0,
+                ["output_tokens"] = 0,
+                ["total_tokens"] = 0,
+            },
         }.ToJsonString();
     }
 
     public static void PrepareStreamChunks(UpstreamCapture capture, params JsonObject[] events)
     {
-        capture.ResponseBody = UpstreamChat.Sse(events.Select(item => item.ToJsonString()).ToArray());
+        capture.ResponseBody = UpstreamChat.Sse(
+            events.Select(item => item.ToJsonString()).ToArray()
+        );
         capture.MediaType = "text/event-stream";
     }
 
@@ -95,7 +109,11 @@ internal static class OpenResponsesLanguageModelTestSupport
     {
         Assert.True(
             JsonNode.DeepEquals(expected, actual),
-            "Expected: " + (expected?.ToJsonString() ?? "null") + "\nActual:   " + (actual?.ToJsonString() ?? "null"));
+            "Expected: "
+                + (expected?.ToJsonString() ?? "null")
+                + "\nActual:   "
+                + (actual?.ToJsonString() ?? "null")
+        );
     }
 
     public static void AssertMetadata(string expectedJson, JsonElement? actual)
@@ -107,7 +125,8 @@ internal static class OpenResponsesLanguageModelTestSupport
     public static IReadOnlyDictionary<string, JsonElement>? Options(JsonElement? metadata)
     {
         return metadata is { ValueKind: JsonValueKind.Object } bag
-            ? bag.EnumerateObject().ToDictionary(property => property.Name, property => property.Value)
+            ? bag.EnumerateObject()
+                .ToDictionary(property => property.Name, property => property.Value)
             : null;
     }
 
@@ -115,14 +134,22 @@ internal static class OpenResponsesLanguageModelTestSupport
     {
         bool ProviderExecuted(JsonObject item)
         {
-            return item["provider_executed"] is JsonValue flag && flag.TryGetValue<bool>(out var value) ? value : providerExecuted;
+            return
+                item["provider_executed"] is JsonValue flag && flag.TryGetValue<bool>(out var value)
+                ? value
+                : providerExecuted;
         }
 
         return new OpenResponsesExtension
         {
             Id = "acme.document_search",
             ToolType = "acme:document_search",
-            ItemTypes = new[] { "acme:document_search_call", "acme:document_search_result", "acme:document_search_receipt" },
+            ItemTypes = new[]
+            {
+                "acme:document_search_call",
+                "acme:document_search_result",
+                "acme:document_search_receipt",
+            },
             EventTypes = new[] { "acme:document_search_input" },
             EncodeTool = context =>
             {
@@ -143,7 +170,14 @@ internal static class OpenResponsesLanguageModelTestSupport
                 {
                     return new GeneratedContent[]
                     {
-                        new GeneratedToolCall((string)item["call_id"]!, (string)item["name"]!, item["query"]!.ToJsonString()) { ProviderExecuted = ProviderExecuted(item) },
+                        new GeneratedToolCall(
+                            (string)item["call_id"]!,
+                            (string)item["name"]!,
+                            item["query"]!.ToJsonString()
+                        )
+                        {
+                            ProviderExecuted = ProviderExecuted(item),
+                        },
                     };
                 }
 
@@ -151,14 +185,29 @@ internal static class OpenResponsesLanguageModelTestSupport
                 {
                     return new GeneratedContent[]
                     {
-                        new GeneratedToolResult((string)item["call_id"]!, (string)item["name"]!, item["result"]!.ToJsonString()),
+                        new GeneratedToolResult(
+                            (string)item["call_id"]!,
+                            (string)item["name"]!,
+                            item["result"]!.ToJsonString()
+                        ),
                     };
                 }
 
                 return new GeneratedContent[]
                 {
-                    new GeneratedToolCall((string)item["call_id"]!, (string)item["name"]!, item["query"]!.ToJsonString()) { ProviderExecuted = ProviderExecuted(item) },
-                    new GeneratedToolResult((string)item["call_id"]!, (string)item["name"]!, item["result"]!.ToJsonString()),
+                    new GeneratedToolCall(
+                        (string)item["call_id"]!,
+                        (string)item["name"]!,
+                        item["query"]!.ToJsonString()
+                    )
+                    {
+                        ProviderExecuted = ProviderExecuted(item),
+                    },
+                    new GeneratedToolResult(
+                        (string)item["call_id"]!,
+                        (string)item["name"]!,
+                        item["result"]!.ToJsonString()
+                    ),
                 };
             },
             EncodeInputItem = context =>
@@ -207,7 +256,12 @@ internal static class OpenResponsesLanguageModelTestSupport
                 var id = (string)evt["call_id"]!;
                 return new LanguageModelStreamPart[]
                 {
-                    new ToolInputStartStreamPart(id, (string)evt["name"]!, null, ProviderExecuted(evt)),
+                    new ToolInputStartStreamPart(
+                        id,
+                        (string)evt["name"]!,
+                        null,
+                        ProviderExecuted(evt)
+                    ),
                     new ToolInputDeltaStreamPart(id, (string)evt["delta"]!),
                     new ToolInputEndStreamPart(id),
                 };
@@ -223,7 +277,12 @@ internal static class OpenResponsesLanguageModelTestSupport
         extension.EventTypes = null;
         extension.AllowBareTypes = true;
         extension.BareToolType = "web_search";
-        extension.BareItemTypes = new[] { "web_search_call", "custom_tool_call", "custom_tool_call_output" };
+        extension.BareItemTypes = new[]
+        {
+            "web_search_call",
+            "custom_tool_call",
+            "custom_tool_call_output",
+        };
         extension.BareEventTypes = new[] { "response.custom_tool_call_input.delta" };
         extension.EncodeInputItem = context =>
         {

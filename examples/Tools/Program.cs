@@ -23,15 +23,18 @@ var weather = Tool.Function(
     {
         var city = arguments.GetProperty("city").GetString();
         return Task.FromResult(JsonSerializer.Serialize(new { city, forecast = "sunny" }));
-    });
+    }
+);
 
-var result = await client.GenerateTextAsync(new GenerateTextOptions
-{
-    ModelId = "openai/gpt-6-astra",
-    Prompt = "Weather in Lisbon?",
-    Tools = new[] { weather },
-    StopWhen = StopWhen.IsStepCount(4),
-});
+var result = await client.GenerateTextAsync(
+    new GenerateTextOptions
+    {
+        ModelId = "openai/gpt-6-astra",
+        Prompt = "Weather in Lisbon?",
+        Tools = new[] { weather },
+        StopWhen = StopWhen.IsStepCount(4),
+    }
+);
 #endregion
 
 Console.WriteLine(result.Text);

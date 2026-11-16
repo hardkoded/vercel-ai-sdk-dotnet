@@ -47,7 +47,8 @@ public sealed class LanguageModelUsage
         int? reasoningTokens = null,
         JsonElement? raw = null,
         int? noCacheInputTokens = null,
-        int? textTokens = null)
+        int? textTokens = null
+    )
     {
         InputTokens = inputTokens;
         OutputTokens = outputTokens;
@@ -60,9 +61,7 @@ public sealed class LanguageModelUsage
         TextTokens = textTokens;
     }
 
-    private LanguageModelUsage()
-    {
-    }
+    private LanguageModelUsage() { }
 
     /// <summary>Prompt tokens.</summary>
     public int? InputTokens { get; }
@@ -101,9 +100,12 @@ public sealed class LanguageModelUsage
             Sum(left.CacheReadTokens, right.CacheReadTokens),
             Sum(left.CacheWriteTokens, right.CacheWriteTokens),
             Sum(left.ReasoningTokens, right.ReasoningTokens),
-            raw: left.IsNull ? right.Raw : right.IsNull ? left.Raw : null,
+            raw: left.IsNull ? right.Raw
+                : right.IsNull ? left.Raw
+                : null,
             noCacheInputTokens: Sum(left.NoCacheInputTokens, right.NoCacheInputTokens),
-            textTokens: Sum(left.TextTokens, right.TextTokens));
+            textTokens: Sum(left.TextTokens, right.TextTokens)
+        );
     }
 
     /// <summary>Zero usage.</summary>
@@ -182,7 +184,11 @@ public abstract class GeneratedContent
 public class GeneratedText : GeneratedContent
 {
     /// <summary>Creates text content.</summary>
-    public GeneratedText(string text, IReadOnlyList<Citation>? citations = null, JsonElement? providerMetadata = null)
+    public GeneratedText(
+        string text,
+        IReadOnlyList<Citation>? citations = null,
+        JsonElement? providerMetadata = null
+    )
         : base("text")
     {
         Text = text ?? throw new ArgumentNullException(nameof(text));
@@ -207,7 +213,12 @@ public class GeneratedText : GeneratedContent
 public class GeneratedToolCall : GeneratedContent
 {
     /// <summary>Creates a tool call.</summary>
-    public GeneratedToolCall(string toolCallId, string toolName, string argumentsJson, JsonElement? providerMetadata = null)
+    public GeneratedToolCall(
+        string toolCallId,
+        string toolName,
+        string argumentsJson,
+        JsonElement? providerMetadata = null
+    )
         : base("tool-call")
     {
         ToolCallId = toolCallId ?? throw new ArgumentNullException(nameof(toolCallId));
@@ -293,7 +304,13 @@ public sealed class GeneratedToolApprovalRequest : GeneratedContent
 public sealed class GeneratedToolApprovalResponse : GeneratedContent
 {
     /// <summary>Creates an approval response.</summary>
-    public GeneratedToolApprovalResponse(string approvalId, GeneratedToolCall toolCall, bool approved, string? reason = null, bool providerExecuted = false)
+    public GeneratedToolApprovalResponse(
+        string approvalId,
+        GeneratedToolCall toolCall,
+        bool approved,
+        string? reason = null,
+        bool providerExecuted = false
+    )
         : base("tool-approval-response")
     {
         ApprovalId = approvalId ?? throw new ArgumentNullException(nameof(approvalId));
@@ -324,9 +341,7 @@ public class GeneratedReasoning : GeneratedContent
 {
     /// <summary>Creates reasoning content.</summary>
     public GeneratedReasoning(string text)
-        : this(text, null)
-    {
-    }
+        : this(text, null) { }
 
     /// <summary>Creates reasoning content that carries provider metadata, such as an <c>itemId</c> or encrypted content.</summary>
     public GeneratedReasoning(string text, JsonElement? providerMetadata)
@@ -347,7 +362,12 @@ public class GeneratedReasoning : GeneratedContent
 public sealed class GeneratedSource : GeneratedContent
 {
     /// <summary>Creates a source.</summary>
-    public GeneratedSource(string id, string url, string? title, JsonElement? providerMetadata = null)
+    public GeneratedSource(
+        string id,
+        string url,
+        string? title,
+        JsonElement? providerMetadata = null
+    )
         : base("source")
     {
         Id = id;
@@ -373,7 +393,13 @@ public sealed class GeneratedSource : GeneratedContent
 public sealed class GeneratedDocumentSource : GeneratedContent
 {
     /// <summary>Creates a document source.</summary>
-    public GeneratedDocumentSource(string id, string mediaType, string title, string? filename = null, JsonElement? providerMetadata = null)
+    public GeneratedDocumentSource(
+        string id,
+        string mediaType,
+        string title,
+        string? filename = null,
+        JsonElement? providerMetadata = null
+    )
         : base("source")
     {
         Id = id ?? throw new ArgumentNullException(nameof(id));
@@ -406,16 +432,22 @@ public sealed class GeneratedDocumentSource : GeneratedContent
 public sealed class Citation
 {
     /// <summary>Creates a citation for a URL source.</summary>
-    public Citation(GeneratedSource source, int? startIndex = null, int? endIndex = null, string? citedText = null)
-        : this((GeneratedContent)source, startIndex, endIndex, citedText)
-    {
-    }
+    public Citation(
+        GeneratedSource source,
+        int? startIndex = null,
+        int? endIndex = null,
+        string? citedText = null
+    )
+        : this((GeneratedContent)source, startIndex, endIndex, citedText) { }
 
     /// <summary>Creates a citation for a document source.</summary>
-    public Citation(GeneratedDocumentSource source, int? startIndex = null, int? endIndex = null, string? citedText = null)
-        : this((GeneratedContent)source, startIndex, endIndex, citedText)
-    {
-    }
+    public Citation(
+        GeneratedDocumentSource source,
+        int? startIndex = null,
+        int? endIndex = null,
+        string? citedText = null
+    )
+        : this((GeneratedContent)source, startIndex, endIndex, citedText) { }
 
     private Citation(GeneratedContent source, int? startIndex, int? endIndex, string? citedText)
     {
@@ -442,7 +474,12 @@ public sealed class Citation
 public sealed class GeneratedToolResult : GeneratedContent
 {
     /// <summary>Creates a provider-executed tool result.</summary>
-    public GeneratedToolResult(string toolCallId, string toolName, string resultJson, bool isError = false)
+    public GeneratedToolResult(
+        string toolCallId,
+        string toolName,
+        string resultJson,
+        bool isError = false
+    )
         : base("tool-result")
     {
         ToolCallId = toolCallId ?? string.Empty;
@@ -519,7 +556,11 @@ public class GeneratedFile : GeneratedContent
 public sealed class GeneratedReasoningFile : GeneratedContent
 {
     /// <summary>Creates reasoning-file content.</summary>
-    public GeneratedReasoningFile(byte[] data, string mediaType, JsonElement? providerMetadata = null)
+    public GeneratedReasoningFile(
+        byte[] data,
+        string mediaType,
+        JsonElement? providerMetadata = null
+    )
         : base("reasoning-file")
     {
         Data = data ?? throw new ArgumentNullException(nameof(data));
@@ -571,25 +612,19 @@ public abstract class ToolChoice
     private sealed class AutoChoice : ToolChoice
     {
         public AutoChoice()
-            : base("auto")
-        {
-        }
+            : base("auto") { }
     }
 
     private sealed class NoneChoice : ToolChoice
     {
         public NoneChoice()
-            : base("none")
-        {
-        }
+            : base("none") { }
     }
 
     private sealed class RequiredChoice : ToolChoice
     {
         public RequiredChoice()
-            : base("required")
-        {
-        }
+            : base("required") { }
     }
 
     /// <summary>A named tool choice.</summary>
@@ -610,7 +645,12 @@ public abstract class ToolChoice
 public sealed class LanguageModelTool
 {
     /// <summary>Creates a function tool.</summary>
-    public LanguageModelTool(string name, string? description, JsonElement inputSchema, bool? strict = null)
+    public LanguageModelTool(
+        string name,
+        string? description,
+        JsonElement inputSchema,
+        bool? strict = null
+    )
     {
         Name = name ?? throw new ArgumentNullException(nameof(name));
         Description = description;
@@ -685,12 +725,13 @@ public sealed class SystemModelMessage : ModelMessage
 {
     /// <summary>Creates a system message.</summary>
     public SystemModelMessage(string content)
-        : this(content, null)
-    {
-    }
+        : this(content, null) { }
 
     /// <summary>Creates a system message with provider options, such as an OpenAI <c>reasoningEffortUpdate</c>.</summary>
-    public SystemModelMessage(string content, IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    public SystemModelMessage(
+        string content,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
+    )
         : base("system")
     {
         Content = content ?? string.Empty;
@@ -751,10 +792,12 @@ public sealed class FileContentPart : UserContentPart
         string mediaType,
         IReadOnlyDictionary<string, string> providerReference,
         string? fileName,
-        IReadOnlyDictionary<string, JsonElement>? providerOptions)
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
+    )
         : this(mediaType, null, null, fileName)
     {
-        ProviderReference = providerReference ?? throw new ArgumentNullException(nameof(providerReference));
+        ProviderReference = providerReference
+            ?? throw new ArgumentNullException(nameof(providerReference));
         ProviderOptions = providerOptions;
     }
 
@@ -769,7 +812,8 @@ public sealed class FileContentPart : UserContentPart
         string mediaType,
         IReadOnlyDictionary<string, string> providerReference,
         string? fileName = null,
-        IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null
+    )
     {
         return new FileContentPart(mediaType, providerReference, fileName, providerOptions);
     }
@@ -785,14 +829,19 @@ public sealed class FileContentPart : UserContentPart
         string mediaType,
         string text,
         string? fileName = null,
-        IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null
+    )
     {
         if (text == null)
         {
             throw new ArgumentNullException(nameof(text));
         }
 
-        return new FileContentPart(mediaType, null, null, fileName) { Text = text, ProviderOptions = providerOptions };
+        return new FileContentPart(mediaType, null, null, fileName)
+        {
+            Text = text,
+            ProviderOptions = providerOptions,
+        };
     }
 
     /// <summary>Map from provider name to an uploaded file id, used when there is no URL or inline data.</summary>
@@ -825,9 +874,7 @@ public sealed class CustomContentPart : UserContentPart
 {
     /// <summary>Creates a custom part.</summary>
     public CustomContentPart()
-        : base("custom")
-    {
-    }
+        : base("custom") { }
 
     /// <summary>Provider-specific options for this part.</summary>
     public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
@@ -838,9 +885,7 @@ public sealed class UserModelMessage : ModelMessage
 {
     /// <summary>Creates a user message from text.</summary>
     public UserModelMessage(string text)
-        : this(new UserContentPart[] { new TextContentPart(text) })
-    {
-    }
+        : this(new UserContentPart[] { new TextContentPart(text) }) { }
 
     /// <summary>Creates a user message from parts.</summary>
     public UserModelMessage(IReadOnlyList<UserContentPart> content)
@@ -860,7 +905,10 @@ public sealed class UserModelMessage : ModelMessage
 public abstract class AssistantContentPart
 {
     /// <summary>Creates a part.</summary>
-    protected AssistantContentPart(string type, IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    protected AssistantContentPart(
+        string type,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
+    )
     {
         Type = type;
         ProviderOptions = providerOptions;
@@ -877,7 +925,10 @@ public abstract class AssistantContentPart
 public sealed class AssistantTextPart : AssistantContentPart
 {
     /// <summary>Creates a text part.</summary>
-    public AssistantTextPart(string text, IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+    public AssistantTextPart(
+        string text,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null
+    )
         : base("text", providerOptions)
     {
         Text = text ?? throw new ArgumentNullException(nameof(text));
@@ -891,7 +942,10 @@ public sealed class AssistantTextPart : AssistantContentPart
 public sealed class AssistantReasoningPart : AssistantContentPart
 {
     /// <summary>Creates a reasoning part.</summary>
-    public AssistantReasoningPart(string text, IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+    public AssistantReasoningPart(
+        string text,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null
+    )
         : base("reasoning", providerOptions)
     {
         Text = text ?? string.Empty;
@@ -915,10 +969,9 @@ public class AssistantFilePart : AssistantContentPart
         string? url,
         byte[]? data,
         string? fileName = null,
-        IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
-        : this("file", mediaType, url, data, fileName, providerOptions)
-    {
-    }
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null
+    )
+        : this("file", mediaType, url, data, fileName, providerOptions) { }
 
     /// <summary>
     /// Creates a file part that refers to an uploaded file. Maps to <c>data: { type: "reference", reference }</c>.
@@ -931,11 +984,13 @@ public class AssistantFilePart : AssistantContentPart
         string mediaType,
         IReadOnlyDictionary<string, string> providerReference,
         string? fileName = null,
-        IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null
+    )
     {
         return new AssistantFilePart("file", mediaType, null, null, fileName, providerOptions)
         {
-            ProviderReference = providerReference ?? throw new ArgumentNullException(nameof(providerReference)),
+            ProviderReference = providerReference
+                ?? throw new ArgumentNullException(nameof(providerReference)),
         };
     }
 
@@ -945,7 +1000,8 @@ public class AssistantFilePart : AssistantContentPart
         string? url,
         byte[]? data,
         string? fileName,
-        IReadOnlyDictionary<string, JsonElement>? providerOptions)
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
+    )
         : base(type, providerOptions)
     {
         MediaType = mediaType ?? throw new ArgumentNullException(nameof(mediaType));
@@ -982,17 +1038,19 @@ public sealed class AssistantReasoningFilePart : AssistantFilePart
         string mediaType,
         string? url,
         byte[]? data,
-        IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
-        : base("reasoning-file", mediaType, url, data, null, providerOptions)
-    {
-    }
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null
+    )
+        : base("reasoning-file", mediaType, url, data, null, providerOptions) { }
 }
 
 /// <summary>A tool call in an assistant message.</summary>
 public sealed class AssistantToolCallPart : AssistantContentPart
 {
     /// <summary>Creates a tool-call part. Without <paramref name="providerOptions"/>, the call's provider metadata is used.</summary>
-    public AssistantToolCallPart(GeneratedToolCall toolCall, IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+    public AssistantToolCallPart(
+        GeneratedToolCall toolCall,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null
+    )
         : base("tool-call", providerOptions ?? ToOptions(toolCall))
     {
         ToolCall = toolCall ?? throw new ArgumentNullException(nameof(toolCall));
@@ -1022,7 +1080,11 @@ public sealed class AssistantToolCallPart : AssistantContentPart
 public sealed class AssistantToolApprovalRequestPart : AssistantContentPart
 {
     /// <summary>Creates a tool-approval-request part.</summary>
-    public AssistantToolApprovalRequestPart(string approvalId, string toolCallId, bool? isAutomatic = null)
+    public AssistantToolApprovalRequestPart(
+        string approvalId,
+        string toolCallId,
+        bool? isAutomatic = null
+    )
         : base("tool-approval-request", null)
     {
         ApprovalId = approvalId ?? throw new ArgumentNullException(nameof(approvalId));
@@ -1053,10 +1115,12 @@ public sealed class AssistantToolApprovalRequestPart : AssistantContentPart
 public sealed class AssistantModelMessage : ModelMessage
 {
     /// <summary>Creates an assistant message.</summary>
-    public AssistantModelMessage(string? text, IReadOnlyList<GeneratedToolCall>? toolCalls, string? reasoning)
-        : this(text, toolCalls, reasoning, null)
-    {
-    }
+    public AssistantModelMessage(
+        string? text,
+        IReadOnlyList<GeneratedToolCall>? toolCalls,
+        string? reasoning
+    )
+        : this(text, toolCalls, reasoning, null) { }
 
     /// <summary>
     /// Creates an assistant message whose reasoning carries provider options, such as an OpenAI
@@ -1066,10 +1130,9 @@ public sealed class AssistantModelMessage : ModelMessage
         string? text,
         IReadOnlyList<GeneratedToolCall>? toolCalls,
         string? reasoning,
-        IReadOnlyDictionary<string, JsonElement>? reasoningProviderOptions)
-        : this(text, toolCalls, reasoning, reasoningProviderOptions, null)
-    {
-    }
+        IReadOnlyDictionary<string, JsonElement>? reasoningProviderOptions
+    )
+        : this(text, toolCalls, reasoning, reasoningProviderOptions, null) { }
 
     /// <summary>
     /// Creates an assistant message that also keeps its content parts in order. When <paramref name="parts"/> is null,
@@ -1080,7 +1143,8 @@ public sealed class AssistantModelMessage : ModelMessage
         IReadOnlyList<GeneratedToolCall>? toolCalls,
         string? reasoning,
         IReadOnlyDictionary<string, JsonElement>? reasoningProviderOptions,
-        IReadOnlyList<AssistantContentPart>? parts)
+        IReadOnlyList<AssistantContentPart>? parts
+    )
         : base("assistant")
     {
         Text = text;
@@ -1097,15 +1161,16 @@ public sealed class AssistantModelMessage : ModelMessage
             ToolCallsOf(parts),
             JoinText(parts, "reasoning"),
             FirstReasoningOptions(parts),
-            parts)
-    {
-    }
+            parts
+        ) { }
 
     /// <summary>
     /// Creates an assistant message from generated content, keeping order and each part's provider metadata as its provider options.
     /// This is how a generate result is replayed as history. Sources and files have no assistant part and are skipped.
     /// </summary>
-    public static AssistantModelMessage FromGeneratedContent(IReadOnlyList<GeneratedContent> content)
+    public static AssistantModelMessage FromGeneratedContent(
+        IReadOnlyList<GeneratedContent> content
+    )
     {
         if (content == null)
         {
@@ -1118,26 +1183,53 @@ public sealed class AssistantModelMessage : ModelMessage
             switch (item)
             {
                 case GeneratedText text:
-                    parts.Add(new AssistantTextPart(text.Text, MetadataToOptions(text.ProviderMetadata)));
+                    parts.Add(
+                        new AssistantTextPart(text.Text, MetadataToOptions(text.ProviderMetadata))
+                    );
                     break;
                 case GeneratedReasoning reasoning:
-                    parts.Add(new AssistantReasoningPart(reasoning.Text, MetadataToOptions(reasoning.ProviderMetadata)));
+                    parts.Add(
+                        new AssistantReasoningPart(
+                            reasoning.Text,
+                            MetadataToOptions(reasoning.ProviderMetadata)
+                        )
+                    );
                     break;
                 case GeneratedToolCall call:
                     parts.Add(new AssistantToolCallPart(call));
                     break;
                 case GeneratedToolResult result:
-                    parts.Add(new AssistantToolResultPart(
-                        result.ToolCallId,
-                        result.ToolName,
-                        new ToolModelMessage(result.ToolCallId, result.ToolName, result.ResultJson, result.IsError),
-                        MetadataToOptions(result.ProviderMetadata)));
+                    parts.Add(
+                        new AssistantToolResultPart(
+                            result.ToolCallId,
+                            result.ToolName,
+                            new ToolModelMessage(
+                                result.ToolCallId,
+                                result.ToolName,
+                                result.ResultJson,
+                                result.IsError
+                            ),
+                            MetadataToOptions(result.ProviderMetadata)
+                        )
+                    );
                     break;
                 case GeneratedCustom custom:
-                    parts.Add(new AssistantCustomPart(custom.Kind, MetadataToOptions(custom.ProviderMetadata)));
+                    parts.Add(
+                        new AssistantCustomPart(
+                            custom.Kind,
+                            MetadataToOptions(custom.ProviderMetadata)
+                        )
+                    );
                     break;
                 case GeneratedReasoningFile reasoningFile:
-                    parts.Add(new AssistantReasoningFilePart(reasoningFile.MediaType, null, reasoningFile.Data, MetadataToOptions(reasoningFile.ProviderMetadata)));
+                    parts.Add(
+                        new AssistantReasoningFilePart(
+                            reasoningFile.MediaType,
+                            null,
+                            reasoningFile.Data,
+                            MetadataToOptions(reasoningFile.ProviderMetadata)
+                        )
+                    );
                     break;
             }
         }
@@ -1145,7 +1237,9 @@ public sealed class AssistantModelMessage : ModelMessage
         return new AssistantModelMessage(parts);
     }
 
-    private static IReadOnlyDictionary<string, JsonElement>? MetadataToOptions(JsonElement? metadata)
+    private static IReadOnlyDictionary<string, JsonElement>? MetadataToOptions(
+        JsonElement? metadata
+    )
     {
         if (metadata is not { ValueKind: JsonValueKind.Object } bag)
         {
@@ -1183,12 +1277,15 @@ public sealed class AssistantModelMessage : ModelMessage
         string? text,
         IReadOnlyList<GeneratedToolCall> toolCalls,
         string? reasoning,
-        IReadOnlyDictionary<string, JsonElement>? reasoningProviderOptions)
+        IReadOnlyDictionary<string, JsonElement>? reasoningProviderOptions
+    )
     {
         var parts = new List<AssistantContentPart>();
         if (!string.IsNullOrEmpty(reasoning) || reasoningProviderOptions != null)
         {
-            parts.Add(new AssistantReasoningPart(reasoning ?? string.Empty, reasoningProviderOptions));
+            parts.Add(
+                new AssistantReasoningPart(reasoning ?? string.Empty, reasoningProviderOptions)
+            );
         }
 
         if (!string.IsNullOrEmpty(text))
@@ -1225,7 +1322,9 @@ public sealed class AssistantModelMessage : ModelMessage
         return found ? builder.ToString() : null;
     }
 
-    private static IReadOnlyList<GeneratedToolCall> ToolCallsOf(IReadOnlyList<AssistantContentPart> parts)
+    private static IReadOnlyList<GeneratedToolCall> ToolCallsOf(
+        IReadOnlyList<AssistantContentPart> parts
+    )
     {
         var calls = new List<GeneratedToolCall>();
         foreach (var part in parts)
@@ -1239,7 +1338,9 @@ public sealed class AssistantModelMessage : ModelMessage
         return calls;
     }
 
-    private static IReadOnlyDictionary<string, JsonElement>? FirstReasoningOptions(IReadOnlyList<AssistantContentPart> parts)
+    private static IReadOnlyDictionary<string, JsonElement>? FirstReasoningOptions(
+        IReadOnlyList<AssistantContentPart> parts
+    )
     {
         foreach (var part in parts)
         {
@@ -1261,7 +1362,8 @@ public sealed class AssistantToolResultPart : AssistantContentPart
         string toolCallId,
         string toolName,
         ToolModelMessage output,
-        IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null
+    )
         : base("tool-result", providerOptions)
     {
         ToolCallId = toolCallId ?? throw new ArgumentNullException(nameof(toolCallId));
@@ -1284,16 +1386,17 @@ public sealed class PingStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a ping part.</summary>
     public PingStreamPart()
-        : base("ping")
-    {
-    }
+        : base("ping") { }
 }
 
 /// <summary>A provider-specific part, identified by <see cref="Kind"/>.</summary>
 public sealed class AssistantCustomPart : AssistantContentPart
 {
     /// <summary>Creates a custom part.</summary>
-    public AssistantCustomPart(string kind, IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+    public AssistantCustomPart(
+        string kind,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null
+    )
         : base("custom", providerOptions)
     {
         Kind = kind ?? throw new ArgumentNullException(nameof(kind));
@@ -1310,7 +1413,12 @@ public sealed class AssistantCustomPart : AssistantContentPart
 public sealed class ToolApprovalResponseModelMessage : ModelMessage
 {
     /// <summary>Creates an approval response.</summary>
-    public ToolApprovalResponseModelMessage(string approvalId, bool approved, string? reason = null, bool providerExecuted = false)
+    public ToolApprovalResponseModelMessage(
+        string approvalId,
+        bool approved,
+        string? reason = null,
+        bool providerExecuted = false
+    )
         : base("tool")
     {
         ApprovalId = approvalId ?? throw new ArgumentNullException(nameof(approvalId));
@@ -1341,13 +1449,24 @@ public sealed class ToolApprovalResponseModelMessage : ModelMessage
 /// <summary>A tool result fed back to the model.</summary>
 public sealed class ToolModelMessage : ModelMessage
 {
-    private static readonly string[] OutputTypes = { "text", "json", "error-text", "error-json", "execution-denied" };
+    private static readonly string[] OutputTypes =
+    {
+        "text",
+        "json",
+        "error-text",
+        "error-json",
+        "execution-denied",
+    };
 
     /// <summary>Creates a tool result message. The output type comes from <paramref name="isError"/> and from whether <paramref name="outputJson"/> is valid JSON.</summary>
-    public ToolModelMessage(string toolCallId, string toolName, string outputJson, bool isError, JsonElement? providerMetadata = null)
-        : this(toolCallId, toolName, outputJson, isError, null, providerMetadata)
-    {
-    }
+    public ToolModelMessage(
+        string toolCallId,
+        string toolName,
+        string outputJson,
+        bool isError,
+        JsonElement? providerMetadata = null
+    )
+        : this(toolCallId, toolName, outputJson, isError, null, providerMetadata) { }
 
     /// <summary>
     /// Creates a tool result message. <paramref name="outputType"/> is <c>text</c>, <c>json</c>, <c>error-text</c>, <c>error-json</c>,
@@ -1355,22 +1474,40 @@ public sealed class ToolModelMessage : ModelMessage
     /// <paramref name="outputJson"/> is valid JSON. When it is set, it decides <see cref="IsError"/> and <paramref name="isError"/> is ignored.
     /// For <c>execution-denied</c>, <paramref name="outputJson"/> is the reason, or null for none.
     /// </summary>
-    public ToolModelMessage(string toolCallId, string toolName, string? outputJson, bool isError, string? outputType, JsonElement? providerMetadata = null)
+    public ToolModelMessage(
+        string toolCallId,
+        string toolName,
+        string? outputJson,
+        bool isError,
+        string? outputType,
+        JsonElement? providerMetadata = null
+    )
         : base("tool")
     {
         ToolCallId = toolCallId ?? throw new ArgumentNullException(nameof(toolCallId));
         ToolName = toolName ?? throw new ArgumentNullException(nameof(toolName));
         if (outputType != null && Array.IndexOf(OutputTypes, outputType) < 0)
         {
-            throw new ArgumentException("Unknown tool output type '" + outputType + "'.", nameof(outputType));
+            throw new ArgumentException(
+                "Unknown tool output type '" + outputType + "'.",
+                nameof(outputType)
+            );
         }
 
         if ((outputType == "json" || outputType == "error-json") && !IsJson(outputJson))
         {
-            throw new ArgumentException("Output type '" + outputType + "' needs valid JSON.", nameof(outputJson));
+            throw new ArgumentException(
+                "Output type '" + outputType + "' needs valid JSON.",
+                nameof(outputJson)
+            );
         }
 
-        OutputType = outputType ?? (isError ? (IsJson(outputJson) ? "error-json" : "error-text") : (IsJson(outputJson) ? "json" : "text"));
+        OutputType = outputType
+            ?? (
+                isError
+                    ? (IsJson(outputJson) ? "error-json" : "error-text")
+                    : (IsJson(outputJson) ? "json" : "text")
+            );
         OutputJson = outputJson ?? (OutputType == "execution-denied" ? string.Empty : "null");
         ExecutionDeniedReason = OutputType == "execution-denied" ? outputJson : null;
         IsError = OutputType != "text" && OutputType != "json";
@@ -1382,12 +1519,21 @@ public sealed class ToolModelMessage : ModelMessage
     /// <see cref="OutputType"/> is <c>json</c> and <see cref="OutputJson"/> is the JSON text of the parts, so a provider that
     /// does not read <see cref="OutputContent"/> sends the stringified parts, as upstream does by default.
     /// </summary>
-    public ToolModelMessage(string toolCallId, string toolName, IReadOnlyList<UserContentPart> content, JsonElement? providerMetadata = null)
-        : this(toolCallId, toolName, Snapshot(content), providerMetadata, true)
-    {
-    }
+    public ToolModelMessage(
+        string toolCallId,
+        string toolName,
+        IReadOnlyList<UserContentPart> content,
+        JsonElement? providerMetadata = null
+    )
+        : this(toolCallId, toolName, Snapshot(content), providerMetadata, true) { }
 
-    private ToolModelMessage(string toolCallId, string toolName, UserContentPart[] snapshot, JsonElement? providerMetadata, bool snapshotted)
+    private ToolModelMessage(
+        string toolCallId,
+        string toolName,
+        UserContentPart[] snapshot,
+        JsonElement? providerMetadata,
+        bool snapshotted
+    )
         : this(toolCallId, toolName, SerializeContent(snapshot), false, "json", providerMetadata)
     {
         OutputContent = snapshot;
@@ -1402,7 +1548,10 @@ public sealed class ToolModelMessage : ModelMessage
     {
         if (results is null || results.Count == 0)
         {
-            throw new ArgumentException("A tool message needs at least one result.", nameof(results));
+            throw new ArgumentException(
+                "A tool message needs at least one result.",
+                nameof(results)
+            );
         }
 
         var flat = new List<ToolModelMessage>();
@@ -1497,7 +1646,10 @@ public sealed class ToolModelMessage : ModelMessage
     /// <summary>Provider options of the whole tool message, such as an Amazon Bedrock <c>cachePoint</c> added after all its results.</summary>
     public IReadOnlyDictionary<string, JsonElement>? MessageProviderOptions { get; init; }
 
-    private static readonly JsonSerializerOptions ContentJsonOptions = new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    private static readonly JsonSerializerOptions ContentJsonOptions = new JsonSerializerOptions
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     private static UserContentPart[] Snapshot(IReadOnlyList<UserContentPart> content)
     {
@@ -1509,15 +1661,47 @@ public sealed class ToolModelMessage : ModelMessage
         var copy = new UserContentPart[content.Count];
         for (var i = 0; i < copy.Length; i++)
         {
-            var part = content[i] ?? throw new ArgumentException("Tool content parts cannot be null.", nameof(content));
+            var part = content[i]
+                ?? throw new ArgumentException(
+                    "Tool content parts cannot be null.",
+                    nameof(content)
+                );
             if (part is FileContentPart file)
             {
-                var options = file.ProviderOptions == null ? null : file.ProviderOptions.ToDictionary(pair => pair.Key, pair => pair.Value.Clone());
-                copy[i] = file.Text != null
-                    ? FileContentPart.FromText(file.MediaType, file.Text, file.FileName, options)
+                var options =
+                    file.ProviderOptions == null
+                        ? null
+                        : file.ProviderOptions.ToDictionary(
+                            pair => pair.Key,
+                            pair => pair.Value.Clone()
+                        );
+                copy[i] =
+                    file.Text != null
+                        ? FileContentPart.FromText(
+                            file.MediaType,
+                            file.Text,
+                            file.FileName,
+                            options
+                        )
                     : file.ProviderReference != null
-                    ? FileContentPart.FromProviderReference(file.MediaType, file.ProviderReference.ToDictionary(pair => pair.Key, pair => pair.Value), file.FileName, options)
-                    : new FileContentPart(file.MediaType, file.Url, (byte[]?)file.Data?.Clone(), file.FileName) { ProviderOptions = options };
+                        ? FileContentPart.FromProviderReference(
+                            file.MediaType,
+                            file.ProviderReference.ToDictionary(
+                                pair => pair.Key,
+                                pair => pair.Value
+                            ),
+                            file.FileName,
+                            options
+                        )
+                    : new FileContentPart(
+                        file.MediaType,
+                        file.Url,
+                        (byte[]?)file.Data?.Clone(),
+                        file.FileName
+                    )
+                    {
+                        ProviderOptions = options,
+                    };
             }
             else if (part is TextContentPart)
             {
@@ -1525,11 +1709,20 @@ public sealed class ToolModelMessage : ModelMessage
             }
             else if (part is CustomContentPart custom)
             {
-                copy[i] = new CustomContentPart { ProviderOptions = custom.ProviderOptions?.ToDictionary(pair => pair.Key, pair => pair.Value.Clone()) };
+                copy[i] = new CustomContentPart
+                {
+                    ProviderOptions = custom.ProviderOptions?.ToDictionary(
+                        pair => pair.Key,
+                        pair => pair.Value.Clone()
+                    ),
+                };
             }
             else
             {
-                throw new ArgumentException("Tool content parts must be text, file, or custom parts.", nameof(content));
+                throw new ArgumentException(
+                    "Tool content parts must be text, file, or custom parts.",
+                    nameof(content)
+                );
             }
         }
 
@@ -1581,10 +1774,18 @@ public sealed class ToolModelMessage : ModelMessage
                 }
                 else
                 {
-                    throw new ArgumentException("A file part needs a URL, data, text, or a provider reference.", nameof(content));
+                    throw new ArgumentException(
+                        "A file part needs a URL, data, text, or a provider reference.",
+                        nameof(content)
+                    );
                 }
 
-                var json = new JsonObject { ["type"] = "file", ["data"] = data, ["mediaType"] = file.MediaType };
+                var json = new JsonObject
+                {
+                    ["type"] = "file",
+                    ["data"] = data,
+                    ["mediaType"] = file.MediaType,
+                };
                 if (file.FileName != null)
                 {
                     json["filename"] = file.FileName;
@@ -1610,7 +1811,10 @@ public sealed class ToolModelMessage : ModelMessage
             }
             else
             {
-                throw new ArgumentException("Tool content parts must be text, file, or custom parts.", nameof(content));
+                throw new ArgumentException(
+                    "Tool content parts must be text, file, or custom parts.",
+                    nameof(content)
+                );
             }
         }
 
@@ -1727,7 +1931,8 @@ public sealed class LanguageModelGenerateResult
         string? responseModelId = null,
         DateTimeOffset? responseTimestamp = null,
         IReadOnlyDictionary<string, string>? responseHeaders = null,
-        string? structuredOutputText = null)
+        string? structuredOutputText = null
+    )
     {
         Content = content ?? Array.Empty<GeneratedContent>();
         StructuredOutputText = structuredOutputText;
@@ -1768,7 +1973,8 @@ public sealed class LanguageModelGenerateResult
             ResponseModelId,
             ResponseTimestamp,
             ResponseHeaders,
-            StructuredOutputText);
+            StructuredOutputText
+        );
     }
 
     /// <summary>Normalized finish reason.</summary>
@@ -1882,7 +2088,11 @@ public sealed class FileStreamPart : LanguageModelStreamPart
 public sealed class ReasoningFileStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a reasoning-file part with inline bytes.</summary>
-    public ReasoningFileStreamPart(byte[] data, string mediaType, JsonElement? providerMetadata = null)
+    public ReasoningFileStreamPart(
+        byte[] data,
+        string mediaType,
+        JsonElement? providerMetadata = null
+    )
         : base("reasoning-file")
     {
         Data = data ?? throw new ArgumentNullException(nameof(data));
@@ -1960,7 +2170,12 @@ public sealed class ReasoningDeltaStreamPart : LanguageModelStreamPart
 public sealed class ToolCallStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a tool-call part.</summary>
-    public ToolCallStreamPart(string toolCallId, string toolName, string argumentsJson, JsonElement? providerMetadata = null)
+    public ToolCallStreamPart(
+        string toolCallId,
+        string toolName,
+        string argumentsJson,
+        JsonElement? providerMetadata = null
+    )
         : base("tool-call")
     {
         ToolCallId = toolCallId;
@@ -2017,7 +2232,8 @@ public sealed class ToolInputStartStreamPart : LanguageModelStreamPart
         bool? providerExecuted = null,
         bool? dynamic = null,
         string? title = null,
-        ToolInputEncoding? inputEncoding = null)
+        ToolInputEncoding? inputEncoding = null
+    )
         : base("tool-input-start")
     {
         Id = id ?? string.Empty;
@@ -2136,7 +2352,12 @@ public sealed class ToolResultStreamPart : LanguageModelStreamPart
 public sealed class SourceStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a source part.</summary>
-    public SourceStreamPart(string id, string url, string? title, JsonElement? providerMetadata = null)
+    public SourceStreamPart(
+        string id,
+        string url,
+        string? title,
+        JsonElement? providerMetadata = null
+    )
         : base("source")
     {
         Id = id;
@@ -2162,7 +2383,13 @@ public sealed class SourceStreamPart : LanguageModelStreamPart
 public sealed class DocumentSourceStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a document source part.</summary>
-    public DocumentSourceStreamPart(string id, string mediaType, string title, string? filename = null, JsonElement? providerMetadata = null)
+    public DocumentSourceStreamPart(
+        string id,
+        string mediaType,
+        string title,
+        string? filename = null,
+        JsonElement? providerMetadata = null
+    )
         : base("source")
     {
         Id = id;
@@ -2196,7 +2423,8 @@ public sealed class FinishStreamPart : LanguageModelStreamPart
         FinishReason finishReason,
         LanguageModelUsage usage,
         string? rawFinishReason = null,
-        JsonElement? providerMetadata = null)
+        JsonElement? providerMetadata = null
+    )
         : base("finish")
     {
         FinishReason = finishReason;
@@ -2293,7 +2521,11 @@ public sealed class TextStartStreamPart : LanguageModelStreamPart
 public sealed class TextEndStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a text-end part.</summary>
-    public TextEndStreamPart(string id, IReadOnlyList<Citation>? citations = null, JsonElement? providerMetadata = null)
+    public TextEndStreamPart(
+        string id,
+        IReadOnlyList<Citation>? citations = null,
+        JsonElement? providerMetadata = null
+    )
         : base("text-end")
     {
         Id = id ?? string.Empty;
@@ -2334,9 +2566,7 @@ public sealed class ReasoningEndStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a reasoning-end part.</summary>
     public ReasoningEndStreamPart(string id)
-        : this(id, null)
-    {
-    }
+        : this(id, null) { }
 
     /// <summary>Creates a reasoning-end part that carries provider metadata.</summary>
     public ReasoningEndStreamPart(string id, JsonElement? providerMetadata)
@@ -2429,10 +2659,16 @@ public interface ILanguageModel
     IReadOnlyDictionary<string, string> SupportedUrls { get; }
 
     /// <summary>Generates a complete result.</summary>
-    Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken);
+    Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    );
 
     /// <summary>Streams partial results. The result carries the stream with the request and response info.</summary>
-    Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken);
+    Task<LanguageModelStreamResult> DoStreamAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>Request info for a stream call. Maps to the <c>request</c> field of <c>doStream</c>.</summary>
@@ -2475,7 +2711,10 @@ public sealed class LanguageModelStreamResponse
 /// A provider opens the HTTP response in <c>DoStreamAsync</c>. Dispose the result to release that response when you stop without enumerating the stream, or while you enumerate it.
 /// Disposing is safe to repeat, and it does nothing after the stream has ended.
 /// </summary>
-public sealed class LanguageModelStreamResult : IAsyncEnumerable<LanguageModelStreamPart>, IAsyncDisposable, IDisposable
+public sealed class LanguageModelStreamResult
+    : IAsyncEnumerable<LanguageModelStreamPart>,
+        IAsyncDisposable,
+        IDisposable
 {
     private IDisposable? _resource;
 
@@ -2488,7 +2727,8 @@ public sealed class LanguageModelStreamResult : IAsyncEnumerable<LanguageModelSt
         IAsyncEnumerable<LanguageModelStreamPart> stream,
         LanguageModelStreamRequest? request = null,
         LanguageModelStreamResponse? response = null,
-        IDisposable? resource = null)
+        IDisposable? resource = null
+    )
     {
         Stream = stream ?? throw new ArgumentNullException(nameof(stream));
         Request = request;
@@ -2506,7 +2746,9 @@ public sealed class LanguageModelStreamResult : IAsyncEnumerable<LanguageModelSt
     public LanguageModelStreamResponse? Response { get; }
 
     /// <inheritdoc />
-    public IAsyncEnumerator<LanguageModelStreamPart> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+    public IAsyncEnumerator<LanguageModelStreamPart> GetAsyncEnumerator(
+        CancellationToken cancellationToken = default
+    )
     {
         return Stream.GetAsyncEnumerator(cancellationToken);
     }
@@ -2515,7 +2757,9 @@ public sealed class LanguageModelStreamResult : IAsyncEnumerable<LanguageModelSt
     /// Configures how awaits on the stream parts run. This instance method keeps <c>await foreach (var part in result.ConfigureAwait(false))</c>
     /// unambiguous, because the result is both an async enumerable and an async disposable.
     /// </summary>
-    public System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<LanguageModelStreamPart> ConfigureAwait(bool continueOnCapturedContext)
+    public System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<LanguageModelStreamPart> ConfigureAwait(
+        bool continueOnCapturedContext
+    )
     {
         return Stream.ConfigureAwait(continueOnCapturedContext);
     }

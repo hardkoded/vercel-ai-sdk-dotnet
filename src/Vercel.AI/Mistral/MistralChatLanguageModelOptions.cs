@@ -65,20 +65,34 @@ public sealed class MistralLanguageModelChatOptions
             StructuredOutputs = Bool(value, "structuredOutputs"),
             StrictJsonSchema = Bool(value, "strictJsonSchema"),
             ParallelToolCalls = Bool(value, "parallelToolCalls"),
-            PromptCacheKey = value.TryGetProperty("promptCacheKey", out var key) && key.ValueKind == JsonValueKind.String ? key.GetString() : null,
-            ReasoningEffort = value.TryGetProperty("reasoningEffort", out var effort) && effort.ValueKind == JsonValueKind.String ? effort.GetString() : null,
+            PromptCacheKey =
+                value.TryGetProperty("promptCacheKey", out var key)
+                && key.ValueKind == JsonValueKind.String
+                    ? key.GetString()
+                    : null,
+            ReasoningEffort =
+                value.TryGetProperty("reasoningEffort", out var effort)
+                && effort.ValueKind == JsonValueKind.String
+                    ? effort.GetString()
+                    : null,
         };
     }
 
     private static bool? Bool(JsonElement value, string name)
     {
-        return value.TryGetProperty(name, out var property) && property.ValueKind is JsonValueKind.True or JsonValueKind.False
+        return
+            value.TryGetProperty(name, out var property)
+            && property.ValueKind is JsonValueKind.True or JsonValueKind.False
             ? property.GetBoolean()
             : null;
     }
 
     private static double? Number(JsonElement value, string name)
     {
-        return value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.Number ? property.GetDouble() : null;
+        return
+            value.TryGetProperty(name, out var property)
+            && property.ValueKind == JsonValueKind.Number
+            ? property.GetDouble()
+            : null;
     }
 }

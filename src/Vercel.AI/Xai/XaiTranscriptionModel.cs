@@ -31,7 +31,11 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
     /// Creates a transcription model. <paramref name="modelId"/> is empty for xAI's default model.
     /// <paramref name="clock"/> sets the response timestamp (upstream <c>_internal.currentDate</c>) and defaults to UTC now.
     /// </summary>
-    public XaiTranscriptionModel(XaiProvider provider, string modelId = "", Func<DateTimeOffset>? clock = null)
+    public XaiTranscriptionModel(
+        XaiProvider provider,
+        string modelId = "",
+        Func<DateTimeOffset>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -68,15 +72,26 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
     /// <param name="serialized">The serialized model id and config.</param>
     /// <param name="apiKey">API key. Defaults to the <c>XAI_API_KEY</c> environment variable.</param>
     /// <param name="handler">HTTP handler. Pass one from tests.</param>
-    public static XaiTranscriptionModel Deserialize(SerializedModelOptions serialized, string? apiKey = null, HttpMessageHandler? handler = null)
+    public static XaiTranscriptionModel Deserialize(
+        SerializedModelOptions serialized,
+        string? apiKey = null,
+        HttpMessageHandler? handler = null
+    )
     {
         serialized = serialized ?? throw new ArgumentNullException(nameof(serialized));
         var options = new XaiOptions { ApiKey = apiKey };
-        if (serialized.Config.TryGetValue("baseURL", out var baseUrl) && baseUrl is string text && text.Length > 0)
+        if (
+            serialized.Config.TryGetValue("baseURL", out var baseUrl)
+            && baseUrl is string text
+            && text.Length > 0
+        )
         {
             options.BaseUrl = text;
         }
-        else if (serialized.Config.TryGetValue("baseURL", out var element) && element is JsonElement { ValueKind: JsonValueKind.String } json)
+        else if (
+            serialized.Config.TryGetValue("baseURL", out var element)
+            && element is JsonElement { ValueKind: JsonValueKind.String } json
+        )
         {
             options.BaseUrl = json.GetString()!;
         }
@@ -85,15 +100,31 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
     }
 
     /// <inheritdoc />
-    public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+    public async Task<TranscriptionResult> DoTranscribeAsync(
+        AudioInput audio,
+        CancellationToken cancellationToken
+    )
     {
         audio = audio ?? throw new ArgumentNullException(nameof(audio));
-        var result = await DoGenerateAsync(new TranscriptionModelCall(audio.Data, string.IsNullOrEmpty(audio.MediaType) ? "audio/wav" : audio.MediaType, OperationJson.Parse("{}"), new Dictionary<string, string>(), cancellationToken), cancellationToken).ConfigureAwait(false);
+        var result = await DoGenerateAsync(
+                new TranscriptionModelCall(
+                    audio.Data,
+                    string.IsNullOrEmpty(audio.MediaType) ? "audio/wav" : audio.MediaType,
+                    OperationJson.Parse("{}"),
+                    new Dictionary<string, string>(),
+                    cancellationToken
+                ),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return new TranscriptionResult(result.Text ?? string.Empty);
     }
 
     /// <inheritdoc />
-    public async Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
+    public async Task<TranscriptionModelResult> DoGenerateAsync(
+        TranscriptionModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var timestamp = _clock?.Invoke() ?? DateTimeOffset.UtcNow;
@@ -102,7 +133,12 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
 
         using var form = new MultipartFormDataContent();
         var fields = GetXaiSttParams(ModelId, xaiOptions);
-        fields.Add(("audio_format", xaiOptions?.AudioFormat is { } audioFormat ? new[] { audioFormat } : null));
+        fields.Add(
+            (
+                "audio_format",
+                xaiOptions?.AudioFormat is { } audioFormat ? new[] { audioFormat } : null
+            )
+        );
         fields.Add(("format", xaiOptions?.Format is { } format ? new[] { Bool(format) } : null));
         AppendXaiSttParams(fields, (name, value) => form.Add(new StringContent(value), name));
 
@@ -112,12 +148,17 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
         file.Headers.ContentType = MediaTypeHeaderValue.Parse(mediaType);
         form.Add(file, "file", "audio." + ProviderValues.MediaTypeToExtension(mediaType));
 
-        var response = await _provider.Http.SendBinaryAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "stt"),
-            form,
-            _provider.CreateHeaders(call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)),
-            cancellationToken).ConfigureAwait(false);
+        var response = await _provider
+            .Http.SendBinaryAsync(
+                HttpMethod.Post,
+                ApiKeys.Combine(_provider.Options.BaseUrl, "stt"),
+                form,
+                _provider.CreateHeaders(
+                    call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)
+                ),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
 
         var body = Encoding.UTF8.GetString(response.Body);
         JsonElement root;
@@ -128,43 +169,77 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
         }
         catch (JsonException)
         {
-            throw new InvalidResponseDataException(body, "Invalid xAI transcription response: the body is not valid JSON.");
+            throw new InvalidResponseDataException(
+                body,
+                "Invalid xAI transcription response: the body is not valid JSON."
+            );
         }
 
-        if (root.ValueKind != JsonValueKind.Object
-            || !root.TryGetProperty("text", out var textElement) || textElement.ValueKind != JsonValueKind.String)
+        if (
+            root.ValueKind != JsonValueKind.Object
+            || !root.TryGetProperty("text", out var textElement)
+            || textElement.ValueKind != JsonValueKind.String
+        )
         {
-            throw new InvalidResponseDataException(body, "Invalid xAI transcription response: expected text.");
+            throw new InvalidResponseDataException(
+                body,
+                "Invalid xAI transcription response: expected text."
+            );
         }
 
         var text = textElement.GetString()!;
         var responseWords = ReadWords(root, body);
-        var language = root.TryGetProperty("language", out var languageElement) && languageElement.ValueKind == JsonValueKind.String ? languageElement.GetString() : null;
-        double? duration = root.TryGetProperty("duration", out var durationElement) && durationElement.ValueKind == JsonValueKind.Number ? durationElement.GetDouble() : null;
+        var language =
+            root.TryGetProperty("language", out var languageElement)
+            && languageElement.ValueKind == JsonValueKind.String
+                ? languageElement.GetString()
+                : null;
+        double? duration =
+            root.TryGetProperty("duration", out var durationElement)
+            && durationElement.ValueKind == JsonValueKind.Number
+                ? durationElement.GetDouble()
+                : null;
 
         if (call.TimestampGranularities?.Contains("segment") == true)
         {
-            warnings.Add(new OperationWarning(
-                "unsupported",
-                feature: "timestampGranularities",
-                details: "xAI transcription returns word timings and does not provide separate caption segments."));
+            warnings.Add(
+                new OperationWarning(
+                    "unsupported",
+                    feature: "timestampGranularities",
+                    details: "xAI transcription returns word timings and does not provide separate caption segments."
+                )
+            );
         }
 
-        var words = responseWords?.Select(word => new TranscriptSegment(word.Text, word.Start, word.End)).ToList();
-        if (call.TimestampGranularities?.Contains("word") == true
+        var words = responseWords
+            ?.Select(word => new TranscriptSegment(word.Text, word.Start, word.End))
+            .ToList();
+        if (
+            call.TimestampGranularities?.Contains("word") == true
             && (words is null || words.Count == 0)
-            && text.Trim() != string.Empty)
+            && text.Trim() != string.Empty
+        )
         {
-            warnings.Add(new OperationWarning("other", message: "The xAI transcription response omitted the requested word timings."));
+            warnings.Add(
+                new OperationWarning(
+                    "other",
+                    message: "The xAI transcription response omitted the requested word timings."
+                )
+            );
         }
 
         JsonElement? providerMetadata = null;
         if (responseWords?.Any(word => word.Speaker is not null) == true)
         {
-            providerMetadata = JsonSerializer.SerializeToElement(new JsonObject
-            {
-                ["xai"] = new JsonObject { ["words"] = new JsonArray(responseWords.Select(word => word.Raw).ToArray()) },
-            });
+            providerMetadata = JsonSerializer.SerializeToElement(
+                new JsonObject
+                {
+                    ["xai"] = new JsonObject
+                    {
+                        ["words"] = new JsonArray(responseWords.Select(word => word.Raw).ToArray()),
+                    },
+                }
+            );
         }
 
         return new TranscriptionModelResult(
@@ -174,12 +249,21 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
             duration,
             warnings,
             providerMetadata,
-            new ProviderResponse(response.Headers, root, timestamp: timestamp.UtcDateTime, modelId: ModelId),
-            words is { Count: > 0 } ? words : null);
+            new ProviderResponse(
+                response.Headers,
+                root,
+                timestamp: timestamp.UtcDateTime,
+                modelId: ModelId
+            ),
+            words is { Count: > 0 } ? words : null
+        );
     }
 
     /// <inheritdoc />
-    public Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+    public Task<TranscriptionStreamStart?> DoStreamAsync(
+        TranscriptionStreamCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var timestamp = _clock?.Invoke() ?? DateTimeOffset.UtcNow;
@@ -191,31 +275,54 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
             throw new InvalidArgumentException(
                 "providerOptions",
                 null,
-                "providerOptions.xai.channels is required when providerOptions.xai.multichannel is true");
+                "providerOptions.xai.channels is required when providerOptions.xai.multichannel is true"
+            );
         }
 
         if (xaiOptions?.Format is not null)
         {
-            warnings.Add(new OperationWarning("unsupported", feature: "providerOptions.xai.format", details: "xAI streaming transcription does not support format."));
+            warnings.Add(
+                new OperationWarning(
+                    "unsupported",
+                    feature: "providerOptions.xai.format",
+                    details: "xAI streaming transcription does not support format."
+                )
+            );
         }
 
-        if (xaiOptions?.AudioFormat is null && !InputAudioFormatEncodings.Any(entry => entry.Type == call.InputAudioFormat.Type))
+        if (
+            xaiOptions?.AudioFormat is null
+            && !InputAudioFormatEncodings.Any(entry => entry.Type == call.InputAudioFormat.Type)
+        )
         {
-            warnings.Add(new OperationWarning(
-                "other",
-                message: "Unrecognized inputAudioFormat.type \"" + call.InputAudioFormat.Type + "\"; falling back to raw PCM encoding. Use "
-                    + string.Join(", ", InputAudioFormatEncodings.Select(entry => entry.Type))
-                    + ", or set providerOptions.xai.audioFormat explicitly."));
+            warnings.Add(
+                new OperationWarning(
+                    "other",
+                    message: "Unrecognized inputAudioFormat.type \""
+                        + call.InputAudioFormat.Type
+                        + "\"; falling back to raw PCM encoding. Use "
+                        + string.Join(", ", InputAudioFormatEncodings.Select(entry => entry.Type))
+                        + ", or set providerOptions.xai.audioFormat explicitly."
+                )
+            );
         }
 
         var url = BuildXaiStreamingTranscriptionUrl(call.InputAudioFormat, xaiOptions);
         var headers = _provider.CreateHeaders(call.Headers);
-        var session = new Session(call, warnings, xaiOptions?.Language, xaiOptions?.Multichannel == true ? xaiOptions.Channels!.Value : 1);
+        var session = new Session(
+            call,
+            warnings,
+            xaiOptions?.Language,
+            xaiOptions?.Multichannel == true ? xaiOptions.Channels!.Value : 1
+        );
         session.Start(url, headers, (_provider.Options as XaiOptions)?.WebSocket);
-        return Task.FromResult<TranscriptionStreamStart?>(new TranscriptionStreamStart(
-            new ModelPartStream(session.Queue, session.Cancel),
-            new ProviderResponse(timestamp: timestamp.UtcDateTime, modelId: ModelId),
-            new ProviderRequest(url.ToString())));
+        return Task.FromResult<TranscriptionStreamStart?>(
+            new TranscriptionStreamStart(
+                new ModelPartStream(session.Queue, session.Cancel),
+                new ProviderResponse(timestamp: timestamp.UtcDateTime, modelId: ModelId),
+                new ProviderRequest(url.ToString())
+            )
+        );
     }
 
     private static string Bool(bool value) => value ? "true" : "false";
@@ -223,24 +330,51 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
     private static string Number(double value) => value.ToString("R", CultureInfo.InvariantCulture);
 
     // Maps to `getXaiSttParams`. The model comes from `getXaiTranscriptionModelEntry(modelId).requestConfig.transcription.model`.
-    private List<(string Name, string[]? Values)> GetXaiSttParams(string modelId, XaiTranscriptionModelOptions? options)
+    private List<(string Name, string[]? Values)> GetXaiSttParams(
+        string modelId,
+        XaiTranscriptionModelOptions? options
+    )
     {
         return new List<(string, string[]?)>
         {
-            ("model", XaiModelCatalog.GetXaiTranscriptionModelEntry(modelId).Model is { } model ? new[] { model } : null),
-            ("sample_rate", options?.SampleRate is { } rate ? new[] { rate.ToString(CultureInfo.InvariantCulture) } : null),
+            (
+                "model",
+                XaiModelCatalog.GetXaiTranscriptionModelEntry(modelId).Model is { } model
+                    ? new[] { model }
+                    : null
+            ),
+            (
+                "sample_rate",
+                options?.SampleRate is { } rate
+                    ? new[] { rate.ToString(CultureInfo.InvariantCulture) }
+                    : null
+            ),
             ("language", options?.Language is { } language ? new[] { language } : null),
-            ("multichannel", options?.Multichannel is { } multichannel ? new[] { Bool(multichannel) } : null),
-            ("channels", options?.Channels is { } channels ? new[] { channels.ToString(CultureInfo.InvariantCulture) } : null),
+            (
+                "multichannel",
+                options?.Multichannel is { } multichannel ? new[] { Bool(multichannel) } : null
+            ),
+            (
+                "channels",
+                options?.Channels is { } channels
+                    ? new[] { channels.ToString(CultureInfo.InvariantCulture) }
+                    : null
+            ),
             ("diarize", options?.Diarize is { } diarize ? new[] { Bool(diarize) } : null),
-            ("filler_words", options?.FillerWords is { } fillerWords ? new[] { Bool(fillerWords) } : null),
+            (
+                "filler_words",
+                options?.FillerWords is { } fillerWords ? new[] { Bool(fillerWords) } : null
+            ),
             ("vad_threshold", options?.VadThreshold is { } vad ? new[] { Number(vad) } : null),
             ("keyterm", options?.Keyterm?.ToArray()),
         };
     }
 
     // Maps to `appendXaiSttParams`.
-    private static void AppendXaiSttParams(List<(string Name, string[]? Values)> parameters, Action<string, string> append)
+    private static void AppendXaiSttParams(
+        List<(string Name, string[]? Values)> parameters,
+        Action<string, string> append
+    )
     {
         foreach (var (name, values) in parameters)
         {
@@ -257,7 +391,10 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
     }
 
     // Maps to `buildXaiStreamingTranscriptionUrl`.
-    private Uri BuildXaiStreamingTranscriptionUrl(AudioFormat inputAudioFormat, XaiTranscriptionModelOptions? options)
+    private Uri BuildXaiStreamingTranscriptionUrl(
+        AudioFormat inputAudioFormat,
+        XaiTranscriptionModelOptions? options
+    )
     {
         var url = WebSocketUtils.ToWebSocketUrl(_provider.Options.BaseUrl.TrimEnd('/') + "/stt");
         var parameters = GetXaiSttParams(ModelId, options);
@@ -268,16 +405,45 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
         }
 
         var encoding = options?.AudioFormat
-            ?? InputAudioFormatEncodings.Where(entry => entry.Type == inputAudioFormat.Type).Select(entry => entry.Encoding).FirstOrDefault()
+            ?? InputAudioFormatEncodings
+                .Where(entry => entry.Type == inputAudioFormat.Type)
+                .Select(entry => entry.Encoding)
+                .FirstOrDefault()
             ?? "pcm";
         parameters.Add(("encoding", new[] { encoding }));
-        parameters.Add(("interim_results", options?.Streaming?.InterimResults is { } interim ? new[] { Bool(interim) } : null));
-        parameters.Add(("endpointing", options?.Streaming?.Endpointing is { } endpointing ? new[] { endpointing.ToString(CultureInfo.InvariantCulture) } : null));
-        parameters.Add(("smart_turn", options?.Streaming?.SmartTurn is { } smartTurn ? new[] { Number(smartTurn) } : null));
-        parameters.Add(("smart_turn_timeout", options?.Streaming?.SmartTurnTimeout is { } timeout ? new[] { timeout.ToString(CultureInfo.InvariantCulture) } : null));
+        parameters.Add(
+            (
+                "interim_results",
+                options?.Streaming?.InterimResults is { } interim ? new[] { Bool(interim) } : null
+            )
+        );
+        parameters.Add(
+            (
+                "endpointing",
+                options?.Streaming?.Endpointing is { } endpointing
+                    ? new[] { endpointing.ToString(CultureInfo.InvariantCulture) }
+                    : null
+            )
+        );
+        parameters.Add(
+            (
+                "smart_turn",
+                options?.Streaming?.SmartTurn is { } smartTurn ? new[] { Number(smartTurn) } : null
+            )
+        );
+        parameters.Add(
+            (
+                "smart_turn_timeout",
+                options?.Streaming?.SmartTurnTimeout is { } timeout
+                    ? new[] { timeout.ToString(CultureInfo.InvariantCulture) }
+                    : null
+            )
+        );
 
         var query = new List<string>();
-        AppendXaiSttParams(parameters, (name, value) => query.Add(FormEncode(name) + "=" + FormEncode(value)));
+        AppendXaiSttParams(parameters, (name, value) =>
+            query.Add(FormEncode(name) + "=" + FormEncode(value))
+        );
         return new UriBuilder(url) { Query = string.Join("&", query) }.Uri;
     }
 
@@ -330,25 +496,39 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
     // Maps to `xaiTranscriptionResponseSchema` words: text, start, end, and an optional speaker. Other keys are dropped.
     private static List<XaiWord>? ReadWords(JsonElement root, string body)
     {
-        if (!root.TryGetProperty("words", out var wordItems) || wordItems.ValueKind == JsonValueKind.Null)
+        if (
+            !root.TryGetProperty("words", out var wordItems)
+            || wordItems.ValueKind == JsonValueKind.Null
+        )
         {
             return null;
         }
 
         if (wordItems.ValueKind != JsonValueKind.Array)
         {
-            throw new InvalidResponseDataException(body, "Invalid xAI transcription response: words must be an array.");
+            throw new InvalidResponseDataException(
+                body,
+                "Invalid xAI transcription response: words must be an array."
+            );
         }
 
         var words = new List<XaiWord>();
         foreach (var item in wordItems.EnumerateArray())
         {
-            if (item.ValueKind != JsonValueKind.Object
-                || !item.TryGetProperty("text", out var text) || text.ValueKind != JsonValueKind.String
-                || !item.TryGetProperty("start", out var start) || start.ValueKind != JsonValueKind.Number
-                || !item.TryGetProperty("end", out var end) || end.ValueKind != JsonValueKind.Number)
+            if (
+                item.ValueKind != JsonValueKind.Object
+                || !item.TryGetProperty("text", out var text)
+                || text.ValueKind != JsonValueKind.String
+                || !item.TryGetProperty("start", out var start)
+                || start.ValueKind != JsonValueKind.Number
+                || !item.TryGetProperty("end", out var end)
+                || end.ValueKind != JsonValueKind.Number
+            )
             {
-                throw new InvalidResponseDataException(body, "Invalid xAI transcription response: a word is malformed.");
+                throw new InvalidResponseDataException(
+                    body,
+                    "Invalid xAI transcription response: a word is malformed."
+                );
             }
 
             var raw = new JsonObject
@@ -362,20 +542,34 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
             {
                 if (speakerElement.ValueKind is not (JsonValueKind.Number or JsonValueKind.Null))
                 {
-                    throw new InvalidResponseDataException(body, "Invalid xAI transcription response: a word speaker must be a number.");
+                    throw new InvalidResponseDataException(
+                        body,
+                        "Invalid xAI transcription response: a word speaker must be a number."
+                    );
                 }
 
-                speaker = speakerElement.ValueKind == JsonValueKind.Null ? null : JsonNode.Parse(speakerElement.GetRawText());
-                raw["speaker"] = speakerElement.ValueKind == JsonValueKind.Null ? null : JsonNode.Parse(speakerElement.GetRawText());
+                speaker =
+                    speakerElement.ValueKind == JsonValueKind.Null
+                        ? null
+                        : JsonNode.Parse(speakerElement.GetRawText());
+                raw["speaker"] =
+                    speakerElement.ValueKind == JsonValueKind.Null
+                        ? null
+                        : JsonNode.Parse(speakerElement.GetRawText());
             }
 
-            words.Add(new XaiWord(text.GetString()!, start.GetDouble(), end.GetDouble(), speaker, raw));
+            words.Add(
+                new XaiWord(text.GetString()!, start.GetDouble(), end.GetDouble(), speaker, raw)
+            );
         }
 
         return words;
     }
 
-    private static string? ChannelId(int? channelIndex) => channelIndex is null ? null : "channel-" + channelIndex.Value.ToString(CultureInfo.InvariantCulture);
+    private static string? ChannelId(int? channelIndex) =>
+        channelIndex is null
+            ? null
+            : "channel-" + channelIndex.Value.ToString(CultureInfo.InvariantCulture);
 
     // Maps to `createXaiStreamingTranscriptionStream`.
     private sealed class Session
@@ -385,18 +579,25 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
         private readonly string? _language;
         private readonly int _expectedDoneCount;
         private readonly object _gate = new object();
-        private readonly SortedDictionary<int, string> _doneTexts = new SortedDictionary<int, string>();
+        private readonly SortedDictionary<int, string> _doneTexts =
+            new SortedDictionary<int, string>();
 
         // Per-channel finalized utterances and latest revisable text, used to reconstruct the finish text (xAI's
         // `transcript.done` has empty text).
-        private readonly Dictionary<int, List<string>> _finalizedTexts = new Dictionary<int, List<string>>();
+        private readonly Dictionary<int, List<string>> _finalizedTexts =
+            new Dictionary<int, List<string>>();
         private readonly Dictionary<int, string> _pendingTexts = new Dictionary<int, string>();
         private WebSocketConnection? _connection;
         private AudioChunkReader? _reader;
         private bool _finished;
         private double? _doneDuration;
 
-        public Session(TranscriptionStreamCall call, IReadOnlyList<OperationWarning> warnings, string? language, int expectedDoneCount)
+        public Session(
+            TranscriptionStreamCall call,
+            IReadOnlyList<OperationWarning> warnings,
+            string? language,
+            int expectedDoneCount
+        )
         {
             _call = call;
             _warnings = warnings;
@@ -406,35 +607,47 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
 
         public PartQueue<ModelStreamPart> Queue { get; } = new PartQueue<ModelStreamPart>();
 
-        public void Start(Uri url, IReadOnlyDictionary<string, string?> headers, WebSocketFactory? webSocket)
+        public void Start(
+            Uri url,
+            IReadOnlyDictionary<string, string?> headers,
+            WebSocketFactory? webSocket
+        )
         {
-            _connection = ConnectToWebSocket.Connect(new ConnectToWebSocketOptions
-            {
-                Url = url,
-                Headers = headers,
-                WebSocket = webSocket,
-                AbortSignal = _call.CancellationToken,
-                AbortReason = _call.AbortReason,
-                OnAbort = FinishWithError,
-                OnProcessingError = FinishWithError,
-                OnMessageText = OnMessageTextAsync,
-                OnSocketError = () => FinishWithError(new AiSdkException(
-                    "xAI streaming transcription error."
-                    + (webSocket is null
-                        ? " Note: ClientWebSocket may not be able to send the Authorization header required by xAI on every runtime."
-                            + " Pass a header-capable WebSocket implementation via XaiOptions.WebSocket."
-                        : string.Empty))),
-                OnClose = (_, _) =>
+            _connection = ConnectToWebSocket.Connect(
+                new ConnectToWebSocketOptions
                 {
-                    if (!TryFinish())
+                    Url = url,
+                    Headers = headers,
+                    WebSocket = webSocket,
+                    AbortSignal = _call.CancellationToken,
+                    AbortReason = _call.AbortReason,
+                    OnAbort = FinishWithError,
+                    OnProcessingError = FinishWithError,
+                    OnMessageText = OnMessageTextAsync,
+                    OnSocketError = () =>
+                        FinishWithError(
+                            new AiSdkException(
+                                "xAI streaming transcription error."
+                                    + (
+                                        webSocket is null
+                                            ? " Note: ClientWebSocket may not be able to send the Authorization header required by xAI on every runtime."
+                                                + " Pass a header-capable WebSocket implementation via XaiOptions.WebSocket."
+                                            : string.Empty
+                                    )
+                            )
+                        ),
+                    OnClose = (_, _) =>
                     {
-                        return;
-                    }
+                        if (!TryFinish())
+                        {
+                            return;
+                        }
 
-                    Cleanup(null);
-                    Queue.Complete(null);
-                },
-            });
+                        Cleanup(null);
+                        Queue.Complete(null);
+                    },
+                }
+            );
         }
 
         public void Cancel()
@@ -528,14 +741,16 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
                 duration = _doneDuration;
             }
 
-            Queue.Enqueue(new ModelStreamPart
-            {
-                Type = "finish",
-                Text = text,
-                Segments = Array.Empty<TranscriptSegment>(),
-                Language = _language,
-                DurationInSeconds = duration,
-            });
+            Queue.Enqueue(
+                new ModelStreamPart
+                {
+                    Type = "finish",
+                    Text = text,
+                    Segments = Array.Empty<TranscriptSegment>(),
+                    Language = _language,
+                    DurationInSeconds = duration,
+                }
+            );
             Queue.Complete(null);
             Cleanup(1000);
         }
@@ -552,7 +767,9 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
             {
                 while (true)
                 {
-                    var bytes = await reader.ReadAsync(_call.CancellationToken).ConfigureAwait(false);
+                    var bytes = await reader
+                        .ReadAsync(_call.CancellationToken)
+                        .ConfigureAwait(false);
                     if (bytes is null || IsFinished)
                     {
                         break;
@@ -561,7 +778,12 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
                     socket.Send(bytes);
 
                     // Backpressure: pause reads while the socket buffer is full.
-                    await WebSocketUtils.WaitForWebSocketBufferDrainAsync(socket, cancellationToken: _call.CancellationToken).ConfigureAwait(false);
+                    await WebSocketUtils
+                        .WaitForWebSocketBufferDrainAsync(
+                            socket,
+                            cancellationToken: _call.CancellationToken
+                        )
+                        .ConfigureAwait(false);
                 }
             }
             finally
@@ -606,7 +828,9 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
             switch (ReadString(raw, "type"))
             {
                 case "transcript.created":
-                    Queue.Enqueue(new ModelStreamPart { Type = "stream-start", Warnings = _warnings });
+                    Queue.Enqueue(
+                        new ModelStreamPart { Type = "stream-start", Warnings = _warnings }
+                    );
                     var socket = _connection?.Socket;
                     if (socket is null)
                     {
@@ -614,7 +838,11 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
                         break;
                     }
 
-                    _ = SendAudioAsync(socket).ContinueWith(task => FinishWithError(task.Exception!.GetBaseException()), TaskContinuationOptions.OnlyOnFaulted);
+                    _ = SendAudioAsync(socket)
+                        .ContinueWith(
+                            task => FinishWithError(task.Exception!.GetBaseException()),
+                            TaskContinuationOptions.OnlyOnFaulted
+                        );
                     break;
 
                 case "transcript.partial":
@@ -632,13 +860,18 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
                             accumulated.AddRange(finalized);
                         }
 
-                        if (_pendingTexts.TryGetValue(doneChannel, out var pending) && pending.Length > 0)
+                        if (
+                            _pendingTexts.TryGetValue(doneChannel, out var pending)
+                            && pending.Length > 0
+                        )
                         {
                             accumulated.Add(pending);
                         }
 
                         var doneText = ReadString(raw, "text");
-                        _doneTexts[doneChannel] = string.IsNullOrEmpty(doneText) ? string.Join(" ", accumulated) : doneText!;
+                        _doneTexts[doneChannel] = string.IsNullOrEmpty(doneText)
+                            ? string.Join(" ", accumulated)
+                            : doneText!;
                         _doneDuration = ReadDouble(raw, "duration") ?? _doneDuration;
                     }
 
@@ -647,7 +880,9 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
 
                 case "error":
                     // xAI STT errors are terminal: surface the server message instead of letting the socket close mask it.
-                    FinishWithError(new AiSdkException(ReadString(raw, "message") ?? "xAI STT error"));
+                    FinishWithError(
+                        new AiSdkException(ReadString(raw, "message") ?? "xAI STT error")
+                    );
                     break;
             }
 
@@ -681,15 +916,18 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
                     _pendingTexts.Remove(channelIndex);
                 }
 
-                Queue.Enqueue(new ModelStreamPart
-                {
-                    Type = "transcript-final",
-                    Id = ChannelId(channel),
-                    Text = text ?? string.Empty,
-                    StartSecond = start,
-                    EndSecond = start is not null && duration is not null ? start + duration : null,
-                    ChannelIndex = channel,
-                });
+                Queue.Enqueue(
+                    new ModelStreamPart
+                    {
+                        Type = "transcript-final",
+                        Id = ChannelId(channel),
+                        Text = text ?? string.Empty,
+                        StartSecond = start,
+                        EndSecond =
+                            start is not null && duration is not null ? start + duration : null,
+                        ChannelIndex = channel,
+                    }
+                );
             }
             else
             {
@@ -698,36 +936,52 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
                     _pendingTexts[channelIndex] = text ?? string.Empty;
                 }
 
-                Queue.Enqueue(new ModelStreamPart
-                {
-                    Type = "transcript-partial",
-                    Id = ChannelId(channel),
-                    Text = text ?? string.Empty,
-                    StartSecond = start,
-                    DurationInSeconds = duration,
-                    ChannelIndex = channel,
-                });
+                Queue.Enqueue(
+                    new ModelStreamPart
+                    {
+                        Type = "transcript-partial",
+                        Id = ChannelId(channel),
+                        Text = text ?? string.Empty,
+                        StartSecond = start,
+                        DurationInSeconds = duration,
+                        ChannelIndex = channel,
+                    }
+                );
             }
         }
 
         private static string? ReadString(JsonElement element, string name)
         {
-            return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+            return
+                element.TryGetProperty(name, out var value)
+                && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
         }
 
         private static double? ReadDouble(JsonElement element, string name)
         {
-            return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number ? value.GetDouble() : null;
+            return
+                element.TryGetProperty(name, out var value)
+                && value.ValueKind == JsonValueKind.Number
+                ? value.GetDouble()
+                : null;
         }
 
         private static int? ReadInt(JsonElement element, string name)
         {
-            return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number) ? number : null;
+            return
+                element.TryGetProperty(name, out var value)
+                && value.ValueKind == JsonValueKind.Number
+                && value.TryGetInt32(out var number)
+                ? number
+                : null;
         }
 
         private static bool ReadBool(JsonElement element, string name)
         {
-            return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.True;
+            return element.TryGetProperty(name, out var value)
+                && value.ValueKind == JsonValueKind.True;
         }
     }
 }

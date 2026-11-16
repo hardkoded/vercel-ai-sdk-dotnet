@@ -26,7 +26,8 @@ public static class HostnameParts
             value,
             SingleLabelPattern,
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
-            TimeSpan.FromMilliseconds(100));
+            TimeSpan.FromMilliseconds(100)
+        );
         return match.Success && match.Value == value;
     }
 }

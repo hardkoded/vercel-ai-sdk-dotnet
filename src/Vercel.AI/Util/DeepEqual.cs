@@ -135,8 +135,16 @@ public static class DeepEqual
 
     private static bool IsNumber(object value)
     {
-        return value is byte || value is sbyte || value is short || value is ushort
-            || value is int || value is uint || value is long || value is ulong
-            || value is float || value is double || value is decimal;
+        return value is byte
+            || value is sbyte
+            || value is short
+            || value is ushort
+            || value is int
+            || value is uint
+            || value is long
+            || value is ulong
+            || value is float
+            || value is double
+            || value is decimal;
     }
 }

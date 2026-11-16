@@ -9,6 +9,4 @@ namespace Vercel.AI.Xai;
 /// <c>Record&lt;string, never&gt;</c>: there are no options yet. Maps to <c>XaiRealtimeModelOptions</c> of
 /// <c>xai-realtime-model-options.ts</c>.
 /// </summary>
-public sealed class XaiRealtimeModelOptions
-{
-}
+public sealed class XaiRealtimeModelOptions { }

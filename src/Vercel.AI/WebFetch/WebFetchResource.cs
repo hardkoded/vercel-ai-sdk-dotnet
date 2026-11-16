@@ -10,9 +10,7 @@ namespace Vercel.AI.WebFetch;
 
 internal sealed class WebFetchResourceResult
 {
-    private WebFetchResourceResult()
-    {
-    }
+    private WebFetchResourceResult() { }
 
     public bool IsSuccess { get; private init; }
 
@@ -30,14 +28,35 @@ internal sealed class WebFetchResourceResult
 
     public int? ErrorStatusCode { get; private init; }
 
-    public static WebFetchResourceResult Success(string finalUrl, int statusCode, string? contentType, byte[] body)
+    public static WebFetchResourceResult Success(
+        string finalUrl,
+        int statusCode,
+        string? contentType,
+        byte[] body
+    )
     {
-        return new WebFetchResourceResult { IsSuccess = true, FinalUrl = finalUrl, StatusCode = statusCode, ContentType = contentType, Body = body };
+        return new WebFetchResourceResult
+        {
+            IsSuccess = true,
+            FinalUrl = finalUrl,
+            StatusCode = statusCode,
+            ContentType = contentType,
+            Body = body,
+        };
     }
 
-    public static WebFetchResourceResult Error(string errorCode, string message, int? statusCode = null)
+    public static WebFetchResourceResult Error(
+        string errorCode,
+        string message,
+        int? statusCode = null
+    )
     {
-        return new WebFetchResourceResult { ErrorCode = errorCode, Message = message, ErrorStatusCode = statusCode };
+        return new WebFetchResourceResult
+        {
+            ErrorCode = errorCode,
+            Message = message,
+            ErrorStatusCode = statusCode,
+        };
     }
 }
 
@@ -59,7 +78,8 @@ internal static class WebFetchResource
         CancellationToken abortSignal,
         long maxBytes,
         DownloadFetch? fetch,
-        Func<Uri, bool> isDomainAllowed)
+        Func<Uri, bool> isDomainAllowed
+    )
     {
         var currentUrl = url;
 
@@ -69,7 +89,10 @@ internal static class WebFetchResource
             {
                 return WebFetchResourceResult.Error(
                     "url_not_allowed",
-                    redirectCount == 0 ? "The domain of the URL is not allowed." : "The URL redirected to a domain that is not allowed.");
+                    redirectCount == 0
+                        ? "The domain of the URL is not allowed."
+                        : "The URL redirected to a domain that is not allowed."
+                );
             }
 
             try
@@ -82,33 +105,46 @@ internal static class WebFetchResource
                     "url_not_allowed",
                     redirectCount == 0
                         ? "The URL points to a local, private, or reserved address, which is not allowed."
-                        : "The URL redirected to a local, private, or reserved address, which is not allowed.");
+                        : "The URL redirected to a local, private, or reserved address, which is not allowed."
+                );
             }
 
             DownloadResponse response;
             try
             {
-                response = await Download.FetchWithValidatedEndpointAsync(
-                    currentUrl,
-                    new DownloadRequest(headers, abortSignal, "manual") { MaxBytes = maxBytes },
-                    fetch,
-                    redirect: "manual").ConfigureAwait(false);
+                response = await Download
+                    .FetchWithValidatedEndpointAsync(
+                        currentUrl,
+                        new DownloadRequest(headers, abortSignal, "manual") { MaxBytes = maxBytes },
+                        fetch,
+                        redirect: "manual"
+                    )
+                    .ConfigureAwait(false);
             }
             catch (Exception error) when (!abortSignal.IsCancellationRequested)
             {
                 // The fetch rejects hostnames that resolve to private addresses with a DownloadError.
                 if (FindCause(error, DownloadError.IsInstance) != null)
                 {
-                    return WebFetchResourceResult.Error("url_not_allowed", "The URL resolves to a private or reserved address, which is not allowed.");
+                    return WebFetchResourceResult.Error(
+                        "url_not_allowed",
+                        "The URL resolves to a private or reserved address, which is not allowed."
+                    );
                 }
 
-                return WebFetchResourceResult.Error("network_error", "The request failed" + FormatErrorCode(error) + ".");
+                return WebFetchResourceResult.Error(
+                    "network_error",
+                    "The request failed" + FormatErrorCode(error) + "."
+                );
             }
 
             if (response.Type == "opaqueredirect")
             {
                 response.Cancel();
-                return WebFetchResourceResult.Error("network_error", "A redirect could not be validated and was blocked.");
+                return WebFetchResourceResult.Error(
+                    "network_error",
+                    "A redirect could not be validated and was blocked."
+                );
             }
 
             var location = response.Headers.Get("location");
@@ -117,7 +153,10 @@ internal static class WebFetchResource
                 response.Cancel();
                 if (!Uri.TryCreate(new Uri(currentUrl), location, out var next))
                 {
-                    return WebFetchResourceResult.Error("network_error", "A redirect could not be validated and was blocked.");
+                    return WebFetchResourceResult.Error(
+                        "network_error",
+                        "A redirect could not be validated and was blocked."
+                    );
                 }
 
                 currentUrl = next.AbsoluteUri;
@@ -132,25 +171,59 @@ internal static class WebFetchResource
                 return WebFetchResourceResult.Error(
                     "http_error",
                     challenged
-                        ? "The request was blocked by bot protection (HTTP " + response.Status + ")."
-                        : "The request failed with HTTP " + response.Status + (string.IsNullOrEmpty(response.StatusText) ? string.Empty : " " + response.StatusText) + ".",
-                    response.Status);
+                        ? "The request was blocked by bot protection (HTTP "
+                            + response.Status
+                            + ")."
+                        : "The request failed with HTTP "
+                            + response.Status
+                            + (
+                                string.IsNullOrEmpty(response.StatusText)
+                                    ? string.Empty
+                                    : " " + response.StatusText
+                            )
+                            + ".",
+                    response.Status
+                );
             }
 
             var body = response.Body ?? Array.Empty<byte>();
             long contentLength;
             var declared = response.Headers.Get("content-length");
-            if ((declared != null && long.TryParse(declared, NumberStyles.Integer, CultureInfo.InvariantCulture, out contentLength) && contentLength > maxBytes)
-                || body.LongLength > maxBytes)
+            if (
+                (
+                    declared != null
+                    && long.TryParse(
+                        declared,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out contentLength
+                    )
+                    && contentLength > maxBytes
+                )
+                || body.LongLength > maxBytes
+            )
             {
                 response.Cancel();
-                return WebFetchResourceResult.Error("too_large", "The response exceeds the maximum size of " + maxBytes.ToString(CultureInfo.InvariantCulture) + " bytes.");
+                return WebFetchResourceResult.Error(
+                    "too_large",
+                    "The response exceeds the maximum size of "
+                        + maxBytes.ToString(CultureInfo.InvariantCulture)
+                        + " bytes."
+                );
             }
 
-            return WebFetchResourceResult.Success(currentUrl, response.Status, response.Headers.Get("content-type"), body);
+            return WebFetchResourceResult.Success(
+                currentUrl,
+                response.Status,
+                response.Headers.Get("content-type"),
+                body
+            );
         }
 
-        return WebFetchResourceResult.Error("too_many_redirects", "The URL exceeded the maximum of " + MaxRedirects + " redirects.");
+        return WebFetchResourceResult.Error(
+            "too_many_redirects",
+            "The URL exceeded the maximum of " + MaxRedirects + " redirects."
+        );
     }
 
     private static bool IsRedirectStatus(int status)

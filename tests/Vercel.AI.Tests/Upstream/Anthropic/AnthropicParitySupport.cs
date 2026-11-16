@@ -28,14 +28,24 @@ internal static class AnthropicParity
         return document.RootElement.Clone();
     }
 
-    public static LanguageModelCallOptions WithProvider(string json, LanguageModelCallOptions? options = null)
+    public static LanguageModelCallOptions WithProvider(
+        string json,
+        LanguageModelCallOptions? options = null
+    )
     {
         options = options ?? Hello();
-        options.ProviderOptions = new Dictionary<string, JsonElement> { ["anthropic"] = Json(json) };
+        options.ProviderOptions = new Dictionary<string, JsonElement>
+        {
+            ["anthropic"] = Json(json),
+        };
         return options;
     }
 
-    public static AnthropicPreparedRequest Prepare(string model, LanguageModelCallOptions options, bool stream = false)
+    public static AnthropicPreparedRequest Prepare(
+        string model,
+        LanguageModelCallOptions options,
+        bool stream = false
+    )
     {
         return AnthropicMessagesRequest.Prepare(model, options, stream, "anthropic.messages");
     }
@@ -44,13 +54,17 @@ internal static class AnthropicParity
     {
         return new CaptureHandler
         {
-            ResponseBody = body ?? "{\"id\":\"msg_123\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-3-haiku-20240307\",\"content\":[{\"type\":\"text\",\"text\":\"Hi\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}",
+            ResponseBody = body
+                ?? "{\"id\":\"msg_123\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-3-haiku-20240307\",\"content\":[{\"type\":\"text\",\"text\":\"Hi\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}",
         };
     }
 
     public static AnthropicProvider Client(CaptureHandler handler, AnthropicOptions? options = null)
     {
-        return AnthropicProvider.Create(options ?? new AnthropicOptions { ApiKey = "test-api-key" }, handler);
+        return AnthropicProvider.Create(
+            options ?? new AnthropicOptions { ApiKey = "test-api-key" },
+            handler
+        );
     }
 
     public static AnthropicAwsProvider Aws(CaptureHandler handler, AnthropicOptions options)
@@ -58,9 +72,16 @@ internal static class AnthropicParity
         return AnthropicAwsProvider.Create(options, handler);
     }
 
-    public static async Task<LanguageModelGenerateResult> Generate(AnthropicProvider provider, string model, LanguageModelCallOptions? options = null)
+    public static async Task<LanguageModelGenerateResult> Generate(
+        AnthropicProvider provider,
+        string model,
+        LanguageModelCallOptions? options = null
+    )
     {
-        return await provider.LanguageModel(model).DoGenerateAsync(options ?? Hello(), CancellationToken.None).ConfigureAwait(false);
+        return await provider
+            .LanguageModel(model)
+            .DoGenerateAsync(options ?? Hello(), CancellationToken.None)
+            .ConfigureAwait(false);
     }
 
     public static void AssertCapability(
@@ -74,7 +95,8 @@ internal static class AnthropicParity
         bool rejectAboveHigh,
         bool rejectDisabled,
         bool rejectBudget,
-        bool rejectForced)
+        bool rejectForced
+    )
     {
         var caps = AnthropicModelCapabilities.Get(model);
         Assert.Equal(max, caps.MaxOutputTokens);
@@ -145,13 +167,18 @@ internal sealed class CaptureHandler : HttpMessageHandler
 
     public string ContentType { get; set; } = "application/json";
 
-    public Dictionary<string, string> Headers { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string> Headers { get; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-    public Dictionary<string, string> ResponseHeaders { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string> ResponseHeaders { get; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
     public List<string> Uris { get; } = new List<string>();
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         Calls++;
         Method = request.Method.Method;
@@ -199,14 +226,13 @@ internal sealed class CaptureHandler : HttpMessageHandler
 
 /// <summary>Keeps Anthropic parity tests from racing on environment variables.</summary>
 [CollectionDefinition("AnthropicParity", DisableParallelization = true)]
-public sealed class AnthropicParityCollection
-{
-}
+public sealed class AnthropicParityCollection { }
 
 /// <summary>Dispatches one upstream id to its assertion.</summary>
 internal static class AnthropicCases
 {
-    private static readonly Dictionary<string, Func<Task>> Map = new Dictionary<string, Func<Task>>();
+    private static readonly Dictionary<string, Func<Task>> Map =
+        new Dictionary<string, Func<Task>>();
 
     static AnthropicCases()
     {

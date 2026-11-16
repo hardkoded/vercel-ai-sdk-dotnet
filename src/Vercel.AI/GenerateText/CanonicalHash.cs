@@ -82,11 +82,15 @@ public static class CanonicalHash
                     properties.Add(property);
                 }
 
-                properties.Sort(static (left, right) => string.CompareOrdinal(left.Name, right.Name));
+                properties.Sort(
+                    static (left, right) => string.CompareOrdinal(left.Name, right.Name)
+                );
                 var parts = new List<string>(properties.Count);
                 foreach (var property in properties)
                 {
-                    parts.Add(JsonSerializer.Serialize(property.Name) + ":" + Write(property.Value));
+                    parts.Add(
+                        JsonSerializer.Serialize(property.Name) + ":" + Write(property.Value)
+                    );
                 }
 
                 return "{" + string.Join(",", parts) + "}";

@@ -12,12 +12,14 @@ namespace Vercel.AI.Tests.ParseToolCall;
 internal static class ParseToolCallFixture
 {
     /// <summary><c>z.object({ param1: z.string(), param2: z.number() })</c>.</summary>
-    public const string ParamsSchema = "{\"type\":\"object\",\"properties\":{\"param1\":{\"type\":\"string\"},\"param2\":{\"type\":\"number\"}},\"required\":[\"param1\",\"param2\"]}";
+    public const string ParamsSchema =
+        "{\"type\":\"object\",\"properties\":{\"param1\":{\"type\":\"string\"},\"param2\":{\"type\":\"number\"}},\"required\":[\"param1\",\"param2\"]}";
 
     /// <summary><c>z.object({})</c>.</summary>
     public const string EmptyObjectSchema = "{\"type\":\"object\",\"properties\":{}}";
 
-    public const string LocationSchema = "{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}},\"additionalProperties\":false}";
+    public const string LocationSchema =
+        "{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}},\"additionalProperties\":false}";
 
     public static Tool TestTool(string schema, string name = "testTool") =>
         Tool.Function(name, null, schema, (_, _) => Task.FromResult("null"));
@@ -26,10 +28,14 @@ internal static class ParseToolCallFixture
         GeneratedToolCall toolCall,
         IReadOnlyList<Tool>? tools,
         ToolCallRepairFunction? repairToolCall = null,
-        IReadOnlyDictionary<string, Func<JsonElement, CancellationToken, Task<JsonElement>>>? refineToolInput = null,
+        IReadOnlyDictionary<
+            string,
+            Func<JsonElement, CancellationToken, Task<JsonElement>>
+        >? refineToolInput = null,
         IReadOnlyList<ModelMessage>? messages = null,
         Instructions? instructions = null,
-        CancellationToken cancellationToken = default) =>
+        CancellationToken cancellationToken = default
+    ) =>
         ToolCallParser.ParseToolCallAsync(
             new ParseToolCallOptions(toolCall)
             {
@@ -39,7 +45,8 @@ internal static class ParseToolCallFixture
                 Messages = messages,
                 Instructions = instructions,
             },
-            cancellationToken);
+            cancellationToken
+        );
 
     public static JsonElement Json(string json)
     {

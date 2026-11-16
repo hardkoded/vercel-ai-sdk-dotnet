@@ -44,36 +44,58 @@ public sealed class FireworksImageModel : IImageModel
     public Func<DateTimeOffset>? Clock { get; set; }
 
     /// <inheritdoc />
-    public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+    public async Task<ImageGenerationResult> DoGenerateAsync(
+        ImageCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
         var warnings = new List<CallWarning>();
         var supportsSize = SupportsSize(ModelId);
         if (!supportsSize && !string.IsNullOrEmpty(options.Size))
         {
-            warnings.Add(new CallWarning("unsupported", "size", "This model does not support the `size` option. Use `aspectRatio` instead."));
+            warnings.Add(
+                new CallWarning(
+                    "unsupported",
+                    "size",
+                    "This model does not support the `size` option. Use `aspectRatio` instead."
+                )
+            );
         }
 
         if (supportsSize && !string.IsNullOrEmpty(options.AspectRatio))
         {
-            warnings.Add(new CallWarning("unsupported", "aspectRatio", "This model does not support the `aspectRatio` option."));
+            warnings.Add(
+                new CallWarning(
+                    "unsupported",
+                    "aspectRatio",
+                    "This model does not support the `aspectRatio` option."
+                )
+            );
         }
 
         if (options.Files != null && options.Files.Count > 1)
         {
-            warnings.Add(new CallWarning("other", "Fireworks only supports a single input image. Additional images are ignored."));
+            warnings.Add(
+                new CallWarning(
+                    "other",
+                    "Fireworks only supports a single input image. Additional images are ignored."
+                )
+            );
         }
 
         if (options.Mask != null)
         {
-            warnings.Add(new CallWarning("unsupported", "mask", "Fireworks Kontext models do not support explicit masks. Use the prompt to describe the areas to edit."));
+            warnings.Add(
+                new CallWarning(
+                    "unsupported",
+                    "mask",
+                    "Fireworks Kontext models do not support explicit masks. Use the prompt to describe the areas to edit."
+                )
+            );
         }
 
-        var body = new JsonObject
-        {
-            ["prompt"] = options.Prompt,
-            ["samples"] = options.Count,
-        };
+        var body = new JsonObject { ["prompt"] = options.Prompt, ["samples"] = options.Count };
         if (!string.IsNullOrEmpty(options.AspectRatio))
         {
             body["aspect_ratio"] = options.AspectRatio;
@@ -102,46 +124,78 @@ public sealed class FireworksImageModel : IImageModel
         var headers = _provider.CreateHeaders(options.Headers);
         if (IsAsync(ModelId))
         {
-            return await GenerateAsync(body, headers, warnings, timestamp, cancellationToken).ConfigureAwait(false);
+            return await GenerateAsync(body, headers, warnings, timestamp, cancellationToken)
+                .ConfigureAwait(false);
         }
 
-        var binary = await _provider.PostBinaryAsync(RequestUri(), body.ToJsonString(), headers, cancellationToken).ConfigureAwait(false);
+        var binary = await _provider
+            .PostBinaryAsync(RequestUri(), body.ToJsonString(), headers, cancellationToken)
+            .ConfigureAwait(false);
         if (binary.Body.Length == 0)
         {
             throw new ApiException("Response body is empty", binary.StatusCode, string.Empty);
         }
 
-        return new ImageGenerationResult(new[] { new GeneratedImage("image/png", binary.Body, null) }, warnings, new ImageResponseInfo(timestamp, ModelId, binary.Headers));
+        return new ImageGenerationResult(
+            new[] { new GeneratedImage("image/png", binary.Body, null) },
+            warnings,
+            new ImageResponseInfo(timestamp, ModelId, binary.Headers)
+        );
     }
 
-    private async Task<ImageGenerationResult> GenerateAsync(JsonObject body, Dictionary<string, string?> headers, IReadOnlyList<CallWarning> warnings, DateTimeOffset timestamp, CancellationToken cancellationToken)
+    private async Task<ImageGenerationResult> GenerateAsync(
+        JsonObject body,
+        Dictionary<string, string?> headers,
+        IReadOnlyList<CallWarning> warnings,
+        DateTimeOffset timestamp,
+        CancellationToken cancellationToken
+    )
     {
-        var submitted = await _provider.PostJsonAsync(RequestUri(), body.ToJsonString(), headers, cancellationToken).ConfigureAwait(false);
-        using var submit = JsonDocument.Parse(string.IsNullOrWhiteSpace(submitted.Body) ? "{}" : submitted.Body);
-        var requestId = submit.RootElement.TryGetProperty("request_id", out var idElement) ? idElement.GetString() : null;
+        var submitted = await _provider
+            .PostJsonAsync(RequestUri(), body.ToJsonString(), headers, cancellationToken)
+            .ConfigureAwait(false);
+        using var submit = JsonDocument.Parse(
+            string.IsNullOrWhiteSpace(submitted.Body) ? "{}" : submitted.Body
+        );
+        var requestId = submit.RootElement.TryGetProperty("request_id", out var idElement)
+            ? idElement.GetString()
+            : null;
         var pollBody = new JsonObject { ["id"] = requestId ?? string.Empty };
         var started = DateTime.UtcNow;
         while (true)
         {
             if (DateTime.UtcNow - started > PollTimeout)
             {
-                throw new AiSdkException("Fireworks image generation timed out after " + PollTimeout.TotalMilliseconds.ToString(CultureInfo.InvariantCulture) + "ms");
+                throw new AiSdkException(
+                    "Fireworks image generation timed out after "
+                        + PollTimeout.TotalMilliseconds.ToString(CultureInfo.InvariantCulture)
+                        + "ms"
+                );
             }
 
-            var poll = await _provider.PostJsonAsync(PollUri(), pollBody.ToJsonString(), headers, cancellationToken).ConfigureAwait(false);
-            using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(poll.Body) ? "{}" : poll.Body);
-            var status = document.RootElement.TryGetProperty("status", out var statusElement) ? statusElement.GetString() : null;
+            var poll = await _provider
+                .PostJsonAsync(PollUri(), pollBody.ToJsonString(), headers, cancellationToken)
+                .ConfigureAwait(false);
+            using var document = JsonDocument.Parse(
+                string.IsNullOrWhiteSpace(poll.Body) ? "{}" : poll.Body
+            );
+            var status = document.RootElement.TryGetProperty("status", out var statusElement)
+                ? statusElement.GetString()
+                : null;
             if (status == "Ready")
             {
-                var sample = document.RootElement.TryGetProperty("result", out var result)
+                var sample =
+                    document.RootElement.TryGetProperty("result", out var result)
                     && result.ValueKind == JsonValueKind.Object
                     && result.TryGetProperty("sample", out var sampleElement)
                     && sampleElement.ValueKind == JsonValueKind.String
-                    ? sampleElement.GetString()
-                    : null;
+                        ? sampleElement.GetString()
+                        : null;
                 if (string.IsNullOrEmpty(sample))
                 {
-                    throw new AiSdkException("Fireworks poll response is Ready but missing result.sample");
+                    throw new AiSdkException(
+                        "Fireworks poll response is Ready but missing result.sample"
+                    );
                 }
 
                 // The sample URL comes from the response body. Only send credentials to the provider's own origin.
@@ -151,13 +205,25 @@ public sealed class FireworksImageModel : IImageModel
                     DownloadUrls.ValidateDownloadUrl(sample!);
                 }
 
-                var image = await _provider.GetBinaryAsync(new Uri(sample!), sameOrigin ? headers : null, cancellationToken).ConfigureAwait(false);
-                return new ImageGenerationResult(new[] { new GeneratedImage("image/png", image.Body, sample) }, warnings, new ImageResponseInfo(timestamp, ModelId, image.Headers));
+                var image = await _provider
+                    .GetBinaryAsync(
+                        new Uri(sample!),
+                        sameOrigin ? headers : null,
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
+                return new ImageGenerationResult(
+                    new[] { new GeneratedImage("image/png", image.Body, sample) },
+                    warnings,
+                    new ImageResponseInfo(timestamp, ModelId, image.Headers)
+                );
             }
 
             if (status == "Error" || status == "Failed")
             {
-                throw new AiSdkException("Fireworks image generation failed with status: " + status);
+                throw new AiSdkException(
+                    "Fireworks image generation failed with status: " + status
+                );
             }
 
             await Task.Delay(PollInterval, cancellationToken).ConfigureAwait(false);
@@ -166,7 +232,11 @@ public sealed class FireworksImageModel : IImageModel
 
     private static void ValidateOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions)
     {
-        if (providerOptions == null || !providerOptions.TryGetValue("fireworks", out var options) || options.ValueKind != JsonValueKind.Object)
+        if (
+            providerOptions == null
+            || !providerOptions.TryGetValue("fireworks", out var options)
+            || options.ValueKind != JsonValueKind.Object
+        )
         {
             return;
         }
@@ -177,16 +247,26 @@ public sealed class FireworksImageModel : IImageModel
             var valid = property.Name switch
             {
                 "guidance_scale" or "cfg_scale" => value.ValueKind == JsonValueKind.Number,
-                "num_inference_steps" or "steps" => value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out _),
-                "output_format" => value.ValueKind == JsonValueKind.String && (value.GetString() == "jpeg" || value.GetString() == "png"),
+                "num_inference_steps" or "steps" => value.ValueKind == JsonValueKind.Number
+                    && value.TryGetInt64(out _),
+                "output_format" => value.ValueKind == JsonValueKind.String
+                    && (value.GetString() == "jpeg" || value.GetString() == "png"),
                 "webhook_url" or "webhook_secret" => value.ValueKind == JsonValueKind.String,
-                "prompt_upsampling" => value.ValueKind == JsonValueKind.True || value.ValueKind == JsonValueKind.False,
-                "safety_tolerance" => value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var tolerance) && tolerance >= 0 && tolerance <= 6,
+                "prompt_upsampling" => value.ValueKind == JsonValueKind.True
+                    || value.ValueKind == JsonValueKind.False,
+                "safety_tolerance" => value.ValueKind == JsonValueKind.Number
+                    && value.TryGetInt32(out var tolerance)
+                    && tolerance >= 0
+                    && tolerance <= 6,
                 _ => true,
             };
             if (!valid)
             {
-                throw new Operations.InvalidArgumentException("providerOptions", options.GetRawText(), "invalid fireworks provider options");
+                throw new Operations.InvalidArgumentException(
+                    "providerOptions",
+                    options.GetRawText(),
+                    "invalid fireworks provider options"
+                );
             }
         }
     }
@@ -209,7 +289,9 @@ public sealed class FireworksImageModel : IImageModel
 
     private Uri PollUri()
     {
-        return new Uri(_provider.Options.BaseUrl.TrimEnd('/') + "/workflows/" + ModelId + "/get_result");
+        return new Uri(
+            _provider.Options.BaseUrl.TrimEnd('/') + "/workflows/" + ModelId + "/get_result"
+        );
     }
 
     private static bool IsAsync(string modelId)
@@ -255,6 +337,9 @@ public sealed class FireworksImageModel : IImageModel
             return file.Url!;
         }
 
-        return "data:" + file.MediaType + ";base64," + Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
+        return "data:"
+            + file.MediaType
+            + ";base64,"
+            + Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
     }
 }

@@ -31,7 +31,10 @@ public static class ModelOptionsSerialization
     /// Copies JSON-serializable config values. A function-valued <c>headers</c> entry is invoked.
     /// Asynchronous headers throw <see cref="SerializationError"/>.
     /// </summary>
-    public static SerializedModelOptions SerializeModelOptions(string modelId, IReadOnlyDictionary<string, object?> config)
+    public static SerializedModelOptions SerializeModelOptions(
+        string modelId,
+        IReadOnlyDictionary<string, object?> config
+    )
     {
         if (config is null)
         {
@@ -84,7 +87,11 @@ public static class ModelOptionsSerialization
         var copy = new Dictionary<string, object?>();
         foreach (DictionaryEntry entry in dictionary)
         {
-            if (entry.Key is not string key || entry.Value is JsUndefined || !ProviderValues.IsJsonSerializable(entry.Value))
+            if (
+                entry.Key is not string key
+                || entry.Value is JsUndefined
+                || !ProviderValues.IsJsonSerializable(entry.Value)
+            )
             {
                 return null;
             }

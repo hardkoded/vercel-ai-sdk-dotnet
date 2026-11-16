@@ -12,7 +12,8 @@ namespace Vercel.AI.Tests.Upstream.Google.GoogleVertexAnthropicStructuredOutput;
 /// <summary>Port of <c>describe.each(['generate', 'stream'])('Vertex Anthropic structured output: %s')</c>.</summary>
 public sealed class VertexAnthropicStructuredOutputMethodTests
 {
-    private const string Prefix = "packages/google-vertex/src/anthropic/google-vertex-anthropic-structured-output.test.ts::Vertex Anthropic structured output: %s::";
+    private const string Prefix =
+        "packages/google-vertex/src/anthropic/google-vertex-anthropic-structured-output.test.ts::Vertex Anthropic structured output: %s::";
 
     public static IEnumerable<object[]> Cases()
     {
@@ -30,16 +31,29 @@ public sealed class VertexAnthropicStructuredOutputMethodTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    [UpstreamTest(Prefix + "$provider $mode preserves the schema and returned arguments", Coverage = UpstreamCoverage.Covered, Commit = "4b8f00efff97de78e52667359aa33267a1036c46", Note = "The 'anthropic' provider runs AnthropicProvider with a stub handler.")]
-    public async Task Preserves_the_schema_and_returned_arguments(string method, string provider, string mode)
+    [UpstreamTest(
+        Prefix + "$provider $mode preserves the schema and returned arguments",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "4b8f00efff97de78e52667359aa33267a1036c46",
+        Note = "The 'anthropic' provider runs AnthropicProvider with a stub handler."
+    )]
+    public async Task Preserves_the_schema_and_returned_arguments(
+        string method,
+        string provider,
+        string mode
+    )
     {
         var native = mode == "outputFormat" || (provider != "vertex" && mode == "auto");
         var handler = new Handler(method, native, Report);
-        var model = provider == "anthropic"
-            ? AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-key" }, handler).LanguageModel("claude-opus-5")
-            : Model("claude-opus-5", handler, provider == "vertex-opt-in");
+        var model =
+            provider == "anthropic"
+                ? AnthropicProvider
+                    .Create(new AnthropicOptions { ApiKey = "test-key" }, handler)
+                    .LanguageModel("claude-opus-5")
+                : Model("claude-opus-5", handler, provider == "vertex-opt-in");
 
-        var (content, _, parts) = await Call(model, method, Options(ReportSchema, mode)).ConfigureAwait(false);
+        var (content, _, parts) = await Call(model, method, Options(ReportSchema, mode))
+            .ConfigureAwait(false);
 
         if (method == "generate")
         {
@@ -63,7 +77,9 @@ public sealed class VertexAnthropicStructuredOutputMethodTests
         else
         {
             Assert.Null(request["output_config"]);
-            var tool = JsonNode.Parse("{\"name\":\"json\",\"description\":\"Respond with a JSON object.\"}")!;
+            var tool = JsonNode.Parse(
+                "{\"name\":\"json\",\"description\":\"Respond with a JSON object.\"}"
+            )!;
             tool["input_schema"] = JsonNode.Parse(ReportSchema);
             if (method == "stream")
             {
@@ -71,7 +87,12 @@ public sealed class VertexAnthropicStructuredOutputMethodTests
             }
 
             Assert.True(JsonNode.DeepEquals(new JsonArray(tool), request["tools"]));
-            Assert.True(JsonNode.DeepEquals(JsonNode.Parse("{\"type\":\"any\",\"disable_parallel_tool_use\":true}"), request["tool_choice"]));
+            Assert.True(
+                JsonNode.DeepEquals(
+                    JsonNode.Parse("{\"type\":\"any\",\"disable_parallel_tool_use\":true}"),
+                    request["tool_choice"]
+                )
+            );
         }
 
         if (provider != "anthropic")

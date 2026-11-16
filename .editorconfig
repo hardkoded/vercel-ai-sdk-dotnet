@@ -25,6 +25,9 @@ csharp_using_directive_placement = outside_namespace:warning
 file_header_template = Copyright 2023 Vercel, Inc.\nCopyright 2026 Darío Kondratiuk\nSPDX-License-Identifier: Apache-2.0
 dotnet_diagnostic.IDE0073.severity = warning
 
+# CSharpier owns formatting. IDE0055 (formatting rule) would fight its layout.
+dotnet_diagnostic.IDE0055.severity = none
+
 # xUnit forbids ConfigureAwait inside test methods. Library code still uses it.
 [tests/**.cs]
 dotnet_diagnostic.xUnit1030.severity = none

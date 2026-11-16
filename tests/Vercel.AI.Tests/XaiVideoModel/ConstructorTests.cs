@@ -9,10 +9,14 @@ namespace Vercel.AI.Tests.XaiVideoModel;
 /// <summary>Port of <c>xai-video-model.test.ts</c> &gt; <c>XaiVideoModel</c> &gt; <c>constructor</c>.</summary>
 public sealed class ConstructorTests
 {
-    private const string Id = "packages/xai/src/xai-video-model.test.ts::XaiVideoModel > constructor::";
+    private const string Id =
+        "packages/xai/src/xai-video-model.test.ts::XaiVideoModel > constructor::";
 
     [Fact]
-    [UpstreamTest(Id + "should expose correct provider and model information", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should expose correct provider and model information",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void ShouldExposeCorrectProviderAndModelInformation()
     {
         var model = CreateModel(new XaiVideoServer());
@@ -24,12 +28,16 @@ public sealed class ConstructorTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should send the grok-imagine-video-1.5 model id in the request body", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should send the grok-imagine-video-1.5 model id in the request body",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldSendTheGrokImagineVideo15ModelIdInTheRequestBody()
     {
         var server = new XaiVideoServer();
 
-        await CreateModel(server, modelId: "grok-imagine-video-1.5").DoStartAsync(Call(), CancellationToken.None);
+        await CreateModel(server, modelId: "grok-imagine-video-1.5")
+            .DoStartAsync(Call(), CancellationToken.None);
 
         AssertMatches("{\"model\":\"grok-imagine-video-1.5\"}", RequestBody(server));
     }

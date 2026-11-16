@@ -19,15 +19,21 @@ internal static class KlingAIProviderSupport
     internal const string ModelId = "kling-v2.6-motion-control";
 
     /// <summary>Sends a status request through the provider's video model and returns what the server saw.</summary>
-    internal static async Task<ParityCall> SendAsync(KlingAIVideoModelSupport.Server server, OpenAICompatibleOptions? options)
+    internal static async Task<ParityCall> SendAsync(
+        KlingAIVideoModelSupport.Server server,
+        OpenAICompatibleOptions? options
+    )
     {
         var provider = KlingAIProviderType.Create(options, server.Handler);
-        await ((KlingAIVideoModelType)provider.Video(ModelId)).DoStatusAsync(KlingAIVideoModelSupport.Status(), CancellationToken.None).ConfigureAwait(false);
+        await ((KlingAIVideoModelType)provider.Video(ModelId))
+            .DoStatusAsync(KlingAIVideoModelSupport.Status(), CancellationToken.None)
+            .ConfigureAwait(false);
         return Assert.Single(server.Calls);
     }
 
     internal static async Task<ParityCall> SendAsync(OpenAICompatibleOptions? options)
     {
-        return await SendAsync(new KlingAIVideoModelSupport.Server(), options).ConfigureAwait(false);
+        return await SendAsync(new KlingAIVideoModelSupport.Server(), options)
+            .ConfigureAwait(false);
     }
 }

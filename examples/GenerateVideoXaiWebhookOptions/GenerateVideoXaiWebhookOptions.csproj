@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <Description>Passes a webhook to a provider without webhook support, so the SDK falls back to polling.</Description>
-  </PropertyGroup>
+    <PropertyGroup>
+        <Description>Passes a webhook to a provider without webhook support, so the SDK falls back to polling.</Description>
+    </PropertyGroup>
 </Project>

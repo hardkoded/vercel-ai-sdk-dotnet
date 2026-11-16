@@ -10,7 +10,10 @@ namespace Vercel.AI.ProviderUtils;
 /// <summary>Maps reasoning levels onto provider effort and token budgets.</summary>
 public static class ReasoningMap
 {
-    private static readonly Dictionary<string, double> DefaultBudgetPercentages = new Dictionary<string, double>
+    private static readonly Dictionary<string, double> DefaultBudgetPercentages = new Dictionary<
+        string,
+        double
+    >
     {
         { "minimal", 0.02 },
         { "low", 0.1 },
@@ -20,15 +23,31 @@ public static class ReasoningMap
         { "max", 0.95 },
     };
 
-    private static readonly string[] ReasoningLevels = ["minimal", "low", "medium", "high", "xhigh", "max"];
+    private static readonly string[] ReasoningLevels =
+    [
+        "minimal",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+    ];
 
     /// <summary>Converts a warning produced while mapping reasoning into a call warning that keeps its feature.</summary>
     internal static CallWarning? ToCallWarning(ModelWarning warning)
     {
         return warning switch
         {
-            UnsupportedWarning unsupported => new CallWarning(unsupported.Type, unsupported.Feature, unsupported.Details),
-            CompatibilityWarning compatibility => new CallWarning(compatibility.Type, compatibility.Feature, compatibility.Details),
+            UnsupportedWarning unsupported => new CallWarning(
+                unsupported.Type,
+                unsupported.Feature,
+                unsupported.Details
+            ),
+            CompatibilityWarning compatibility => new CallWarning(
+                compatibility.Type,
+                compatibility.Feature,
+                compatibility.Details
+            ),
             _ => null,
         };
     }
@@ -46,7 +65,8 @@ public static class ReasoningMap
     public static string? MapReasoningToProviderEffort(
         string reasoning,
         IReadOnlyDictionary<string, string> effortMap,
-        IList<ModelWarning> warnings)
+        IList<ModelWarning> warnings
+    )
     {
         if (effortMap is null)
         {
@@ -82,15 +102,27 @@ public static class ReasoningMap
 
         if (mapped is null)
         {
-            warnings.Add(new UnsupportedWarning("reasoning", "reasoning \"" + reasoning + "\" is not supported by this model."));
+            warnings.Add(
+                new UnsupportedWarning(
+                    "reasoning",
+                    "reasoning \"" + reasoning + "\" is not supported by this model."
+                )
+            );
             return null;
         }
 
         if (mapped != reasoning)
         {
-            warnings.Add(new CompatibilityWarning(
-                "reasoning",
-                "reasoning \"" + reasoning + "\" is not directly supported by this model. mapped to effort \"" + mapped + "\"."));
+            warnings.Add(
+                new CompatibilityWarning(
+                    "reasoning",
+                    "reasoning \""
+                        + reasoning
+                        + "\" is not directly supported by this model. mapped to effort \""
+                        + mapped
+                        + "\"."
+                )
+            );
         }
 
         return mapped;
@@ -103,7 +135,8 @@ public static class ReasoningMap
         int maxReasoningBudget,
         IList<ModelWarning> warnings,
         int minReasoningBudget = 1024,
-        IReadOnlyDictionary<string, double>? budgetPercentages = null)
+        IReadOnlyDictionary<string, double>? budgetPercentages = null
+    )
     {
         if (warnings is null)
         {
@@ -114,7 +147,12 @@ public static class ReasoningMap
         double pct;
         if (!percentages.TryGetValue(reasoning, out pct))
         {
-            warnings.Add(new UnsupportedWarning("reasoning", "reasoning \"" + reasoning + "\" is not supported by this model."));
+            warnings.Add(
+                new UnsupportedWarning(
+                    "reasoning",
+                    "reasoning \"" + reasoning + "\" is not supported by this model."
+                )
+            );
             return null;
         }
 

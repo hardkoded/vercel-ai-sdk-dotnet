@@ -16,7 +16,12 @@ namespace Vercel.AI.Tests.BlackForestLabsImageModel;
 /// <summary>One request seen by <see cref="BlackForestLabsServer"/>.</summary>
 internal sealed class BlackForestLabsCall
 {
-    public BlackForestLabsCall(HttpMethod method, string url, string body, IReadOnlyDictionary<string, string> headers)
+    public BlackForestLabsCall(
+        HttpMethod method,
+        string url,
+        string body,
+        IReadOnlyDictionary<string, string> headers
+    )
     {
         Method = method;
         Url = url;
@@ -49,25 +54,48 @@ internal sealed class BlackForestLabsServer : HttpMessageHandler
 {
     public BlackForestLabsServer()
     {
-        const string submit = "{\"id\":\"req-123\",\"polling_url\":\"https://api.example.com/poll\"}";
-        foreach (var model in new[] { "flux-2-pro", "flux-3-image", "flux-3-image-klein", "flux-pro-1.0-fill", "flux-kontext-pro" })
+        const string submit =
+            "{\"id\":\"req-123\",\"polling_url\":\"https://api.example.com/poll\"}";
+        foreach (
+            var model in new[]
+            {
+                "flux-2-pro",
+                "flux-3-image",
+                "flux-3-image-klein",
+                "flux-pro-1.0-fill",
+                "flux-kontext-pro",
+            }
+        )
         {
             Json("https://api.example.com/v1/" + model, submit);
         }
 
-        Json("https://api.example.com/poll", "{\"status\":\"Ready\",\"result\":{\"sample\":\"https://api.example.com/image.png\"}}");
-        Json("https://api.example.com/v1/get_result", "{\"id\":\"req-123\",\"status\":\"Ready\",\"result\":{\"sample\":\"https://api.example.com/image.png\"}}");
+        Json(
+            "https://api.example.com/poll",
+            "{\"status\":\"Ready\",\"result\":{\"sample\":\"https://api.example.com/image.png\"}}"
+        );
+        Json(
+            "https://api.example.com/v1/get_result",
+            "{\"id\":\"req-123\",\"status\":\"Ready\",\"result\":{\"sample\":\"https://api.example.com/image.png\"}}"
+        );
         Binary("https://api.example.com/image.png");
         Binary("https://cdn.evil.example/image.png");
-        Json("https://api.bfl.ai/v1/flux-2-pro", "{\"id\":\"req-123\",\"polling_url\":\"https://api.us1.bfl.ai/v1/get_result\"}");
-        Json("https://api.us1.bfl.ai/v1/get_result", "{\"status\":\"Ready\",\"result\":{\"sample\":\"https://delivery-us1.bfl.ai/image.png\"}}");
+        Json(
+            "https://api.bfl.ai/v1/flux-2-pro",
+            "{\"id\":\"req-123\",\"polling_url\":\"https://api.us1.bfl.ai/v1/get_result\"}"
+        );
+        Json(
+            "https://api.us1.bfl.ai/v1/get_result",
+            "{\"status\":\"Ready\",\"result\":{\"sample\":\"https://delivery-us1.bfl.ai/image.png\"}}"
+        );
         Binary("https://delivery-us1.bfl.ai/image.png");
         Binary("https://api.bfl.ai/image.png");
     }
 
     public List<BlackForestLabsCall> Calls { get; } = new List<BlackForestLabsCall>();
 
-    public Dictionary<string, Func<CancellationToken, Task<HttpResponseMessage>>> Urls { get; } = new Dictionary<string, Func<CancellationToken, Task<HttpResponseMessage>>>();
+    public Dictionary<string, Func<CancellationToken, Task<HttpResponseMessage>>> Urls { get; } =
+        new Dictionary<string, Func<CancellationToken, Task<HttpResponseMessage>>>();
 
     public void Json(string url, string body)
     {
@@ -76,23 +104,35 @@ internal sealed class BlackForestLabsServer : HttpMessageHandler
 
     public void Respond(string url, int status, string body)
     {
-        Urls[url] = _ => Task.FromResult(new HttpResponseMessage((HttpStatusCode)status)
-        {
-            Content = new StringContent(body, Encoding.UTF8, "application/json"),
-        });
+        Urls[url] = _ =>
+            Task.FromResult(
+                new HttpResponseMessage((HttpStatusCode)status)
+                {
+                    Content = new StringContent(body, Encoding.UTF8, "application/json"),
+                }
+            );
     }
 
     public void Binary(string url)
     {
-        Urls[url] = _ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new ByteArrayContent(Encoding.UTF8.GetBytes("test-binary-content")),
-        });
+        Urls[url] = _ =>
+            Task.FromResult(
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new ByteArrayContent(Encoding.UTF8.GetBytes("test-binary-content")),
+                }
+            );
     }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
-        var body = request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+        var body =
+            request.Content == null
+                ? string.Empty
+                : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
         var headers = new Dictionary<string, string>();
         foreach (var header in request.Headers)
         {
@@ -135,7 +175,8 @@ internal static class BlackForestLabsImageModelFixture
         Func<DateTimeOffset>? currentDate = null,
         int? pollIntervalMillis = null,
         int? pollTimeoutMillis = null,
-        string baseUrl = "https://api.example.com/v1")
+        string baseUrl = "https://api.example.com/v1"
+    )
     {
         var options = new OpenAICompatibleOptions { BaseUrl = baseUrl, ApiKey = "test-key" };
         if (headers != null)
@@ -146,7 +187,12 @@ internal static class BlackForestLabsImageModelFixture
             }
         }
 
-        var provider = Vercel.AI.BlackForestLabs.BlackForestLabsProvider.Create(options, server, pollIntervalMillis, pollTimeoutMillis);
+        var provider = Vercel.AI.BlackForestLabs.BlackForestLabsProvider.Create(
+            options,
+            server,
+            pollIntervalMillis,
+            pollTimeoutMillis
+        );
         return new Model(provider, modelId, currentDate);
     }
 
@@ -158,11 +204,15 @@ internal static class BlackForestLabsImageModelFixture
         string? size = null,
         string? aspectRatio = null,
         int? seed = null,
-        IReadOnlyDictionary<string, string>? headers = null)
+        IReadOnlyDictionary<string, string>? headers = null
+    )
     {
-        var providerOptions = blackForestLabs == null
-            ? JsonDocument.Parse("{}").RootElement.Clone()
-            : JsonDocument.Parse("{\"blackForestLabs\":" + blackForestLabs + "}").RootElement.Clone();
+        var providerOptions =
+            blackForestLabs == null
+                ? JsonDocument.Parse("{}").RootElement.Clone()
+                : JsonDocument
+                    .Parse("{\"blackForestLabs\":" + blackForestLabs + "}")
+                    .RootElement.Clone();
         return new ImageModelCall(
             PromptText,
             files,
@@ -173,7 +223,8 @@ internal static class BlackForestLabsImageModelFixture
             seed,
             providerOptions,
             headers ?? new Dictionary<string, string>(),
-            CancellationToken.None);
+            CancellationToken.None
+        );
     }
 
     public static ImageModelFile PngFile(string content)
@@ -190,12 +241,17 @@ internal static class BlackForestLabsImageModelFixture
     {
         var expectedNode = JsonNode.Parse(expected);
         var actualNode = JsonNode.Parse(actual ?? "null");
-        Assert.True(JsonNode.DeepEquals(expectedNode, actualNode), "Expected " + expectedNode!.ToJsonString() + " but was " + actualNode?.ToJsonString());
+        Assert.True(
+            JsonNode.DeepEquals(expectedNode, actualNode),
+            "Expected " + expectedNode!.ToJsonString() + " but was " + actualNode?.ToJsonString()
+        );
     }
 
     public static JsonNode? Metadata(ImageModelResult result)
     {
-        return JsonNode.Parse(result.ProviderMetadata!.Value.GetRawText())!["blackForestLabs"]!["images"]![0];
+        return JsonNode.Parse(result.ProviderMetadata!.Value.GetRawText())!["blackForestLabs"]![
+            "images"
+        ]![0];
     }
 
     public static (string Type, string? Feature, string? Details) Warning(OperationWarning warning)

@@ -17,10 +17,21 @@ public sealed class OpenAIBatchWebSearchStatusWithActionTests
     [InlineData(true, "incomplete")]
     [InlineData(false, "failed")]
     [InlineData(false, "incomplete")]
-    [UpstreamTest("packages/openai/src/openai-batch.test.ts::OpenAI batch service > batch result lifecycle > web search status with action: %s::preserves %s web search tool errors in successful batch responses", Coverage = UpstreamCoverage.Covered)]
-    public async Task Preserves_web_search_tool_errors_in_successful_batch_responses(bool withAction, string status)
+    [UpstreamTest(
+        "packages/openai/src/openai-batch.test.ts::OpenAI batch service > batch result lifecycle > web search status with action: %s::preserves %s web search tool errors in successful batch responses",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Preserves_web_search_tool_errors_in_successful_batch_responses(
+        bool withAction,
+        string status
+    )
     {
-        var webSearch = new JsonObject { ["type"] = "web_search_call", ["id"] = "ws_test", ["status"] = status };
+        var webSearch = new JsonObject
+        {
+            ["type"] = "web_search_call",
+            ["id"] = "ws_test",
+            ["status"] = status,
+        };
         if (withAction)
         {
             webSearch["action"] = new JsonObject { ["type"] = "search", ["query"] = "AI SDK" };
@@ -28,7 +39,10 @@ public sealed class OpenAIBatchWebSearchStatusWithActionTests
 
         var handler = new RoutedHandler()
             .Add(BatchUrl, BatchResponse(outputFileId: "file-output"))
-            .Add(OutputUrl, ResultLine("web-search", WithOutput(ResponsesResultBody(string.Empty), webSearch)));
+            .Add(
+                OutputUrl,
+                ResultLine("web-search", WithOutput(ResponsesResultBody(string.Empty), webSearch))
+            );
 
         var item = Assert.Single(await GetResultsAsync(handler));
 

@@ -26,7 +26,11 @@ public sealed class ResolvableTelemetryAttribute
     private readonly Func<object?>? _resolve;
     private readonly Func<Task<object?>>? _resolveAsync;
 
-    private ResolvableTelemetryAttribute(bool input, Func<object?>? resolve, Func<Task<object?>>? resolveAsync)
+    private ResolvableTelemetryAttribute(
+        bool input,
+        Func<object?>? resolve,
+        Func<Task<object?>>? resolveAsync
+    )
     {
         _input = input;
         _resolve = resolve;
@@ -172,7 +176,9 @@ public static class TelemetryAttributes
 
     /// <summary>Drops entries that <see cref="SanitizeValue"/> rejects. A null map returns an empty map.</summary>
     /// <param name="attributes">Attributes to sanitize.</param>
-    public static IReadOnlyDictionary<string, object?> Sanitize(IReadOnlyDictionary<string, object?>? attributes)
+    public static IReadOnlyDictionary<string, object?> Sanitize(
+        IReadOnlyDictionary<string, object?>? attributes
+    )
     {
         var result = new Dictionary<string, object?>(StringComparer.Ordinal);
         if (attributes == null)
@@ -204,7 +210,8 @@ public static class TelemetryAttributes
     /// <param name="attributes">Literal values and <see cref="ResolvableTelemetryAttribute"/> callbacks.</param>
     public static IReadOnlyDictionary<string, object?> SelectAttributes(
         TelemetrySelection? telemetry,
-        IReadOnlyDictionary<string, object?>? attributes)
+        IReadOnlyDictionary<string, object?>? attributes
+    )
     {
         if (telemetry?.IsEnabled == false || attributes == null)
         {
@@ -239,7 +246,8 @@ public static class TelemetryAttributes
     public static async Task<IReadOnlyDictionary<string, object?>> SelectTelemetryAttributesAsync(
         TelemetrySelection? telemetry,
         IReadOnlyDictionary<string, object?>? attributes,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         if (telemetry?.IsEnabled == false || attributes == null)
         {
@@ -282,7 +290,11 @@ public static class TelemetryAttributes
         return result;
     }
 
-    private static bool TryResolve(TelemetrySelection? telemetry, object? value, out object? resolved)
+    private static bool TryResolve(
+        TelemetrySelection? telemetry,
+        object? value,
+        out object? resolved
+    )
     {
         resolved = null;
         if (value == null)
@@ -336,7 +348,18 @@ public static class TelemetryAttributes
 
     private static bool IsNumber(object value)
     {
-        return value is byte or sbyte or short or ushort or int or uint or long or ulong or float or double or decimal;
+        return value
+            is byte
+                or sbyte
+                or short
+                or ushort
+                or int
+                or uint
+                or long
+                or ulong
+                or float
+                or double
+                or decimal;
     }
 
     private static bool IsNonFinite(object value)

@@ -20,5 +20,6 @@ public sealed class DataObject
     public object Constructor { get; set; }
 
     /// <summary>Own properties. Inherited names are not stored here.</summary>
-    public Dictionary<string, object> Properties { get; } = new Dictionary<string, object>(StringComparer.Ordinal);
+    public Dictionary<string, object> Properties { get; } =
+        new Dictionary<string, object>(StringComparer.Ordinal);
 }

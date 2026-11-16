@@ -35,21 +35,46 @@ public sealed class Agent
     /// <paramref name="timeout"/> replaces <see cref="AgentOptions.Timeout"/> and the timeout that <see cref="AgentOptions.PrepareCall"/> returns for this call. Maps to <c>timeout</c> of <c>generate</c>.
     /// <paramref name="experimentalSteering"/> adds user messages to the run at the next step boundary and is not passed to <see cref="AgentOptions.PrepareCall"/>. Maps to <c>experimental_steering</c>.
     /// </summary>
-    public Task<GenerateTextResult> GenerateAsync(string prompt, CancellationToken cancellationToken = default, TimeoutConfiguration? timeout = null, ISteering? experimentalSteering = null)
+    public Task<GenerateTextResult> GenerateAsync(
+        string prompt,
+        CancellationToken cancellationToken = default,
+        TimeoutConfiguration? timeout = null,
+        ISteering? experimentalSteering = null
+    )
     {
-        return GenerateAsync(CreateOptions(prompt, null), cancellationToken, timeout, experimentalSteering);
+        return GenerateAsync(
+            CreateOptions(prompt, null),
+            cancellationToken,
+            timeout,
+            experimentalSteering
+        );
     }
 
     /// <summary>
     /// Generates a reply to <paramref name="messages"/>. System messages in <paramref name="messages"/> are rejected unless
     /// <see cref="AgentOptions.AllowSystemInMessages"/> is set. Maps to <c>messages</c> of <c>generate</c>.
     /// </summary>
-    public Task<GenerateTextResult> GenerateAsync(IReadOnlyList<ModelMessage> messages, CancellationToken cancellationToken = default, TimeoutConfiguration? timeout = null, ISteering? experimentalSteering = null)
+    public Task<GenerateTextResult> GenerateAsync(
+        IReadOnlyList<ModelMessage> messages,
+        CancellationToken cancellationToken = default,
+        TimeoutConfiguration? timeout = null,
+        ISteering? experimentalSteering = null
+    )
     {
-        return GenerateAsync(CreateOptions(null, messages ?? throw new ArgumentNullException(nameof(messages))), cancellationToken, timeout, experimentalSteering);
+        return GenerateAsync(
+            CreateOptions(null, messages ?? throw new ArgumentNullException(nameof(messages))),
+            cancellationToken,
+            timeout,
+            experimentalSteering
+        );
     }
 
-    private Task<GenerateTextResult> GenerateAsync(GenerateTextOptions call, CancellationToken cancellationToken, TimeoutConfiguration? timeout, ISteering? experimentalSteering)
+    private Task<GenerateTextResult> GenerateAsync(
+        GenerateTextOptions call,
+        CancellationToken cancellationToken,
+        TimeoutConfiguration? timeout,
+        ISteering? experimentalSteering
+    )
     {
         var prepared = Prepare(call);
         if (timeout != null || experimentalSteering != null)
@@ -67,66 +92,99 @@ public sealed class Agent
     /// <paramref name="timeout"/> replaces <see cref="AgentOptions.Timeout"/> and the timeout that <see cref="AgentOptions.PrepareCall"/> returns for this call. Maps to <c>timeout</c> of <c>stream</c>.
     /// <paramref name="experimentalSteering"/> adds user messages to the run at the next step boundary and is not passed to <see cref="AgentOptions.PrepareCall"/>. Maps to <c>experimental_steering</c>.
     /// </summary>
-    public StreamTextResult Stream(string prompt, CancellationToken cancellationToken = default, Vercel.AI.Util.AbortSignal? abortSignal = null, TimeoutConfiguration? timeout = null, ISteering? experimentalSteering = null)
+    public StreamTextResult Stream(
+        string prompt,
+        CancellationToken cancellationToken = default,
+        Vercel.AI.Util.AbortSignal? abortSignal = null,
+        TimeoutConfiguration? timeout = null,
+        ISteering? experimentalSteering = null
+    )
     {
-        return Stream(CreateOptions(prompt, null), cancellationToken, abortSignal, timeout, experimentalSteering);
+        return Stream(
+            CreateOptions(prompt, null),
+            cancellationToken,
+            abortSignal,
+            timeout,
+            experimentalSteering
+        );
     }
 
     /// <summary>
     /// Streams a reply to <paramref name="messages"/>. System messages in <paramref name="messages"/> are rejected unless
     /// <see cref="AgentOptions.AllowSystemInMessages"/> is set. Maps to <c>messages</c> of <c>stream</c>.
     /// </summary>
-    public StreamTextResult Stream(IReadOnlyList<ModelMessage> messages, CancellationToken cancellationToken = default, Vercel.AI.Util.AbortSignal? abortSignal = null, TimeoutConfiguration? timeout = null, ISteering? experimentalSteering = null)
+    public StreamTextResult Stream(
+        IReadOnlyList<ModelMessage> messages,
+        CancellationToken cancellationToken = default,
+        Vercel.AI.Util.AbortSignal? abortSignal = null,
+        TimeoutConfiguration? timeout = null,
+        ISteering? experimentalSteering = null
+    )
     {
-        return Stream(CreateOptions(null, messages ?? throw new ArgumentNullException(nameof(messages))), cancellationToken, abortSignal, timeout, experimentalSteering);
+        return Stream(
+            CreateOptions(null, messages ?? throw new ArgumentNullException(nameof(messages))),
+            cancellationToken,
+            abortSignal,
+            timeout,
+            experimentalSteering
+        );
     }
 
-    private StreamTextResult Stream(GenerateTextOptions call, CancellationToken cancellationToken, Vercel.AI.Util.AbortSignal? abortSignal, TimeoutConfiguration? timeout, ISteering? experimentalSteering)
+    private StreamTextResult Stream(
+        GenerateTextOptions call,
+        CancellationToken cancellationToken,
+        Vercel.AI.Util.AbortSignal? abortSignal,
+        TimeoutConfiguration? timeout,
+        ISteering? experimentalSteering
+    )
     {
         var prepared = Prepare(call);
-        return _client.StreamTextAsync(new StreamTextOptions
-        {
-            Model = prepared.Model,
-            ModelId = prepared.ModelId,
-            System = prepared.System,
-            Instructions = prepared.Instructions,
-            Prompt = prepared.Prompt,
-            Messages = prepared.Messages,
-            AllowSystemInMessages = prepared.AllowSystemInMessages,
-            Tools = prepared.Tools,
-            ActiveTools = prepared.ActiveTools,
-            ToolCallConcurrency = prepared.ToolCallConcurrency,
-            ToolChoice = prepared.ToolChoice,
-            StopWhen = prepared.StopWhen,
-            Output = prepared.Output,
-            MaxOutputTokens = prepared.MaxOutputTokens,
-            Temperature = prepared.Temperature,
-            TopP = prepared.TopP,
-            TopK = prepared.TopK,
-            PresencePenalty = prepared.PresencePenalty,
-            FrequencyPenalty = prepared.FrequencyPenalty,
-            StopSequences = prepared.StopSequences,
-            Seed = prepared.Seed,
-            Reasoning = prepared.Reasoning,
-            MaxRetries = prepared.MaxRetries,
-            Timeout = timeout ?? prepared.Timeout,
-            Headers = prepared.Headers,
-            ProviderOptions = prepared.ProviderOptions,
-            PrepareStep = prepared.PrepareStep,
-            ExperimentalSteering = experimentalSteering ?? prepared.ExperimentalSteering,
-            OnStepEnd = prepared.OnStepEnd,
-            OnFinish = prepared.OnFinish,
-            OnError = prepared.OnError,
-            ToolApproval = prepared.ToolApproval,
-            ExperimentalToolApprovalSecret = prepared.ExperimentalToolApprovalSecret,
-            ExperimentalToolApprovalSecretBytes = prepared.ExperimentalToolApprovalSecretBytes,
+        return _client.StreamTextAsync(
+            new StreamTextOptions
+            {
+                Model = prepared.Model,
+                ModelId = prepared.ModelId,
+                System = prepared.System,
+                Instructions = prepared.Instructions,
+                Prompt = prepared.Prompt,
+                Messages = prepared.Messages,
+                AllowSystemInMessages = prepared.AllowSystemInMessages,
+                Tools = prepared.Tools,
+                ActiveTools = prepared.ActiveTools,
+                ToolCallConcurrency = prepared.ToolCallConcurrency,
+                ToolChoice = prepared.ToolChoice,
+                StopWhen = prepared.StopWhen,
+                Output = prepared.Output,
+                MaxOutputTokens = prepared.MaxOutputTokens,
+                Temperature = prepared.Temperature,
+                TopP = prepared.TopP,
+                TopK = prepared.TopK,
+                PresencePenalty = prepared.PresencePenalty,
+                FrequencyPenalty = prepared.FrequencyPenalty,
+                StopSequences = prepared.StopSequences,
+                Seed = prepared.Seed,
+                Reasoning = prepared.Reasoning,
+                MaxRetries = prepared.MaxRetries,
+                Timeout = timeout ?? prepared.Timeout,
+                Headers = prepared.Headers,
+                ProviderOptions = prepared.ProviderOptions,
+                PrepareStep = prepared.PrepareStep,
+                ExperimentalSteering = experimentalSteering ?? prepared.ExperimentalSteering,
+                OnStepEnd = prepared.OnStepEnd,
+                OnFinish = prepared.OnFinish,
+                OnError = prepared.OnError,
+                ToolApproval = prepared.ToolApproval,
+                ExperimentalToolApprovalSecret = prepared.ExperimentalToolApprovalSecret,
+                ExperimentalToolApprovalSecretBytes = prepared.ExperimentalToolApprovalSecretBytes,
 #pragma warning disable CS0618
-            RepairToolCall = prepared.RepairToolCall ?? prepared.ExperimentalRepairToolCall,
+                RepairToolCall = prepared.RepairToolCall ?? prepared.ExperimentalRepairToolCall,
 #pragma warning restore CS0618
-            RefineToolInput = prepared.RefineToolInput,
-            AbortSignal = abortSignal,
-            OnAbort = Options.OnAbort,
-        }, cancellationToken);
+                RefineToolInput = prepared.RefineToolInput,
+                AbortSignal = abortSignal,
+                OnAbort = Options.OnAbort,
+            },
+            cancellationToken
+        );
     }
 
     private GenerateTextOptions Prepare(GenerateTextOptions call)
@@ -198,7 +256,10 @@ public sealed class AgentOptions
     public ToolCallRepairFunction? RepairToolCall { get; set; }
 
     /// <summary>Refines the parsed input of tool calls. See <see cref="GenerateTextOptions.RefineToolInput"/>. <see cref="PrepareCall"/> can replace it.</summary>
-    public IReadOnlyDictionary<string, Func<JsonElement, CancellationToken, Task<JsonElement>>>? RefineToolInput { get; set; }
+    public IReadOnlyDictionary<
+        string,
+        Func<JsonElement, CancellationToken, Task<JsonElement>>
+    >? RefineToolInput { get; set; }
 
     /// <summary>
     /// Timeout of each <see cref="Agent.GenerateAsync(string, CancellationToken, TimeoutConfiguration?, ISteering?)"/> and <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?)"/> call. See <see cref="GenerateTextOptions.Timeout"/>.
@@ -223,7 +284,9 @@ public sealed class AgentOptions
 /// </summary>
 public sealed class ProviderRegistry
 {
-    private readonly Dictionary<string, ProviderBase> _providers = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, ProviderBase> _providers = new(
+        StringComparer.OrdinalIgnoreCase
+    );
     private readonly string _separator;
 
     /// <summary>Creates a registry. <paramref name="separator"/> splits the provider id from the model id.</summary>
@@ -254,50 +317,68 @@ public sealed class ProviderRegistry
     /// <summary>Resolves <c>provider:model</c> to a language model.</summary>
     public ILanguageModel LanguageModel(string providerAndModel)
     {
-        var model = Model(providerAndModel, "languageModel", (provider, modelId) => provider.LanguageModel(modelId));
-        return LanguageModelMiddleware is { Count: > 0 } middleware ? model.WrapLanguageModel(middleware.ToArray()) : model;
+        var model = Model(providerAndModel, "languageModel", (provider, modelId) =>
+            provider.LanguageModel(modelId)
+        );
+        return LanguageModelMiddleware is { Count: > 0 } middleware
+            ? model.WrapLanguageModel(middleware.ToArray())
+            : model;
     }
 
     /// <summary>Resolves <c>provider:model</c> to an embedding model.</summary>
     public IEmbeddingModel EmbeddingModel(string providerAndModel)
     {
-        return Model(providerAndModel, "embeddingModel", (provider, modelId) => provider.EmbeddingModel(modelId));
+        return Model(providerAndModel, "embeddingModel", (provider, modelId) =>
+            provider.EmbeddingModel(modelId)
+        );
     }
 
     /// <summary>Resolves <c>provider:model</c> to an image model.</summary>
     public IImageModel ImageModel(string providerAndModel)
     {
-        return Model(providerAndModel, "imageModel", (provider, modelId) => provider.ImageModel(modelId));
+        return Model(providerAndModel, "imageModel", (provider, modelId) =>
+            provider.ImageModel(modelId)
+        );
     }
 
     /// <summary>Resolves <c>provider:model</c> to a transcription model.</summary>
     public ITranscriptionModel TranscriptionModel(string providerAndModel)
     {
-        return Model(providerAndModel, "transcriptionModel", (provider, modelId) => provider.TranscriptionModel(modelId));
+        return Model(providerAndModel, "transcriptionModel", (provider, modelId) =>
+            provider.TranscriptionModel(modelId)
+        );
     }
 
     /// <summary>Resolves <c>provider:model</c> to a speech model.</summary>
     public ISpeechModel SpeechModel(string providerAndModel)
     {
-        return Model(providerAndModel, "speechModel", (provider, modelId) => provider.SpeechModel(modelId));
+        return Model(providerAndModel, "speechModel", (provider, modelId) =>
+            provider.SpeechModel(modelId)
+        );
     }
 
     /// <summary>Resolves <c>provider:model</c> to a reranking model.</summary>
     public IRerankingModel RerankingModel(string providerAndModel)
     {
-        return Model(providerAndModel, "rerankingModel", (provider, modelId) => provider.RerankingModel(modelId));
+        return Model(providerAndModel, "rerankingModel", (provider, modelId) =>
+            provider.RerankingModel(modelId)
+        );
     }
 
     /// <summary>Resolves <c>provider:model</c> to a video model.</summary>
     public IVideoModel VideoModel(string providerAndModel)
     {
-        return Model(providerAndModel, "videoModel", (provider, modelId) => provider.VideoModel(modelId));
+        return Model(providerAndModel, "videoModel", (provider, modelId) =>
+            provider.VideoModel(modelId)
+        );
     }
 
     /// <summary>Resolves <c>provider:model</c> to a model that scores a candidate against a rubric.</summary>
     public IRubricModel RubricModel(string providerAndModel)
     {
-        return Model(providerAndModel, "rubricModel", (provider, modelId) => provider.RubricModel(modelId));
+        return Model(providerAndModel, "rubricModel", (provider, modelId) =>
+            provider.RubricModel(modelId)
+        );
     }
 
     /// <summary>
@@ -306,7 +387,9 @@ public sealed class ProviderRegistry
     /// </summary>
     public Operations.IDecisionCaller DecisionModel(string providerAndModel)
     {
-        return Operations.DecisionModels.Validate(Model(providerAndModel, "decisionModel", Operations.DecisionModels.FromProvider));
+        return Operations.DecisionModels.Validate(
+            Model(providerAndModel, "decisionModel", Operations.DecisionModels.FromProvider)
+        );
     }
 
     /// <summary>
@@ -343,18 +426,34 @@ public sealed class ProviderRegistry
         var index = id.IndexOf(_separator, StringComparison.Ordinal);
         if (index < 0)
         {
-            throw new NoSuchModelError(id, modelType, "Invalid " + modelType + " id for registry: " + id + " (must be in the format \"providerId" + _separator + "modelId\")");
+            throw new NoSuchModelError(
+                id,
+                modelType,
+                "Invalid "
+                    + modelType
+                    + " id for registry: "
+                    + id
+                    + " (must be in the format \"providerId"
+                    + _separator
+                    + "modelId\")"
+            );
         }
 
         var provider = Provider(id.Substring(0, index), modelType);
-        return create(provider, id.Substring(index + _separator.Length)) ?? throw new NoSuchModelError(id, modelType);
+        return create(provider, id.Substring(index + _separator.Length))
+            ?? throw new NoSuchModelError(id, modelType);
     }
 
     private ProviderBase Provider(string providerId, string modelType)
     {
         return _providers.TryGetValue(providerId, out var provider)
             ? provider
-            : throw new NoSuchProviderError(providerId, modelType, providerId, _providers.Keys.ToList());
+            : throw new NoSuchProviderError(
+                providerId,
+                modelType,
+                providerId,
+                _providers.Keys.ToList()
+            );
     }
 }
 
@@ -367,19 +466,23 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
     private readonly Dictionary<string, ILanguageModel> _language = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IEmbeddingModel> _embedding = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IImageModel> _image = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, ITranscriptionModel> _transcription = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, ITranscriptionModel> _transcription = new(
+        StringComparer.Ordinal
+    );
     private readonly Dictionary<string, ISpeechModel> _speech = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IRerankingModel> _reranking = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IVideoModel> _video = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IRubricModel> _rubric = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, Func<Operations.IDecisionCaller>> _decision = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, Func<Operations.IDecisionCaller>> _legacyDecision = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Func<Operations.IDecisionCaller>> _decision = new(
+        StringComparer.Ordinal
+    );
+    private readonly Dictionary<string, Func<Operations.IDecisionCaller>> _legacyDecision = new(
+        StringComparer.Ordinal
+    );
 
     /// <summary>Creates a custom provider.</summary>
     public CustomProvider(string name = "custom")
-        : base(name)
-    {
-    }
+        : base(name) { }
 
     /// <summary>Provider asked for model ids that are not registered here.</summary>
     public ProviderBase? FallbackProvider { get; set; }
@@ -489,7 +592,9 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
             throw new ArgumentNullException(nameof(providerModelId));
         }
 
-        return Add(_decision, modelId, () => Operations.DecisionModels.Resolve(null, providerModelId));
+        return Add(_decision, modelId, () =>
+            Operations.DecisionModels.Resolve(null, providerModelId)
+        );
     }
 
     /// <summary>
@@ -506,13 +611,17 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
-        return Find(_language, modelId, "languageModel", fallback => fallback.LanguageModel(modelId));
+        return Find(_language, modelId, "languageModel", fallback =>
+            fallback.LanguageModel(modelId)
+        );
     }
 
     /// <inheritdoc />
     public override IEmbeddingModel EmbeddingModel(string modelId)
     {
-        return Find(_embedding, modelId, "embeddingModel", fallback => fallback.EmbeddingModel(modelId));
+        return Find(_embedding, modelId, "embeddingModel", fallback =>
+            fallback.EmbeddingModel(modelId)
+        );
     }
 
     /// <inheritdoc />
@@ -524,7 +633,9 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
     /// <inheritdoc />
     public override ITranscriptionModel TranscriptionModel(string modelId)
     {
-        return Find(_transcription, modelId, "transcriptionModel", fallback => fallback.TranscriptionModel(modelId));
+        return Find(_transcription, modelId, "transcriptionModel", fallback =>
+            fallback.TranscriptionModel(modelId)
+        );
     }
 
     /// <inheritdoc />
@@ -536,7 +647,9 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
     /// <inheritdoc />
     public override IRerankingModel RerankingModel(string modelId)
     {
-        return Find(_reranking, modelId, "rerankingModel", fallback => fallback.RerankingModel(modelId));
+        return Find(_reranking, modelId, "rerankingModel", fallback =>
+            fallback.RerankingModel(modelId)
+        );
     }
 
     /// <inheritdoc />
@@ -558,7 +671,11 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
     public Operations.IDecisionCaller DecisionModel(string modelId)
     {
         var models = _decision.Count > 0 ? _decision : _legacyDecision;
-        var factory = Find(models, modelId, "decisionModel", fallback => Operations.DecisionModels.FromProvider(fallback, modelId) is { } found ? () => found : null);
+        var factory = Find(models, modelId, "decisionModel", fallback =>
+            Operations.DecisionModels.FromProvider(fallback, modelId) is { } found
+                ? () => found
+                : null
+        );
         return Operations.DecisionModels.Validate(factory());
     }
 
@@ -601,7 +718,12 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
     }
 
     // A fallback that returns null has no such model.
-    private T Find<T>(Dictionary<string, T> models, string modelId, string modelType, Func<ProviderBase, T?> fallback)
+    private T Find<T>(
+        Dictionary<string, T> models,
+        string modelId,
+        string modelType,
+        Func<ProviderBase, T?> fallback
+    )
         where T : class
     {
         if (models.TryGetValue(modelId, out var model))
@@ -609,6 +731,7 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
             return model;
         }
 
-        return (FallbackProvider == null ? null : fallback(FallbackProvider)) ?? throw new NoSuchModelError(modelId, modelType);
+        return (FallbackProvider == null ? null : fallback(FallbackProvider))
+            ?? throw new NoSuchModelError(modelId, modelType);
     }
 }

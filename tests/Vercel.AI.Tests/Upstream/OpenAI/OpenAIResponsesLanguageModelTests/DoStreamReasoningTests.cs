@@ -13,8 +13,10 @@ namespace Vercel.AI.Tests.OpenAIResponsesLanguageModelTests;
 /// <summary>Port of <c>openai-responses-language-model.test.ts</c> &gt; <c>OpenAIResponsesLanguageModel &gt; doStream &gt; reasoning</c>.</summary>
 public sealed class DoStreamReasoningTests
 {
-    private const string Prefix = "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doStream > reasoning::";
-    private const string Note = "Asserts the reasoning parts (ids and provider metadata). The upstream inline snapshot also lists the stream-start, response-metadata, text and finish parts.";
+    private const string Prefix =
+        "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doStream > reasoning::";
+    private const string Note =
+        "Asserts the reasoning parts (ids and provider metadata). The upstream inline snapshot also lists the stream-start, response-metadata, text and finish parts.";
     private const string Rs = "rs_6808709f6fcc8191ad2e2fdd784017b3";
 
     [Fact]
@@ -23,8 +25,16 @@ public sealed class DoStreamReasoningTests
     {
         var parts = await Run(
             "{\"reasoningEffort\":\"low\",\"reasoningSummary\":\"auto\"}",
-            Added(0, Rs), SummaryAdded(Rs, 0), SummaryDelta(Rs, 0, "first"), SummaryDelta(Rs, 0, "part"), SummaryDone(Rs, 0),
-            SummaryAdded(Rs, 1), SummaryDelta(Rs, 1, "second"), SummaryDone(Rs, 1), Done(0, Rs));
+            Added(0, Rs),
+            SummaryAdded(Rs, 0),
+            SummaryDelta(Rs, 0, "first"),
+            SummaryDelta(Rs, 0, "part"),
+            SummaryDone(Rs, 0),
+            SummaryAdded(Rs, 1),
+            SummaryDelta(Rs, 1, "second"),
+            SummaryDone(Rs, 1),
+            Done(0, Rs)
+        );
 
         Assert.Equal(
             new[]
@@ -37,18 +47,28 @@ public sealed class DoStreamReasoningTests
                 $"reasoning-delta {Rs}:1 item={Rs} second",
                 $"reasoning-end {Rs}:1 item={Rs} enc=null",
             },
-            parts);
+            parts
+        );
     }
 
     [Fact]
     [UpstreamTest(Prefix + "should handle reasoning with empty summary", Note = Note)]
     public async Task Handles_reasoning_with_empty_summary()
     {
-        var parts = await Run("{\"reasoningEffort\":\"low\",\"reasoningSummary\":null}", Added(0, Rs), Done(0, Rs));
+        var parts = await Run(
+            "{\"reasoningEffort\":\"low\",\"reasoningSummary\":null}",
+            Added(0, Rs),
+            Done(0, Rs)
+        );
 
         Assert.Equal(
-            new[] { $"reasoning-start {Rs}:0 item={Rs} enc=null", $"reasoning-end {Rs}:0 item={Rs} enc=null" },
-            parts);
+            new[]
+            {
+                $"reasoning-start {Rs}:0 item={Rs} enc=null",
+                $"reasoning-end {Rs}:0 item={Rs} enc=null",
+            },
+            parts
+        );
     }
 
     [Fact]
@@ -57,8 +77,15 @@ public sealed class DoStreamReasoningTests
     {
         var parts = await Run(
             "{\"reasoningEffort\":\"low\",\"reasoningSummary\":\"auto\",\"include\":[\"reasoning.encrypted_content\"]}",
-            Added(0, Rs, "encrypted_reasoning_data_abc123"), SummaryAdded(Rs, 0), SummaryDelta(Rs, 0, "first"), SummaryDone(Rs, 0),
-            SummaryAdded(Rs, 1), SummaryDelta(Rs, 1, "second"), SummaryDone(Rs, 1), Done(0, Rs, "encrypted_reasoning_data_final_def456"));
+            Added(0, Rs, "encrypted_reasoning_data_abc123"),
+            SummaryAdded(Rs, 0),
+            SummaryDelta(Rs, 0, "first"),
+            SummaryDone(Rs, 0),
+            SummaryAdded(Rs, 1),
+            SummaryDelta(Rs, 1, "second"),
+            SummaryDone(Rs, 1),
+            Done(0, Rs, "encrypted_reasoning_data_final_def456")
+        );
 
         Assert.Equal(
             new[]
@@ -70,7 +97,8 @@ public sealed class DoStreamReasoningTests
                 $"reasoning-delta {Rs}:1 item={Rs} second",
                 $"reasoning-end {Rs}:1 item={Rs} enc=encrypted_reasoning_data_final_def456",
             },
-            parts);
+            parts
+        );
     }
 
     [Fact]
@@ -79,7 +107,9 @@ public sealed class DoStreamReasoningTests
     {
         var parts = await Run(
             "{\"reasoningEffort\":\"low\",\"reasoningSummary\":null,\"include\":[\"reasoning.encrypted_content\"]}",
-            Added(0, Rs, "encrypted_reasoning_data_abc123"), Done(0, Rs, "encrypted_reasoning_data_final_def456"));
+            Added(0, Rs, "encrypted_reasoning_data_abc123"),
+            Done(0, Rs, "encrypted_reasoning_data_final_def456")
+        );
 
         Assert.Equal(
             new[]
@@ -87,7 +117,8 @@ public sealed class DoStreamReasoningTests
                 $"reasoning-start {Rs}:0 item={Rs} enc=encrypted_reasoning_data_abc123",
                 $"reasoning-end {Rs}:0 item={Rs} enc=encrypted_reasoning_data_final_def456",
             },
-            parts);
+            parts
+        );
     }
 
     [Fact]
@@ -98,9 +129,20 @@ public sealed class DoStreamReasoningTests
         const string second = "rs_second_7908809g7gcc9291be3e3fee895028c4";
         var parts = await Run(
             "{\"reasoningEffort\":\"medium\",\"reasoningSummary\":\"auto\"}",
-            Added(0, first), SummaryAdded(first, 0), SummaryDelta(first, 0, "a"), SummaryDone(first, 0),
-            SummaryAdded(first, 1), SummaryDelta(first, 1, "b"), SummaryDone(first, 1), Done(0, first),
-            Added(2, second), SummaryAdded(second, 0), SummaryDelta(second, 0, "c"), SummaryDone(second, 0), Done(2, second));
+            Added(0, first),
+            SummaryAdded(first, 0),
+            SummaryDelta(first, 0, "a"),
+            SummaryDone(first, 0),
+            SummaryAdded(first, 1),
+            SummaryDelta(first, 1, "b"),
+            SummaryDone(first, 1),
+            Done(0, first),
+            Added(2, second),
+            SummaryAdded(second, 0),
+            SummaryDelta(second, 0, "c"),
+            SummaryDone(second, 0),
+            Done(2, second)
+        );
 
         Assert.Equal(
             new[]
@@ -115,7 +157,8 @@ public sealed class DoStreamReasoningTests
                 $"reasoning-delta {second}:0 item={second} c",
                 $"reasoning-end {second}:0 item={second} enc=null",
             },
-            parts);
+            parts
+        );
     }
 
     [Fact]
@@ -123,7 +166,12 @@ public sealed class DoStreamReasoningTests
     {
         var parts = await Run(
             "{\"store\":true}",
-            Added(0, Rs, "encrypted"), SummaryAdded(Rs, 0), SummaryDelta(Rs, 0, "x"), SummaryDone(Rs, 0), Done(0, Rs, "encrypted"));
+            Added(0, Rs, "encrypted"),
+            SummaryAdded(Rs, 0),
+            SummaryDelta(Rs, 0, "x"),
+            SummaryDone(Rs, 0),
+            Done(0, Rs, "encrypted")
+        );
 
         Assert.Equal(
             new[]
@@ -132,51 +180,76 @@ public sealed class DoStreamReasoningTests
                 $"reasoning-delta {Rs}:0 item={Rs} x",
                 $"reasoning-end {Rs}:0 item={Rs}",
             },
-            parts);
+            parts
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should correlate rotated item ids by output index", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should correlate rotated item ids by output index",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_correlate_rotated_item_ids_by_output_index()
     {
         // Captured from GitHub Copilot's Responses API with gpt-5.3-codex on 2026-08-06.
-        var handler = new SseStreamHandler(SseStreamHandler.FixtureChunks("github-copilot-id-rotation.1", done: false));
+        var handler = new SseStreamHandler(
+            SseStreamHandler.FixtureChunks("github-copilot-id-rotation.1", done: false)
+        );
         var options = OpenAIUpstream.Hello();
-        options.ProviderOptions = OpenAIUpstream.OpenAIOptionsJson("""{"reasoningEffort":"low","reasoningSummary":"detailed","store":false}""");
-        var model = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key" }, handler).ResponsesModel("gpt-5.3-codex");
+        options.ProviderOptions = OpenAIUpstream.OpenAIOptionsJson(
+            """{"reasoningEffort":"low","reasoningSummary":"detailed","store":false}"""
+        );
+        var model = OpenAIProvider
+            .Create(new OpenAIOptions { ApiKey = "test-api-key" }, handler)
+            .ResponsesModel("gpt-5.3-codex");
 
-        var streamParts = await OpenAIUpstream.Read(await model.DoStreamAsync(options, CancellationToken.None));
+        var streamParts = await OpenAIUpstream.Read(
+            await model.DoStreamAsync(options, CancellationToken.None)
+        );
 
         Assert.Empty(streamParts.OfType<ErrorStreamPart>());
-        var reasoningPartIds = streamParts.SelectMany(part => part switch
-        {
-            ReasoningStartStreamPart start => new[] { start.Id },
-            ReasoningDeltaStreamPart delta => new[] { delta.Id },
-            ReasoningEndStreamPart end => new[] { end.Id },
-            _ => Array.Empty<string>(),
-        });
-        var textPartIds = streamParts.SelectMany(part => part switch
-        {
-            TextStartStreamPart start => new[] { start.Id },
-            TextDeltaStreamPart delta => new[] { delta.Id },
-            TextEndStreamPart end => new[] { end.Id },
-            _ => Array.Empty<string>(),
-        });
+        var reasoningPartIds = streamParts.SelectMany(part =>
+            part switch
+            {
+                ReasoningStartStreamPart start => new[] { start.Id },
+                ReasoningDeltaStreamPart delta => new[] { delta.Id },
+                ReasoningEndStreamPart end => new[] { end.Id },
+                _ => Array.Empty<string>(),
+            }
+        );
+        var textPartIds = streamParts.SelectMany(part =>
+            part switch
+            {
+                TextStartStreamPart start => new[] { start.Id },
+                TextDeltaStreamPart delta => new[] { delta.Id },
+                TextEndStreamPart end => new[] { end.Id },
+                _ => Array.Empty<string>(),
+            }
+        );
 
-        Assert.Equal(new HashSet<string> { "capture-id-3:0" }, new HashSet<string>(reasoningPartIds));
+        Assert.Equal(
+            new HashSet<string> { "capture-id-3:0" },
+            new HashSet<string>(reasoningPartIds)
+        );
         Assert.Equal(new HashSet<string> { "capture-id-9" }, new HashSet<string>(textPartIds));
         Assert.Equal(
-            "There are **3** letter **“r”**s in **“strawberry.”**\n\n" +
-            "Breakdown: **s t r a w b e r r y**  \n" +
-            "You can see **r** at positions **3, 8, and 9**.",
-            string.Concat(streamParts.OfType<TextDeltaStreamPart>().Select(part => part.Delta)));
+            "There are **3** letter **“r”**s in **“strawberry.”**\n\n"
+                + "Breakdown: **s t r a w b e r r y**  \n"
+                + "You can see **r** at positions **3, 8, and 9**.",
+            string.Concat(streamParts.OfType<TextDeltaStreamPart>().Select(part => part.Delta))
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should stream with encrypted content include reasoning-delta part", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should stream with encrypted content include reasoning-delta part",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_stream_with_encrypted_content_include_reasoning_delta_part()
     {
-        var handler = new SseStreamHandler(SseStreamHandler.FixtureChunks("openai-reasoning-encrypted-content.1", done: false));
+        var handler = new SseStreamHandler(
+            SseStreamHandler.FixtureChunks("openai-reasoning-encrypted-content.1", done: false)
+        );
         var options = OpenAIUpstream.Hello();
         options.Tools = new[]
         {
@@ -184,20 +257,28 @@ public sealed class DoStreamReasoningTests
                 "calculator",
                 null,
                 null,
-                """{"type":"object","properties":{"a":{"type":"number"},"b":{"type":"number"},"op":{"type":"string"}},"required":["a","b"],"additionalProperties":false}"""),
+                """{"type":"object","properties":{"a":{"type":"number"},"b":{"type":"number"},"op":{"type":"string"}},"required":["a","b"],"additionalProperties":false}"""
+            ),
         };
         options.ProviderOptions = OpenAIUpstream.OpenAIOptionsJson(
-            """{"reasoningEffort":"high","maxCompletionTokens":32000,"store":false,"include":["reasoning.encrypted_content"],"reasoningSummary":"auto","forceReasoning":true}""");
-        var model = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key" }, handler).ResponsesModel("gpt-5.1-codex-max");
+            """{"reasoningEffort":"high","maxCompletionTokens":32000,"store":false,"include":["reasoning.encrypted_content"],"reasoningSummary":"auto","forceReasoning":true}"""
+        );
+        var model = OpenAIProvider
+            .Create(new OpenAIOptions { ApiKey = "test-api-key" }, handler)
+            .ResponsesModel("gpt-5.1-codex-max");
 
-        var parts = await OpenAIUpstream.Read(await model.DoStreamAsync(options, CancellationToken.None));
+        var parts = await OpenAIUpstream.Read(
+            await model.DoStreamAsync(options, CancellationToken.None)
+        );
 
         OpenAIResponsesSupport.AssertStreamSnapshot(parts, "openai-reasoning-encrypted-content.1");
     }
 
-    private static JsonObject Added(int index, string id, string? encrypted = null) => Item("response.output_item.added", index, id, encrypted);
+    private static JsonObject Added(int index, string id, string? encrypted = null) =>
+        Item("response.output_item.added", index, id, encrypted);
 
-    private static JsonObject Done(int index, string id, string? encrypted = null) => Item("response.output_item.done", index, id, encrypted);
+    private static JsonObject Done(int index, string id, string? encrypted = null) =>
+        Item("response.output_item.done", index, id, encrypted);
 
     private static JsonObject Item(string type, int index, string id, string? encrypted)
     {
@@ -207,7 +288,12 @@ public sealed class DoStreamReasoningTests
             item["encrypted_content"] = encrypted;
         }
 
-        return new JsonObject { ["type"] = type, ["output_index"] = index, ["item"] = item };
+        return new JsonObject
+        {
+            ["type"] = type,
+            ["output_index"] = index,
+            ["item"] = item,
+        };
     }
 
     private static JsonObject SummaryAdded(string id, int summaryIndex, int? outputIndex = null) =>
@@ -216,7 +302,12 @@ public sealed class DoStreamReasoningTests
     private static JsonObject SummaryDone(string id, int summaryIndex, int? outputIndex = null) =>
         Summary("response.reasoning_summary_part.done", id, summaryIndex, outputIndex);
 
-    private static JsonObject SummaryDelta(string id, int summaryIndex, string delta, int? outputIndex = null)
+    private static JsonObject SummaryDelta(
+        string id,
+        int summaryIndex,
+        string delta,
+        int? outputIndex = null
+    )
     {
         var node = Summary("response.reasoning_summary_text.delta", id, summaryIndex, outputIndex);
         node["delta"] = delta;
@@ -225,7 +316,12 @@ public sealed class DoStreamReasoningTests
 
     private static JsonObject Summary(string type, string id, int summaryIndex, int? outputIndex)
     {
-        var node = new JsonObject { ["type"] = type, ["item_id"] = id, ["summary_index"] = summaryIndex };
+        var node = new JsonObject
+        {
+            ["type"] = type,
+            ["item_id"] = id,
+            ["summary_index"] = summaryIndex,
+        };
         if (outputIndex != null)
         {
             node["output_index"] = outputIndex;
@@ -239,19 +335,38 @@ public sealed class DoStreamReasoningTests
     {
         var all = new List<JsonNode>
         {
-            new JsonObject { ["type"] = "response.created", ["response"] = new JsonObject { ["id"] = "resp_1", ["model"] = "o3-mini", ["created_at"] = 1 } },
+            new JsonObject
+            {
+                ["type"] = "response.created",
+                ["response"] = new JsonObject
+                {
+                    ["id"] = "resp_1",
+                    ["model"] = "o3-mini",
+                    ["created_at"] = 1,
+                },
+            },
         };
         all.AddRange(events);
-        all.Add(new JsonObject
-        {
-            ["type"] = "response.completed",
-            ["response"] = new JsonObject { ["id"] = "resp_1", ["output"] = new JsonArray(), ["usage"] = new JsonObject { ["input_tokens"] = 1, ["output_tokens"] = 1 } },
-        });
+        all.Add(
+            new JsonObject
+            {
+                ["type"] = "response.completed",
+                ["response"] = new JsonObject
+                {
+                    ["id"] = "resp_1",
+                    ["output"] = new JsonArray(),
+                    ["usage"] = new JsonObject { ["input_tokens"] = 1, ["output_tokens"] = 1 },
+                },
+            }
+        );
 
         var capture = new OpenAICapture { ServerSentEvents = OpenAIResponsesSupport.Sse(all) };
         var options = OpenAIUpstream.Hello();
         options.ProviderOptions = OpenAIUpstream.OpenAIOptionsJson(openaiOptions);
-        var result = await OpenAIUpstream.Provider(capture).ResponsesModel("o3-mini").DoStreamAsync(options, CancellationToken.None);
+        var result = await OpenAIUpstream
+            .Provider(capture)
+            .ResponsesModel("o3-mini")
+            .DoStreamAsync(options, CancellationToken.None);
         var parts = await OpenAIUpstream.Read(result);
 
         static string Describe(string type, string id, JsonElement? metadata, string? delta)
@@ -264,16 +379,38 @@ public sealed class DoStreamReasoningTests
             }
 
             return openai.TryGetProperty("reasoningEncryptedContent", out var encrypted)
-                ? text + " enc=" + (encrypted.ValueKind == JsonValueKind.Null ? "null" : encrypted.GetString())
+                ? text
+                    + " enc="
+                    + (encrypted.ValueKind == JsonValueKind.Null ? "null" : encrypted.GetString())
                 : text;
         }
 
-        return parts.Select(part => part switch
-        {
-            ReasoningStartStreamPart start => Describe("reasoning-start", start.Id, start.ProviderMetadata, null),
-            ReasoningDeltaStreamPart delta => Describe("reasoning-delta", delta.Id, delta.ProviderMetadata, delta.Delta),
-            ReasoningEndStreamPart end => Describe("reasoning-end", end.Id, end.ProviderMetadata, null),
-            _ => null,
-        }).OfType<string>().ToList();
+        return parts
+            .Select(part =>
+                part switch
+                {
+                    ReasoningStartStreamPart start => Describe(
+                        "reasoning-start",
+                        start.Id,
+                        start.ProviderMetadata,
+                        null
+                    ),
+                    ReasoningDeltaStreamPart delta => Describe(
+                        "reasoning-delta",
+                        delta.Id,
+                        delta.ProviderMetadata,
+                        delta.Delta
+                    ),
+                    ReasoningEndStreamPart end => Describe(
+                        "reasoning-end",
+                        end.Id,
+                        end.ProviderMetadata,
+                        null
+                    ),
+                    _ => null,
+                }
+            )
+            .OfType<string>()
+            .ToList();
     }
 }

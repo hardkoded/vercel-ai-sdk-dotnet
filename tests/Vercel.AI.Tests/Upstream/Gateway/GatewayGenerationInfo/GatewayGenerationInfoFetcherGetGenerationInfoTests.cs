@@ -14,22 +14,32 @@ namespace Vercel.AI.Tests.Upstream.Gateway.GatewayGenerationInfo;
 /// <summary>Port of <c>gateway-generation-info.test.ts</c> &gt; <c>GatewayGenerationInfoFetcher &gt; getGenerationInfo</c>.</summary>
 public sealed class GatewayGenerationInfoFetcherGetGenerationInfoTests
 {
-    private const string Prefix = "packages/gateway/src/gateway-generation-info.test.ts::GatewayGenerationInfoFetcher > getGenerationInfo::";
+    private const string Prefix =
+        "packages/gateway/src/gateway-generation-info.test.ts::GatewayGenerationInfoFetcher > getGenerationInfo::";
     private const string Commit = "32acf43";
     private const string Id = "gen_01ARZ3NDEKTSV4RRFFQ69G5FAV";
 
-    private static JsonObject MockData() => JsonNode.Parse(
-        "{\"id\":\"gen_01ARZ3NDEKTSV4RRFFQ69G5FAV\",\"total_cost\":0.00123,\"market_cost\":0.0011,\"surcharge_cost\":0.00013,\"gateway_cost\":0.00123,\"upstream_inference_cost\":0.0011,\"usage\":0.00123,\"created_at\":\"2024-01-01T00:00:00.000Z\",\"model\":\"gpt-4\",\"is_byok\":false,\"provider_name\":\"openai\",\"streamed\":true,\"finish_reason\":\"stop\",\"latency\":200,\"generation_time\":1500,\"native_tokens_prompt\":100,\"native_tokens_completion\":50,\"native_tokens_reasoning\":0,\"native_tokens_cached\":0,\"native_tokens_cache_creation\":0,\"billable_web_search_calls\":0}")!.AsObject();
+    private static JsonObject MockData() =>
+        JsonNode
+            .Parse(
+                "{\"id\":\"gen_01ARZ3NDEKTSV4RRFFQ69G5FAV\",\"total_cost\":0.00123,\"market_cost\":0.0011,\"surcharge_cost\":0.00013,\"gateway_cost\":0.00123,\"upstream_inference_cost\":0.0011,\"usage\":0.00123,\"created_at\":\"2024-01-01T00:00:00.000Z\",\"model\":\"gpt-4\",\"is_byok\":false,\"provider_name\":\"openai\",\"streamed\":true,\"finish_reason\":\"stop\",\"latency\":200,\"generation_time\":1500,\"native_tokens_prompt\":100,\"native_tokens_completion\":50,\"native_tokens_reasoning\":0,\"native_tokens_cached\":0,\"native_tokens_cache_creation\":0,\"billable_web_search_calls\":0}"
+            )!
+            .AsObject();
 
-    private static string Wrap(JsonObject data) => new JsonObject { ["data"] = data }.ToJsonString();
+    private static string Wrap(JsonObject data) =>
+        new JsonObject { ["data"] = data }.ToJsonString();
 
     [Fact]
-    [UpstreamTest(Prefix + "should fetch from the correct endpoint with generation ID", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should fetch from the correct endpoint with generation ID",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_fetch_from_the_correct_endpoint_with_generation_ID()
     {
         var server = new Server(Wrap(MockData()));
 
-        await CreateFetcher(server).GetGenerationInfoAsync(new GatewayGenerationInfoParams { Id = Id });
+        await CreateFetcher(server)
+            .GetGenerationInfoAsync(new GatewayGenerationInfoParams { Id = Id });
 
         Assert.Equal(HttpMethod.Get, server.Calls[0].Method);
         var url = server.Calls[0].RequestUri!;
@@ -38,14 +48,22 @@ public sealed class GatewayGenerationInfoFetcherGetGenerationInfoTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should transform snake_case response fields to camelCase", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should transform snake_case response fields to camelCase",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_transform_snake_case_response_fields_to_camelCase()
     {
         var result = await Fetch(new Server(Wrap(MockData())));
 
-        Assert.True(JsonNode.DeepEquals(
-            JsonNode.Parse("{\"id\":\"gen_01ARZ3NDEKTSV4RRFFQ69G5FAV\",\"totalCost\":0.00123,\"marketCost\":0.0011,\"surchargeCost\":0.00013,\"gatewayCost\":0.00123,\"upstreamInferenceCost\":0.0011,\"usage\":0.00123,\"createdAt\":\"2024-01-01T00:00:00.000Z\",\"model\":\"gpt-4\",\"isByok\":false,\"providerName\":\"openai\",\"streamed\":true,\"finishReason\":\"stop\",\"latency\":200,\"generationTime\":1500,\"promptTokens\":100,\"completionTokens\":50,\"reasoningTokens\":0,\"cachedTokens\":0,\"cacheCreationTokens\":0,\"billableWebSearchCalls\":0}"),
-            JsonSerializer.SerializeToNode(result)));
+        Assert.True(
+            JsonNode.DeepEquals(
+                JsonNode.Parse(
+                    "{\"id\":\"gen_01ARZ3NDEKTSV4RRFFQ69G5FAV\",\"totalCost\":0.00123,\"marketCost\":0.0011,\"surchargeCost\":0.00013,\"gatewayCost\":0.00123,\"upstreamInferenceCost\":0.0011,\"usage\":0.00123,\"createdAt\":\"2024-01-01T00:00:00.000Z\",\"model\":\"gpt-4\",\"isByok\":false,\"providerName\":\"openai\",\"streamed\":true,\"finishReason\":\"stop\",\"latency\":200,\"generationTime\":1500,\"promptTokens\":100,\"completionTokens\":50,\"reasoningTokens\":0,\"cachedTokens\":0,\"cacheCreationTokens\":0,\"billableWebSearchCalls\":0}"
+                ),
+                JsonSerializer.SerializeToNode(result)
+            )
+        );
     }
 
     [Fact]
@@ -60,13 +78,29 @@ public sealed class GatewayGenerationInfoFetcherGetGenerationInfoTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should not have snake_case fields in result", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should not have snake_case fields in result",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_not_have_snake_case_fields_in_result()
     {
         var result = await Fetch(new Server(Wrap(MockData())));
         var json = JsonSerializer.SerializeToNode(result)!.AsObject();
 
-        foreach (var key in new[] { "total_cost", "market_cost", "surcharge_cost", "gateway_cost", "is_byok", "provider_name", "created_at", "generation_time", "finish_reason" })
+        foreach (
+            var key in new[]
+            {
+                "total_cost",
+                "market_cost",
+                "surcharge_cost",
+                "gateway_cost",
+                "is_byok",
+                "provider_name",
+                "created_at",
+                "generation_time",
+                "finish_reason",
+            }
+        )
         {
             Assert.False(json.ContainsKey(key), key);
         }
@@ -77,25 +111,35 @@ public sealed class GatewayGenerationInfoFetcherGetGenerationInfoTests
     public async Task Should_pass_headers_correctly()
     {
         var server = new Server(Wrap(MockData()));
-        var fetcher = CreateFetcher(server, () => new Dictionary<string, string?>
-        {
-            ["Authorization"] = "Bearer custom-token",
-            ["Custom-Header"] = "custom-value",
-        });
+        var fetcher = CreateFetcher(server, () =>
+            new Dictionary<string, string?>
+            {
+                ["Authorization"] = "Bearer custom-token",
+                ["Custom-Header"] = "custom-value",
+            }
+        );
 
         await fetcher.GetGenerationInfoAsync(new GatewayGenerationInfoParams { Id = Id });
 
-        var headers = server.Calls[0].Headers.ToDictionary(h => h.Key.ToLowerInvariant(), h => string.Join(",", h.Value));
+        var headers = server
+            .Calls[0]
+            .Headers.ToDictionary(h => h.Key.ToLowerInvariant(), h => string.Join(",", h.Value));
         Assert.Equal("Bearer custom-token", headers["authorization"]);
         Assert.Equal("custom-value", headers["custom-header"]);
         Assert.DoesNotContain("ai-gateway-protocol-version", headers.Keys);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should handle 401 authentication errors", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should handle 401 authentication errors",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_handle_401_authentication_errors()
     {
-        var server = new Server("{\"error\":{\"message\":\"Unauthorized\",\"type\":\"authentication_error\"}}", HttpStatusCode.Unauthorized);
+        var server = new Server(
+            "{\"error\":{\"message\":\"Unauthorized\",\"type\":\"authentication_error\"}}",
+            HttpStatusCode.Unauthorized
+        );
 
         var error = await Assert.ThrowsAsync<GatewayAuthenticationError>(() => Fetch(server));
 
@@ -104,16 +148,25 @@ public sealed class GatewayGenerationInfoFetcherGetGenerationInfoTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should handle 500 internal server errors", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should handle 500 internal server errors",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_handle_500_internal_server_errors()
     {
-        var server = new Server("{\"error\":{\"message\":\"Failed to retrieve usage data\",\"type\":\"internal_server_error\"}}", HttpStatusCode.InternalServerError);
+        var server = new Server(
+            "{\"error\":{\"message\":\"Failed to retrieve usage data\",\"type\":\"internal_server_error\"}}",
+            HttpStatusCode.InternalServerError
+        );
 
         await Assert.ThrowsAsync<GatewayInternalServerError>(() => Fetch(server));
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should handle malformed JSON error responses", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should handle malformed JSON error responses",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_handle_malformed_JSON_error_responses()
     {
         var server = new Server("{ invalid json", HttpStatusCode.InternalServerError);
@@ -125,7 +178,10 @@ public sealed class GatewayGenerationInfoFetcherGetGenerationInfoTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should use custom fetch function when provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should use custom fetch function when provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_use_custom_fetch_function_when_provided()
     {
         var server = new Server(Wrap(MockData()));
@@ -138,18 +194,25 @@ public sealed class GatewayGenerationInfoFetcherGetGenerationInfoTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should encode special characters in generation ID", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should encode special characters in generation ID",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_encode_special_characters_in_generation_ID()
     {
         var server = new Server(Wrap(MockData()));
 
-        await CreateFetcher(server).GetGenerationInfoAsync(new GatewayGenerationInfoParams { Id = Id });
+        await CreateFetcher(server)
+            .GetGenerationInfoAsync(new GatewayGenerationInfoParams { Id = Id });
 
         Assert.Equal("?id=" + Id, server.Calls[0].RequestUri!.Query);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should handle BYOK generation response", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should handle BYOK generation response",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_handle_BYOK_generation_response()
     {
         var data = MockData();
@@ -168,7 +231,11 @@ public sealed class GatewayGenerationInfoFetcherGetGenerationInfoTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    [UpstreamTest(Prefix + "should accept an unavailable cost breakdown (%s)", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "should accept an unavailable cost breakdown (%s)",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Should_accept_an_unavailable_cost_breakdown(bool isNull)
     {
         var data = MockData();
@@ -194,7 +261,11 @@ public sealed class GatewayGenerationInfoFetcherGetGenerationInfoTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should preserve zero cost values", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "should preserve zero cost values",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Should_preserve_zero_cost_values()
     {
         var data = MockData();
@@ -212,7 +283,11 @@ public sealed class GatewayGenerationInfoFetcherGetGenerationInfoTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    [UpstreamTest(Prefix + "should omit unavailable marketCost (%s)", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "should omit unavailable marketCost (%s)",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Should_omit_unavailable_marketCost(bool isNull)
     {
         var data = MockData();
@@ -235,24 +310,48 @@ public sealed class GatewayGenerationInfoFetcherGetGenerationInfoTests
     private static Task<Vercel.AI.Gateway.GatewayGenerationInfo> Fetch(Server server) =>
         CreateFetcher(server).GetGenerationInfoAsync(new GatewayGenerationInfoParams { Id = Id });
 
-    private static GatewayGenerationInfoFetcher CreateFetcher(Server server, Func<IReadOnlyDictionary<string, string?>>? headers = null)
+    private static GatewayGenerationInfoFetcher CreateFetcher(
+        Server server,
+        Func<IReadOnlyDictionary<string, string?>>? headers = null
+    )
     {
-        return new GatewayGenerationInfoFetcher(new GatewayConfig
-        {
-            BaseUrl = "https://api.example.com",
-            Headers = headers ?? (() => new Dictionary<string, string?> { ["Authorization"] = "Bearer test-token" }),
-            Http = new ProviderHttp(new HttpClient(server, disposeHandler: false), new RetryPolicy { MaxRetries = 0 }),
-        });
+        return new GatewayGenerationInfoFetcher(
+            new GatewayConfig
+            {
+                BaseUrl = "https://api.example.com",
+                Headers = headers
+                    ?? (
+                        () =>
+                            new Dictionary<string, string?>
+                            {
+                                ["Authorization"] = "Bearer test-token",
+                            }
+                    ),
+                Http = new ProviderHttp(
+                    new HttpClient(server, disposeHandler: false),
+                    new RetryPolicy { MaxRetries = 0 }
+                ),
+            }
+        );
     }
 
-    private sealed class Server(string body, HttpStatusCode status = HttpStatusCode.OK) : HttpMessageHandler
+    private sealed class Server(string body, HttpStatusCode status = HttpStatusCode.OK)
+        : HttpMessageHandler
     {
         public List<HttpRequestMessage> Calls { get; } = [];
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
         {
             Calls.Add(request);
-            return Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(body, Encoding.UTF8, "application/json") });
+            return Task.FromResult(
+                new HttpResponseMessage(status)
+                {
+                    Content = new StringContent(body, Encoding.UTF8, "application/json"),
+                }
+            );
         }
     }
 }

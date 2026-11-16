@@ -30,7 +30,8 @@ internal sealed class ScaleDownDecisionResponse
 {
     public string? Model { get; init; }
 
-    public IReadOnlyDictionary<string, ScaleDownAnswer> Answers { get; init; } = new Dictionary<string, ScaleDownAnswer>();
+    public IReadOnlyDictionary<string, ScaleDownAnswer> Answers { get; init; } =
+        new Dictionary<string, ScaleDownAnswer>();
 
     public bool HasUsage { get; init; }
 
@@ -64,14 +65,20 @@ internal static class ScaleDownDecisionApi
             switch (Property(answer, "type", JsonValueKind.String).GetString())
             {
                 case "noul":
-                    answers[pair.Name] = new ScaleDownAnswer { Type = "noul", Noul = Property(answer, "noul", JsonValueKind.Number).GetDouble() };
+                    answers[pair.Name] = new ScaleDownAnswer
+                    {
+                        Type = "noul",
+                        Noul = Property(answer, "noul", JsonValueKind.Number).GetDouble(),
+                    };
                     break;
                 case "choice":
                     answers[pair.Name] = new ScaleDownAnswer
                     {
                         Type = "choice",
                         Choice = Property(answer, "choice", JsonValueKind.String).GetString(),
-                        Probabilities = Numbers(Property(answer, "probabilities", JsonValueKind.Object)),
+                        Probabilities = Numbers(
+                            Property(answer, "probabilities", JsonValueKind.Object)
+                        ),
                         Confidence = Optional(answer, "confidence"),
                     };
                     break;
@@ -80,7 +87,9 @@ internal static class ScaleDownDecisionApi
                     {
                         Type = "score",
                         Score = Property(answer, "score", JsonValueKind.Number).GetDouble(),
-                        Probabilities = Numbers(Property(answer, "probabilities", JsonValueKind.Object)),
+                        Probabilities = Numbers(
+                            Property(answer, "probabilities", JsonValueKind.Object)
+                        ),
                         Confidence = Optional(answer, "confidence"),
                         Legend = Legend(answer),
                     };
@@ -109,7 +118,15 @@ internal static class ScaleDownDecisionApi
             cost = Optional(usage, "cost");
         }
 
-        return new ScaleDownDecisionResponse { Model = model, Answers = answers, HasUsage = hasUsage, InputTokens = inputTokens, OutputTokens = outputTokens, Cost = cost };
+        return new ScaleDownDecisionResponse
+        {
+            Model = model,
+            Answers = answers,
+            HasUsage = hasUsage,
+            InputTokens = inputTokens,
+            OutputTokens = outputTokens,
+            Cost = cost,
+        };
     }
 
     private static bool IsPresent(JsonElement element, string name)
@@ -129,7 +146,9 @@ internal static class ScaleDownDecisionApi
 
     private static double? Optional(JsonElement element, string name)
     {
-        return IsPresent(element, name) ? Property(element, name, JsonValueKind.Number).GetDouble() : null;
+        return IsPresent(element, name)
+            ? Property(element, name, JsonValueKind.Number).GetDouble()
+            : null;
     }
 
     private static Dictionary<string, double> Numbers(JsonElement map)

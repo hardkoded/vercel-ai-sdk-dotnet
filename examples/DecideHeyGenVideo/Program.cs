@@ -21,24 +21,34 @@ if (!File.Exists(path))
 }
 
 #region decide-heygen-video
-var result = await Decide.DecideAsync(new DecideRequest
-{
-    Model = HeyGenProvider.Create().DecisionModel("heygen-decision-1"),
-    State = DecisionState.From(
-    [
-        new DecisionTextPart("Review this clip before it is published."),
-        new DecisionFilePart("video/mp4", FilePartInput.FromBytes(File.ReadAllBytes(path))),
-    ]),
-    Questions = new Dictionary<string, DecisionQuestion>
+var result = await Decide.DecideAsync(
+    new DecideRequest
     {
-        ["person"] = new("boolean", "Does the video show a person?"),
-        ["setting"] = new(
-            "choice",
-            "Where does the video take place?",
-            new DecisionChoiceCriteria(new Dictionary<string, DecisionInput?> { ["indoors"] = null, ["outdoors"] = null })),
-    },
-});
+        Model = HeyGenProvider.Create().DecisionModel("heygen-decision-1"),
+        State = DecisionState.From([
+            new DecisionTextPart("Review this clip before it is published."),
+            new DecisionFilePart("video/mp4", FilePartInput.FromBytes(File.ReadAllBytes(path))),
+        ]),
+        Questions = new Dictionary<string, DecisionQuestion>
+        {
+            ["person"] = new("boolean", "Does the video show a person?"),
+            ["setting"] = new(
+                "choice",
+                "Where does the video take place?",
+                new DecisionChoiceCriteria(
+                    new Dictionary<string, DecisionInput?>
+                    {
+                        ["indoors"] = null,
+                        ["outdoors"] = null,
+                    }
+                )
+            ),
+        },
+    }
+);
 #endregion
 
 Console.WriteLine("Answers: " + JsonSerializer.Serialize(result.Answers));
-Console.WriteLine("Usage: " + result.Usage.InputTokens + " in, " + result.Usage.OutputTokens + " out");
+Console.WriteLine(
+    "Usage: " + result.Usage.InputTokens + " in, " + result.Usage.OutputTokens + " out"
+);

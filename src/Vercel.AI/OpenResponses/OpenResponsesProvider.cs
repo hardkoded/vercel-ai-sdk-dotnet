@@ -82,20 +82,29 @@ public sealed class OpenResponsesProvider : ProviderBase
     public ProviderHttp Http { get; }
 
     /// <summary>Creates a provider.</summary>
-    public static OpenResponsesProvider Create(OpenResponsesOptions? options = null, HttpMessageHandler? handler = null)
+    public static OpenResponsesProvider Create(
+        OpenResponsesOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new OpenResponsesProvider(client, options);
     }
 
     /// <inheritdoc />
-    public override ILanguageModel LanguageModel(string modelId) => new OpenResponsesLanguageModel(this, modelId);
+    public override ILanguageModel LanguageModel(string modelId) =>
+        new OpenResponsesLanguageModel(this, modelId);
 }
 
 /// <summary>Posts to <c>/responses</c>.</summary>
 public sealed class OpenResponsesLanguageModel : ILanguageModel
 {
-    private static readonly Dictionary<string, string> ReasoningEffortMap = new Dictionary<string, string>
+    private static readonly Dictionary<string, string> ReasoningEffortMap = new Dictionary<
+        string,
+        string
+    >
     {
         { "minimal", "low" },
         { "low", "low" },
@@ -118,10 +127,8 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<string, string> SupportedUrls { get; } = new Dictionary<string, string>
-    {
-        ["image/*"] = "^https?://.*\\z",
-    };
+    public IReadOnlyDictionary<string, string> SupportedUrls { get; } =
+        new Dictionary<string, string> { ["image/*"] = "^https?://.*\\z" };
 
     /// <inheritdoc />
     public string Provider => _provider.Name + ".responses";
@@ -140,7 +147,8 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         if (Registry.ByExtensionId.Count > 0)
         {
             throw new SerializationError(
-                "Open Responses models with registered extensions cannot be serialized across workflow boundaries. Recreate the provider with its extension codecs inside the workflow step.");
+                "Open Responses models with registered extensions cannot be serialized across workflow boundaries. Recreate the provider with its extension codecs inside the workflow step."
+            );
         }
 
         var config = new Dictionary<string, object?>
@@ -153,15 +161,28 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var (body, warnings) = Prepare(options);
         var uri = RequestUri();
-        var http = await _provider.Http.SendJsonStringAsync(HttpMethod.Post, uri, body.ToJsonString(), Headers(options), cancellationToken).ConfigureAwait(false);
+        var http = await _provider
+            .Http.SendJsonStringAsync(
+                HttpMethod.Post,
+                uri,
+                body.ToJsonString(),
+                Headers(options),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         JsonDocument document;
         try
         {
-            document = JsonDocument.Parse(string.IsNullOrWhiteSpace(http.Body) ? "null" : http.Body);
+            document = JsonDocument.Parse(
+                string.IsNullOrWhiteSpace(http.Body) ? "null" : http.Body
+            );
         }
         catch (JsonException exception)
         {
@@ -175,22 +196,35 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var (body, warnings) = Prepare(options);
         body["stream"] = true;
         var json = body.ToJsonString();
-        var sse = await _provider.Http.OpenSseResponseAsync(RequestUri(), json, Headers(options), cancellationToken).ConfigureAwait(false);
-        return sse.ToStreamResult(StreamAsync(options, warnings, sse.Events, cancellationToken), json);
+        var sse = await _provider
+            .Http.OpenSseResponseAsync(RequestUri(), json, Headers(options), cancellationToken)
+            .ConfigureAwait(false);
+        return sse.ToStreamResult(
+            StreamAsync(options, warnings, sse.Events, cancellationToken),
+            json
+        );
     }
 
     private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
         LanguageModelCallOptions options,
         List<CallWarning> warnings,
         IAsyncEnumerable<string> events,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
-        var session = new OpenResponsesStream(_provider.Name, Registry, _provider.Options.GetResponseErrorMetadata);
+        var session = new OpenResponsesStream(
+            _provider.Name,
+            Registry,
+            _provider.Options.GetResponseErrorMetadata
+        );
         var enumerator = events.GetAsyncEnumerator(cancellationToken);
         try
         {
@@ -249,9 +283,17 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
             }
         }
 
-        var converted = OpenResponsesInput.Convert(options.Prompt, _provider.Name, _provider.Options.StrictResponseInput, Registry, providerToolsByName);
+        var converted = OpenResponsesInput.Convert(
+            options.Prompt,
+            _provider.Name,
+            _provider.Options.StrictResponseInput,
+            Registry,
+            providerToolsByName
+        );
         warnings.AddRange(converted.Warnings);
-        var encodedProviderTools = new Dictionary<string, OpenResponsesExtension>(StringComparer.Ordinal);
+        var encodedProviderTools = new Dictionary<string, OpenResponsesExtension>(
+            StringComparer.Ordinal
+        );
 
         var body = new JsonObject { ["model"] = ModelId, ["input"] = converted.Input };
         OpenAIJson.Set(body, "instructions", converted.Instructions);
@@ -262,8 +304,15 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         OpenAIJson.Set(body, "frequency_penalty", options.FrequencyPenalty);
         OpenAIJson.Set(body, "reasoning", Reasoning(options, warnings));
         OpenAIJson.Set(body, "tools", Tools(options.Tools, encodedProviderTools, warnings));
-        OpenAIJson.Set(body, "tool_choice", ToolChoice(options.Tools, options.ToolChoice, encodedProviderTools, warnings));
-        if (options.JsonSchema is { ValueKind: not JsonValueKind.Undefined and not JsonValueKind.Null } schema)
+        OpenAIJson.Set(
+            body,
+            "tool_choice",
+            ToolChoice(options.Tools, options.ToolChoice, encodedProviderTools, warnings)
+        );
+        if (
+            options.JsonSchema is
+            { ValueKind: not JsonValueKind.Undefined and not JsonValueKind.Null } schema
+        )
         {
             var format = new JsonObject
             {
@@ -277,7 +326,10 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         }
         else if (options.JsonResponse)
         {
-            body["text"] = new JsonObject { ["format"] = new JsonObject { ["type"] = "json_object" } };
+            body["text"] = new JsonObject
+            {
+                ["format"] = new JsonObject { ["type"] = "json_object" },
+            };
         }
 
         return (body, warnings);
@@ -287,9 +339,11 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
     {
         string? providerEffort = null;
         string? providerSummary = null;
-        if (options.ProviderOptions != null
+        if (
+            options.ProviderOptions != null
             && options.ProviderOptions.TryGetValue(_provider.Name, out var configured)
-            && configured.ValueKind == JsonValueKind.Object)
+            && configured.ValueKind == JsonValueKind.Object
+        )
         {
             providerEffort = OpenAIJson.String(configured, "reasoningEffort");
             providerSummary = OpenAIJson.String(configured, "reasoningSummary");
@@ -305,7 +359,11 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
             else
             {
                 var mappingWarnings = new List<ModelWarning>();
-                effort = ReasoningMap.MapReasoningToProviderEffort(options.Reasoning!, ReasoningEffortMap, mappingWarnings);
+                effort = ReasoningMap.MapReasoningToProviderEffort(
+                    options.Reasoning!,
+                    ReasoningEffortMap,
+                    mappingWarnings
+                );
                 foreach (var warning in mappingWarnings)
                 {
                     if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
@@ -334,7 +392,8 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
     private JsonArray? Tools(
         IReadOnlyList<LanguageModelTool>? tools,
         Dictionary<string, OpenResponsesExtension> encodedProviderTools,
-        List<CallWarning> warnings)
+        List<CallWarning> warnings
+    )
     {
         if (tools == null || tools.Count == 0)
         {
@@ -351,9 +410,19 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
                 {
                     try
                     {
-                        if (extension.EncodeTool!(new OpenResponsesToolContext(tool.Name, tool.Args)) is { } fields)
+                        if (
+                            extension.EncodeTool!(
+                                new OpenResponsesToolContext(tool.Name, tool.Args)
+                            ) is
+                            { } fields
+                        )
                         {
-                            encoded = WithType(fields, OpenResponsesExtensions.GetOpenResponsesExtensionToolType(extension)!);
+                            encoded = WithType(
+                                fields,
+                                OpenResponsesExtensions.GetOpenResponsesExtensionToolType(
+                                    extension
+                                )!
+                            );
                         }
                     }
                     catch (Exception)
@@ -364,7 +433,13 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
 
                 if (encoded == null)
                 {
-                    warnings.Add(new CallWarning("unsupported", "provider-defined tool " + tool.ProviderToolId, null));
+                    warnings.Add(
+                        new CallWarning(
+                            "unsupported",
+                            "provider-defined tool " + tool.ProviderToolId,
+                            null
+                        )
+                    );
                 }
                 else
                 {
@@ -397,14 +472,17 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         IReadOnlyList<LanguageModelTool>? tools,
         ToolChoice? toolChoice,
         Dictionary<string, OpenResponsesExtension> encodedProviderTools,
-        List<CallWarning> warnings)
+        List<CallWarning> warnings
+    )
     {
         if (toolChoice is not ToolChoice.NamedChoice named)
         {
             return toolChoice?.Type;
         }
 
-        var tool = tools?.FirstOrDefault(candidate => candidate.IsProviderDefined && candidate.Name == named.ToolName);
+        var tool = tools?.FirstOrDefault(candidate =>
+            candidate.IsProviderDefined && candidate.Name == named.ToolName
+        );
         if (tool == null)
         {
             return new JsonObject { ["type"] = "function", ["name"] = named.ToolName };
@@ -420,7 +498,9 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         {
             try
             {
-                fields = extension.EncodeToolChoice(new OpenResponsesToolContext(tool.Name, tool.Args));
+                fields = extension.EncodeToolChoice(
+                    new OpenResponsesToolContext(tool.Name, tool.Args)
+                );
             }
             catch (Exception)
             {
@@ -429,12 +509,21 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
 
             if (fields == null)
             {
-                warnings.Add(new CallWarning("unsupported", "tool choice for provider-defined tool " + tool.ProviderToolId, null));
+                warnings.Add(
+                    new CallWarning(
+                        "unsupported",
+                        "tool choice for provider-defined tool " + tool.ProviderToolId,
+                        null
+                    )
+                );
                 return null;
             }
         }
 
-        return WithType(fields!, OpenResponsesExtensions.GetOpenResponsesExtensionToolType(extension)!);
+        return WithType(
+            fields!,
+            OpenResponsesExtensions.GetOpenResponsesExtensionToolType(extension)!
+        );
     }
 
     private static JsonObject WithType(JsonObject fields, string type)
@@ -456,29 +545,46 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         JsonObject body,
         List<CallWarning> warnings,
         Uri uri,
-        ProviderTextResponse http)
+        ProviderTextResponse http
+    )
     {
         if (OpenAIJson.Child(response, "error") is { } error)
         {
             var errorMetadata = _provider.Options.GetResponseErrorMetadata?.Invoke(error);
             var statusCode = errorMetadata?.StatusCode ?? 400;
-            throw new ApiException(OpenAIJson.String(error, "message") ?? string.Empty, statusCode, http.Body)
+            throw new ApiException(
+                OpenAIJson.String(error, "message") ?? string.Empty,
+                statusCode,
+                http.Body
+            )
             {
                 Url = uri.ToString(),
                 RequestBodyValues = body,
                 ResponseHeaders = http.Headers,
-                IsRetryable = errorMetadata?.IsRetryable ?? (statusCode == 408 || statusCode == 409 || statusCode == 429 || statusCode >= 500),
+                IsRetryable = errorMetadata?.IsRetryable
+                    ?? (
+                        statusCode == 408
+                        || statusCode == 409
+                        || statusCode == 429
+                        || statusCode >= 500
+                    ),
                 ErrorData = error.Clone(),
             };
         }
 
         if (OpenAIJson.Child(response, "output") is not { ValueKind: JsonValueKind.Array } output)
         {
-            var detail = OpenAIJson.String(OpenAIJson.Child(response, "incomplete_details"), "reason") ?? OpenAIJson.String(response, "status");
+            var detail = OpenAIJson.String(
+                OpenAIJson.Child(response, "incomplete_details"),
+                "reason"
+            ) ?? OpenAIJson.String(response, "status");
             throw new ApiException(
-                detail != null ? "Responses API returned no output (" + detail + ")" : "Responses API returned no output",
+                detail != null
+                    ? "Responses API returned no output (" + detail + ")"
+                    : "Responses API returned no output",
                 500,
-                http.Body)
+                http.Body
+            )
             {
                 Url = uri.ToString(),
                 RequestBodyValues = body,
@@ -494,19 +600,33 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
             switch (OpenAIJson.String(part, "type"))
             {
                 case "reasoning":
-                    if (OpenAIJson.Child(part, "content") is { ValueKind: JsonValueKind.Array } reasoningContent && reasoningContent.GetArrayLength() > 0)
+                    if (
+                        OpenAIJson.Child(part, "content")
+                            is { ValueKind: JsonValueKind.Array } reasoningContent
+                        && reasoningContent.GetArrayLength() > 0
+                    )
                     {
                         foreach (var contentPart in reasoningContent.EnumerateArray())
                         {
-                            content.Add(new GeneratedReasoning(
-                                OpenAIJson.String(contentPart, "text") ?? string.Empty,
-                                OpenResponsesResults.ReasoningMetadata(_provider.Name, part, new[] { contentPart })));
+                            content.Add(
+                                new GeneratedReasoning(
+                                    OpenAIJson.String(contentPart, "text") ?? string.Empty,
+                                    OpenResponsesResults.ReasoningMetadata(
+                                        _provider.Name,
+                                        part,
+                                        new[] { contentPart }
+                                    )
+                                )
+                            );
                         }
                     }
                     else
                     {
                         var summary = new List<string>();
-                        if (OpenAIJson.Child(part, "summary") is { ValueKind: JsonValueKind.Array } summaryParts)
+                        if (
+                            OpenAIJson.Child(part, "summary") is
+                            { ValueKind: JsonValueKind.Array } summaryParts
+                        )
                         {
                             foreach (var summaryPart in summaryParts.EnumerateArray())
                             {
@@ -514,55 +634,92 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
                             }
                         }
 
-                        content.Add(new GeneratedReasoning(string.Concat(summary), OpenResponsesResults.ReasoningMetadata(_provider.Name, part)));
+                        content.Add(
+                            new GeneratedReasoning(
+                                string.Concat(summary),
+                                OpenResponsesResults.ReasoningMetadata(_provider.Name, part)
+                            )
+                        );
                     }
 
                     break;
                 case "message":
-                    if (OpenAIJson.Child(part, "content") is { ValueKind: JsonValueKind.Array } messageContent)
+                    if (
+                        OpenAIJson.Child(part, "content") is
+                        { ValueKind: JsonValueKind.Array } messageContent
+                    )
                     {
                         foreach (var contentPart in messageContent.EnumerateArray())
                         {
-                            content.Add(new GeneratedText(
-                                OpenAIJson.String(contentPart, "text") ?? string.Empty,
-                                providerMetadata: OpenResponsesResults.MessageMetadata(_provider.Name, OpenAIJson.String(part, "id"), OpenResponsesResults.Annotations(contentPart))));
+                            content.Add(
+                                new GeneratedText(
+                                    OpenAIJson.String(contentPart, "text") ?? string.Empty,
+                                    providerMetadata: OpenResponsesResults.MessageMetadata(
+                                        _provider.Name,
+                                        OpenAIJson.String(part, "id"),
+                                        OpenResponsesResults.Annotations(contentPart)
+                                    )
+                                )
+                            );
                         }
                     }
 
                     break;
                 case "function_call":
                     hasToolCalls = true;
-                    content.Add(new GeneratedToolCall(
-                        OpenAIJson.String(part, "call_id") ?? string.Empty,
-                        OpenAIJson.String(part, "name") ?? string.Empty,
-                        OpenAIJson.String(part, "arguments") ?? string.Empty,
-                        OpenResponsesResults.ItemMetadata(_provider.Name, OpenAIJson.String(part, "id"))));
+                    content.Add(
+                        new GeneratedToolCall(
+                            OpenAIJson.String(part, "call_id") ?? string.Empty,
+                            OpenAIJson.String(part, "name") ?? string.Empty,
+                            OpenAIJson.String(part, "arguments") ?? string.Empty,
+                            OpenResponsesResults.ItemMetadata(
+                                _provider.Name,
+                                OpenAIJson.String(part, "id")
+                            )
+                        )
+                    );
                     break;
                 default:
-                    if (OpenAIJson.Node(part) is JsonObject item
+                    if (
+                        OpenAIJson.Node(part) is JsonObject item
                         && OpenResponsesJson.IsExtensionItem(item)
-                        && OpenResponsesExtensionItems.Decode(Registry, _provider.Name, item, OpenResponsesItemMode.Generate) is { } decoded)
+                        && OpenResponsesExtensionItems.Decode(
+                            Registry,
+                            _provider.Name,
+                            item,
+                            OpenResponsesItemMode.Generate
+                        )
+                            is { } decoded
+                    )
                     {
                         content.AddRange(decoded);
-                        hasToolCalls |= decoded.Any(decodedPart => decodedPart is GeneratedToolCall);
+                        hasToolCalls |= decoded.Any(decodedPart =>
+                            decodedPart is GeneratedToolCall
+                        );
                     }
 
                     break;
             }
         }
 
-        var rawFinishReason = OpenAIJson.String(OpenAIJson.Child(response, "incomplete_details"), "reason");
+        var rawFinishReason = OpenAIJson.String(
+            OpenAIJson.Child(response, "incomplete_details"),
+            "reason"
+        );
         return new LanguageModelGenerateResult(
             content,
             OpenResponsesFinishReason.Map(rawFinishReason, hasToolCalls),
-            OpenAIJson.Child(response, "usage") is { ValueKind: JsonValueKind.Object } usage ? OpenResponsesResults.Usage(usage) : LanguageModelUsage.Null,
+            OpenAIJson.Child(response, "usage") is { ValueKind: JsonValueKind.Object } usage
+                ? OpenResponsesResults.Usage(usage)
+                : LanguageModelUsage.Null,
             rawFinishReason,
             warnings,
             OpenAIJson.String(response, "id"),
             rawResponse: http.Body,
             responseModelId: OpenAIJson.String(response, "model"),
             responseTimestamp: OpenAIJson.UnixSeconds(OpenAIJson.Unix(response, "created_at")),
-            responseHeaders: http.Headers);
+            responseHeaders: http.Headers
+        );
     }
 
     private Uri RequestUri()
@@ -574,7 +731,12 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Authorization"] = "Bearer " + ApiKeys.Require(_provider.Options.ApiKey, _provider.Options.ApiKeyEnvironmentVariable),
+            ["Authorization"] =
+                "Bearer "
+                + ApiKeys.Require(
+                    _provider.Options.ApiKey,
+                    _provider.Options.ApiKeyEnvironmentVariable
+                ),
         };
         foreach (var pair in _provider.Options.Headers ?? new Dictionary<string, string>())
         {
@@ -597,14 +759,21 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
 public static class OpenResponsesServiceCollectionExtensions
 {
     /// <summary>Adds <see cref="OpenResponsesProvider"/>.</summary>
-    public static IServiceCollection AddOpenResponses(this IServiceCollection services, Action<OpenResponsesOptions>? configure = null)
+    public static IServiceCollection AddOpenResponses(
+        this IServiceCollection services,
+        Action<OpenResponsesOptions>? configure = null
+    )
     {
         services.AddHttpClient(OpenResponsesProvider.ProviderName);
         services.AddSingleton(sp =>
         {
             var options = new OpenResponsesOptions();
             configure?.Invoke(options);
-            return new OpenResponsesProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(OpenResponsesProvider.ProviderName), options);
+            return new OpenResponsesProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(OpenResponsesProvider.ProviderName),
+                options
+            );
         });
         return services;
     }

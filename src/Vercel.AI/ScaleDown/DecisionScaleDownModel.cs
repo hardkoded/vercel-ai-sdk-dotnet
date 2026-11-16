@@ -15,10 +15,12 @@ namespace Vercel.AI.ScaleDown;
 public sealed class ScaleDownDecisionProviderMetadata
 {
     /// <summary>Confidence per question id. Boolean questions have none.</summary>
-    public IReadOnlyDictionary<string, double> Confidence { get; init; } = new Dictionary<string, double>();
+    public IReadOnlyDictionary<string, double> Confidence { get; init; } =
+        new Dictionary<string, double>();
 
     /// <summary>Score legend per question id.</summary>
-    public IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> Legend { get; init; } = new Dictionary<string, IReadOnlyDictionary<string, string>>();
+    public IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> Legend { get; init; } =
+        new Dictionary<string, IReadOnlyDictionary<string, string>>();
 
     /// <summary>Total request cost in USD, when supplied by ScaleDown.</summary>
     public double? Cost { get; init; }
@@ -43,7 +45,10 @@ public class ScaleDownDecisionModelConfig
     /// Provider headers that need an asynchronous step, such as an async API key. Used when <see cref="Headers"/> is null.
     /// Not serializable: <c>Serialize</c> throws <see cref="SerializationError"/>, as upstream does for an async <c>headers</c>.
     /// </summary>
-    public Func<CancellationToken, Task<IReadOnlyDictionary<string, string>>>? HeadersAsync { get; set; }
+    public Func<
+        CancellationToken,
+        Task<IReadOnlyDictionary<string, string>>
+    >? HeadersAsync { get; set; }
 
     /// <summary>HTTP client. Not serialized.</summary>
     public HttpClient? HttpClient { get; set; }
@@ -54,7 +59,10 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
 {
     private static readonly HttpClient SharedClient = new();
 
-    private static readonly JsonSerializerOptions Compact = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    private static readonly JsonSerializerOptions Compact = new()
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     private readonly ScaleDownDecisionModelConfig _config;
 
@@ -92,7 +100,9 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
 
         if (_config.Headers is { } headers)
         {
-            config["headers"] = new Func<Dictionary<string, string>>(() => headers().ToDictionary(pair => pair.Key, pair => pair.Value));
+            config["headers"] = new Func<Dictionary<string, string>>(() =>
+                headers().ToDictionary(pair => pair.Key, pair => pair.Value)
+            );
         }
 
         return ModelOptionsSerialization.SerializeModelOptions(ModelId, config);
@@ -102,7 +112,10 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
     /// Restores a model from <see cref="Serialize"/>. When no headers were serialized, authentication is read from
     /// <c>SCALEDOWN_API_KEY</c> at call time. Maps to <c>WORKFLOW_DESERIALIZE</c>.
     /// </summary>
-    public static DecisionScaleDownModel Deserialize(SerializedModelOptions options, HttpClient? httpClient = null)
+    public static DecisionScaleDownModel Deserialize(
+        SerializedModelOptions options,
+        HttpClient? httpClient = null
+    )
     {
         if (options == null)
         {
@@ -110,7 +123,10 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
         }
 
         var config = new ScaleDownDecisionModelConfig { HttpClient = httpClient };
-        if (options.Config.TryGetValue("provider", out var provider) && provider is string providerId)
+        if (
+            options.Config.TryGetValue("provider", out var provider)
+            && provider is string providerId
+        )
         {
             config.Provider = providerId;
         }
@@ -120,9 +136,14 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
             config.BaseUrl = url;
         }
 
-        if (options.Config.TryGetValue("headers", out var headers) && headers is IDictionary<string, object?> values)
+        if (
+            options.Config.TryGetValue("headers", out var headers)
+            && headers is IDictionary<string, object?> values
+        )
         {
-            var copy = values.Where(pair => pair.Value is string).ToDictionary(pair => pair.Key, pair => (string)pair.Value!);
+            var copy = values
+                .Where(pair => pair.Value is string)
+                .ToDictionary(pair => pair.Key, pair => (string)pair.Value!);
             config.Headers = () => copy;
         }
 
@@ -130,7 +151,10 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
     }
 
     /// <inheritdoc />
-    public async Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken)
+    public async Task<DecisionModelResult> DoDecideAsync(
+        DecisionModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (call == null)
         {
@@ -160,14 +184,19 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
         }
         else if (_config.HeadersAsync is { } providerHeadersAsync)
         {
-            foreach (var pair in await providerHeadersAsync(cancellationToken).ConfigureAwait(false))
+            foreach (
+                var pair in await providerHeadersAsync(cancellationToken).ConfigureAwait(false)
+            )
             {
                 headers[pair.Key] = pair.Value;
             }
         }
         else
         {
-            headers["x-api-key"] = ApiKeys.Require(null, ScaleDownProvider.ApiKeyEnvironmentVariable);
+            headers["x-api-key"] = ApiKeys.Require(
+                null,
+                ScaleDownProvider.ApiKeyEnvironmentVariable
+            );
             headers["User-Agent"] = ProviderExchange.UserAgent("scaledown");
         }
 
@@ -177,10 +206,16 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
         }
 
         var uri = ApiKeys.Combine(_config.BaseUrl, "/v1/scaledown");
-        using var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = ProviderExchange.Json(body.ToJsonString()) };
+        using var request = new HttpRequestMessage(HttpMethod.Post, uri)
+        {
+            Content = ProviderExchange.Json(body.ToJsonString()),
+        };
         foreach (var pair in headers)
         {
-            if (!string.IsNullOrEmpty(pair.Value) && !pair.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
+            if (
+                !string.IsNullOrEmpty(pair.Value)
+                && !pair.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase)
+            )
             {
                 request.Headers.TryAddWithoutValidation(pair.Key, pair.Value);
             }
@@ -189,7 +224,9 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
         HttpResponseMessage response;
         try
         {
-            response = await (_config.HttpClient ?? SharedClient).SendAsync(request, cancellationToken).ConfigureAwait(false);
+            response = await (_config.HttpClient ?? SharedClient)
+                .SendAsync(request, cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -197,17 +234,32 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
         }
         catch (HttpRequestException exception)
         {
-            throw new ApiCallError("Cannot connect to API: " + exception.Message, uri.ToString(), body, cause: exception, isRetryable: true);
+            throw new ApiCallError(
+                "Cannot connect to API: " + exception.Message,
+                uri.ToString(),
+                body,
+                cause: exception,
+                isRetryable: true
+            );
         }
 
         using (response)
         {
-            var text = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
+            var text = await CancellableReads
+                .ReadAsStringAsync(response.Content, cancellationToken)
+                .ConfigureAwait(false);
             var responseHeaders = CopyHeaders(response);
             var status = (int)response.StatusCode;
             if (!response.IsSuccessStatusCode)
             {
-                throw ScaleDownError.FailedResponse(uri.ToString(), body, status, response.ReasonPhrase, responseHeaders, text);
+                throw ScaleDownError.FailedResponse(
+                    uri.ToString(),
+                    body,
+                    status,
+                    response.ReasonPhrase,
+                    responseHeaders,
+                    text
+                );
             }
 
             return ParseResponse(uri.ToString(), body, status, responseHeaders, text, call);
@@ -216,7 +268,9 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
 
     internal static string ToText(DecisionInput value)
     {
-        return value.Value.ValueKind == JsonValueKind.String ? value.Value.GetString()! : JsonSerializer.Serialize(value.Value, Compact);
+        return value.Value.ValueKind == JsonValueKind.String
+            ? value.Value.GetString()!
+            : JsonSerializer.Serialize(value.Value, Compact);
     }
 
     private static IReadOnlyDictionary<string, string> CopyHeaders(HttpResponseMessage response)
@@ -246,7 +300,8 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
                 {
                     foreach (var option in choices.Options)
                     {
-                        criteria[option.Key] = option.Value == null ? option.Key : ToText(option.Value);
+                        criteria[option.Key] =
+                            option.Value == null ? option.Key : ToText(option.Value);
                     }
                 }
 
@@ -279,12 +334,20 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
                     }
                 }
 
-                return new JsonObject { ["type"] = "noul", ["instructions"] = string.Join("\n", lines) };
+                return new JsonObject
+                {
+                    ["type"] = "noul",
+                    ["instructions"] = string.Join("\n", lines),
+                };
             case "score":
                 var levels = (question.Criteria as DecisionScoreCriteria)?.Levels ?? [];
                 if (levels.Count < 2 || levels.Count > 10 || levels.Any(level => level == null))
                 {
-                    throw new InvalidArgumentError("questions." + id + ".criteria", question.Criteria, "ScaleDown Score questions require 2 to 10 non-null levels.");
+                    throw new InvalidArgumentError(
+                        "questions." + id + ".criteria",
+                        question.Criteria,
+                        "ScaleDown Score questions require 2 to 10 non-null levels."
+                    );
                 }
 
                 var score = new JsonObject { ["type"] = "score" };
@@ -293,14 +356,28 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
                     score["instructions"] = instructions;
                 }
 
-                score["criteria"] = new JsonArray(levels.Select(level => (JsonNode?)ToText(level!)).ToArray());
+                score["criteria"] = new JsonArray(
+                    levels.Select(level => (JsonNode?)ToText(level!)).ToArray()
+                );
                 return score;
             default:
-                throw new DecisionUnsupportedQuestionTypeError(id, question.Type, Provider, ModelId);
+                throw new DecisionUnsupportedQuestionTypeError(
+                    id,
+                    question.Type,
+                    Provider,
+                    ModelId
+                );
         }
     }
 
-    private DecisionModelResult ParseResponse(string url, JsonObject requestBody, int status, IReadOnlyDictionary<string, string> headers, string text, DecisionModelCall call)
+    private DecisionModelResult ParseResponse(
+        string url,
+        JsonObject requestBody,
+        int status,
+        IReadOnlyDictionary<string, string> headers,
+        string text,
+        DecisionModelCall call
+    )
     {
         JsonElement root;
         ScaleDownDecisionResponse value;
@@ -310,9 +387,21 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
             root = document.RootElement.Clone();
             value = ScaleDownDecisionApi.Parse(root);
         }
-        catch (Exception exception) when (exception is JsonException || exception is FormatException || exception is InvalidOperationException)
+        catch (Exception exception)
+            when (exception is JsonException
+                || exception is FormatException
+                || exception is InvalidOperationException
+            )
         {
-            throw new ApiCallError("Invalid JSON response", url, requestBody, status, headers, text, exception);
+            throw new ApiCallError(
+                "Invalid JSON response",
+                url,
+                requestBody,
+                status,
+                headers,
+                text,
+                exception
+            );
         }
 
         var confidence = new Dictionary<string, double>();
@@ -334,12 +423,25 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
             answers[pair.Key] = answer.Type switch
             {
                 "noul" => new DecisionAnswer("boolean", probability: answer.Noul),
-                "choice" => new DecisionAnswer("choice", choice: answer.Choice, probabilities: answer.Probabilities),
-                _ => new DecisionAnswer("score", score: answer.Score, probabilities: answer.Probabilities),
+                "choice" => new DecisionAnswer(
+                    "choice",
+                    choice: answer.Choice,
+                    probabilities: answer.Probabilities
+                ),
+                _ => new DecisionAnswer(
+                    "score",
+                    score: answer.Score,
+                    probabilities: answer.Probabilities
+                ),
             };
         }
 
-        var metadata = new ScaleDownDecisionProviderMetadata { Confidence = confidence, Legend = legend, Cost = value.Cost };
+        var metadata = new ScaleDownDecisionProviderMetadata
+        {
+            Confidence = confidence,
+            Legend = legend,
+            Cost = value.Cost,
+        };
         var metadataNode = new JsonObject
         {
             ["confidence"] = JsonSerializer.SerializeToNode(metadata.Confidence),
@@ -361,13 +463,20 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
             warnings.Add(new OperationWarning("unsupported", feature: "reasoning"));
         }
 
-        if (call.ProviderOptions.ValueKind == JsonValueKind.Object
+        if (
+            call.ProviderOptions.ValueKind == JsonValueKind.Object
             && call.ProviderOptions.TryGetProperty("scaledown", out var options)
-            && options.ValueKind == JsonValueKind.Object)
+            && options.ValueKind == JsonValueKind.Object
+        )
         {
             foreach (var option in options.EnumerateObject())
             {
-                warnings.Add(new OperationWarning("unsupported", feature: "providerOptions.scaledown." + option.Name));
+                warnings.Add(
+                    new OperationWarning(
+                        "unsupported",
+                        feature: "providerOptions.scaledown." + option.Name
+                    )
+                );
             }
         }
 
@@ -375,7 +484,10 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
             answers,
             warnings: warnings,
             usage: new OperationUsage(value.InputTokens, value.OutputTokens),
-            providerMetadata: JsonSerializer.SerializeToElement(new JsonObject { ["scaledown"] = metadataNode }),
-            response: new ProviderResponse(headers, root, modelId: value.Model ?? ModelId));
+            providerMetadata: JsonSerializer.SerializeToElement(
+                new JsonObject { ["scaledown"] = metadataNode }
+            ),
+            response: new ProviderResponse(headers, root, modelId: value.Model ?? ModelId)
+        );
     }
 }

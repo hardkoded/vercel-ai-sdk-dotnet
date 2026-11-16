@@ -11,7 +11,12 @@ namespace Vercel.AI.MiniMax;
 public sealed class MiniMaxVideoModelConfig
 {
     /// <summary>Creates a configuration.</summary>
-    public MiniMaxVideoModelConfig(string provider, string baseUrl, Func<Dictionary<string, string>> headers, HttpClient httpClient)
+    public MiniMaxVideoModelConfig(
+        string provider,
+        string baseUrl,
+        Func<Dictionary<string, string>> headers,
+        HttpClient httpClient
+    )
     {
         Provider = provider ?? throw new ArgumentNullException(nameof(provider));
         BaseUrl = baseUrl ?? throw new ArgumentNullException(nameof(baseUrl));
@@ -79,37 +84,54 @@ public sealed class MiniMaxVideoModel : IVideoModel, IVideoCaller
     }
 
     /// <inheritdoc />
-    public Task<VideoResult> DoGenerateAsync(VideoCallOptions options, CancellationToken cancellationToken)
+    public Task<VideoResult> DoGenerateAsync(
+        VideoCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         throw NotPorted();
     }
 
     /// <inheritdoc />
-    public Task<VideoModelResult> DoGenerateAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public Task<VideoModelResult> DoGenerateAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         throw NotPorted();
     }
 
     /// <inheritdoc />
-    public Task<VideoStartResult> DoStartAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public Task<VideoStartResult> DoStartAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         throw NotPorted();
     }
 
     /// <inheritdoc />
-    public Task<VideoStatusResult> DoStatusAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public Task<VideoStatusResult> DoStatusAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         throw NotPorted();
     }
 
     /// <inheritdoc />
-    public Task<VideoWebhook> HandleWebhookAsync(Func<Task<VideoWebhook>> webhook, CancellationToken cancellationToken)
+    public Task<VideoWebhook> HandleWebhookAsync(
+        Func<Task<VideoWebhook>> webhook,
+        CancellationToken cancellationToken
+    )
     {
         throw NotPorted();
     }
 
     private static NotSupportedException NotPorted()
     {
-        return new NotSupportedException("MiniMax video request building, polling, and errors are not ported yet.");
+        return new NotSupportedException(
+            "MiniMax video request building, polling, and errors are not ported yet."
+        );
     }
 }

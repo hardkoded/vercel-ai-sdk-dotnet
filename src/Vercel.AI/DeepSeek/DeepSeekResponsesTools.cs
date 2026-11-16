@@ -48,7 +48,13 @@ internal static class DeepSeekResponsesTools
                 }
                 else
                 {
-                    warnings.Add(new CallWarning("unsupported", "provider-defined tool " + tool.ProviderToolId, null));
+                    warnings.Add(
+                        new CallWarning(
+                            "unsupported",
+                            "provider-defined tool " + tool.ProviderToolId,
+                            null
+                        )
+                    );
                 }
 
                 continue;
@@ -56,7 +62,13 @@ internal static class DeepSeekResponsesTools
 
             if (tool.Strict != null)
             {
-                warnings.Add(new CallWarning("unsupported", "strict tool calls", "The DeepSeek Responses API does not support strict mode."));
+                warnings.Add(
+                    new CallWarning(
+                        "unsupported",
+                        "strict tool calls",
+                        "The DeepSeek Responses API does not support strict mode."
+                    )
+                );
             }
 
             var function = new JsonObject { ["type"] = "function", ["name"] = tool.Name };
@@ -65,16 +77,21 @@ internal static class DeepSeekResponsesTools
                 function["description"] = tool.Description;
             }
 
-            function["parameters"] = tool.InputSchema.ValueKind == JsonValueKind.Undefined
-                ? new JsonObject()
-                : JsonNode.Parse(tool.InputSchema.GetRawText());
+            function["parameters"] =
+                tool.InputSchema.ValueKind == JsonValueKind.Undefined
+                    ? new JsonObject()
+                    : JsonNode.Parse(tool.InputSchema.GetRawText());
             prepared.Add(function);
         }
 
         return new Prepared(prepared, MapToolChoice(toolChoice, tools, warnings), warnings);
     }
 
-    private static JsonNode? MapToolChoice(ToolChoice? toolChoice, IReadOnlyList<LanguageModelTool> tools, List<CallWarning> warnings)
+    private static JsonNode? MapToolChoice(
+        ToolChoice? toolChoice,
+        IReadOnlyList<LanguageModelTool> tools,
+        List<CallWarning> warnings
+    )
     {
         switch (toolChoice)
         {
@@ -84,7 +101,13 @@ internal static class DeepSeekResponsesTools
                 var selected = tools.FirstOrDefault(tool => tool.Name == named.ToolName);
                 if (selected is { IsProviderDefined: true })
                 {
-                    warnings.Add(new CallWarning("unsupported", "toolChoice for provider-defined tool " + selected.ProviderToolId, null));
+                    warnings.Add(
+                        new CallWarning(
+                            "unsupported",
+                            "toolChoice for provider-defined tool " + selected.ProviderToolId,
+                            null
+                        )
+                    );
                     return null;
                 }
 

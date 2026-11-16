@@ -15,7 +15,8 @@ public sealed class MixedCitationTypesTests
     [Fact]
     [UpstreamTest(
         "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > mixed citation types::should retain streamed citation sources when retrieved sources are unavailable",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_retain_streamed_citation_sources_when_retrieved_sources_are_unavailable()
     {
         var annotations = """
@@ -26,12 +27,28 @@ public sealed class MixedCitationTypesTests
             """;
         var events = new List<JsonNode>
         {
-            JsonNode.Parse("""{"type":"response.content_part.added","item_id":"msg_123","output_index":0,"content_index":0,"part":{"type":"output_text","text":"","annotations":[]}}""")!,
-            JsonNode.Parse("""{"type":"response.output_text.annotation.added","item_id":"msg_123","output_index":0,"content_index":0,"annotation_index":0,"annotation":{"type":"url_citation","url":"https://example.com","title":"Example URL","start_index":123,"end_index":234}}""")!,
-            JsonNode.Parse("""{"type":"response.output_text.annotation.added","item_id":"msg_123","output_index":0,"content_index":0,"annotation_index":1,"annotation":{"type":"file_citation","index":123,"file_id":"file-abc123","filename":"resource1.json"}}""")!,
-            JsonNode.Parse("{\"type\":\"response.content_part.done\",\"item_id\":\"msg_123\",\"output_index\":0,\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"Based on web search and file content.\",\"annotations\":" + annotations + "}}")!,
-            JsonNode.Parse("{\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"id\":\"msg_123\",\"type\":\"message\",\"status\":\"completed\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"Based on web search and file content.\",\"annotations\":" + annotations + "}]}}")!,
-            JsonNode.Parse("""{"type":"response.completed","response":{"id":"resp_123","object":"response","created_at":1234567890,"status":"completed","error":null,"incomplete_details":null,"model":"gpt-4o","output":[],"usage":{"input_tokens":100,"input_tokens_details":{"cached_tokens":0},"output_tokens":50,"output_tokens_details":{"reasoning_tokens":0},"total_tokens":150}}}""")!,
+            JsonNode.Parse(
+                """{"type":"response.content_part.added","item_id":"msg_123","output_index":0,"content_index":0,"part":{"type":"output_text","text":"","annotations":[]}}"""
+            )!,
+            JsonNode.Parse(
+                """{"type":"response.output_text.annotation.added","item_id":"msg_123","output_index":0,"content_index":0,"annotation_index":0,"annotation":{"type":"url_citation","url":"https://example.com","title":"Example URL","start_index":123,"end_index":234}}"""
+            )!,
+            JsonNode.Parse(
+                """{"type":"response.output_text.annotation.added","item_id":"msg_123","output_index":0,"content_index":0,"annotation_index":1,"annotation":{"type":"file_citation","index":123,"file_id":"file-abc123","filename":"resource1.json"}}"""
+            )!,
+            JsonNode.Parse(
+                "{\"type\":\"response.content_part.done\",\"item_id\":\"msg_123\",\"output_index\":0,\"content_index\":0,\"part\":{\"type\":\"output_text\",\"text\":\"Based on web search and file content.\",\"annotations\":"
+                    + annotations
+                    + "}}"
+            )!,
+            JsonNode.Parse(
+                "{\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"id\":\"msg_123\",\"type\":\"message\",\"status\":\"completed\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"Based on web search and file content.\",\"annotations\":"
+                    + annotations
+                    + "}]}}"
+            )!,
+            JsonNode.Parse(
+                """{"type":"response.completed","response":{"id":"resp_123","object":"response","created_at":1234567890,"status":"completed","error":null,"incomplete_details":null,"model":"gpt-4o","output":[],"usage":{"input_tokens":100,"input_tokens_details":{"cached_tokens":0},"output_tokens":50,"output_tokens_details":{"reasoning_tokens":0},"total_tokens":150}}}"""
+            )!,
         };
 
         var parts = await OpenAIResponsesSupport.Stream(OpenAIResponsesSupport.Sse(events));
@@ -46,11 +63,14 @@ public sealed class MixedCitationTypesTests
                 nameof(DocumentSourceStreamPart),
                 nameof(FinishStreamPart),
             },
-            kinds);
+            kinds
+        );
 
         var end = Assert.IsType<TextEndStreamPart>(parts[1]);
         Assert.Equal("msg_123", end.Id);
-        JsonAssert.Equal(OpenAIResponsesSupport.CitationsJson(end.Citations), """
+        JsonAssert.Equal(
+            OpenAIResponsesSupport.CitationsJson(end.Citations),
+            """
             [
               {
                 "source": { "type": "source", "sourceType": "url", "id": "https://example.com", "url": "https://example.com", "title": "Example URL" },
@@ -69,8 +89,11 @@ public sealed class MixedCitationTypesTests
                 }
               }
             ]
-            """);
-        JsonAssert.Equal(end.ProviderMetadata!.Value, """
+            """
+        );
+        JsonAssert.Equal(
+            end.ProviderMetadata!.Value,
+            """
             {
               "openai": {
                 "itemId": "msg_123",
@@ -80,7 +103,8 @@ public sealed class MixedCitationTypesTests
                 ]
               }
             }
-            """);
+            """
+        );
 
         var url = Assert.IsType<SourceStreamPart>(parts[2]);
         Assert.Equal("https://example.com", url.Url);
@@ -89,7 +113,10 @@ public sealed class MixedCitationTypesTests
         Assert.Equal("text/plain", document.MediaType);
         Assert.Equal("resource1.json", document.Title);
         Assert.Equal("resource1.json", document.Filename);
-        JsonAssert.Equal(document.ProviderMetadata!.Value, """{ "openai": { "type": "file_citation", "fileId": "file-abc123", "index": 123 } }""");
+        JsonAssert.Equal(
+            document.ProviderMetadata!.Value,
+            """{ "openai": { "type": "file_citation", "fileId": "file-abc123", "index": 123 } }"""
+        );
 
         var finish = Assert.IsType<FinishStreamPart>(parts[4]);
         Assert.Equal(FinishReason.Stop, finish.FinishReason);

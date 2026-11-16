@@ -55,13 +55,17 @@ public sealed record ApplyPatchResult(ApplyPatchStatus Status, string? Output = 
 public static class ApplyPatchFileEditor
 {
     /// <summary>Creates an executor that applies operations inside <paramref name="workspaceRoot"/>.</summary>
-    public static Func<ApplyPatchExecutorInput, Task<ApplyPatchResult>> CreateApplyPatchExecutor(string workspaceRoot)
+    public static Func<ApplyPatchExecutorInput, Task<ApplyPatchResult>> CreateApplyPatchExecutor(
+        string workspaceRoot
+    )
     {
         var editor = new WorkspaceEditor(workspaceRoot);
 
         return input =>
         {
-            Console.WriteLine($"[{input.CallId}] Applying {input.Operation.Type} to {input.Operation.Path}");
+            Console.WriteLine(
+                $"[{input.CallId}] Applying {input.Operation.Type} to {input.Operation.Path}"
+            );
 
             return input.Operation switch
             {
@@ -92,7 +96,10 @@ public sealed class WorkspaceEditor(string root)
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {
-            return new ApplyPatchResult(ApplyPatchStatus.Failed, $"Error creating file: {error.Message}");
+            return new ApplyPatchResult(
+                ApplyPatchStatus.Failed,
+                $"Error creating file: {error.Message}"
+            );
         }
     }
 
@@ -105,11 +112,16 @@ public sealed class WorkspaceEditor(string root)
             string original;
             try
             {
-                original = await File.ReadAllTextAsync(targetPath, Encoding.UTF8).ConfigureAwait(false);
+                original = await File.ReadAllTextAsync(targetPath, Encoding.UTF8)
+                    .ConfigureAwait(false);
             }
-            catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException)
+            catch (Exception error)
+                when (error is FileNotFoundException or DirectoryNotFoundException)
             {
-                throw new InvalidOperationException($"Cannot update missing file: {operation.Path}", error);
+                throw new InvalidOperationException(
+                    $"Cannot update missing file: {operation.Path}",
+                    error
+                );
             }
 
             var patched = ApplyDiff(original, operation.Diff);
@@ -118,7 +130,10 @@ public sealed class WorkspaceEditor(string root)
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {
-            return new ApplyPatchResult(ApplyPatchStatus.Failed, $"Error updating file: {error.Message}");
+            return new ApplyPatchResult(
+                ApplyPatchStatus.Failed,
+                $"Error updating file: {error.Message}"
+            );
         }
     }
 
@@ -129,11 +144,18 @@ public sealed class WorkspaceEditor(string root)
         {
             var targetPath = Resolve(operation.Path);
             File.Delete(targetPath);
-            return Task.FromResult(new ApplyPatchResult(ApplyPatchStatus.Completed, $"Deleted {operation.Path}"));
+            return Task.FromResult(
+                new ApplyPatchResult(ApplyPatchStatus.Completed, $"Deleted {operation.Path}")
+            );
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {
-            return Task.FromResult(new ApplyPatchResult(ApplyPatchStatus.Failed, $"Error deleting file: {error.Message}"));
+            return Task.FromResult(
+                new ApplyPatchResult(
+                    ApplyPatchStatus.Failed,
+                    $"Error deleting file: {error.Message}"
+                )
+            );
         }
     }
 
@@ -141,11 +163,14 @@ public sealed class WorkspaceEditor(string root)
     {
         var relative = Path.GetRelativePath(
             Path.GetFullPath(root),
-            Path.GetFullPath(relativePath, Path.GetFullPath(root)));
-        if (relative.Length == 0
+            Path.GetFullPath(relativePath, Path.GetFullPath(root))
+        );
+        if (
+            relative.Length == 0
             || relative == ".."
             || relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal)
-            || Path.IsPathRooted(relative))
+            || Path.IsPathRooted(relative)
+        )
         {
             throw new InvalidOperationException($"Operation outside workspace: {relativePath}");
         }
@@ -161,7 +186,8 @@ public sealed class WorkspaceEditor(string root)
             {
                 attributes = File.GetAttributes(current);
             }
-            catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException)
+            catch (Exception error)
+                when (error is FileNotFoundException or DirectoryNotFoundException)
             {
                 break;
             }
@@ -181,7 +207,9 @@ public sealed class WorkspaceEditor(string root)
         var info = new DirectoryInfo(full);
         if (!info.Exists)
         {
-            throw new DirectoryNotFoundException($"ENOENT: no such file or directory, realpath '{path}'");
+            throw new DirectoryNotFoundException(
+                $"ENOENT: no such file or directory, realpath '{path}'"
+            );
         }
 
         var target = info.ResolveLinkTarget(true);

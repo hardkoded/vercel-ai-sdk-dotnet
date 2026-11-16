@@ -28,33 +28,75 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
     // separately from the overall poll timeout: at the default 500ms interval this gives the job about 10s to register.
     private const int MaxTaskNotFoundAttempts = 20;
 
-    private static readonly Regex LegacyFamily = new Regex("^flux-[12](?:[.-]|$)", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+    private static readonly Regex LegacyFamily = new Regex(
+        "^flux-[12](?:[.-]|$)",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(1)
+    );
 
     private static readonly string[] Flux3AspectRatios =
     {
-        "21:9", "2:1", "16:9", "3:2", "7:5", "4:3", "5:4", "1:1", "4:5", "3:4", "5:7", "2:3", "9:16", "1:2", "9:21",
+        "21:9",
+        "2:1",
+        "16:9",
+        "3:2",
+        "7:5",
+        "4:3",
+        "5:4",
+        "1:1",
+        "4:5",
+        "3:4",
+        "5:7",
+        "2:3",
+        "9:16",
+        "1:2",
+        "9:21",
     };
 
     private static readonly string[] LatestOptions =
     {
-        "height", "outputFormat", "pollIntervalMillis", "pollTimeoutMillis", "resolution", "safetyTolerance", "steps", "width",
+        "height",
+        "outputFormat",
+        "pollIntervalMillis",
+        "pollTimeoutMillis",
+        "resolution",
+        "safetyTolerance",
+        "steps",
+        "width",
     };
 
     private static readonly string[] Flux3Options =
     {
-        "grounding", "pollIntervalMillis", "pollTimeoutMillis", "resolution", "safetyTolerance", "version",
+        "grounding",
+        "pollIntervalMillis",
+        "pollTimeoutMillis",
+        "resolution",
+        "safetyTolerance",
+        "version",
     };
 
     private static readonly string[] PollStatuses =
     {
-        "Content Moderated", "Generating", "Pending", "Reasoning", "Ready", "Error", "Failed", "Request Moderated", "Task not found",
+        "Content Moderated",
+        "Generating",
+        "Pending",
+        "Reasoning",
+        "Ready",
+        "Error",
+        "Failed",
+        "Request Moderated",
+        "Task not found",
     };
 
     private readonly BlackForestLabsProvider _provider;
     private readonly Func<DateTimeOffset> _clock;
 
     /// <summary>Creates a model. <paramref name="clock"/> sets the response timestamp.</summary>
-    public BlackForestLabsImageModel(BlackForestLabsProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
+    public BlackForestLabsImageModel(
+        BlackForestLabsProvider provider,
+        string modelId,
+        Func<DateTimeOffset>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -81,8 +123,12 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
     {
         get
         {
-            if (ModelApi != BflApi.Legacy
-                || ModelId == "flux-kontext-pro" || ModelId == "flux-kontext-max" || ModelId == "flux-pro-1.0-fill")
+            if (
+                ModelApi != BflApi.Legacy
+                || ModelId == "flux-kontext-pro"
+                || ModelId == "flux-kontext-max"
+                || ModelId == "flux-pro-1.0-fill"
+            )
             {
                 return true;
             }
@@ -114,10 +160,13 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
     {
         get
         {
-            if (ModelId == "flux-pro" || ModelId == "flux-dev"
+            if (
+                ModelId == "flux-pro"
+                || ModelId == "flux-dev"
                 || ModelId.StartsWith("flux-pro-", StringComparison.Ordinal)
                 || ModelId.StartsWith("flux-kontext-", StringComparison.Ordinal)
-                || LegacyFamily.IsMatch(ModelId))
+                || LegacyFamily.IsMatch(ModelId)
+            )
             {
                 return BflApi.Legacy;
             }
@@ -139,32 +188,65 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
     }
 
     /// <inheritdoc />
-    public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+    public async Task<ImageGenerationResult> DoGenerateAsync(
+        ImageCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
-        var result = await DoGenerateAsync(options.ToModelCall(cancellationToken), cancellationToken).ConfigureAwait(false);
+        var result = await DoGenerateAsync(
+                options.ToModelCall(cancellationToken),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var data = (byte[])result.Images[0]!;
-        var info = new ImageResponseInfo(new DateTimeOffset(result.Response.Timestamp ?? DateTime.UtcNow), result.Response.ModelId, result.Response.Headers);
+        var info = new ImageResponseInfo(
+            new DateTimeOffset(result.Response.Timestamp ?? DateTime.UtcNow),
+            result.Response.ModelId,
+            result.Response.Headers
+        );
         return new ImageGenerationResult(
-            new[] { new ProviderGeneratedImage(MediaTypes.DetectMediaType(data, "image") ?? "image/png", data, null) },
+            new[]
+            {
+                new ProviderGeneratedImage(
+                    MediaTypes.DetectMediaType(data, "image") ?? "image/png",
+                    data,
+                    null
+                ),
+            },
             result.Warnings.Select(warning => warning.ToCallWarning()).ToList(),
-            info);
+            info
+        );
     }
 
     /// <inheritdoc />
-    public async Task<ImageModelResult> DoGenerateAsync(ImageModelCall call, CancellationToken cancellationToken)
+    public async Task<ImageModelResult> DoGenerateAsync(
+        ImageModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var (body, warnings, options) = GetArgs(call);
         var timestamp = _clock();
-        var headers = _provider.CreateHeaders(call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value));
+        var headers = _provider.CreateHeaders(
+            call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)
+        );
         var baseUrl = _provider.Options.BaseUrl.TrimEnd('/');
 
         var submitUrl = baseUrl + "/" + ModelId;
         ProviderExchangeResult submitted;
         try
         {
-            submitted = await ProviderExchange.SendAsync(_provider.HttpClient, HttpMethod.Post, new Uri(submitUrl), ProviderExchange.Json(body.ToJsonString()), headers, cancellationToken).ConfigureAwait(false);
+            submitted = await ProviderExchange
+                .SendAsync(
+                    _provider.HttpClient,
+                    HttpMethod.Post,
+                    new Uri(submitUrl),
+                    ProviderExchange.Json(body.ToJsonString()),
+                    headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
         catch (ApiException exception)
         {
@@ -175,31 +257,46 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         var root = submit.RootElement;
         // Black Forest Labs answers with a webhook-shaped response (no polling_url) when a webhook is registered.
         // The task can still be polled through the documented get_result endpoint on the configured base URL.
-        var pollingUrl = root.TryGetProperty("polling_url", out var pollingUrlElement) && pollingUrlElement.ValueKind == JsonValueKind.String
-            ? pollingUrlElement.GetString()
-            : null;
+        var pollingUrl =
+            root.TryGetProperty("polling_url", out var pollingUrlElement)
+            && pollingUrlElement.ValueKind == JsonValueKind.String
+                ? pollingUrlElement.GetString()
+                : null;
         var usesGetResultFallback = pollingUrl == null;
         var pollUrl = pollingUrl ?? baseUrl + "/get_result";
         var requestId = root.GetProperty("id").GetString()!;
 
-        var polled = await PollForImageUrlAsync(pollUrl, requestId, usesGetResultFallback, baseUrl, headers, options, cancellationToken).ConfigureAwait(false);
+        var polled = await PollForImageUrlAsync(
+                pollUrl,
+                requestId,
+                usesGetResultFallback,
+                baseUrl,
+                headers,
+                options,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
 
         var baseHost = new Uri(baseUrl).Host;
-        var useCustomDownloadHeaders = ProviderValues.IsSameOrigin(polled.ImageUrl, baseUrl)
+        var useCustomDownloadHeaders =
+            ProviderValues.IsSameOrigin(polled.ImageUrl, baseUrl)
             && baseHost != "bfl.ai"
             && !baseHost.EndsWith(".bfl.ai", StringComparison.OrdinalIgnoreCase);
         var userAgentOnly = UserAgentOnly(headers);
         var downloadHeaders = useCustomDownloadHeaders ? headers : userAgentOnly;
         // The sample URL comes from the response body. Signed BFL downloads need no credentials; custom proxies may.
-        var image = await ProviderExchange.GetResponseUrlAsync(
-            _provider.HttpClient,
-            polled.ImageUrl,
-            baseUrl,
-            DownloadUrls.ValidateDownloadUrl,
-            downloadHeaders,
-            cancellationToken,
-            ProviderExchange.DownloadClient(_provider.Options),
-            userAgentOnly).ConfigureAwait(false);
+        var image = await ProviderExchange
+            .GetResponseUrlAsync(
+                _provider.HttpClient,
+                polled.ImageUrl,
+                baseUrl,
+                DownloadUrls.ValidateDownloadUrl,
+                downloadHeaders,
+                cancellationToken,
+                ProviderExchange.DownloadClient(_provider.Options),
+                userAgentOnly
+            )
+            .ConfigureAwait(false);
 
         var metadata = new JsonObject();
         AddNumber(metadata, "seed", polled.Seed);
@@ -209,37 +306,54 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         AddNumber(metadata, "cost", Number(root, "cost"));
         AddNumber(metadata, "inputMegapixels", Number(root, "input_mp"));
         AddNumber(metadata, "outputMegapixels", Number(root, "output_mp"));
-        var providerMetadata = new JsonObject { ["blackForestLabs"] = new JsonObject { ["images"] = new JsonArray(metadata) } };
+        var providerMetadata = new JsonObject
+        {
+            ["blackForestLabs"] = new JsonObject { ["images"] = new JsonArray(metadata) },
+        };
         return new ImageModelResult(
             new object?[] { image.Bytes },
             warnings,
             providerMetadata: OperationJson.Parse(providerMetadata.ToJsonString()),
-            response: new ProviderResponse(image.Headers, timestamp: timestamp.UtcDateTime, modelId: ModelId));
+            response: new ProviderResponse(
+                image.Headers,
+                timestamp: timestamp.UtcDateTime,
+                modelId: ModelId
+            )
+        );
     }
 
-    private (JsonObject Body, List<OperationWarning> Warnings, BflOptions Options) GetArgs(ImageModelCall call)
+    private (JsonObject Body, List<OperationWarning> Warnings, BflOptions Options) GetArgs(
+        ImageModelCall call
+    )
     {
         var warnings = new List<OperationWarning>();
         var modelApi = ModelApi;
         var size = call.Size;
         var aspectRatio = call.AspectRatio;
-        var finalAspectRatio = aspectRatio ?? (size != null ? ConvertSizeToAspectRatio(size) : null);
+        var finalAspectRatio = aspectRatio
+            ?? (size != null ? ConvertSizeToAspectRatio(size) : null);
 
         if (size != null && aspectRatio == null && modelApi != BflApi.Latest)
         {
-            warnings.Add(OperationWarning.Unsupported(
-                "size",
-                modelApi == BflApi.Flux3Image
-                    ? "Deriving aspect_ratio from size. FLUX 3 uses the resolution provider option to select output resolution."
-                    : "Deriving aspect_ratio from size. Use the width and height provider options to specify dimensions for models that support them."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "size",
+                    modelApi == BflApi.Flux3Image
+                        ? "Deriving aspect_ratio from size. FLUX 3 uses the resolution provider option to select output resolution."
+                        : "Deriving aspect_ratio from size. Use the width and height provider options to specify dimensions for models that support them."
+                )
+            );
         }
         else if (size != null && aspectRatio != null && modelApi != BflApi.Latest)
         {
-            warnings.Add(OperationWarning.Unsupported(
-                "size",
-                modelApi == BflApi.Flux3Image
-                    ? "FLUX 3 ignores size when aspectRatio is provided. Use the resolution provider option to select output resolution."
-                    : "Black Forest Labs ignores size when aspectRatio is provided. Use the width and height provider options to specify dimensions for models that support them"));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "size",
+                    modelApi == BflApi.Flux3Image
+                        ? "FLUX 3 ignores size when aspectRatio is provided. Use the resolution provider option to select output resolution."
+                        : "Black Forest Labs ignores size when aspectRatio is provided. Use the width and height provider options to specify dimensions for models that support them"
+                )
+            );
         }
 
         var sizeParts = size?.Split('x') ?? Array.Empty<string>();
@@ -269,7 +383,11 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         {
             foreach (var file in call.Files)
             {
-                inputImages.Add(file.Type == "url" ? file.Url! : Convert.ToBase64String(file.Data ?? Array.Empty<byte>()));
+                inputImages.Add(
+                    file.Type == "url"
+                        ? file.Url!
+                        : Convert.ToBase64String(file.Data ?? Array.Empty<byte>())
+                );
             }
         }
 
@@ -282,20 +400,30 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         {
             var hasDimensions = modelApi == BflApi.Latest && bflOptions.Width != null;
             // The endpoint uses 21:9 and 9:21 instead of their reduced forms.
-            var flux3AspectRatio = hasDimensions
-                ? null
-                : finalAspectRatio == "7:3" ? "21:9" : finalAspectRatio == "3:7" ? "9:21" : finalAspectRatio;
+            var flux3AspectRatio =
+                hasDimensions ? null
+                : finalAspectRatio == "7:3" ? "21:9"
+                : finalAspectRatio == "3:7" ? "9:21"
+                : finalAspectRatio;
             if (flux3AspectRatio != null && Array.IndexOf(Flux3AspectRatios, flux3AspectRatio) < 0)
             {
-                warnings.Add(OperationWarning.Unsupported(
-                    "aspectRatio",
-                    "FLUX 3 does not support aspect ratio " + finalAspectRatio + ". Using the endpoint's default auto aspect ratio."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "aspectRatio",
+                        "FLUX 3 does not support aspect ratio "
+                            + finalAspectRatio
+                            + ". Using the endpoint's default auto aspect ratio."
+                    )
+                );
                 flux3AspectRatio = null;
             }
 
             if (call.Mask != null)
             {
-                throw new UnsupportedFunctionalityException("FLUX 3 image masks", "'FLUX 3 image masks' functionality not supported.");
+                throw new UnsupportedFunctionalityException(
+                    "FLUX 3 image masks",
+                    "'FLUX 3 image masks' functionality not supported."
+                );
             }
 
             if (call.Seed != null && modelApi != BflApi.Latest)
@@ -317,7 +445,9 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
             Set(flux3Body, "aspect_ratio", flux3AspectRatio);
             if (inputImages.Count > 0)
             {
-                flux3Body["images"] = new JsonArray(inputImages.Select(image => (JsonNode?)JsonValue.Create(image)).ToArray());
+                flux3Body["images"] = new JsonArray(
+                    inputImages.Select(image => (JsonNode?)JsonValue.Create(image)).ToArray()
+                );
             }
 
             Set(flux3Body, "resolution", hasDimensions ? null : bflOptions.String("resolution"));
@@ -352,12 +482,25 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         Set(body, "image_prompt", bflOptions.String("imagePrompt"));
         for (var index = 0; index < inputImages.Count; index++)
         {
-            body[inputImageField + (index == 0 ? string.Empty : "_" + (index + 1).ToString(CultureInfo.InvariantCulture))] = inputImages[index];
+            body[
+                inputImageField
+                    + (
+                        index == 0
+                            ? string.Empty
+                            : "_" + (index + 1).ToString(CultureInfo.InvariantCulture)
+                    )
+            ] = inputImages[index];
         }
 
         if (call.Mask != null)
         {
-            Set(body, "mask", call.Mask.Type == "url" ? call.Mask.Url : Convert.ToBase64String(call.Mask.Data ?? Array.Empty<byte>()));
+            Set(
+                body,
+                "mask",
+                call.Mask.Type == "url"
+                    ? call.Mask.Url
+                    : Convert.ToBase64String(call.Mask.Data ?? Array.Empty<byte>())
+            );
         }
 
         Set(body, "output_format", bflOptions.String("outputFormat"));
@@ -376,10 +519,15 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         string baseUrl,
         IReadOnlyDictionary<string, string?> headers,
         BflOptions options,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        var pollIntervalMillis = options.Integer("pollIntervalMillis") ?? _provider.PollIntervalMillis ?? DefaultPollIntervalMillis;
-        var pollTimeoutMillis = options.Integer("pollTimeoutMillis") ?? _provider.PollTimeoutMillis ?? DefaultPollTimeoutMillis;
+        var pollIntervalMillis = options.Integer("pollIntervalMillis")
+            ?? _provider.PollIntervalMillis
+            ?? DefaultPollIntervalMillis;
+        var pollTimeoutMillis = options.Integer("pollTimeoutMillis")
+            ?? _provider.PollTimeoutMillis
+            ?? DefaultPollTimeoutMillis;
 
         var url = WithRequestId(pollUrl, requestId);
         // Credentials only go to a trusted provider host. For those the poll origin is the trusted origin.
@@ -388,11 +536,18 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
 
         var userAgentOnly = UserAgentOnly(headers);
         using var timeout = new CancellationTokenSource(pollTimeoutMillis);
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            timeout.Token
+        );
         string? lastStatus = null;
         var taskNotFoundAttempts = 0;
         AiSdkException TaskNotFoundError() =>
-            new AiSdkException("Black Forest Labs task " + requestId + " was not found via get_result before timing out");
+            new AiSdkException(
+                "Black Forest Labs task "
+                    + requestId
+                    + " was not found via get_result before timing out"
+            );
 
         // Record "Task not found" answers so a task that never appears is reported as such, not as a generic timeout.
         void TrackTaskNotFound()
@@ -412,15 +567,18 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
                 ProviderExchangeResult response;
                 try
                 {
-                    response = await ProviderExchange.GetResponseUrlAsync(
-                        _provider.HttpClient,
-                        url.AbsoluteUri,
-                        trustedOrigin,
-                        DownloadUrls.ValidateDownloadUrl,
-                        trusted ? headers : null,
-                        linked.Token,
-                        ProviderExchange.DownloadClient(_provider.Options),
-                        userAgentOnly).ConfigureAwait(false);
+                    response = await ProviderExchange
+                        .GetResponseUrlAsync(
+                            _provider.HttpClient,
+                            url.AbsoluteUri,
+                            trustedOrigin,
+                            DownloadUrls.ValidateDownloadUrl,
+                            trusted ? headers : null,
+                            linked.Token,
+                            ProviderExchange.DownloadClient(_provider.Options),
+                            userAgentOnly
+                        )
+                        .ConfigureAwait(false);
                 }
                 catch (ApiException exception)
                 {
@@ -440,19 +598,24 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
                 lastStatus = status;
                 if (status == "Ready")
                 {
-                    if (document.RootElement.TryGetProperty("result", out var result)
+                    if (
+                        document.RootElement.TryGetProperty("result", out var result)
                         && result.ValueKind == JsonValueKind.Object
-                        && result.TryGetProperty("sample", out var sample))
+                        && result.TryGetProperty("sample", out var sample)
+                    )
                     {
                         return new PolledImage(
                             sample.GetString()!,
                             Number(result, "seed"),
                             Number(result, "start_time"),
                             Number(result, "end_time"),
-                            Number(result, "duration"));
+                            Number(result, "duration")
+                        );
                     }
 
-                    throw new AiSdkException("Black Forest Labs poll response is Ready but missing result.sample");
+                    throw new AiSdkException(
+                        "Black Forest Labs poll response is Ready but missing result.sample"
+                    );
                 }
 
                 if (status == "Task not found" && allowTaskNotFound)
@@ -467,15 +630,22 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
                     throw new AiSdkException("Black Forest Labs generation failed.");
                 }
 
-                if (status == "Request Moderated" || status == "Content Moderated" || status == "Task not found")
+                if (
+                    status == "Request Moderated"
+                    || status == "Content Moderated"
+                    || status == "Task not found"
+                )
                 {
-                    throw new AiSdkException("Black Forest Labs generation failed: " + status + ".");
+                    throw new AiSdkException(
+                        "Black Forest Labs generation failed: " + status + "."
+                    );
                 }
 
                 await Task.Delay(pollIntervalMillis, linked.Token).ConfigureAwait(false);
             }
         }
-        catch (OperationCanceledException) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException)
+            when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
             throw lastStatus == "Task not found"
                 ? TaskNotFoundError()
@@ -495,25 +665,40 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
             {
                 if (root.TryGetProperty(name, out var value))
                 {
-                    valid &= value.ValueKind == JsonValueKind.String && Array.IndexOf(PollStatuses, value.GetString()) >= 0;
+                    valid &=
+                        value.ValueKind == JsonValueKind.String
+                        && Array.IndexOf(PollStatuses, value.GetString()) >= 0;
                     found ??= value.GetString();
                 }
             }
 
             valid &= found != null;
-            if (valid && root.TryGetProperty("result", out var result) && result.ValueKind != JsonValueKind.Null)
+            if (
+                valid
+                && root.TryGetProperty("result", out var result)
+                && result.ValueKind != JsonValueKind.Null
+            )
             {
-                valid = result.ValueKind == JsonValueKind.Object
-                    && result.TryGetProperty("sample", out var sample) && IsUrl(sample)
-                    && OptionalNumber(result, "seed") && OptionalNumber(result, "start_time")
-                    && OptionalNumber(result, "end_time") && OptionalNumber(result, "duration");
+                valid =
+                    result.ValueKind == JsonValueKind.Object
+                    && result.TryGetProperty("sample", out var sample)
+                    && IsUrl(sample)
+                    && OptionalNumber(result, "seed")
+                    && OptionalNumber(result, "start_time")
+                    && OptionalNumber(result, "end_time")
+                    && OptionalNumber(result, "duration");
             }
         }
 
         if (!valid)
         {
             document.Dispose();
-            throw new InvalidResponseDataException(text, found == null ? "Missing status in Black Forest Labs poll response" : "Invalid Black Forest Labs poll response");
+            throw new InvalidResponseDataException(
+                text,
+                found == null
+                    ? "Missing status in Black Forest Labs poll response"
+                    : "Invalid Black Forest Labs poll response"
+            );
         }
 
         status = found!;
@@ -536,9 +721,11 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
     private static Dictionary<string, JsonElement> RawOptions(JsonElement? providerOptions)
     {
         var result = new Dictionary<string, JsonElement>();
-        if (providerOptions is { ValueKind: JsonValueKind.Object } bag
+        if (
+            providerOptions is { ValueKind: JsonValueKind.Object } bag
             && bag.TryGetProperty("blackForestLabs", out var options)
-            && options.ValueKind == JsonValueKind.Object)
+            && options.ValueKind == JsonValueKind.Object
+        )
         {
             foreach (var property in options.EnumerateObject())
             {
@@ -551,7 +738,16 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
 
     private static double ParseNumber(string? text)
     {
-        return text != null && double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) ? number : double.NaN;
+        return
+            text != null
+            && double.TryParse(
+                text,
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out var number
+            )
+            ? number
+            : double.NaN;
     }
 
     private static JsonElement NumberElement(double value)
@@ -573,14 +769,22 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         var parts = size.Split('x');
         var width = ParseNumber(parts.Length > 0 ? parts[0] : null);
         var height = ParseNumber(parts.Length > 1 ? parts[1] : null);
-        if (double.IsNaN(width) || double.IsInfinity(width) || double.IsNaN(height) || double.IsInfinity(height) || width <= 0 || height <= 0)
+        if (
+            double.IsNaN(width)
+            || double.IsInfinity(width)
+            || double.IsNaN(height)
+            || double.IsInfinity(height)
+            || width <= 0
+            || height <= 0
+        )
         {
             return null;
         }
 
         var divisor = Gcd(width, height);
         return Math.Round(width / divisor).ToString("0", CultureInfo.InvariantCulture)
-            + ":" + Math.Round(height / divisor).ToString("0", CultureInfo.InvariantCulture);
+            + ":"
+            + Math.Round(height / divisor).ToString("0", CultureInfo.InvariantCulture);
     }
 
     private static double Gcd(double a, double b)
@@ -638,7 +842,13 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
 
     private sealed class PolledImage
     {
-        public PolledImage(string imageUrl, JsonElement? seed, JsonElement? startTime, JsonElement? endTime, JsonElement? duration)
+        public PolledImage(
+            string imageUrl,
+            JsonElement? seed,
+            JsonElement? startTime,
+            JsonElement? endTime,
+            JsonElement? duration
+        )
         {
             ImageUrl = imageUrl;
             Seed = seed;
@@ -663,16 +873,39 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
     {
         private static readonly string[] Schema =
         {
-            "resolution", "grounding", "version", "imagePrompt", "imagePromptStrength",
-            "inputImage", "inputImage2", "inputImage3", "inputImage4", "inputImage5",
-            "inputImage6", "inputImage7", "inputImage8", "inputImage9", "inputImage10",
-            "steps", "guidance", "width", "height", "outputFormat", "promptUpsampling", "raw",
-            "safetyTolerance", "webhookSecret", "webhookUrl", "pollIntervalMillis", "pollTimeoutMillis",
+            "resolution",
+            "grounding",
+            "version",
+            "imagePrompt",
+            "imagePromptStrength",
+            "inputImage",
+            "inputImage2",
+            "inputImage3",
+            "inputImage4",
+            "inputImage5",
+            "inputImage6",
+            "inputImage7",
+            "inputImage8",
+            "inputImage9",
+            "inputImage10",
+            "steps",
+            "guidance",
+            "width",
+            "height",
+            "outputFormat",
+            "promptUpsampling",
+            "raw",
+            "safetyTolerance",
+            "webhookSecret",
+            "webhookUrl",
+            "pollIntervalMillis",
+            "pollTimeoutMillis",
         };
 
         private static readonly string[] Resolutions = { "768sq", "1k", "1.5k", "2k", "4k" };
 
-        private readonly Dictionary<string, JsonElement> _values = new Dictionary<string, JsonElement>();
+        private readonly Dictionary<string, JsonElement> _values =
+            new Dictionary<string, JsonElement>();
 
         /// <summary>Set options in schema order.</summary>
         public IEnumerable<string> Keys => Schema.Where(_values.ContainsKey);
@@ -694,23 +927,47 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
 
                 var valid = key switch
                 {
-                    "resolution" => value.ValueKind == JsonValueKind.String && Array.IndexOf(Resolutions, value.GetString()) >= 0,
-                    "grounding" or "promptUpsampling" or "raw" => value.ValueKind is JsonValueKind.True or JsonValueKind.False,
-                    "version" => value.ValueKind == JsonValueKind.String && value.GetString() == "latest",
+                    "resolution" => value.ValueKind == JsonValueKind.String
+                        && Array.IndexOf(Resolutions, value.GetString()) >= 0,
+                    "grounding" or "promptUpsampling" or "raw" => value.ValueKind
+                        is JsonValueKind.True
+                            or JsonValueKind.False,
+                    "version" => value.ValueKind == JsonValueKind.String
+                        && value.GetString() == "latest",
                     "imagePrompt" or "webhookSecret" => value.ValueKind == JsonValueKind.String,
-                    "webhookUrl" => value.ValueKind == JsonValueKind.String && Uri.TryCreate(value.GetString(), UriKind.Absolute, out _),
+                    "webhookUrl" => value.ValueKind == JsonValueKind.String
+                        && Uri.TryCreate(value.GetString(), UriKind.Absolute, out _),
                     "imagePromptStrength" => InRange(value, 0, 1, integer: false),
                     "guidance" => InRange(value, 0, double.MaxValue, integer: false),
-                    "steps" => latest ? InRange(value, 1, 16, integer: true) : InRange(value, 1, double.MaxValue, integer: true),
-                    "width" or "height" => latest ? InRange(value, 64, 6256, integer: true) : InRange(value, 256, 1920, integer: true),
-                    "outputFormat" => value.ValueKind == JsonValueKind.String && (value.GetString() == "jpeg" || value.GetString() == "png"),
-                    "safetyTolerance" => InRange(value, 0, api == BflApi.Legacy ? 6 : 7, integer: true),
-                    "pollIntervalMillis" or "pollTimeoutMillis" => InRange(value, 1, double.MaxValue, integer: true),
+                    "steps" => latest
+                        ? InRange(value, 1, 16, integer: true)
+                        : InRange(value, 1, double.MaxValue, integer: true),
+                    "width" or "height" => latest
+                        ? InRange(value, 64, 6256, integer: true)
+                        : InRange(value, 256, 1920, integer: true),
+                    "outputFormat" => value.ValueKind == JsonValueKind.String
+                        && (value.GetString() == "jpeg" || value.GetString() == "png"),
+                    "safetyTolerance" => InRange(
+                        value,
+                        0,
+                        api == BflApi.Legacy ? 6 : 7,
+                        integer: true
+                    ),
+                    "pollIntervalMillis" or "pollTimeoutMillis" => InRange(
+                        value,
+                        1,
+                        double.MaxValue,
+                        integer: true
+                    ),
                     _ => value.ValueKind == JsonValueKind.String,
                 };
                 if (!valid)
                 {
-                    throw new InvalidArgumentException("providerOptions", null, "Invalid Black Forest Labs provider option " + key + ".");
+                    throw new InvalidArgumentException(
+                        "providerOptions",
+                        null,
+                        "Invalid Black Forest Labs provider option " + key + "."
+                    );
                 }
 
                 options._values[key] = value;
@@ -722,12 +979,20 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
                 var height = options.Height;
                 if ((width == null) != (height == null))
                 {
-                    throw new InvalidArgumentException("providerOptions", null, "width and height must be provided together");
+                    throw new InvalidArgumentException(
+                        "providerOptions",
+                        null,
+                        "width and height must be provided together"
+                    );
                 }
 
                 if (width != null && (long)width.Value * height!.Value > 16822272)
                 {
-                    throw new InvalidArgumentException("providerOptions", null, "width × height must not exceed 16822272 pixels");
+                    throw new InvalidArgumentException(
+                        "providerOptions",
+                        null,
+                        "width × height must not exceed 16822272 pixels"
+                    );
                 }
             }
 
@@ -762,7 +1027,9 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
             }
 
             var number = value.GetDouble();
-            return number >= min && number <= max && (!integer || (Math.Floor(number) == number && number <= int.MaxValue));
+            return number >= min
+                && number <= max
+                && (!integer || (Math.Floor(number) == number && number <= int.MaxValue));
         }
     }
 }

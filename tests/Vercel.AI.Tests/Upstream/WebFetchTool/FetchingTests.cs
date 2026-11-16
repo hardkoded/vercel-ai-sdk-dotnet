@@ -16,7 +16,10 @@ public sealed class FetchingTests
 {
     private const string Prefix = FilePath + "::createWebFetchTool > fetching::";
 
-    private static Tool Tool(Func<string, DownloadRequest, DownloadResponse> handler, WebFetchToolOptions? options = null)
+    private static Tool Tool(
+        Func<string, DownloadRequest, DownloadResponse> handler,
+        WebFetchToolOptions? options = null
+    )
     {
         options ??= new WebFetchToolOptions();
         options.Fetch = new RecordingFetch(handler).Fetch;
@@ -24,7 +27,11 @@ public sealed class FetchingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "converts HTML to markdown with the main content", Coverage = UpstreamCoverage.Covered, Note = "The HTML is converted by AngleSharp and a built-in extractor, not by defuddle.")]
+    [UpstreamTest(
+        Prefix + "converts HTML to markdown with the main content",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "The HTML is converted by AngleSharp and a built-in extractor, not by defuddle."
+    )]
     public async Task ConvertsHtmlToMarkdownWithTheMainContent()
     {
         var webFetch = Tool((_, _) => HtmlResponse(ArticleHtml, "text/html; charset=utf-8"));
@@ -32,7 +39,10 @@ public sealed class FetchingTests
         var output = await ExecuteAsync(webFetch, "https://example.com/blog/post#section");
 
         Assert.Equal("document", output.GetProperty("type").GetString());
-        Assert.Equal("https://example.com/blog/post#section", output.GetProperty("url").GetString());
+        Assert.Equal(
+            "https://example.com/blog/post#section",
+            output.GetProperty("url").GetString()
+        );
         Assert.Equal("https://example.com/blog/post", output.GetProperty("finalUrl").GetString());
         Assert.Equal("text/html", output.GetProperty("contentType").GetString());
         Assert.Equal("Test Page", output.GetProperty("title").GetString());
@@ -44,7 +54,10 @@ public sealed class FetchingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "sends GET requests preferring markdown with an identifying user agent", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "sends GET requests preferring markdown with an identifying user agent",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task SendsGetRequestsPreferringMarkdownWithAnIdentifyingUserAgent()
     {
         var fetch = new RecordingFetch((_, _) => DownloadResponse.Text("# Hello", "text/markdown"));
@@ -63,15 +76,27 @@ public sealed class FetchingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "passes defuddle options to the content extractor", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "passes defuddle options to the content extractor",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesDefuddleOptionsToTheContentExtractor()
     {
         var webFetch = Tool(
-            (_, _) => HtmlResponse(Html("""
-                <main><p>Main content that is long enough to be selected by the extractor as the primary content of this page.</p></main>
-                <aside id="sidebar"><p>Sidebar content that should be selected.</p></aside>
-                """)),
-            new WebFetchToolOptions { DefuddleOptions = new WebFetchDefuddleOptions { ContentSelector = "#sidebar" } });
+            (_, _) =>
+                HtmlResponse(
+                    Html(
+                        """
+                        <main><p>Main content that is long enough to be selected by the extractor as the primary content of this page.</p></main>
+                        <aside id="sidebar"><p>Sidebar content that should be selected.</p></aside>
+                        """
+                    )
+                ),
+            new WebFetchToolOptions
+            {
+                DefuddleOptions = new WebFetchDefuddleOptions { ContentSelector = "#sidebar" },
+            }
+        );
 
         var output = await ExecuteAsync(webFetch, "https://example.com/");
 
@@ -79,11 +104,25 @@ public sealed class FetchingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "extracts HTML without an <html> element", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "extracts HTML without an <html> element",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ExtractsHtmlWithoutAnHtmlElement()
     {
-        var paragraph = string.Concat(Enumerable.Repeat("The quick brown fox jumps over the lazy dog in the meadow. ", 3));
-        var webFetch = Tool((_, _) => HtmlResponse("<!doctype html><title>No Root</title><h1>Heading</h1><p>" + paragraph + "</p><p>" + paragraph + "</p>"));
+        var paragraph = string.Concat(
+            Enumerable.Repeat("The quick brown fox jumps over the lazy dog in the meadow. ", 3)
+        );
+        var webFetch = Tool(
+            (_, _) =>
+                HtmlResponse(
+                    "<!doctype html><title>No Root</title><h1>Heading</h1><p>"
+                        + paragraph
+                        + "</p><p>"
+                        + paragraph
+                        + "</p>"
+                )
+        );
 
         var output = await ExecuteAsync(webFetch, "https://example.com/");
 
@@ -93,10 +132,21 @@ public sealed class FetchingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "returns empty content for pages that require JavaScript", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "returns empty content for pages that require JavaScript",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ReturnsEmptyContentForPagesThatRequireJavaScript()
     {
-        var webFetch = Tool((_, _) => HtmlResponse(Html("<div id=\"root\"></div><script src=\"/app.js\"></script>", "<title>My App</title>")));
+        var webFetch = Tool(
+            (_, _) =>
+                HtmlResponse(
+                    Html(
+                        "<div id=\"root\"></div><script src=\"/app.js\"></script>",
+                        "<title>My App</title>"
+                    )
+                )
+        );
 
         var output = await ExecuteAsync(webFetch, "https://example.com/");
 
@@ -107,13 +157,26 @@ public sealed class FetchingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "normalizes whitespace in linear time", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "normalizes whitespace in linear time",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task NormalizesWhitespaceInLinearTime()
     {
         // Deep nesting selects the plain-text fallback. A long run of non-breaking spaces without a newline made the
         // previous whitespace pattern backtrack quadratically (about 10 seconds for this input).
-        var webFetch = Tool((_, _) => HtmlResponse(Html(
-            string.Concat(Enumerable.Repeat("<div>", 600)) + "start" + new string(' ', 160_000) + "end" + string.Concat(Enumerable.Repeat("</div>", 600)))));
+        var webFetch = Tool(
+            (_, _) =>
+                HtmlResponse(
+                    Html(
+                        string.Concat(Enumerable.Repeat("<div>", 600))
+                            + "start"
+                            + new string(' ', 160_000)
+                            + "end"
+                            + string.Concat(Enumerable.Repeat("</div>", 600))
+                    )
+                )
+        );
 
         var stopwatch = Stopwatch.StartNew();
         var output = await ExecuteAsync(webFetch, "https://example.com/");
@@ -124,11 +187,23 @@ public sealed class FetchingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "falls back to plain text for deeply nested HTML", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "falls back to plain text for deeply nested HTML",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task FallsBackToPlainTextForDeeplyNestedHtml()
     {
         const int depth = 1000;
-        var webFetch = Tool((_, _) => HtmlResponse(Html(string.Concat(Enumerable.Repeat("<div>", depth)) + "Deep text" + string.Concat(Enumerable.Repeat("</div>", depth)))));
+        var webFetch = Tool(
+            (_, _) =>
+                HtmlResponse(
+                    Html(
+                        string.Concat(Enumerable.Repeat("<div>", depth))
+                            + "Deep text"
+                            + string.Concat(Enumerable.Repeat("</div>", depth))
+                    )
+                )
+        );
 
         var output = await ExecuteAsync(webFetch, "https://example.com/");
 
@@ -140,7 +215,9 @@ public sealed class FetchingTests
     [UpstreamTest(Prefix + "returns text formats as is", Coverage = UpstreamCoverage.Covered)]
     public async Task ReturnsTextFormatsAsIs()
     {
-        var webFetch = Tool((_, _) => DownloadResponse.Text("{\"name\":\"ai\"}", "application/json"));
+        var webFetch = Tool(
+            (_, _) => DownloadResponse.Text("{\"name\":\"ai\"}", "application/json")
+        );
 
         var output = await ExecuteAsync(webFetch, "https://example.com/data.json");
 
@@ -150,10 +227,19 @@ public sealed class FetchingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "decodes the charset from the Content-Type header", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "decodes the charset from the Content-Type header",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task DecodesTheCharsetFromTheContentTypeHeader()
     {
-        var webFetch = Tool((_, _) => DownloadResponse.Bytes(new byte[] { 0x63, 0x61, 0x66, 0xe9 }, "text/plain; charset=iso-8859-1"));
+        var webFetch = Tool(
+            (_, _) =>
+                DownloadResponse.Bytes(
+                    new byte[] { 0x63, 0x61, 0x66, 0xe9 },
+                    "text/plain; charset=iso-8859-1"
+                )
+        );
 
         var output = await ExecuteAsync(webFetch, "https://example.com/");
 
@@ -161,13 +247,18 @@ public sealed class FetchingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "decodes the charset from a meta tag in HTML", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "decodes the charset from a meta tag in HTML",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task DecodesTheCharsetFromAMetaTagInHtml()
     {
         var page = Html(
             "<main><p>Un café crème, s’il vous plaît. Merci beaucoup pour votre accueil chaleureux.</p></main>",
-            "<meta charset=\"windows-1252\"><title>Café</title>");
-        var body = page.Select(character => character == '’' ? (byte)0x92 : (byte)character).ToArray();
+            "<meta charset=\"windows-1252\"><title>Café</title>"
+        );
+        var body = page.Select(character => character == '’' ? (byte)0x92 : (byte)character)
+            .ToArray();
         var webFetch = Tool((_, _) => DownloadResponse.Bytes(body, "text/html"));
 
         var output = await ExecuteAsync(webFetch, "https://example.com/");
@@ -177,10 +268,15 @@ public sealed class FetchingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "sniffs HTML when the content type is missing", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "sniffs HTML when the content type is missing",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task SniffsHtmlWhenTheContentTypeIsMissing()
     {
-        var webFetch = Tool((_, _) => DownloadResponse.Bytes(Encoding.UTF8.GetBytes(ArticleHtml), null));
+        var webFetch = Tool(
+            (_, _) => DownloadResponse.Bytes(Encoding.UTF8.GetBytes(ArticleHtml), null)
+        );
 
         var output = await ExecuteAsync(webFetch, "https://example.com/page");
 
@@ -192,10 +288,15 @@ public sealed class FetchingTests
     [InlineData("image/png")]
     [InlineData("application/pdf")]
     [InlineData("application/octet-stream")]
-    [UpstreamTest(Prefix + "rejects unsupported content type %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "rejects unsupported content type %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task RejectsUnsupportedContentType(string contentType)
     {
-        var webFetch = Tool((_, _) => DownloadResponse.Bytes(Encoding.UTF8.GetBytes("%PDF-1.4"), contentType));
+        var webFetch = Tool(
+            (_, _) => DownloadResponse.Bytes(Encoding.UTF8.GetBytes("%PDF-1.4"), contentType)
+        );
 
         var output = await ExecuteAsync(webFetch, "https://example.com/file");
 

@@ -35,17 +35,22 @@ public sealed class GatewayFetchMetadata
     }
 
     /// <summary>Gets the models the Gateway offers.</summary>
-    public async Task<GatewayFetchMetadataResponse> GetAvailableModelsAsync(CancellationToken cancellationToken = default)
+    public async Task<GatewayFetchMetadataResponse> GetAvailableModelsAsync(
+        CancellationToken cancellationToken = default
+    )
     {
         try
         {
-            var http = _config.Http ?? throw new InvalidOperationException("GatewayConfig.Http is required.");
+            var http = _config.Http
+                ?? throw new InvalidOperationException("GatewayConfig.Http is required.");
             using var document = await http.SendJsonAsync(
-                HttpMethod.Get,
-                new Uri(_config.BaseUrl + "/config"),
-                null,
-                await _config.ResolveHeadersAsync(cancellationToken).ConfigureAwait(false),
-                cancellationToken).ConfigureAwait(false);
+                    HttpMethod.Get,
+                    new Uri(_config.BaseUrl + "/config"),
+                    null,
+                    await _config.ResolveHeadersAsync(cancellationToken).ConfigureAwait(false),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             return ParseAvailableModels(document.RootElement);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -55,12 +60,16 @@ public sealed class GatewayFetchMetadata
     }
 
     /// <summary>Gets the credit balance of the account.</summary>
-    public async Task<GatewayCreditsResponse> GetCreditsAsync(CancellationToken cancellationToken = default)
+    public async Task<GatewayCreditsResponse> GetCreditsAsync(
+        CancellationToken cancellationToken = default
+    )
     {
         try
         {
             var baseUrl = new Uri(_config.BaseUrl);
-            var headers = await _config.ResolveHeadersAsync(cancellationToken).ConfigureAwait(false);
+            var headers = await _config
+                .ResolveHeadersAsync(cancellationToken)
+                .ConfigureAwait(false);
 
             // The credits endpoint selects the team from the `teamId` / `slug`
             // query parameter rather than the team header, so forward it there.
@@ -70,11 +79,24 @@ public sealed class GatewayFetchMetadata
             var teamIdOrSlug = GetTeamIdOrSlug(headers);
             if (teamIdOrSlug != null)
             {
-                url += (teamIdOrSlug.StartsWith("team_", StringComparison.Ordinal) ? "?teamId=" : "?slug=") + Uri.EscapeDataString(teamIdOrSlug);
+                url +=
+                    (
+                        teamIdOrSlug.StartsWith("team_", StringComparison.Ordinal)
+                            ? "?teamId="
+                            : "?slug="
+                    ) + Uri.EscapeDataString(teamIdOrSlug);
             }
 
-            var http = _config.Http ?? throw new InvalidOperationException("GatewayConfig.Http is required.");
-            using var document = await http.SendJsonAsync(HttpMethod.Get, new Uri(url), null, headers, cancellationToken).ConfigureAwait(false);
+            var http = _config.Http
+                ?? throw new InvalidOperationException("GatewayConfig.Http is required.");
+            using var document = await http.SendJsonAsync(
+                    HttpMethod.Get,
+                    new Uri(url),
+                    null,
+                    headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             return ParseCredits(document.RootElement);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -92,7 +114,13 @@ public sealed class GatewayFetchMetadata
 
         foreach (var pair in headers)
         {
-            if (string.Equals(pair.Key, GatewayErrors.TeamHeader, StringComparison.OrdinalIgnoreCase))
+            if (
+                string.Equals(
+                    pair.Key,
+                    GatewayErrors.TeamHeader,
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
             {
                 var value = pair.Value?.Trim();
                 return string.IsNullOrEmpty(value) ? null : value;
@@ -113,9 +141,15 @@ public sealed class GatewayFetchMetadata
 
     private static GatewayFetchMetadataResponse ParseAvailableModels(JsonElement root)
     {
-        if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("models", out var models) || models.ValueKind != JsonValueKind.Array)
+        if (
+            root.ValueKind != JsonValueKind.Object
+            || !root.TryGetProperty("models", out var models)
+            || models.ValueKind != JsonValueKind.Array
+        )
         {
-            throw new FormatException("Type validation failed: expected an object with a models array.");
+            throw new FormatException(
+                "Type validation failed: expected an object with a models array."
+            );
         }
 
         var entries = new List<GatewayLanguageModelEntry>();
@@ -124,7 +158,10 @@ public sealed class GatewayFetchMetadata
             var entry = ParseEntry(model);
 
             // Models of a type this SDK does not know are dropped.
-            if (entry.ModelType == null || GatewayLanguageModelEntry.KnownModelTypes.Contains(entry.ModelType))
+            if (
+                entry.ModelType == null
+                || GatewayLanguageModelEntry.KnownModelTypes.Contains(entry.ModelType)
+            )
             {
                 entries.Add(entry);
             }
@@ -165,7 +202,10 @@ public sealed class GatewayFetchMetadata
 
     private static GatewayModelPricing? ParsePricing(JsonElement model)
     {
-        if (!model.TryGetProperty("pricing", out var pricing) || pricing.ValueKind == JsonValueKind.Null)
+        if (
+            !model.TryGetProperty("pricing", out var pricing)
+            || pricing.ValueKind == JsonValueKind.Null
+        )
         {
             return null;
         }
@@ -199,7 +239,11 @@ public sealed class GatewayFetchMetadata
 
     private static string RequiredString(JsonElement parent, string name)
     {
-        if (parent.ValueKind != JsonValueKind.Object || !parent.TryGetProperty(name, out var value) || value.ValueKind != JsonValueKind.String)
+        if (
+            parent.ValueKind != JsonValueKind.Object
+            || !parent.TryGetProperty(name, out var value)
+            || value.ValueKind != JsonValueKind.String
+        )
         {
             throw new FormatException("Type validation failed: invalid or missing " + name + ".");
         }

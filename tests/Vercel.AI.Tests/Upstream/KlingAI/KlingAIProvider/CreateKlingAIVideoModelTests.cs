@@ -11,7 +11,8 @@ namespace Vercel.AI.Tests.Upstream.KlingAI.KlingAIProvider;
 /// <summary>Port of <c>klingai-provider.test.ts</c> &gt; <c>createKlingAI &gt; videoModel</c>.</summary>
 public sealed class CreateKlingAIVideoModelTests
 {
-    private const string Prefix = "packages/klingai/src/klingai-provider.test.ts::createKlingAI > videoModel::";
+    private const string Prefix =
+        "packages/klingai/src/klingai-provider.test.ts::createKlingAI > videoModel::";
 
     [Fact]
     [UpstreamTest(Prefix + "should be an alias for video", Coverage = UpstreamCoverage.Covered)]

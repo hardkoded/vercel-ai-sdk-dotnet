@@ -13,7 +13,8 @@ namespace Vercel.AI.Tests.Upstream.GenerateText;
 /// <summary>Shared pieces of the <c>options.timeout</c> tests of <c>generateText</c> and <c>streamText</c>.</summary>
 internal static class OptionsTimeoutSupport
 {
-    internal const string ValueSchema = "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}";
+    internal const string ValueSchema =
+        "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}";
 
     internal static readonly LanguageModelUsage Usage = new LanguageModelUsage(3, 10, 13);
 
@@ -26,17 +27,32 @@ internal static class OptionsTimeoutSupport
 
     internal static Tool ToolOne(Func<JsonElement, CancellationToken, Task<string>>? execute = null)
     {
-        return Tool.Function("tool1", null, ValueSchema, execute ?? ((_, _) => Task.FromResult("\"tool result\"")));
+        return Tool.Function(
+            "tool1",
+            null,
+            ValueSchema,
+            execute ?? ((_, _) => Task.FromResult("\"tool result\""))
+        );
     }
 
     internal static LanguageModelGenerateResult TextResult(string text)
     {
-        return new LanguageModelGenerateResult(new GeneratedContent[] { new GeneratedText(text) }, FinishReason.Stop, Usage, "stop");
+        return new LanguageModelGenerateResult(
+            new GeneratedContent[] { new GeneratedText(text) },
+            FinishReason.Stop,
+            Usage,
+            "stop"
+        );
     }
 
     internal static LanguageModelGenerateResult ToolCallResult(string input)
     {
-        return new LanguageModelGenerateResult(new GeneratedContent[] { new GeneratedToolCall("call-1", "tool1", input) }, FinishReason.ToolCalls, Usage, "tool-calls");
+        return new LanguageModelGenerateResult(
+            new GeneratedContent[] { new GeneratedToolCall("call-1", "tool1", input) },
+            FinishReason.ToolCalls,
+            Usage,
+            "tool-calls"
+        );
     }
 
     internal static LanguageModelStreamPart[] HelloParts()
@@ -70,7 +86,9 @@ internal static class OptionsTimeoutSupport
         };
     }
 
-    internal static async IAsyncEnumerable<LanguageModelStreamPart> Yield(IEnumerable<LanguageModelStreamPart> parts)
+    internal static async IAsyncEnumerable<LanguageModelStreamPart> Yield(
+        IEnumerable<LanguageModelStreamPart> parts
+    )
     {
         foreach (var part in parts)
         {
@@ -84,7 +102,8 @@ internal static class OptionsTimeoutSupport
         IEnumerable<LanguageModelStreamPart> first,
         Task gate,
         IEnumerable<LanguageModelStreamPart> rest,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
     {
         foreach (var part in first)
         {
@@ -101,9 +120,7 @@ internal static class OptionsTimeoutSupport
 
     internal static async Task Consume(StreamTextResult result)
     {
-        await foreach (var _ in result.Stream())
-        {
-        }
+        await foreach (var _ in result.Stream()) { }
     }
 
     internal static async Task WaitUntil(Func<bool> condition)
@@ -127,11 +144,20 @@ internal static class OptionsTimeoutSupport
         private readonly List<LanguageModelCallOptions> _calls = new();
         private readonly List<CancellationToken> _tokens = new();
 
-        public Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelGenerateResult>>? Generate { get; set; }
+        public Func<
+            LanguageModelCallOptions,
+            CancellationToken,
+            Task<LanguageModelGenerateResult>
+        >? Generate { get; set; }
 
-        public Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>>? Stream { get; set; }
+        public Func<
+            LanguageModelCallOptions,
+            CancellationToken,
+            Task<LanguageModelStreamResult>
+        >? Stream { get; set; }
 
-        public IReadOnlyDictionary<string, string> SupportedUrls => Vercel.AI.ProviderUtils.UrlSupport.None;
+        public IReadOnlyDictionary<string, string> SupportedUrls =>
+            Vercel.AI.ProviderUtils.UrlSupport.None;
 
         public string SpecificationVersion => "V4";
 
@@ -161,13 +187,19 @@ internal static class OptionsTimeoutSupport
             }
         }
 
-        public Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        public Task<LanguageModelGenerateResult> DoGenerateAsync(
+            LanguageModelCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
             Record(options, cancellationToken);
             return Generate!(options, cancellationToken);
         }
 
-        public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        public Task<LanguageModelStreamResult> DoStreamAsync(
+            LanguageModelCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
             Record(options, cancellationToken);
             return Stream!(options, cancellationToken);

@@ -21,23 +21,43 @@ public sealed class DeepSeekResponsesTests
     [SkippableFact]
     public async Task Should_stream_a_chat_reply_with_text_and_reasoning_parts_through_the_route()
     {
-        Skip.If(string.IsNullOrEmpty(Environment.GetEnvironmentVariable(DeepSeekProvider.ApiKeyVariable)));
+        Skip.If(
+            string.IsNullOrEmpty(
+                Environment.GetEnvironmentVariable(DeepSeekProvider.ApiKeyVariable)
+            )
+        );
         var client = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "unused" }));
         var model = DeepSeekProvider.Create().ResponsesModel("deepseek-v4-pro");
         var messages = new List<UIMessage>
         {
-            new(UIMessageRole.User, [new TextUIPart("Why is the sky blue? Answer in one sentence.")]) { Id = "user-1" },
+            new(
+                UIMessageRole.User,
+                [new TextUIPart("Why is the sky blue? Answer in one sentence.")]
+            )
+            {
+                Id = "user-1",
+            },
         };
 
         // POST /api/chat/deepseek-responses
-        var result = client.StreamTextAsync(new StreamTextOptions
-        {
-            Model = model,
-            Messages = UIMessageConversion.ConvertToModelMessages(messages),
-        });
+        var result = client.StreamTextAsync(
+            new StreamTextOptions
+            {
+                Model = model,
+                Messages = UIMessageConversion.ConvertToModelMessages(messages),
+            }
+        );
         UIMessage? reply = null;
-        await foreach (var message in UIMessageStreamConverter.ReadUIMessageStream(
-            new ReadUIMessageStreamOptions(UIMessageStreamConverter.ToUIMessageStream(result.Stream(), new ToUIMessageChunkOptions { SendReasoning = true }))))
+        await foreach (
+            var message in UIMessageStreamConverter.ReadUIMessageStream(
+                new ReadUIMessageStreamOptions(
+                    UIMessageStreamConverter.ToUIMessageStream(
+                        result.Stream(),
+                        new ToUIMessageChunkOptions { SendReasoning = true }
+                    )
+                )
+            )
+        )
         {
             reply = message;
         }

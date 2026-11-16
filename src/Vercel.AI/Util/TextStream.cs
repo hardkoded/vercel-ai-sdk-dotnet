@@ -35,7 +35,12 @@ public sealed class TextStreamPart
 public sealed class TextStreamResponse
 {
     /// <summary>Creates the response.</summary>
-    public TextStreamResponse(int status, string? statusText, HeaderCollection headers, ReadableStream<byte[]> body)
+    public TextStreamResponse(
+        int status,
+        string? statusText,
+        HeaderCollection headers,
+        ReadableStream<byte[]> body
+    )
     {
         Status = status;
         StatusText = statusText;
@@ -63,9 +68,79 @@ public static class TextStreams
     public static ReadableStream<string> ToTextStream(ReadableStream<TextStreamPart> stream)
     {
         var reader = stream.GetReader();
-        return new ReadableStream<string>(pull: async delegate (ReadableStreamController<string> controller)
-        {
-            while (true)
+        return new ReadableStream<string>(
+            pull: async delegate(ReadableStreamController<string> controller)
+            {
+                while (true)
+                {
+                    var read = await reader.ReadAsync().ConfigureAwait(false);
+                    if (read.Rejected)
+                    {
+                        controller.Error(read.Reason);
+                        return;
+                    }
+
+                    if (read.Done)
+                    {
+                        controller.Close();
+                        return;
+                    }
+
+                    if (read.HasValue && read.Value.Type == "text-delta")
+                    {
+                        controller.Enqueue(read.Value.Text ?? string.Empty);
+                        return;
+                    }
+                }
+            }
+        );
+    }
+
+    /// <summary>
+    /// Builds a response with <c>content-type: text/plain; charset=utf-8</c> unless already set.
+    /// Each string chunk is encoded as its own UTF-8 body chunk.
+    /// </summary>
+    public static TextStreamResponse CreateTextStreamResponse(
+        ReadableStream<string> stream,
+        int? status = null,
+        string? statusText = null,
+        HeaderCollection? headers = null
+    )
+    {
+        var prepared = PrepareHeaders.Apply(
+            headers,
+            new Dictionary<string, string> { { "content-type", "text/plain; charset=utf-8" } }
+        );
+        return new TextStreamResponse(status ?? 200, statusText, prepared, Encode(stream));
+    }
+
+    /// <summary>Encodes <paramref name="stream"/> as UTF-8 and writes it to <paramref name="response"/>.</summary>
+    public static Task PipeTextStreamToResponseAsync(
+        ServerResponse response,
+        ReadableStream<string> stream,
+        int? status = null,
+        string? statusText = null,
+        HeaderCollection? headers = null
+    )
+    {
+        var prepared = PrepareHeaders.Apply(
+            headers,
+            new Dictionary<string, string> { { "content-type", "text/plain; charset=utf-8" } }
+        );
+        return ServerResponseWriter.WriteAsync(
+            response,
+            Encode(stream),
+            status,
+            statusText,
+            prepared
+        );
+    }
+
+    private static ReadableStream<byte[]> Encode(ReadableStream<string> stream)
+    {
+        var reader = stream.GetReader();
+        return new ReadableStream<byte[]>(
+            pull: async delegate(ReadableStreamController<byte[]> controller)
             {
                 var read = await reader.ReadAsync().ConfigureAwait(false);
                 if (read.Rejected)
@@ -80,57 +155,10 @@ public static class TextStreams
                     return;
                 }
 
-                if (read.HasValue && read.Value.Type == "text-delta")
-                {
-                    controller.Enqueue(read.Value.Text ?? string.Empty);
-                    return;
-                }
+                controller.Enqueue(
+                    Encoding.UTF8.GetBytes(read.HasValue ? read.Value : string.Empty)
+                );
             }
-        });
-    }
-
-    /// <summary>
-    /// Builds a response with <c>content-type: text/plain; charset=utf-8</c> unless already set.
-    /// Each string chunk is encoded as its own UTF-8 body chunk.
-    /// </summary>
-    public static TextStreamResponse CreateTextStreamResponse(ReadableStream<string> stream, int? status = null, string? statusText = null, HeaderCollection? headers = null)
-    {
-        var prepared = PrepareHeaders.Apply(headers, new Dictionary<string, string>
-        {
-            { "content-type", "text/plain; charset=utf-8" },
-        });
-        return new TextStreamResponse(status ?? 200, statusText, prepared, Encode(stream));
-    }
-
-    /// <summary>Encodes <paramref name="stream"/> as UTF-8 and writes it to <paramref name="response"/>.</summary>
-    public static Task PipeTextStreamToResponseAsync(ServerResponse response, ReadableStream<string> stream, int? status = null, string? statusText = null, HeaderCollection? headers = null)
-    {
-        var prepared = PrepareHeaders.Apply(headers, new Dictionary<string, string>
-        {
-            { "content-type", "text/plain; charset=utf-8" },
-        });
-        return ServerResponseWriter.WriteAsync(response, Encode(stream), status, statusText, prepared);
-    }
-
-    private static ReadableStream<byte[]> Encode(ReadableStream<string> stream)
-    {
-        var reader = stream.GetReader();
-        return new ReadableStream<byte[]>(pull: async delegate (ReadableStreamController<byte[]> controller)
-        {
-            var read = await reader.ReadAsync().ConfigureAwait(false);
-            if (read.Rejected)
-            {
-                controller.Error(read.Reason);
-                return;
-            }
-
-            if (read.Done)
-            {
-                controller.Close();
-                return;
-            }
-
-            controller.Enqueue(Encoding.UTF8.GetBytes(read.HasValue ? read.Value : string.Empty));
-        });
+        );
     }
 }

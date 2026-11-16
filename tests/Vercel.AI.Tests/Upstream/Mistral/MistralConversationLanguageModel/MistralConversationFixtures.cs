@@ -14,41 +14,66 @@ namespace Vercel.AI.Tests.Upstream.Mistral.MistralConversationLanguageModel;
 /// <summary>Shared constants and helpers of <c>mistral-conversation-language-model.test.ts</c>.</summary>
 internal static class MistralConversationFixtures
 {
-    public const string UsageJson = "{\"prompt_tokens\":10,\"completion_tokens\":20,\"total_tokens\":30,\"connector_tokens\":5,\"connectors\":{\"web_search\":1}}";
+    public const string UsageJson =
+        "{\"prompt_tokens\":10,\"completion_tokens\":20,\"total_tokens\":30,\"connector_tokens\":5,\"connectors\":{\"web_search\":1}}";
 
-    public const string Execution = "{\"type\":\"tool.execution\",\"id\":\"search-1\",\"name\":\"web_search\",\"arguments\":\"latest results\",\"info\":{\"status\":\"success\"}}";
+    public const string Execution =
+        "{\"type\":\"tool.execution\",\"id\":\"search-1\",\"name\":\"web_search\",\"arguments\":\"latest results\",\"info\":{\"status\":\"success\"}}";
 
-    public const string Reference = "{\"type\":\"tool_reference\",\"tool\":\"web_search\",\"title\":\"Results\",\"url\":\"https://example.com/results\"}";
+    public const string Reference =
+        "{\"type\":\"tool_reference\",\"tool\":\"web_search\",\"title\":\"Results\",\"url\":\"https://example.com/results\"}";
 
-    public static readonly string Answer = "{\"type\":\"message.output\",\"model\":\"mistral-small-latest\",\"content\":[{\"type\":\"text\",\"text\":\"Spain won.\"}," + Reference + "]}";
+    public static readonly string Answer =
+        "{\"type\":\"message.output\",\"model\":\"mistral-small-latest\",\"content\":[{\"type\":\"text\",\"text\":\"Spain won.\"},"
+        + Reference
+        + "]}";
 
-    public static readonly IReadOnlyList<ModelMessage> PromptMessages = new ModelMessage[] { new UserModelMessage("Who won?") };
+    public static readonly IReadOnlyList<ModelMessage> PromptMessages = new ModelMessage[]
+    {
+        new UserModelMessage("Who won?"),
+    };
 
     /// <summary>Maps to <c>mockId()</c>.</summary>
     public static Func<string> MockId()
     {
         var count = 0;
-        return () => "id-" + Interlocked.Increment(ref count).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return () =>
+            "id-"
+            + Interlocked
+                .Increment(ref count)
+                .ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
 
     public static MistralProvider Provider(HttpMessageHandler handler)
     {
-        return MistralProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-api-key", GenerateId = MockId() }, handler);
+        return MistralProvider.Create(
+            new OpenAICompatibleOptions { ApiKey = "test-api-key", GenerateId = MockId() },
+            handler
+        );
     }
 
-    public static ConversationModel Model(HttpMessageHandler handler, string modelId = "mistral-small-latest")
+    public static ConversationModel Model(
+        HttpMessageHandler handler,
+        string modelId = "mistral-small-latest"
+    )
     {
         return Provider(handler).Conversation(modelId);
     }
 
     public static string GenerateBody(string outputs, string? usage = UsageJson)
     {
-        return "{\"conversation_id\":\"conversation-1\",\"outputs\":" + outputs + (usage == null ? string.Empty : ",\"usage\":" + usage) + "}";
+        return "{\"conversation_id\":\"conversation-1\",\"outputs\":"
+            + outputs
+            + (usage == null ? string.Empty : ",\"usage\":" + usage)
+            + "}";
     }
 
     public static UpstreamCapture Capture(string? outputs = null)
     {
-        return new UpstreamCapture { ResponseBody = GenerateBody(outputs ?? "[" + Execution + "," + Answer + "]") };
+        return new UpstreamCapture
+        {
+            ResponseBody = GenerateBody(outputs ?? "[" + Execution + "," + Answer + "]"),
+        };
     }
 
     public static UpstreamCapture StreamCapture(params string[] events)
@@ -101,23 +126,43 @@ internal static class MistralConversationFixtures
     public static GeneratedToolCall ToolCall(LanguageModelStreamPart part)
     {
         var call = (ToolCallStreamPart)part;
-        return new GeneratedToolCall(call.ToolCallId, call.ToolName, call.ArgumentsJson, call.ProviderMetadata) { ProviderExecuted = true };
+        return new GeneratedToolCall(
+            call.ToolCallId,
+            call.ToolName,
+            call.ArgumentsJson,
+            call.ProviderMetadata
+        )
+        {
+            ProviderExecuted = true,
+        };
     }
 
-    public static IReadOnlyList<ModelMessage> Followup(GeneratedToolCall toolCall, string info = "{\"status\":\"success\"}")
+    public static IReadOnlyList<ModelMessage> Followup(
+        GeneratedToolCall toolCall,
+        string info = "{\"status\":\"success\"}"
+    )
     {
         return new ModelMessage[]
         {
             PromptMessages[0],
-            new AssistantModelMessage(new AssistantContentPart[]
-            {
-                new AssistantToolCallPart(toolCall),
-                new AssistantToolResultPart(
-                    toolCall.ToolCallId,
-                    toolCall.ToolName,
-                    new ToolModelMessage(toolCall.ToolCallId, toolCall.ToolName, "{\"info\":" + info + "}", false, "json")),
-                new AssistantTextPart("Spain won."),
-            }),
+            new AssistantModelMessage(
+                new AssistantContentPart[]
+                {
+                    new AssistantToolCallPart(toolCall),
+                    new AssistantToolResultPart(
+                        toolCall.ToolCallId,
+                        toolCall.ToolName,
+                        new ToolModelMessage(
+                            toolCall.ToolCallId,
+                            toolCall.ToolName,
+                            "{\"info\":" + info + "}",
+                            false,
+                            "json"
+                        )
+                    ),
+                    new AssistantTextPart("Spain won."),
+                }
+            ),
             new UserModelMessage("Who did they beat?"),
         };
     }
@@ -127,13 +172,22 @@ internal static class MistralConversationFixtures
     {
         var left = JsonNode.Parse(expected);
         var right = actual == null ? null : JsonNode.Parse(actual.ToJsonString());
-        Assert.True(JsonNode.DeepEquals(left, right), "Expected " + expected + " but was " + actual?.ToJsonString());
+        Assert.True(
+            JsonNode.DeepEquals(left, right),
+            "Expected " + expected + " but was " + actual?.ToJsonString()
+        );
     }
 
     /// <summary>Maps to <c>toMatchObject</c>: every property of the expected object is in the actual object.</summary>
     public static void AssertMatches(string expected, JsonNode? actual)
     {
-        Assert.True(Subset(JsonNode.Parse(expected), actual == null ? null : JsonNode.Parse(actual.ToJsonString())), "Expected " + expected + " to match " + actual?.ToJsonString());
+        Assert.True(
+            Subset(
+                JsonNode.Parse(expected),
+                actual == null ? null : JsonNode.Parse(actual.ToJsonString())
+            ),
+            "Expected " + expected + " to match " + actual?.ToJsonString()
+        );
     }
 
     private static bool Subset(JsonNode? expected, JsonNode? actual)
@@ -142,11 +196,16 @@ internal static class MistralConversationFixtures
         {
             case JsonObject expectedObject:
                 return actual is JsonObject actualObject
-                    && expectedObject.All(pair => actualObject.ContainsKey(pair.Key) && Subset(pair.Value, actualObject[pair.Key]));
+                    && expectedObject.All(pair =>
+                        actualObject.ContainsKey(pair.Key)
+                        && Subset(pair.Value, actualObject[pair.Key])
+                    );
             case JsonArray expectedArray:
                 return actual is JsonArray actualArray
                     && actualArray.Count == expectedArray.Count
-                    && expectedArray.Select((item, index) => Subset(item, actualArray[index])).All(match => match);
+                    && expectedArray
+                        .Select((item, index) => Subset(item, actualArray[index]))
+                        .All(match => match);
             default:
                 return JsonNode.DeepEquals(expected, actual);
         }

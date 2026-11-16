@@ -12,7 +12,10 @@ namespace Vercel.AI.Tests.Upstream.Alibaba.AlibabaChatLanguageModelTests;
 public sealed class DoStreamPreserveThinkingTests
 {
     [Fact]
-    [UpstreamTest("packages/alibaba/src/alibaba-chat-language-model.test.ts::doStream > preserveThinking::should send explicit preserve_thinking false and omit historical reasoning", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/alibaba/src/alibaba-chat-language-model.test.ts::doStream > preserveThinking::should send explicit preserve_thinking false and omit historical reasoning",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_send_explicit_preserve_thinking_false_and_omit_historical_reasoning()
     {
         var handler = FixtureStream("alibaba-reasoning");
@@ -25,20 +28,24 @@ public sealed class DoStreamPreserveThinkingTests
                 Prompt = new ModelMessage[]
                 {
                     new UserModelMessage("Think before answering."),
-                    new AssistantModelMessage(new AssistantContentPart[]
-                    {
-                        new AssistantReasoningPart("Hidden reasoning."),
-                        new AssistantTextPart("Visible answer."),
-                    }),
+                    new AssistantModelMessage(
+                        new AssistantContentPart[]
+                        {
+                            new AssistantReasoningPart("Hidden reasoning."),
+                            new AssistantTextPart("Visible answer."),
+                        }
+                    ),
                     new UserModelMessage("Continue."),
                 },
                 ProviderOptions = AlibabaOptions("{\"preserveThinking\":false}"),
-            });
+            }
+        );
 
         var body = JsonNode.Parse(handler.Body)!.AsObject();
         Assert.False(body["preserve_thinking"]!.GetValue<bool>());
         AssertJson(
             "[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"Think before answering.\"}]},{\"role\":\"assistant\",\"content\":\"Visible answer.\"},{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"Continue.\"}]}]",
-            body["messages"]);
+            body["messages"]
+        );
     }
 }

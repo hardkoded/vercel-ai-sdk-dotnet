@@ -18,7 +18,10 @@ internal static class AzureProviderOptions
     /// Picks the entries of the <c>azure</c> provider options whose key is in <paramref name="keys"/>.
     /// Raw values are used so defaults are not injected. Null values are dropped.
     /// </summary>
-    public static JsonObject PickAzureOptions(JsonElement? providerOptions, IEnumerable<string> keys)
+    public static JsonObject PickAzureOptions(
+        JsonElement? providerOptions,
+        IEnumerable<string> keys
+    )
     {
         return PickKeys(OpenAIJson.Child(providerOptions, "azure"), keys);
     }
@@ -48,7 +51,10 @@ internal static class AzureProviderOptions
     /// Merges the picked Azure options into <c>openai</c> for the OpenAI model; <c>azure</c> wins.
     /// Returns <paramref name="providerOptions"/> unchanged when there is nothing to merge.
     /// </summary>
-    public static JsonElement? WithAzureOptionsForOpenAI(JsonElement? providerOptions, JsonObject azureOptions)
+    public static JsonElement? WithAzureOptionsForOpenAI(
+        JsonElement? providerOptions,
+        JsonObject azureOptions
+    )
     {
         if (azureOptions.Count == 0)
         {
@@ -69,14 +75,23 @@ internal static class AzureProviderOptions
     }
 
     /// <summary>One <c>unsupported</c> warning per option, <c>providerOptions.azure.{key}</c>.</summary>
-    public static List<OpenAICallWarning> UnsupportedOptionWarnings(JsonObject options, string details)
+    public static List<OpenAICallWarning> UnsupportedOptionWarnings(
+        JsonObject options,
+        string details
+    )
     {
         var warnings = new List<OpenAICallWarning>();
         foreach (var pair in options)
         {
             if (pair.Value != null)
             {
-                warnings.Add(new OpenAICallWarning("unsupported", "providerOptions.azure." + pair.Key, details));
+                warnings.Add(
+                    new OpenAICallWarning(
+                        "unsupported",
+                        "providerOptions.azure." + pair.Key,
+                        details
+                    )
+                );
             }
         }
 

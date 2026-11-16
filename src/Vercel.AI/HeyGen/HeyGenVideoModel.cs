@@ -17,37 +17,47 @@ namespace Vercel.AI.HeyGen;
 /// </summary>
 public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
 {
-    private static readonly string[] Modes = { "text_to_video", "image_to_video", "reference_to_video" };
+    private static readonly string[] Modes =
+    {
+        "text_to_video",
+        "image_to_video",
+        "reference_to_video",
+    };
     private static readonly string[] Resolutions = { "480p", "768p", "1080p", "2k" };
     private static readonly string[] PromptEnhancements = { "turbo", "quality", "disabled" };
     private static readonly string[] AspectRatios = { "21:9", "16:9", "4:3", "1:1", "3:4", "9:16" };
 
     // HeyGen's named size classes do not consistently equal the short edge.
-    private static readonly Dictionary<string, (string Resolution, string AspectRatio)> FrameSizes = new(StringComparer.Ordinal)
-    {
-        ["960x416"] = ("480p", "21:9"),
-        ["832x480"] = ("480p", "16:9"),
-        ["640x480"] = ("480p", "4:3"),
-        ["480x480"] = ("480p", "1:1"),
-        ["480x640"] = ("480p", "3:4"),
-        ["480x832"] = ("480p", "9:16"),
-        ["1536x672"] = ("768p", "21:9"),
-        ["1344x768"] = ("768p", "16:9"),
-        ["1024x768"] = ("768p", "4:3"),
-        ["768x768"] = ("768p", "1:1"),
-        ["768x1024"] = ("768p", "3:4"),
-        ["768x1344"] = ("768p", "9:16"),
-        ["1890x1080"] = ("1080p", "16:9"),
-        ["1080x1890"] = ("1080p", "9:16"),
-        ["2688x1536"] = ("2k", "16:9"),
-        ["1536x2688"] = ("2k", "9:16"),
-    };
+    private static readonly Dictionary<string, (string Resolution, string AspectRatio)> FrameSizes =
+        new(StringComparer.Ordinal)
+        {
+            ["960x416"] = ("480p", "21:9"),
+            ["832x480"] = ("480p", "16:9"),
+            ["640x480"] = ("480p", "4:3"),
+            ["480x480"] = ("480p", "1:1"),
+            ["480x640"] = ("480p", "3:4"),
+            ["480x832"] = ("480p", "9:16"),
+            ["1536x672"] = ("768p", "21:9"),
+            ["1344x768"] = ("768p", "16:9"),
+            ["1024x768"] = ("768p", "4:3"),
+            ["768x768"] = ("768p", "1:1"),
+            ["768x1024"] = ("768p", "3:4"),
+            ["768x1344"] = ("768p", "9:16"),
+            ["1890x1080"] = ("1080p", "16:9"),
+            ["1080x1890"] = ("1080p", "9:16"),
+            ["2688x1536"] = ("2k", "16:9"),
+            ["1536x2688"] = ("2k", "9:16"),
+        };
 
     private readonly HeyGenProvider _provider;
     private readonly Func<DateTimeOffset> _clock;
 
     /// <summary>Creates a model. <paramref name="clock"/> sets the response timestamp.</summary>
-    public HeyGenVideoModel(HeyGenProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
+    public HeyGenVideoModel(
+        HeyGenProvider provider,
+        string modelId,
+        Func<DateTimeOffset>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -85,27 +95,49 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
     }
 
     /// <summary>Starts a job and polls it until the video is ready.</summary>
-    public async Task<VideoResult> DoGenerateAsync(VideoCallOptions options, CancellationToken cancellationToken)
+    public async Task<VideoResult> DoGenerateAsync(
+        VideoCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
-        var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest { Model = this, Prompt = new VideoPrompt(options.Prompt), Duration = options.DurationSeconds }, cancellationToken).ConfigureAwait(false);
+        var result = await GenerateVideo
+            .GenerateVideoAsync(
+                new GenerateVideoRequest
+                {
+                    Model = this,
+                    Prompt = new VideoPrompt(options.Prompt),
+                    Duration = options.DurationSeconds,
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return new VideoResult(null, result.Video.Data, result.Video.MediaType);
     }
 
     /// <inheritdoc />
-    public Task<VideoModelResult> DoGenerateAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public Task<VideoModelResult> DoGenerateAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         throw new NotSupportedException("HeyGen generates videos with doStart and doStatus.");
     }
 
     /// <inheritdoc />
-    public Task<VideoWebhook> HandleWebhookAsync(Func<Task<VideoWebhook>> webhook, CancellationToken cancellationToken)
+    public Task<VideoWebhook> HandleWebhookAsync(
+        Func<Task<VideoWebhook>> webhook,
+        CancellationToken cancellationToken
+    )
     {
         throw new NotSupportedException("HeyGen does not handle webhooks.");
     }
 
     /// <inheritdoc />
-    public async Task<VideoStartResult> DoStartAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public async Task<VideoStartResult> DoStartAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var timestamp = _clock();
@@ -114,20 +146,22 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
         var (body, operation) = Build(call, options, warnings);
 
         var response = await SendAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "v3/models/videos"),
-            ProviderExchange.Json(body.ToJsonString()),
-            call,
-            cancellationToken).ConfigureAwait(false);
+                HttpMethod.Post,
+                ApiKeys.Combine(_provider.Options.BaseUrl, "v3/models/videos"),
+                ProviderExchange.Json(body.ToJsonString()),
+                call,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         string? videoId = null;
         try
         {
             using var document = JsonDocument.Parse(response.Body);
-            videoId = Object(document.RootElement, "data") is { } data ? String(data, "video_id") : null;
+            videoId = Object(document.RootElement, "data") is { } data
+                ? String(data, "video_id")
+                : null;
         }
-        catch (JsonException)
-        {
-        }
+        catch (JsonException) { }
 
         if (string.IsNullOrEmpty(videoId))
         {
@@ -135,31 +169,52 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
         }
 
         operation["videoId"] = videoId;
-        var ordered = new JsonObject { ["videoId"] = videoId, ["mode"] = operation["mode"]!.DeepClone(), ["resolution"] = operation["resolution"]!.DeepClone() };
+        var ordered = new JsonObject
+        {
+            ["videoId"] = videoId,
+            ["mode"] = operation["mode"]!.DeepClone(),
+            ["resolution"] = operation["resolution"]!.DeepClone(),
+        };
         return new VideoStartResult(
             OperationJson.Parse(ordered.ToJsonString()),
             warnings,
             OperationJson.Parse(new JsonObject { ["heygen"] = ordered.DeepClone() }.ToJsonString()),
-            Response(response, timestamp));
+            Response(response, timestamp)
+        );
     }
 
     /// <inheritdoc />
-    public async Task<VideoStatusResult> DoStatusAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public async Task<VideoStatusResult> DoStatusAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var operation = ReadOperation(call.Operation);
         var timestamp = _clock();
         var response = await SendAsync(
-            HttpMethod.Get,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "v3/models/videos/" + Uri.EscapeDataString(operation["videoId"]!.GetValue<string>())),
-            null,
-            call,
-            cancellationToken).ConfigureAwait(false);
+                HttpMethod.Get,
+                ApiKeys.Combine(
+                    _provider.Options.BaseUrl,
+                    "v3/models/videos/"
+                        + Uri.EscapeDataString(operation["videoId"]!.GetValue<string>())
+                ),
+                null,
+                call,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         using var document = JsonDocument.Parse(response.Body);
         var data = Object(document.RootElement, "data")
-            ?? throw new InvalidResponseDataException(response.Body, "HeyGen returned an unexpected status response.");
+            ?? throw new InvalidResponseDataException(
+                response.Body,
+                "HeyGen returned an unexpected status response."
+            );
         var status = String(data, "status")
-            ?? throw new InvalidResponseDataException(response.Body, "HeyGen returned an unexpected status response.");
+            ?? throw new InvalidResponseDataException(
+                response.Body,
+                "HeyGen returned an unexpected status response."
+            );
 
         var metadata = (JsonObject)operation.DeepClone();
         CopyNumber(data, "duration", metadata, "duration");
@@ -171,9 +226,16 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
         }
 
         CopyNumber(data, "seed", metadata, "seed");
-        if (Object(data, "timings") is { } timings && timings.TryGetProperty("inference", out var inference) && inference.ValueKind == JsonValueKind.Number)
+        if (
+            Object(data, "timings") is { } timings
+            && timings.TryGetProperty("inference", out var inference)
+            && inference.ValueKind == JsonValueKind.Number
+        )
         {
-            metadata["timings"] = new JsonObject { ["inference"] = JsonNode.Parse(inference.GetRawText()) };
+            metadata["timings"] = new JsonObject
+            {
+                ["inference"] = JsonNode.Parse(inference.GetRawText()),
+            };
         }
 
         var failureCode = String(data, "failure_code");
@@ -183,60 +245,118 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
         }
 
         var providerResponse = Response(response, timestamp);
-        var providerMetadata = OperationJson.Parse(new JsonObject { ["heygen"] = metadata }.ToJsonString());
+        var providerMetadata = OperationJson.Parse(
+            new JsonObject { ["heygen"] = metadata }.ToJsonString()
+        );
         if (status is "pending" or "processing")
         {
-            return new VideoStatusResult("pending", providerMetadata: providerMetadata, response: providerResponse);
+            return new VideoStatusResult(
+                "pending",
+                providerMetadata: providerMetadata,
+                response: providerResponse
+            );
         }
 
         if (status is "failed" or "cancelled")
         {
             var message = String(data, "failure_message") ?? "HeyGen video generation " + status;
-            return new VideoStatusResult("error", error: message + (failureCode != null ? " (" + failureCode + ")" : string.Empty), providerMetadata: providerMetadata, response: providerResponse);
+            return new VideoStatusResult(
+                "error",
+                error: message + (failureCode != null ? " (" + failureCode + ")" : string.Empty),
+                providerMetadata: providerMetadata,
+                response: providerResponse
+            );
         }
 
         var videoUrl = String(data, "video_url");
         if (status != "completed" || string.IsNullOrEmpty(videoUrl))
         {
-            throw new InvalidResponseDataException(response.Body, "HeyGen returned an unexpected video status or a completed video without a URL.");
+            throw new InvalidResponseDataException(
+                response.Body,
+                "HeyGen returned an unexpected video status or a completed video without a URL."
+            );
         }
 
         return new VideoStatusResult(
             "completed",
             new[] { new VideoOutput("url", videoUrl, mediaType: "video/mp4") },
             warnings: Array.Empty<OperationWarning>(),
-            providerMetadata: OperationJson.Parse(new JsonObject { ["heygen"] = new JsonObject { ["videos"] = new JsonArray(metadata.DeepClone()) } }.ToJsonString()),
-            response: providerResponse);
+            providerMetadata: OperationJson.Parse(
+                new JsonObject
+                {
+                    ["heygen"] = new JsonObject
+                    {
+                        ["videos"] = new JsonArray(metadata.DeepClone()),
+                    },
+                }.ToJsonString()
+            ),
+            response: providerResponse
+        );
     }
 
     // HeyGen reports errors as { error: { code, message, param } }.
-    private async Task<ProviderExchangeResult> SendAsync(HttpMethod method, Uri uri, HttpContent? content, VideoModelCall call, CancellationToken cancellationToken)
+    private async Task<ProviderExchangeResult> SendAsync(
+        HttpMethod method,
+        Uri uri,
+        HttpContent? content,
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
-            return await ProviderExchange.SendAsync(_provider._httpClient, method, uri, content, ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers), cancellationToken).ConfigureAwait(false);
+            return await ProviderExchange
+                .SendAsync(
+                    _provider._httpClient,
+                    method,
+                    uri,
+                    content,
+                    ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
-        catch (ApiException exception) when (HeyGenError.ErrorMessage(exception.ResponseBody) is { } message)
+        catch (ApiException exception)
+            when (HeyGenError.ErrorMessage(exception.ResponseBody) is { } message)
         {
             throw ProviderHttp.MapStatus(exception.StatusCode, message, exception.ResponseBody);
         }
     }
 
-    private (JsonObject Body, JsonObject Operation) Build(VideoModelCall call, Options options, List<OperationWarning> warnings)
+    private (JsonObject Body, JsonObject Operation) Build(
+        VideoModelCall call,
+        Options options,
+        List<OperationWarning> warnings
+    )
     {
         if (string.IsNullOrEmpty(call.Prompt) || call.Prompt.Length > 32000)
         {
-            throw new InvalidArgumentException("prompt", call.Prompt, "HeyGen requires a prompt between 1 and 32,000 characters.");
+            throw new InvalidArgumentException(
+                "prompt",
+                call.Prompt,
+                "HeyGen requires a prompt between 1 and 32,000 characters."
+            );
         }
 
-        if (call.Duration is { } duration && (duration != Math.Floor(duration) || duration < 5 || duration > 15))
+        if (
+            call.Duration is { } duration
+            && (duration != Math.Floor(duration) || duration < 5 || duration > 15)
+        )
         {
-            throw new InvalidArgumentException("duration", duration, "HeyGen duration must be an integer between 5 and 15 seconds.");
+            throw new InvalidArgumentException(
+                "duration",
+                duration,
+                "HeyGen duration must be an integer between 5 and 15 seconds."
+            );
         }
 
         if (call.Seed is { } seed && (seed != Math.Floor(seed) || seed < 0 || seed > uint.MaxValue))
         {
-            throw new InvalidArgumentException("seed", call.Seed, "HeyGen seed must be an unsigned 32-bit integer.");
+            throw new InvalidArgumentException(
+                "seed",
+                call.Seed,
+                "HeyGen seed must be an unsigned 32-bit integer."
+            );
         }
 
         if (call.N > 1)
@@ -251,24 +371,41 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
 
         if (call.GenerateAudio == false)
         {
-            warnings.Add(OperationWarning.Unsupported("generateAudio", "HeyGen always generates audio alongside the video."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "generateAudio",
+                    "HeyGen always generates audio alongside the video."
+                )
+            );
         }
 
         var frames = call.FrameImages ?? Array.Empty<VideoFrameFile>();
         if (frames.Any(frame => frame.FrameType != "first_frame") || frames.Count > 1)
         {
-            throw new InvalidArgumentException("frameImages", null, "HeyGen supports a single first frame, not last-frame conditioning.");
+            throw new InvalidArgumentException(
+                "frameImages",
+                null,
+                "HeyGen supports a single first frame, not last-frame conditioning."
+            );
         }
 
         if (frames.Count > 0 && call.Image != null)
         {
-            throw new InvalidArgumentException("image", null, "Supply either image or a first frame, not both.");
+            throw new InvalidArgumentException(
+                "image",
+                null,
+                "Supply either image or a first frame, not both."
+            );
         }
 
         var firstFrame = frames.Count > 0 ? frames[0].Image : call.Image;
         if (firstFrame != null && options.Image != null)
         {
-            throw new InvalidArgumentException("image", null, "Supply either a standard image or providerOptions.heygen.image, not both.");
+            throw new InvalidArgumentException(
+                "image",
+                null,
+                "Supply either a standard image or providerOptions.heygen.image, not both."
+            );
         }
 
         var image = firstFrame != null ? ToAsset(firstFrame, "image") : options.Image;
@@ -292,7 +429,11 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
             }
             else
             {
-                throw new InvalidArgumentException("inputReferences", null, "HeyGen references require an image, video, or audio mediaType.");
+                throw new InvalidArgumentException(
+                    "inputReferences",
+                    null,
+                    "HeyGen references require an image, video, or audio mediaType."
+                );
             }
         }
 
@@ -300,20 +441,48 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
         referenceVideos.AddRange(options.ReferenceVideos);
         referenceAudio.AddRange(options.ReferenceAudio);
         var referenceCount = referenceImages.Count + referenceVideos.Count + referenceAudio.Count;
-        if (referenceImages.Count > 9 || referenceVideos.Count > 3 || referenceAudio.Count > 3 || referenceCount > 12)
+        if (
+            referenceImages.Count > 9
+            || referenceVideos.Count > 3
+            || referenceAudio.Count > 3
+            || referenceCount > 12
+        )
         {
-            throw new InvalidArgumentException("inputReferences", null, "HeyGen accepts at most 9 images, 3 videos, 3 audio references, and 12 references in total.");
+            throw new InvalidArgumentException(
+                "inputReferences",
+                null,
+                "HeyGen accepts at most 9 images, 3 videos, 3 audio references, and 12 references in total."
+            );
         }
 
-        var mode = options.Mode ?? (image != null ? "image_to_video" : referenceCount > 0 ? "reference_to_video" : "text_to_video");
-        if ((mode == "image_to_video" && image == null) || (mode != "image_to_video" && image != null))
+        var mode = options.Mode
+            ?? (
+                image != null ? "image_to_video"
+                : referenceCount > 0 ? "reference_to_video"
+                : "text_to_video"
+            );
+        if (
+            (mode == "image_to_video" && image == null)
+            || (mode != "image_to_video" && image != null)
+        )
         {
-            throw new InvalidArgumentException("image", null, "A first-frame image is required for image_to_video and cannot be used in other modes.");
+            throw new InvalidArgumentException(
+                "image",
+                null,
+                "A first-frame image is required for image_to_video and cannot be used in other modes."
+            );
         }
 
-        if ((mode != "reference_to_video" && referenceCount > 0) || (mode == "reference_to_video" && referenceImages.Count + referenceVideos.Count == 0))
+        if (
+            (mode != "reference_to_video" && referenceCount > 0)
+            || (mode == "reference_to_video" && referenceImages.Count + referenceVideos.Count == 0)
+        )
         {
-            throw new InvalidArgumentException("inputReferences", null, "References are only supported in reference_to_video, which requires at least one image or video reference.");
+            throw new InvalidArgumentException(
+                "inputReferences",
+                null,
+                "References are only supported in reference_to_video, which requires at least one image or video reference."
+            );
         }
 
         (string Resolution, string AspectRatio)? frameSize = null;
@@ -321,31 +490,57 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
         {
             if (!FrameSizes.TryGetValue(call.Resolution, out var size))
             {
-                throw new InvalidArgumentException("resolution", call.Resolution, "Unsupported HeyGen frame size. Use a documented frame size or providerOptions.heygen.resolution to select 480p, 768p, 1080p, or 2k.");
+                throw new InvalidArgumentException(
+                    "resolution",
+                    call.Resolution,
+                    "Unsupported HeyGen frame size. Use a documented frame size or providerOptions.heygen.resolution to select 480p, 768p, 1080p, or 2k."
+                );
             }
 
             frameSize = size;
         }
 
         var resolution = options.Resolution ?? frameSize?.Resolution ?? "768p";
-        var aspectRatio = call.AspectRatio ?? frameSize?.AspectRatio ?? (mode == "text_to_video" ? "16:9" : "adaptive");
+        var aspectRatio = call.AspectRatio
+            ?? frameSize?.AspectRatio
+            ?? (mode == "text_to_video" ? "16:9" : "adaptive");
         if (mode == "image_to_video")
         {
             if (call.AspectRatio != null || frameSize != null)
             {
-                warnings.Add(OperationWarning.Unsupported("aspectRatio", "HeyGen image-to-video follows the first frame aspect ratio; only the resolution size class is applied."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "aspectRatio",
+                        "HeyGen image-to-video follows the first frame aspect ratio; only the resolution size class is applied."
+                    )
+                );
             }
         }
         else
         {
-            if (!AspectRatios.Contains(aspectRatio) && !(mode == "reference_to_video" && aspectRatio == "adaptive"))
+            if (
+                !AspectRatios.Contains(aspectRatio)
+                && !(mode == "reference_to_video" && aspectRatio == "adaptive")
+            )
             {
-                throw new InvalidArgumentException("aspectRatio", aspectRatio, "Unsupported HeyGen aspect ratio for " + mode + ": " + aspectRatio + ".");
+                throw new InvalidArgumentException(
+                    "aspectRatio",
+                    aspectRatio,
+                    "Unsupported HeyGen aspect ratio for " + mode + ": " + aspectRatio + "."
+                );
             }
 
-            if ((resolution == "1080p" || resolution == "2k") && aspectRatio != "16:9" && aspectRatio != "9:16")
+            if (
+                (resolution == "1080p" || resolution == "2k")
+                && aspectRatio != "16:9"
+                && aspectRatio != "9:16"
+            )
             {
-                throw new InvalidArgumentException("aspectRatio", aspectRatio, "HeyGen 1080p and 2k require an explicit 16:9 or 9:16 aspect ratio for text-to-video and reference-to-video.");
+                throw new InvalidArgumentException(
+                    "aspectRatio",
+                    aspectRatio,
+                    "HeyGen 1080p and 2k require an explicit 16:9 or 9:16 aspect ratio for text-to-video and reference-to-video."
+                );
             }
         }
 
@@ -387,20 +582,29 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
     {
         if (assets.Count > 0)
         {
-            body[field] = new JsonArray(assets.Select(asset => (JsonNode?)AssetBody(asset, kind)).ToArray());
+            body[field] = new JsonArray(
+                assets.Select(asset => (JsonNode?)AssetBody(asset, kind)).ToArray()
+            );
         }
     }
 
     private static Asset ToAsset(VideoModelFile file, string kind)
     {
-        if (file.MediaType != null && !file.MediaType.StartsWith(kind + "/", StringComparison.Ordinal))
+        if (
+            file.MediaType != null
+            && !file.MediaType.StartsWith(kind + "/", StringComparison.Ordinal)
+        )
         {
             throw new InvalidArgumentException(kind, null, "Expected a " + kind + " mediaType.");
         }
 
         return file.Type == "url"
             ? new Asset("url") { Url = file.Url }
-            : new Asset("base64") { MediaType = file.MediaType, Data = Convert.ToBase64String(file.Data ?? Array.Empty<byte>()) };
+            : new Asset("base64")
+            {
+                MediaType = file.MediaType,
+                Data = Convert.ToBase64String(file.Data ?? Array.Empty<byte>()),
+            };
     }
 
     private static JsonObject AssetBody(Asset asset, string kind)
@@ -408,30 +612,51 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
         switch (asset.Type)
         {
             case "url":
-                if (!Uri.TryCreate(asset.Url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
+                if (
+                    !Uri.TryCreate(asset.Url, UriKind.Absolute, out var uri)
+                    || uri.Scheme != Uri.UriSchemeHttps
+                )
                 {
-                    throw new InvalidArgumentException(kind, asset.Url, "HeyGen input URLs must be absolute HTTPS URLs.");
+                    throw new InvalidArgumentException(
+                        kind,
+                        asset.Url,
+                        "HeyGen input URLs must be absolute HTTPS URLs."
+                    );
                 }
 
                 return new JsonObject { ["type"] = "url", ["url"] = asset.Url };
             case "asset_id":
                 return new JsonObject { ["type"] = "asset_id", ["asset_id"] = asset.AssetId };
             default:
-                if (asset.MediaType == null || !asset.MediaType.StartsWith(kind + "/", StringComparison.Ordinal))
+                if (
+                    asset.MediaType == null
+                    || !asset.MediaType.StartsWith(kind + "/", StringComparison.Ordinal)
+                )
                 {
-                    throw new InvalidArgumentException(kind, null, "Expected a " + kind + " mediaType.");
+                    throw new InvalidArgumentException(
+                        kind,
+                        null,
+                        "Expected a " + kind + " mediaType."
+                    );
                 }
 
-                return new JsonObject { ["type"] = "base64", ["media_type"] = asset.MediaType, ["data"] = asset.Data };
+                return new JsonObject
+                {
+                    ["type"] = "base64",
+                    ["media_type"] = asset.MediaType,
+                    ["data"] = asset.Data,
+                };
         }
     }
 
     private static Options ReadOptions(JsonElement providerOptions)
     {
         var options = new Options();
-        if (providerOptions.ValueKind != JsonValueKind.Object
+        if (
+            providerOptions.ValueKind != JsonValueKind.Object
             || !providerOptions.TryGetProperty(HeyGenProvider.ProviderId, out var heygen)
-            || heygen.ValueKind == JsonValueKind.Null)
+            || heygen.ValueKind == JsonValueKind.Null
+        )
         {
             return options;
         }
@@ -475,12 +700,20 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
         var type = String(element, "type");
         switch (type)
         {
-            case "url" when String(element, "url") is { } url && url.StartsWith("https://", StringComparison.Ordinal):
+            case "url"
+                when String(element, "url") is { } url
+                    && url.StartsWith("https://", StringComparison.Ordinal):
                 return new Asset("url") { Url = url };
             case "asset_id" when !string.IsNullOrEmpty(String(element, "assetId")):
                 return new Asset("asset_id") { AssetId = String(element, "assetId") };
-            case "base64" when !string.IsNullOrEmpty(String(element, "mediaType")) && !string.IsNullOrEmpty(String(element, "data")):
-                return new Asset("base64") { MediaType = String(element, "mediaType"), Data = String(element, "data") };
+            case "base64"
+                when !string.IsNullOrEmpty(String(element, "mediaType"))
+                    && !string.IsNullOrEmpty(String(element, "data")):
+                return new Asset("base64")
+                {
+                    MediaType = String(element, "mediaType"),
+                    Data = String(element, "data"),
+                };
             default:
                 throw Invalid(name, "expected a url, asset_id, or base64 asset.");
         }
@@ -504,25 +737,46 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
 
     private static InvalidArgumentException Invalid(string name, string message)
     {
-        return new InvalidArgumentException("providerOptions.heygen." + name, null, "Invalid HeyGen provider options: " + message);
+        return new InvalidArgumentException(
+            "providerOptions.heygen." + name,
+            null,
+            "Invalid HeyGen provider options: " + message
+        );
     }
 
     private static JsonObject ReadOperation(object? value)
     {
-        if (value is JsonElement { ValueKind: JsonValueKind.Object } element
+        if (
+            value is JsonElement { ValueKind: JsonValueKind.Object } element
             && String(element, "videoId") is { Length: > 0 } videoId
-            && String(element, "mode") is { } mode && Modes.Contains(mode)
-            && String(element, "resolution") is { } resolution && Resolutions.Contains(resolution))
+            && String(element, "mode") is { } mode
+            && Modes.Contains(mode)
+            && String(element, "resolution") is { } resolution
+            && Resolutions.Contains(resolution)
+        )
         {
-            return new JsonObject { ["videoId"] = videoId, ["mode"] = mode, ["resolution"] = resolution };
+            return new JsonObject
+            {
+                ["videoId"] = videoId,
+                ["mode"] = mode,
+                ["resolution"] = resolution,
+            };
         }
 
-        throw new InvalidArgumentException("operation", value, "HeyGen operations are objects with a videoId, mode, and resolution.");
+        throw new InvalidArgumentException(
+            "operation",
+            value,
+            "HeyGen operations are objects with a videoId, mode, and resolution."
+        );
     }
 
     private ProviderResponse Response(ProviderExchangeResult response, DateTimeOffset timestamp)
     {
-        return new ProviderResponse(response.Headers, timestamp: timestamp.UtcDateTime, modelId: ModelId);
+        return new ProviderResponse(
+            response.Headers,
+            timestamp: timestamp.UtcDateTime,
+            modelId: ModelId
+        );
     }
 
     private static void CopyNumber(JsonElement data, string name, JsonObject target, string field)
@@ -535,12 +789,20 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
 
     private static JsonElement? Object(JsonElement element, string name)
     {
-        return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Object ? value : null;
+        return
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Object
+            ? value
+            : null;
     }
 
     private static string? String(JsonElement element, string name)
     {
-        return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+        return
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.String
             ? value.GetString()
             : null;
     }

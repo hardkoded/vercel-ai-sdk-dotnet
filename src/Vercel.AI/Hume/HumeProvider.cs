@@ -126,7 +126,11 @@ public sealed class HumeSpeechRequest
 public sealed class HumeSpeechResponse
 {
     /// <summary>Creates response metadata.</summary>
-    public HumeSpeechResponse(DateTimeOffset timestamp, string modelId, IReadOnlyDictionary<string, string> headers)
+    public HumeSpeechResponse(
+        DateTimeOffset timestamp,
+        string modelId,
+        IReadOnlyDictionary<string, string> headers
+    )
     {
         Timestamp = timestamp;
         ModelId = modelId ?? string.Empty;
@@ -147,7 +151,12 @@ public sealed class HumeSpeechResponse
 public sealed class HumeSpeechResult
 {
     /// <summary>Creates a speech result.</summary>
-    public HumeSpeechResult(byte[] audio, string mediaType, IReadOnlyList<HumeWarning> warnings, HumeSpeechResponse response)
+    public HumeSpeechResult(
+        byte[] audio,
+        string mediaType,
+        IReadOnlyList<HumeWarning> warnings,
+        HumeSpeechResponse response
+    )
     {
         Audio = audio ?? Array.Empty<byte>();
         MediaType = mediaType ?? "audio/mpeg";
@@ -187,9 +196,14 @@ public sealed class HumeProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider.</summary>
-    public static new HumeProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new HumeProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new HumeProvider(client, options);
     }
 
@@ -215,7 +229,10 @@ public sealed class HumeProvider : OpenAICompatibleProvider
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
+        options.BaseUrl =
+            string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
+                ? DefaultBaseUrl
+                : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "HUME_API_KEY";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
@@ -249,7 +266,10 @@ public sealed class HumeProvider : OpenAICompatibleProvider
         }
 
         /// <inheritdoc />
-        public async Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
+        public async Task<SpeechResult> DoGenerateAsync(
+            SpeechCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
             var request = new HumeSpeechRequest(options.Text) { Voice = options.Voice };
             var result = await GenerateAsync(request, cancellationToken).ConfigureAwait(false);
@@ -257,7 +277,10 @@ public sealed class HumeProvider : OpenAICompatibleProvider
         }
 
         /// <summary>Synthesizes speech and returns the audio bytes with response metadata.</summary>
-        public async Task<HumeSpeechResult> GenerateAsync(HumeSpeechRequest request, CancellationToken cancellationToken)
+        public async Task<HumeSpeechResult> GenerateAsync(
+            HumeSpeechRequest request,
+            CancellationToken cancellationToken
+        )
         {
             if (request == null)
             {
@@ -266,23 +289,38 @@ public sealed class HumeProvider : OpenAICompatibleProvider
 
             var warnings = new List<HumeWarning>();
             var format = request.OutputFormat ?? "mp3";
-            if (!string.Equals(format, "mp3", StringComparison.Ordinal)
+            if (
+                !string.Equals(format, "mp3", StringComparison.Ordinal)
                 && !string.Equals(format, "pcm", StringComparison.Ordinal)
-                && !string.Equals(format, "wav", StringComparison.Ordinal))
+                && !string.Equals(format, "wav", StringComparison.Ordinal)
+            )
             {
-                warnings.Add(new HumeWarning("unsupported", "outputFormat", "Unsupported output format: " + format + ". Using mp3 instead."));
+                warnings.Add(
+                    new HumeWarning(
+                        "unsupported",
+                        "outputFormat",
+                        "Unsupported output format: " + format + ". Using mp3 instead."
+                    )
+                );
                 format = "mp3";
             }
 
             if (!string.IsNullOrEmpty(request.Language))
             {
-                warnings.Add(new HumeWarning(
-                    "unsupported",
-                    "language",
-                    "Hume speech models do not support language selection. Language parameter \"" + request.Language + "\" was ignored."));
+                warnings.Add(
+                    new HumeWarning(
+                        "unsupported",
+                        "language",
+                        "Hume speech models do not support language selection. Language parameter \""
+                            + request.Language
+                            + "\" was ignored."
+                    )
+                );
             }
 
-            var voice = string.IsNullOrEmpty(request.Voice) ? HumeSpeechRequest.DefaultVoiceId : request.Voice;
+            var voice = string.IsNullOrEmpty(request.Voice)
+                ? HumeSpeechRequest.DefaultVoiceId
+                : request.Voice;
             var utterance = new JsonObject
             {
                 ["text"] = request.Text,
@@ -302,21 +340,34 @@ public sealed class HumeProvider : OpenAICompatibleProvider
             var started = options?.Clock != null ? options.Clock() : DateTimeOffset.UtcNow;
             var headers = ProviderExchange.Merge(_provider.CreateHeaders(), request.Headers);
             ProviderExchange.AddUserAgent(headers, "hume");
-            var response = await ProviderExchange.SendAsync(
-                _provider._httpClient,
-                HttpMethod.Post,
-                ApiKeys.Combine(_provider.Options.BaseUrl, "/v0/tts/file"),
-                ProviderExchange.Json(body.ToJsonString()),
-                headers,
-                cancellationToken).ConfigureAwait(false);
+            var response = await ProviderExchange
+                .SendAsync(
+                    _provider._httpClient,
+                    HttpMethod.Post,
+                    ApiKeys.Combine(_provider.Options.BaseUrl, "/v0/tts/file"),
+                    ProviderExchange.Json(body.ToJsonString()),
+                    headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             var mediaType = "audio/" + format;
-            if (response.Headers.TryGetValue("Content-Type", out var contentType) && contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase))
+            if (
+                response.Headers.TryGetValue("Content-Type", out var contentType)
+                && contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase)
+            )
             {
                 var separator = contentType.IndexOf(';');
-                mediaType = (separator >= 0 ? contentType.Substring(0, separator) : contentType).Trim();
+                mediaType = (
+                    separator >= 0 ? contentType.Substring(0, separator) : contentType
+                ).Trim();
             }
 
-            return new HumeSpeechResult(response.Bytes, mediaType, warnings, new HumeSpeechResponse(started, string.Empty, response.Headers));
+            return new HumeSpeechResult(
+                response.Bytes,
+                mediaType,
+                warnings,
+                new HumeSpeechResponse(started, string.Empty, response.Headers)
+            );
         }
     }
 }
@@ -325,14 +376,20 @@ public sealed class HumeProvider : OpenAICompatibleProvider
 public static class HumeServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddHume(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddHume(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(HumeProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new HumeProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(HumeProvider.ProviderId), options);
+            return new HumeProvider(
+                sp.GetRequiredService<IHttpClientFactory>().CreateClient(HumeProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

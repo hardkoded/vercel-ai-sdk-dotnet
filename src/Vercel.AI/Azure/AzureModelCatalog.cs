@@ -7,7 +7,13 @@ namespace Vercel.AI.Azure;
 /// <summary>Request routing of an Azure-owned model. Maps to <c>AzureRequestConfig</c> in <c>azure-model-catalog.ts</c>.</summary>
 public sealed class AzureModelRequestConfig
 {
-    internal AzureModelRequestConfig(bool maiImage, string? speechVoiceModel, string? transcribeName, bool transcribeSupportsTimestamps, bool maiStreamingTranscription)
+    internal AzureModelRequestConfig(
+        bool maiImage,
+        string? speechVoiceModel,
+        string? transcribeName,
+        bool transcribeSupportsTimestamps,
+        bool maiStreamingTranscription
+    )
     {
         MaiImage = maiImage;
         SpeechVoiceModel = speechVoiceModel;
@@ -35,7 +41,9 @@ public sealed class AzureModelRequestConfig
 /// <summary>Azure-owned models. Maps to <c>azureModelCatalog</c> in <c>azure-model-catalog.ts</c>.</summary>
 public static class AzureModelCatalog
 {
-    private static readonly Dictionary<string, AzureModelRequestConfig> Entries = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, AzureModelRequestConfig> Entries = new(
+        StringComparer.Ordinal
+    )
     {
         ["mai-image-2.5"] = Image(),
         ["mai-image-2.5-flash"] = Image(),
@@ -46,9 +54,27 @@ public static class AzureModelCatalog
         ["mai-voice-2.1"] = Speech("MAI-Voice-2.1"),
         ["mai-voice-2-flash"] = Speech("MAI-Voice-2-Flash"),
         ["mai-voice-2"] = Speech("MAI-Voice-2"),
-        ["mai-transcribe-2"] = new AzureModelRequestConfig(false, null, "MAI-Transcribe-2", true, false),
-        ["mai-transcribe-1.5"] = new AzureModelRequestConfig(false, null, "MAI-Transcribe-1.5", false, false),
-        ["mai-transcribe-2-streaming"] = new AzureModelRequestConfig(false, null, null, false, true),
+        ["mai-transcribe-2"] = new AzureModelRequestConfig(
+            false,
+            null,
+            "MAI-Transcribe-2",
+            true,
+            false
+        ),
+        ["mai-transcribe-1.5"] = new AzureModelRequestConfig(
+            false,
+            null,
+            "MAI-Transcribe-1.5",
+            false,
+            false
+        ),
+        ["mai-transcribe-2-streaming"] = new AzureModelRequestConfig(
+            false,
+            null,
+            null,
+            false,
+            true
+        ),
     };
 
     /// <summary>Returns the entry for <paramref name="modelId"/>, case-insensitively, or null. Maps to <c>getAzureModelEntry</c>.</summary>

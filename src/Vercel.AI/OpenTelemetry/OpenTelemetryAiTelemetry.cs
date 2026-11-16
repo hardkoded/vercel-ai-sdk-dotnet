@@ -26,7 +26,10 @@ public sealed class OpenTelemetryAiTelemetry : IAiTelemetry
             return Empty.Instance;
         }
 
-        activity.SetTag("gen_ai.operation.name", operation == null ? null : GenAiConventions.MapOperationName(operation));
+        activity.SetTag(
+            "gen_ai.operation.name",
+            operation == null ? null : GenAiConventions.MapOperationName(operation)
+        );
         activity.SetTag("gen_ai.request.model", modelId);
         return activity;
     }
@@ -39,7 +42,10 @@ public sealed class OpenTelemetryAiTelemetry : IAiTelemetry
             return;
         }
 
-        activity.SetTag("gen_ai.response.finish_reasons", new[] { GenAiConventions.FormatFinishReason(finishReason) });
+        activity.SetTag(
+            "gen_ai.response.finish_reasons",
+            new[] { GenAiConventions.FormatFinishReason(finishReason) }
+        );
         if (finishReason == FinishReason.Error)
         {
             activity.SetStatus(ActivityStatusCode.Error);
@@ -97,9 +103,7 @@ public sealed class OpenTelemetryAiTelemetry : IAiTelemetry
     {
         public static readonly Empty Instance = new();
 
-        public void Dispose()
-        {
-        }
+        public void Dispose() { }
     }
 }
 

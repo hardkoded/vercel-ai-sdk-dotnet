@@ -51,7 +51,8 @@ internal static class AmazonBedrockEventStreamDecoder
     public static async IAsyncEnumerable<T> Create<T>(
         Stream body,
         Action<DecodedEvent, Action<T>> processEvent,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
     {
         var buffer = new byte[8192];
         var count = 0;
@@ -59,7 +60,8 @@ internal static class AmazonBedrockEventStreamDecoder
         var outputs = new List<T>();
         while (true)
         {
-            var read = await body.ReadAsync(chunk, 0, chunk.Length, cancellationToken).ConfigureAwait(false);
+            var read = await body.ReadAsync(chunk, 0, chunk.Length, cancellationToken)
+                .ConfigureAwait(false);
             if (read == 0)
             {
                 break;
@@ -79,7 +81,12 @@ internal static class AmazonBedrockEventStreamDecoder
                 if (declaredLength > MaxMessageLength)
                 {
                     throw new AiSdkException(
-                        "Amazon Bedrock event-stream frame length " + declaredLength + " exceeds the maximum of " + MaxMessageLength + " bytes.");
+                        "Amazon Bedrock event-stream frame length "
+                            + declaredLength
+                            + " exceeds the maximum of "
+                            + MaxMessageLength
+                            + " bytes."
+                    );
                 }
 
                 var totalLength = (int)declaredLength;
@@ -104,7 +111,10 @@ internal static class AmazonBedrockEventStreamDecoder
         if (count > 0)
         {
             throw new AiSdkException(
-                "Incomplete Amazon Bedrock event-stream frame: " + count + " buffered bytes remain at end of stream.");
+                "Incomplete Amazon Bedrock event-stream frame: "
+                    + count
+                    + " buffered bytes remain at end of stream."
+            );
         }
     }
 
@@ -112,7 +122,9 @@ internal static class AmazonBedrockEventStreamDecoder
     {
         if (totalLength < PreludeLength + MessageCrcLength)
         {
-            throw new AiSdkException("Reached end of stream before the event-stream frame was complete.");
+            throw new AiSdkException(
+                "Reached end of stream before the event-stream frame was complete."
+            );
         }
 
         var headersLength = (int)ReadUInt32(frame, 4);
@@ -121,7 +133,12 @@ internal static class AmazonBedrockEventStreamDecoder
         if (preludeCrc != actualPreludeCrc)
         {
             throw new AiSdkException(
-                "The prelude checksum specified in the message (" + preludeCrc + ") does not match the calculated CRC32 checksum (" + actualPreludeCrc + ").");
+                "The prelude checksum specified in the message ("
+                    + preludeCrc
+                    + ") does not match the calculated CRC32 checksum ("
+                    + actualPreludeCrc
+                    + ")."
+            );
         }
 
         var messageCrc = ReadUInt32(frame, totalLength - MessageCrcLength);
@@ -129,7 +146,8 @@ internal static class AmazonBedrockEventStreamDecoder
         if (messageCrc != actualMessageCrc)
         {
             throw new AiSdkException(
-                "The message checksum did not match the expected value of " + actualMessageCrc + ".");
+                "The message checksum did not match the expected value of " + actualMessageCrc + "."
+            );
         }
 
         var headers = ReadHeaders(frame, PreludeLength, headersLength);
@@ -138,12 +156,20 @@ internal static class AmazonBedrockEventStreamDecoder
         headers.TryGetValue(":message-type", out var messageType);
         headers.TryGetValue(":event-type", out var eventType);
         headers.TryGetValue(":exception-type", out var exceptionType);
-        return new DecodedEvent(messageType, eventType, exceptionType, Encoding.UTF8.GetString(frame, payloadStart, payloadLength));
+        return new DecodedEvent(
+            messageType,
+            eventType,
+            exceptionType,
+            Encoding.UTF8.GetString(frame, payloadStart, payloadLength)
+        );
     }
 
     private static uint ReadUInt32(byte[] data, int offset)
     {
-        return ((uint)data[offset] << 24) | ((uint)data[offset + 1] << 16) | ((uint)data[offset + 2] << 8) | data[offset + 3];
+        return ((uint)data[offset] << 24)
+            | ((uint)data[offset + 1] << 16)
+            | ((uint)data[offset + 2] << 8)
+            | data[offset + 3];
     }
 
     private static int ReadUInt16(byte[] data, int offset)
@@ -239,7 +265,12 @@ internal static class AmazonBedrockEventStreamDecoder
 /// <summary>A parsed stream chunk, or the reason it could not be parsed.</summary>
 internal sealed class AmazonBedrockStreamChunk
 {
-    private AmazonBedrockStreamChunk(bool success, JsonElement value, JsonElement rawValue, string? error)
+    private AmazonBedrockStreamChunk(
+        bool success,
+        JsonElement value,
+        JsonElement rawValue,
+        string? error
+    )
     {
         Success = success;
         Value = value;
@@ -257,9 +288,11 @@ internal sealed class AmazonBedrockStreamChunk
 
     public string? Error { get; }
 
-    public static AmazonBedrockStreamChunk Ok(JsonElement value, JsonElement rawValue) => new(true, value, rawValue, null);
+    public static AmazonBedrockStreamChunk Ok(JsonElement value, JsonElement rawValue) =>
+        new(true, value, rawValue, null);
 
-    public static AmazonBedrockStreamChunk Fail(string error) => new(false, default, default, error);
+    public static AmazonBedrockStreamChunk Fail(string error) =>
+        new(false, default, default, error);
 }
 
 /// <summary>
@@ -272,30 +305,43 @@ internal static class AmazonBedrockEventStreamResponseHandler
     /// Handles <paramref name="response"/>. <paramref name="validate"/> returns an error message for a chunk
     /// that does not match the stream schema, or null.
     /// </summary>
-    public static async Task<(IReadOnlyDictionary<string, string> Headers, IAsyncEnumerable<AmazonBedrockStreamChunk> Stream)> HandleAsync(
+    public static async Task<(
+        IReadOnlyDictionary<string, string> Headers,
+        IAsyncEnumerable<AmazonBedrockStreamChunk> Stream
+    )> HandleAsync(
         HttpResponseMessage response,
         Func<JsonElement, string?> validate,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var headers = JsonStreams.ExtractResponseHeaders(response);
         if (response.Content is null || response.Content.Headers.ContentLength == 0)
         {
-            throw new ApiException("Response body is empty", (int)response.StatusCode, null) { ResponseHeaders = headers };
+            throw new ApiException("Response body is empty", (int)response.StatusCode, null)
+            {
+                ResponseHeaders = headers,
+            };
         }
 
         var body = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
         var stream = AmazonBedrockEventStreamDecoder.Create<AmazonBedrockStreamChunk>(
             body,
             (evt, enqueue) => ProcessEvent(evt, enqueue, validate),
-            cancellationToken);
+            cancellationToken
+        );
         return (headers, stream);
     }
 
-    private static void ProcessEvent(DecodedEvent evt, Action<AmazonBedrockStreamChunk> enqueue, Func<JsonElement, string?> validate)
+    private static void ProcessEvent(
+        DecodedEvent evt,
+        Action<AmazonBedrockStreamChunk> enqueue,
+        Func<JsonElement, string?> validate
+    )
     {
-        var payloadType = evt.MessageType == "event"
-            ? evt.EventType
-            : evt.MessageType == "exception" ? evt.ExceptionType : null;
+        var payloadType =
+            evt.MessageType == "event" ? evt.EventType
+            : evt.MessageType == "exception" ? evt.ExceptionType
+            : null;
         if (payloadType is null)
         {
             return;
@@ -308,7 +354,14 @@ internal static class AmazonBedrockEventStreamResponseHandler
         }
         catch (JsonException exception)
         {
-            enqueue(AmazonBedrockStreamChunk.Fail("JSON parsing failed: Text: " + evt.Data + ".\nError message: " + exception.Message));
+            enqueue(
+                AmazonBedrockStreamChunk.Fail(
+                    "JSON parsing failed: Text: "
+                        + evt.Data
+                        + ".\nError message: "
+                        + exception.Message
+                )
+            );
             return;
         }
 
@@ -321,6 +374,10 @@ internal static class AmazonBedrockEventStreamResponseHandler
         using var document = JsonDocument.Parse(wrapped.ToJsonString());
         var element = document.RootElement.Clone();
         var error = validate(element);
-        enqueue(error is null ? AmazonBedrockStreamChunk.Ok(element, element) : AmazonBedrockStreamChunk.Fail(error));
+        enqueue(
+            error is null
+                ? AmazonBedrockStreamChunk.Ok(element, element)
+                : AmazonBedrockStreamChunk.Fail(error)
+        );
     }
 }

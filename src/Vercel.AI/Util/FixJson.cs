@@ -46,7 +46,15 @@ public static class FixJson
             switch (currentState)
             {
                 case Root:
-                    ProcessValueStart(ch, i, Finish, input, stack, ref lastValidIndex, ref literalStart);
+                    ProcessValueStart(
+                        ch,
+                        i,
+                        Finish,
+                        input,
+                        stack,
+                        ref lastValidIndex,
+                        ref literalStart
+                    );
                     break;
                 case InsideObjectStart:
                     if (ch == '"')
@@ -86,7 +94,15 @@ public static class FixJson
 
                     break;
                 case InsideObjectBeforeValue:
-                    ProcessValueStart(ch, i, InsideObjectAfterValue, input, stack, ref lastValidIndex, ref literalStart);
+                    ProcessValueStart(
+                        ch,
+                        i,
+                        InsideObjectAfterValue,
+                        input,
+                        stack,
+                        ref lastValidIndex,
+                        ref literalStart
+                    );
                     break;
                 case InsideObjectAfterValue:
                     ProcessAfterObjectValue(ch, i, stack, ref lastValidIndex);
@@ -116,7 +132,15 @@ public static class FixJson
                     else
                     {
                         lastValidIndex = i;
-                        ProcessValueStart(ch, i, InsideArrayAfterValue, input, stack, ref lastValidIndex, ref literalStart);
+                        ProcessValueStart(
+                            ch,
+                            i,
+                            InsideArrayAfterValue,
+                            input,
+                            stack,
+                            ref lastValidIndex,
+                            ref literalStart
+                        );
                     }
 
                     break;
@@ -138,7 +162,15 @@ public static class FixJson
 
                     break;
                 case InsideArrayAfterComma:
-                    ProcessValueStart(ch, i, InsideArrayAfterValue, input, stack, ref lastValidIndex, ref literalStart);
+                    ProcessValueStart(
+                        ch,
+                        i,
+                        InsideArrayAfterValue,
+                        input,
+                        stack,
+                        ref lastValidIndex,
+                        ref literalStart
+                    );
                     break;
                 case InsideStringEscape:
                     stack.RemoveAt(stack.Count - 1);
@@ -174,7 +206,8 @@ public static class FixJson
             }
         }
 
-        var result = lastValidIndex + 1 <= 0 ? string.Empty : input.Substring(0, lastValidIndex + 1);
+        var result =
+            lastValidIndex + 1 <= 0 ? string.Empty : input.Substring(0, lastValidIndex + 1);
         for (var i = stack.Count - 1; i >= 0; i--)
         {
             var state = stack[i];
@@ -197,7 +230,8 @@ public static class FixJson
                     result += "]";
                     break;
                 case InsideLiteral:
-                    var partialLiteral = literalStart == null ? string.Empty : input.Substring(literalStart.Value);
+                    var partialLiteral =
+                        literalStart == null ? string.Empty : input.Substring(literalStart.Value);
                     if ("true".StartsWith(partialLiteral, StringComparison.Ordinal))
                     {
                         result += "true".Substring(partialLiteral.Length);
@@ -225,7 +259,8 @@ public static class FixJson
         string input,
         List<string> stack,
         ref int lastValidIndex,
-        ref int? literalStart)
+        ref int? literalStart
+    )
     {
         switch (ch)
         {
@@ -279,7 +314,12 @@ public static class FixJson
         }
     }
 
-    private static void ProcessAfterObjectValue(char ch, int index, List<string> stack, ref int lastValidIndex)
+    private static void ProcessAfterObjectValue(
+        char ch,
+        int index,
+        List<string> stack,
+        ref int lastValidIndex
+    )
     {
         if (ch == ',')
         {
@@ -293,7 +333,12 @@ public static class FixJson
         }
     }
 
-    private static void ProcessAfterArrayValue(char ch, int index, List<string> stack, ref int lastValidIndex)
+    private static void ProcessAfterArrayValue(
+        char ch,
+        int index,
+        List<string> stack,
+        ref int lastValidIndex
+    )
     {
         if (ch == ',')
         {
@@ -307,7 +352,12 @@ public static class FixJson
         }
     }
 
-    private static void ProcessNumber(char ch, int index, List<string> stack, ref int lastValidIndex)
+    private static void ProcessNumber(
+        char ch,
+        int index,
+        List<string> stack,
+        ref int lastValidIndex
+    )
     {
         switch (ch)
         {
@@ -363,13 +413,21 @@ public static class FixJson
         }
     }
 
-    private static void ProcessLiteral(string input, int index, List<string> stack, int? literalStart, ref int lastValidIndex)
+    private static void ProcessLiteral(
+        string input,
+        int index,
+        List<string> stack,
+        int? literalStart,
+        ref int lastValidIndex
+    )
     {
         var start = literalStart ?? 0;
         var partialLiteral = input.Substring(start, index + 1 - start);
-        if (!"false".StartsWith(partialLiteral, StringComparison.Ordinal)
+        if (
+            !"false".StartsWith(partialLiteral, StringComparison.Ordinal)
             && !"true".StartsWith(partialLiteral, StringComparison.Ordinal)
-            && !"null".StartsWith(partialLiteral, StringComparison.Ordinal))
+            && !"null".StartsWith(partialLiteral, StringComparison.Ordinal)
+        )
         {
             stack.RemoveAt(stack.Count - 1);
             if (stack.Count > 0 && stack[stack.Count - 1] == InsideObjectAfterValue)

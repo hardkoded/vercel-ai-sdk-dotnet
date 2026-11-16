@@ -46,19 +46,20 @@ public sealed class CartesiaProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Schema of a Cartesia error body.</summary>
-    public static JsonObject ErrorSchema { get; } = new JsonObject
-    {
-        ["type"] = "object",
-        ["properties"] = new JsonObject
+    public static JsonObject ErrorSchema { get; } =
+        new JsonObject
         {
-            ["error_code"] = new JsonObject { ["type"] = new JsonArray("string", "null") },
-            ["title"] = new JsonObject { ["type"] = "string" },
-            ["message"] = new JsonObject { ["type"] = "string" },
-            ["request_id"] = new JsonObject { ["type"] = "string" },
-            ["doc_url"] = new JsonObject { ["type"] = "string" },
-        },
-        ["required"] = new JsonArray("title", "message", "request_id"),
-    };
+            ["type"] = "object",
+            ["properties"] = new JsonObject
+            {
+                ["error_code"] = new JsonObject { ["type"] = new JsonArray("string", "null") },
+                ["title"] = new JsonObject { ["type"] = "string" },
+                ["message"] = new JsonObject { ["type"] = "string" },
+                ["request_id"] = new JsonObject { ["type"] = "string" },
+                ["doc_url"] = new JsonObject { ["type"] = "string" },
+            },
+            ["required"] = new JsonArray("title", "message", "request_id"),
+        };
 
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
@@ -67,9 +68,14 @@ public sealed class CartesiaProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider.</summary>
-    public static new CartesiaProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new CartesiaProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new CartesiaProvider(client, options);
     }
 
@@ -77,27 +83,48 @@ public sealed class CartesiaProvider : OpenAICompatibleProvider
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
+        options.BaseUrl =
+            string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
+                ? DefaultBaseUrl
+                : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "CARTESIA_API_KEY";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
         options.ApiKeyStyle = ApiKeyStyle.Bearer;
-        options.Headers["Cartesia-Version"] = (options as CartesiaOptions)?.Version ?? DefaultVersion;
+        options.Headers["Cartesia-Version"] = (options as CartesiaOptions)?.Version
+            ?? DefaultVersion;
         options.UserAgent = ProviderExchange.UserAgent("cartesia");
         return options;
     }
 
     /// <inheritdoc />
-    public override ISpeechModel SpeechModel(string modelId) => new CartesiaSpeechModel(this, modelId);
+    public override ISpeechModel SpeechModel(string modelId) =>
+        new CartesiaSpeechModel(this, modelId);
 
     /// <inheritdoc />
-    public override ITranscriptionModel TranscriptionModel(string modelId) => new CartesiaTranscriptionModel(this, modelId);
+    public override ITranscriptionModel TranscriptionModel(string modelId) =>
+        new CartesiaTranscriptionModel(this, modelId);
 
     /// <summary>Synthesizes speech. <paramref name="headers"/> override the provider headers.</summary>
-    public async Task<SpeechResult> GenerateSpeechAsync(string modelId, SpeechCallOptions options, IDictionary<string, string>? headers, CancellationToken cancellationToken)
+    public async Task<SpeechResult> GenerateSpeechAsync(
+        string modelId,
+        SpeechCallOptions options,
+        IDictionary<string, string>? headers,
+        CancellationToken cancellationToken
+    )
     {
         var model = new CartesiaSpeechModel(this, modelId);
-        var call = new SpeechModelCall(options.Text, options.Voice, null, null, null, null, JsonValues.EmptyObject(), new Dictionary<string, string>(headers ?? new Dictionary<string, string>()), cancellationToken);
+        var call = new SpeechModelCall(
+            options.Text,
+            options.Voice,
+            null,
+            null,
+            null,
+            null,
+            JsonValues.EmptyObject(),
+            new Dictionary<string, string>(headers ?? new Dictionary<string, string>()),
+            cancellationToken
+        );
         var result = await model.DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
         return new SpeechResult(result.Audio, "audio/mpeg");
     }
@@ -108,17 +135,33 @@ public sealed class CartesiaProvider : OpenAICompatibleProvider
     /// <summary>The WebSocket factory for streaming transcription.</summary>
     internal WebSocketFactory? WebSocket => (Options as CartesiaOptions)?.WebSocket;
 
-    internal async Task<ProviderExchangeResult> SendAsync(string path, HttpContent content, IReadOnlyDictionary<string, string>? headers, CancellationToken cancellationToken)
+    internal async Task<ProviderExchangeResult> SendAsync(
+        string path,
+        HttpContent content,
+        IReadOnlyDictionary<string, string>? headers,
+        CancellationToken cancellationToken
+    )
     {
         var merged = ProviderExchange.Merge(CreateHeaders(), headers);
-        return await ProviderExchange.SendAsync(_httpClient, HttpMethod.Post, ApiKeys.Combine(Options.BaseUrl, path), content, merged, cancellationToken).ConfigureAwait(false);
+        return await ProviderExchange
+            .SendAsync(
+                _httpClient,
+                HttpMethod.Post,
+                ApiKeys.Combine(Options.BaseUrl, path),
+                content,
+                merged,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
     }
 
     internal static JsonElement? CartesiaOptions(JsonElement providerOptions)
     {
-        if (providerOptions.ValueKind == JsonValueKind.Object
+        if (
+            providerOptions.ValueKind == JsonValueKind.Object
             && providerOptions.TryGetProperty(ProviderId, out var cartesia)
-            && cartesia.ValueKind == JsonValueKind.Object)
+            && cartesia.ValueKind == JsonValueKind.Object
+        )
         {
             return cartesia;
         }
@@ -128,14 +171,20 @@ public sealed class CartesiaProvider : OpenAICompatibleProvider
 
     internal static string? ReadString(JsonElement? element, string name)
     {
-        return element is { } value && value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.String
+        return
+            element is { } value
+            && value.TryGetProperty(name, out var property)
+            && property.ValueKind == JsonValueKind.String
             ? property.GetString()
             : null;
     }
 
     internal static double? ReadNumber(JsonElement? element, string name)
     {
-        return element is { } value && value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.Number
+        return
+            element is { } value
+            && value.TryGetProperty(name, out var property)
+            && property.ValueKind == JsonValueKind.Number
             ? property.GetDouble()
             : null;
     }
@@ -148,19 +197,75 @@ public sealed class CartesiaSpeechModel : ISpeechModel, ISpeechCaller
 
     private static readonly string[] Emotions =
     {
-        "neutral", "happy", "excited", "enthusiastic", "elated", "euphoric", "triumphant", "amazed", "surprised", "flirtatious",
-        "curious", "content", "peaceful", "serene", "calm", "grateful", "affectionate", "trust", "sympathetic", "anticipation",
-        "mysterious", "angry", "mad", "outraged", "frustrated", "agitated", "threatened", "disgusted", "contempt", "envious",
-        "sarcastic", "ironic", "sad", "dejected", "melancholic", "disappointed", "hurt", "guilty", "bored", "tired",
-        "rejected", "nostalgic", "wistful", "apologetic", "hesitant", "insecure", "confused", "resigned", "anxious", "panicked",
-        "alarmed", "scared", "proud", "confident", "distant", "skeptical", "contemplative", "determined",
+        "neutral",
+        "happy",
+        "excited",
+        "enthusiastic",
+        "elated",
+        "euphoric",
+        "triumphant",
+        "amazed",
+        "surprised",
+        "flirtatious",
+        "curious",
+        "content",
+        "peaceful",
+        "serene",
+        "calm",
+        "grateful",
+        "affectionate",
+        "trust",
+        "sympathetic",
+        "anticipation",
+        "mysterious",
+        "angry",
+        "mad",
+        "outraged",
+        "frustrated",
+        "agitated",
+        "threatened",
+        "disgusted",
+        "contempt",
+        "envious",
+        "sarcastic",
+        "ironic",
+        "sad",
+        "dejected",
+        "melancholic",
+        "disappointed",
+        "hurt",
+        "guilty",
+        "bored",
+        "tired",
+        "rejected",
+        "nostalgic",
+        "wistful",
+        "apologetic",
+        "hesitant",
+        "insecure",
+        "confused",
+        "resigned",
+        "anxious",
+        "panicked",
+        "alarmed",
+        "scared",
+        "proud",
+        "confident",
+        "distant",
+        "skeptical",
+        "contemplative",
+        "determined",
     };
 
     private readonly CartesiaProvider _provider;
     private readonly Func<DateTime>? _clock;
 
     /// <summary>Creates a speech model. <paramref name="clock"/> sets the response timestamp.</summary>
-    public CartesiaSpeechModel(CartesiaProvider provider, string modelId, Func<DateTime>? clock = null)
+    public CartesiaSpeechModel(
+        CartesiaProvider provider,
+        string modelId,
+        Func<DateTime>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -174,15 +279,31 @@ public sealed class CartesiaSpeechModel : ISpeechModel, ISpeechCaller
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
+    public async Task<SpeechResult> DoGenerateAsync(
+        SpeechCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
-        var call = new SpeechModelCall(options.Text, options.Voice, null, null, null, null, JsonValues.EmptyObject(), new Dictionary<string, string>(), cancellationToken);
+        var call = new SpeechModelCall(
+            options.Text,
+            options.Voice,
+            null,
+            null,
+            null,
+            null,
+            JsonValues.EmptyObject(),
+            new Dictionary<string, string>(),
+            cancellationToken
+        );
         var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
         return new SpeechResult(result.Audio, "audio/mpeg");
     }
 
     /// <inheritdoc />
-    public async Task<SpeechModelResult> DoGenerateAsync(SpeechModelCall call, CancellationToken cancellationToken)
+    public async Task<SpeechModelResult> DoGenerateAsync(
+        SpeechModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (call is null)
         {
@@ -212,7 +333,8 @@ public sealed class CartesiaSpeechModel : ISpeechModel, ISpeechCaller
             throw new InvalidArgumentException(
                 "providerOptions",
                 cartesia?.GetRawText(),
-                "providerOptions.cartesia.locale cannot be combined with providerOptions.cartesia.language");
+                "providerOptions.cartesia.locale cannot be combined with providerOptions.cartesia.language"
+            );
         }
 
         if (providerLocale != null)
@@ -220,7 +342,12 @@ public sealed class CartesiaSpeechModel : ISpeechModel, ISpeechCaller
             body["locale"] = providerLocale;
             if (!string.IsNullOrEmpty(call.Language))
             {
-                warnings.Add(OperationWarning.Unsupported("language", "Cartesia does not support both locale and language. The language option was ignored in favor of providerOptions.cartesia.locale."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "language",
+                        "Cartesia does not support both locale and language. The language option was ignored in favor of providerOptions.cartesia.locale."
+                    )
+                );
             }
         }
         else if (providerLanguage != null)
@@ -237,7 +364,10 @@ public sealed class CartesiaSpeechModel : ISpeechModel, ISpeechCaller
             body["normalization"] = normalization;
         }
 
-        if (CartesiaProvider.ReadString(cartesia, "pronunciationDictionaryId") is { } pronunciationDictionaryId)
+        if (
+            CartesiaProvider.ReadString(cartesia, "pronunciationDictionaryId") is
+            { } pronunciationDictionaryId
+        )
         {
             body["pronunciation_dict_id"] = pronunciationDictionaryId;
         }
@@ -251,7 +381,12 @@ public sealed class CartesiaSpeechModel : ISpeechModel, ISpeechCaller
             }
             else
             {
-                warnings.Add(OperationWarning.Unsupported("speed", "Cartesia speed must be between 0.6 and 1.5. The speed option was ignored."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "speed",
+                        "Cartesia speed must be between 0.6 and 1.5. The speed option was ignored."
+                    )
+                );
             }
         }
 
@@ -272,11 +407,27 @@ public sealed class CartesiaSpeechModel : ISpeechModel, ISpeechCaller
 
         if (!string.IsNullOrEmpty(call.Instructions))
         {
-            warnings.Add(OperationWarning.Unsupported("instructions", "Cartesia speech models do not support instructions. Instructions parameter was ignored."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "instructions",
+                    "Cartesia speech models do not support instructions. Instructions parameter was ignored."
+                )
+            );
         }
 
-        var response = await _provider.SendAsync("/tts/bytes", ProviderExchange.Json(body.ToJsonString()), call.Headers, cancellationToken).ConfigureAwait(false);
-        return new SpeechModelResult(response.Bytes, warnings, response: new ProviderResponse(response.Headers, timestamp: timestamp, modelId: ModelId));
+        var response = await _provider
+            .SendAsync(
+                "/tts/bytes",
+                ProviderExchange.Json(body.ToJsonString()),
+                call.Headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        return new SpeechModelResult(
+            response.Bytes,
+            warnings,
+            response: new ProviderResponse(response.Headers, timestamp: timestamp, modelId: ModelId)
+        );
     }
 
     private static void ValidateOptions(JsonElement? cartesia)
@@ -291,54 +442,90 @@ public sealed class CartesiaSpeechModel : ISpeechModel, ISpeechCaller
             var value = property.Value;
             var valid = property.Name switch
             {
-                "volume" => value.ValueKind == JsonValueKind.Number && value.GetDouble() is >= 0.5 and <= 2,
-                "emotion" => value.ValueKind == JsonValueKind.String && Array.IndexOf(Emotions, value.GetString()) >= 0,
-                "locale" or "normalization" or "pronunciationDictionaryId" => value.ValueKind == JsonValueKind.String,
+                "volume" => value.ValueKind == JsonValueKind.Number
+                    && value.GetDouble() is >= 0.5 and <= 2,
+                "emotion" => value.ValueKind == JsonValueKind.String
+                    && Array.IndexOf(Emotions, value.GetString()) >= 0,
+                "locale" or "normalization" or "pronunciationDictionaryId" => value.ValueKind
+                    == JsonValueKind.String,
                 _ => true,
             };
             if (!valid)
             {
-                throw new InvalidArgumentException("providerOptions", values.GetRawText(), "Invalid cartesia provider options: " + property.Name + ".");
+                throw new InvalidArgumentException(
+                    "providerOptions",
+                    values.GetRawText(),
+                    "Invalid cartesia provider options: " + property.Name + "."
+                );
             }
         }
     }
 
-    private static JsonObject OutputFormat(string outputFormat, JsonElement? cartesia, List<OperationWarning> warnings)
+    private static JsonObject OutputFormat(
+        string outputFormat,
+        JsonElement? cartesia,
+        List<OperationWarning> warnings
+    )
     {
         var parts = outputFormat.ToLowerInvariant().Split('_');
         var mapped = Mapped(parts[0]);
         var resolved = mapped ?? Mapped("mp3")!;
         if (mapped == null)
         {
-            warnings.Add(OperationWarning.Unsupported(
-                "outputFormat",
-                "Unknown output format \"" + outputFormat + "\". Falling back to mp3. Use providerOptions.cartesia to configure container, encoding, and sampleRate directly."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "outputFormat",
+                    "Unknown output format \""
+                        + outputFormat
+                        + "\". Falling back to mp3. Use providerOptions.cartesia to configure container, encoding, and sampleRate directly."
+                )
+            );
         }
         else if (parts.Length > 1)
         {
-            if (parts.Length == 2 && int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out var rate) && Array.IndexOf(SampleRates, rate) >= 0)
+            if (
+                parts.Length == 2
+                && int.TryParse(
+                    parts[1],
+                    NumberStyles.None,
+                    CultureInfo.InvariantCulture,
+                    out var rate
+                )
+                && Array.IndexOf(SampleRates, rate) >= 0
+            )
             {
                 resolved.SampleRate = rate;
             }
             else
             {
-                warnings.Add(OperationWarning.Unsupported(
-                    "outputFormat",
-                    "Unsupported Cartesia sample rate in output format \"" + outputFormat + "\". Using " + resolved.SampleRate.ToString(CultureInfo.InvariantCulture) + " Hz instead."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "outputFormat",
+                        "Unsupported Cartesia sample rate in output format \""
+                            + outputFormat
+                            + "\". Using "
+                            + resolved.SampleRate.ToString(CultureInfo.InvariantCulture)
+                            + " Hz instead."
+                    )
+                );
             }
         }
 
         var container = CartesiaProvider.ReadString(cartesia, "container") ?? resolved.Container;
-        var sampleRate = (int?)CartesiaProvider.ReadNumber(cartesia, "sampleRate") ?? resolved.SampleRate;
+        var sampleRate = (int?)CartesiaProvider.ReadNumber(cartesia, "sampleRate")
+            ?? resolved.SampleRate;
         var encoding = CartesiaProvider.ReadString(cartesia, "encoding");
         var bitRate = (int?)CartesiaProvider.ReadNumber(cartesia, "bitRate");
         if (container == "mp3")
         {
             if (encoding != null)
             {
-                warnings.Add(OperationWarning.Unsupported(
-                    "providerOptions.cartesia.encoding",
-                    "Cartesia MP3 output does not accept an encoding. The encoding option was ignored."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "providerOptions.cartesia.encoding",
+                        "Cartesia MP3 output does not accept an encoding. The encoding option was ignored."
+                    )
+                );
             }
 
             return new JsonObject
@@ -351,15 +538,20 @@ public sealed class CartesiaSpeechModel : ISpeechModel, ISpeechCaller
 
         if (bitRate != null)
         {
-            warnings.Add(OperationWarning.Unsupported(
-                "providerOptions.cartesia.bitRate",
-                "Cartesia raw and WAV output do not accept a bit rate. The bitRate option was ignored."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "providerOptions.cartesia.bitRate",
+                    "Cartesia raw and WAV output do not accept a bit rate. The bitRate option was ignored."
+                )
+            );
         }
 
         return new JsonObject
         {
             ["container"] = container,
-            ["encoding"] = encoding ?? resolved.Encoding ?? (container == "wav" ? "pcm_s16le" : "pcm_f32le"),
+            ["encoding"] = encoding
+                ?? resolved.Encoding
+                ?? (container == "wav" ? "pcm_s16le" : "pcm_f32le"),
             ["sample_rate"] = sampleRate,
         };
     }
@@ -408,7 +600,11 @@ public sealed class CartesiaTranscriptionModel : ITranscriptionModel, ITranscrip
     private readonly Func<DateTime>? _clock;
 
     /// <summary>Creates a transcription model. <paramref name="clock"/> sets the response timestamp.</summary>
-    public CartesiaTranscriptionModel(CartesiaProvider provider, string modelId, Func<DateTime>? clock = null)
+    public CartesiaTranscriptionModel(
+        CartesiaProvider provider,
+        string modelId,
+        Func<DateTime>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -428,20 +624,32 @@ public sealed class CartesiaTranscriptionModel : ITranscriptionModel, ITranscrip
     public bool CanStream => true;
 
     /// <inheritdoc />
-    public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+    public async Task<TranscriptionResult> DoTranscribeAsync(
+        AudioInput audio,
+        CancellationToken cancellationToken
+    )
     {
         if (audio is null)
         {
             throw new ArgumentNullException(nameof(audio));
         }
 
-        var call = new TranscriptionModelCall(audio.Data, audio.MediaType, JsonValues.EmptyObject(), new Dictionary<string, string>(), cancellationToken);
+        var call = new TranscriptionModelCall(
+            audio.Data,
+            audio.MediaType,
+            JsonValues.EmptyObject(),
+            new Dictionary<string, string>(),
+            cancellationToken
+        );
         var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
         return new TranscriptionResult(result.Text ?? string.Empty);
     }
 
     /// <inheritdoc />
-    public async Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
+    public async Task<TranscriptionModelResult> DoGenerateAsync(
+        TranscriptionModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (call is null)
         {
@@ -457,9 +665,18 @@ public sealed class CartesiaTranscriptionModel : ITranscriptionModel, ITranscrip
         var cartesia = CartesiaProvider.CartesiaOptions(call.ProviderOptions);
         CartesiaStreamingTranscription.ValidateProviderOptions(cartesia);
         var warnings = new List<OperationWarning>();
-        if (cartesia is { } options && options.TryGetProperty("streaming", out var streaming) && streaming.ValueKind != JsonValueKind.Null)
+        if (
+            cartesia is { } options
+            && options.TryGetProperty("streaming", out var streaming)
+            && streaming.ValueKind != JsonValueKind.Null
+        )
         {
-            warnings.Add(OperationWarning.Unsupported("providerOptions.cartesia.streaming", "Cartesia batch transcription does not support streaming options."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "providerOptions.cartesia.streaming",
+                    "Cartesia batch transcription does not support streaming options."
+                )
+            );
         }
 
         var form = new MultipartFormDataContent();
@@ -472,15 +689,24 @@ public sealed class CartesiaTranscriptionModel : ITranscriptionModel, ITranscrip
             form.Add(new StringContent(language), "language");
         }
 
-        if (cartesia is { } granularOptions && granularOptions.TryGetProperty("timestampGranularities", out var granularities) && granularities.ValueKind == JsonValueKind.Array)
+        if (
+            cartesia is { } granularOptions
+            && granularOptions.TryGetProperty("timestampGranularities", out var granularities)
+            && granularities.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var granularity in granularities.EnumerateArray())
             {
-                form.Add(new StringContent(granularity.GetString() ?? string.Empty), "timestamp_granularities[]");
+                form.Add(
+                    new StringContent(granularity.GetString() ?? string.Empty),
+                    "timestamp_granularities[]"
+                );
             }
         }
 
-        var response = await _provider.SendAsync("/stt", form, call.Headers, cancellationToken).ConfigureAwait(false);
+        var response = await _provider
+            .SendAsync("/stt", form, call.Headers, cancellationToken)
+            .ConfigureAwait(false);
         using var document = JsonDocument.Parse(response.Body);
         var root = document.RootElement;
         var segments = new List<TranscriptSegment>();
@@ -488,7 +714,13 @@ public sealed class CartesiaTranscriptionModel : ITranscriptionModel, ITranscrip
         {
             foreach (var word in words.EnumerateArray())
             {
-                segments.Add(new TranscriptSegment(word.GetProperty("word").GetString() ?? string.Empty, word.GetProperty("start").GetDouble(), word.GetProperty("end").GetDouble()));
+                segments.Add(
+                    new TranscriptSegment(
+                        word.GetProperty("word").GetString() ?? string.Empty,
+                        word.GetProperty("start").GetDouble(),
+                        word.GetProperty("end").GetDouble()
+                    )
+                );
             }
         }
 
@@ -498,11 +730,20 @@ public sealed class CartesiaTranscriptionModel : ITranscriptionModel, ITranscrip
             CartesiaProvider.ReadString(root, "language"),
             CartesiaProvider.ReadNumber(root, "duration"),
             warnings,
-            response: new ProviderResponse(response.Headers, root.Clone(), timestamp: timestamp, modelId: ModelId));
+            response: new ProviderResponse(
+                response.Headers,
+                root.Clone(),
+                timestamp: timestamp,
+                modelId: ModelId
+            )
+        );
     }
 
     /// <inheritdoc />
-    public async Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+    public async Task<TranscriptionStreamStart?> DoStreamAsync(
+        TranscriptionStreamCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (call is null)
         {
@@ -515,19 +756,42 @@ public sealed class CartesiaTranscriptionModel : ITranscriptionModel, ITranscrip
         }
 
         var timestamp = _clock?.Invoke() ?? DateTime.UtcNow;
-        return await CartesiaStreamingTranscription.StreamAsync(ModelId, _provider, call, timestamp, CreateStreamingAccessTokenAsync, cancellationToken).ConfigureAwait(false);
+        return await CartesiaStreamingTranscription
+            .StreamAsync(
+                ModelId,
+                _provider,
+                call,
+                timestamp,
+                CreateStreamingAccessTokenAsync,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
     }
 
     /// <summary>Creates a short-lived, STT-scoped access token so the API key stays out of the WebSocket URL.</summary>
-    internal async Task<string> CreateStreamingAccessTokenAsync(IReadOnlyDictionary<string, string?> headers, CancellationToken cancellationToken)
+    internal async Task<string> CreateStreamingAccessTokenAsync(
+        IReadOnlyDictionary<string, string?> headers,
+        CancellationToken cancellationToken
+    )
     {
-        var request = headers.Where(pair => pair.Value is not null).ToDictionary(pair => pair.Key, pair => pair.Value!);
-        var response = await _provider.SendAsync("/access-token", ProviderExchange.Json("{\"grants\":{\"stt\":true}}"), request, cancellationToken).ConfigureAwait(false);
+        var request = headers
+            .Where(pair => pair.Value is not null)
+            .ToDictionary(pair => pair.Key, pair => pair.Value!);
+        var response = await _provider
+            .SendAsync(
+                "/access-token",
+                ProviderExchange.Json("{\"grants\":{\"stt\":true}}"),
+                request,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         using var document = JsonDocument.Parse(response.Body);
-        if (document.RootElement.ValueKind == JsonValueKind.Object
+        if (
+            document.RootElement.ValueKind == JsonValueKind.Object
             && document.RootElement.TryGetProperty("token", out var token)
             && token.ValueKind == JsonValueKind.String
-            && !string.IsNullOrEmpty(token.GetString()))
+            && !string.IsNullOrEmpty(token.GetString())
+        )
         {
             return token.GetString()!;
         }
@@ -535,11 +799,15 @@ public sealed class CartesiaTranscriptionModel : ITranscriptionModel, ITranscrip
         throw new AiSdkException("Cartesia access token response is missing a token.");
     }
 
-    private bool IsStreamingModel => CartesiaModelCatalog.GetCartesiaTranscriptionModelEntry(ModelId).Streaming;
+    private bool IsStreamingModel =>
+        CartesiaModelCatalog.GetCartesiaTranscriptionModelEntry(ModelId).Streaming;
 
     private static UnsupportedFunctionalityException Unsupported(string functionality)
     {
-        return new UnsupportedFunctionalityException(functionality, "'" + functionality + "' functionality not supported.");
+        return new UnsupportedFunctionalityException(
+            functionality,
+            "'" + functionality + "' functionality not supported."
+        );
     }
 }
 
@@ -547,14 +815,21 @@ public sealed class CartesiaTranscriptionModel : ITranscriptionModel, ITranscrip
 public static class CartesiaServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddCartesia(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddCartesia(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(CartesiaProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new CartesiaProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(CartesiaProvider.ProviderId), options);
+            return new CartesiaProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(CartesiaProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

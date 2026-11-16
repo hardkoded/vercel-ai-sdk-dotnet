@@ -16,7 +16,12 @@ public static class AmazonBedrockMessages
     /// Groups leading system messages, merges adjacent user and tool messages, and emits assistant tool uses.
     /// A system message after another role throws.
     /// </summary>
-    public static void Convert(string modelId, IReadOnlyList<ModelMessage> prompt, out JsonArray? system, out JsonArray messages)
+    public static void Convert(
+        string modelId,
+        IReadOnlyList<ModelMessage> prompt,
+        out JsonArray? system,
+        out JsonArray messages
+    )
     {
         var isMistral = AmazonBedrockToolIds.IsMistralModel(modelId);
         system = null;
@@ -57,7 +62,9 @@ public static class AmazonBedrockMessages
 
             if (HasContentBlock(assistantContent))
             {
-                built.Add(new JsonObject { ["role"] = "assistant", ["content"] = assistantContent });
+                built.Add(
+                    new JsonObject { ["role"] = "assistant", ["content"] = assistantContent }
+                );
             }
 
             assistantContent = null;
@@ -68,9 +75,16 @@ public static class AmazonBedrockMessages
             var message = prompt[messageIndex];
             if (message is SystemModelMessage systemMessage)
             {
-                if (built.Count > 0 || userContent != null || assistantContent != null || toolResultContent != null)
+                if (
+                    built.Count > 0
+                    || userContent != null
+                    || assistantContent != null
+                    || toolResultContent != null
+                )
                 {
-                    throw new AiSdkException("Multiple system messages that are separated by user/assistant messages are not supported.");
+                    throw new AiSdkException(
+                        "Multiple system messages that are separated by user/assistant messages are not supported."
+                    );
                 }
 
                 system ??= new JsonArray();
@@ -97,13 +111,23 @@ public static class AmazonBedrockMessages
                     else if (part is FileContentPart file)
                     {
                         var block = FileBlock(file, ref documentCount);
-                        var guardImage = file.Data != null
+                        var guardImage =
+                            file.Data != null
                             && block.ContainsKey("image")
                             && GuardContent(file.ProviderOptions) is true;
-                        userContent.Add(guardImage ? new JsonObject { ["guardContent"] = block } : block);
+                        userContent.Add(
+                            guardImage ? new JsonObject { ["guardContent"] = block } : block
+                        );
                     }
 
-                    if (CachePoint(part is TextContentPart t ? t.ProviderOptions : (part as FileContentPart)?.ProviderOptions) is { } partCachePoint)
+                    if (
+                        CachePoint(
+                            part is TextContentPart t
+                                ? t.ProviderOptions
+                                : (part as FileContentPart)?.ProviderOptions
+                        ) is
+                        { } partCachePoint
+                    )
                     {
                         userContent.Add(partCachePoint);
                     }
@@ -160,10 +184,19 @@ public static class AmazonBedrockMessages
                         {
                             // Bedrock does not allow trailing whitespace in a pre-filled assistant response.
                             assistantContent ??= new JsonArray();
-                            assistantContent.Add(new JsonObject { ["text"] = isLastMessage && isLastPart ? text.Text.Trim() : text.Text });
+                            assistantContent.Add(
+                                new JsonObject
+                                {
+                                    ["text"] =
+                                        isLastMessage && isLastPart ? text.Text.Trim() : text.Text,
+                                }
+                            );
                         }
                     }
-                    else if (part is AssistantReasoningPart reasoning && ReasoningBlock(reasoning) is { } reasoningBlock)
+                    else if (
+                        part is AssistantReasoningPart reasoning
+                        && ReasoningBlock(reasoning) is { } reasoningBlock
+                    )
                     {
                         (assistantContent ??= new JsonArray()).Add(reasoningBlock);
                     }
@@ -171,26 +204,36 @@ public static class AmazonBedrockMessages
                     {
                         var call = toolCall.ToolCall;
                         assistantContent ??= new JsonArray();
-                        assistantContent.Add(new JsonObject
-                        {
-                            ["toolUse"] = new JsonObject
+                        assistantContent.Add(
+                            new JsonObject
                             {
-                                ["toolUseId"] = AmazonBedrockToolIds.Normalize(call.ToolCallId, isMistral),
-                                ["name"] = SanitizeToolName(call.ToolName),
-                                ["input"] = ToolInput(call.ArgumentsJson),
-                            },
-                        });
+                                ["toolUse"] = new JsonObject
+                                {
+                                    ["toolUseId"] = AmazonBedrockToolIds.Normalize(
+                                        call.ToolCallId,
+                                        isMistral
+                                    ),
+                                    ["name"] = SanitizeToolName(call.ToolName),
+                                    ["input"] = ToolInput(call.ArgumentsJson),
+                                },
+                            }
+                        );
                     }
                     else if (part is AssistantToolResultPart toolResult)
                     {
                         FlushAssistant();
                         toolResultContent ??= new JsonArray();
-                        toolResultContent.Add(ToolResultBlock(toolResult.Output, isMistral, toolResult.ToolCallId));
+                        toolResultContent.Add(
+                            ToolResultBlock(toolResult.Output, isMistral, toolResult.ToolCallId)
+                        );
                     }
 
-                    var partOptions = part is AssistantToolResultPart { Output.ProviderOptions: { } outputOptions } && CachePoint(part.ProviderOptions) is null
-                        ? outputOptions
-                        : part.ProviderOptions;
+                    var partOptions =
+                        part
+                            is AssistantToolResultPart { Output.ProviderOptions: { } outputOptions }
+                        && CachePoint(part.ProviderOptions) is null
+                            ? outputOptions
+                            : part.ProviderOptions;
                     if (CachePoint(partOptions) is { } partCachePoint)
                     {
                         if (part is AssistantToolResultPart)
@@ -206,7 +249,10 @@ public static class AmazonBedrockMessages
 
                 if (CachePoint(assistant.ProviderOptions) is { } assistantContentCachePoint)
                 {
-                    if (assistant.Parts.Count > 0 && assistant.Parts[assistant.Parts.Count - 1] is AssistantToolResultPart)
+                    if (
+                        assistant.Parts.Count > 0
+                        && assistant.Parts[assistant.Parts.Count - 1] is AssistantToolResultPart
+                    )
                     {
                         (toolResultContent ??= new JsonArray()).Add(assistantContentCachePoint);
                     }
@@ -224,16 +270,24 @@ public static class AmazonBedrockMessages
         messages = built;
     }
 
-    private static JsonObject ToolResultBlock(ToolModelMessage result, bool isMistral, string? toolCallId = null)
+    private static JsonObject ToolResultBlock(
+        ToolModelMessage result,
+        bool isMistral,
+        string? toolCallId = null
+    )
     {
-        var text = result.OutputType == "execution-denied"
-            ? result.ExecutionDeniedReason ?? "Tool call execution denied."
-            : result.OutputJson;
+        var text =
+            result.OutputType == "execution-denied"
+                ? result.ExecutionDeniedReason ?? "Tool call execution denied."
+                : result.OutputJson;
         return new JsonObject
         {
             ["toolResult"] = new JsonObject
             {
-                ["toolUseId"] = AmazonBedrockToolIds.Normalize(toolCallId ?? result.ToolCallId, isMistral),
+                ["toolUseId"] = AmazonBedrockToolIds.Normalize(
+                    toolCallId ?? result.ToolCallId,
+                    isMistral
+                ),
                 ["content"] = new JsonArray { new JsonObject { ["text"] = text } },
             },
         };
@@ -242,10 +296,12 @@ public static class AmazonBedrockMessages
     /// <summary>A trailing assistant tool result and the following user content share one user message so roles keep alternating.</summary>
     private static void AppendToUserMessage(JsonArray messages, JsonArray content)
     {
-        if (messages.Count > 0
+        if (
+            messages.Count > 0
             && messages[messages.Count - 1] is JsonObject { } last
             && last["role"]?.GetValue<string>() == "user"
-            && last["content"] is JsonArray lastContent)
+            && last["content"] is JsonArray lastContent
+        )
         {
             var hasToolResult = false;
             foreach (var block in lastContent)
@@ -287,21 +343,31 @@ public static class AmazonBedrockMessages
             {
                 ["reasoningContent"] = new JsonObject
                 {
-                    ["reasoningText"] = new JsonObject { ["text"] = part.Text, ["signature"] = signature },
+                    ["reasoningText"] = new JsonObject
+                    {
+                        ["text"] = part.Text,
+                        ["signature"] = signature,
+                    },
                 },
             };
         }
 
         if (ReasoningString(options, "redactedContent") is { } redactedContent)
         {
-            return new JsonObject { ["reasoningContent"] = new JsonObject { ["redactedContent"] = redactedContent } };
+            return new JsonObject
+            {
+                ["reasoningContent"] = new JsonObject { ["redactedContent"] = redactedContent },
+            };
         }
 
         if (ReasoningString(options, "redactedData") is { } redactedData)
         {
             return new JsonObject
             {
-                ["reasoningContent"] = new JsonObject { ["redactedReasoning"] = new JsonObject { ["data"] = redactedData } },
+                ["reasoningContent"] = new JsonObject
+                {
+                    ["redactedReasoning"] = new JsonObject { ["data"] = redactedData },
+                },
             };
         }
 
@@ -310,7 +376,11 @@ public static class AmazonBedrockMessages
 
     private static string? ReasoningString(JsonElement? options, string name)
     {
-        if (options is not { } bag || !bag.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null)
+        if (
+            options is not { } bag
+            || !bag.TryGetProperty(name, out var value)
+            || value.ValueKind == JsonValueKind.Null
+        )
         {
             return null;
         }
@@ -342,20 +412,28 @@ public static class AmazonBedrockMessages
         }
 
         var text = new JsonObject { ["text"] = part.Text };
-        if (options!.Value.TryGetProperty("guardContentQualifiers", out var qualifiers) && qualifiers.ValueKind != JsonValueKind.Null)
+        if (
+            options!.Value.TryGetProperty("guardContentQualifiers", out var qualifiers)
+            && qualifiers.ValueKind != JsonValueKind.Null
+        )
         {
             if (qualifiers.ValueKind != JsonValueKind.Array)
             {
-                throw new ArgumentException("Bedrock guardContentQualifiers must be an array of grounding_source, query, or guard_content.");
+                throw new ArgumentException(
+                    "Bedrock guardContentQualifiers must be an array of grounding_source, query, or guard_content."
+                );
             }
 
             var list = new JsonArray();
             foreach (var qualifier in qualifiers.EnumerateArray())
             {
-                var value = qualifier.ValueKind == JsonValueKind.String ? qualifier.GetString() : null;
+                var value =
+                    qualifier.ValueKind == JsonValueKind.String ? qualifier.GetString() : null;
                 if (value is not ("grounding_source" or "query" or "guard_content"))
                 {
-                    throw new ArgumentException("Bedrock guardContentQualifiers must be an array of grounding_source, query, or guard_content.");
+                    throw new ArgumentException(
+                        "Bedrock guardContentQualifiers must be an array of grounding_source, query, or guard_content."
+                    );
                 }
 
                 list.Add(value);
@@ -368,11 +446,17 @@ public static class AmazonBedrockMessages
     }
 
     /// <summary>Reads the options bag from <c>amazonBedrock</c>, then <c>bedrock</c>.</summary>
-    private static JsonElement? BedrockOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    private static JsonElement? BedrockOptions(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
+    )
     {
         foreach (var key in new[] { "amazonBedrock", "bedrock" })
         {
-            if (providerOptions != null && providerOptions.TryGetValue(key, out var bag) && bag.ValueKind == JsonValueKind.Object)
+            if (
+                providerOptions != null
+                && providerOptions.TryGetValue(key, out var bag)
+                && bag.ValueKind == JsonValueKind.Object
+            )
             {
                 return bag;
             }
@@ -381,11 +465,16 @@ public static class AmazonBedrockMessages
         return null;
     }
 
-    private static bool? GuardContent(IReadOnlyDictionary<string, JsonElement>? providerOptions) => GuardContent(BedrockOptions(providerOptions));
+    private static bool? GuardContent(IReadOnlyDictionary<string, JsonElement>? providerOptions) =>
+        GuardContent(BedrockOptions(providerOptions));
 
     private static bool? GuardContent(JsonElement? options)
     {
-        if (options is not { } bag || !bag.TryGetProperty("guardContent", out var value) || value.ValueKind == JsonValueKind.Null)
+        if (
+            options is not { } bag
+            || !bag.TryGetProperty("guardContent", out var value)
+            || value.ValueKind == JsonValueKind.Null
+        )
         {
             return null;
         }
@@ -403,11 +492,13 @@ public static class AmazonBedrockMessages
     {
         foreach (var key in new[] { "amazonBedrock", "bedrock" })
         {
-            if (providerOptions != null
+            if (
+                providerOptions != null
                 && providerOptions.TryGetValue(key, out var bag)
                 && bag.ValueKind == JsonValueKind.Object
                 && bag.TryGetProperty("cachePoint", out var cachePoint)
-                && cachePoint.ValueKind == JsonValueKind.Object)
+                && cachePoint.ValueKind == JsonValueKind.Object
+            )
             {
                 return new JsonObject { ["cachePoint"] = JsonNode.Parse(cachePoint.GetRawText()) };
             }
@@ -466,12 +557,17 @@ public static class AmazonBedrockMessages
             return new JsonObject { ["bytes"] = System.Convert.ToBase64String(file.Data) };
         }
 
-        if (!string.IsNullOrEmpty(file.Url) && file.Url!.StartsWith("s3://", StringComparison.OrdinalIgnoreCase))
+        if (
+            !string.IsNullOrEmpty(file.Url)
+            && file.Url!.StartsWith("s3://", StringComparison.OrdinalIgnoreCase)
+        )
         {
             return new JsonObject { ["s3Location"] = new JsonObject { ["uri"] = file.Url } };
         }
 
-        throw new AiSdkException(functionality + " is not supported. Bedrock file parts accept bytes or an s3:// URL.");
+        throw new AiSdkException(
+            functionality + " is not supported. Bedrock file parts accept bytes or an s3:// URL."
+        );
     }
 
     private static string ImageFormat(string mediaType)
@@ -487,7 +583,11 @@ public static class AmazonBedrockMessages
             case "image/webp":
                 return "webp";
             default:
-                throw new AiSdkException("Unsupported image mime type: " + mediaType + ", expected one of: image/jpeg, image/png, image/gif, image/webp");
+                throw new AiSdkException(
+                    "Unsupported image mime type: "
+                        + mediaType
+                        + ", expected one of: image/jpeg, image/png, image/gif, image/webp"
+                );
         }
     }
 
@@ -582,10 +682,15 @@ public static class AmazonBedrockMessages
                 continue;
             }
 
-            var allowed = (character >= 'a' && character <= 'z')
+            var allowed =
+                (character >= 'a' && character <= 'z')
                 || (character >= 'A' && character <= 'Z')
                 || (character >= '0' && character <= '9')
-                || character == '(' || character == ')' || character == '[' || character == ']' || character == '-';
+                || character == '('
+                || character == ')'
+                || character == '['
+                || character == ']'
+                || character == '-';
             if (!allowed)
             {
                 continue;
@@ -617,10 +722,13 @@ public static class AmazonBedrockMessages
         var builder = new StringBuilder(toolName.Length);
         foreach (var character in toolName)
         {
-            if ((character >= 'a' && character <= 'z')
+            if (
+                (character >= 'a' && character <= 'z')
                 || (character >= 'A' && character <= 'Z')
                 || (character >= '0' && character <= '9')
-                || character == '_' || character == '-')
+                || character == '_'
+                || character == '-'
+            )
             {
                 builder.Append(character);
             }

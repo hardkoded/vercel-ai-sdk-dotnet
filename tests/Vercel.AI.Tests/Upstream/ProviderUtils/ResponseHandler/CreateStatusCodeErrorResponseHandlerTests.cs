@@ -14,7 +14,8 @@ public sealed class CreateStatusCodeErrorResponseHandlerTests
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/response-handler.test.ts::createStatusCodeErrorResponseHandler::should create error with status text and response body",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_create_error_with_status_text_and_response_body()
     {
         var response = new HttpResponseMessage(HttpStatusCode.NotFound)
@@ -24,7 +25,11 @@ public sealed class CreateStatusCodeErrorResponseHandlerTests
         };
         var requestBodyValues = new Dictionary<string, string> { ["some"] = "data" };
 
-        var error = await ResponseHandlers.CreateStatusCodeErrorResponseAsync(response, "test-url", requestBodyValues);
+        var error = await ResponseHandlers.CreateStatusCodeErrorResponseAsync(
+            response,
+            "test-url",
+            requestBodyValues
+        );
 
         Assert.Equal("Not Found", error.Message);
         Assert.Equal(404, error.StatusCode);
@@ -36,18 +41,23 @@ public sealed class CreateStatusCodeErrorResponseHandlerTests
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/response-handler.test.ts::createStatusCodeErrorResponseHandler::should reject oversized responses before reading the body",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_reject_oversized_responses_before_reading_the_body()
     {
         var (response, content) = OversizedResponseContent.Create(
             "too large",
             HttpStatusCode.InternalServerError,
-            "Internal Server Error");
+            "Internal Server Error"
+        );
 
-        var error = await Assert.ThrowsAsync<DownloadError>(() => ResponseHandlers.CreateStatusCodeErrorResponseAsync(
-            response,
-            "test-url",
-            new Dictionary<string, string> { ["some"] = "data" }));
+        var error = await Assert.ThrowsAsync<DownloadError>(() =>
+            ResponseHandlers.CreateStatusCodeErrorResponseAsync(
+                response,
+                "test-url",
+                new Dictionary<string, string> { ["some"] = "data" }
+            )
+        );
 
         Assert.Contains("exceeded maximum size", error.Message);
         Assert.False(content.BodyRead);

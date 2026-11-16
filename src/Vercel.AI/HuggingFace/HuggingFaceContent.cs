@@ -26,16 +26,19 @@ public sealed class HuggingFaceReasoning : GeneratedReasoning
 {
     /// <summary>Creates reasoning.</summary>
     public HuggingFaceReasoning(string text, JsonElement? providerMetadata)
-        : base(text, providerMetadata)
-    {
-    }
+        : base(text, providerMetadata) { }
 }
 
 /// <summary>A tool call that Hugging Face ran itself, such as an MCP call.</summary>
 public sealed class HuggingFaceToolCall : GeneratedToolCall
 {
     /// <summary>Creates a tool call.</summary>
-    public HuggingFaceToolCall(string toolCallId, string toolName, string argumentsJson, bool providerExecuted)
+    public HuggingFaceToolCall(
+        string toolCallId,
+        string toolName,
+        string argumentsJson,
+        bool providerExecuted
+    )
         : base(toolCallId, toolName, argumentsJson)
     {
         ProviderExecuted = providerExecuted;

@@ -16,14 +16,23 @@ public sealed class ByteDanceImageModel : IImageModel, IImageCaller
 {
     private static readonly HashSet<string> HandledOptions = new(StringComparer.Ordinal)
     {
-        "watermark", "outputFormat", "size", "sequentialImageGeneration", "maxImages", "optimizePromptMode",
+        "watermark",
+        "outputFormat",
+        "size",
+        "sequentialImageGeneration",
+        "maxImages",
+        "optimizePromptMode",
     };
 
     private readonly ByteDanceProvider _provider;
     private readonly Func<DateTimeOffset> _clock;
 
     /// <summary>Creates a model. <paramref name="clock"/> sets the response timestamp.</summary>
-    public ByteDanceImageModel(ByteDanceProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
+    public ByteDanceImageModel(
+        ByteDanceProvider provider,
+        string modelId,
+        Func<DateTimeOffset>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -46,19 +55,30 @@ public sealed class ByteDanceImageModel : IImageModel, IImageCaller
     }
 
     /// <inheritdoc />
-    public Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+    public Task<ImageGenerationResult> DoGenerateAsync(
+        ImageCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         return GenerateAsync(options, null, cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<ImageModelResult> DoGenerateAsync(ImageModelCall call, CancellationToken cancellationToken)
+    public async Task<ImageModelResult> DoGenerateAsync(
+        ImageModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var warnings = new List<OperationWarning>();
         if (call.AspectRatio != null)
         {
-            warnings.Add(OperationWarning.Unsupported("aspectRatio", "ByteDance does not support aspectRatio. Use `size` (e.g. \"2048x2048\" or a resolution level like \"2K\" via providerOptions) instead."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "aspectRatio",
+                    "ByteDance does not support aspectRatio. Use `size` (e.g. \"2048x2048\" or a resolution level like \"2K\" via providerOptions) instead."
+                )
+            );
         }
 
         if (call.Seed != null)
@@ -68,16 +88,28 @@ public sealed class ByteDanceImageModel : IImageModel, IImageCaller
 
         if (call.Mask != null)
         {
-            warnings.Add(OperationWarning.Unsupported("mask", "ByteDance Seedream does not support a separate mask. Provide edit instructions in the prompt, optionally with markings on the input image."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "mask",
+                    "ByteDance Seedream does not support a separate mask. Provide edit instructions in the prompt, optionally with markings on the input image."
+                )
+            );
         }
 
         var timestamp = _clock();
         var body = new JsonObject { ["model"] = ModelId, ["prompt"] = call.Prompt };
         if (call.Files is { Count: > 0 } files)
         {
-            body["image"] = files.Count == 1
-                ? FileDataConversions.ConvertImageModelFileToDataUri(files[0])
-                : new JsonArray(files.Select(file => (JsonNode?)FileDataConversions.ConvertImageModelFileToDataUri(file)).ToArray());
+            body["image"] =
+                files.Count == 1
+                    ? FileDataConversions.ConvertImageModelFileToDataUri(files[0])
+                    : new JsonArray(
+                        files
+                            .Select(file =>
+                                (JsonNode?)FileDataConversions.ConvertImageModelFileToDataUri(file)
+                            )
+                            .ToArray()
+                    );
         }
 
         if (call.Size != null)
@@ -85,7 +117,11 @@ public sealed class ByteDanceImageModel : IImageModel, IImageCaller
             body["size"] = call.Size;
         }
 
-        if (call.ProviderOptions is { ValueKind: JsonValueKind.Object } bag && bag.TryGetProperty(ByteDanceProvider.ProviderId, out var options) && options.ValueKind == JsonValueKind.Object)
+        if (
+            call.ProviderOptions is { ValueKind: JsonValueKind.Object } bag
+            && bag.TryGetProperty(ByteDanceProvider.ProviderId, out var options)
+            && options.ValueKind == JsonValueKind.Object
+        )
         {
             Copy(options, "watermark", body, "watermark");
             Copy(options, "outputFormat", body, "output_format");
@@ -95,7 +131,10 @@ public sealed class ByteDanceImageModel : IImageModel, IImageCaller
             Copy(options, "sequentialImageGeneration", body, "sequential_image_generation");
             if (Value(options, "maxImages") is { } maxImages)
             {
-                body["sequential_image_generation_options"] = new JsonObject { ["max_images"] = maxImages };
+                body["sequential_image_generation_options"] = new JsonObject
+                {
+                    ["max_images"] = maxImages,
+                };
             }
 
             if (Value(options, "optimizePromptMode") is { } mode)
@@ -103,7 +142,11 @@ public sealed class ByteDanceImageModel : IImageModel, IImageCaller
                 body["optimize_prompt_options"] = new JsonObject { ["mode"] = mode };
             }
 
-            foreach (var option in options.EnumerateObject().Where(option => !HandledOptions.Contains(option.Name)))
+            foreach (
+                var option in options
+                    .EnumerateObject()
+                    .Where(option => !HandledOptions.Contains(option.Name))
+            )
             {
                 body[option.Name] = JsonNode.Parse(option.Value.GetRawText());
             }
@@ -111,27 +154,52 @@ public sealed class ByteDanceImageModel : IImageModel, IImageCaller
 
         // Always ask for base64 so the SDK receives the image bytes.
         body["response_format"] = "b64_json";
-        var response = await ProviderExchange.SendAsync(
-            _provider._httpClient,
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "/images/generations"),
-            ProviderExchange.Json(body.ToJsonString()),
-            ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers),
-            cancellationToken).ConfigureAwait(false);
+        var response = await ProviderExchange
+            .SendAsync(
+                _provider._httpClient,
+                HttpMethod.Post,
+                ApiKeys.Combine(_provider.Options.BaseUrl, "/images/generations"),
+                ProviderExchange.Json(body.ToJsonString()),
+                ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         using var document = JsonDocument.Parse(response.Body);
         var root = document.RootElement;
-        var images = root.GetProperty("data").EnumerateArray().Select(item => (object?)item.GetProperty("b64_json").GetString()).ToList();
+        var images = root.GetProperty("data")
+            .EnumerateArray()
+            .Select(item => (object?)item.GetProperty("b64_json").GetString())
+            .ToList();
         OperationUsage? usage = null;
-        if (root.TryGetProperty("usage", out var usageElement) && usageElement.ValueKind == JsonValueKind.Object)
+        if (
+            root.TryGetProperty("usage", out var usageElement)
+            && usageElement.ValueKind == JsonValueKind.Object
+        )
         {
             // Ark reports no input tokens, and generated_images counts images, not tokens.
-            usage = new OperationUsage(null, Count(usageElement, "output_tokens"), Count(usageElement, "total_tokens"));
+            usage = new OperationUsage(
+                null,
+                Count(usageElement, "output_tokens"),
+                Count(usageElement, "total_tokens")
+            );
         }
 
-        return new ImageModelResult(images, warnings, usage, response: new ProviderResponse(response.Headers, timestamp: timestamp.UtcDateTime, modelId: ModelId));
+        return new ImageModelResult(
+            images,
+            warnings,
+            usage,
+            response: new ProviderResponse(
+                response.Headers,
+                timestamp: timestamp.UtcDateTime,
+                modelId: ModelId
+            )
+        );
     }
 
-    private static Dictionary<string, string> MergedHeaders(ImageCallOptions options, IDictionary<string, string>? headers)
+    private static Dictionary<string, string> MergedHeaders(
+        ImageCallOptions options,
+        IDictionary<string, string>? headers
+    )
     {
         var merged = options.NonNullHeaders;
         foreach (var pair in headers ?? new Dictionary<string, string>())
@@ -142,16 +210,40 @@ public sealed class ByteDanceImageModel : IImageModel, IImageCaller
         return merged;
     }
 
-    internal async Task<ImageGenerationResult> GenerateAsync(ImageCallOptions options, IDictionary<string, string>? headers, CancellationToken cancellationToken)
+    internal async Task<ImageGenerationResult> GenerateAsync(
+        ImageCallOptions options,
+        IDictionary<string, string>? headers,
+        CancellationToken cancellationToken
+    )
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
-        var call = new ImageModelCall(options.Prompt, options.Files, options.Mask, options.Count, options.Size, options.AspectRatio, options.Seed, options.ProviderOptionsElement, MergedHeaders(options, headers), cancellationToken);
+        var call = new ImageModelCall(
+            options.Prompt,
+            options.Files,
+            options.Mask,
+            options.Count,
+            options.Size,
+            options.AspectRatio,
+            options.Seed,
+            options.ProviderOptionsElement,
+            MergedHeaders(options, headers),
+            cancellationToken
+        );
         var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
-        return new ImageGenerationResult(result.Images.Select(image =>
-        {
-            var data = Convert.FromBase64String((string)image!);
-            return new ProviderGeneratedImage(MediaTypes.DetectMediaType(data, "image") ?? "image/jpeg", data, null);
-        }).ToList(), result.Warnings.Select(warning => warning.ToCallWarning()).ToList());
+        return new ImageGenerationResult(
+            result
+                .Images.Select(image =>
+                {
+                    var data = Convert.FromBase64String((string)image!);
+                    return new ProviderGeneratedImage(
+                        MediaTypes.DetectMediaType(data, "image") ?? "image/jpeg",
+                        data,
+                        null
+                    );
+                })
+                .ToList(),
+            result.Warnings.Select(warning => warning.ToCallWarning()).ToList()
+        );
     }
 
     private static void Copy(JsonElement options, string name, JsonObject body, string field)
@@ -164,11 +256,15 @@ public sealed class ByteDanceImageModel : IImageModel, IImageCaller
 
     private static JsonNode? Value(JsonElement options, string name)
     {
-        return options.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null ? JsonNode.Parse(value.GetRawText()) : null;
+        return options.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null
+            ? JsonNode.Parse(value.GetRawText())
+            : null;
     }
 
     private static int? Count(JsonElement usage, string name)
     {
-        return usage.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number ? value.GetInt32() : null;
+        return usage.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number
+            ? value.GetInt32()
+            : null;
     }
 }

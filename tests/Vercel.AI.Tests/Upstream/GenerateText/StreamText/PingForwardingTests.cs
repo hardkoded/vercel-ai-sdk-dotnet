@@ -16,10 +16,15 @@ namespace Vercel.AI.Tests.Upstream.GenerateText.StreamText;
 /// </summary>
 public sealed class PingForwardingTests
 {
-    private const string Prefix = "packages/ai/src/generate-text/stream-text.test.ts::streamText > ping forwarding::";
+    private const string Prefix =
+        "packages/ai/src/generate-text/stream-text.test.ts::streamText > ping forwarding::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should forward ping chunks without enabling raw chunks", Coverage = UpstreamCoverage.Covered, Commit = "97540149254736e8d566d432ccb7abf7b1cebbb3")]
+    [UpstreamTest(
+        Prefix + "should forward ping chunks without enabling raw chunks",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "97540149254736e8d566d432ccb7abf7b1cebbb3"
+    )]
     public async Task Should_forward_ping_chunks_without_enabling_raw_chunks()
     {
         var model = new TestLanguageModel
@@ -32,7 +37,8 @@ public sealed class PingForwardingTests
             },
         };
 
-        var result = Client().StreamTextAsync(new StreamTextOptions { Model = model, Prompt = "test prompt" });
+        var result = Client()
+            .StreamTextAsync(new StreamTextOptions { Model = model, Prompt = "test prompt" });
 
         var chunks = await ReadAsync(result);
 
@@ -51,17 +57,27 @@ public sealed class PingForwardingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "does not treat a ping-only incomplete stream as generated output", Coverage = UpstreamCoverage.Covered, Commit = "97540149254736e8d566d432ccb7abf7b1cebbb3")]
+    [UpstreamTest(
+        Prefix + "does not treat a ping-only incomplete stream as generated output",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "97540149254736e8d566d432ccb7abf7b1cebbb3"
+    )]
     public async Task Does_not_treat_a_ping_only_incomplete_stream_as_generated_output()
     {
-        var model = new TestLanguageModel { StreamParts = new LanguageModelStreamPart[] { new PingStreamPart() } };
-
-        var result = Client().StreamTextAsync(new StreamTextOptions
+        var model = new TestLanguageModel
         {
-            Model = model,
-            Prompt = "test",
-            OnError = (_, _) => Task.CompletedTask,
-        });
+            StreamParts = new LanguageModelStreamPart[] { new PingStreamPart() },
+        };
+
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = model,
+                    Prompt = "test",
+                    OnError = (_, _) => Task.CompletedTask,
+                }
+            );
 
         // The port rethrows the no-output error from the stream after yielding the parts.
         var chunks = new List<TextStreamPart>();

@@ -12,10 +12,16 @@ namespace Vercel.AI.AmazonBedrock;
 /// <summary>Signs an HTTP request with AWS Signature Version 4.</summary>
 public static class AwsSigV4
 {
-    private static readonly Regex Whitespace = new Regex("\\s+", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex Whitespace = new Regex(
+        "\\s+",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(100)
+    );
 
     // The transport can change these after signing, so they are never signed.
-    private static readonly HashSet<string> UnsignedHeaders = new HashSet<string>(StringComparer.Ordinal)
+    private static readonly HashSet<string> UnsignedHeaders = new HashSet<string>(
+        StringComparer.Ordinal
+    )
     {
         "authorization",
         "connection",
@@ -27,14 +33,26 @@ public static class AwsSigV4
     /// Adds the Authorization header for <paramref name="service"/> in <paramref name="region"/>.
     /// The headers already on <paramref name="request"/> are signed too, except values with non-ASCII characters.
     /// </summary>
-    public static void Sign(HttpRequestMessage request, byte[] payload, string region, string service, string accessKey, string secretKey, string? sessionToken, DateTimeOffset utcNow)
+    public static void Sign(
+        HttpRequestMessage request,
+        byte[] payload,
+        string region,
+        string service,
+        string accessKey,
+        string secretKey,
+        string? sessionToken,
+        DateTimeOffset utcNow
+    )
     {
         if (request.RequestUri is null)
         {
             throw new ArgumentException("Request URI is required.", nameof(request));
         }
 
-        var amzDate = utcNow.UtcDateTime.ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture);
+        var amzDate = utcNow.UtcDateTime.ToString(
+            "yyyyMMdd'T'HHmmss'Z'",
+            CultureInfo.InvariantCulture
+        );
         var headers = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var header in request.Headers)
         {
@@ -59,16 +77,42 @@ public static class AwsSigV4
             request.Headers.TryAddWithoutValidation("x-amz-security-token", sessionToken);
         }
 
-        request.Headers.TryAddWithoutValidation("Authorization", Authorize(request.Method.Method, request.RequestUri, headers, payload, region, service, accessKey, secretKey, utcNow));
+        request.Headers.TryAddWithoutValidation(
+            "Authorization",
+            Authorize(
+                request.Method.Method,
+                request.RequestUri,
+                headers,
+                payload,
+                region,
+                service,
+                accessKey,
+                secretKey,
+                utcNow
+            )
+        );
     }
 
     /// <summary>
     /// Returns the <c>Authorization</c> value for <paramref name="headers"/>, which holds lower-case names
     /// and includes <c>host</c> and <c>x-amz-date</c>. A header whose value has a non-ASCII character is not signed.
     /// </summary>
-    internal static string Authorize(string method, Uri uri, IReadOnlyDictionary<string, string> headers, byte[] payload, string region, string service, string accessKey, string secretKey, DateTimeOffset utcNow)
+    internal static string Authorize(
+        string method,
+        Uri uri,
+        IReadOnlyDictionary<string, string> headers,
+        byte[] payload,
+        string region,
+        string service,
+        string accessKey,
+        string secretKey,
+        DateTimeOffset utcNow
+    )
     {
-        var amzDate = utcNow.UtcDateTime.ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture);
+        var amzDate = utcNow.UtcDateTime.ToString(
+            "yyyyMMdd'T'HHmmss'Z'",
+            CultureInfo.InvariantCulture
+        );
         var dateStamp = utcNow.UtcDateTime.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
         var payloadHash = ToHex(Sha256(payload));
         var names = new List<string>(headers.Keys);
@@ -82,7 +126,11 @@ public static class AwsSigV4
                 continue;
             }
 
-            canonicalHeaders.Append(name).Append(':').Append(Whitespace.Replace(headers[name].Trim(), " ")).Append('\n');
+            canonicalHeaders
+                .Append(name)
+                .Append(':')
+                .Append(Whitespace.Replace(headers[name].Trim(), " "))
+                .Append('\n');
             if (signed.Length > 0)
             {
                 signed.Append(';');
@@ -92,17 +140,49 @@ public static class AwsSigV4
         }
 
         var path = string.IsNullOrEmpty(uri.AbsolutePath) ? "/" : uri.AbsolutePath;
-        var canonical = method + "\n" + path + "\n" + uri.Query.TrimStart('?') + "\n"
-            + canonicalHeaders + "\n" + signed + "\n" + payloadHash;
+        var canonical =
+            method
+            + "\n"
+            + path
+            + "\n"
+            + uri.Query.TrimStart('?')
+            + "\n"
+            + canonicalHeaders
+            + "\n"
+            + signed
+            + "\n"
+            + payloadHash;
         var scope = dateStamp + "/" + region + "/" + service + "/aws4_request";
-        var stringToSign = "AWS4-HMAC-SHA256\n" + amzDate + "\n" + scope + "\n" + ToHex(Sha256(Encoding.UTF8.GetBytes(canonical)));
-        var signingKey = Hmac(Hmac(Hmac(Hmac(Encoding.UTF8.GetBytes("AWS4" + secretKey), dateStamp), region), service), "aws4_request");
+        var stringToSign =
+            "AWS4-HMAC-SHA256\n"
+            + amzDate
+            + "\n"
+            + scope
+            + "\n"
+            + ToHex(Sha256(Encoding.UTF8.GetBytes(canonical)));
+        var signingKey = Hmac(
+            Hmac(
+                Hmac(Hmac(Encoding.UTF8.GetBytes("AWS4" + secretKey), dateStamp), region),
+                service
+            ),
+            "aws4_request"
+        );
         var signature = ToHex(Hmac(signingKey, stringToSign));
-        return "AWS4-HMAC-SHA256 Credential=" + accessKey + "/" + scope + ", SignedHeaders=" + signed + ", Signature=" + signature;
+        return "AWS4-HMAC-SHA256 Credential="
+            + accessKey
+            + "/"
+            + scope
+            + ", SignedHeaders="
+            + signed
+            + ", Signature="
+            + signature;
     }
 
     /// <summary>The <c>Host</c> header value, which includes the port when it is not the default.</summary>
-    internal static string HostHeader(Uri uri) => uri.IsDefaultPort ? uri.Host : uri.Host + ":" + uri.Port.ToString(CultureInfo.InvariantCulture);
+    internal static string HostHeader(Uri uri) =>
+        uri.IsDefaultPort
+            ? uri.Host
+            : uri.Host + ":" + uri.Port.ToString(CultureInfo.InvariantCulture);
 
     // SigV4 header values must be ASCII. Other values are sent but left out of the signature.
     private static bool IsAscii(string value)

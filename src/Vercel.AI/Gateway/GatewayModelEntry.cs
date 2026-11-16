@@ -41,7 +41,6 @@ public sealed class GatewayLanguageModelEntry
     [
         "embedding",
         "decision",
-
         // Keep "evaluation" until Gateway migrates its model catalog to "decision".
         "evaluation",
         "image",

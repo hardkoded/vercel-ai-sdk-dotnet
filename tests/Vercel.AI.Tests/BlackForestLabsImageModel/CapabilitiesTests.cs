@@ -20,8 +20,13 @@ public sealed class CapabilitiesTests
     [InlineData("flux-2-pro", null, null)]
     [UpstreamTest(
         "packages/black-forest-labs/src/black-forest-labs-image-model.test.ts::BlackForestLabsImageModel > capabilities::advertises file=$supportsFileInputs and mask=$supportsMaskInputs for $modelId",
-        Coverage = UpstreamCoverage.Covered)]
-    public void AdvertisesFileAndMaskForModelId(string modelId, bool? supportsFileInputs, bool? supportsMaskInputs)
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void AdvertisesFileAndMaskForModelId(
+        string modelId,
+        bool? supportsFileInputs,
+        bool? supportsMaskInputs
+    )
     {
         var model = CreateBasicModel(new BlackForestLabsServer(), modelId);
 

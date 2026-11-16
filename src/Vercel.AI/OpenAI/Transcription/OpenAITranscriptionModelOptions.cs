@@ -24,7 +24,9 @@ internal static class OpenAITranscriptionModelOptions
             ["keywords"] = strings,
             ["prompt"] = ProviderOptionShape.String(),
             ["temperature"] = ProviderOptionShape.Number(min: 0, max: 1),
-            ["timestampGranularities"] = ProviderOptionShape.ArrayOf(ProviderOptionShape.Enum("word", "segment")),
+            ["timestampGranularities"] = ProviderOptionShape.ArrayOf(
+                ProviderOptionShape.Enum("word", "segment")
+            ),
             ["responseFormat"] = ProviderOptionShape.Enum("json", "verbose_json", "diarized_json"),
             ["chunkingStrategy"] = ProviderOptionShape.Union(
                 ProviderOptionShape.Literal("auto"),
@@ -37,13 +39,22 @@ internal static class OpenAITranscriptionModelOptions
                         ["silenceDurationMs"] = ProviderOptionShape.Number(min: 0, integer: true),
                     },
                     false,
-                    "type")),
+                    "type"
+                )
+            ),
             ["streaming"] = ProviderOptionShape.ObjectOf(
                 new Dictionary<string, OptionValidator>(StringComparer.Ordinal)
                 {
-                    ["delay"] = ProviderOptionShape.Enum("minimal", "low", "medium", "high", "xhigh"),
+                    ["delay"] = ProviderOptionShape.Enum(
+                        "minimal",
+                        "low",
+                        "medium",
+                        "high",
+                        "xhigh"
+                    ),
                     ["include"] = strings,
-                }),
+                }
+            ),
         };
     }
 }

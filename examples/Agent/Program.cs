@@ -12,23 +12,35 @@ if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AI_GATEWAY_API_KEY"
 }
 
 #region agent
-var weatherAgent = new Agent(new AgentOptions
-{
-    ModelId = "openai/gpt-6-astra",
-    Instructions = "You are an agent that answers questions about the weather.",
-    Tools = new[]
+var weatherAgent = new Agent(
+    new AgentOptions
     {
-        Tool.Function(
-            "weather",
-            "Returns the weather in a city.",
-            """{ "type": "object", "properties": { "city": { "type": "string" } }, "required": ["city"] }""",
-            (arguments, cancellationToken) =>
-            {
-                var city = arguments.GetProperty("city").GetString();
-                return Task.FromResult(JsonSerializer.Serialize(new { city, forecast = "sunny", temperature = 22 }));
-            }),
-    },
-});
+        ModelId = "openai/gpt-6-astra",
+        Instructions = "You are an agent that answers questions about the weather.",
+        Tools = new[]
+        {
+            Tool.Function(
+                "weather",
+                "Returns the weather in a city.",
+                """{ "type": "object", "properties": { "city": { "type": "string" } }, "required": ["city"] }""",
+                (arguments, cancellationToken) =>
+                {
+                    var city = arguments.GetProperty("city").GetString();
+                    return Task.FromResult(
+                        JsonSerializer.Serialize(
+                            new
+                            {
+                                city,
+                                forecast = "sunny",
+                                temperature = 22,
+                            }
+                        )
+                    );
+                }
+            ),
+        },
+    }
+);
 
 var result = await weatherAgent.GenerateAsync("What is the weather in Lisbon?");
 Console.WriteLine(result.Text);

@@ -19,9 +19,14 @@ public sealed class GatewayConfig
     public Func<IReadOnlyDictionary<string, string?>>? Headers { get; set; }
 
     /// <summary>Gets or sets the asynchronous function that resolves the request headers. Takes precedence over <see cref="Headers"/>. Upstream's <c>headers</c> is async.</summary>
-    public Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? HeadersAsync { get; set; }
+    public Func<
+        CancellationToken,
+        Task<IReadOnlyDictionary<string, string?>>
+    >? HeadersAsync { get; set; }
 
-    internal async Task<IReadOnlyDictionary<string, string?>?> ResolveHeadersAsync(CancellationToken cancellationToken)
+    internal async Task<IReadOnlyDictionary<string, string?>?> ResolveHeadersAsync(
+        CancellationToken cancellationToken
+    )
     {
         if (HeadersAsync is not null)
         {
@@ -145,19 +150,29 @@ public sealed class GatewayGenerationInfoFetcher
     }
 
     /// <summary>Gets the info of one generation.</summary>
-    public async Task<GatewayGenerationInfo> GetGenerationInfoAsync(GatewayGenerationInfoParams parameters, CancellationToken cancellationToken = default)
+    public async Task<GatewayGenerationInfo> GetGenerationInfoAsync(
+        GatewayGenerationInfoParams parameters,
+        CancellationToken cancellationToken = default
+    )
     {
         try
         {
             var baseUrl = new Uri(_config.BaseUrl);
-            var uri = new Uri(baseUrl.GetLeftPart(UriPartial.Authority) + "/v1/generation?id=" + Uri.EscapeDataString(parameters.Id));
-            var http = _config.Http ?? throw new InvalidOperationException("GatewayConfig.Http is required.");
+            var uri = new Uri(
+                baseUrl.GetLeftPart(UriPartial.Authority)
+                    + "/v1/generation?id="
+                    + Uri.EscapeDataString(parameters.Id)
+            );
+            var http = _config.Http
+                ?? throw new InvalidOperationException("GatewayConfig.Http is required.");
             using var document = await http.SendJsonAsync(
-                HttpMethod.Get,
-                uri,
-                null,
-                await _config.ResolveHeadersAsync(cancellationToken).ConfigureAwait(false),
-                cancellationToken).ConfigureAwait(false);
+                    HttpMethod.Get,
+                    uri,
+                    null,
+                    await _config.ResolveHeadersAsync(cancellationToken).ConfigureAwait(false),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             return Parse(document.RootElement);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -168,9 +183,15 @@ public sealed class GatewayGenerationInfoFetcher
 
     private static GatewayGenerationInfo Parse(JsonElement root)
     {
-        if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Object)
+        if (
+            root.ValueKind != JsonValueKind.Object
+            || !root.TryGetProperty("data", out var data)
+            || data.ValueKind != JsonValueKind.Object
+        )
         {
-            throw new FormatException("Type validation failed: expected an object with a data object.");
+            throw new FormatException(
+                "Type validation failed: expected an object with a data object."
+            );
         }
 
         return new GatewayGenerationInfo
@@ -203,21 +224,38 @@ public sealed class GatewayGenerationInfoFetcher
     {
         if (!data.TryGetProperty(name, out var value) || value.ValueKind != kind)
         {
-            throw new FormatException(string.Format(CultureInfo.InvariantCulture, "Type validation failed: invalid or missing {0}.", name));
+            throw new FormatException(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "Type validation failed: invalid or missing {0}.",
+                    name
+                )
+            );
         }
 
         return value;
     }
 
-    private static string Str(JsonElement data, string name) => Field(data, name, JsonValueKind.String).GetString()!;
+    private static string Str(JsonElement data, string name) =>
+        Field(data, name, JsonValueKind.String).GetString()!;
 
-    private static double Num(JsonElement data, string name) => Field(data, name, JsonValueKind.Number).GetDouble();
+    private static double Num(JsonElement data, string name) =>
+        Field(data, name, JsonValueKind.Number).GetDouble();
 
     private static bool Bool(JsonElement data, string name)
     {
-        if (!data.TryGetProperty(name, out var value) || value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+        if (
+            !data.TryGetProperty(name, out var value)
+            || value.ValueKind is not (JsonValueKind.True or JsonValueKind.False)
+        )
         {
-            throw new FormatException(string.Format(CultureInfo.InvariantCulture, "Type validation failed: invalid or missing {0}.", name));
+            throw new FormatException(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "Type validation failed: invalid or missing {0}.",
+                    name
+                )
+            );
         }
 
         return value.GetBoolean();

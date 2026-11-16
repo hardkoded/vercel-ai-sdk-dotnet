@@ -16,8 +16,24 @@ internal static class DeepgramStreamingTranscription
 {
     private static readonly string[] ProviderOptionOrder =
     {
-        "language", "detectLanguage", "smartFormat", "punctuate", "paragraphs", "summarize", "topics", "intents", "sentiment",
-        "detectEntities", "redact", "replace", "search", "keyterm", "diarize", "utterances", "uttSplit", "fillerWords",
+        "language",
+        "detectLanguage",
+        "smartFormat",
+        "punctuate",
+        "paragraphs",
+        "summarize",
+        "topics",
+        "intents",
+        "sentiment",
+        "detectEntities",
+        "redact",
+        "replace",
+        "search",
+        "keyterm",
+        "diarize",
+        "utterances",
+        "uttSplit",
+        "fillerWords",
     };
 
     private static readonly Dictionary<string, string> Mappings = new Dictionary<string, string>
@@ -43,13 +59,25 @@ internal static class DeepgramStreamingTranscription
         ("utteranceEndMs", "utterance_end_ms"),
     };
 
-    private static readonly Regex Credentials = new Regex(@"^(Token|Bearer) (\S+)\z", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+    private static readonly Regex Credentials = new Regex(
+        @"^(Token|Bearer) (\S+)\z",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(1)
+    );
 
-    public static async Task<TranscriptionStreamStart> StreamAsync(string modelId, DeepgramProvider provider, TranscriptionStreamCall options, CancellationToken cancellationToken)
+    public static async Task<TranscriptionStreamStart> StreamAsync(
+        string modelId,
+        DeepgramProvider provider,
+        TranscriptionStreamCall options,
+        CancellationToken cancellationToken
+    )
     {
         if (!DeepgramModelCatalog.GetDeepgramTranscriptionModelEntry(modelId).Streaming)
         {
-            throw new UnsupportedFunctionalityException("Deepgram Flux streaming transcription (/v2/listen)", "'Deepgram Flux streaming transcription (/v2/listen)' functionality not supported.");
+            throw new UnsupportedFunctionalityException(
+                "Deepgram Flux streaming transcription (/v2/listen)",
+                "'Deepgram Flux streaming transcription (/v2/listen)' functionality not supported."
+            );
         }
 
         var encoding = options.InputAudioFormat.Type switch
@@ -60,9 +88,19 @@ internal static class DeepgramStreamingTranscription
             _ => null,
         };
         var rate = options.InputAudioFormat.Rate;
-        if (encoding is null || rate is null || rate <= 0 || rate != Math.Floor(rate.Value) || double.IsInfinity(rate.Value))
+        if (
+            encoding is null
+            || rate is null
+            || rate <= 0
+            || rate != Math.Floor(rate.Value)
+            || double.IsInfinity(rate.Value)
+        )
         {
-            throw new InvalidArgumentException("inputAudioFormat", options.InputAudioFormat, "Deepgram streaming requires audio/pcm (16-bit little-endian), audio/pcmu, or audio/pcma and a positive integer sample rate.");
+            throw new InvalidArgumentException(
+                "inputAudioFormat",
+                options.InputAudioFormat,
+                "Deepgram streaming requires audio/pcm (16-bit little-endian), audio/pcmu, or audio/pcma and a positive integer sample rate."
+            );
         }
 
         var warnings = new List<OperationWarning>();
@@ -70,16 +108,27 @@ internal static class DeepgramStreamingTranscription
         {
             new KeyValuePair<string, string>("model", modelId),
             new KeyValuePair<string, string>("encoding", encoding),
-            new KeyValuePair<string, string>("sample_rate", rate.Value.ToString("0", CultureInfo.InvariantCulture)),
+            new KeyValuePair<string, string>(
+                "sample_rate",
+                rate.Value.ToString("0", CultureInfo.InvariantCulture)
+            ),
         };
-        var deepgram = options.ProviderOptions.ValueKind == JsonValueKind.Object && options.ProviderOptions.TryGetProperty("deepgram", out var bag) && bag.ValueKind == JsonValueKind.Object ? bag : (JsonElement?)null;
+        var deepgram =
+            options.ProviderOptions.ValueKind == JsonValueKind.Object
+            && options.ProviderOptions.TryGetProperty("deepgram", out var bag)
+            && bag.ValueKind == JsonValueKind.Object
+                ? bag
+                : (JsonElement?)null;
         string? language = null;
         if (deepgram is { } values)
         {
             ValidateProviderOptions(values);
             foreach (var key in ProviderOptionOrder)
             {
-                if (!values.TryGetProperty(key, out var value) || value.ValueKind == JsonValueKind.Null)
+                if (
+                    !values.TryGetProperty(key, out var value)
+                    || value.ValueKind == JsonValueKind.Null
+                )
                 {
                     continue;
                 }
@@ -96,21 +145,36 @@ internal static class DeepgramStreamingTranscription
                         continue;
                     }
 
-                    warnings.Add(OperationWarning.Unsupported("providerOptions.deepgram." + key, "This option is not supported for Deepgram streaming transcription."));
+                    warnings.Add(
+                        OperationWarning.Unsupported(
+                            "providerOptions.deepgram." + key,
+                            "This option is not supported for Deepgram streaming transcription."
+                        )
+                    );
                     continue;
                 }
 
-                foreach (var entry in value.ValueKind == JsonValueKind.Array ? value.EnumerateArray().ToArray() : new[] { value })
+                foreach (
+                    var entry in value.ValueKind == JsonValueKind.Array
+                        ? value.EnumerateArray().ToArray()
+                        : new[] { value }
+                )
                 {
                     query.Add(new KeyValuePair<string, string>(parameter, QueryValue(entry)));
                 }
             }
 
-            if (values.TryGetProperty("streaming", out var streaming) && streaming.ValueKind == JsonValueKind.Object)
+            if (
+                values.TryGetProperty("streaming", out var streaming)
+                && streaming.ValueKind == JsonValueKind.Object
+            )
             {
                 foreach (var (option, parameter) in StreamingMappings)
                 {
-                    if (streaming.TryGetProperty(option, out var value) && value.ValueKind != JsonValueKind.Null)
+                    if (
+                        streaming.TryGetProperty(option, out var value)
+                        && value.ValueKind != JsonValueKind.Null
+                    )
                     {
                         query.Add(new KeyValuePair<string, string>(parameter, QueryValue(value)));
                     }
@@ -118,13 +182,29 @@ internal static class DeepgramStreamingTranscription
             }
         }
 
-        var url = new UriBuilder(WebSocketUtils.ToWebSocketUrl(ApiKeys.Combine(provider.Options.BaseUrl, "/v1/listen")))
+        var url = new UriBuilder(
+            WebSocketUtils.ToWebSocketUrl(ApiKeys.Combine(provider.Options.BaseUrl, "/v1/listen"))
+        )
         {
-            Query = string.Join("&", query.Select(pair => Uri.EscapeDataString(pair.Key) + "=" + Uri.EscapeDataString(pair.Value))),
+            Query = string.Join(
+                "&",
+                query.Select(pair =>
+                    Uri.EscapeDataString(pair.Key) + "=" + Uri.EscapeDataString(pair.Value)
+                )
+            ),
         }.Uri;
 
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-        foreach (var source in new IEnumerable<KeyValuePair<string, string?>>[] { await provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), options.Headers.Select(pair => new KeyValuePair<string, string?>(pair.Key, pair.Value)) })
+        foreach (
+            var source in new IEnumerable<KeyValuePair<string, string?>>[]
+            {
+                await provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+                options.Headers.Select(pair => new KeyValuePair<string, string?>(
+                    pair.Key,
+                    pair.Value
+                )),
+            }
+        )
         {
             foreach (var pair in source)
             {
@@ -138,17 +218,24 @@ internal static class DeepgramStreamingTranscription
         var match = authorization is null ? null : Credentials.Match(authorization);
         if (authorization is not null && !match!.Success)
         {
-            throw new InvalidArgumentException("headers", null, "Deepgram streaming authorization must use the Token or Bearer scheme.");
+            throw new InvalidArgumentException(
+                "headers",
+                null,
+                "Deepgram streaming authorization must use the Token or Bearer scheme."
+            );
         }
 
-        var protocols = match is not null ? new[] { match.Groups[1].Value.ToLowerInvariant(), match.Groups[2].Value } : null;
+        var protocols = match is not null
+            ? new[] { match.Groups[1].Value.ToLowerInvariant(), match.Groups[2].Value }
+            : null;
         var timestamp = provider.Now().UtcDateTime;
         var session = new Session(modelId, options, timestamp, warnings, language);
         session.Start(url, protocols, headers, provider.WebSocket);
         return new TranscriptionStreamStart(
             new ModelPartStream(session.Queue, session.Cancel),
             new ProviderResponse(timestamp: timestamp, modelId: modelId),
-            new ProviderRequest(url.ToString()));
+            new ProviderRequest(url.ToString())
+        );
     }
 
     // Maps to parseProviderOptions with deepgramTranscriptionModelOptionsSchema.
@@ -159,19 +246,44 @@ internal static class DeepgramStreamingTranscription
             var value = property.Value;
             var valid = property.Name switch
             {
-                "language" or "replace" or "search" or "keyterm" => IsNullOr(value, JsonValueKind.String),
-                "detectLanguage" or "smartFormat" or "punctuate" or "paragraphs" or "topics" or "intents" or "sentiment"
-                    or "detectEntities" or "diarize" or "utterances" or "fillerWords" => value.ValueKind is JsonValueKind.Null or JsonValueKind.True or JsonValueKind.False,
-                "summarize" => value.ValueKind is JsonValueKind.Null or JsonValueKind.False || (value.ValueKind == JsonValueKind.String && value.GetString() == "v2"),
+                "language" or "replace" or "search" or "keyterm" => IsNullOr(
+                    value,
+                    JsonValueKind.String
+                ),
+                "detectLanguage"
+                or "smartFormat"
+                or "punctuate"
+                or "paragraphs"
+                or "topics"
+                or "intents"
+                or "sentiment"
+                or "detectEntities"
+                or "diarize"
+                or "utterances"
+                or "fillerWords" => value.ValueKind
+                    is JsonValueKind.Null
+                        or JsonValueKind.True
+                        or JsonValueKind.False,
+                "summarize" => value.ValueKind is JsonValueKind.Null or JsonValueKind.False
+                    || (value.ValueKind == JsonValueKind.String && value.GetString() == "v2"),
                 "redact" => value.ValueKind is JsonValueKind.Null or JsonValueKind.String
-                    || (value.ValueKind == JsonValueKind.Array && value.EnumerateArray().All(entry => entry.ValueKind == JsonValueKind.String)),
+                    || (
+                        value.ValueKind == JsonValueKind.Array
+                        && value
+                            .EnumerateArray()
+                            .All(entry => entry.ValueKind == JsonValueKind.String)
+                    ),
                 "uttSplit" => IsNullOr(value, JsonValueKind.Number),
                 "streaming" => value.ValueKind == JsonValueKind.Null || IsValidStreaming(value),
                 _ => true,
             };
             if (!valid)
             {
-                throw new InvalidArgumentException("providerOptions", values.GetRawText(), "Invalid deepgram provider options: " + property.Name + ".");
+                throw new InvalidArgumentException(
+                    "providerOptions",
+                    values.GetRawText(),
+                    "Invalid deepgram provider options: " + property.Name + "."
+                );
             }
         }
     }
@@ -188,10 +300,21 @@ internal static class DeepgramStreamingTranscription
             var value = property.Value;
             var valid = property.Name switch
             {
-                "interimResults" or "multichannel" or "vadEvents" => value.ValueKind is JsonValueKind.True or JsonValueKind.False,
-                "endpointing" => value.ValueKind == JsonValueKind.False || (value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var ms) && ms >= 0),
-                "channels" => value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var channels) && channels > 0,
-                "utteranceEndMs" => value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var utterance) && utterance >= 1000,
+                "interimResults" or "multichannel" or "vadEvents" => value.ValueKind
+                    is JsonValueKind.True
+                        or JsonValueKind.False,
+                "endpointing" => value.ValueKind == JsonValueKind.False
+                    || (
+                        value.ValueKind == JsonValueKind.Number
+                        && value.TryGetInt32(out var ms)
+                        && ms >= 0
+                    ),
+                "channels" => value.ValueKind == JsonValueKind.Number
+                    && value.TryGetInt32(out var channels)
+                    && channels > 0,
+                "utteranceEndMs" => value.ValueKind == JsonValueKind.Number
+                    && value.TryGetInt32(out var utterance)
+                    && utterance >= 1000,
                 _ => true,
             };
             if (!valid)
@@ -245,7 +368,13 @@ internal static class DeepgramStreamingTranscription
         private double? _reportedDuration;
         private string? _language;
 
-        public Session(string modelId, TranscriptionStreamCall options, DateTime timestamp, IReadOnlyList<OperationWarning> warnings, string? language)
+        public Session(
+            string modelId,
+            TranscriptionStreamCall options,
+            DateTime timestamp,
+            IReadOnlyList<OperationWarning> warnings,
+            string? language
+        )
         {
             _modelId = modelId;
             _options = options;
@@ -256,23 +385,31 @@ internal static class DeepgramStreamingTranscription
 
         public PartQueue<ModelStreamPart> Queue { get; } = new PartQueue<ModelStreamPart>();
 
-        public void Start(Uri url, IReadOnlyList<string>? protocols, IReadOnlyDictionary<string, string?> headers, WebSocketFactory? webSocket)
+        public void Start(
+            Uri url,
+            IReadOnlyList<string>? protocols,
+            IReadOnlyDictionary<string, string?> headers,
+            WebSocketFactory? webSocket
+        )
         {
-            _connection = ConnectToWebSocket.Connect(new ConnectToWebSocketOptions
-            {
-                Url = url,
-                Headers = headers,
-                Protocols = protocols,
-                WebSocket = webSocket,
-                AbortSignal = _options.CancellationToken,
-                AbortReason = _options.AbortReason,
-                OnAbort = Fail,
-                OnProcessingError = Fail,
-                OnOpen = OnOpen,
-                OnMessageText = OnMessageTextAsync,
-                OnSocketError = () => Fail(new AiSdkException("Deepgram streaming WebSocket error.")),
-                OnClose = OnClose,
-            });
+            _connection = ConnectToWebSocket.Connect(
+                new ConnectToWebSocketOptions
+                {
+                    Url = url,
+                    Headers = headers,
+                    Protocols = protocols,
+                    WebSocket = webSocket,
+                    AbortSignal = _options.CancellationToken,
+                    AbortReason = _options.AbortReason,
+                    OnAbort = Fail,
+                    OnProcessingError = Fail,
+                    OnOpen = OnOpen,
+                    OnMessageText = OnMessageTextAsync,
+                    OnSocketError = () =>
+                        Fail(new AiSdkException("Deepgram streaming WebSocket error.")),
+                    OnClose = OnClose,
+                }
+            );
         }
 
         public void Cancel()
@@ -352,15 +489,25 @@ internal static class DeepgramStreamingTranscription
                 return;
             }
 
-            Queue.Enqueue(new ModelStreamPart
-            {
-                Type = "finish",
-                Text = string.Join(" ", _finalTexts.OrderBy(segment => segment.StartSecond).ThenBy(segment => segment.ChannelIndex).Select(segment => segment.Text)),
-                Segments = _segments.OrderBy(segment => segment.StartSecond).ToList(),
-                Language = _language,
-                DurationInSeconds = _duration,
-                Usage = _reportedDuration is { } seconds ? new OperationUsage(seconds: seconds) : null,
-            });
+            Queue.Enqueue(
+                new ModelStreamPart
+                {
+                    Type = "finish",
+                    Text = string.Join(
+                        " ",
+                        _finalTexts
+                            .OrderBy(segment => segment.StartSecond)
+                            .ThenBy(segment => segment.ChannelIndex)
+                            .Select(segment => segment.Text)
+                    ),
+                    Segments = _segments.OrderBy(segment => segment.StartSecond).ToList(),
+                    Language = _language,
+                    DurationInSeconds = _duration,
+                    Usage = _reportedDuration is { } seconds
+                        ? new OperationUsage(seconds: seconds)
+                        : null,
+                }
+            );
             Queue.Complete(null);
             Cleanup();
         }
@@ -402,10 +549,15 @@ internal static class DeepgramStreamingTranscription
                     },
                     null,
                     4000,
-                    4000);
+                    4000
+                );
             }
 
-            _ = SendAudioAsync(socket).ContinueWith(task => Fail(task.Exception!.GetBaseException()), TaskContinuationOptions.OnlyOnFaulted);
+            _ = SendAudioAsync(socket)
+                .ContinueWith(
+                    task => Fail(task.Exception!.GetBaseException()),
+                    TaskContinuationOptions.OnlyOnFaulted
+                );
         }
 
         private async Task SendAudioAsync(IWebSocketLike socket)
@@ -425,7 +577,9 @@ internal static class DeepgramStreamingTranscription
                         break;
                     }
 
-                    var bytes = await reader.ReadAsync(_options.CancellationToken).ConfigureAwait(false);
+                    var bytes = await reader
+                        .ReadAsync(_options.CancellationToken)
+                        .ConfigureAwait(false);
                     if (bytes is null || IsFinished)
                     {
                         break;
@@ -437,7 +591,12 @@ internal static class DeepgramStreamingTranscription
                     }
 
                     socket.Send(bytes);
-                    await WebSocketUtils.WaitForWebSocketBufferDrainAsync(socket, cancellationToken: _options.CancellationToken).ConfigureAwait(false);
+                    await WebSocketUtils
+                        .WaitForWebSocketBufferDrainAsync(
+                            socket,
+                            cancellationToken: _options.CancellationToken
+                        )
+                        .ConfigureAwait(false);
                 }
             }
             finally
@@ -471,7 +630,11 @@ internal static class DeepgramStreamingTranscription
 
             using var document = JsonDocument.Parse(text);
             var root = document.RootElement;
-            if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("type", out var typeElement) || typeElement.ValueKind != JsonValueKind.String)
+            if (
+                root.ValueKind != JsonValueKind.Object
+                || !root.TryGetProperty("type", out var typeElement)
+                || typeElement.ValueKind != JsonValueKind.String
+            )
             {
                 throw new AiSdkException("Deepgram streaming event is missing a type.");
             }
@@ -484,7 +647,13 @@ internal static class DeepgramStreamingTranscription
             switch (typeElement.GetString())
             {
                 case "Error":
-                    Fail(new AiSdkException(ReadString(root, "description") ?? ReadString(root, "message") ?? "Deepgram streaming transcription failed."));
+                    Fail(
+                        new AiSdkException(
+                            ReadString(root, "description")
+                                ?? ReadString(root, "message")
+                                ?? "Deepgram streaming transcription failed."
+                        )
+                    );
                     break;
                 case "Metadata":
                     var duration = ReadNumber(root, "duration");
@@ -494,7 +663,14 @@ internal static class DeepgramStreamingTranscription
                         _duration = duration ?? _duration;
                     }
 
-                    Queue.Enqueue(new ModelStreamPart { Type = "response-metadata", Timestamp = _timestamp, ModelId = _modelId });
+                    Queue.Enqueue(
+                        new ModelStreamPart
+                        {
+                            Type = "response-metadata",
+                            Timestamp = _timestamp,
+                            ModelId = _modelId,
+                        }
+                    );
                     bool ended;
                     lock (_gate)
                     {
@@ -517,15 +693,28 @@ internal static class DeepgramStreamingTranscription
 
         private void HandleResults(JsonElement root)
         {
-            if (!root.TryGetProperty("channel", out var channel) || channel.ValueKind != JsonValueKind.Object
-                || !channel.TryGetProperty("alternatives", out var alternatives) || alternatives.ValueKind != JsonValueKind.Array || alternatives.GetArrayLength() == 0)
+            if (
+                !root.TryGetProperty("channel", out var channel)
+                || channel.ValueKind != JsonValueKind.Object
+                || !channel.TryGetProperty("alternatives", out var alternatives)
+                || alternatives.ValueKind != JsonValueKind.Array
+                || alternatives.GetArrayLength() == 0
+            )
             {
-                throw new AiSdkException("Deepgram Results event is missing a transcript alternative.");
+                throw new AiSdkException(
+                    "Deepgram Results event is missing a transcript alternative."
+                );
             }
 
             var alternative = alternatives[0];
-            var transcript = ReadString(alternative, "transcript") ?? throw new AiSdkException("Deepgram Results event is missing a transcript.");
-            if (alternative.TryGetProperty("languages", out var languages) && languages.ValueKind == JsonValueKind.Array && languages.GetArrayLength() > 0 && languages[0].ValueKind == JsonValueKind.String)
+            var transcript = ReadString(alternative, "transcript")
+                ?? throw new AiSdkException("Deepgram Results event is missing a transcript.");
+            if (
+                alternative.TryGetProperty("languages", out var languages)
+                && languages.ValueKind == JsonValueKind.Array
+                && languages.GetArrayLength() > 0
+                && languages[0].ValueKind == JsonValueKind.String
+            )
             {
                 _language = languages[0].GetString();
             }
@@ -538,29 +727,83 @@ internal static class DeepgramStreamingTranscription
                 _duration = Math.Max(_duration ?? 0, end);
             }
 
-            int? channelIndex = root.TryGetProperty("channel_index", out var indexes) && indexes.ValueKind == JsonValueKind.Array && indexes.GetArrayLength() > 0 && indexes[0].TryGetInt32(out var index) ? index : (int?)null;
-            var speechFinal = root.TryGetProperty("speech_final", out var speech) && speech.ValueKind == JsonValueKind.True;
-            var metadata = JsonSerializer.SerializeToElement(new Dictionary<string, object> { ["deepgram"] = new Dictionary<string, object> { ["speechFinal"] = speechFinal } });
-            if (root.TryGetProperty("is_final", out var isFinal) && isFinal.ValueKind == JsonValueKind.True)
+            int? channelIndex =
+                root.TryGetProperty("channel_index", out var indexes)
+                && indexes.ValueKind == JsonValueKind.Array
+                && indexes.GetArrayLength() > 0
+                && indexes[0].TryGetInt32(out var index)
+                    ? index
+                    : (int?)null;
+            var speechFinal =
+                root.TryGetProperty("speech_final", out var speech)
+                && speech.ValueKind == JsonValueKind.True;
+            var metadata = JsonSerializer.SerializeToElement(
+                new Dictionary<string, object>
+                {
+                    ["deepgram"] = new Dictionary<string, object> { ["speechFinal"] = speechFinal },
+                }
+            );
+            if (
+                root.TryGetProperty("is_final", out var isFinal)
+                && isFinal.ValueKind == JsonValueKind.True
+            )
             {
                 if (transcript.Length > 0)
                 {
-                    _finalTexts.Add(new FinalText { Text = transcript, StartSecond = start, ChannelIndex = channelIndex ?? 0 });
+                    _finalTexts.Add(
+                        new FinalText
+                        {
+                            Text = transcript,
+                            StartSecond = start,
+                            ChannelIndex = channelIndex ?? 0,
+                        }
+                    );
                 }
 
-                if (alternative.TryGetProperty("words", out var words) && words.ValueKind == JsonValueKind.Array)
+                if (
+                    alternative.TryGetProperty("words", out var words)
+                    && words.ValueKind == JsonValueKind.Array
+                )
                 {
                     foreach (var word in words.EnumerateArray())
                     {
-                        _segments.Add(new TranscriptSegment(ReadString(word, "punctuated_word") ?? ReadString(word, "word") ?? string.Empty, ReadNumber(word, "start") ?? 0, ReadNumber(word, "end") ?? 0));
+                        _segments.Add(
+                            new TranscriptSegment(
+                                ReadString(word, "punctuated_word")
+                                    ?? ReadString(word, "word")
+                                    ?? string.Empty,
+                                ReadNumber(word, "start") ?? 0,
+                                ReadNumber(word, "end") ?? 0
+                            )
+                        );
                     }
                 }
 
-                Queue.Enqueue(new ModelStreamPart { Type = "transcript-final", Text = transcript, StartSecond = start, EndSecond = end, ChannelIndex = channelIndex, ProviderMetadata = metadata });
+                Queue.Enqueue(
+                    new ModelStreamPart
+                    {
+                        Type = "transcript-final",
+                        Text = transcript,
+                        StartSecond = start,
+                        EndSecond = end,
+                        ChannelIndex = channelIndex,
+                        ProviderMetadata = metadata,
+                    }
+                );
             }
             else
             {
-                Queue.Enqueue(new ModelStreamPart { Type = "transcript-partial", Text = transcript, StartSecond = start, DurationInSeconds = eventDuration, ChannelIndex = channelIndex, ProviderMetadata = metadata });
+                Queue.Enqueue(
+                    new ModelStreamPart
+                    {
+                        Type = "transcript-partial",
+                        Text = transcript,
+                        StartSecond = start,
+                        DurationInSeconds = eventDuration,
+                        ChannelIndex = channelIndex,
+                        ProviderMetadata = metadata,
+                    }
+                );
             }
         }
 
@@ -579,7 +822,17 @@ internal static class DeepgramStreamingTranscription
 
             if (!ended || (code != null && code != 1000))
             {
-                Fail(new AiSdkException("Deepgram streaming connection closed unexpectedly" + (code != null ? " (" + code.Value.ToString(CultureInfo.InvariantCulture) + ")" : string.Empty) + (string.IsNullOrEmpty(reason) ? "." : ": " + reason)));
+                Fail(
+                    new AiSdkException(
+                        "Deepgram streaming connection closed unexpectedly"
+                            + (
+                                code != null
+                                    ? " (" + code.Value.ToString(CultureInfo.InvariantCulture) + ")"
+                                    : string.Empty
+                            )
+                            + (string.IsNullOrEmpty(reason) ? "." : ": " + reason)
+                    )
+                );
             }
             else
             {
@@ -589,12 +842,22 @@ internal static class DeepgramStreamingTranscription
 
         private static string? ReadString(JsonElement element, string name)
         {
-            return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+            return
+                element.ValueKind == JsonValueKind.Object
+                && element.TryGetProperty(name, out var value)
+                && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
         }
 
         private static double? ReadNumber(JsonElement element, string name)
         {
-            return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number ? value.GetDouble() : (double?)null;
+            return
+                element.ValueKind == JsonValueKind.Object
+                && element.TryGetProperty(name, out var value)
+                && value.ValueKind == JsonValueKind.Number
+                ? value.GetDouble()
+                : (double?)null;
         }
     }
 }

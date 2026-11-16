@@ -38,7 +38,8 @@ public readonly struct JsonInstructionText
 public static class JsonInstructions
 {
     private const string SchemaPrefix = "JSON schema:";
-    private const string SchemaSuffix = "You MUST answer with a JSON object that matches the JSON schema above.";
+    private const string SchemaSuffix =
+        "You MUST answer with a JSON object that matches the JSON schema above.";
     private const string GenericSuffix = "You MUST answer with JSON.";
 
     /// <summary>Builds the instruction text appended to a prompt.</summary>
@@ -46,10 +47,17 @@ public static class JsonInstructions
         string? prompt = null,
         JsonElement? schema = null,
         JsonInstructionText schemaPrefix = default,
-        JsonInstructionText schemaSuffix = default)
+        JsonInstructionText schemaSuffix = default
+    )
     {
-        var prefix = schemaPrefix.IsSet ? schemaPrefix.Value : schema.HasValue ? SchemaPrefix : null;
-        var suffix = schemaSuffix.IsSet ? schemaSuffix.Value : schema.HasValue ? SchemaSuffix : GenericSuffix;
+        var prefix =
+            schemaPrefix.IsSet ? schemaPrefix.Value
+            : schema.HasValue ? SchemaPrefix
+            : null;
+        var suffix =
+            schemaSuffix.IsSet ? schemaSuffix.Value
+            : schema.HasValue ? SchemaSuffix
+            : GenericSuffix;
         var lines = new List<string>();
         if (prompt != null && prompt.Length > 0)
         {

@@ -9,7 +9,8 @@ namespace Vercel.AI.Tests;
 
 public sealed class SseMcpTransportRestartTests
 {
-    private const string EndpointEvent = "event: endpoint\ndata: http://localhost:3000/messages\n\n";
+    private const string EndpointEvent =
+        "event: endpoint\ndata: http://localhost:3000/messages\n\n";
     private static readonly TimeSpan Limit = TimeSpan.FromSeconds(10);
 
     [Fact]
@@ -20,7 +21,9 @@ public sealed class SseMcpTransportRestartTests
         using var transport = new SseMcpTransport(client, new Uri(SseTestServer.SseUrl));
         var first = new TestResponseController();
         server.Controlled(first);
-        var closed = new TaskCompletionSource<Exception>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var closed = new TaskCompletionSource<Exception>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         transport.OnError = error => closed.TrySetResult(error);
 
         var start = transport.StartAsync();
@@ -36,7 +39,9 @@ public sealed class SseMcpTransportRestartTests
         second.Write(EndpointEvent);
         await restart.WaitAsync(Limit);
 
-        using var message = System.Text.Json.JsonDocument.Parse("{\"jsonrpc\":\"2.0\",\"method\":\"test\",\"id\":\"1\"}");
+        using var message = System.Text.Json.JsonDocument.Parse(
+            "{\"jsonrpc\":\"2.0\",\"method\":\"test\",\"id\":\"1\"}"
+        );
         await transport.SendAsync(message.RootElement).WaitAsync(Limit);
         await transport.CloseAsync();
     }

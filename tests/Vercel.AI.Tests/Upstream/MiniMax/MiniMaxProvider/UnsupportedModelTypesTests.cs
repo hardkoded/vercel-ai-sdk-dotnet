@@ -11,10 +11,17 @@ namespace Vercel.AI.Tests.MiniMaxProvider;
 public sealed class UnsupportedModelTypesTests
 {
     [Fact]
-    [UpstreamTest("packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > unsupported model types::should throw NoSuchModelError for embeddingModel", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > unsupported model types::should throw NoSuchModelError for embeddingModel",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_throw_NoSuchModelError_for_embeddingModel()
     {
-        var error = Assert.Throws<AiSdkException>(() => Vercel.AI.MiniMax.MiniMaxProvider.Create(new MiniMaxOptions { ApiKey = "secret" }).EmbeddingModel("embed"));
+        var error = Assert.Throws<AiSdkException>(() =>
+            Vercel
+                .AI.MiniMax.MiniMaxProvider.Create(new MiniMaxOptions { ApiKey = "secret" })
+                .EmbeddingModel("embed")
+        );
         Assert.Equal("Provider 'minimax' does not support embedding model 'embed'.", error.Message);
     }
 }

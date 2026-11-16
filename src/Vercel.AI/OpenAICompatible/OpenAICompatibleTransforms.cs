@@ -28,7 +28,13 @@ public static class OpenAICompatibleTransforms
             if (model != "qwen/qwen3.6-27b")
             {
                 body.Remove("reasoning_effort");
-                warnings.Add(new CallWarning("unsupported", "reasoning", "reasoning \"none\" is not supported by this model."));
+                warnings.Add(
+                    new CallWarning(
+                        "unsupported",
+                        "reasoning",
+                        "reasoning \"none\" is not supported by this model."
+                    )
+                );
             }
 
             return body;
@@ -37,12 +43,26 @@ public static class OpenAICompatibleTransforms
         if (effort == "minimal")
         {
             body["reasoning_effort"] = "low";
-            warnings.Add(new CallWarning("compatibility", "reasoning", "reasoning \"minimal\" is not directly supported by this model. mapped to effort \"low\"."));
+            warnings.Add(
+                new CallWarning(
+                    "compatibility",
+                    "reasoning",
+                    "reasoning \"minimal\" is not directly supported by this model. mapped to effort \"low\"."
+                )
+            );
         }
         else if (effort == "xhigh" || effort == "max")
         {
             body["reasoning_effort"] = "high";
-            warnings.Add(new CallWarning("compatibility", "reasoning", "reasoning \"" + effort + "\" is not directly supported by this model. mapped to effort \"high\"."));
+            warnings.Add(
+                new CallWarning(
+                    "compatibility",
+                    "reasoning",
+                    "reasoning \""
+                        + effort
+                        + "\" is not directly supported by this model. mapped to effort \"high\"."
+                )
+            );
         }
 
         return body;
@@ -63,14 +83,22 @@ public static class OpenAICompatibleTransforms
         {
             foreach (var node in messages)
             {
-                if (node is not JsonObject message || Text(message["role"]) != "assistant" || !message.ContainsKey("reasoning_content"))
+                if (
+                    node is not JsonObject message
+                    || Text(message["role"]) != "assistant"
+                    || !message.ContainsKey("reasoning_content")
+                )
                 {
                     continue;
                 }
 
                 var reasoning = message["reasoning_content"];
                 message.Remove("reasoning_content");
-                if (!message.ContainsKey("reasoning") && reasoning != null && reasoning.GetValueKind() != System.Text.Json.JsonValueKind.Null)
+                if (
+                    !message.ContainsKey("reasoning")
+                    && reasoning != null
+                    && reasoning.GetValueKind() != System.Text.Json.JsonValueKind.Null
+                )
                 {
                     message["reasoning"] = reasoning;
                 }
@@ -231,7 +259,14 @@ public static class OpenAICompatibleTransforms
         {
             body.Remove("tool_choice");
             var label = choice ?? "tool";
-            warnings.Add(new CallWarning("unsupported", "toolChoice " + label + ". Z.AI currently supports only automatic tool selection."));
+            warnings.Add(
+                new CallWarning(
+                    "unsupported",
+                    "toolChoice "
+                        + label
+                        + ". Z.AI currently supports only automatic tool selection."
+                )
+            );
         }
 
         return body;
@@ -293,7 +328,10 @@ public static class OpenAICompatibleTransforms
     /// <summary>Reads a GMI Cloud error, preferring the diagnostic nested in <c>error.details</c>.</summary>
     public static string? GmiCloudError(string? body)
     {
-        if (string.IsNullOrWhiteSpace(body) || body!.TrimStart().StartsWith("{", StringComparison.Ordinal) == false)
+        if (
+            string.IsNullOrWhiteSpace(body)
+            || body!.TrimStart().StartsWith("{", StringComparison.Ordinal) == false
+        )
         {
             return null;
         }
@@ -411,9 +449,7 @@ public static class OpenAICompatibleTransforms
                 }
             }
         }
-        catch (System.Text.Json.JsonException)
-        {
-        }
+        catch (System.Text.Json.JsonException) { }
 
         return null;
     }

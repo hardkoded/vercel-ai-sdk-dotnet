@@ -10,7 +10,11 @@ namespace Vercel.AI.ProviderUtils;
 public static class ApiKeys
 {
     /// <summary>Returns the first non-empty key, or throws.</summary>
-    public static string Require(string? apiKey, string environmentVariable, params string[] additionalEnvironmentVariables)
+    public static string Require(
+        string? apiKey,
+        string environmentVariable,
+        params string[] additionalEnvironmentVariables
+    )
     {
         if (!string.IsNullOrWhiteSpace(apiKey))
         {
@@ -36,7 +40,10 @@ public static class ApiKeys
         }
 
         throw new AiSdkException(
-            "API key is required. Pass it explicitly or set the " + environmentVariable + " environment variable.");
+            "API key is required. Pass it explicitly or set the "
+                + environmentVariable
+                + " environment variable."
+        );
     }
 
     /// <summary>Joins a base URL and a relative path.</summary>

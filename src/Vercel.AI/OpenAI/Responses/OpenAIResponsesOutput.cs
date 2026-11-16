@@ -29,25 +29,42 @@ public sealed class OpenAIText : GeneratedText
 internal static class OpenAIResponsesOutput
 {
     // JSON.stringify leaves characters such as '>' and non-ASCII text unescaped.
-    private static readonly JsonSerializerOptions JsonOptions = new() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     /// <summary>The source an annotation points at: a URL source for <c>url_citation</c>, else a document source.</summary>
-    public static GeneratedContent AnnotationSource(JsonElement annotation, string id, string providerName = "openai")
+    public static GeneratedContent AnnotationSource(
+        JsonElement annotation,
+        string id,
+        string providerName = "openai"
+    )
     {
         var type = OpenAIJson.String(annotation, "type");
         if (type == "url_citation")
         {
-            return new GeneratedSource(id, OpenAIJson.String(annotation, "url") ?? string.Empty, OpenAIJson.String(annotation, "title"));
+            return new GeneratedSource(
+                id,
+                OpenAIJson.String(annotation, "url") ?? string.Empty,
+                OpenAIJson.String(annotation, "title")
+            );
         }
 
         var fileId = OpenAIJson.String(annotation, "file_id") ?? string.Empty;
-        var filename = type == "file_path" ? fileId : OpenAIJson.String(annotation, "filename") ?? string.Empty;
+        var filename =
+            type == "file_path"
+                ? fileId
+                : OpenAIJson.String(annotation, "filename") ?? string.Empty;
         var metadata = new JsonObject { ["type"] = type, ["fileId"] = fileId };
         if (type == "container_file_citation")
         {
             metadata["containerId"] = OpenAIJson.String(annotation, "container_id");
         }
-        else if (annotation.TryGetProperty("index", out var index) && index.ValueKind == JsonValueKind.Number)
+        else if (
+            annotation.TryGetProperty("index", out var index)
+            && index.ValueKind == JsonValueKind.Number
+        )
         {
             metadata["index"] = JsonNode.Parse(index.GetRawText());
         }
@@ -57,7 +74,8 @@ internal static class OpenAIResponsesOutput
             type == "file_path" ? "application/octet-stream" : "text/plain",
             filename,
             filename,
-            OpenAIJson.ProviderMetadata(metadata, providerName));
+            OpenAIJson.ProviderMetadata(metadata, providerName)
+        );
     }
 
     /// <summary>The citations for a text block. A <c>file_path</c> annotation is a generated file, not a citation.</summary>
@@ -72,15 +90,20 @@ internal static class OpenAIResponsesOutput
                 continue;
             }
 
-            var id = type == "url_citation" ? OpenAIJson.String(annotation, "url") : OpenAIJson.String(annotation, "file_id");
+            var id =
+                type == "url_citation"
+                    ? OpenAIJson.String(annotation, "url")
+                    : OpenAIJson.String(annotation, "file_id");
             var source = AnnotationSource(annotation, id ?? string.Empty);
             var start = Index(annotation, "start_index");
             var end = start == null ? null : Index(annotation, "end_index");
-            citations.Add(source switch
-            {
-                GeneratedSource url => new Citation(url, start, end),
-                _ => new Citation((GeneratedDocumentSource)source, start, end),
-            });
+            citations.Add(
+                source switch
+                {
+                    GeneratedSource url => new Citation(url, start, end),
+                    _ => new Citation((GeneratedDocumentSource)source, start, end),
+                }
+            );
         }
 
         return citations.Count == 0 ? null : citations;
@@ -88,26 +111,46 @@ internal static class OpenAIResponsesOutput
 
     /// <summary>The input of a <c>program</c> item: its code and replay fingerprint.</summary>
     public static string ProgramInput(JsonElement item) =>
-        new JsonObject { ["code"] = OpenAIJson.String(item, "code"), ["fingerprint"] = OpenAIJson.String(item, "fingerprint") }.ToJsonString(JsonOptions);
+        new JsonObject
+        {
+            ["code"] = OpenAIJson.String(item, "code"),
+            ["fingerprint"] = OpenAIJson.String(item, "fingerprint"),
+        }.ToJsonString(JsonOptions);
 
     /// <summary>The result of a <c>program_output</c> item.</summary>
     public static string ProgramOutputResult(JsonElement item) =>
-        new JsonObject { ["result"] = OpenAIJson.String(item, "result"), ["status"] = OpenAIJson.String(item, "status") }.ToJsonString(JsonOptions);
+        new JsonObject
+        {
+            ["result"] = OpenAIJson.String(item, "result"),
+            ["status"] = OpenAIJson.String(item, "status"),
+        }.ToJsonString(JsonOptions);
 
     /// <summary>The input of a <c>shell_call</c> item: its commands and the optional execution controls. Null controls are omitted.</summary>
     public static string ShellCallInput(JsonElement item)
     {
         var action = new JsonObject();
-        var source = item.TryGetProperty("action", out var actionElement) && actionElement.ValueKind == JsonValueKind.Object ? actionElement : default;
-        action["commands"] = source.ValueKind == JsonValueKind.Object && source.TryGetProperty("commands", out var commands)
-            ? JsonNode.Parse(commands.GetRawText())
-            : new JsonArray();
-        if (source.ValueKind == JsonValueKind.Object && OpenAIJson.Int(source, "timeout_ms") is { } timeoutMs)
+        var source =
+            item.TryGetProperty("action", out var actionElement)
+            && actionElement.ValueKind == JsonValueKind.Object
+                ? actionElement
+                : default;
+        action["commands"] =
+            source.ValueKind == JsonValueKind.Object
+            && source.TryGetProperty("commands", out var commands)
+                ? JsonNode.Parse(commands.GetRawText())
+                : new JsonArray();
+        if (
+            source.ValueKind == JsonValueKind.Object
+            && OpenAIJson.Int(source, "timeout_ms") is { } timeoutMs
+        )
         {
             action["timeoutMs"] = timeoutMs;
         }
 
-        if (source.ValueKind == JsonValueKind.Object && OpenAIJson.Int(source, "max_output_length") is { } maxOutputLength)
+        if (
+            source.ValueKind == JsonValueKind.Object
+            && OpenAIJson.Int(source, "max_output_length") is { } maxOutputLength
+        )
         {
             action["maxOutputLength"] = maxOutputLength;
         }
@@ -119,9 +162,22 @@ internal static class OpenAIResponsesOutput
     public static string LocalShellCallInput(JsonElement item)
     {
         var action = new JsonObject();
-        if (item.TryGetProperty("action", out var source) && source.ValueKind == JsonValueKind.Object)
+        if (
+            item.TryGetProperty("action", out var source)
+            && source.ValueKind == JsonValueKind.Object
+        )
         {
-            foreach (var name in new[] { "type", "command", "timeout_ms", "user", "working_directory", "env" })
+            foreach (
+                var name in new[]
+                {
+                    "type",
+                    "command",
+                    "timeout_ms",
+                    "user",
+                    "working_directory",
+                    "env",
+                }
+            )
             {
                 if (source.TryGetProperty(name, out var value))
                 {
@@ -136,11 +192,17 @@ internal static class OpenAIResponsesOutput
     /// <summary>The input of a streamed <c>local_shell_call</c> item: an exec action with camelCase fields, as upstream's stream builds it.</summary>
     public static string LocalShellStreamCallInput(JsonElement item)
     {
-        var source = item.TryGetProperty("action", out var actionElement) && actionElement.ValueKind == JsonValueKind.Object ? actionElement : default;
+        var source =
+            item.TryGetProperty("action", out var actionElement)
+            && actionElement.ValueKind == JsonValueKind.Object
+                ? actionElement
+                : default;
         var action = new JsonObject { ["type"] = "exec" };
         if (source.ValueKind == JsonValueKind.Object)
         {
-            action["command"] = source.TryGetProperty("command", out var command) ? JsonNode.Parse(command.GetRawText()) : null;
+            action["command"] = source.TryGetProperty("command", out var command)
+                ? JsonNode.Parse(command.GetRawText())
+                : null;
             if (OpenAIJson.Int(source, "timeout_ms") is { } timeoutMs)
             {
                 action["timeoutMs"] = timeoutMs;
@@ -175,19 +237,32 @@ internal static class OpenAIResponsesOutput
         }
 
         var output = new JsonArray();
-        if (item.TryGetProperty("output", out var entries) && entries.ValueKind == JsonValueKind.Array)
+        if (
+            item.TryGetProperty("output", out var entries)
+            && entries.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var entry in entries.EnumerateArray())
             {
-                var outcome = entry.TryGetProperty("outcome", out var outcomeElement) ? outcomeElement : default;
-                output.Add(new JsonObject
-                {
-                    ["stdout"] = OpenAIJson.String(entry, "stdout"),
-                    ["stderr"] = OpenAIJson.String(entry, "stderr"),
-                    ["outcome"] = outcome.ValueKind == JsonValueKind.Object && OpenAIJson.String(outcome, "type") == "exit"
-                        ? new JsonObject { ["type"] = "exit", ["exitCode"] = OpenAIJson.Int(outcome, "exit_code") }
-                        : new JsonObject { ["type"] = "timeout" },
-                });
+                var outcome = entry.TryGetProperty("outcome", out var outcomeElement)
+                    ? outcomeElement
+                    : default;
+                output.Add(
+                    new JsonObject
+                    {
+                        ["stdout"] = OpenAIJson.String(entry, "stdout"),
+                        ["stderr"] = OpenAIJson.String(entry, "stderr"),
+                        ["outcome"] =
+                            outcome.ValueKind == JsonValueKind.Object
+                            && OpenAIJson.String(outcome, "type") == "exit"
+                                ? new JsonObject
+                                {
+                                    ["type"] = "exit",
+                                    ["exitCode"] = OpenAIJson.Int(outcome, "exit_code"),
+                                }
+                                : new JsonObject { ["type"] = "timeout" },
+                    }
+                );
             }
         }
 
@@ -200,12 +275,17 @@ internal static class OpenAIResponsesOutput
         new JsonObject
         {
             ["callId"] = OpenAIJson.String(item, "call_id"),
-            ["operation"] = item.TryGetProperty("operation", out var operation) ? JsonNode.Parse(operation.GetRawText()) : null,
+            ["operation"] = item.TryGetProperty("operation", out var operation)
+                ? JsonNode.Parse(operation.GetRawText())
+                : null,
         }.ToJsonString(JsonOptions);
 
     /// <summary>Provider metadata that carries only the output item id.</summary>
     public static JsonElement ItemMetadata(JsonElement item, string providerName = "openai") =>
-        OpenAIJson.ProviderMetadata(new JsonObject { ["itemId"] = OpenAIJson.String(item, "id") }, providerName);
+        OpenAIJson.ProviderMetadata(
+            new JsonObject { ["itemId"] = OpenAIJson.String(item, "id") },
+            providerName
+        );
 
     /// <summary>The tool name of an <c>mcp_call</c> item: <c>mcp.</c> and the name of the MCP tool.</summary>
     public static string McpToolName(JsonElement item) => "mcp." + OpenAIJson.String(item, "name");
@@ -234,7 +314,12 @@ internal static class OpenAIResponsesOutput
     }
 
     /// <summary>Provider metadata for a text block.</summary>
-    public static JsonElement TextMetadata(string? itemId, IReadOnlyList<JsonElement> annotations, string? phase = null, string providerName = "openai")
+    public static JsonElement TextMetadata(
+        string? itemId,
+        IReadOnlyList<JsonElement> annotations,
+        string? phase = null,
+        string providerName = "openai"
+    )
     {
         var metadata = new JsonObject { ["itemId"] = itemId };
         if (phase != null)
@@ -260,15 +345,20 @@ internal static class OpenAIResponsesOutput
     public static List<string> WebSearchUrls(JsonElement item)
     {
         var urls = new List<string>();
-        if (item.TryGetProperty("action", out var action)
+        if (
+            item.TryGetProperty("action", out var action)
             && action.ValueKind == JsonValueKind.Object
             && OpenAIJson.String(action, "type") == "search"
             && action.TryGetProperty("sources", out var sources)
-            && sources.ValueKind == JsonValueKind.Array)
+            && sources.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var source in sources.EnumerateArray())
             {
-                if (OpenAIJson.String(source, "type") == "url" && OpenAIJson.String(source, "url") is { } url)
+                if (
+                    OpenAIJson.String(source, "type") == "url"
+                    && OpenAIJson.String(source, "url") is { } url
+                )
                 {
                     urls.Add(url);
                 }
@@ -281,7 +371,10 @@ internal static class OpenAIResponsesOutput
     /// <summary>The result a <c>web_search_call</c> reports.</summary>
     public static string WebSearchResult(JsonElement item)
     {
-        if (!item.TryGetProperty("action", out var action) || action.ValueKind != JsonValueKind.Object)
+        if (
+            !item.TryGetProperty("action", out var action)
+            || action.ValueKind != JsonValueKind.Object
+        )
         {
             return "{}";
         }
@@ -296,20 +389,30 @@ internal static class OpenAIResponsesOutput
                     search["query"] = query;
                 }
 
-                if (action.TryGetProperty("queries", out var queries) && queries.ValueKind == JsonValueKind.Array)
+                if (
+                    action.TryGetProperty("queries", out var queries)
+                    && queries.ValueKind == JsonValueKind.Array
+                )
                 {
                     search["queries"] = JsonNode.Parse(queries.GetRawText());
                 }
 
                 result["action"] = search;
-                if (action.TryGetProperty("sources", out var sources) && sources.ValueKind == JsonValueKind.Array)
+                if (
+                    action.TryGetProperty("sources", out var sources)
+                    && sources.ValueKind == JsonValueKind.Array
+                )
                 {
                     result["sources"] = JsonNode.Parse(sources.GetRawText());
                 }
 
                 break;
             case "open_page":
-                result["action"] = new JsonObject { ["type"] = "openPage", ["url"] = OpenAIJson.String(action, "url") };
+                result["action"] = new JsonObject
+                {
+                    ["type"] = "openPage",
+                    ["url"] = OpenAIJson.String(action, "url"),
+                };
                 break;
             case "find_in_page":
                 result["action"] = new JsonObject
@@ -327,23 +430,34 @@ internal static class OpenAIResponsesOutput
     /// <summary>The result a <c>file_search_call</c> reports.</summary>
     public static string FileSearchResult(JsonElement item)
     {
-        var queries = item.TryGetProperty("queries", out var queryArray) && queryArray.ValueKind == JsonValueKind.Array
-            ? JsonNode.Parse(queryArray.GetRawText())
-            : new JsonArray();
+        var queries =
+            item.TryGetProperty("queries", out var queryArray)
+            && queryArray.ValueKind == JsonValueKind.Array
+                ? JsonNode.Parse(queryArray.GetRawText())
+                : new JsonArray();
         JsonNode? results = null;
-        if (item.TryGetProperty("results", out var resultArray) && resultArray.ValueKind == JsonValueKind.Array)
+        if (
+            item.TryGetProperty("results", out var resultArray)
+            && resultArray.ValueKind == JsonValueKind.Array
+        )
         {
             var mapped = new JsonArray();
             foreach (var result in resultArray.EnumerateArray())
             {
-                mapped.Add(new JsonObject
-                {
-                    ["attributes"] = result.TryGetProperty("attributes", out var attributes) ? JsonNode.Parse(attributes.GetRawText()) : new JsonObject(),
-                    ["fileId"] = OpenAIJson.String(result, "file_id"),
-                    ["filename"] = OpenAIJson.String(result, "filename"),
-                    ["score"] = result.TryGetProperty("score", out var score) ? JsonNode.Parse(score.GetRawText()) : null,
-                    ["text"] = OpenAIJson.String(result, "text"),
-                });
+                mapped.Add(
+                    new JsonObject
+                    {
+                        ["attributes"] = result.TryGetProperty("attributes", out var attributes)
+                            ? JsonNode.Parse(attributes.GetRawText())
+                            : new JsonObject(),
+                        ["fileId"] = OpenAIJson.String(result, "file_id"),
+                        ["filename"] = OpenAIJson.String(result, "filename"),
+                        ["score"] = result.TryGetProperty("score", out var score)
+                            ? JsonNode.Parse(score.GetRawText())
+                            : null,
+                        ["text"] = OpenAIJson.String(result, "text"),
+                    }
+                );
             }
 
             results = mapped;
@@ -355,24 +469,37 @@ internal static class OpenAIResponsesOutput
     /// <summary>The retrieved files of a <c>file_search_call</c>, one per file id.</summary>
     public static IEnumerable<(string FileId, string Filename)> RetrievedFiles(JsonElement item)
     {
-        if (item.TryGetProperty("results", out var results) && results.ValueKind == JsonValueKind.Array)
+        if (
+            item.TryGetProperty("results", out var results)
+            && results.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var result in results.EnumerateArray())
             {
-                yield return (OpenAIJson.String(result, "file_id") ?? string.Empty, OpenAIJson.String(result, "filename") ?? string.Empty);
+                yield return (
+                    OpenAIJson.String(result, "file_id") ?? string.Empty,
+                    OpenAIJson.String(result, "filename") ?? string.Empty
+                );
             }
         }
     }
 
     /// <summary>Provider metadata of a retrieved file source.</summary>
     public static JsonElement FileSearchMetadata(string fileId, string providerName = "openai") =>
-        OpenAIJson.ProviderMetadata(new JsonObject { ["type"] = "file_search", ["fileId"] = fileId }, providerName);
+        OpenAIJson.ProviderMetadata(
+            new JsonObject { ["type"] = "file_search", ["fileId"] = fileId },
+            providerName
+        );
 
     public static bool HasResults(JsonElement item) =>
-        item.TryGetProperty("results", out var results) && results.ValueKind == JsonValueKind.Array && results.GetArrayLength() > 0;
+        item.TryGetProperty("results", out var results)
+        && results.ValueKind == JsonValueKind.Array
+        && results.GetArrayLength() > 0;
 
     private static int? Index(JsonElement annotation, string name) =>
-        annotation.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number)
+        annotation.TryGetProperty(name, out var value)
+        && value.ValueKind == JsonValueKind.Number
+        && value.TryGetInt32(out var number)
             ? number
             : null;
 }

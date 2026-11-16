@@ -46,15 +46,31 @@ public sealed class OpenAIEmbeddingModel : IEmbeddingModel
     public bool SupportsParallelCalls => true;
 
     /// <inheritdoc />
-    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null, IReadOnlyDictionary<string, string?>? headers = null)
+    public async Task<EmbeddingResult> DoEmbedAsync(
+        IReadOnlyList<string> values,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        CancellationToken cancellationToken,
+        int? dimensions = null,
+        IReadOnlyDictionary<string, string?>? headers = null
+    )
     {
-        var result = await EmbedAsync(values, ProviderDimensions(providerOptions) ?? dimensions, null, headers, cancellationToken).ConfigureAwait(false);
+        var result = await EmbedAsync(
+                values,
+                ProviderDimensions(providerOptions) ?? dimensions,
+                null,
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return result.Result;
     }
 
-    private static int? ProviderDimensions(IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    private static int? ProviderDimensions(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
+    )
     {
-        return providerOptions != null
+        return
+            providerOptions != null
             && providerOptions.TryGetValue("openai", out var options)
             && options.ValueKind == JsonValueKind.Object
             && options.TryGetProperty("dimensions", out var width)
@@ -70,7 +86,8 @@ public sealed class OpenAIEmbeddingModel : IEmbeddingModel
         int? dimensions,
         string? user,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         if (values == null)
         {
@@ -80,7 +97,10 @@ public sealed class OpenAIEmbeddingModel : IEmbeddingModel
         if (values.Count > MaxEmbeddingsPerCall)
         {
             throw new AiSdkException(
-                "Too many embedding values for a single call. The maximum is " + MaxEmbeddingsPerCall.ToString() + ".");
+                "Too many embedding values for a single call. The maximum is "
+                    + MaxEmbeddingsPerCall.ToString()
+                    + "."
+            );
         }
 
         var input = new JsonArray();
@@ -105,15 +125,23 @@ public sealed class OpenAIEmbeddingModel : IEmbeddingModel
             body["user"] = user;
         }
 
-        var response = await _provider.Http.SendJsonStringAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "embeddings"),
-            body.ToJsonString(),
-            _provider.CreateOpenAIHeaders(headers),
-            cancellationToken).ConfigureAwait(false);
-        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
+        var response = await _provider
+            .Http.SendJsonStringAsync(
+                HttpMethod.Post,
+                ApiKeys.Combine(_provider.Options.BaseUrl, "embeddings"),
+                body.ToJsonString(),
+                _provider.CreateOpenAIHeaders(headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        using var document = JsonDocument.Parse(
+            string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+        );
         var vectors = new List<float[]>();
-        if (document.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
+        if (
+            document.RootElement.TryGetProperty("data", out var data)
+            && data.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var item in data.EnumerateArray())
             {
@@ -130,22 +158,32 @@ public sealed class OpenAIEmbeddingModel : IEmbeddingModel
         }
 
         int? tokens = null;
-        if (document.RootElement.TryGetProperty("usage", out var usage)
+        if (
+            document.RootElement.TryGetProperty("usage", out var usage)
             && usage.ValueKind == JsonValueKind.Object
             && usage.TryGetProperty("prompt_tokens", out var prompt)
-            && prompt.TryGetInt32(out var count))
+            && prompt.TryGetInt32(out var count)
+        )
         {
             tokens = count;
         }
 
-        return new OpenAIEmbeddingCallResult(new EmbeddingResult(vectors, tokens), response.Headers, response.Body);
+        return new OpenAIEmbeddingCallResult(
+            new EmbeddingResult(vectors, tokens),
+            response.Headers,
+            response.Body
+        );
     }
 }
 
 /// <summary>Embedding vectors plus the raw response.</summary>
 public sealed class OpenAIEmbeddingCallResult
 {
-    internal OpenAIEmbeddingCallResult(EmbeddingResult result, IReadOnlyDictionary<string, string> headers, string rawBody)
+    internal OpenAIEmbeddingCallResult(
+        EmbeddingResult result,
+        IReadOnlyDictionary<string, string> headers,
+        string rawBody
+    )
     {
         Result = result;
         Headers = headers;

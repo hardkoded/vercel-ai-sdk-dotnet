@@ -12,33 +12,58 @@ namespace Vercel.AI.Tests.Upstream.ProcessUiMessageStream;
 /// <summary>Port of <c>process-ui-message-stream.test.ts</c> &gt; <c>processUIMessageStream</c> &gt; <c>provider-executed dynamic tools</c>.</summary>
 public sealed class ProviderExecutedDynamicToolsTests
 {
-    private const string Prefix = "packages/ai/src/ui/process-ui-message-stream.test.ts::processUIMessageStream > ";
+    private const string Prefix =
+        "packages/ai/src/ui/process-ui-message-stream.test.ts::processUIMessageStream > ";
 
     [Fact]
-    [UpstreamTest(Prefix + "provider-executed dynamic tools::should not call onToolCall", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "provider-executed dynamic tools::should not call onToolCall",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_not_call_onToolCall()
     {
         var harness = new ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
         var onToolCallInvoked = false;
-        await harness.ProcessAsync("""
+        await harness.ProcessAsync(
+            """
             [{"type":"start","messageId":"msg-123"},{"type":"start-step"},{"type":"tool-input-start","toolCallId":"tool-call-1","toolName":"tool-name","providerExecuted":true,"dynamic":true},{"type":"tool-input-delta","toolCallId":"tool-call-1","inputTextDelta":"{ \"query\": \"test\" }"},{"type":"tool-input-available","toolCallId":"tool-call-1","toolName":"tool-name","input":{"query":"test"},"providerExecuted":true,"dynamic":true},{"type":"tool-output-available","toolCallId":"tool-call-1","output":{"result":"provider-result"},"providerExecuted":true,"dynamic":true},{"type":"tool-input-available","toolCallId":"tool-call-2","toolName":"tool-name","input":{"query":"test"},"providerExecuted":true,"dynamic":true},{"type":"tool-output-error","toolCallId":"tool-call-2","errorText":"error-text","providerExecuted":true,"dynamic":true},{"type":"finish-step"},{"type":"finish"}]
-            """, new ProcessUIMessageStreamOptions(harness.RunUpdateMessageJob, error => throw error) { OnToolCall = _ => { onToolCallInvoked = true; return Task.CompletedTask; } });
+            """,
+            new ProcessUIMessageStreamOptions(harness.RunUpdateMessageJob, error => throw error)
+            {
+                OnToolCall = _ =>
+                {
+                    onToolCallInvoked = true;
+                    return Task.CompletedTask;
+                },
+            }
+        );
 
         Assert.False(onToolCallInvoked);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "provider-executed dynamic tools::should call the update function with the correct arguments", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "provider-executed dynamic tools::should call the update function with the correct arguments",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_call_the_update_function_with_the_correct_arguments()
     {
         var harness = new ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
-        await harness.ProcessAsync("""
+        await harness.ProcessAsync(
+            """
             [{"type":"start","messageId":"msg-123"},{"type":"start-step"},{"type":"tool-input-start","toolCallId":"tool-call-1","toolName":"tool-name","providerExecuted":true,"dynamic":true},{"type":"tool-input-delta","toolCallId":"tool-call-1","inputTextDelta":"{ \"query\": \"test\" }"},{"type":"tool-input-available","toolCallId":"tool-call-1","toolName":"tool-name","input":{"query":"test"},"providerExecuted":true,"dynamic":true},{"type":"tool-output-available","toolCallId":"tool-call-1","output":{"result":"provider-result"},"providerExecuted":true,"dynamic":true},{"type":"tool-input-available","toolCallId":"tool-call-2","toolName":"tool-name","input":{"query":"test"},"providerExecuted":true,"dynamic":true},{"type":"tool-output-error","toolCallId":"tool-call-2","errorText":"error-text","providerExecuted":true,"dynamic":true},{"type":"finish-step"},{"type":"finish"}]
-            """, new ProcessUIMessageStreamOptions(harness.RunUpdateMessageJob, error => throw error) { OnToolCall = _ => Task.CompletedTask });
+            """,
+            new ProcessUIMessageStreamOptions(harness.RunUpdateMessageJob, error => throw error)
+            {
+                OnToolCall = _ => Task.CompletedTask,
+            }
+        );
 
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             [
               {
                 "message": {
@@ -202,20 +227,32 @@ public sealed class ProviderExecutedDynamicToolsTests
                 }
               }
             ]
-            """, harness.WriteCalls);
+            """,
+            harness.WriteCalls
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "provider-executed dynamic tools::should have the correct final message state", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "provider-executed dynamic tools::should have the correct final message state",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_have_the_correct_final_message_state()
     {
         var harness = new ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
-        await harness.ProcessAsync("""
+        await harness.ProcessAsync(
+            """
             [{"type":"start","messageId":"msg-123"},{"type":"start-step"},{"type":"tool-input-start","toolCallId":"tool-call-1","toolName":"tool-name","providerExecuted":true,"dynamic":true},{"type":"tool-input-delta","toolCallId":"tool-call-1","inputTextDelta":"{ \"query\": \"test\" }"},{"type":"tool-input-available","toolCallId":"tool-call-1","toolName":"tool-name","input":{"query":"test"},"providerExecuted":true,"dynamic":true},{"type":"tool-output-available","toolCallId":"tool-call-1","output":{"result":"provider-result"},"providerExecuted":true,"dynamic":true},{"type":"tool-input-available","toolCallId":"tool-call-2","toolName":"tool-name","input":{"query":"test"},"providerExecuted":true,"dynamic":true},{"type":"tool-output-error","toolCallId":"tool-call-2","errorText":"error-text","providerExecuted":true,"dynamic":true},{"type":"finish-step"},{"type":"finish"}]
-            """, new ProcessUIMessageStreamOptions(harness.RunUpdateMessageJob, error => throw error) { OnToolCall = _ => Task.CompletedTask });
+            """,
+            new ProcessUIMessageStreamOptions(harness.RunUpdateMessageJob, error => throw error)
+            {
+                OnToolCall = _ => Task.CompletedTask,
+            }
+        );
 
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             [
               {
                 "type": "step-start"
@@ -245,41 +282,64 @@ public sealed class ProviderExecutedDynamicToolsTests
                 "type": "dynamic-tool"
               }
             ]
-            """, harness.Parts);
+            """,
+            harness.Parts
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "provider-executed dynamic tools::should preserve separate call and result provider metadata for dynamic tools", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "provider-executed dynamic tools::should preserve separate call and result provider metadata for dynamic tools",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_preserve_separate_call_and_result_provider_metadata_for_dynamic_tools()
     {
         var harness = new ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
-        await harness.ProcessAsync("""
+        await harness.ProcessAsync(
+            """
             [{"type":"start","messageId":"msg-123"},{"type":"start-step"},{"type":"tool-input-available","toolCallId":"tool-call-1","toolName":"tool-name","input":{"query":"test"},"providerExecuted":true,"dynamic":true,"providerMetadata":{"testProvider":{"itemId":"call-item"}}},{"type":"tool-output-error","toolCallId":"tool-call-1","errorText":"error-text","providerExecuted":true,"dynamic":true,"providerMetadata":{"testProvider":{"itemId":"result-item"}}},{"type":"finish-step"},{"type":"finish"}]
-            """);
+            """
+        );
 
         var toolPart = harness.FindToolPart("tool-call-1")!;
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             {"testProvider":{"itemId":"call-item"}}
-            """, toolPart["callProviderMetadata"]);
-        ProcessUIMessageStreamHarness.AssertJson("""
+            """,
+            toolPart["callProviderMetadata"]
+        );
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             {"testProvider":{"itemId":"result-item"}}
-            """, toolPart["resultProviderMetadata"]);
+            """,
+            toolPart["resultProviderMetadata"]
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "provider-executed dynamic tools::should preserve tool metadata on dynamic tool parts", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "provider-executed dynamic tools::should preserve tool metadata on dynamic tool parts",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_preserve_tool_metadata_on_dynamic_tool_parts()
     {
         var harness = new ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
-        await harness.ProcessAsync("""
+        await harness.ProcessAsync(
+            """
             [{"type":"start","messageId":"msg-123"},{"type":"start-step"},{"type":"tool-input-available","toolCallId":"tool-call-1","toolName":"tool-name","input":{"query":"test"},"dynamic":true,"toolMetadata":{"clientName":"MyMCPClient"}},{"type":"tool-output-available","toolCallId":"tool-call-1","output":{"result":"provider-result"},"dynamic":true},{"type":"finish-step"},{"type":"finish"}]
-            """);
+            """
+        );
 
         var toolPart = harness.FindToolPart("tool-call-1")!;
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             {"input":{"query":"test"},"output":{"result":"provider-result"},"state":"output-available","toolCallId":"tool-call-1","toolMetadata":{"clientName":"MyMCPClient"},"toolName":"tool-name","type":"dynamic-tool"}
-            """, toolPart);
+            """,
+            toolPart
+        );
     }
 }

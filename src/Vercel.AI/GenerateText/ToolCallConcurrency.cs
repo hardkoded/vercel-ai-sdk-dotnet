@@ -23,7 +23,11 @@ public static class ToolCallConcurrencyScheduler
 
         if (toolCallConcurrency < 1)
         {
-            throw new InvalidArgumentError("toolCallConcurrency", toolCallConcurrency, "toolCallConcurrency must be >= 1");
+            throw new InvalidArgumentError(
+                "toolCallConcurrency",
+                toolCallConcurrency,
+                "toolCallConcurrency must be >= 1"
+            );
         }
 
         return toolCallConcurrency;
@@ -38,7 +42,8 @@ public static class ToolCallConcurrencyScheduler
         IReadOnlyList<TInput> items,
         int? concurrency,
         Func<TInput, int, Task<TOutput>> execute,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         if (items is null)
         {
