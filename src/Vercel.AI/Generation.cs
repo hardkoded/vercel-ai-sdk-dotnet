@@ -809,7 +809,7 @@ internal static class Generation
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
                 var stepResponse = new LanguageModelResponseMetadata(stepResponseId, stepResponseTimestamp, stepResponseModelId, streamResult.Response?.Headers);
                 var approvalParts = new List<TextStreamPart>();
-                var step = await FinishStepAsync(generated, options, messages, instructionCount, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, outputChunkTimes), stepRequest, stepResponse, null, approvalParts, deliveredSteeringMessages.Select(delivered => delivered.Message).ToArray()).ConfigureAwait(false);
+                var step = await FinishStepAsync(generated, options, messages, instructionCount, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, outputChunkTimes), stepRequest, stepResponse, null, approvalParts, deliveredSteeringMessages.Select(delivered => delivered.Message).ToArray(), preliminary => buffer.Add(new ToolResultPart(preliminary))).ConfigureAwait(false);
                 foreach (var approvalPart in approvalParts)
                 {
                     buffer.Add(approvalPart);
@@ -1282,7 +1282,8 @@ internal static class Generation
         LanguageModelResponseMetadata responseInfo,
         JsonElement? responseBody,
         List<TextStreamPart>? approvalParts = null,
-        IReadOnlyList<UserModelMessage>? steeringMessages = null)
+        IReadOnlyList<UserModelMessage>? steeringMessages = null,
+        Action<ExecutedTool>? onPreliminaryToolResult = null)
     {
         var toolExecutionMs = new Dictionary<string, double>(StringComparer.Ordinal);
         var toolCalls = new List<GeneratedToolCall>();
@@ -1422,7 +1423,7 @@ internal static class Generation
                 ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency),
                 async (call, _) =>
                 {
-                    var (executed, executionMs) = await ExecuteToolAsync(call, options, stepInputMessages, timing.Now, cancellationToken).ConfigureAwait(false);
+                    var (executed, executionMs) = await ExecuteToolAsync(call, options, stepInputMessages, timing.Now, cancellationToken, onPreliminaryToolResult).ConfigureAwait(false);
                     return (Executed: executed, ElapsedMs: executionMs);
                 },
                 cancellationToken).ConfigureAwait(false);
@@ -2085,7 +2086,7 @@ internal static class Generation
     }
 
     // A tool without an execute function, or one awaiting approval, leaves its call for the caller, so the loop ends without asking the stop condition.
-    private static bool HasExecutor(Tool? tool) => tool != null && (tool.Execute != null || tool.ExecuteWithOptions != null);
+    private static bool HasExecutor(Tool? tool) => tool != null && (tool.Execute != null || tool.ExecuteWithOptions != null || tool.ExecuteStream != null);
 
     // A call is settled when the step answers it: with a tool result, or with an automatic denial. Like upstream, the loop goes on
     // only when every client call is settled.
@@ -2126,7 +2127,7 @@ internal static class Generation
         return false;
     }
 
-    private static async Task<(ExecutedTool Executed, double ElapsedMs)> ExecuteToolAsync(GeneratedToolCall call, GenerateTextOptions options, IReadOnlyList<ModelMessage> stepMessages, Func<double> now, CancellationToken cancellationToken)
+    private static async Task<(ExecutedTool Executed, double ElapsedMs)> ExecuteToolAsync(GeneratedToolCall call, GenerateTextOptions options, IReadOnlyList<ModelMessage> stepMessages, Func<double> now, CancellationToken cancellationToken, Action<ExecutedTool>? onPreliminaryToolResult = null)
     {
         var tool = FindTool(options, call.ToolName);
 
@@ -2152,9 +2153,39 @@ internal static class Generation
         {
             using var arguments = JsonDocument.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson);
             var input = arguments.RootElement.Clone();
-            var output = tool.ExecuteWithOptions != null
-                ? await tool.ExecuteWithOptions(input, new ToolExecutionOptions(call.ToolCallId, stepMessages, toolToken)).ConfigureAwait(false)
-                : await tool.Execute!(input, toolToken).ConfigureAwait(false);
+            string output;
+            if (tool.ExecuteStream != null)
+            {
+                // Like upstream's executeTool, each streamed value is a preliminary result and the last one is the final result.
+                var last = default(string);
+                await foreach (var part in Vercel.AI.ProviderUtils.ToolExecution.ExecuteStreamAsync(tool.ExecuteStream(input, new ToolExecutionOptions(call.ToolCallId, stepMessages, toolToken)), toolToken).ConfigureAwait(false))
+                {
+                    if (part.Type == "preliminary")
+                    {
+                        onPreliminaryToolResult?.Invoke(new ExecutedTool(call.ToolCallId, call.ToolName, string.IsNullOrEmpty(part.Output) ? "null" : part.Output, false)
+                        {
+                            InputJson = call.ArgumentsJson,
+                            Dynamic = call.Dynamic,
+                            Title = call.Title,
+                            ToolMetadata = call.ToolMetadata,
+                            Preliminary = true,
+                        });
+                    }
+                    else
+                    {
+                        last = part.Output;
+                    }
+                }
+
+                output = last!;
+            }
+            else
+            {
+                output = tool.ExecuteWithOptions != null
+                    ? await tool.ExecuteWithOptions(input, new ToolExecutionOptions(call.ToolCallId, stepMessages, toolToken)).ConfigureAwait(false)
+                    : await tool.Execute!(input, toolToken).ConfigureAwait(false);
+            }
+
             output = string.IsNullOrEmpty(output) ? "null" : output;
             var modelOutput = tool.ToModelOutput?.Invoke(new ToolModelOutputCall(call.ToolCallId, input, output));
             executed = new ExecutedTool(call.ToolCallId, call.ToolName, output, false)

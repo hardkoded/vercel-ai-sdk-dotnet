@@ -124,7 +124,7 @@ public static class ToolApprovalValidation
                 }
             }
 
-            if (tool != null && (tool.Execute != null || tool.ExecuteWithOptions != null) && tool.InputSchema.ValueKind == JsonValueKind.Object)
+            if (tool != null && (tool.Execute != null || tool.ExecuteWithOptions != null || tool.ExecuteStream != null) && tool.InputSchema.ValueKind == JsonValueKind.Object)
             {
                 Exception? validationError = null;
                 try

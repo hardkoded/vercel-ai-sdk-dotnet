@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Collections;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
@@ -568,7 +569,7 @@ public static class ToolExecution
     }
 
     /// <summary>Yields each streamed value as preliminary, then repeats the last value as final.</summary>
-    public static async IAsyncEnumerable<ToolStep<T>> ExecuteStreamAsync<T>(IAsyncEnumerable<T> outputs)
+    public static async IAsyncEnumerable<ToolStep<T>> ExecuteStreamAsync<T>(IAsyncEnumerable<T> outputs, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         if (outputs is null)
         {
@@ -577,8 +578,9 @@ public static class ToolExecution
 
         var hasLast = false;
         T last = default!;
-        await foreach (var output in outputs.ConfigureAwait(false))
+        await foreach (var output in outputs.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
+            cancellationToken.ThrowIfCancellationRequested();
             hasLast = true;
             last = output;
             yield return new ToolStep<T>("preliminary", output);
