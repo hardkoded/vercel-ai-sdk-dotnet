@@ -140,7 +140,14 @@ public sealed class GoogleSpeechModel : ISpeechModel
     /// <inheritdoc />
     public Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
     {
-        return GenerateAsync(new GoogleSpeechCall(options.Text) { Voice = options.Voice }, cancellationToken);
+        return GenerateAsync(new GoogleSpeechCall(options.Text)
+        {
+            Voice = options.Voice,
+            Instructions = options.Instructions,
+            Speed = options.Speed,
+            Language = options.Language,
+            OutputFormat = options.OutputFormat,
+        }, cancellationToken);
     }
 
     /// <summary>Synthesizes speech with Gemini-specific options.</summary>
