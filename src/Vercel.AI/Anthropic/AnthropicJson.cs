@@ -92,7 +92,11 @@ internal static class AnthropicJson
 
         foreach (var name in names)
         {
-            if (element.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null && value.ValueKind != JsonValueKind.Undefined)
+            if (
+                element.TryGetProperty(name, out var value)
+                && value.ValueKind != JsonValueKind.Null
+                && value.ValueKind != JsonValueKind.Undefined
+            )
             {
                 return value;
             }
@@ -109,7 +113,9 @@ internal static class AnthropicJson
             return null;
         }
 
-        return value.Value.ValueKind == JsonValueKind.String ? value.Value.GetString() : value.Value.ToString();
+        return value.Value.ValueKind == JsonValueKind.String
+            ? value.Value.GetString()
+            : value.Value.ToString();
     }
 
     public static bool? Bool(JsonElement element, params string[] names)

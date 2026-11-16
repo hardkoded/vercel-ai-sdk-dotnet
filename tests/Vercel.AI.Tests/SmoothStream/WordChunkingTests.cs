@@ -26,11 +26,13 @@ public sealed class WordChunkingTests
         var options = new Vercel.AI.GenerateText.SmoothStreamOptions
         {
             DelayInMs = delayInMs,
-            Delay = !recordDelay ? null : (ms, _) =>
-            {
-                _events.Add($"delay {ms}");
-                return Task.CompletedTask;
-            },
+            Delay = !recordDelay
+                ? null
+                : (ms, _) =>
+                {
+                    _events.Add($"delay {ms}");
+                    return Task.CompletedTask;
+                },
         };
         var transform = Vercel.AI.GenerateText.SmoothStream.Create(options)(null);
         await foreach (var part in transform(From(input), default))
@@ -99,7 +101,11 @@ public sealed class WordChunkingTests
     [Fact]
     public async Task ForwardsPingsWithoutFlushingAPartialWord()
     {
-        await Run([Start, D("Hel"), new PingPart(), D("lo "), End], delayInMs: null, recordDelay: false);
+        await Run(
+            [Start, D("Hel"), new PingPart(), D("lo "), End],
+            delayInMs: null,
+            recordDelay: false
+        );
         Expect(Start, new PingPart(), D("Hello "), End);
     }
 
@@ -114,14 +120,50 @@ public sealed class WordChunkingTests
     public async Task ShouldSplitLargerTextChunks()
     {
         await Run([Start, D("Hello, World! This is an example text."), End]);
-        Expect(Start, D("Hello, "), Delay, D("World! "), Delay, D("This "), Delay, D("is "), Delay, D("an "), Delay, D("example "), Delay, D("text."), End);
+        Expect(
+            Start,
+            D("Hello, "),
+            Delay,
+            D("World! "),
+            Delay,
+            D("This "),
+            Delay,
+            D("is "),
+            Delay,
+            D("an "),
+            Delay,
+            D("example "),
+            Delay,
+            D("text."),
+            End
+        );
     }
 
     [Fact]
     public async Task ShouldKeepLongerWhitespaceSequencesTogether()
     {
-        await Run([Start, D("First line"), D(" \n\n"), D("  "), D("  Multiple spaces"), D("\n    Indented"), End]);
-        Expect(Start, D("First "), Delay, D("line \n\n"), Delay, D("    Multiple "), Delay, D("spaces\n    "), Delay, D("Indented"), End);
+        await Run([
+            Start,
+            D("First line"),
+            D(" \n\n"),
+            D("  "),
+            D("  Multiple spaces"),
+            D("\n    Indented"),
+            End,
+        ]);
+        Expect(
+            Start,
+            D("First "),
+            Delay,
+            D("line \n\n"),
+            Delay,
+            D("    Multiple "),
+            Delay,
+            D("spaces\n    "),
+            Delay,
+            D("Indented"),
+            End
+        );
     }
 
     [Fact]
@@ -129,7 +171,24 @@ public sealed class WordChunkingTests
     {
         var call = new ToolCallPart(new GeneratedToolCall("1", "weather", "{\"city\":\"London\"}"));
         await Run([Start, D("I will check the"), D(" weather in Lon"), D("don."), call, End]);
-        Expect(Start, D("I "), Delay, D("will "), Delay, D("check "), Delay, D("the "), Delay, D("weather "), Delay, D("in "), Delay, D("London."), call, End);
+        Expect(
+            Start,
+            D("I "),
+            Delay,
+            D("will "),
+            Delay,
+            D("check "),
+            Delay,
+            D("the "),
+            Delay,
+            D("weather "),
+            Delay,
+            D("in "),
+            Delay,
+            D("London."),
+            call,
+            End
+        );
     }
 
     [Fact]
@@ -139,8 +198,38 @@ public sealed class WordChunkingTests
         var inputStart = new ToolInputStartPart("2", "weather", null, null, false);
         var inputDelta = new ToolInputDeltaPart("2", "{ city: \"London\" }", null);
         var inputEnd = new ToolInputEndPart("2", null);
-        await Run([Start, D("I will check the"), D(" weather in Lon"), D("don."), inputStart, inputDelta, inputEnd, call, End]);
-        Expect(Start, D("I "), Delay, D("will "), Delay, D("check "), Delay, D("the "), Delay, D("weather "), Delay, D("in "), Delay, D("London."), inputStart, inputDelta, inputEnd, call, End);
+        await Run([
+            Start,
+            D("I will check the"),
+            D(" weather in Lon"),
+            D("don."),
+            inputStart,
+            inputDelta,
+            inputEnd,
+            call,
+            End,
+        ]);
+        Expect(
+            Start,
+            D("I "),
+            Delay,
+            D("will "),
+            Delay,
+            D("check "),
+            Delay,
+            D("the "),
+            Delay,
+            D("weather "),
+            Delay,
+            D("in "),
+            Delay,
+            D("London."),
+            inputStart,
+            inputDelta,
+            inputEnd,
+            call,
+            End
+        );
     }
 
     [Fact]

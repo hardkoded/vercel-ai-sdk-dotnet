@@ -17,7 +17,8 @@ public sealed class ResponsesDoGenerateReasoningTests
     [Fact]
     [UpstreamTest(
         "packages/azure/src/azure-openai-provider.test.ts::responses > doGenerate > reasoning::should generate with reasoning encrypted content",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_generate_with_reasoning_encrypted_content()
     {
         var fixture = JsonNode.Parse(Fixture("azure-reasoning-encrypted-content.1.json"))!;
@@ -26,14 +27,18 @@ public sealed class ResponsesDoGenerateReasoningTests
 
         var options = Call(
             new[] { new LanguageModelTool("calculator", null, Json(Calculator)) },
-            azureOptions: "{\"reasoningEffort\":\"high\",\"maxCompletionTokens\":32000,\"store\":false,\"include\":[\"reasoning.encrypted_content\"],\"reasoningSummary\":\"auto\",\"forceReasoning\":true}");
+            azureOptions: "{\"reasoningEffort\":\"high\",\"maxCompletionTokens\":32000,\"store\":false,\"include\":[\"reasoning.encrypted_content\"],\"reasoningSummary\":\"auto\",\"forceReasoning\":true}"
+        );
         var result = await Generate(capture, options);
 
         // Request body of the snapshot (undefined fields are omitted).
         var expectedBody = JsonNode.Parse(
             "{\"model\":\"test-deployment\",\"input\":[{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"Hello\"}]}],"
-            + "\"include\":[\"reasoning.encrypted_content\"],\"reasoning\":{\"effort\":\"high\",\"summary\":\"auto\"},\"store\":false,"
-            + "\"tools\":[{\"type\":\"function\",\"name\":\"calculator\",\"parameters\":" + Calculator + ",\"strict\":false}]}")!;
+                + "\"include\":[\"reasoning.encrypted_content\"],\"reasoning\":{\"effort\":\"high\",\"summary\":\"auto\"},\"store\":false,"
+                + "\"tools\":[{\"type\":\"function\",\"name\":\"calculator\",\"parameters\":"
+                + Calculator
+                + ",\"strict\":false}]}"
+        )!;
         var body = RequestBody(capture);
         Assert.True(JsonNode.DeepEquals(expectedBody, body), body.ToJsonString());
 
@@ -49,20 +54,27 @@ public sealed class ResponsesDoGenerateReasoningTests
                 ["azure"] = new JsonObject
                 {
                     ["itemId"] = output[0]!["id"]!.GetValue<string>(),
-                    ["reasoningEncryptedContent"] = output[0]!["encrypted_content"]!.GetValue<string>(),
+                    ["reasoningEncryptedContent"] = output[0]![
+                        "encrypted_content"
+                    ]!.GetValue<string>(),
                 },
-            }.ToJsonString());
+            }.ToJsonString()
+        );
         var text = Assert.IsType<Vercel.AI.OpenAI.OpenAIText>(result.Content[1]);
         Assert.Equal("(12 + 7) = 19\n19 × 3 = 57\n57 × 10 = 570\n\nFinal result: 570", text.Text);
         JsonAssert.Equal(
             text.ProviderMetadata,
-            "{\"azure\":{\"itemId\":\"" + output[1]!["id"]!.GetValue<string>() + "\"}}");
+            "{\"azure\":{\"itemId\":\"" + output[1]!["id"]!.GetValue<string>() + "\"}}"
+        );
 
         Assert.Equal(FinishReason.Stop, result.FinishReason);
         Assert.Empty(result.Warnings);
         JsonAssert.Equal(
             result.ProviderMetadata!.Value,
-            "{\"azure\":{\"responseId\":\"" + fixture["id"]!.GetValue<string>() + "\",\"serviceTier\":\"default\"}}");
+            "{\"azure\":{\"responseId\":\""
+                + fixture["id"]!.GetValue<string>()
+                + "\",\"serviceTier\":\"default\"}}"
+        );
 
         // Response of the snapshot.
         Assert.Equal(fixture["id"]!.GetValue<string>(), result.ResponseId);
@@ -82,6 +94,11 @@ public sealed class ResponsesDoGenerateReasoningTests
         Assert.Equal(101, result.Usage.OutputTokens);
         Assert.Equal(37, result.Usage.TextTokens);
         Assert.Equal(665, result.Usage.TotalTokens);
-        Assert.True(JsonNode.DeepEquals(fixture["usage"], JsonNode.Parse(result.Usage.Raw!.Value.GetRawText())));
+        Assert.True(
+            JsonNode.DeepEquals(
+                fixture["usage"],
+                JsonNode.Parse(result.Usage.Raw!.Value.GetRawText())
+            )
+        );
     }
 }

@@ -43,16 +43,21 @@ public sealed class PruneToolCallsRule
 
     /// <summary>Prunes in all messages. Maps to <c>type: 'all'</c>.</summary>
     /// <param name="tools">Names of the tools to prune. Null prunes every tool.</param>
-    public static PruneToolCallsRule All(IReadOnlyList<string>? tools = null) => new PruneToolCallsRule(null, tools);
+    public static PruneToolCallsRule All(IReadOnlyList<string>? tools = null) =>
+        new PruneToolCallsRule(null, tools);
 
     /// <summary>Prunes before the last message. Maps to <c>type: 'before-last-message'</c>.</summary>
     /// <param name="tools">Names of the tools to prune. Null prunes every tool.</param>
-    public static PruneToolCallsRule BeforeLastMessage(IReadOnlyList<string>? tools = null) => new PruneToolCallsRule(1, tools);
+    public static PruneToolCallsRule BeforeLastMessage(IReadOnlyList<string>? tools = null) =>
+        new PruneToolCallsRule(1, tools);
 
     /// <summary>Prunes before the last <paramref name="count"/> messages. Maps to <c>type: 'before-last-N-messages'</c>.</summary>
     /// <param name="count">Number of trailing messages to keep unpruned.</param>
     /// <param name="tools">Names of the tools to prune. Null prunes every tool.</param>
-    public static PruneToolCallsRule BeforeLastMessages(int count, IReadOnlyList<string>? tools = null)
+    public static PruneToolCallsRule BeforeLastMessages(
+        int count,
+        IReadOnlyList<string>? tools = null
+    )
     {
         if (count < 0)
         {
@@ -79,7 +84,8 @@ public sealed class PruneMessagesOptions
     public PruneReasoning Reasoning { get; set; } = PruneReasoning.None;
 
     /// <summary>How to prune tool calls, results, errors, and approvals. Default is no rules.</summary>
-    public IReadOnlyList<PruneToolCallsRule> ToolCalls { get; set; } = Array.Empty<PruneToolCallsRule>();
+    public IReadOnlyList<PruneToolCallsRule> ToolCalls { get; set; } =
+        Array.Empty<PruneToolCallsRule>();
 
     /// <summary>Whether to keep or remove messages whose content is empty after pruning. Default is <see cref="PruneEmptyMessages.Remove"/>.</summary>
     public PruneEmptyMessages EmptyMessages { get; set; } = PruneEmptyMessages.Remove;
@@ -99,7 +105,13 @@ public static class MessagePruning
 
     private readonly struct Entry
     {
-        public Entry(object source, EntryKind kind, string? toolCallId, string? toolName, string? approvalId)
+        public Entry(
+            object source,
+            EntryKind kind,
+            string? toolCallId,
+            string? toolName,
+            string? approvalId
+        )
         {
             Source = source;
             Kind = kind;
@@ -139,11 +151,21 @@ public static class MessagePruning
         {
             for (var index = 0; index < groups.Count; index++)
             {
-                if (groups[index].Count == 1
+                if (
+                    groups[index].Count == 1
                     && groups[index][0] is AssistantModelMessage assistant
-                    && !(options.Reasoning == PruneReasoning.BeforeLastMessage && index == groups.Count - 1))
+                    && !(
+                        options.Reasoning == PruneReasoning.BeforeLastMessage
+                        && index == groups.Count - 1
+                    )
+                )
                 {
-                    groups[index] = new List<ModelMessage> { Filter(assistant, part => part is not (AssistantReasoningPart or AssistantReasoningFilePart)) };
+                    groups[index] = new List<ModelMessage>
+                    {
+                        Filter(assistant, part =>
+                            part is not (AssistantReasoningPart or AssistantReasoningFilePart)
+                        ),
+                    };
                 }
             }
         }
@@ -167,7 +189,10 @@ public static class MessagePruning
         return result;
     }
 
-    private static List<List<ModelMessage>> ApplyRule(List<List<ModelMessage>> groups, PruneToolCallsRule rule)
+    private static List<List<ModelMessage>> ApplyRule(
+        List<List<ModelMessage>> groups,
+        PruneToolCallsRule rule
+    )
     {
         var keepLast = rule.KeepLastMessagesCount;
 
@@ -177,7 +202,11 @@ public static class MessagePruning
 
         if (keepLast is > 0)
         {
-            for (var index = Math.Max(0, groups.Count - keepLast.Value); index < groups.Count; index++)
+            for (
+                var index = Math.Max(0, groups.Count - keepLast.Value);
+                index < groups.Count;
+                index++
+            )
             {
                 foreach (var entry in EntriesOf(groups[index]))
                 {
@@ -261,10 +290,14 @@ public static class MessagePruning
             }
             else
             {
-                partToolName = approvalIdToToolName.TryGetValue(entry.ApprovalId!, out var name) ? name : null;
+                partToolName = approvalIdToToolName.TryGetValue(entry.ApprovalId!, out var name)
+                    ? name
+                    : null;
             }
 
-            return rule.Tools != null && partToolName != null && !ContainsName(rule.Tools, partToolName);
+            return rule.Tools != null
+                && partToolName != null
+                && !ContainsName(rule.Tools, partToolName);
         }
 
         var pruned = new List<List<ModelMessage>>(groups.Count);
@@ -366,9 +399,13 @@ public static class MessagePruning
         }
     }
 
-    private static bool IsReasoning(Entry entry) => entry.Source is AssistantReasoningPart or AssistantReasoningFilePart;
+    private static bool IsReasoning(Entry entry) =>
+        entry.Source is AssistantReasoningPart or AssistantReasoningFilePart;
 
-    private static AssistantModelMessage Filter(AssistantModelMessage message, Func<AssistantContentPart, bool> keep)
+    private static AssistantModelMessage Filter(
+        AssistantModelMessage message,
+        Func<AssistantContentPart, bool> keep
+    )
     {
         var kept = new List<AssistantContentPart>();
         foreach (var part in message.Parts)
@@ -382,7 +419,10 @@ public static class MessagePruning
         return Rebuild(message, kept);
     }
 
-    private static AssistantModelMessage Rebuild(AssistantModelMessage message, List<AssistantContentPart> kept)
+    private static AssistantModelMessage Rebuild(
+        AssistantModelMessage message,
+        List<AssistantContentPart> kept
+    )
     {
         if (kept.Count == message.Parts.Count)
         {
@@ -405,13 +445,37 @@ public static class MessagePruning
                         switch (part)
                         {
                             case AssistantToolCallPart call:
-                                entries.Add(new Entry(part, EntryKind.ToolCall, call.ToolCall.ToolCallId, call.ToolCall.ToolName, null));
+                                entries.Add(
+                                    new Entry(
+                                        part,
+                                        EntryKind.ToolCall,
+                                        call.ToolCall.ToolCallId,
+                                        call.ToolCall.ToolName,
+                                        null
+                                    )
+                                );
                                 break;
                             case AssistantToolResultPart result:
-                                entries.Add(new Entry(part, EntryKind.ToolResult, result.ToolCallId, result.ToolName, null));
+                                entries.Add(
+                                    new Entry(
+                                        part,
+                                        EntryKind.ToolResult,
+                                        result.ToolCallId,
+                                        result.ToolName,
+                                        null
+                                    )
+                                );
                                 break;
                             case AssistantToolApprovalRequestPart request:
-                                entries.Add(new Entry(part, EntryKind.ApprovalRequest, request.ToolCallId, null, request.ApprovalId));
+                                entries.Add(
+                                    new Entry(
+                                        part,
+                                        EntryKind.ApprovalRequest,
+                                        request.ToolCallId,
+                                        null,
+                                        request.ApprovalId
+                                    )
+                                );
                                 break;
                             default:
                                 entries.Add(new Entry(part, EntryKind.Other, null, null, null));
@@ -421,12 +485,28 @@ public static class MessagePruning
 
                     break;
                 case ToolApprovalResponseModelMessage response:
-                    entries.Add(new Entry(response, EntryKind.ApprovalResponse, null, null, response.ApprovalId));
+                    entries.Add(
+                        new Entry(
+                            response,
+                            EntryKind.ApprovalResponse,
+                            null,
+                            null,
+                            response.ApprovalId
+                        )
+                    );
                     break;
                 case ToolModelMessage tool:
                     foreach (var result in tool.Results)
                     {
-                        entries.Add(new Entry(result, EntryKind.ToolResult, result.ToolCallId, result.ToolName, null));
+                        entries.Add(
+                            new Entry(
+                                result,
+                                EntryKind.ToolResult,
+                                result.ToolCallId,
+                                result.ToolName,
+                                null
+                            )
+                        );
                     }
 
                     break;
@@ -442,7 +522,12 @@ public static class MessagePruning
         var groups = new List<List<ModelMessage>>();
         foreach (var message in messages)
         {
-            if (message.Role == "tool" && groups.Count > 0 && groups[groups.Count - 1].Count > 0 && groups[groups.Count - 1][0].Role == "tool")
+            if (
+                message.Role == "tool"
+                && groups.Count > 0
+                && groups[groups.Count - 1].Count > 0
+                && groups[groups.Count - 1][0].Role == "tool"
+            )
             {
                 groups[groups.Count - 1].Add(message);
             }

@@ -18,7 +18,8 @@ internal sealed class ThreadCallResult
 
     public IReadOnlyList<string> PartTypes { get; init; } = Array.Empty<string>();
 
-    public IReadOnlyList<ToolCallStreamPart> StreamToolCalls { get; init; } = Array.Empty<ToolCallStreamPart>();
+    public IReadOnlyList<ToolCallStreamPart> StreamToolCalls { get; init; } =
+        Array.Empty<ToolCallStreamPart>();
 
     public IReadOnlyList<GeneratedContent> Content { get; init; } = Array.Empty<GeneratedContent>();
 }
@@ -46,17 +47,27 @@ internal static class ThreadTestSupport
         return document.RootElement.Clone();
     }
 
-    public static IReadOnlyDictionary<string, JsonElement> Opts(string json, string name = "anthropic")
+    public static IReadOnlyDictionary<string, JsonElement> Opts(
+        string json,
+        string name = "anthropic"
+    )
     {
         return new Dictionary<string, JsonElement> { [name] = Json(json) };
     }
 
-    public static LanguageModelCallOptions Options(IReadOnlyList<ModelMessage> prompt, string? providerOptions = null, bool tool = true)
+    public static LanguageModelCallOptions Options(
+        IReadOnlyList<ModelMessage> prompt,
+        string? providerOptions = null,
+        bool tool = true
+    )
     {
         var options = new LanguageModelCallOptions { Prompt = prompt };
         if (tool)
         {
-            options.Tools = new[] { new LanguageModelTool("weather", null, Json("{\"type\":\"object\"}")) };
+            options.Tools = new[]
+            {
+                new LanguageModelTool("weather", null, Json("{\"type\":\"object\"}")),
+            };
         }
 
         if (providerOptions != null)
@@ -69,7 +80,11 @@ internal static class ThreadTestSupport
 
     public static IReadOnlyList<ModelMessage> SystemAndHello()
     {
-        return new ModelMessage[] { new SystemModelMessage("Be concise."), new UserModelMessage("Hello") };
+        return new ModelMessage[]
+        {
+            new SystemModelMessage("Be concise."),
+            new UserModelMessage("Hello"),
+        };
     }
 
     public static ModelMessage Hello()
@@ -87,15 +102,25 @@ internal static class ThreadTestSupport
         CaptureHandler handler,
         LanguageModelCallOptions options,
         ILanguageModel? model = null,
-        string fixture = "anthropic-text")
+        string fixture = "anthropic-text"
+    )
     {
-        model ??= AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-key" }, handler).LanguageModel("claude-sonnet-4-6");
+        model ??= AnthropicProvider
+            .Create(new AnthropicOptions { ApiKey = "test-key" }, handler)
+            .LanguageModel("claude-sonnet-4-6");
         if (method == "generate")
         {
             handler.ContentType = "application/json";
             handler.ResponseBody = Fixture(fixture + ".json");
-            var result = await model.DoGenerateAsync(options, CancellationToken.None).ConfigureAwait(false);
-            return new ThreadCallResult { ResponseId = result.ResponseId, Warnings = result.Warnings, Content = result.Content };
+            var result = await model
+                .DoGenerateAsync(options, CancellationToken.None)
+                .ConfigureAwait(false);
+            return new ThreadCallResult
+            {
+                ResponseId = result.ResponseId,
+                Warnings = result.Warnings,
+                Content = result.Content,
+            };
         }
 
         var chunks = new StringBuilder();
@@ -109,7 +134,9 @@ internal static class ThreadTestSupport
 
         handler.ContentType = "text/event-stream";
         handler.ResponseBody = chunks.ToString();
-        var stream = await model.DoStreamAsync(options, CancellationToken.None).ConfigureAwait(false);
+        var stream = await model
+            .DoStreamAsync(options, CancellationToken.None)
+            .ConfigureAwait(false);
         var warnings = new List<CallWarning>();
         var types = new List<string>();
         var calls = new List<ToolCallStreamPart>();
@@ -131,7 +158,13 @@ internal static class ThreadTestSupport
             }
         }
 
-        return new ThreadCallResult { ResponseId = id, Warnings = warnings, PartTypes = types, StreamToolCalls = calls };
+        return new ThreadCallResult
+        {
+            ResponseId = id,
+            Warnings = warnings,
+            PartTypes = types,
+            StreamToolCalls = calls,
+        };
     }
 
     public static JsonDocument Body(CaptureHandler handler)

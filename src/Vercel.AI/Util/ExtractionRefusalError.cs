@@ -13,17 +13,32 @@ public sealed class ExtractionRefusalError : AiSdkError
     /// <summary>Marker for <see cref="IsInstance(object)"/>.</summary>
     public const string ErrorMarker = "vercel.ai.error.AI_ExtractionRefusalError";
 
-    private static readonly JsonSerializerOptions Quote = new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    private static readonly JsonSerializerOptions Quote = new JsonSerializerOptions
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     /// <summary>Creates the error for the refused fields.</summary>
     public ExtractionRefusalError(
         IReadOnlyList<string> fieldIds,
         string provider,
         string modelId,
-        string? message = null)
+        string? message = null
+    )
         : base(
             "AI_ExtractionRefusalError",
-            message ?? ("Extraction model \"" + modelId + "\" from provider \"" + provider + "\" refused " + (fieldIds.Count == 1 ? "field " : "fields ") + string.Join(", ", fieldIds.Select(id => JsonSerializer.Serialize(id, Quote))) + "."))
+            message
+                ?? (
+                    "Extraction model \""
+                    + modelId
+                    + "\" from provider \""
+                    + provider
+                    + "\" refused "
+                    + (fieldIds.Count == 1 ? "field " : "fields ")
+                    + string.Join(", ", fieldIds.Select(id => JsonSerializer.Serialize(id, Quote)))
+                    + "."
+                )
+        )
     {
         FieldIds = fieldIds;
         Provider = provider;

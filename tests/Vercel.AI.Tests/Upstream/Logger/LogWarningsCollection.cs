@@ -6,6 +6,4 @@ namespace Vercel.AI.Tests;
 
 /// <summary>Keeps tests that install a warning recorder or observe the static <c>LogWarnings</c> state from running in parallel with other tests.</summary>
 [CollectionDefinition("LogWarnings", DisableParallelization = true)]
-public sealed class LogWarningsCollection
-{
-}
+public sealed class LogWarningsCollection { }

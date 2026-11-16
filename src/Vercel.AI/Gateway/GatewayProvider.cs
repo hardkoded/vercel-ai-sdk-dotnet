@@ -53,7 +53,11 @@ public sealed class GatewayOptions
 /// (<c>/language-model</c>, <c>/embedding-model</c>, <c>/image-model</c>, <c>/video-model</c>).
 /// </summary>
 #pragma warning disable CS0618
-public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, Operations.IDecisionProvider, Operations.IEvaluationProvider
+public sealed class GatewayProvider
+    : ProviderBase,
+        Operations.IBatchProvider,
+        Operations.IDecisionProvider,
+        Operations.IEvaluationProvider
 #pragma warning restore CS0618
 {
     /// <summary>Provider id.</summary>
@@ -88,9 +92,14 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
     public ProviderHttp Http { get; }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static GatewayProvider Create(GatewayOptions? options = null, HttpMessageHandler? handler = null)
+    public static GatewayProvider Create(
+        GatewayOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new GatewayProvider(options, client);
     }
 
@@ -137,9 +146,15 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
     /// Mints a client secret for a realtime model and returns it with the WebSocket URL. Maps to
     /// <c>experimental_realtime.getToken</c>.
     /// </summary>
-    public async Task<GatewayRealtimeClientSecret> ExperimentalRealtimeGetTokenAsync(string model, int? expiresAfterSeconds = null, CancellationToken cancellationToken = default)
+    public async Task<GatewayRealtimeClientSecret> ExperimentalRealtimeGetTokenAsync(
+        string model,
+        int? expiresAfterSeconds = null,
+        CancellationToken cancellationToken = default
+    )
     {
-        return await CreateRealtimeModel(model).DoCreateClientSecretAsync(expiresAfterSeconds, cancellationToken).ConfigureAwait(false);
+        return await CreateRealtimeModel(model)
+            .DoCreateClientSecretAsync(expiresAfterSeconds, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <summary>
@@ -155,10 +170,24 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
     /// transcription WebSocket without holding the Gateway credential. Server-side only. Maps to
     /// <c>experimental_transcription.getToken</c>.
     /// </summary>
-    public async Task<GatewayTranscriptionFactoryGetTokenResult> ExperimentalTranscriptionGetTokenAsync(string model, int? expiresAfterSeconds = null, CancellationToken cancellationToken = default)
+    public async Task<GatewayTranscriptionFactoryGetTokenResult> ExperimentalTranscriptionGetTokenAsync(
+        string model,
+        int? expiresAfterSeconds = null,
+        CancellationToken cancellationToken = default
+    )
     {
-        var secret = await MintClientSecretAsync(model, expiresAfterSeconds, "transcription", cancellationToken).ConfigureAwait(false);
-        return new GatewayTranscriptionFactoryGetTokenResult(secret.Token, GatewayTranscriptionModel.ToGatewayTranscriptionUrl(Options.BaseUrl, model), secret.ExpiresAt);
+        var secret = await MintClientSecretAsync(
+                model,
+                expiresAfterSeconds,
+                "transcription",
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        return new GatewayTranscriptionFactoryGetTokenResult(
+            secret.Token,
+            GatewayTranscriptionModel.ToGatewayTranscriptionUrl(Options.BaseUrl, model),
+            secret.ExpiresAt
+        );
     }
 
     /// <summary>Decision model routed through <c>/decision-model</c>.</summary>
@@ -195,13 +224,15 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
         }
 
         var headers = new List<KeyValuePair<string, string>>();
-        foreach (var (name, variable) in new[]
-        {
-            ("ai-o11y-deployment-id", "VERCEL_DEPLOYMENT_ID"),
-            ("ai-o11y-environment", "VERCEL_ENV"),
-            ("ai-o11y-region", "VERCEL_REGION"),
-            ("ai-o11y-project-id", "VERCEL_PROJECT_ID"),
-        })
+        foreach (
+            var (name, variable) in new[]
+            {
+                ("ai-o11y-deployment-id", "VERCEL_DEPLOYMENT_ID"),
+                ("ai-o11y-environment", "VERCEL_ENV"),
+                ("ai-o11y-region", "VERCEL_REGION"),
+                ("ai-o11y-project-id", "VERCEL_PROJECT_ID"),
+            }
+        )
         {
             var value = Environment.GetEnvironmentVariable(variable);
             if (!string.IsNullOrEmpty(value))
@@ -213,7 +244,14 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
         return headers;
     }
 
-    internal Dictionary<string, string?> Headers(string specificationHeader, string specificationValue, string modelHeader, string modelId, bool? streaming, IReadOnlyDictionary<string, string?>? extra = null)
+    internal Dictionary<string, string?> Headers(
+        string specificationHeader,
+        string specificationValue,
+        string modelHeader,
+        string modelId,
+        bool? streaming,
+        IReadOnlyDictionary<string, string?>? extra = null
+    )
     {
         var key = ApiKeys.Require(Options.ApiKey, ApiKeyEnvironmentVariable);
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
@@ -274,12 +312,16 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
     /// Gets the models the Gateway offers (upstream <c>getAvailableModels</c>). The result is cached for
     /// <see cref="GatewayOptions.MetadataCacheRefreshMillis"/>. A failed fetch is not cached.
     /// </summary>
-    public Task<GatewayFetchMetadataResponse> GetAvailableModelsAsync(CancellationToken cancellationToken = default)
+    public Task<GatewayFetchMetadataResponse> GetAvailableModelsAsync(
+        CancellationToken cancellationToken = default
+    )
     {
         Task<GatewayFetchMetadataResponse> result;
         lock (_metadataLock)
         {
-            var now = (Options.CurrentDate?.Invoke() ?? DateTimeOffset.UtcNow).ToUnixTimeMilliseconds();
+            var now = (
+                Options.CurrentDate?.Invoke() ?? DateTimeOffset.UtcNow
+            ).ToUnixTimeMilliseconds();
             var refreshMillis = Options.MetadataCacheRefreshMillis ?? 1000 * 60 * 5;
             if (_pendingMetadata == null || now - _lastFetchTime > refreshMillis)
             {
@@ -301,7 +343,8 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
                     },
                     CancellationToken.None,
                     TaskContinuationOptions.OnlyOnFaulted,
-                    TaskScheduler.Default);
+                    TaskScheduler.Default
+                );
             }
 
             result = _metadataCache != null ? Task.FromResult(_metadataCache) : _pendingMetadata;
@@ -311,38 +354,63 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
     }
 
     /// <summary>Gets the credit balance of the account (upstream <c>getCredits</c>).</summary>
-    public Task<GatewayCreditsResponse> GetCreditsAsync(CancellationToken cancellationToken = default)
+    public Task<GatewayCreditsResponse> GetCreditsAsync(
+        CancellationToken cancellationToken = default
+    )
     {
-        return WithGatewayErrorAsync(config => new GatewayFetchMetadata(config).GetCreditsAsync(cancellationToken));
+        return WithGatewayErrorAsync(config =>
+            new GatewayFetchMetadata(config).GetCreditsAsync(cancellationToken)
+        );
     }
 
     /// <summary>Gets the spend report of the account (upstream <c>getSpendReport</c>).</summary>
-    public Task<GatewaySpendReportResponse> GetSpendReportAsync(GatewaySpendReportParams parameters, CancellationToken cancellationToken = default)
+    public Task<GatewaySpendReportResponse> GetSpendReportAsync(
+        GatewaySpendReportParams parameters,
+        CancellationToken cancellationToken = default
+    )
     {
-        return WithGatewayErrorAsync(config => new GatewaySpendReport(config).GetSpendReportAsync(parameters, cancellationToken));
+        return WithGatewayErrorAsync(config =>
+            new GatewaySpendReport(config).GetSpendReportAsync(parameters, cancellationToken)
+        );
     }
 
     /// <summary>Gets the info of one generation, including its cost breakdown.</summary>
-    public Task<GatewayGenerationInfo> GetGenerationInfoAsync(GatewayGenerationInfoParams parameters, CancellationToken cancellationToken = default)
+    public Task<GatewayGenerationInfo> GetGenerationInfoAsync(
+        GatewayGenerationInfoParams parameters,
+        CancellationToken cancellationToken = default
+    )
     {
-        return WithGatewayErrorAsync(config => new GatewayGenerationInfoFetcher(config).GetGenerationInfoAsync(parameters, cancellationToken));
+        return WithGatewayErrorAsync(config =>
+            new GatewayGenerationInfoFetcher(config).GetGenerationInfoAsync(
+                parameters,
+                cancellationToken
+            )
+        );
     }
 
     /// <summary>Resolves the Gateway credential: an explicit key, <c>AI_GATEWAY_API_KEY</c>, then the Vercel OIDC token.</summary>
-    internal async Task<(string Token, string AuthMethod)> GetGatewayAuthTokenAsync(CancellationToken cancellationToken)
+    internal async Task<(string Token, string AuthMethod)> GetGatewayAuthTokenAsync(
+        CancellationToken cancellationToken
+    )
     {
-        var apiKey = !string.IsNullOrWhiteSpace(Options.ApiKey) ? Options.ApiKey : Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable);
+        var apiKey = !string.IsNullOrWhiteSpace(Options.ApiKey)
+            ? Options.ApiKey
+            : Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable);
         if (!string.IsNullOrWhiteSpace(apiKey))
         {
             return (apiKey!, "api-key");
         }
 
-        var oidcToken = await VercelEnvironment.GetVercelOidcTokenAsync(cancellationToken).ConfigureAwait(false);
+        var oidcToken = await VercelEnvironment
+            .GetVercelOidcTokenAsync(cancellationToken)
+            .ConfigureAwait(false);
         return (oidcToken, "oidc");
     }
 
     /// <summary>Resolves the credential, wrapping a failure in a <see cref="GatewayAuthenticationError"/>.</summary>
-    internal async Task<(string Token, string AuthMethod)> GetRealtimeAuthTokenAsync(CancellationToken cancellationToken)
+    internal async Task<(string Token, string AuthMethod)> GetRealtimeAuthTokenAsync(
+        CancellationToken cancellationToken
+    )
     {
         try
         {
@@ -350,7 +418,12 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            throw GatewayAuthenticationError.CreateContextual(apiKeyProvided: false, oidcTokenProvided: false, statusCode: 401, cause: exception);
+            throw GatewayAuthenticationError.CreateContextual(
+                apiKeyProvided: false,
+                oidcTokenProvided: false,
+                statusCode: 401,
+                cause: exception
+            );
         }
     }
 
@@ -376,11 +449,16 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
             }
         }
 
-        return ProviderValues.WithUserAgentSuffix(headers, "ai-sdk-gateway/" + AiSdkVersion.Version);
+        return ProviderValues.WithUserAgentSuffix(
+            headers,
+            "ai-sdk-gateway/" + AiSdkVersion.Version
+        );
     }
 
     /// <summary>Resolves the credential and builds the auth headers. Maps to <c>getHeaders</c>.</summary>
-    internal async Task<IReadOnlyDictionary<string, string?>> GetHeadersAsync(CancellationToken cancellationToken)
+    internal async Task<IReadOnlyDictionary<string, string?>> GetHeadersAsync(
+        CancellationToken cancellationToken
+    )
     {
         var auth = await GetRealtimeAuthTokenAsync(cancellationToken).ConfigureAwait(false);
         var headers = new Dictionary<string, string?>(StringComparer.Ordinal);
@@ -396,7 +474,11 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
     /// Mints a short-lived client secret (<c>vcst_</c>) through <c>/v1/realtime/client-secrets</c> on the Gateway origin
     /// (not under the <c>BaseUrl</c> path), authenticated with the long-lived Gateway credential. Maps to <c>mintClientSecret</c>.
     /// </summary>
-    internal Task<GatewayMintedClientSecret> MintClientSecretAsync(string modelId, int? expiresAfterSeconds, CancellationToken cancellationToken)
+    internal Task<GatewayMintedClientSecret> MintClientSecretAsync(
+        string modelId,
+        int? expiresAfterSeconds,
+        CancellationToken cancellationToken
+    )
     {
         return MintClientSecretAsync(modelId, expiresAfterSeconds, null, cancellationToken);
     }
@@ -406,7 +488,12 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
     /// secret to a streaming surface (<c>speech</c> or <c>transcription</c>). It is omitted for realtime (the gateway
     /// default) so older gateway deployments keep accepting realtime mints.
     /// </summary>
-    internal async Task<GatewayMintedClientSecret> MintClientSecretAsync(string modelId, int? expiresAfterSeconds, string? routeKind, CancellationToken cancellationToken)
+    internal async Task<GatewayMintedClientSecret> MintClientSecretAsync(
+        string modelId,
+        int? expiresAfterSeconds,
+        string? routeKind,
+        CancellationToken cancellationToken
+    )
     {
         AssertGatewayClientSecretServerEnvironment();
         var auth = await GetRealtimeAuthTokenAsync(cancellationToken).ConfigureAwait(false);
@@ -416,7 +503,10 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
             headers[pair.Key] = pair.Value;
         }
 
-        var url = new Uri(new Uri(Options.BaseUrl, UriKind.Absolute), "/v1/realtime/client-secrets");
+        var url = new Uri(
+            new Uri(Options.BaseUrl, UriKind.Absolute),
+            "/v1/realtime/client-secrets"
+        );
         var body = new JsonObject { ["model"] = modelId };
         if (routeKind is not null)
         {
@@ -430,18 +520,34 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
 
         try
         {
-            using var document = await Http.SendJsonAsync(HttpMethod.Post, url, body.ToJsonString(), headers, cancellationToken).ConfigureAwait(false);
+            using var document = await Http.SendJsonAsync(
+                    HttpMethod.Post,
+                    url,
+                    body.ToJsonString(),
+                    headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             var root = document.RootElement;
-            var token = root.ValueKind == JsonValueKind.Object && root.TryGetProperty("token", out var tokenValue) && tokenValue.ValueKind == JsonValueKind.String
-                ? tokenValue.GetString()
-                : null;
+            var token =
+                root.ValueKind == JsonValueKind.Object
+                && root.TryGetProperty("token", out var tokenValue)
+                && tokenValue.ValueKind == JsonValueKind.String
+                    ? tokenValue.GetString()
+                    : null;
             if (token is null)
             {
-                throw new AiSdkException("AI Gateway client secret response did not include a token.");
+                throw new AiSdkException(
+                    "AI Gateway client secret response did not include a token."
+                );
             }
 
             long? expiresAt = null;
-            if (root.TryGetProperty("expiresAt", out var expiresValue) && expiresValue.ValueKind == JsonValueKind.Number && expiresValue.TryGetInt64(out var expires))
+            if (
+                root.TryGetProperty("expiresAt", out var expiresValue)
+                && expiresValue.ValueKind == JsonValueKind.Number
+                && expiresValue.TryGetInt64(out var expires)
+            )
             {
                 expiresAt = expires;
             }
@@ -459,11 +565,12 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
     /// <c>window</c> global, so this maps <c>typeof globalThis.window !== 'undefined'</c> to the Blazor WebAssembly
     /// runtime. Tests replace it.
     /// </summary>
-    internal Func<bool> IsBrowserEnvironment { get; set; } = static () =>
+    internal Func<bool> IsBrowserEnvironment { get; set; } =
+        static () =>
 #if NET
-        OperatingSystem.IsBrowser();
+            OperatingSystem.IsBrowser();
 #else
-        false;
+            false;
 #endif
 
     /// <summary>Throws when called in a browser. Maps to <c>assertGatewayClientSecretServerEnvironment</c>.</summary>
@@ -471,7 +578,9 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
     {
         if (IsBrowserEnvironment())
         {
-            throw new AiSdkException("AI Gateway client secrets must be minted server-side: minting needs your Gateway credential, which must never reach the browser. Call gateway.ExperimentalRealtimeGetTokenAsync() or gateway.ExperimentalTranscriptionGetTokenAsync() from your server and pass the returned token to the client.");
+            throw new AiSdkException(
+                "AI Gateway client secrets must be minted server-side: minting needs your Gateway credential, which must never reach the browser. Call gateway.ExperimentalRealtimeGetTokenAsync() or gateway.ExperimentalTranscriptionGetTokenAsync() from your server and pass the returned token to the client."
+            );
         }
     }
 
@@ -482,7 +591,9 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
             return await task.ConfigureAwait(false);
         }
 
-        var cancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cancelled = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         using (cancellationToken.Register(() => cancelled.TrySetResult(true)))
         {
             if (await Task.WhenAny(task, cancelled.Task).ConfigureAwait(false) != task)
@@ -503,15 +614,21 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
         IReadOnlyDictionary<string, string?>? resolvedHeaders = null;
         try
         {
-            return await run(CreateConfig(headers => resolvedHeaders = headers)).ConfigureAwait(false);
+            return await run(CreateConfig(headers => resolvedHeaders = headers))
+                .ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            throw GatewayErrors.AsGatewayError(exception, GatewayErrors.ParseAuthMethod(resolvedHeaders ?? new Dictionary<string, string?>()));
+            throw GatewayErrors.AsGatewayError(
+                exception,
+                GatewayErrors.ParseAuthMethod(resolvedHeaders ?? new Dictionary<string, string?>())
+            );
         }
     }
 
-    private GatewayConfig CreateConfig(Action<IReadOnlyDictionary<string, string?>>? onResolved = null)
+    private GatewayConfig CreateConfig(
+        Action<IReadOnlyDictionary<string, string?>>? onResolved = null
+    )
     {
         return new GatewayConfig
         {
@@ -529,7 +646,10 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
     private async Task<GatewayFetchMetadataResponse> FetchMetadataAsync()
     {
         // The fetch is shared by every caller, so a caller's token does not cancel it.
-        var metadata = await WithGatewayErrorAsync(config => new GatewayFetchMetadata(config).GetAvailableModelsAsync()).ConfigureAwait(false);
+        var metadata = await WithGatewayErrorAsync(config =>
+                new GatewayFetchMetadata(config).GetAvailableModelsAsync()
+            )
+            .ConfigureAwait(false);
         lock (_metadataLock)
         {
             _metadataCache = metadata;
@@ -557,7 +677,9 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
                 Options.BaseUrl.TrimEnd('/'),
                 GetHeadersAsync,
                 MintClientSecretAsync,
-                Options.TeamIdOrSlug));
+                Options.TeamIdOrSlug
+            )
+        );
     }
 }
 
@@ -565,7 +687,11 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
 public sealed class GatewayTranscriptionFactoryGetTokenResult
 {
     /// <summary>Creates a result.</summary>
-    public GatewayTranscriptionFactoryGetTokenResult(string token, string url, long? expiresAt = null)
+    public GatewayTranscriptionFactoryGetTokenResult(
+        string token,
+        string url,
+        long? expiresAt = null
+    )
     {
         Token = token ?? throw new ArgumentNullException(nameof(token));
         Url = url ?? throw new ArgumentNullException(nameof(url));
@@ -598,10 +724,8 @@ public sealed class GatewayLanguageModel : ILanguageModel
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<string, string> SupportedUrls { get; } = new Dictionary<string, string>
-    {
-        ["*/*"] = ".*",
-    };
+    public IReadOnlyDictionary<string, string> SupportedUrls { get; } =
+        new Dictionary<string, string> { ["*/*"] = ".*" };
 
     /// <inheritdoc />
     public string Provider => GatewayProvider.ProviderId;
@@ -610,18 +734,31 @@ public sealed class GatewayLanguageModel : ILanguageModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         // Built outside the try so a missing key surfaces as it is.
-        var headers = _provider.Headers("ai-language-model-specification-version", "4", "ai-language-model-id", ModelId, false, options.Headers);
+        var headers = _provider.Headers(
+            "ai-language-model-specification-version",
+            "4",
+            "ai-language-model-id",
+            ModelId,
+            false,
+            options.Headers
+        );
         try
         {
-            using var document = await _provider.Http.SendJsonAsync(
-                HttpMethod.Post,
-                _provider.Route("language-model"),
-                V4Json.CallOptions(options),
-                headers,
-                cancellationToken).ConfigureAwait(false);
+            using var document = await _provider
+                .Http.SendJsonAsync(
+                    HttpMethod.Post,
+                    _provider.Route("language-model"),
+                    V4Json.CallOptions(options),
+                    headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             return V4Json.ParseGenerate(document.RootElement);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -631,29 +768,49 @@ public sealed class GatewayLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         // The request is sent here, so HTTP errors surface from this call as they do upstream.
         var json = V4Json.CallOptions(options);
-        var headers = _provider.Headers("ai-language-model-specification-version", "4", "ai-language-model-id", ModelId, true, options.Headers);
+        var headers = _provider.Headers(
+            "ai-language-model-specification-version",
+            "4",
+            "ai-language-model-id",
+            ModelId,
+            true,
+            options.Headers
+        );
         ProviderSseResponse sse;
         try
         {
-            sse = await _provider.Http.OpenSseResponseAsync(
-                _provider.Route("language-model"),
-                json,
-                headers,
-                cancellationToken).ConfigureAwait(false);
+            sse = await _provider
+                .Http.OpenSseResponseAsync(
+                    _provider.Route("language-model"),
+                    json,
+                    headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             throw GatewayProvider.MapFailure(exception);
         }
 
-        return sse.ToStreamResult(StreamAsync(sse.Events, options.IncludeRawChunks, cancellationToken), json);
+        return sse.ToStreamResult(
+            StreamAsync(sse.Events, options.IncludeRawChunks, cancellationToken),
+            json
+        );
     }
 
-    private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(IAsyncEnumerable<string> events, bool includeRawChunks, [EnumeratorCancellation] CancellationToken cancellationToken)
+    private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
+        IAsyncEnumerable<string> events,
+        bool includeRawChunks,
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         var enumerator = events.GetAsyncEnumerator(cancellationToken);
         try
@@ -726,25 +883,44 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
     public string ModelId { get; }
 
     /// <summary>Embeds values without provider options.</summary>
-    public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, CancellationToken cancellationToken)
+    public Task<EmbeddingResult> DoEmbedAsync(
+        IReadOnlyList<string> values,
+        CancellationToken cancellationToken
+    )
     {
         return DoEmbedAsync(values, null, null, cancellationToken);
     }
 
     /// <inheritdoc />
-    Task<EmbeddingResult> IEmbeddingModel.DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions, IReadOnlyDictionary<string, string?>? headers)
+    Task<EmbeddingResult> IEmbeddingModel.DoEmbedAsync(
+        IReadOnlyList<string> values,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        CancellationToken cancellationToken,
+        int? dimensions,
+        IReadOnlyDictionary<string, string?>? headers
+    )
     {
         return DoEmbedAsync(values, null, headers, cancellationToken, dimensions);
     }
 
     /// <summary>Embeds values and sends <paramref name="providerOptions"/> when it is a JSON object.</summary>
-    public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, JsonElement? providerOptions, CancellationToken cancellationToken)
+    public Task<EmbeddingResult> DoEmbedAsync(
+        IReadOnlyList<string> values,
+        JsonElement? providerOptions,
+        CancellationToken cancellationToken
+    )
     {
         return DoEmbedAsync(values, providerOptions, null, cancellationToken);
     }
 
     /// <summary>Embeds values. Call headers are merged onto the Gateway V4 headers.</summary>
-    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, JsonElement? providerOptions, IReadOnlyDictionary<string, string?>? headers, CancellationToken cancellationToken, int? dimensions = null)
+    public async Task<EmbeddingResult> DoEmbedAsync(
+        IReadOnlyList<string> values,
+        JsonElement? providerOptions,
+        IReadOnlyDictionary<string, string?>? headers,
+        CancellationToken cancellationToken,
+        int? dimensions = null
+    )
     {
         var input = new JsonArray();
         foreach (var value in values)
@@ -766,12 +942,22 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
         JsonDocument document;
         try
         {
-            document = await _provider.Http.SendJsonAsync(
-                HttpMethod.Post,
-                _provider.Route("embedding-model"),
-                body.ToJsonString(),
-                _provider.Headers("ai-embedding-model-specification-version", "4", "ai-model-id", ModelId, null, headers),
-                cancellationToken).ConfigureAwait(false);
+            document = await _provider
+                .Http.SendJsonAsync(
+                    HttpMethod.Post,
+                    _provider.Route("embedding-model"),
+                    body.ToJsonString(),
+                    _provider.Headers(
+                        "ai-embedding-model-specification-version",
+                        "4",
+                        "ai-model-id",
+                        ModelId,
+                        null,
+                        headers
+                    ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
         catch (ApiException exception)
         {
@@ -785,7 +971,9 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
         using (document)
         {
             var vectors = new List<float[]>();
-            foreach (var embedding in document.RootElement.GetProperty("embeddings").EnumerateArray())
+            foreach (
+                var embedding in document.RootElement.GetProperty("embeddings").EnumerateArray()
+            )
             {
                 var vector = new float[embedding.GetArrayLength()];
                 var index = 0;
@@ -798,7 +986,11 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
             }
 
             int? tokens = null;
-            if (document.RootElement.TryGetProperty("usage", out var usage) && usage.ValueKind == JsonValueKind.Object && usage.TryGetProperty("tokens", out var tokenCount))
+            if (
+                document.RootElement.TryGetProperty("usage", out var usage)
+                && usage.ValueKind == JsonValueKind.Object
+                && usage.TryGetProperty("tokens", out var tokenCount)
+            )
             {
                 tokens = tokenCount.GetInt32();
             }
@@ -843,42 +1035,66 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
     }
 
     /// <inheritdoc />
-    public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+    public async Task<ImageGenerationResult> DoGenerateAsync(
+        ImageCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         if (options is null)
         {
             throw new ArgumentNullException(nameof(options));
         }
 
-        var result = await DoGenerateAsync(options.ToModelCall(cancellationToken), cancellationToken).ConfigureAwait(false);
+        var result = await DoGenerateAsync(
+                options.ToModelCall(cancellationToken),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var images = new List<ProviderImage>();
         foreach (var image in result.Images)
         {
             var bytes = image is string text ? Convert.FromBase64String(text) : (byte[])image!;
-            images.Add(new ProviderImage(MediaTypes.DetectMediaType(bytes, "image") ?? "image/png", bytes, null));
+            images.Add(
+                new ProviderImage(
+                    MediaTypes.DetectMediaType(bytes, "image") ?? "image/png",
+                    bytes,
+                    null
+                )
+            );
         }
 
         var response = new ImageResponseInfo(
             result.Response.Timestamp ?? DateTime.UtcNow,
             result.Response.ModelId,
-            result.Response.Headers);
-        var usage = result.Usage is null ? null : new LanguageModelUsage(result.Usage.InputTokens, result.Usage.OutputTokens, result.Usage.TotalTokens);
-        return new ImageGenerationResult(images, result.Warnings.Select(warning => warning.ToCallWarning()).ToList(), response, usage);
+            result.Response.Headers
+        );
+        var usage = result.Usage is null
+            ? null
+            : new LanguageModelUsage(
+                result.Usage.InputTokens,
+                result.Usage.OutputTokens,
+                result.Usage.TotalTokens
+            );
+        return new ImageGenerationResult(
+            images,
+            result.Warnings.Select(warning => warning.ToCallWarning()).ToList(),
+            response,
+            usage
+        );
     }
 
     /// <inheritdoc />
-    public async Task<ImageModelResult> DoGenerateAsync(ImageModelCall call, CancellationToken cancellationToken)
+    public async Task<ImageModelResult> DoGenerateAsync(
+        ImageModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (call is null)
         {
             throw new ArgumentNullException(nameof(call));
         }
 
-        var body = new JsonObject
-        {
-            ["prompt"] = call.Prompt,
-            ["n"] = call.N,
-        };
+        var body = new JsonObject { ["prompt"] = call.Prompt, ["n"] = call.N };
         if (!string.IsNullOrEmpty(call.Size))
         {
             body["size"] = call.Size;
@@ -924,12 +1140,22 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
         ProviderTextResponse response;
         try
         {
-            response = await _provider.Http.SendJsonStringAsync(
-                HttpMethod.Post,
-                _provider.Route("image-model"),
-                body.ToJsonString(),
-                _provider.Headers("ai-image-model-specification-version", "4", "ai-model-id", ModelId, null, headers),
-                cancellationToken).ConfigureAwait(false);
+            response = await _provider
+                .Http.SendJsonStringAsync(
+                    HttpMethod.Post,
+                    _provider.Route("image-model"),
+                    body.ToJsonString(),
+                    _provider.Headers(
+                        "ai-image-model-specification-version",
+                        "4",
+                        "ai-model-id",
+                        ModelId,
+                        null,
+                        headers
+                    ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
         catch (ApiException exception)
         {
@@ -940,7 +1166,9 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
             throw GatewayProvider.MapFailure(exception);
         }
 
-        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
+        using var document = JsonDocument.Parse(
+            string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+        );
         var root = document.RootElement;
         var images = new List<object?>();
         if (root.TryGetProperty("images", out var array) && array.ValueKind == JsonValueKind.Array)
@@ -951,7 +1179,14 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
                 {
                     images.Add(item.GetString());
                 }
-                else if (item.ValueKind == JsonValueKind.Object && (item.TryGetProperty("b64", out var b64) || item.TryGetProperty("base64", out b64)) && b64.ValueKind == JsonValueKind.String)
+                else if (
+                    item.ValueKind == JsonValueKind.Object
+                    && (
+                        item.TryGetProperty("b64", out var b64)
+                        || item.TryGetProperty("base64", out b64)
+                    )
+                    && b64.ValueKind == JsonValueKind.String
+                )
                 {
                     images.Add(b64.GetString());
                 }
@@ -959,7 +1194,10 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
         }
 
         var warnings = new List<OperationWarning>();
-        if (root.TryGetProperty("warnings", out var warningArray) && warningArray.ValueKind == JsonValueKind.Array)
+        if (
+            root.TryGetProperty("warnings", out var warningArray)
+            && warningArray.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var warning in warningArray.EnumerateArray())
             {
@@ -968,24 +1206,36 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
         }
 
         OperationUsage? usage = null;
-        if (root.TryGetProperty("usage", out var usageElement) && usageElement.ValueKind == JsonValueKind.Object)
+        if (
+            root.TryGetProperty("usage", out var usageElement)
+            && usageElement.ValueKind == JsonValueKind.Object
+        )
         {
-            usage = new OperationUsage(ReadCount(usageElement, "inputTokens"), ReadCount(usageElement, "outputTokens"), ReadCount(usageElement, "totalTokens"));
+            usage = new OperationUsage(
+                ReadCount(usageElement, "inputTokens"),
+                ReadCount(usageElement, "outputTokens"),
+                ReadCount(usageElement, "totalTokens")
+            );
         }
 
-        JsonElement? providerMetadata = root.TryGetProperty("providerMetadata", out var metadata) && metadata.ValueKind == JsonValueKind.Object
-            ? metadata.Clone()
-            : null;
-        bool? isRetryable = root.TryGetProperty("isRetryable", out var retryable) && retryable.ValueKind is JsonValueKind.True or JsonValueKind.False
-            ? retryable.GetBoolean()
-            : null;
+        JsonElement? providerMetadata =
+            root.TryGetProperty("providerMetadata", out var metadata)
+            && metadata.ValueKind == JsonValueKind.Object
+                ? metadata.Clone()
+                : null;
+        bool? isRetryable =
+            root.TryGetProperty("isRetryable", out var retryable)
+            && retryable.ValueKind is JsonValueKind.True or JsonValueKind.False
+                ? retryable.GetBoolean()
+                : null;
         return new ImageModelResult(
             images,
             warnings,
             usage,
             providerMetadata,
             new ProviderResponse(response.Headers, timestamp: DateTime.UtcNow, modelId: ModelId),
-            isRetryable);
+            isRetryable
+        );
     }
 
     private static JsonNode EncodeFile(ImageModelFile file)
@@ -1014,19 +1264,32 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
 
     internal static OperationWarning ReadWarning(JsonElement warning)
     {
-        string? Text(string name) => warning.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        string? Text(string name) =>
+            warning.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
         var type = Text("type") ?? "other";
         return type switch
         {
-            "deprecated" => new OperationWarning(type, message: Text("message"), setting: Text("setting")),
-            "unsupported" or "compatibility" => new OperationWarning(type, feature: Text("feature"), details: Text("details")),
+            "deprecated" => new OperationWarning(
+                type,
+                message: Text("message"),
+                setting: Text("setting")
+            ),
+            "unsupported" or "compatibility" => new OperationWarning(
+                type,
+                feature: Text("feature"),
+                details: Text("details")
+            ),
             _ => new OperationWarning(type, message: Text("message")),
         };
     }
 
     private static int? ReadCount(JsonElement usage, string name)
     {
-        return usage.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number ? (int)value.GetDouble() : null;
+        return usage.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number
+            ? (int)value.GetDouble()
+            : null;
     }
 }
 
@@ -1034,7 +1297,10 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
 public static class GatewayServiceCollectionExtensions
 {
     /// <summary>Registers <see cref="GatewayProvider"/>.</summary>
-    public static IServiceCollection AddGateway(this IServiceCollection services, Action<GatewayOptions>? configure = null)
+    public static IServiceCollection AddGateway(
+        this IServiceCollection services,
+        Action<GatewayOptions>? configure = null
+    )
     {
         if (services is null)
         {
@@ -1046,7 +1312,8 @@ public static class GatewayServiceCollectionExtensions
         {
             var options = new GatewayOptions();
             configure?.Invoke(options);
-            var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient(GatewayProvider.ProviderId);
+            var http = sp.GetRequiredService<IHttpClientFactory>()
+                .CreateClient(GatewayProvider.ProviderId);
             return new GatewayProvider(options, http);
         });
         return services;

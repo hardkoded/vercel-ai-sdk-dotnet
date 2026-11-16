@@ -13,19 +13,23 @@ namespace Vercel.AI.Tests.Upstream.GenerateText.GenerateText;
 /// <summary>Port of <c>generate-text.test.ts</c> &gt; <c>generateText &gt; programmatic tool calling</c>.</summary>
 public sealed class ProgrammaticToolCallingTests
 {
-    private const string Id = "packages/ai/src/generate-text/generate-text.test.ts::generateText > programmatic tool calling::";
+    private const string Id =
+        "packages/ai/src/generate-text/generate-text.test.ts::generateText > programmatic tool calling::";
 
     [Fact]
     [UpstreamTest(
         Id + "should stop for client tool approval while a provider tool result is deferred",
         Coverage = UpstreamCoverage.Partial,
-        Note = "The provider tool is declared without supportsDeferredResults, which the port does not have.")]
+        Note = "The provider tool is declared without supportsDeferredResults, which the port does not have."
+    )]
     public async Task Should_stop_for_client_tool_approval_while_a_provider_tool_result_is_deferred()
     {
         var executeCalls = 0;
         var modelCallCount = 0;
         using var args = JsonDocument.Parse("{}");
-        using var programSchema = JsonDocument.Parse("{\"type\":\"object\",\"properties\":{\"code\":{\"type\":\"string\"}},\"required\":[\"code\"],\"additionalProperties\":false}");
+        using var programSchema = JsonDocument.Parse(
+            "{\"type\":\"object\",\"properties\":{\"code\":{\"type\":\"string\"}},\"required\":[\"code\"],\"additionalProperties\":false}"
+        );
         var getHours = Tool.Function(
             "getHours",
             null,
@@ -34,35 +38,59 @@ public sealed class ProgrammaticToolCallingTests
             {
                 executeCalls++;
                 return Task.FromResult("8");
-            });
+            }
+        );
 
-        var result = await Client().GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = new TestLanguageModel
-            {
-                OnGenerate = _ =>
+        var result = await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
                 {
-                    modelCallCount++;
-                    return new LanguageModelGenerateResult(
-                        new GeneratedContent[]
+                    Model = new TestLanguageModel
+                    {
+                        OnGenerate = _ =>
                         {
-                            new GeneratedToolCall("program-call", "program", "{\"code\":\"getHours()\"}") { ProviderExecuted = true },
-                            new GeneratedToolCall("get-hours-call", "getHours", "{\"member\":\"Ada\"}"),
+                            modelCallCount++;
+                            return new LanguageModelGenerateResult(
+                                new GeneratedContent[]
+                                {
+                                    new GeneratedToolCall(
+                                        "program-call",
+                                        "program",
+                                        "{\"code\":\"getHours()\"}"
+                                    )
+                                    {
+                                        ProviderExecuted = true,
+                                    },
+                                    new GeneratedToolCall(
+                                        "get-hours-call",
+                                        "getHours",
+                                        "{\"member\":\"Ada\"}"
+                                    ),
+                                },
+                                FinishReason.ToolCalls,
+                                new LanguageModelUsage(3, 10, 13)
+                            );
                         },
-                        FinishReason.ToolCalls,
-                        new LanguageModelUsage(3, 10, 13));
-                },
-            },
-            Tools = new[]
-            {
-                Tool.ProviderDefined("test.program", "program", args.RootElement.Clone(), programSchema.RootElement.Clone()),
-                getHours,
-            },
-            ToolApproval = new ToolApprovalConfiguration { { "getHours", "user-approval" } },
-            Prompt = "Get Ada hours with a program.",
-            StopWhen = StopWhen.IsStepCount(3),
-            GenerateId = MockId("id"),
-        });
+                    },
+                    Tools = new[]
+                    {
+                        Tool.ProviderDefined(
+                            "test.program",
+                            "program",
+                            args.RootElement.Clone(),
+                            programSchema.RootElement.Clone()
+                        ),
+                        getHours,
+                    },
+                    ToolApproval = new ToolApprovalConfiguration
+                    {
+                        { "getHours", "user-approval" },
+                    },
+                    Prompt = "Get Ada hours with a program.",
+                    StopWhen = StopWhen.IsStepCount(3),
+                    GenerateId = MockId("id"),
+                }
+            );
 
         Assert.Equal(1, modelCallCount);
         Assert.Equal(0, executeCalls);

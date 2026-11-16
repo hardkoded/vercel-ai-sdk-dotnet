@@ -44,9 +44,11 @@ public static class GenAiConventions
         var lower = provider.ToLowerInvariant();
         foreach (var (prefix, name) in ProviderPrefixes)
         {
-            if (lower == prefix
+            if (
+                lower == prefix
                 || lower.StartsWith(prefix + ".", StringComparison.Ordinal)
-                || lower.StartsWith(prefix + "-", StringComparison.Ordinal))
+                || lower.StartsWith(prefix + "-", StringComparison.Ordinal)
+            )
             {
                 return name;
             }

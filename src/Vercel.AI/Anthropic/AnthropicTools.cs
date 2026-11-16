@@ -42,7 +42,12 @@ public sealed class AnthropicToolDefinition
 public sealed class AnthropicPreparedTools
 {
     /// <summary>Creates a prepared tool set.</summary>
-    public AnthropicPreparedTools(JsonArray? tools, JsonObject? toolChoice, IReadOnlyList<AnthropicWarning> warnings, IReadOnlyList<string> betas)
+    public AnthropicPreparedTools(
+        JsonArray? tools,
+        JsonObject? toolChoice,
+        IReadOnlyList<AnthropicWarning> warnings,
+        IReadOnlyList<string> betas
+    )
     {
         Tools = tools;
         ToolChoice = toolChoice;
@@ -77,7 +82,8 @@ public static class AnthropicToolPreparer
         bool supportsStrictTools = false,
         bool defaultEagerInputStreaming = false,
         bool rejectsForcedToolUse = false,
-        bool hasInlineTools = false)
+        bool hasInlineTools = false
+    )
     {
         var warnings = new List<AnthropicWarning>();
         var betas = new List<string>();
@@ -104,25 +110,44 @@ public static class AnthropicToolPreparer
 
             var anthropicOptions = AnthropicJson.Anthropic(tool.ProviderOptions);
             var cache = validator.Get(tool.ProviderOptions, "tool definition", true);
-            var eager = anthropicOptions == null ? defaultEagerInputStreaming : AnthropicJson.Bool(anthropicOptions.Value, "eagerInputStreaming") ?? defaultEagerInputStreaming;
-            bool? defer = anthropicOptions == null ? null : AnthropicJson.Bool(anthropicOptions.Value, "deferLoading");
+            var eager =
+                anthropicOptions == null
+                    ? defaultEagerInputStreaming
+                    : AnthropicJson.Bool(anthropicOptions.Value, "eagerInputStreaming")
+                        ?? defaultEagerInputStreaming;
+            bool? defer =
+                anthropicOptions == null
+                    ? null
+                    : AnthropicJson.Bool(anthropicOptions.Value, "deferLoading");
             JsonArray? callers = null;
-            if (anthropicOptions != null && AnthropicJson.Property(anthropicOptions.Value, "allowedCallers") is { } callerValue && callerValue.ValueKind == JsonValueKind.Array)
+            if (
+                anthropicOptions != null
+                && AnthropicJson.Property(anthropicOptions.Value, "allowedCallers")
+                    is { } callerValue
+                && callerValue.ValueKind == JsonValueKind.Array
+            )
             {
                 callers = JsonNode.Parse(callerValue.GetRawText()) as JsonArray;
             }
 
             if (!supportsStrictTools && tool.Strict == true)
             {
-                warnings.Add(new AnthropicWarning(
-                    "unsupported",
-                    "strict",
-                    "Tool '" + tool.Name + "' has strict: true, but strict mode is not supported by this provider. The strict property will be ignored."));
+                warnings.Add(
+                    new AnthropicWarning(
+                        "unsupported",
+                        "strict",
+                        "Tool '"
+                            + tool.Name
+                            + "' has strict: true, but strict mode is not supported by this provider. The strict property will be ignored."
+                    )
+                );
             }
 
             var node = new JsonObject { ["name"] = tool.Name };
             AnthropicJson.Set(node, "description", tool.Description);
-            node["input_schema"] = tool.InputSchema is { } schema ? AnthropicJson.Node(schema) : new JsonObject();
+            node["input_schema"] = tool.InputSchema is { } schema
+                ? AnthropicJson.Node(schema)
+                : new JsonObject();
             AnthropicJson.Set(node, "cache_control", cache);
             if (eager)
             {
@@ -149,7 +174,10 @@ public static class AnthropicToolPreparer
                 var inputs = new JsonArray();
                 foreach (var example in examples.EnumerateArray())
                 {
-                    if (example.ValueKind == JsonValueKind.Object && example.TryGetProperty("input", out var input))
+                    if (
+                        example.ValueKind == JsonValueKind.Object
+                        && example.TryGetProperty("input", out var input)
+                    )
                     {
                         inputs.Add(AnthropicJson.Node(input));
                     }
@@ -192,27 +220,55 @@ public static class AnthropicToolPreparer
         switch (toolChoiceType)
         {
             case "auto":
-                return new AnthropicPreparedTools(declared, Choice("auto", null, disableParallelToolUse), warnings, betas);
+                return new AnthropicPreparedTools(
+                    declared,
+                    Choice("auto", null, disableParallelToolUse),
+                    warnings,
+                    betas
+                );
             case "required":
                 if (rejectsForcedToolUse)
                 {
-                    warnings.Add(new AnthropicWarning(
-                        "unsupported",
-                        "toolChoice",
-                        "toolChoice 'required' is not supported with this model or thinking configuration. Using 'auto' instead. Instruct the model to use a tool in the prompt and verify that a tool call was made."));
-                    return new AnthropicPreparedTools(declared, Choice("auto", null, disableParallelToolUse), warnings, betas);
+                    warnings.Add(
+                        new AnthropicWarning(
+                            "unsupported",
+                            "toolChoice",
+                            "toolChoice 'required' is not supported with this model or thinking configuration. Using 'auto' instead. Instruct the model to use a tool in the prompt and verify that a tool call was made."
+                        )
+                    );
+                    return new AnthropicPreparedTools(
+                        declared,
+                        Choice("auto", null, disableParallelToolUse),
+                        warnings,
+                        betas
+                    );
                 }
 
-                return new AnthropicPreparedTools(declared, Choice("any", null, disableParallelToolUse), warnings, betas);
+                return new AnthropicPreparedTools(
+                    declared,
+                    Choice("any", null, disableParallelToolUse),
+                    warnings,
+                    betas
+                );
             case "none":
-                return new AnthropicPreparedTools(declared, Choice("none", null, null), warnings, betas);
+                return new AnthropicPreparedTools(
+                    declared,
+                    Choice("none", null, null),
+                    warnings,
+                    betas
+                );
             case "tool":
                 if (rejectsForcedToolUse)
                 {
-                    warnings.Add(new AnthropicWarning(
-                        "unsupported",
-                        "toolChoice",
-                        "toolChoice 'tool' is not supported with this model or thinking configuration. Only the '" + toolName + "' tool is sent with 'auto' tool choice. Instruct the model to use the tool in the prompt and verify that a tool call was made."));
+                    warnings.Add(
+                        new AnthropicWarning(
+                            "unsupported",
+                            "toolChoice",
+                            "toolChoice 'tool' is not supported with this model or thinking configuration. Only the '"
+                                + toolName
+                                + "' tool is sent with 'auto' tool choice. Instruct the model to use the tool in the prompt and verify that a tool call was made."
+                        )
+                    );
                     var filtered = declared == null ? null : new JsonArray();
                     foreach (var item in declared ?? new JsonArray())
                     {
@@ -222,12 +278,24 @@ public static class AnthropicToolPreparer
                         }
                     }
 
-                    return new AnthropicPreparedTools(filtered, Choice("auto", null, disableParallelToolUse), warnings, betas);
+                    return new AnthropicPreparedTools(
+                        filtered,
+                        Choice("auto", null, disableParallelToolUse),
+                        warnings,
+                        betas
+                    );
                 }
 
-                return new AnthropicPreparedTools(declared, Choice("tool", toolName, disableParallelToolUse), warnings, betas);
+                return new AnthropicPreparedTools(
+                    declared,
+                    Choice("tool", toolName, disableParallelToolUse),
+                    warnings,
+                    betas
+                );
             default:
-                throw new Vercel.AI.Provider.AiSdkException("Unsupported tool choice type: " + toolChoiceType);
+                throw new Vercel.AI.Provider.AiSdkException(
+                    "Unsupported tool choice type: " + toolChoiceType
+                );
         }
     }
 
@@ -243,7 +311,12 @@ public static class AnthropicToolPreparer
         return choice;
     }
 
-    private static void AddProviderTool(AnthropicToolDefinition tool, JsonArray prepared, List<string> betas, List<AnthropicWarning> warnings)
+    private static void AddProviderTool(
+        AnthropicToolDefinition tool,
+        JsonArray prepared,
+        List<string> betas,
+        List<AnthropicWarning> warnings
+    )
     {
         var id = tool.Id ?? string.Empty;
         var args = tool.Args ?? default;
@@ -251,14 +324,32 @@ public static class AnthropicToolPreparer
         {
             case "anthropic.code_execution_20250522":
                 AddBeta(betas, "code-execution-2025-05-22");
-                prepared.Add(new JsonObject { ["type"] = "code_execution_20250522", ["name"] = "code_execution" });
+                prepared.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "code_execution_20250522",
+                        ["name"] = "code_execution",
+                    }
+                );
                 return;
             case "anthropic.code_execution_20250825":
                 AddBeta(betas, "code-execution-2025-08-25");
-                prepared.Add(new JsonObject { ["type"] = "code_execution_20250825", ["name"] = "code_execution" });
+                prepared.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "code_execution_20250825",
+                        ["name"] = "code_execution",
+                    }
+                );
                 return;
             case "anthropic.code_execution_20260120":
-                prepared.Add(new JsonObject { ["type"] = "code_execution_20260120", ["name"] = "code_execution" });
+                prepared.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "code_execution_20260120",
+                        ["name"] = "code_execution",
+                    }
+                );
                 return;
             case "anthropic.computer_20241022":
                 AddBeta(betas, "computer-use-2024-10-22");
@@ -277,21 +368,47 @@ public static class AnthropicToolPreparer
                 return;
             case "anthropic.text_editor_20241022":
                 AddBeta(betas, "computer-use-2024-10-22");
-                prepared.Add(new JsonObject { ["name"] = "str_replace_editor", ["type"] = "text_editor_20241022" });
+                prepared.Add(
+                    new JsonObject
+                    {
+                        ["name"] = "str_replace_editor",
+                        ["type"] = "text_editor_20241022",
+                    }
+                );
                 return;
             case "anthropic.text_editor_20250124":
                 AddBeta(betas, "computer-use-2025-01-24");
-                prepared.Add(new JsonObject { ["name"] = "str_replace_editor", ["type"] = "text_editor_20250124" });
+                prepared.Add(
+                    new JsonObject
+                    {
+                        ["name"] = "str_replace_editor",
+                        ["type"] = "text_editor_20250124",
+                    }
+                );
                 return;
             case "anthropic.text_editor_20250429":
                 AddBeta(betas, "computer-use-2025-01-24");
-                prepared.Add(new JsonObject { ["name"] = "str_replace_based_edit_tool", ["type"] = "text_editor_20250429" });
+                prepared.Add(
+                    new JsonObject
+                    {
+                        ["name"] = "str_replace_based_edit_tool",
+                        ["type"] = "text_editor_20250429",
+                    }
+                );
                 return;
             case "anthropic.text_editor_20250728":
-                var editor = new JsonObject { ["name"] = "str_replace_based_edit_tool", ["type"] = "text_editor_20250728" };
+                var editor = new JsonObject
+                {
+                    ["name"] = "str_replace_based_edit_tool",
+                    ["type"] = "text_editor_20250728",
+                };
                 if (args.ValueKind == JsonValueKind.Object)
                 {
-                    AnthropicJson.Set(editor, "max_characters", AnthropicJson.Int(args, "maxCharacters"));
+                    AnthropicJson.Set(
+                        editor,
+                        "max_characters",
+                        AnthropicJson.Int(args, "maxCharacters")
+                    );
                 }
 
                 prepared.Add(editor);
@@ -330,10 +447,22 @@ public static class AnthropicToolPreparer
                 prepared.Add(Fetch("web_fetch_20260318", args, true));
                 return;
             case "anthropic.tool_search_regex_20251119":
-                prepared.Add(new JsonObject { ["type"] = "tool_search_tool_regex_20251119", ["name"] = "tool_search_tool_regex" });
+                prepared.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "tool_search_tool_regex_20251119",
+                        ["name"] = "tool_search_tool_regex",
+                    }
+                );
                 return;
             case "anthropic.tool_search_bm25_20251119":
-                prepared.Add(new JsonObject { ["type"] = "tool_search_tool_bm25_20251119", ["name"] = "tool_search_tool_bm25" });
+                prepared.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "tool_search_tool_bm25_20251119",
+                        ["name"] = "tool_search_tool_bm25",
+                    }
+                );
                 return;
             case "anthropic.advisor_20260301":
                 AddBeta(betas, "advisor-tool-2026-03-01");
@@ -355,7 +484,11 @@ public static class AnthropicToolPreparer
             ["display_height_px"] = AnthropicJson.Int(args, "displayHeightPx") ?? 0,
             ["display_number"] = AnthropicJson.Int(args, "displayNumber") ?? 0,
         };
-        if (zoom && args.ValueKind == JsonValueKind.Object && args.TryGetProperty("enableZoom", out _))
+        if (
+            zoom
+            && args.ValueKind == JsonValueKind.Object
+            && args.TryGetProperty("enableZoom", out _)
+        )
         {
             node["enable_zoom"] = AnthropicJson.Bool(args, "enableZoom") ?? false;
         }
@@ -366,7 +499,11 @@ public static class AnthropicToolPreparer
     private static JsonObject Toolset(JsonElement args)
     {
         var node = new JsonObject { ["type"] = "computer_toolset_20260801" };
-        if (args.ValueKind == JsonValueKind.Object && args.TryGetProperty("configs", out var configs) && configs.ValueKind == JsonValueKind.Object)
+        if (
+            args.ValueKind == JsonValueKind.Object
+            && args.TryGetProperty("configs", out var configs)
+            && configs.ValueKind == JsonValueKind.Object
+        )
         {
             var mapped = new JsonObject();
             foreach (var member in configs.EnumerateObject())
@@ -398,13 +535,22 @@ public static class AnthropicToolPreparer
         return node;
     }
 
-    private static JsonObject Web(string type, string name, JsonElement args, bool responseInclusion)
+    private static JsonObject Web(
+        string type,
+        string name,
+        JsonElement args,
+        bool responseInclusion
+    )
     {
         var node = new JsonObject { ["type"] = type, ["name"] = name };
         CopyOptional(node, args, "maxUses", "max_uses");
         CopyArray(node, args, "allowedDomains", "allowed_domains");
         CopyArray(node, args, "blockedDomains", "blocked_domains");
-        if (args.ValueKind == JsonValueKind.Object && args.TryGetProperty("userLocation", out var location) && location.ValueKind == JsonValueKind.Object)
+        if (
+            args.ValueKind == JsonValueKind.Object
+            && args.TryGetProperty("userLocation", out var location)
+            && location.ValueKind == JsonValueKind.Object
+        )
         {
             node["user_location"] = AnthropicJson.Node(location);
         }
@@ -421,7 +567,10 @@ public static class AnthropicToolPreparer
     {
         var node = Web(type, "web_fetch", args, false);
         CopyOptional(node, args, "maxContentTokens", "max_content_tokens");
-        if (args.ValueKind == JsonValueKind.Object && args.TryGetProperty("citations", out var citations))
+        if (
+            args.ValueKind == JsonValueKind.Object
+            && args.TryGetProperty("citations", out var citations)
+        )
         {
             node["citations"] = AnthropicJson.Node(citations);
         }
@@ -448,23 +597,43 @@ public static class AnthropicToolPreparer
             throw new Vercel.AI.Provider.AiSdkException("advisor_20260301 requires a model.");
         }
 
-        if (args.ValueKind == JsonValueKind.Object && args.TryGetProperty("maxTokens", out var maxTokens))
+        if (
+            args.ValueKind == JsonValueKind.Object
+            && args.TryGetProperty("maxTokens", out var maxTokens)
+        )
         {
-            if (maxTokens.ValueKind != JsonValueKind.Number || !maxTokens.TryGetInt32(out var integer) || Math.Abs(maxTokens.GetDouble() - integer) > 0.0000001)
+            if (
+                maxTokens.ValueKind != JsonValueKind.Number
+                || !maxTokens.TryGetInt32(out var integer)
+                || Math.Abs(maxTokens.GetDouble() - integer) > 0.0000001
+            )
             {
-                throw new Vercel.AI.Provider.AiSdkException("advisor_20260301 maxTokens must be an integer.");
+                throw new Vercel.AI.Provider.AiSdkException(
+                    "advisor_20260301 maxTokens must be an integer."
+                );
             }
 
             if (integer < 1024)
             {
-                throw new Vercel.AI.Provider.AiSdkException("advisor_20260301 maxTokens must be at least 1024.");
+                throw new Vercel.AI.Provider.AiSdkException(
+                    "advisor_20260301 maxTokens must be at least 1024."
+                );
             }
         }
 
-        var node = new JsonObject { ["type"] = "advisor_20260301", ["name"] = "advisor", ["model"] = model };
+        var node = new JsonObject
+        {
+            ["type"] = "advisor_20260301",
+            ["name"] = "advisor",
+            ["model"] = model,
+        };
         CopyOptional(node, args, "maxUses", "max_uses");
         CopyOptional(node, args, "maxTokens", "max_tokens");
-        if (args.ValueKind == JsonValueKind.Object && args.TryGetProperty("caching", out var caching) && caching.ValueKind == JsonValueKind.Object)
+        if (
+            args.ValueKind == JsonValueKind.Object
+            && args.TryGetProperty("caching", out var caching)
+            && caching.ValueKind == JsonValueKind.Object
+        )
         {
             node["caching"] = AnthropicJson.Node(caching);
         }
@@ -481,7 +650,12 @@ public static class AnthropicToolPreparer
         }
     }
 
-    private static void CopyOptionalString(JsonObject target, JsonElement args, string from, string to)
+    private static void CopyOptionalString(
+        JsonObject target,
+        JsonElement args,
+        string from,
+        string to
+    )
     {
         var value = AnthropicJson.String(args, from);
         if (value != null)
@@ -517,7 +691,8 @@ public static class AnthropicBashTool
     public static async Task<AnthropicBashResult> ExecuteAsync(
         string command,
         Func<string, CancellationToken, Task<AnthropicBashResult>> sandbox,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         if (sandbox == null)
         {
@@ -532,7 +707,12 @@ public static class AnthropicBashTool
 public sealed class AnthropicBashResult
 {
     /// <summary>Creates a bash result.</summary>
-    public AnthropicBashResult(int exitCode, string stdout, string stderr, CancellationToken cancellationToken)
+    public AnthropicBashResult(
+        int exitCode,
+        string stdout,
+        string stderr,
+        CancellationToken cancellationToken
+    )
     {
         ExitCode = exitCode;
         Stdout = stdout ?? string.Empty;

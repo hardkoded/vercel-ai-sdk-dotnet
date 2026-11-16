@@ -11,7 +11,8 @@ namespace Vercel.AI.Tests.Upstream.Xai.ConvertToXaiResponsesInput;
 /// <summary>Helpers shared by the <c>convert-to-xai-responses-input.test.ts</c> ports.</summary>
 internal static class ConvertToXaiResponsesInputSupport
 {
-    internal const string TestFile = "packages/xai/src/responses/convert-to-xai-responses-input.test.ts::convertToXaiResponsesInput";
+    internal const string TestFile =
+        "packages/xai/src/responses/convert-to-xai-responses-input.test.ts::convertToXaiResponsesInput";
 
     internal static JsonArray Convert(params ModelMessage[] prompt)
     {

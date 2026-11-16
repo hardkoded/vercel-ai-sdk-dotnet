@@ -28,9 +28,20 @@ public sealed class FalImageModel : IImageModel, IImageCaller
         ("safetyTolerance", "safety_tolerance"),
     };
 
-    private static readonly string[] CamelOnlyOptions = { "strength", "acceleration", "useMultipleImages" };
+    private static readonly string[] CamelOnlyOptions =
+    {
+        "strength",
+        "acceleration",
+        "useMultipleImages",
+    };
 
-    private static readonly HashSet<string> ResponseFieldsOutsideMetadata = new HashSet<string> { "images", "prompt", "has_nsfw_concepts", "nsfw_content_detected" };
+    private static readonly HashSet<string> ResponseFieldsOutsideMetadata = new HashSet<string>
+    {
+        "images",
+        "prompt",
+        "has_nsfw_concepts",
+        "nsfw_content_detected",
+    };
 
     private readonly FalProvider _provider;
     private readonly Func<DateTime>? _clock;
@@ -63,24 +74,24 @@ public sealed class FalImageModel : IImageModel, IImageCaller
             return ModelId switch
             {
                 "fal-ai/flux-2/edit"
-                    or "fal-ai/flux-pro/kontext"
-                    or "fal-ai/flux-pro/kontext/max"
-                    or "fal-ai/flux-general/image-to-image"
-                    or "fal-ai/flux-general/inpainting"
-                    or "fal-ai/flux-lora/image-to-image"
-                    or "fal-ai/flux-lora/inpainting"
-                    or "fal-ai/flux/dev/image-to-image"
-                    or "fal-ai/flux/krea/image-to-image"
-                    or "fal-ai/recraft/v3/image-to-image" => true,
+                or "fal-ai/flux-pro/kontext"
+                or "fal-ai/flux-pro/kontext/max"
+                or "fal-ai/flux-general/image-to-image"
+                or "fal-ai/flux-general/inpainting"
+                or "fal-ai/flux-lora/image-to-image"
+                or "fal-ai/flux-lora/inpainting"
+                or "fal-ai/flux/dev/image-to-image"
+                or "fal-ai/flux/krea/image-to-image"
+                or "fal-ai/recraft/v3/image-to-image" => true,
                 "bria/text-to-image/3.2"
-                    or "fal-ai/bria/text-to-image/base"
-                    or "fal-ai/bria/text-to-image/fast"
-                    or "fal-ai/bria/text-to-image/hd"
-                    or "fal-ai/bytedance/dreamina/v3.1/text-to-image"
-                    or "fal-ai/flux-kontext-lora/text-to-image"
-                    or "fal-ai/recraft/v3/text-to-image"
-                    or "fal-ai/wan/v2.2-5b/text-to-image"
-                    or "fal-ai/wan/v2.2-a14b/text-to-image" => false,
+                or "fal-ai/bria/text-to-image/base"
+                or "fal-ai/bria/text-to-image/fast"
+                or "fal-ai/bria/text-to-image/hd"
+                or "fal-ai/bytedance/dreamina/v3.1/text-to-image"
+                or "fal-ai/flux-kontext-lora/text-to-image"
+                or "fal-ai/recraft/v3/text-to-image"
+                or "fal-ai/wan/v2.2-5b/text-to-image"
+                or "fal-ai/wan/v2.2-a14b/text-to-image" => false,
                 _ => null,
             };
         }
@@ -91,7 +102,10 @@ public sealed class FalImageModel : IImageModel, IImageCaller
     {
         get
         {
-            if (ModelId == "fal-ai/flux-general/inpainting" || ModelId == "fal-ai/flux-lora/inpainting")
+            if (
+                ModelId == "fal-ai/flux-general/inpainting"
+                || ModelId == "fal-ai/flux-lora/inpainting"
+            )
             {
                 return true;
             }
@@ -107,13 +121,19 @@ public sealed class FalImageModel : IImageModel, IImageCaller
     }
 
     /// <inheritdoc />
-    public Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+    public Task<ImageGenerationResult> DoGenerateAsync(
+        ImageCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         return GenerateAsync(options, null, cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<ImageModelResult> DoGenerateAsync(ImageModelCall call, CancellationToken cancellationToken)
+    public async Task<ImageModelResult> DoGenerateAsync(
+        ImageModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (call is null)
         {
@@ -126,7 +146,15 @@ public sealed class FalImageModel : IImageModel, IImageCaller
         ProviderExchangeResult response;
         try
         {
-            response = await _provider.SendAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/" + ModelId), ProviderExchange.Json(body.ToJsonString()), call.Headers, cancellationToken).ConfigureAwait(false);
+            response = await _provider
+                .SendAsync(
+                    HttpMethod.Post,
+                    ApiKeys.Combine(_provider.Options.BaseUrl, "/" + ModelId),
+                    ProviderExchange.Json(body.ToJsonString()),
+                    call.Headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
         catch (ApiException error) when (ErrorMessage(error.ResponseBody) is { } message)
         {
@@ -141,10 +169,19 @@ public sealed class FalImageModel : IImageModel, IImageCaller
         for (var index = 0; index < targetImages.Count; index++)
         {
             var image = targetImages[index];
-            var url = image.TryGetProperty("url", out var urlElement) && urlElement.ValueKind == JsonValueKind.String
-                ? urlElement.GetString()!
-                : throw new InvalidResponseDataException(response.Body, "Fal image has no url.");
-            images.Add(await _provider.DownloadAsync(url, _provider.Options.BaseUrl, cancellationToken).ConfigureAwait(false));
+            var url =
+                image.TryGetProperty("url", out var urlElement)
+                && urlElement.ValueKind == JsonValueKind.String
+                    ? urlElement.GetString()!
+                    : throw new InvalidResponseDataException(
+                        response.Body,
+                        "Fal image has no url."
+                    );
+            images.Add(
+                await _provider
+                    .DownloadAsync(url, _provider.Options.BaseUrl, cancellationToken)
+                    .ConfigureAwait(false)
+            );
             imageMetadata.Add(ImageMetadata(root, image, index));
         }
 
@@ -157,11 +194,21 @@ public sealed class FalImageModel : IImageModel, IImageCaller
             }
         }
 
-        var providerMetadata = JsonSerializer.SerializeToElement(new JsonObject { [FalProvider.ProviderId] = fal });
-        return new ImageModelResult(images, warnings, providerMetadata: providerMetadata, response: new ProviderResponse(response.Headers, timestamp: timestamp, modelId: ModelId));
+        var providerMetadata = JsonSerializer.SerializeToElement(
+            new JsonObject { [FalProvider.ProviderId] = fal }
+        );
+        return new ImageModelResult(
+            images,
+            warnings,
+            providerMetadata: providerMetadata,
+            response: new ProviderResponse(response.Headers, timestamp: timestamp, modelId: ModelId)
+        );
     }
 
-    private static Dictionary<string, string> MergedHeaders(ImageCallOptions options, IDictionary<string, string>? headers)
+    private static Dictionary<string, string> MergedHeaders(
+        ImageCallOptions options,
+        IDictionary<string, string>? headers
+    )
     {
         var merged = options.NonNullHeaders;
         foreach (var pair in headers ?? new Dictionary<string, string>())
@@ -172,23 +219,47 @@ public sealed class FalImageModel : IImageModel, IImageCaller
         return merged;
     }
 
-    internal async Task<ImageGenerationResult> GenerateAsync(ImageCallOptions options, IDictionary<string, string>? headers, CancellationToken cancellationToken)
+    internal async Task<ImageGenerationResult> GenerateAsync(
+        ImageCallOptions options,
+        IDictionary<string, string>? headers,
+        CancellationToken cancellationToken
+    )
     {
         if (options is null)
         {
             throw new ArgumentNullException(nameof(options));
         }
 
-        var call = new ImageModelCall(options.Prompt, options.Files, options.Mask, options.Count, options.Size, options.AspectRatio, options.Seed, options.ProviderOptionsElement, MergedHeaders(options, headers), cancellationToken);
+        var call = new ImageModelCall(
+            options.Prompt,
+            options.Files,
+            options.Mask,
+            options.Count,
+            options.Size,
+            options.AspectRatio,
+            options.Seed,
+            options.ProviderOptionsElement,
+            MergedHeaders(options, headers),
+            cancellationToken
+        );
         var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
         var images = new List<ProviderImage>();
         foreach (var image in result.Images)
         {
             var bytes = (byte[])image!;
-            images.Add(new ProviderImage(MediaTypes.DetectMediaType(bytes, "image") ?? "image/png", bytes, null));
+            images.Add(
+                new ProviderImage(
+                    MediaTypes.DetectMediaType(bytes, "image") ?? "image/png",
+                    bytes,
+                    null
+                )
+            );
         }
 
-        return new ImageGenerationResult(images, result.Warnings.Select(warning => warning.ToCallWarning()).ToList());
+        return new ImageGenerationResult(
+            images,
+            result.Warnings.Select(warning => warning.ToCallWarning()).ToList()
+        );
     }
 
     private static JsonObject CreateBody(ImageModelCall call, List<OperationWarning> warnings)
@@ -206,10 +277,17 @@ public sealed class FalImageModel : IImageModel, IImageCaller
 
         body["num_images"] = call.N;
         var fal = FalProvider.FalOptions(call.ProviderOptions);
-        var options = fal is { } value ? NormalizeOptions(value, warnings) : new List<KeyValuePair<string, JsonElement>>();
+        var options = fal is { } value
+            ? NormalizeOptions(value, warnings)
+            : new List<KeyValuePair<string, JsonElement>>();
         if (call.Files is { Count: > 0 } files)
         {
-            if (options.Exists(option => option.Key == "useMultipleImages" && option.Value.ValueKind == JsonValueKind.True))
+            if (
+                options.Exists(option =>
+                    option.Key == "useMultipleImages"
+                    && option.Value.ValueKind == JsonValueKind.True
+                )
+            )
             {
                 var urls = new JsonArray();
                 foreach (var file in files)
@@ -224,10 +302,13 @@ public sealed class FalImageModel : IImageModel, IImageCaller
                 body["image_url"] = FileDataConversions.ConvertImageModelFileToDataUri(files[0]);
                 if (files.Count > 1)
                 {
-                    warnings.Add(OperationWarning.Other(
-                        "Multiple input images provided but useMultipleImages is not enabled. "
-                        + "Only the first image will be used. Set providerOptions.fal.useMultipleImages "
-                        + "to true for models that support multiple images (e.g., fal-ai/flux-2/edit)."));
+                    warnings.Add(
+                        OperationWarning.Other(
+                            "Multiple input images provided but useMultipleImages is not enabled. "
+                                + "Only the first image will be used. Set providerOptions.fal.useMultipleImages "
+                                + "to true for models that support multiple images (e.g., fal-ai/flux-2/edit)."
+                        )
+                    );
                 }
             }
         }
@@ -249,7 +330,10 @@ public sealed class FalImageModel : IImageModel, IImageCaller
     }
 
     // Reads camelCase options, accepts the deprecated snake_case spellings with a warning, and keeps unknown options as given.
-    private static List<KeyValuePair<string, JsonElement>> NormalizeOptions(JsonElement fal, List<OperationWarning> warnings)
+    private static List<KeyValuePair<string, JsonElement>> NormalizeOptions(
+        JsonElement fal,
+        List<OperationWarning> warnings
+    )
     {
         var options = new List<KeyValuePair<string, JsonElement>>();
         var deprecated = new List<string>();
@@ -284,8 +368,21 @@ public sealed class FalImageModel : IImageModel, IImageCaller
 
         if (deprecated.Count > 0)
         {
-            var replacements = deprecated.Select(snake => "'" + snake + "' (use '" + RenamedOptions[Array.FindIndex(RenamedOptions, option => option.Snake == snake)].Camel + "')");
-            warnings.Add(OperationWarning.Other("The following provider options use deprecated snake_case and will be removed in @ai-sdk/fal v2.0. Please use camelCase instead: " + string.Join(", ", replacements)));
+            var replacements = deprecated.Select(snake =>
+                "'"
+                + snake
+                + "' (use '"
+                + RenamedOptions[
+                    Array.FindIndex(RenamedOptions, option => option.Snake == snake)
+                ].Camel
+                + "')"
+            );
+            warnings.Add(
+                OperationWarning.Other(
+                    "The following provider options use deprecated snake_case and will be removed in @ai-sdk/fal v2.0. Please use camelCase instead: "
+                        + string.Join(", ", replacements)
+                )
+            );
         }
 
         return options;
@@ -298,7 +395,8 @@ public sealed class FalImageModel : IImageModel, IImageCaller
 
     private static bool IsKnownOption(string name)
     {
-        return Array.IndexOf(CamelOnlyOptions, name) >= 0 || Array.Exists(RenamedOptions, option => option.Camel == name || option.Snake == name);
+        return Array.IndexOf(CamelOnlyOptions, name) >= 0
+            || Array.Exists(RenamedOptions, option => option.Camel == name || option.Snake == name);
     }
 
     private static string ApiName(string option)
@@ -312,7 +410,10 @@ public sealed class FalImageModel : IImageModel, IImageCaller
         if (!string.IsNullOrEmpty(size))
         {
             var parts = size!.Split('x');
-            return Dimensions(int.Parse(parts[0], CultureInfo.InvariantCulture), int.Parse(parts[1], CultureInfo.InvariantCulture));
+            return Dimensions(
+                int.Parse(parts[0], CultureInfo.InvariantCulture),
+                int.Parse(parts[1], CultureInfo.InvariantCulture)
+            );
         }
 
         switch (aspectRatio)
@@ -348,12 +449,20 @@ public sealed class FalImageModel : IImageModel, IImageCaller
     // Most models return an images array; some return a single image.
     private static List<JsonElement> ReadImages(JsonElement root, string body)
     {
-        if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("images", out var images) && images.ValueKind == JsonValueKind.Array)
+        if (
+            root.ValueKind == JsonValueKind.Object
+            && root.TryGetProperty("images", out var images)
+            && images.ValueKind == JsonValueKind.Array
+        )
         {
             return images.EnumerateArray().ToList();
         }
 
-        if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("image", out var image) && image.ValueKind == JsonValueKind.Object)
+        if (
+            root.ValueKind == JsonValueKind.Object
+            && root.TryGetProperty("image", out var image)
+            && image.ValueKind == JsonValueKind.Object
+        )
         {
             return new List<JsonElement> { image };
         }
@@ -371,7 +480,12 @@ public sealed class FalImageModel : IImageModel, IImageCaller
         CopyIfPresent(image, "file_name", metadata, "fileName");
         CopyIfPresent(image, "file_data", metadata, "fileData");
         CopyIfPresent(image, "file_size", metadata, "fileSize");
-        if ((Nsfw(root, "has_nsfw_concepts", index) ?? Nsfw(root, "nsfw_content_detected", index)) is { } nsfw)
+        if (
+            (
+                Nsfw(root, "has_nsfw_concepts", index) ?? Nsfw(root, "nsfw_content_detected", index)
+            ) is
+            { } nsfw
+        )
         {
             metadata["nsfw"] = nsfw;
         }
@@ -379,7 +493,12 @@ public sealed class FalImageModel : IImageModel, IImageCaller
         return metadata;
     }
 
-    private static void CopyIfPresent(JsonElement source, string name, JsonObject target, string targetName)
+    private static void CopyIfPresent(
+        JsonElement source,
+        string name,
+        JsonObject target,
+        string targetName
+    )
     {
         if (source.TryGetProperty(name, out var value))
         {
@@ -389,10 +508,16 @@ public sealed class FalImageModel : IImageModel, IImageCaller
 
     private static bool? Nsfw(JsonElement root, string name, int index)
     {
-        if (root.TryGetProperty(name, out var flags) && flags.ValueKind == JsonValueKind.Array && index < flags.GetArrayLength())
+        if (
+            root.TryGetProperty(name, out var flags)
+            && flags.ValueKind == JsonValueKind.Array
+            && index < flags.GetArrayLength()
+        )
         {
             var flag = flags[index];
-            return flag.ValueKind == JsonValueKind.True ? true : flag.ValueKind == JsonValueKind.False ? false : null;
+            return flag.ValueKind == JsonValueKind.True ? true
+                : flag.ValueKind == JsonValueKind.False ? false
+                : null;
         }
 
         return null;
@@ -415,25 +540,40 @@ public sealed class FalImageModel : IImageModel, IImageCaller
                 return null;
             }
 
-            if (root.TryGetProperty("detail", out var detail) && detail.ValueKind == JsonValueKind.Array)
+            if (
+                root.TryGetProperty("detail", out var detail)
+                && detail.ValueKind == JsonValueKind.Array
+            )
             {
                 var lines = new List<string>();
                 foreach (var item in detail.EnumerateArray())
                 {
-                    if (item.ValueKind != JsonValueKind.Object
-                        || !item.TryGetProperty("loc", out var loc) || loc.ValueKind != JsonValueKind.Array
-                        || !item.TryGetProperty("msg", out var msg) || msg.ValueKind != JsonValueKind.String)
+                    if (
+                        item.ValueKind != JsonValueKind.Object
+                        || !item.TryGetProperty("loc", out var loc)
+                        || loc.ValueKind != JsonValueKind.Array
+                        || !item.TryGetProperty("msg", out var msg)
+                        || msg.ValueKind != JsonValueKind.String
+                    )
                     {
                         return null;
                     }
 
-                    lines.Add(string.Join(".", loc.EnumerateArray().Select(part => part.ToString())) + ": " + msg.GetString());
+                    lines.Add(
+                        string.Join(".", loc.EnumerateArray().Select(part => part.ToString()))
+                            + ": "
+                            + msg.GetString()
+                    );
                 }
 
                 return string.Join("\n", lines);
             }
 
-            return root.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String ? message.GetString() : null;
+            return
+                root.TryGetProperty("message", out var message)
+                && message.ValueKind == JsonValueKind.String
+                ? message.GetString()
+                : null;
         }
         catch (JsonException)
         {

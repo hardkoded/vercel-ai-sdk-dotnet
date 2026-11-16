@@ -19,13 +19,17 @@ public sealed class SerialJobExecutor
             throw new ArgumentNullException(nameof(job));
         }
 
-        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var completion = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         lock (_gate)
         {
-            _queue.Enqueue(delegate
-            {
-                return RunJobAsync(job, completion);
-            });
+            _queue.Enqueue(
+                delegate
+                {
+                    return RunJobAsync(job, completion);
+                }
+            );
             if (_processing)
             {
                 return completion.Task;
@@ -52,7 +56,16 @@ public sealed class SerialJobExecutor
             next = _queue.Dequeue();
         }
 
-        next().ContinueWith(delegate { ProcessQueue(); }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+        next()
+            .ContinueWith(
+                delegate
+                {
+                    ProcessQueue();
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.None,
+                TaskScheduler.Default
+            );
     }
 
     private static async Task RunJobAsync(Func<Task> job, TaskCompletionSource<bool> completion)

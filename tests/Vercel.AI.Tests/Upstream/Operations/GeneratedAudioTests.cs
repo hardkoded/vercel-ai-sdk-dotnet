@@ -12,7 +12,9 @@ public sealed class GeneratedAudioTests
     [Fact]
     public void ShouldThrowAnSdkErrorWhenTheAudioSubtypeIsEmpty()
     {
-        var error = Assert.ThrowsAny<AiSdkException>(() => new GeneratedAudio(new byte[] { 0 }, "audio/"));
+        var error = Assert.ThrowsAny<AiSdkException>(() =>
+            new GeneratedAudio(new byte[] { 0 }, "audio/")
+        );
         var invalid = Assert.IsType<InvalidResponseDataException>(error);
         Assert.Equal("audio/", invalid.Data);
         Assert.Equal("Could not determine audio format from media type: audio/", invalid.Message);

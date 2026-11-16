@@ -12,10 +12,12 @@ namespace Vercel.AI.Operations;
 public sealed class EvaluationQuestion : DecisionQuestion
 {
     /// <summary>Creates a question.</summary>
-    public EvaluationQuestion(string type, DecisionInput? instructions, DecisionCriteria? criteria = null)
-        : base(type, instructions, criteria)
-    {
-    }
+    public EvaluationQuestion(
+        string type,
+        DecisionInput? instructions,
+        DecisionCriteria? criteria = null
+    )
+        : base(type, instructions, criteria) { }
 }
 
 /// <summary>Deprecated alias of <see cref="DecisionAnswer"/>.</summary>
@@ -23,10 +25,14 @@ public sealed class EvaluationQuestion : DecisionQuestion
 public sealed class EvaluationAnswer : DecisionAnswer
 {
     /// <summary>Creates an answer.</summary>
-    public EvaluationAnswer(string type, string? choice = null, double? score = null, double? probability = null, IReadOnlyDictionary<string, double>? probabilities = null)
-        : base(type, choice, score, probability, probabilities)
-    {
-    }
+    public EvaluationAnswer(
+        string type,
+        string? choice = null,
+        double? score = null,
+        double? probability = null,
+        IReadOnlyDictionary<string, double>? probabilities = null
+    )
+        : base(type, choice, score, probability, probabilities) { }
 }
 
 /// <summary>Deprecated alias of <see cref="DecisionRounding"/>.</summary>
@@ -35,9 +41,7 @@ public sealed class EvaluationRounding : DecisionRounding
 {
     /// <summary>Creates rounding limits.</summary>
     public EvaluationRounding(int? probabilityDecimals = null, int? scoreDecimals = null)
-        : base(probabilityDecimals, scoreDecimals)
-    {
-    }
+        : base(probabilityDecimals, scoreDecimals) { }
 }
 
 /// <summary>Deprecated alias of <see cref="DecisionModelCall"/>.</summary>
@@ -45,19 +49,55 @@ public sealed class EvaluationRounding : DecisionRounding
 public sealed class EvaluationModelCall : DecisionModelCall
 {
     /// <summary>Creates a call.</summary>
-    public EvaluationModelCall(IReadOnlyList<DecisionModelStatePart> state, IReadOnlyDictionary<string, EvaluationQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken, double? maxOutputTokens = null, string? reasoning = null)
-        : base(state, questions == null ? null! : EvaluateAliases.ToDecision(questions), providerOptions, headers, cancellationToken, maxOutputTokens, reasoning)
-    {
-    }
+    public EvaluationModelCall(
+        IReadOnlyList<DecisionModelStatePart> state,
+        IReadOnlyDictionary<string, EvaluationQuestion> questions,
+        JsonElement providerOptions,
+        IReadOnlyDictionary<string, string> headers,
+        CancellationToken cancellationToken,
+        double? maxOutputTokens = null,
+        string? reasoning = null
+    )
+        : base(
+            state,
+            questions == null ? null! : EvaluateAliases.ToDecision(questions),
+            providerOptions,
+            headers,
+            cancellationToken,
+            maxOutputTokens,
+            reasoning
+        ) { }
 
-    private EvaluationModelCall(IReadOnlyList<DecisionModelStatePart> state, IReadOnlyDictionary<string, DecisionQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken, double? maxOutputTokens, string? reasoning)
-        : base(state, questions, providerOptions, headers, cancellationToken, maxOutputTokens, reasoning)
-    {
-    }
+    private EvaluationModelCall(
+        IReadOnlyList<DecisionModelStatePart> state,
+        IReadOnlyDictionary<string, DecisionQuestion> questions,
+        JsonElement providerOptions,
+        IReadOnlyDictionary<string, string> headers,
+        CancellationToken cancellationToken,
+        double? maxOutputTokens,
+        string? reasoning
+    )
+        : base(
+            state,
+            questions,
+            providerOptions,
+            headers,
+            cancellationToken,
+            maxOutputTokens,
+            reasoning
+        ) { }
 
     internal static EvaluationModelCall From(DecisionModelCall call)
     {
-        return new EvaluationModelCall(call.State, call.Questions, call.ProviderOptions, call.Headers, call.CancellationToken, call.MaxOutputTokens, call.Reasoning);
+        return new EvaluationModelCall(
+            call.State,
+            call.Questions,
+            call.ProviderOptions,
+            call.Headers,
+            call.CancellationToken,
+            call.MaxOutputTokens,
+            call.Reasoning
+        );
     }
 }
 
@@ -66,19 +106,44 @@ public sealed class EvaluationModelCall : DecisionModelCall
 public sealed class EvaluationModelResult : DecisionModelResult
 {
     /// <summary>Creates a model result.</summary>
-    public EvaluationModelResult(IReadOnlyDictionary<string, EvaluationAnswer> answers, IReadOnlyList<OperationWarning>? warnings = null, OperationUsage? usage = null, EvaluationRounding? rounding = null, JsonElement? providerMetadata = null, ProviderResponse? response = null)
-        : base(answers == null ? null! : EvaluateAliases.ToDecision(answers), warnings, usage, rounding, providerMetadata, response)
-    {
-    }
+    public EvaluationModelResult(
+        IReadOnlyDictionary<string, EvaluationAnswer> answers,
+        IReadOnlyList<OperationWarning>? warnings = null,
+        OperationUsage? usage = null,
+        EvaluationRounding? rounding = null,
+        JsonElement? providerMetadata = null,
+        ProviderResponse? response = null
+    )
+        : base(
+            answers == null ? null! : EvaluateAliases.ToDecision(answers),
+            warnings,
+            usage,
+            rounding,
+            providerMetadata,
+            response
+        ) { }
 
-    private EvaluationModelResult(IReadOnlyDictionary<string, DecisionAnswer> answers, IReadOnlyList<OperationWarning>? warnings = null, OperationUsage? usage = null, DecisionRounding? rounding = null, JsonElement? providerMetadata = null, ProviderResponse? response = null)
-        : base(answers, warnings, usage, rounding, providerMetadata, response)
-    {
-    }
+    private EvaluationModelResult(
+        IReadOnlyDictionary<string, DecisionAnswer> answers,
+        IReadOnlyList<OperationWarning>? warnings = null,
+        OperationUsage? usage = null,
+        DecisionRounding? rounding = null,
+        JsonElement? providerMetadata = null,
+        ProviderResponse? response = null
+    )
+        : base(answers, warnings, usage, rounding, providerMetadata, response) { }
 
     internal static EvaluationModelResult From(DecisionModelResult result)
     {
-        return result as EvaluationModelResult ?? new EvaluationModelResult(result.Answers, result.Warnings, result.Usage, result.Rounding, result.ProviderMetadata, result.Response);
+        return result as EvaluationModelResult
+            ?? new EvaluationModelResult(
+                result.Answers,
+                result.Warnings,
+                result.Usage,
+                result.Rounding,
+                result.ProviderMetadata,
+                result.Response
+            );
     }
 }
 
@@ -99,7 +164,10 @@ public interface IEvaluationCaller
     IReadOnlyList<string> SupportedQuestionTypes { get; }
 
     /// <summary>Decides every question in one call.</summary>
-    Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken);
+    Task<EvaluationModelResult> DoEvaluateAsync(
+        EvaluationModelCall call,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>
@@ -108,9 +176,7 @@ public interface IEvaluationCaller
 /// the same way.
 /// </summary>
 [Obsolete("Use IDecisionCaller instead.")]
-public interface IEvaluationDecisionCaller : IDecisionCaller, IEvaluationCaller
-{
-}
+public interface IEvaluationDecisionCaller : IDecisionCaller, IEvaluationCaller { }
 
 /// <summary>
 /// Deprecated provider factory for decision models. Implement <see cref="IDecisionProvider"/> instead. A provider that
@@ -125,13 +191,17 @@ public interface IEvaluationProvider
 
 /// <summary>Deprecated alias of <see cref="DecisionUnsupportedQuestionTypeException"/>.</summary>
 [Obsolete("Use DecisionUnsupportedQuestionTypeException instead.")]
-public sealed class EvaluationUnsupportedQuestionTypeException : DecisionUnsupportedQuestionTypeException
+public sealed class EvaluationUnsupportedQuestionTypeException
+    : DecisionUnsupportedQuestionTypeException
 {
     /// <summary>Creates the exception.</summary>
-    public EvaluationUnsupportedQuestionTypeException(string questionId, string questionType, string provider, string modelId)
-        : base(questionId, questionType, provider, modelId)
-    {
-    }
+    public EvaluationUnsupportedQuestionTypeException(
+        string questionId,
+        string questionType,
+        string provider,
+        string modelId
+    )
+        : base(questionId, questionType, provider, modelId) { }
 }
 
 /// <summary>Deprecated alias of <see cref="DecideEvent"/>.</summary>
@@ -139,14 +209,70 @@ public sealed class EvaluationUnsupportedQuestionTypeException : DecisionUnsuppo
 public sealed class EvaluateEvent : DecideEvent
 {
     /// <summary>Creates an event.</summary>
-    public EvaluateEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, DecisionState? state, IReadOnlyDictionary<string, DecisionQuestion> questions, int maxRetries, IReadOnlyDictionary<string, string>? headers, JsonElement providerOptions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, IReadOnlyList<OperationWarning>? warnings = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null, double? maxOutputTokens = null, string? reasoning = null)
-        : base(callId, operationId, runtimeContext, provider, modelId, state, questions, maxRetries, headers, providerOptions, answers, usage, warnings, recordInputs, recordOutputs, functionId, maxOutputTokens, reasoning)
-    {
-    }
+    public EvaluateEvent(
+        string callId,
+        string operationId,
+        IReadOnlyDictionary<string, object?> runtimeContext,
+        string provider,
+        string modelId,
+        DecisionState? state,
+        IReadOnlyDictionary<string, DecisionQuestion> questions,
+        int maxRetries,
+        IReadOnlyDictionary<string, string>? headers,
+        JsonElement providerOptions,
+        IReadOnlyDictionary<string, DecisionAnswer>? answers = null,
+        OperationUsage? usage = null,
+        IReadOnlyList<OperationWarning>? warnings = null,
+        bool? recordInputs = null,
+        bool? recordOutputs = null,
+        string? functionId = null,
+        double? maxOutputTokens = null,
+        string? reasoning = null
+    )
+        : base(
+            callId,
+            operationId,
+            runtimeContext,
+            provider,
+            modelId,
+            state,
+            questions,
+            maxRetries,
+            headers,
+            providerOptions,
+            answers,
+            usage,
+            warnings,
+            recordInputs,
+            recordOutputs,
+            functionId,
+            maxOutputTokens,
+            reasoning
+        ) { }
 
     internal static EvaluateEvent From(DecideEvent e)
     {
-        return e as EvaluateEvent ?? new EvaluateEvent(e.CallId, e.OperationId, e.RuntimeContext, e.Provider, e.ModelId, e.State, e.Questions, e.MaxRetries, e.Headers, e.ProviderOptions, e.Answers, e.Usage, e.Warnings, e.RecordInputs, e.RecordOutputs, e.FunctionId, e.MaxOutputTokens, e.Reasoning);
+        return e as EvaluateEvent
+            ?? new EvaluateEvent(
+                e.CallId,
+                e.OperationId,
+                e.RuntimeContext,
+                e.Provider,
+                e.ModelId,
+                e.State,
+                e.Questions,
+                e.MaxRetries,
+                e.Headers,
+                e.ProviderOptions,
+                e.Answers,
+                e.Usage,
+                e.Warnings,
+                e.RecordInputs,
+                e.RecordOutputs,
+                e.FunctionId,
+                e.MaxOutputTokens,
+                e.Reasoning
+            );
     }
 }
 
@@ -155,36 +281,81 @@ public sealed class EvaluateEvent : DecideEvent
 public sealed class EvaluateModelEvent : DecisionModelEvent
 {
     /// <summary>Creates a model event.</summary>
-    public EvaluateModelEvent(string callId, string operationId, string provider, string modelId, IReadOnlyList<DecisionModelStatePart>? state, IReadOnlyDictionary<string, DecisionQuestion> questions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
-        : base(callId, operationId, provider, modelId, state, questions, answers, usage, recordInputs, recordOutputs, functionId)
-    {
-    }
+    public EvaluateModelEvent(
+        string callId,
+        string operationId,
+        string provider,
+        string modelId,
+        IReadOnlyList<DecisionModelStatePart>? state,
+        IReadOnlyDictionary<string, DecisionQuestion> questions,
+        IReadOnlyDictionary<string, DecisionAnswer>? answers = null,
+        OperationUsage? usage = null,
+        bool? recordInputs = null,
+        bool? recordOutputs = null,
+        string? functionId = null
+    )
+        : base(
+            callId,
+            operationId,
+            provider,
+            modelId,
+            state,
+            questions,
+            answers,
+            usage,
+            recordInputs,
+            recordOutputs,
+            functionId
+        ) { }
 
     internal static EvaluateModelEvent From(DecisionModelEvent e)
     {
-        return e as EvaluateModelEvent ?? new EvaluateModelEvent(e.CallId, e.OperationId, e.Provider, e.ModelId, e.State, e.Questions, e.Answers, e.Usage, e.RecordInputs, e.RecordOutputs, e.FunctionId);
+        return e as EvaluateModelEvent
+            ?? new EvaluateModelEvent(
+                e.CallId,
+                e.OperationId,
+                e.Provider,
+                e.ModelId,
+                e.State,
+                e.Questions,
+                e.Answers,
+                e.Usage,
+                e.RecordInputs,
+                e.RecordOutputs,
+                e.FunctionId
+            );
     }
 }
 
 /// <summary>Deprecated alias of <see cref="DecideTelemetry"/>.</summary>
 [Obsolete("Use DecideTelemetry instead.")]
-public sealed class EvaluateTelemetry : DecideTelemetry
-{
-}
+public sealed class EvaluateTelemetry : DecideTelemetry { }
 
 /// <summary>Deprecated alias of <see cref="DecisionResult"/>.</summary>
 [Obsolete("Use DecisionResult instead.")]
 public sealed class EvaluateResult : DecisionResult
 {
     /// <summary>Creates a result.</summary>
-    public EvaluateResult(IReadOnlyDictionary<string, DecisionAnswer> answers, OperationUsage usage, IReadOnlyList<OperationWarning> warnings, DecisionRounding? rounding, JsonElement? providerMetadata, ProviderResponse response)
-        : base(answers, usage, warnings, rounding, providerMetadata, response)
-    {
-    }
+    public EvaluateResult(
+        IReadOnlyDictionary<string, DecisionAnswer> answers,
+        OperationUsage usage,
+        IReadOnlyList<OperationWarning> warnings,
+        DecisionRounding? rounding,
+        JsonElement? providerMetadata,
+        ProviderResponse response
+    )
+        : base(answers, usage, warnings, rounding, providerMetadata, response) { }
 
     internal static EvaluateResult From(DecisionResult result)
     {
-        return new EvaluateResult(result.Answers, result.Usage, result.Warnings, result.Rounding, result.ProviderMetadata, result.Response);
+        return new EvaluateResult(
+            result.Answers,
+            result.Usage,
+            result.Warnings,
+            result.Rounding,
+            result.ProviderMetadata,
+            result.Response
+        );
     }
 }
 
@@ -216,7 +387,10 @@ public sealed class EvaluateRequest : OperationRequest
 public static class Evaluate
 {
     /// <summary>Deprecated alias of <see cref="Decide.DecideAsync"/>. Both run the same operation.</summary>
-    public static async Task<EvaluateResult> EvaluateAsync(EvaluateRequest request, CancellationToken cancellationToken = default)
+    public static async Task<EvaluateResult> EvaluateAsync(
+        EvaluateRequest request,
+        CancellationToken cancellationToken = default
+    )
     {
         if (request == null)
         {
@@ -225,38 +399,58 @@ public static class Evaluate
 
         var onStart = request.OnStart;
         var onEnd = request.OnEnd;
-        var result = await Decide.DecideAsync(
-            new DecideRequest
-            {
-                Model = request.Model == null ? null : DecisionCaller.FromLegacy(request.Model),
-                State = request.State,
-                Questions = request.Questions == null ? null : EvaluateAliases.ToDecision(request.Questions),
-                OnStart = onStart == null ? null : e => onStart(EvaluateEvent.From(e)),
-                OnEnd = onEnd == null ? null : e => onEnd(EvaluateEvent.From(e)),
-                Telemetry = request.Telemetry,
-                MaxRetries = request.MaxRetries,
-                CancellationToken = request.CancellationToken,
-                AbortReason = request.AbortReason,
-                Headers = request.Headers,
-                ProviderOptions = request.ProviderOptions,
-                RuntimeContext = request.RuntimeContext,
-                GenerateCallId = request.GenerateCallId,
-                Now = request.Now,
-            },
-            cancellationToken).ConfigureAwait(false);
+        var result = await Decide
+            .DecideAsync(
+                new DecideRequest
+                {
+                    Model = request.Model == null ? null : DecisionCaller.FromLegacy(request.Model),
+                    State = request.State,
+                    Questions =
+                        request.Questions == null
+                            ? null
+                            : EvaluateAliases.ToDecision(request.Questions),
+                    OnStart = onStart == null ? null : e => onStart(EvaluateEvent.From(e)),
+                    OnEnd = onEnd == null ? null : e => onEnd(EvaluateEvent.From(e)),
+                    Telemetry = request.Telemetry,
+                    MaxRetries = request.MaxRetries,
+                    CancellationToken = request.CancellationToken,
+                    AbortReason = request.AbortReason,
+                    Headers = request.Headers,
+                    ProviderOptions = request.ProviderOptions,
+                    RuntimeContext = request.RuntimeContext,
+                    GenerateCallId = request.GenerateCallId,
+                    Now = request.Now,
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return EvaluateResult.From(result);
     }
 
     /// <summary>Deprecated alias of <see cref="Decide.ValidateInput"/>.</summary>
-    public static void ValidateInput(DecisionState? state, IReadOnlyDictionary<string, EvaluationQuestion>? questions)
+    public static void ValidateInput(
+        DecisionState? state,
+        IReadOnlyDictionary<string, EvaluationQuestion>? questions
+    )
     {
-        Decide.ValidateInput(state, questions == null ? null : EvaluateAliases.ToDecision(questions));
+        Decide.ValidateInput(
+            state,
+            questions == null ? null : EvaluateAliases.ToDecision(questions)
+        );
     }
 
     /// <summary>Deprecated alias of <see cref="Decide.ValidateAnswers"/>.</summary>
-    public static void ValidateAnswers(IReadOnlyDictionary<string, EvaluationQuestion> questions, IReadOnlyDictionary<string, EvaluationAnswer>? answers, EvaluationRounding? rounding)
+    public static void ValidateAnswers(
+        IReadOnlyDictionary<string, EvaluationQuestion> questions,
+        IReadOnlyDictionary<string, EvaluationAnswer>? answers,
+        EvaluationRounding? rounding
+    )
     {
-        Decide.ValidateAnswers(EvaluateAliases.ToDecision(questions), answers == null ? null : EvaluateAliases.ToDecision(answers), rounding);
+        Decide.ValidateAnswers(
+            EvaluateAliases.ToDecision(questions),
+            answers == null ? null : EvaluateAliases.ToDecision(answers),
+            rounding
+        );
     }
 }
 
@@ -298,19 +492,30 @@ internal sealed class LegacyDecisionCaller : IEvaluationDecisionCaller
 
     public IReadOnlyList<string> SupportedQuestionTypes => _inner.SupportedQuestionTypes;
 
-    public Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken)
+    public Task<DecisionModelResult> DoDecideAsync(
+        DecisionModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         return AdaptAsync(call, cancellationToken);
     }
 
-    public Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken)
+    public Task<EvaluationModelResult> DoEvaluateAsync(
+        EvaluationModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         return _inner.DoEvaluateAsync(call, cancellationToken);
     }
 
-    private async Task<DecisionModelResult> AdaptAsync(DecisionModelCall call, CancellationToken cancellationToken)
+    private async Task<DecisionModelResult> AdaptAsync(
+        DecisionModelCall call,
+        CancellationToken cancellationToken
+    )
     {
-        return await _inner.DoEvaluateAsync(EvaluationModelCall.From(call), cancellationToken).ConfigureAwait(false);
+        return await _inner
+            .DoEvaluateAsync(EvaluationModelCall.From(call), cancellationToken)
+            .ConfigureAwait(false);
     }
 }
 
@@ -333,27 +538,40 @@ internal sealed class EvaluationDecisionCaller : IEvaluationDecisionCaller
 
     public IReadOnlyList<string> SupportedQuestionTypes => _inner.SupportedQuestionTypes;
 
-    public Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken)
+    public Task<DecisionModelResult> DoDecideAsync(
+        DecisionModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         return _inner.DoDecideAsync(call, cancellationToken);
     }
 
-    public async Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken)
+    public async Task<EvaluationModelResult> DoEvaluateAsync(
+        EvaluationModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (_inner is IEvaluationCaller legacy)
         {
             return await legacy.DoEvaluateAsync(call, cancellationToken).ConfigureAwait(false);
         }
 
-        return EvaluationModelResult.From(await _inner.DoDecideAsync(call, cancellationToken).ConfigureAwait(false));
+        return EvaluationModelResult.From(
+            await _inner.DoDecideAsync(call, cancellationToken).ConfigureAwait(false)
+        );
     }
 }
 
 internal static class EvaluateAliases
 {
-    public static IReadOnlyDictionary<string, DecisionQuestion> ToDecision(IReadOnlyDictionary<string, EvaluationQuestion> questions)
+    public static IReadOnlyDictionary<string, DecisionQuestion> ToDecision(
+        IReadOnlyDictionary<string, EvaluationQuestion> questions
+    )
     {
-        var copy = new Dictionary<string, DecisionQuestion>(questions.Count, StringComparer.Ordinal);
+        var copy = new Dictionary<string, DecisionQuestion>(
+            questions.Count,
+            StringComparer.Ordinal
+        );
         foreach (var pair in questions)
         {
             copy[pair.Key] = pair.Value;
@@ -362,7 +580,9 @@ internal static class EvaluateAliases
         return copy;
     }
 
-    public static IReadOnlyDictionary<string, DecisionAnswer> ToDecision(IReadOnlyDictionary<string, EvaluationAnswer> answers)
+    public static IReadOnlyDictionary<string, DecisionAnswer> ToDecision(
+        IReadOnlyDictionary<string, EvaluationAnswer> answers
+    )
     {
         var copy = new Dictionary<string, DecisionAnswer>(answers.Count, StringComparer.Ordinal);
         foreach (var pair in answers)

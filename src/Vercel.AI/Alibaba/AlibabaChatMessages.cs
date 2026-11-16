@@ -14,7 +14,11 @@ internal static class AlibabaChatMessages
 {
     private const string ExecutionDeniedText = "Tool call execution denied.";
 
-    public static JsonArray Convert(IReadOnlyList<ModelMessage> prompt, bool preserveThinking, AlibabaCacheControlValidator? cacheControlValidator = null)
+    public static JsonArray Convert(
+        IReadOnlyList<ModelMessage> prompt,
+        bool preserveThinking,
+        AlibabaCacheControlValidator? cacheControlValidator = null
+    )
     {
         var messages = new JsonArray();
         prompt ??= Array.Empty<ModelMessage>();
@@ -33,40 +37,68 @@ internal static class AlibabaChatMessages
             switch (prompt[index])
             {
                 case SystemModelMessage system:
-                    messages.Add(new JsonObject
-                    {
-                        ["role"] = "system",
-                        ["content"] = TextContent(system.Content, cacheControlValidator?.GetCacheControl(system.ProviderOptions)),
-                    });
+                    messages.Add(
+                        new JsonObject
+                        {
+                            ["role"] = "system",
+                            ["content"] = TextContent(
+                                system.Content,
+                                cacheControlValidator?.GetCacheControl(system.ProviderOptions)
+                            ),
+                        }
+                    );
                     break;
                 case UserModelMessage user:
-                    messages.Add(new JsonObject
-                    {
-                        ["role"] = "user",
-                        ["content"] = MapUserContent(user, cacheControlValidator, cacheControlValidator?.GetCacheControl(user.ProviderOptions)),
-                    });
+                    messages.Add(
+                        new JsonObject
+                        {
+                            ["role"] = "user",
+                            ["content"] = MapUserContent(
+                                user,
+                                cacheControlValidator,
+                                cacheControlValidator?.GetCacheControl(user.ProviderOptions)
+                            ),
+                        }
+                    );
                     break;
                 case AssistantModelMessage assistant:
-                    var assistantCacheControl = cacheControlValidator?.GetCacheControl(assistant.ProviderOptions);
-                    if (MapAssistant(assistant, preserveThinking || index > lastUserMessageIndex, assistantCacheControl) is { } mapped)
+                    var assistantCacheControl = cacheControlValidator?.GetCacheControl(
+                        assistant.ProviderOptions
+                    );
+                    if (
+                        MapAssistant(
+                            assistant,
+                            preserveThinking || index > lastUserMessageIndex,
+                            assistantCacheControl
+                        ) is
+                        { } mapped
+                    )
                     {
                         messages.Add(mapped);
                     }
 
                     break;
                 case ToolModelMessage tool:
-                    var toolCacheControl = cacheControlValidator?.GetCacheControl(tool.MessageProviderOptions);
+                    var toolCacheControl = cacheControlValidator?.GetCacheControl(
+                        tool.MessageProviderOptions
+                    );
                     var results = tool.Results;
                     for (var i = 0; i < results.Count; i++)
                     {
-                        var partCacheControl = cacheControlValidator?.GetCacheControl(results[i].ProviderOptions)
-                            ?? (i == results.Count - 1 ? toolCacheControl : null);
-                        messages.Add(new JsonObject
-                        {
-                            ["role"] = "tool",
-                            ["tool_call_id"] = results[i].ToolCallId,
-                            ["content"] = TextContent(ToolContent(results[i]), partCacheControl),
-                        });
+                        var partCacheControl = cacheControlValidator?.GetCacheControl(
+                            results[i].ProviderOptions
+                        ) ?? (i == results.Count - 1 ? toolCacheControl : null);
+                        messages.Add(
+                            new JsonObject
+                            {
+                                ["role"] = "tool",
+                                ["tool_call_id"] = results[i].ToolCallId,
+                                ["content"] = TextContent(
+                                    ToolContent(results[i]),
+                                    partCacheControl
+                                ),
+                            }
+                        );
                     }
 
                     break;
@@ -83,10 +115,21 @@ internal static class AlibabaChatMessages
     {
         return cacheControl == null
             ? JsonValue.Create(text)
-            : new JsonArray(new JsonObject { ["type"] = "text", ["text"] = text, ["cache_control"] = cacheControl });
+            : new JsonArray(
+                new JsonObject
+                {
+                    ["type"] = "text",
+                    ["text"] = text,
+                    ["cache_control"] = cacheControl,
+                }
+            );
     }
 
-    private static JsonArray MapUserContent(UserModelMessage user, AlibabaCacheControlValidator? cacheControlValidator, JsonNode? messageCacheControl)
+    private static JsonArray MapUserContent(
+        UserModelMessage user,
+        AlibabaCacheControlValidator? cacheControlValidator,
+        JsonNode? messageCacheControl
+    )
     {
         var parts = new JsonArray();
         for (var i = 0; i < user.Content.Count; i++)
@@ -131,14 +174,24 @@ internal static class AlibabaChatMessages
 
         var mediaType = file.MediaType ?? string.Empty;
         var slash = mediaType.IndexOf('/');
-        if (!string.Equals(slash < 0 ? mediaType : mediaType.Substring(0, slash), "image", StringComparison.OrdinalIgnoreCase))
+        if (
+            !string.Equals(
+                slash < 0 ? mediaType : mediaType.Substring(0, slash),
+                "image",
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
         {
             throw OpenAICompatibleChat.Unsupported("Only image file parts are supported");
         }
 
-        var url = file.Url != null && file.Data == null
-            ? file.Url
-            : "data:" + mediaType + ";base64," + System.Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
+        var url =
+            file.Url != null && file.Data == null
+                ? file.Url
+                : "data:"
+                    + mediaType
+                    + ";base64,"
+                    + System.Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
         return new JsonObject
         {
             ["type"] = "image_url",
@@ -148,7 +201,11 @@ internal static class AlibabaChatMessages
 
     // Reasoning from the current round (after the last user message) always accompanies tool calls.
     // Earlier rounds are replayed only when preserved thinking is enabled.
-    private static JsonObject? MapAssistant(AssistantModelMessage assistant, bool includeReasoning, JsonNode? cacheControl)
+    private static JsonObject? MapAssistant(
+        AssistantModelMessage assistant,
+        bool includeReasoning,
+        JsonNode? cacheControl
+    )
     {
         var text = new StringBuilder();
         var reasoning = new StringBuilder();
@@ -161,16 +218,18 @@ internal static class AlibabaChatMessages
                     text.Append(textPart.Text);
                     break;
                 case AssistantToolCallPart callPart:
-                    toolCalls.Add(new JsonObject
-                    {
-                        ["id"] = callPart.ToolCall.ToolCallId,
-                        ["type"] = "function",
-                        ["function"] = new JsonObject
+                    toolCalls.Add(
+                        new JsonObject
                         {
-                            ["name"] = callPart.ToolCall.ToolName,
-                            ["arguments"] = callPart.ToolCall.ArgumentsJson ?? string.Empty,
-                        },
-                    });
+                            ["id"] = callPart.ToolCall.ToolCallId,
+                            ["type"] = "function",
+                            ["function"] = new JsonObject
+                            {
+                                ["name"] = callPart.ToolCall.ToolName,
+                                ["arguments"] = callPart.ToolCall.ArgumentsJson ?? string.Empty,
+                            },
+                        }
+                    );
                     break;
                 case AssistantReasoningPart reasoningPart when includeReasoning:
                     reasoning.Append(reasoningPart.Text);
@@ -187,9 +246,11 @@ internal static class AlibabaChatMessages
         var message = new JsonObject
         {
             ["role"] = "assistant",
-            ["content"] = reasoningOnly ? null
+            ["content"] =
+                reasoningOnly ? null
                 : cacheControl != null ? TextContent(text.ToString(), cacheControl)
-                : text.Length > 0 ? JsonValue.Create(text.ToString()) : null,
+                : text.Length > 0 ? JsonValue.Create(text.ToString())
+                : null,
         };
         if (reasoning.Length > 0)
         {

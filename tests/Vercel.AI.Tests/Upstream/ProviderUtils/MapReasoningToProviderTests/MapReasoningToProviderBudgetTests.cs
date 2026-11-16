@@ -11,7 +11,10 @@ namespace Vercel.AI.Tests.MapReasoningToProviderTests;
 public sealed class MapReasoningToProviderBudgetTests
 {
     [Fact]
-    [UpstreamTest("packages/provider-utils/src/map-reasoning-to-provider.test.ts::mapReasoningToProviderBudget::maps max to 95 percent of max output tokens", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/provider-utils/src/map-reasoning-to-provider.test.ts::mapReasoningToProviderBudget::maps max to 95 percent of max output tokens",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Maps_max_to_95_percent_of_max_output_tokens()
     {
         var warnings = new List<ModelWarning>();

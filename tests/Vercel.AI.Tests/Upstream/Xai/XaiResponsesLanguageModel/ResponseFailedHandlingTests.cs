@@ -12,15 +12,20 @@ namespace Vercel.AI.Tests.Upstream.Xai.XaiResponsesLanguageModel;
 public sealed class ResponseFailedHandlingTests
 {
     private const string Prefix = TestFile + " > response.failed handling::";
-    private const string Created = """{"type":"response.created","response":{"id":"resp_123","object":"response","model":"grok-4-fast-non-reasoning","output":[]}}""";
+    private const string Created =
+        """{"type":"response.created","response":{"id":"resp_123","object":"response","model":"grok-4-fast-non-reasoning","output":[]}}""";
 
     [Fact]
-    [UpstreamTest(Prefix + "should set finish reason to error", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should set finish reason to error",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_set_finish_reason_to_error()
     {
         var capture = StreamResponse(
             Created,
-            """{"type":"response.failed","response":{"error":{"code":"server_error","message":"Internal server error"},"usage":{"input_tokens":50,"output_tokens":0}}}""");
+            """{"type":"response.failed","response":{"error":{"code":"server_error","message":"Internal server error"},"usage":{"input_tokens":50,"output_tokens":0}}}"""
+        );
 
         var parts = await Collect(Model(capture), HelloPrompt());
 
@@ -36,16 +41,23 @@ public sealed class ResponseFailedHandlingTests
         Assert.Equal("server_error", error.Code);
         Assert.Equal(500, error.StatusCode);
         Assert.True(error.IsRetryable);
-        Assert.Equal("""{"type":"response.failed","response":{"error":{"code":"server_error","message":"Internal server error"},"usage":{"input_tokens":50,"output_tokens":0}}}""", ((JsonElement)error.Data!).GetRawText());
+        Assert.Equal(
+            """{"type":"response.failed","response":{"error":{"code":"server_error","message":"Internal server error"},"usage":{"input_tokens":50,"output_tokens":0}}}""",
+            ((JsonElement)error.Data!).GetRawText()
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should classify insufficient quota as non-retryable", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should classify insufficient quota as non-retryable",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_classify_insufficient_quota_as_non_retryable()
     {
         var capture = StreamResponse(
             Created,
-            """{"type":"response.failed","response":{"error":{"code":"insufficient_quota","message":"You exceeded your current quota."},"usage":{"input_tokens":50,"output_tokens":0}}}""");
+            """{"type":"response.failed","response":{"error":{"code":"insufficient_quota","message":"You exceeded your current quota."},"usage":{"input_tokens":50,"output_tokens":0}}}"""
+        );
 
         var parts = await Collect(Model(capture), HelloPrompt());
 
@@ -56,16 +68,23 @@ public sealed class ResponseFailedHandlingTests
         Assert.Equal("insufficient_quota", error.Code);
         Assert.Equal(429, error.StatusCode);
         Assert.False(error.IsRetryable);
-        Assert.Equal("""{"type":"response.failed","response":{"error":{"code":"insufficient_quota","message":"You exceeded your current quota."},"usage":{"input_tokens":50,"output_tokens":0}}}""", ((JsonElement)error.Data!).GetRawText());
+        Assert.Equal(
+            """{"type":"response.failed","response":{"error":{"code":"insufficient_quota","message":"You exceeded your current quota."},"usage":{"input_tokens":50,"output_tokens":0}}}""",
+            ((JsonElement)error.Data!).GetRawText()
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should map incomplete_details reason on failed response", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should map incomplete_details reason on failed response",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_map_incomplete_details_reason_on_failed_response()
     {
         var capture = StreamResponse(
             Created,
-            """{"type":"response.failed","response":{"error":{"code":"server_error","message":"response failed"},"incomplete_details":{"reason":"max_output_tokens"},"usage":null}}""");
+            """{"type":"response.failed","response":{"error":{"code":"server_error","message":"response failed"},"incomplete_details":{"reason":"max_output_tokens"},"usage":null}}"""
+        );
 
         var parts = await Collect(Model(capture), HelloPrompt());
 

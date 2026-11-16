@@ -57,7 +57,10 @@ public sealed class AmazonBedrockAnthropicOptions
     /// <summary>
     /// Resolves extra headers on every call, after <see cref="Headers"/>. Its values win. A null value drops the header.
     /// </summary>
-    public Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? HeadersProvider { get; set; }
+    public Func<
+        CancellationToken,
+        Task<IReadOnlyDictionary<string, string?>>
+    >? HeadersProvider { get; set; }
 }
 
 /// <summary>Builds InvokeModel URLs and the Bedrock Anthropic request body.</summary>
@@ -162,12 +165,19 @@ public static class AmazonBedrockAnthropicRequests
         // Bedrock rejects the per-tool field, but the beta alone enables the same behavior.
         var eager = tool["eager_input_streaming"];
         tool.Remove("eager_input_streaming");
-        if (eager is JsonValue eagerValue && eagerValue.TryGetValue<bool>(out var enabled) && enabled)
+        if (
+            eager is JsonValue eagerValue
+            && eagerValue.TryGetValue<bool>(out var enabled)
+            && enabled
+        )
         {
             AddBeta(requiredBetas, "fine-grained-tool-streaming-2025-05-14");
         }
 
-        var toolType = tool["type"] is JsonValue typeValue && typeValue.TryGetValue<string>(out var text) ? text : null;
+        var toolType =
+            tool["type"] is JsonValue typeValue && typeValue.TryGetValue<string>(out var text)
+                ? text
+                : null;
         if (toolType == null)
         {
             return;
@@ -219,27 +229,23 @@ public static class AmazonBedrockAnthropicRequests
             try
             {
                 using var document = JsonDocument.Parse(text);
-                if (document.RootElement.ValueKind == JsonValueKind.Object
+                if (
+                    document.RootElement.ValueKind == JsonValueKind.Object
                     && document.RootElement.TryGetProperty("message", out var messageElement)
                     && messageElement.ValueKind == JsonValueKind.String
-                    && !string.IsNullOrEmpty(messageElement.GetString()))
+                    && !string.IsNullOrEmpty(messageElement.GetString())
+                )
                 {
                     message = messageElement.GetString() ?? message;
                 }
             }
-            catch (JsonException)
-            {
-            }
+            catch (JsonException) { }
         }
 
         return new JsonObject
         {
             ["type"] = "error",
-            ["error"] = new JsonObject
-            {
-                ["type"] = "error",
-                ["message"] = message,
-            },
+            ["error"] = new JsonObject { ["type"] = "error", ["message"] = message },
         }.ToJsonString();
     }
 }
@@ -251,7 +257,10 @@ public sealed class AmazonBedrockAnthropicProvider : ProviderBase
     public const string ProviderId = "bedrock.anthropic.messages";
 
     /// <summary>Creates a provider.</summary>
-    public AmazonBedrockAnthropicProvider(HttpClient httpClient, AmazonBedrockAnthropicOptions? options = null)
+    public AmazonBedrockAnthropicProvider(
+        HttpClient httpClient,
+        AmazonBedrockAnthropicOptions? options = null
+    )
         : base(ProviderId)
     {
         HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
@@ -265,9 +274,14 @@ public sealed class AmazonBedrockAnthropicProvider : ProviderBase
     public HttpClient HttpClient { get; }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static AmazonBedrockAnthropicProvider Create(AmazonBedrockAnthropicOptions? options = null, HttpMessageHandler? handler = null)
+    public static AmazonBedrockAnthropicProvider Create(
+        AmazonBedrockAnthropicOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new AmazonBedrockAnthropicProvider(client, options);
     }
 
@@ -289,7 +303,9 @@ public sealed class AmazonBedrockAnthropicProvider : ProviderBase
     /// <summary>Throws because the JavaScript provider function rejects <c>new</c>.</summary>
     public ILanguageModel New(string modelId)
     {
-        throw new InvalidOperationException("The Bedrock Anthropic model function cannot be called with the new keyword.");
+        throw new InvalidOperationException(
+            "The Bedrock Anthropic model function cannot be called with the new keyword."
+        );
     }
 
     /// <summary>Bedrock Anthropic has no embedding models.</summary>
@@ -311,7 +327,10 @@ public sealed class AmazonBedrockAnthropicLanguageModel : ILanguageModel
     private readonly AmazonBedrockAnthropicProvider _provider;
 
     /// <summary>Creates a model.</summary>
-    public AmazonBedrockAnthropicLanguageModel(AmazonBedrockAnthropicProvider provider, string modelId)
+    public AmazonBedrockAnthropicLanguageModel(
+        AmazonBedrockAnthropicProvider provider,
+        string modelId
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -330,13 +349,19 @@ public sealed class AmazonBedrockAnthropicLanguageModel : ILanguageModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         return Inner().DoGenerateAsync(options, cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public Task<LanguageModelStreamResult> DoStreamAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         return Inner().DoStreamAsync(options, cancellationToken);
     }
@@ -351,7 +376,8 @@ public sealed class AmazonBedrockAnthropicLanguageModel : ILanguageModel
     {
         var baseUrl = _provider.ResolveBaseUrl();
         var options = _provider.Options;
-        var apiKey = options.ApiKey ?? Environment.GetEnvironmentVariable("AWS_BEARER_TOKEN_BEDROCK");
+        var apiKey = options.ApiKey
+            ?? Environment.GetEnvironmentVariable("AWS_BEARER_TOKEN_BEDROCK");
         var signing = new AmazonBedrockSigningHandler(
             new HttpClientMessageHandler(_provider.HttpClient),
             options.Region,
@@ -361,9 +387,19 @@ public sealed class AmazonBedrockAnthropicLanguageModel : ILanguageModel
             options.SecretAccessKey,
             options.SessionToken,
             options.UtcNow,
-            options.CredentialProvider);
-        var client = new HttpClient(AmazonBedrockAnthropicFetch.Create(signing), disposeHandler: false);
-        return new AmazonBedrockAnthropicInnerProvider(client, baseUrl, ModelId, options.Headers, options.HeadersProvider);
+            options.CredentialProvider
+        );
+        var client = new HttpClient(
+            AmazonBedrockAnthropicFetch.Create(signing),
+            disposeHandler: false
+        );
+        return new AmazonBedrockAnthropicInnerProvider(
+            client,
+            baseUrl,
+            ModelId,
+            options.Headers,
+            options.HeadersProvider
+        );
     }
 }
 
@@ -373,15 +409,26 @@ internal sealed class AmazonBedrockAnthropicInnerProvider : Vercel.AI.Anthropic.
     private readonly string _baseUrl;
     private readonly string _modelId;
     private readonly IReadOnlyDictionary<string, string?> _headers;
-    private readonly Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? _headersProvider;
+    private readonly Func<
+        CancellationToken,
+        Task<IReadOnlyDictionary<string, string?>>
+    >? _headersProvider;
 
     public AmazonBedrockAnthropicInnerProvider(
         HttpClient httpClient,
         string baseUrl,
         string modelId,
         IReadOnlyDictionary<string, string?> headers,
-        Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? headersProvider = null)
-        : base(httpClient, new Vercel.AI.Anthropic.AnthropicOptions { BaseUrl = baseUrl, Name = AmazonBedrockAnthropicProvider.ProviderId })
+        Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? headersProvider = null
+    )
+        : base(
+            httpClient,
+            new Vercel.AI.Anthropic.AnthropicOptions
+            {
+                BaseUrl = baseUrl,
+                Name = AmazonBedrockAnthropicProvider.ProviderId,
+            }
+        )
     {
         _baseUrl = baseUrl;
         _modelId = modelId;
@@ -390,23 +437,34 @@ internal sealed class AmazonBedrockAnthropicInnerProvider : Vercel.AI.Anthropic.
     }
 
     // Bedrock Anthropic does not support URL sources, so images and files are downloaded and sent as base64.
-    protected internal override IReadOnlyDictionary<string, string> SupportedUrls { get; } = new Dictionary<string, string>();
+    protected internal override IReadOnlyDictionary<string, string> SupportedUrls { get; } =
+        new Dictionary<string, string>();
 
-    protected internal override bool SupportsNativeStructuredOutput => AmazonBedrockModelSupport.SupportsNativeStructuredOutput(_modelId);
+    protected internal override bool SupportsNativeStructuredOutput =>
+        AmazonBedrockModelSupport.SupportsNativeStructuredOutput(_modelId);
 
-    protected internal override bool SupportsStrictTools => AmazonBedrockModelSupport.SupportsStrictTools(_modelId);
+    protected internal override bool SupportsStrictTools =>
+        AmazonBedrockModelSupport.SupportsStrictTools(_modelId);
 
     protected internal override Uri RequestUri(string modelId, bool streaming)
     {
         return new Uri(AmazonBedrockAnthropicRequests.BuildUrl(_baseUrl, modelId, streaming));
     }
 
-    protected internal override JsonObject TransformRequestBody(JsonObject body, IReadOnlyList<string> betas)
+    protected internal override JsonObject TransformRequestBody(
+        JsonObject body,
+        IReadOnlyList<string> betas
+    )
     {
         return AmazonBedrockAnthropicRequests.Transform(body, betas);
     }
 
-    public override async Task<Dictionary<string, string?>> CreateHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, CancellationToken cancellationToken)
+    public override async Task<Dictionary<string, string?>> CreateHeadersAsync(
+        IReadOnlyList<string> betas,
+        IReadOnlyDictionary<string, string?>? callHeaders,
+        string? body,
+        CancellationToken cancellationToken
+    )
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         var configured = _headers;
@@ -418,7 +476,11 @@ internal sealed class AmazonBedrockAnthropicInnerProvider : Vercel.AI.Anthropic.
                 merged[pair.Key] = pair.Value;
             }
 
-            foreach (var pair in await AmazonBedrockProvider.WaitAsync(_headersProvider(cancellationToken), cancellationToken).ConfigureAwait(false))
+            foreach (
+                var pair in await AmazonBedrockProvider
+                    .WaitAsync(_headersProvider(cancellationToken), cancellationToken)
+                    .ConfigureAwait(false)
+            )
             {
                 merged[pair.Key] = pair.Value;
             }
@@ -426,7 +488,12 @@ internal sealed class AmazonBedrockAnthropicInnerProvider : Vercel.AI.Anthropic.
             configured = merged;
         }
 
-        foreach (var pair in ProviderValues.WithUserAgentSuffix(configured, "ai-sdk-amazon-bedrock/" + AiSdkVersion.Version))
+        foreach (
+            var pair in ProviderValues.WithUserAgentSuffix(
+                configured,
+                "ai-sdk-amazon-bedrock/" + AiSdkVersion.Version
+            )
+        )
         {
             headers[pair.Key] = pair.Value;
         }

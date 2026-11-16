@@ -44,7 +44,12 @@ public sealed class RerankModelRank
 public sealed class RerankModelResponse
 {
     /// <summary>Creates a model response.</summary>
-    public RerankModelResponse(IReadOnlyList<RerankModelRank> ranking, IReadOnlyList<OperationWarning>? warnings = null, JsonElement? providerMetadata = null, ProviderResponse? response = null)
+    public RerankModelResponse(
+        IReadOnlyList<RerankModelRank> ranking,
+        IReadOnlyList<OperationWarning>? warnings = null,
+        JsonElement? providerMetadata = null,
+        ProviderResponse? response = null
+    )
     {
         Ranking = ranking ?? Array.Empty<RerankModelRank>();
         Warnings = warnings ?? Array.Empty<OperationWarning>();
@@ -69,7 +74,14 @@ public sealed class RerankModelResponse
 public sealed class RerankModelCall
 {
     /// <summary>Creates a model call.</summary>
-    public RerankModelCall(RerankModelDocuments documents, string query, int? topN, JsonElement? providerOptions, IReadOnlyDictionary<string, string>? headers, CancellationToken cancellationToken)
+    public RerankModelCall(
+        RerankModelDocuments documents,
+        string query,
+        int? topN,
+        JsonElement? providerOptions,
+        IReadOnlyDictionary<string, string>? headers,
+        CancellationToken cancellationToken
+    )
     {
         Documents = documents;
         Query = query ?? string.Empty;
@@ -108,7 +120,10 @@ public interface IRerankCaller
     string ModelId { get; }
 
     /// <summary>Reranks documents.</summary>
-    Task<RerankModelResponse> DoRerankAsync(RerankModelCall call, CancellationToken cancellationToken);
+    Task<RerankModelResponse> DoRerankAsync(
+        RerankModelCall call,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>One document in the reranked order.</summary>
@@ -136,7 +151,13 @@ public sealed class RankedDocument
 public sealed class RerankResponseInfo
 {
     /// <summary>Creates response metadata.</summary>
-    public RerankResponseInfo(string? id, DateTime timestamp, string modelId, IReadOnlyDictionary<string, string>? headers, JsonElement? body)
+    public RerankResponseInfo(
+        string? id,
+        DateTime timestamp,
+        string modelId,
+        IReadOnlyDictionary<string, string>? headers,
+        JsonElement? body
+    )
     {
         Id = id;
         Timestamp = timestamp;
@@ -167,7 +188,12 @@ public sealed class RerankResult
     private readonly IReadOnlyList<RankedDocument> _ranking;
 
     /// <summary>Creates a rerank result. The ranking list is copied.</summary>
-    public RerankResult(IReadOnlyList<object?> originalDocuments, IReadOnlyList<RankedDocument> ranking, JsonElement? providerMetadata, RerankResponseInfo response)
+    public RerankResult(
+        IReadOnlyList<object?> originalDocuments,
+        IReadOnlyList<RankedDocument> ranking,
+        JsonElement? providerMetadata,
+        RerankResponseInfo response
+    )
     {
         OriginalDocuments = originalDocuments ?? Array.Empty<object?>();
         var copy = new List<RankedDocument>();
@@ -213,7 +239,19 @@ public sealed class RerankResult
 public sealed class RerankStartEvent
 {
     /// <summary>Creates a start event.</summary>
-    public RerankStartEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, IReadOnlyList<object?> documents, string query, int? topN, int maxRetries, IReadOnlyDictionary<string, string>? headers, JsonElement? providerOptions)
+    public RerankStartEvent(
+        string callId,
+        string operationId,
+        IReadOnlyDictionary<string, object?> runtimeContext,
+        string provider,
+        string modelId,
+        IReadOnlyList<object?> documents,
+        string query,
+        int? topN,
+        int maxRetries,
+        IReadOnlyDictionary<string, string>? headers,
+        JsonElement? providerOptions
+    )
     {
         CallId = callId;
         OperationId = operationId;
@@ -266,7 +304,19 @@ public sealed class RerankStartEvent
 public sealed class RerankEndEvent
 {
     /// <summary>Creates an end event.</summary>
-    public RerankEndEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, IReadOnlyList<object?> documents, string query, IReadOnlyList<RankedDocument> ranking, IReadOnlyList<OperationWarning> warnings, JsonElement? providerMetadata, RerankResponseInfo response)
+    public RerankEndEvent(
+        string callId,
+        string operationId,
+        IReadOnlyDictionary<string, object?> runtimeContext,
+        string provider,
+        string modelId,
+        IReadOnlyList<object?> documents,
+        string query,
+        IReadOnlyList<RankedDocument> ranking,
+        IReadOnlyList<OperationWarning> warnings,
+        JsonElement? providerMetadata,
+        RerankResponseInfo response
+    )
     {
         CallId = callId;
         OperationId = operationId;
@@ -341,7 +391,14 @@ public sealed class RerankTelemetry
 public sealed class RerankModelCallEvent
 {
     /// <summary>Creates the event.</summary>
-    public RerankModelCallEvent(string callId, string operationId, string provider, string modelId, string? documentsType, IReadOnlyList<RerankModelRank>? ranking)
+    public RerankModelCallEvent(
+        string callId,
+        string operationId,
+        string provider,
+        string modelId,
+        string? documentsType,
+        IReadOnlyList<RerankModelRank>? ranking
+    )
     {
         CallId = callId;
         OperationId = operationId;
@@ -408,14 +465,18 @@ public sealed class RerankRequest : OperationRequest
 public static class Rerank
 {
     /// <summary>Reranks <see cref="RerankRequest.Documents"/>.</summary>
-    public static async Task<RerankResult> RerankAsync(RerankRequest request, CancellationToken cancellationToken = default)
+    public static async Task<RerankResult> RerankAsync(
+        RerankRequest request,
+        CancellationToken cancellationToken = default
+    )
     {
         if (request == null)
         {
             throw new ArgumentNullException(nameof(request));
         }
 
-        var model = request.Model ?? throw new InvalidArgumentException("model", null, "model is required");
+        var model = request.Model
+            ?? throw new InvalidArgumentException("model", null, "model is required");
         var documents = request.Documents ?? Array.Empty<object?>();
         var callId = (request.GenerateCallId ?? Embed.DefaultCallId)();
         var telemetry = request.Telemetry ?? request.ExperimentalTelemetry;
@@ -426,44 +487,126 @@ public static class Rerank
         if (documents.Count == 0)
         {
             var emptyRetries = request.MaxRetries ?? 2;
-            var emptyStart = new RerankStartEvent(callId, "ai.rerank", context, model.Provider, model.ModelId, documents, request.Query, request.TopN, emptyRetries, request.Headers, request.ProviderOptions);
+            var emptyStart = new RerankStartEvent(
+                callId,
+                "ai.rerank",
+                context,
+                model.Provider,
+                model.ModelId,
+                documents,
+                request.Query,
+                request.TopN,
+                emptyRetries,
+                request.Headers,
+                request.ProviderOptions
+            );
             await NotifyStartAsync(emptyStart, onStart, telemetry).ConfigureAwait(false);
             var emptyResponse = new RerankResponseInfo(null, now(), model.ModelId, null, null);
             var emptyRanking = Array.Empty<RankedDocument>();
-            var emptyEnd = new RerankEndEvent(callId, "ai.rerank", context, model.Provider, model.ModelId, documents, request.Query, emptyRanking, Array.Empty<OperationWarning>(), null, emptyResponse);
+            var emptyEnd = new RerankEndEvent(
+                callId,
+                "ai.rerank",
+                context,
+                model.Provider,
+                model.ModelId,
+                documents,
+                request.Query,
+                emptyRanking,
+                Array.Empty<OperationWarning>(),
+                null,
+                emptyResponse
+            );
             await NotifyEndAsync(emptyEnd, onEnd, telemetry).ConfigureAwait(false);
             return new RerankResult(Array.Empty<object?>(), emptyRanking, null, emptyResponse);
         }
 
-        var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
+        var token = request.CancellationToken.CanBeCanceled
+            ? request.CancellationToken
+            : cancellationToken;
         var maxRetries = OperationRetry.ResolveMaxRetries(request.MaxRetries);
         var text = documents[0] is string;
         var sent = new RerankModelDocuments(text ? "text" : "object", documents);
-        var start = new RerankStartEvent(callId, "ai.rerank", context, model.Provider, model.ModelId, documents, request.Query, request.TopN, maxRetries, request.Headers, request.ProviderOptions);
+        var start = new RerankStartEvent(
+            callId,
+            "ai.rerank",
+            context,
+            model.Provider,
+            model.ModelId,
+            documents,
+            request.Query,
+            request.TopN,
+            maxRetries,
+            request.Headers,
+            request.ProviderOptions
+        );
         await NotifyStartAsync(start, onStart, telemetry).ConfigureAwait(false);
         try
         {
-            var outcome = await OperationRetry.ExecuteAsync(maxRetries, token, request.AbortReason, async ct =>
-            {
-                if (telemetry?.OnRerankStart != null)
-                {
-                    await telemetry.OnRerankStart(new RerankModelCallEvent(callId, "ai.rerank.doRerank", model.Provider, model.ModelId, sent.Type, null)).ConfigureAwait(false);
-                }
+            var outcome = await OperationRetry
+                .ExecuteAsync(
+                    maxRetries,
+                    token,
+                    request.AbortReason,
+                    async ct =>
+                    {
+                        if (telemetry?.OnRerankStart != null)
+                        {
+                            await telemetry
+                                .OnRerankStart(
+                                    new RerankModelCallEvent(
+                                        callId,
+                                        "ai.rerank.doRerank",
+                                        model.Provider,
+                                        model.ModelId,
+                                        sent.Type,
+                                        null
+                                    )
+                                )
+                                .ConfigureAwait(false);
+                        }
 
-                var response = await model.DoRerankAsync(new RerankModelCall(sent, request.Query, request.TopN, request.ProviderOptions, request.Headers, ct), ct).ConfigureAwait(false);
-                if (telemetry?.OnRerankEnd != null)
-                {
-                    await telemetry.OnRerankEnd(new RerankModelCallEvent(callId, "ai.rerank.doRerank", model.Provider, model.ModelId, sent.Type, response.Ranking)).ConfigureAwait(false);
-                }
+                        var response = await model
+                            .DoRerankAsync(
+                                new RerankModelCall(
+                                    sent,
+                                    request.Query,
+                                    request.TopN,
+                                    request.ProviderOptions,
+                                    request.Headers,
+                                    ct
+                                ),
+                                ct
+                            )
+                            .ConfigureAwait(false);
+                        if (telemetry?.OnRerankEnd != null)
+                        {
+                            await telemetry
+                                .OnRerankEnd(
+                                    new RerankModelCallEvent(
+                                        callId,
+                                        "ai.rerank.doRerank",
+                                        model.Provider,
+                                        model.ModelId,
+                                        sent.Type,
+                                        response.Ranking
+                                    )
+                                )
+                                .ConfigureAwait(false);
+                        }
 
-                return response;
-            }, null).ConfigureAwait(false);
+                        return response;
+                    },
+                    null
+                )
+                .ConfigureAwait(false);
             Validate(outcome.Ranking, documents);
             WarningLog.Write(outcome.Warnings, model.Provider, model.ModelId);
             var ranking = new List<RankedDocument>();
             foreach (var rank in outcome.Ranking)
             {
-                ranking.Add(new RankedDocument(rank.Index, rank.RelevanceScore, documents[rank.Index]));
+                ranking.Add(
+                    new RankedDocument(rank.Index, rank.RelevanceScore, documents[rank.Index])
+                );
             }
 
             var providerResponse = outcome.Response;
@@ -472,9 +615,22 @@ public static class Rerank
                 providerResponse?.Timestamp ?? now(),
                 providerResponse?.ModelId ?? model.ModelId,
                 providerResponse?.Headers,
-                providerResponse?.Body);
+                providerResponse?.Body
+            );
             var callbackRanking = new List<RankedDocument>(ranking);
-            var end = new RerankEndEvent(callId, "ai.rerank", context, model.Provider, model.ModelId, documents, request.Query, callbackRanking, outcome.Warnings, outcome.ProviderMetadata, responseInfo);
+            var end = new RerankEndEvent(
+                callId,
+                "ai.rerank",
+                context,
+                model.Provider,
+                model.ModelId,
+                documents,
+                request.Query,
+                callbackRanking,
+                outcome.Warnings,
+                outcome.ProviderMetadata,
+                responseInfo
+            );
             await NotifyEndAsync(end, onEnd, telemetry).ConfigureAwait(false);
             return new RerankResult(documents, ranking, outcome.ProviderMetadata, responseInfo);
         }
@@ -496,18 +652,34 @@ public static class Rerank
         }
     }
 
-    private static void Validate(IReadOnlyList<RerankModelRank> ranking, IReadOnlyList<object?> documents)
+    private static void Validate(
+        IReadOnlyList<RerankModelRank> ranking,
+        IReadOnlyList<object?> documents
+    )
     {
         foreach (var rank in ranking)
         {
             if (rank.Index < 0 || rank.Index >= documents.Count)
             {
-                throw new InvalidResponseDataException(ranking, "Invalid ranking index " + rank.Index.ToString(System.Globalization.CultureInfo.InvariantCulture) + ". Expected an integer between 0 and " + (documents.Count - 1).ToString(System.Globalization.CultureInfo.InvariantCulture) + ".");
+                throw new InvalidResponseDataException(
+                    ranking,
+                    "Invalid ranking index "
+                        + rank.Index.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                        + ". Expected an integer between 0 and "
+                        + (documents.Count - 1).ToString(
+                            System.Globalization.CultureInfo.InvariantCulture
+                        )
+                        + "."
+                );
             }
         }
     }
 
-    private static Task NotifyStartAsync(RerankStartEvent payload, Func<RerankStartEvent, Task>? onStart, RerankTelemetry? telemetry)
+    private static Task NotifyStartAsync(
+        RerankStartEvent payload,
+        Func<RerankStartEvent, Task>? onStart,
+        RerankTelemetry? telemetry
+    )
     {
         Func<RerankStartEvent, Task>? telemetryStart = null;
         if (telemetry != null && telemetry.OnStart != null)
@@ -520,7 +692,11 @@ public static class Rerank
         return OperationCallbacks.NotifyAsync(payload, onStart, telemetryStart);
     }
 
-    private static Task NotifyEndAsync(RerankEndEvent payload, Func<RerankEndEvent, Task>? onEnd, RerankTelemetry? telemetry)
+    private static Task NotifyEndAsync(
+        RerankEndEvent payload,
+        Func<RerankEndEvent, Task>? onEnd,
+        RerankTelemetry? telemetry
+    )
     {
         Func<RerankEndEvent, Task>? telemetryEnd = null;
         if (telemetry != null && telemetry.OnEnd != null)
@@ -535,11 +711,35 @@ public static class Rerank
 
     private static RerankStartEvent WithContext(RerankStartEvent source, RerankTelemetry telemetry)
     {
-        return new RerankStartEvent(source.CallId, source.OperationId, Embed.FilterContext(source.RuntimeContext, telemetry.IncludeRuntimeContext), source.Provider, source.ModelId, source.Documents, source.Query, source.TopN, source.MaxRetries, source.Headers, source.ProviderOptions);
+        return new RerankStartEvent(
+            source.CallId,
+            source.OperationId,
+            Embed.FilterContext(source.RuntimeContext, telemetry.IncludeRuntimeContext),
+            source.Provider,
+            source.ModelId,
+            source.Documents,
+            source.Query,
+            source.TopN,
+            source.MaxRetries,
+            source.Headers,
+            source.ProviderOptions
+        );
     }
 
     private static RerankEndEvent WithContext(RerankEndEvent source, RerankTelemetry telemetry)
     {
-        return new RerankEndEvent(source.CallId, source.OperationId, Embed.FilterContext(source.RuntimeContext, telemetry.IncludeRuntimeContext), source.Provider, source.ModelId, source.Documents, source.Query, source.Ranking, source.Warnings, source.ProviderMetadata, source.Response);
+        return new RerankEndEvent(
+            source.CallId,
+            source.OperationId,
+            Embed.FilterContext(source.RuntimeContext, telemetry.IncludeRuntimeContext),
+            source.Provider,
+            source.ModelId,
+            source.Documents,
+            source.Query,
+            source.Ranking,
+            source.Warnings,
+            source.ProviderMetadata,
+            source.Response
+        );
     }
 }

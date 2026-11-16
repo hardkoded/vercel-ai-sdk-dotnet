@@ -22,19 +22,23 @@ public sealed class GroqProvider : OpenAICompatibleProvider
 
     /// <summary>Creates a provider.</summary>
     public GroqProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
-        : base(Prepare(options), httpClient)
-    {
-    }
+        : base(Prepare(options), httpClient) { }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static new GroqProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new GroqProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new GroqProvider(client, options);
     }
 
     /// <inheritdoc />
-    public override ITranscriptionModel TranscriptionModel(string modelId) => new GroqTranscriptionModel(this, modelId);
+    public override ITranscriptionModel TranscriptionModel(string modelId) =>
+        new GroqTranscriptionModel(this, modelId);
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
@@ -44,7 +48,10 @@ public sealed class GroqProvider : OpenAICompatibleProvider
             ["image/*"] = "^https?://.*\\z",
         };
 
-        if (string.IsNullOrEmpty(options.ProviderName) || options.ProviderName == "openai-compatible")
+        if (
+            string.IsNullOrEmpty(options.ProviderName)
+            || options.ProviderName == "openai-compatible"
+        )
         {
             options.ProviderName = ProviderId;
         }
@@ -78,14 +85,20 @@ public sealed class GroqProvider : OpenAICompatibleProvider
 public static class GroqServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddGroq(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddGroq(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(GroqProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new GroqProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(GroqProvider.ProviderId), options);
+            return new GroqProvider(
+                sp.GetRequiredService<IHttpClientFactory>().CreateClient(GroqProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

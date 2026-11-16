@@ -12,7 +12,12 @@ namespace Vercel.AI.GenerateText;
 public sealed class FingerprintTool
 {
     /// <summary>Creates a tool definition.</summary>
-    public FingerprintTool(JsonElement inputSchema, string? description = null, bool descriptionIsFunction = false, string? title = null)
+    public FingerprintTool(
+        JsonElement inputSchema,
+        string? description = null,
+        bool descriptionIsFunction = false,
+        string? title = null
+    )
     {
         InputSchema = inputSchema;
         Description = description;
@@ -37,7 +42,11 @@ public sealed class FingerprintTool
 public sealed class ToolDrift
 {
     /// <summary>Creates a drift report.</summary>
-    public ToolDrift(IReadOnlyList<string> added, IReadOnlyList<string> removed, IReadOnlyList<string> changed)
+    public ToolDrift(
+        IReadOnlyList<string> added,
+        IReadOnlyList<string> removed,
+        IReadOnlyList<string> changed
+    )
     {
         Added = added ?? Array.Empty<string>();
         Removed = removed ?? Array.Empty<string>();
@@ -58,7 +67,9 @@ public sealed class ToolDrift
 public static class ToolFingerprints
 {
     /// <summary>Returns a stable digest for each tool. Function descriptions hash as a single placeholder.</summary>
-    public static IReadOnlyDictionary<string, string> FingerprintTools(IReadOnlyDictionary<string, FingerprintTool> tools)
+    public static IReadOnlyDictionary<string, string> FingerprintTools(
+        IReadOnlyDictionary<string, FingerprintTool> tools
+    )
     {
         if (tools is null)
         {
@@ -75,7 +86,10 @@ public static class ToolFingerprints
     }
 
     /// <summary>Diffs two fingerprint maps. Names are compared as own keys.</summary>
-    public static ToolDrift DetectToolDrift(IReadOnlyDictionary<string, string> current, IReadOnlyDictionary<string, string> baseline)
+    public static ToolDrift DetectToolDrift(
+        IReadOnlyDictionary<string, string> current,
+        IReadOnlyDictionary<string, string> baseline
+    )
     {
         if (current is null)
         {
@@ -115,12 +129,18 @@ public static class ToolFingerprints
 
     private static string Digest(FingerprintTool tool)
     {
-        var description = tool.DescriptionIsFunction
-            ? "{\"type\":\"function\"}"
-            : tool.Description is null
-                ? "{\"type\":\"none\"}"
-                : "{\"type\":\"string\",\"value\":" + JsonSerializer.Serialize(tool.Description) + "}";
-        var canonical = "{\"description\":" + description + ",\"inputSchema\":" + CanonicalHash.CanonicalJson(tool.InputSchema) + ",\"title\":" + (tool.Title is null ? "null" : JsonSerializer.Serialize(tool.Title)) + "}";
+        var description =
+            tool.DescriptionIsFunction ? "{\"type\":\"function\"}"
+            : tool.Description is null ? "{\"type\":\"none\"}"
+            : "{\"type\":\"string\",\"value\":" + JsonSerializer.Serialize(tool.Description) + "}";
+        var canonical =
+            "{\"description\":"
+            + description
+            + ",\"inputSchema\":"
+            + CanonicalHash.CanonicalJson(tool.InputSchema)
+            + ",\"title\":"
+            + (tool.Title is null ? "null" : JsonSerializer.Serialize(tool.Title))
+            + "}";
         using var sha = SHA256.Create();
         return CanonicalHash.ToBase64Url(sha.ComputeHash(Encoding.UTF8.GetBytes(canonical)));
     }

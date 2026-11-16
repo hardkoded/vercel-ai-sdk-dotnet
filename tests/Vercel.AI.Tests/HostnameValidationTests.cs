@@ -83,15 +83,21 @@ public sealed class BedrockRuntimeRegionValidationTests
                 SecretAccessKey = "secret",
                 UtcNow = () => new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
             },
-            handler);
-        var error = await Assert.ThrowsAsync<ArgumentException>(() => provider.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None));
+            handler
+        );
+        var error = await Assert.ThrowsAsync<ArgumentException>(() =>
+            provider.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None)
+        );
         Assert.Contains("AWS region must be a single DNS label", error.Message);
         Assert.Equal(0, handler.Calls);
     }
 
     private static LanguageModelCallOptions Prompt()
     {
-        return new LanguageModelCallOptions { Prompt = new ModelMessage[] { new UserModelMessage("hi") } };
+        return new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[] { new UserModelMessage("hi") },
+        };
     }
 }
 
@@ -108,7 +114,9 @@ public sealed class VertexLocationValidationTests
     public void RejectsBeforeFetching(string location)
     {
         var handler = new ScriptedHandler();
-        var error = Assert.Throws<ArgumentException>(() => GoogleVertexProvider.Create(Options(location), handler));
+        var error = Assert.Throws<ArgumentException>(() =>
+            GoogleVertexProvider.Create(Options(location), handler)
+        );
         Assert.Contains("Vertex location must be a single DNS label", error.Message);
         Assert.Equal(0, handler.Calls);
     }
@@ -140,7 +148,8 @@ public sealed class VertexLocationValidationTests
                 Region = "not a region",
                 BaseUrl = "https://proxy.example/v1",
             },
-            handler);
+            handler
+        );
         await provider.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
         Assert.Equal("https://proxy.example/v1", provider.Options.BaseUrl);
         Assert.StartsWith("https://proxy.example/v1/", handler.Uri);
@@ -159,7 +168,8 @@ public sealed class VertexLocationValidationTests
                 Region = string.Empty,
                 BaseUrl = "https://proxy.example/v1",
             },
-            handler);
+            handler
+        );
         await provider.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
         Assert.Equal("https://proxy.example/v1", provider.Options.BaseUrl);
         Assert.StartsWith("https://proxy.example/v1/", handler.Uri);
@@ -168,11 +178,19 @@ public sealed class VertexLocationValidationTests
 
     private static VertexOptions Options(string location)
     {
-        return new VertexOptions { ApiKey = "secret", Project = "demo", Region = location };
+        return new VertexOptions
+        {
+            ApiKey = "secret",
+            Project = "demo",
+            Region = location,
+        };
     }
 
     private static LanguageModelCallOptions Prompt()
     {
-        return new LanguageModelCallOptions { Prompt = new ModelMessage[] { new UserModelMessage("hi") } };
+        return new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[] { new UserModelMessage("hi") },
+        };
     }
 }

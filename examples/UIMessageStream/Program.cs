@@ -11,9 +11,13 @@ using Vercel.AI.Testing;
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 var gatewayKey = Environment.GetEnvironmentVariable("AI_GATEWAY_API_KEY");
-var client = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = gatewayKey ?? "local" }));
+var client = new AiClient(
+    GatewayProvider.Create(new GatewayOptions { ApiKey = gatewayKey ?? "local" })
+);
 
-app.MapGet("/", () => Results.Text("POST /chat with {\"prompt\":\"...\"} to stream a UI message response."));
+app.MapGet("/", () =>
+    Results.Text("POST /chat with {\"prompt\":\"...\"} to stream a UI message response.")
+);
 
 app.MapPost("/chat", (ChatRequest request, CancellationToken cancellationToken) =>
 {
@@ -28,11 +32,14 @@ app.MapPost("/chat", (ChatRequest request, CancellationToken cancellationToken) 
         }
         : GatewayProvider.Create().LanguageModel("openai/gpt-4.1-mini");
 
-    var stream = client.StreamTextAsync(new StreamTextOptions
-    {
-        Model = model,
-        Prompt = string.IsNullOrWhiteSpace(request.Prompt) ? "Hello" : request.Prompt,
-    }, cancellationToken);
+    var stream = client.StreamTextAsync(
+        new StreamTextOptions
+        {
+            Model = model,
+            Prompt = string.IsNullOrWhiteSpace(request.Prompt) ? "Hello" : request.Prompt,
+        },
+        cancellationToken
+    );
     return stream.ToUIMessageStreamResult();
 });
 

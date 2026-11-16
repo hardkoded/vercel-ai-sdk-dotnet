@@ -39,116 +39,183 @@ public sealed class DoGenerateBasicTextResponseTests
     [Fact]
     [UpstreamTest(
         "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > basic text response::should omit reasoning effort updates for models before GPT-6",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_omit_reasoning_effort_updates_for_models_before_GPT_6()
     {
-        var prepared = OpenAIResponsesLanguageModel.Prepare("gpt-5.6", new LanguageModelCallOptions
-        {
-            Prompt = OpenAIUpstream.Hello().Prompt,
-            ProviderOptions = OpenAIUpstream.OpenAIOptionsJson("""{"reasoningEffortUpdate":"high"}"""),
-        }, false);
+        var prepared = OpenAIResponsesLanguageModel.Prepare(
+            "gpt-5.6",
+            new LanguageModelCallOptions
+            {
+                Prompt = OpenAIUpstream.Hello().Prompt,
+                ProviderOptions = OpenAIUpstream.OpenAIOptionsJson(
+                    """{"reasoningEffortUpdate":"high"}"""
+                ),
+            },
+            false
+        );
 
-        OpenAIUpstream.Equal(prepared.Body["input"], """[{ "role": "user", "content": [{ "type": "input_text", "text": "Hello" }] }]""");
+        OpenAIUpstream.Equal(
+            prepared.Body["input"],
+            """[{ "role": "user", "content": [{ "type": "input_text", "text": "Hello" }] }]"""
+        );
         var warning = Assert.Single(prepared.Warnings);
         Assert.Equal("unsupported", warning.Type);
         Assert.Equal("reasoningEffortUpdate", warning.Feature);
-        Assert.Equal("Configuration updates are only supported by GPT-6 and later models", warning.Details);
+        Assert.Equal(
+            "Configuration updates are only supported by GPT-6 and later models",
+            warning.Details
+        );
     }
 
     [Fact]
     [UpstreamTest(
         "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > basic text response::should omit reasoning effort updates with incompatible automatic context management",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_omit_reasoning_effort_updates_with_incompatible_automatic_context_management()
     {
-        var prepared = OpenAIResponsesLanguageModel.Prepare("gpt-6-astra", new LanguageModelCallOptions
-        {
-            Prompt = OpenAIUpstream.Hello().Prompt,
-            ProviderOptions = OpenAIUpstream.OpenAIOptionsJson("""{"reasoningEffortUpdate":"high","contextManagement":[{"type":"compaction","compactThreshold":1000}]}"""),
-        }, false);
+        var prepared = OpenAIResponsesLanguageModel.Prepare(
+            "gpt-6-astra",
+            new LanguageModelCallOptions
+            {
+                Prompt = OpenAIUpstream.Hello().Prompt,
+                ProviderOptions = OpenAIUpstream.OpenAIOptionsJson(
+                    """{"reasoningEffortUpdate":"high","contextManagement":[{"type":"compaction","compactThreshold":1000}]}"""
+                ),
+            },
+            false
+        );
 
-        OpenAIUpstream.Equal(prepared.Body["input"], """[{ "role": "user", "content": [{ "type": "input_text", "text": "Hello" }] }]""");
+        OpenAIUpstream.Equal(
+            prepared.Body["input"],
+            """[{ "role": "user", "content": [{ "type": "input_text", "text": "Hello" }] }]"""
+        );
         var warning = Assert.Single(prepared.Warnings);
         Assert.Equal("unsupported", warning.Type);
         Assert.Equal("reasoningEffortUpdate", warning.Feature);
-        Assert.Equal("Configuration updates require standard reasoning mode without automatic compaction or automatic truncation", warning.Details);
+        Assert.Equal(
+            "Configuration updates require standard reasoning mode without automatic compaction or automatic truncation",
+            warning.Details
+        );
     }
 
     [Fact]
     [UpstreamTest(
         "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > basic text response::should send a 12h promptCacheOptions ttl and prewarm",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_send_a_12h_promptCacheOptions_ttl_and_prewarm()
     {
-        var prepared = OpenAIResponsesLanguageModel.Prepare("gpt-6.1-sol", new LanguageModelCallOptions
-        {
-            Prompt = OpenAIUpstream.Hello().Prompt,
-            ProviderOptions = OpenAIUpstream.OpenAIOptionsJson("""{"promptCacheOptions":{"mode":"implicit","ttl":"12h","prewarm":true}}"""),
-        }, false);
+        var prepared = OpenAIResponsesLanguageModel.Prepare(
+            "gpt-6.1-sol",
+            new LanguageModelCallOptions
+            {
+                Prompt = OpenAIUpstream.Hello().Prompt,
+                ProviderOptions = OpenAIUpstream.OpenAIOptionsJson(
+                    """{"promptCacheOptions":{"mode":"implicit","ttl":"12h","prewarm":true}}"""
+                ),
+            },
+            false
+        );
 
-        OpenAIUpstream.Equal(prepared.Body, """
+        OpenAIUpstream.Equal(
+            prepared.Body,
+            """
             {
               "model": "gpt-6.1-sol",
               "input": [{ "role": "user", "content": [{ "type": "input_text", "text": "Hello" }] }],
               "prompt_cache_options": { "mode": "implicit", "ttl": "12h", "prewarm": true }
             }
-            """);
+            """
+        );
         Assert.Empty(prepared.Warnings);
     }
 
     [Fact]
     [UpstreamTest(
         "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > basic text response::should send a 12h ttl on a prompt cache breakpoint",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_send_a_12h_ttl_on_a_prompt_cache_breakpoint()
     {
-        var prepared = OpenAIResponsesLanguageModel.Prepare("gpt-6.1-sol", new LanguageModelCallOptions
-        {
-            Prompt = new ModelMessage[]
+        var prepared = OpenAIResponsesLanguageModel.Prepare(
+            "gpt-6.1-sol",
+            new LanguageModelCallOptions
             {
-                new UserModelMessage(new UserContentPart[]
+                Prompt = new ModelMessage[]
                 {
-                    new TextContentPart("Stable prefix")
-                    {
-                        ProviderOptions = OpenAIUpstream.OpenAIOptionsJson("""{"promptCacheBreakpoint":{"mode":"explicit","ttl":"12h"}}"""),
-                    },
-                }),
+                    new UserModelMessage(
+                        new UserContentPart[]
+                        {
+                            new TextContentPart("Stable prefix")
+                            {
+                                ProviderOptions = OpenAIUpstream.OpenAIOptionsJson(
+                                    """{"promptCacheBreakpoint":{"mode":"explicit","ttl":"12h"}}"""
+                                ),
+                            },
+                        }
+                    ),
+                },
             },
-        }, false);
+            false
+        );
 
         var part = prepared.Body["input"]![0]!["content"]![0]!;
         Assert.Equal("input_text", part["type"]!.GetValue<string>());
         Assert.Equal("Stable prefix", part["text"]!.GetValue<string>());
-        OpenAIUpstream.Equal(part["prompt_cache_breakpoint"], """{ "mode": "explicit", "ttl": "12h" }""");
+        OpenAIUpstream.Equal(
+            part["prompt_cache_breakpoint"],
+            """{ "mode": "explicit", "ttl": "12h" }"""
+        );
     }
 
     [Fact]
     [UpstreamTest(
         "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > basic text response::should reject an unsupported promptCacheOptions ttl",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_reject_an_unsupported_promptCacheOptions_ttl()
     {
         var capture = new OpenAICapture { ResponseJson = OpenAIUpstream.ResponsesEmpty };
         await Assert.ThrowsAsync<InvalidArgumentException>(() =>
-            OpenAIUpstream.Provider(capture).ResponsesModel("gpt-6.1-sol").DoGenerateAsync(new LanguageModelCallOptions
-            {
-                Prompt = OpenAIUpstream.Hello().Prompt,
-                ProviderOptions = OpenAIUpstream.OpenAIOptionsJson("""{"promptCacheOptions":{"ttl":"24h"}}"""),
-            }, CancellationToken.None));
+            OpenAIUpstream
+                .Provider(capture)
+                .ResponsesModel("gpt-6.1-sol")
+                .DoGenerateAsync(
+                    new LanguageModelCallOptions
+                    {
+                        Prompt = OpenAIUpstream.Hello().Prompt,
+                        ProviderOptions = OpenAIUpstream.OpenAIOptionsJson(
+                            """{"promptCacheOptions":{"ttl":"24h"}}"""
+                        ),
+                    },
+                    CancellationToken.None
+                )
+        );
     }
 
     [Fact]
     [UpstreamTest(
         "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > basic text response::should return empty content for a prewarm response",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_return_empty_content_for_a_prewarm_response()
     {
         var capture = new OpenAICapture { ResponseJson = PrewarmResponse };
-        var result = await OpenAIUpstream.Provider(capture).ResponsesModel("gpt-6.1-sol").DoGenerateAsync(new LanguageModelCallOptions
-        {
-            Prompt = OpenAIUpstream.Hello().Prompt,
-            ProviderOptions = OpenAIUpstream.OpenAIOptionsJson("""{"promptCacheOptions":{"ttl":"12h","prewarm":true}}"""),
-        }, CancellationToken.None);
+        var result = await OpenAIUpstream
+            .Provider(capture)
+            .ResponsesModel("gpt-6.1-sol")
+            .DoGenerateAsync(
+                new LanguageModelCallOptions
+                {
+                    Prompt = OpenAIUpstream.Hello().Prompt,
+                    ProviderOptions = OpenAIUpstream.OpenAIOptionsJson(
+                        """{"promptCacheOptions":{"ttl":"12h","prewarm":true}}"""
+                    ),
+                },
+                CancellationToken.None
+            );
 
         Assert.Empty(result.Content);
         Assert.Empty(result.Warnings);

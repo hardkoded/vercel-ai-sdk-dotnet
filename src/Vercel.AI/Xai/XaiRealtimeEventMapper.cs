@@ -26,7 +26,9 @@ public static class XaiRealtimeEventMapper
             case "session.created":
                 return new RealtimeModelV4ServerEvent("session-created")
                 {
-                    SessionId = Object(clone, "session") is { } session ? String(session, "id") : null,
+                    SessionId = Object(clone, "session") is { } session
+                        ? String(session, "id")
+                        : null,
                     Raw = clone,
                 };
 
@@ -37,10 +39,18 @@ public static class XaiRealtimeEventMapper
                 return Custom(type, clone);
 
             case "input_audio_buffer.speech_started":
-                return new RealtimeModelV4ServerEvent("speech-started") { ItemId = String(clone, "item_id"), Raw = clone };
+                return new RealtimeModelV4ServerEvent("speech-started")
+                {
+                    ItemId = String(clone, "item_id"),
+                    Raw = clone,
+                };
 
             case "input_audio_buffer.speech_stopped":
-                return new RealtimeModelV4ServerEvent("speech-stopped") { ItemId = String(clone, "item_id"), Raw = clone };
+                return new RealtimeModelV4ServerEvent("speech-stopped")
+                {
+                    ItemId = String(clone, "item_id"),
+                    Raw = clone,
+                };
 
             case "input_audio_buffer.committed":
                 return new RealtimeModelV4ServerEvent("audio-committed")
@@ -68,25 +78,43 @@ public static class XaiRealtimeEventMapper
                 };
 
             case "response.created":
-                return new RealtimeModelV4ServerEvent("response-created") { ResponseId = ResponseId(clone), Raw = clone };
+                return new RealtimeModelV4ServerEvent("response-created")
+                {
+                    ResponseId = ResponseId(clone),
+                    Raw = clone,
+                };
 
             case "response.done":
+            {
+                var response = Object(clone, "response");
+                return new RealtimeModelV4ServerEvent("response-done")
                 {
-                    var response = Object(clone, "response");
-                    return new RealtimeModelV4ServerEvent("response-done")
-                    {
-                        ResponseId = ResponseId(clone),
-                        Status = (response != null ? String(response.Value, "status") : null) ?? "completed",
-                        Usage = MapResponseUsage(Object(clone, "usage") ?? (response != null ? Object(response.Value, "usage") : null)),
-                        Raw = clone,
-                    };
-                }
+                    ResponseId = ResponseId(clone),
+                    Status = (response != null ? String(response.Value, "status") : null)
+                        ?? "completed",
+                    Usage = MapResponseUsage(
+                        Object(clone, "usage")
+                            ?? (response != null ? Object(response.Value, "usage") : null)
+                    ),
+                    Raw = clone,
+                };
+            }
 
             case "response.output_item.added":
-                return new RealtimeModelV4ServerEvent("output-item-added") { ResponseId = String(clone, "response_id"), ItemId = ItemId(clone), Raw = clone };
+                return new RealtimeModelV4ServerEvent("output-item-added")
+                {
+                    ResponseId = String(clone, "response_id"),
+                    ItemId = ItemId(clone),
+                    Raw = clone,
+                };
 
             case "response.output_item.done":
-                return new RealtimeModelV4ServerEvent("output-item-done") { ResponseId = String(clone, "response_id"), ItemId = ItemId(clone), Raw = clone };
+                return new RealtimeModelV4ServerEvent("output-item-done")
+                {
+                    ResponseId = String(clone, "response_id"),
+                    ItemId = ItemId(clone),
+                    Raw = clone,
+                };
 
             case "response.content_part.added":
                 return Response("content-part-added", clone);
@@ -104,7 +132,11 @@ public static class XaiRealtimeEventMapper
                 return Response("audio-transcript-delta", clone, delta: String(clone, "delta"));
 
             case "response.output_audio_transcript.done":
-                return Response("audio-transcript-done", clone, transcript: String(clone, "transcript"));
+                return Response(
+                    "audio-transcript-done",
+                    clone,
+                    transcript: String(clone, "transcript")
+                );
 
             case "response.text.delta":
                 return Response("text-delta", clone, delta: String(clone, "delta"));
@@ -113,10 +145,21 @@ public static class XaiRealtimeEventMapper
                 return Response("text-done", clone, text: String(clone, "text"));
 
             case "response.function_call_arguments.delta":
-                return Response("function-call-arguments-delta", clone, delta: String(clone, "delta"), callId: String(clone, "call_id"));
+                return Response(
+                    "function-call-arguments-delta",
+                    clone,
+                    delta: String(clone, "delta"),
+                    callId: String(clone, "call_id")
+                );
 
             case "response.function_call_arguments.done":
-                return Response("function-call-arguments-done", clone, callId: String(clone, "call_id"), name: String(clone, "name"), arguments: String(clone, "arguments"));
+                return Response(
+                    "function-call-arguments-done",
+                    clone,
+                    callId: String(clone, "call_id"),
+                    name: String(clone, "name"),
+                    arguments: String(clone, "arguments")
+                );
 
             case "mcp_list_tools.in_progress":
             case "mcp_list_tools.completed":
@@ -129,15 +172,18 @@ public static class XaiRealtimeEventMapper
                 return Custom(type, clone);
 
             case "error":
+            {
+                var error = Object(clone, "error");
+                return new RealtimeModelV4ServerEvent("error")
                 {
-                    var error = Object(clone, "error");
-                    return new RealtimeModelV4ServerEvent("error")
-                    {
-                        Message = (error != null ? String(error.Value, "message") : null) ?? String(clone, "message") ?? "Unknown error",
-                        Code = (error != null ? String(error.Value, "code") : null) ?? String(clone, "code"),
-                        Raw = clone,
-                    };
-                }
+                    Message = (error != null ? String(error.Value, "message") : null)
+                        ?? String(clone, "message")
+                        ?? "Unknown error",
+                    Code = (error != null ? String(error.Value, "code") : null)
+                        ?? String(clone, "code"),
+                    Raw = clone,
+                };
+            }
 
             default:
                 return Custom(type, clone);
@@ -145,7 +191,9 @@ public static class XaiRealtimeEventMapper
     }
 
     /// <summary>Maps one normalized client event to the xAI wire event. Returns null when xAI has no equivalent. Maps to <c>serializeXaiRealtimeClientEvent</c>.</summary>
-    public static JsonObject? SerializeXaiRealtimeClientEvent(RealtimeModelV4ClientEvent clientEvent)
+    public static JsonObject? SerializeXaiRealtimeClientEvent(
+        RealtimeModelV4ClientEvent clientEvent
+    )
     {
         switch (clientEvent.Type)
         {
@@ -153,11 +201,17 @@ public static class XaiRealtimeEventMapper
                 return new JsonObject
                 {
                     ["type"] = "session.update",
-                    ["session"] = BuildXaiSessionConfig(clientEvent.Config ?? new RealtimeModelV4SessionConfig()),
+                    ["session"] = BuildXaiSessionConfig(
+                        clientEvent.Config ?? new RealtimeModelV4SessionConfig()
+                    ),
                 };
 
             case "input-audio-append":
-                return new JsonObject { ["type"] = "input_audio_buffer.append", ["audio"] = clientEvent.Audio };
+                return new JsonObject
+                {
+                    ["type"] = "input_audio_buffer.append",
+                    ["audio"] = clientEvent.Audio,
+                };
 
             case "input-audio-commit":
                 return new JsonObject { ["type"] = "input_audio_buffer.commit" };
@@ -166,25 +220,37 @@ public static class XaiRealtimeEventMapper
                 return new JsonObject { ["type"] = "input_audio_buffer.clear" };
 
             case "conversation-item-create":
+            {
+                var item = clientEvent.Item;
+                switch (item?.Type)
                 {
-                    var item = clientEvent.Item;
-                    switch (item?.Type)
-                    {
-                        case "text-message":
-                            return ConversationItemCreate(Message(item.Role, new JsonObject { ["type"] = "input_text", ["text"] = item.Text }));
-                        case "audio-message":
-                            return ConversationItemCreate(Message(item.Role, new JsonObject { ["type"] = "input_audio", ["audio"] = item.Audio }));
-                        case "function-call-output":
-                            return ConversationItemCreate(new JsonObject
+                    case "text-message":
+                        return ConversationItemCreate(
+                            Message(
+                                item.Role,
+                                new JsonObject { ["type"] = "input_text", ["text"] = item.Text }
+                            )
+                        );
+                    case "audio-message":
+                        return ConversationItemCreate(
+                            Message(
+                                item.Role,
+                                new JsonObject { ["type"] = "input_audio", ["audio"] = item.Audio }
+                            )
+                        );
+                    case "function-call-output":
+                        return ConversationItemCreate(
+                            new JsonObject
                             {
                                 ["type"] = "function_call_output",
                                 ["call_id"] = item.CallId,
                                 ["output"] = item.Output,
-                            });
-                        default:
-                            return null;
-                    }
+                            }
+                        );
+                    default:
+                        return null;
                 }
+            }
 
             case "conversation-item-truncate":
                 // xAI does not support `conversation.item.truncate` over WebSocket (it is
@@ -194,26 +260,30 @@ public static class XaiRealtimeEventMapper
                 return null;
 
             case "response-create":
+            {
+                var create = new JsonObject { ["type"] = "response.create" };
+                if (clientEvent.Options != null)
                 {
-                    var create = new JsonObject { ["type"] = "response.create" };
-                    if (clientEvent.Options != null)
+                    var response = new JsonObject();
+                    if (clientEvent.Options.Modalities != null)
                     {
-                        var response = new JsonObject();
-                        if (clientEvent.Options.Modalities != null)
-                        {
-                            response["modalities"] = new JsonArray([.. clientEvent.Options.Modalities.Select(m => (JsonNode?)JsonValue.Create(m))]);
-                        }
-
-                        if (clientEvent.Options.Instructions != null)
-                        {
-                            response["instructions"] = clientEvent.Options.Instructions;
-                        }
-
-                        create["response"] = response;
+                        response["modalities"] = new JsonArray([
+                            .. clientEvent.Options.Modalities.Select(m =>
+                                (JsonNode?)JsonValue.Create(m)
+                            ),
+                        ]);
                     }
 
-                    return create;
+                    if (clientEvent.Options.Instructions != null)
+                    {
+                        response["instructions"] = clientEvent.Options.Instructions;
+                    }
+
+                    create["response"] = response;
                 }
+
+                return create;
+            }
 
             case "response-cancel":
                 return new JsonObject { ["type"] = "response.cancel" };
@@ -241,12 +311,18 @@ public static class XaiRealtimeEventMapper
         var audio = new JsonObject();
         if (config.InputAudioFormatType != null || config.InputAudioFormatRate != null)
         {
-            audio["input"] = new JsonObject { ["format"] = Format(config.InputAudioFormatType, config.InputAudioFormatRate) };
+            audio["input"] = new JsonObject
+            {
+                ["format"] = Format(config.InputAudioFormatType, config.InputAudioFormatRate),
+            };
         }
 
         if (config.OutputAudioFormatType != null || config.OutputAudioFormatRate != null)
         {
-            audio["output"] = new JsonObject { ["format"] = Format(config.OutputAudioFormatType, config.OutputAudioFormatRate) };
+            audio["output"] = new JsonObject
+            {
+                ["format"] = Format(config.OutputAudioFormatType, config.OutputAudioFormatRate),
+            };
         }
 
         if (audio.Count > 0)
@@ -348,18 +424,21 @@ public static class XaiRealtimeEventMapper
         var output = Object(usage.Value, "output_token_details");
         var cached = input != null ? Object(input.Value, "cached_tokens_details") : null;
 
-        return CompactUsage(new RealtimeModelV4Usage
-        {
-            InputTokens = Count(usage.Value, "input_tokens"),
-            OutputTokens = Count(usage.Value, "output_tokens"),
-            CachedInputTokens = input != null ? Count(input.Value, "cached_tokens") : null,
-            InputAudioTokens = input != null ? Count(input.Value, "audio_tokens") : null,
-            InputTextTokens = input != null ? Count(input.Value, "text_tokens") : null,
-            OutputAudioTokens = output != null ? Count(output.Value, "audio_tokens") : null,
-            OutputTextTokens = output != null ? Count(output.Value, "text_tokens") : null,
-            CachedInputAudioTokens = cached != null ? Count(cached.Value, "audio_tokens") : null,
-            CachedInputTextTokens = cached != null ? Count(cached.Value, "text_tokens") : null,
-        });
+        return CompactUsage(
+            new RealtimeModelV4Usage
+            {
+                InputTokens = Count(usage.Value, "input_tokens"),
+                OutputTokens = Count(usage.Value, "output_tokens"),
+                CachedInputTokens = input != null ? Count(input.Value, "cached_tokens") : null,
+                InputAudioTokens = input != null ? Count(input.Value, "audio_tokens") : null,
+                InputTextTokens = input != null ? Count(input.Value, "text_tokens") : null,
+                OutputAudioTokens = output != null ? Count(output.Value, "audio_tokens") : null,
+                OutputTextTokens = output != null ? Count(output.Value, "text_tokens") : null,
+                CachedInputAudioTokens =
+                    cached != null ? Count(cached.Value, "audio_tokens") : null,
+                CachedInputTextTokens = cached != null ? Count(cached.Value, "text_tokens") : null,
+            }
+        );
     }
 
     /// <summary>
@@ -375,29 +454,39 @@ public static class XaiRealtimeEventMapper
 
         if (String(usage.Value, "type") == "duration")
         {
-            return usage.Value.TryGetProperty("seconds", out var seconds) && seconds.ValueKind == JsonValueKind.Number
+            return
+                usage.Value.TryGetProperty("seconds", out var seconds)
+                && seconds.ValueKind == JsonValueKind.Number
                 ? new RealtimeModelV4Usage { Seconds = seconds.GetDouble() }
                 : null;
         }
 
         var input = Object(usage.Value, "input_token_details");
-        return CompactUsage(new RealtimeModelV4Usage
-        {
-            InputTokens = Count(usage.Value, "input_tokens"),
-            OutputTokens = Count(usage.Value, "output_tokens"),
-            InputAudioTokens = input != null ? Count(input.Value, "audio_tokens") : null,
-            InputTextTokens = input != null ? Count(input.Value, "text_tokens") : null,
-            OutputTextTokens = Count(usage.Value, "output_tokens"),
-        });
+        return CompactUsage(
+            new RealtimeModelV4Usage
+            {
+                InputTokens = Count(usage.Value, "input_tokens"),
+                OutputTokens = Count(usage.Value, "output_tokens"),
+                InputAudioTokens = input != null ? Count(input.Value, "audio_tokens") : null,
+                InputTextTokens = input != null ? Count(input.Value, "text_tokens") : null,
+                OutputTextTokens = Count(usage.Value, "output_tokens"),
+            }
+        );
     }
 
     /// <summary>Drops empty fields; returns null when nothing is observable.</summary>
     private static RealtimeModelV4Usage? CompactUsage(RealtimeModelV4Usage usage)
     {
-        return usage.InputTokens == null && usage.OutputTokens == null && usage.CachedInputTokens == null
-            && usage.InputTextTokens == null && usage.InputAudioTokens == null
-            && usage.OutputTextTokens == null && usage.OutputAudioTokens == null
-            && usage.CachedInputTextTokens == null && usage.CachedInputAudioTokens == null
+        return
+            usage.InputTokens == null
+            && usage.OutputTokens == null
+            && usage.CachedInputTokens == null
+            && usage.InputTextTokens == null
+            && usage.InputAudioTokens == null
+            && usage.OutputTextTokens == null
+            && usage.OutputAudioTokens == null
+            && usage.CachedInputTextTokens == null
+            && usage.CachedInputAudioTokens == null
             && usage.Seconds == null
             ? null
             : usage;
@@ -441,7 +530,16 @@ public static class XaiRealtimeEventMapper
         return new RealtimeModelV4ServerEvent("custom") { RawType = rawType, Raw = raw };
     }
 
-    private static RealtimeModelV4ServerEvent Response(string type, JsonElement raw, string? delta = null, string? callId = null, string? name = null, string? arguments = null, string? transcript = null, string? text = null)
+    private static RealtimeModelV4ServerEvent Response(
+        string type,
+        JsonElement raw,
+        string? delta = null,
+        string? callId = null,
+        string? name = null,
+        string? arguments = null,
+        string? transcript = null,
+        string? text = null
+    )
     {
         return new RealtimeModelV4ServerEvent(type)
         {
@@ -459,31 +557,42 @@ public static class XaiRealtimeEventMapper
 
     private static string? ResponseId(JsonElement raw)
     {
-        return (Object(raw, "response") is { } response ? String(response, "id") : null) ?? String(raw, "response_id");
+        return (Object(raw, "response") is { } response ? String(response, "id") : null)
+            ?? String(raw, "response_id");
     }
 
     private static string? ItemId(JsonElement raw)
     {
-        return (Object(raw, "item") is { } item ? String(item, "id") : null) ?? String(raw, "item_id");
+        return (Object(raw, "item") is { } item ? String(item, "id") : null)
+            ?? String(raw, "item_id");
     }
 
     private static string? String(JsonElement element, string name)
     {
-        return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+        return
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.String
             ? value.GetString()
             : null;
     }
 
     private static JsonElement? Object(JsonElement element, string name)
     {
-        return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Object
+        return
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Object
             ? value
             : null;
     }
 
     private static int? Count(JsonElement element, string name)
     {
-        return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number
+        return
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Number
             ? (int)value.GetDouble()
             : null;
     }

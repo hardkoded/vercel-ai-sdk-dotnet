@@ -15,10 +15,13 @@ public sealed class CreateJsonLinesResponseHandlerTests
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::parses JSON lines across byte boundaries",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Json_lines_cross_byte_boundaries_and_keep_headers()
     {
-        var bytes = Encoding.UTF8.GetBytes("{\"id\":\"first\",\"text\":\"café\"}\r\n\n{\"id\":\"second\",\"text\":\"done\"}");
+        var bytes = Encoding.UTF8.GetBytes(
+            "{\"id\":\"first\",\"text\":\"café\"}\r\n\n{\"id\":\"second\",\"text\":\"done\"}"
+        );
         using var stream = new MemoryStream();
         stream.Write(bytes, 0, 24);
         stream.Write(bytes, 24, 3);
@@ -46,10 +49,13 @@ public sealed class CreateJsonLinesResponseHandlerTests
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::errors when a line is invalid JSON",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Json_lines_reject_invalid_json()
     {
-        using var stream = new MemoryStream(Encoding.UTF8.GetBytes("{\"id\":\"first\"}\n{invalid}\n"));
+        using var stream = new MemoryStream(
+            Encoding.UTF8.GetBytes("{\"id\":\"first\"}\n{invalid}\n")
+        );
         var enumerator = JsonStreams.ReadJsonLinesAsync(stream).GetAsyncEnumerator();
         Assert.True(await enumerator.MoveNextAsync());
         Assert.Equal("first", enumerator.Current.GetProperty("id").GetString());
@@ -60,12 +66,17 @@ public sealed class CreateJsonLinesResponseHandlerTests
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::cancels the response body when iteration stops early",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Json_lines_cancel_when_iteration_stops()
     {
         var cancelled = false;
-        using var stream = new MemoryStream(Encoding.UTF8.GetBytes("{\"id\":\"first\"}\n{\"id\":\"second\"}\n"));
-        await foreach (var _ in JsonStreams.ReadJsonLinesAsync(stream, onCancel: () => cancelled = true))
+        using var stream = new MemoryStream(
+            Encoding.UTF8.GetBytes("{\"id\":\"first\"}\n{\"id\":\"second\"}\n")
+        );
+        await foreach (
+            var _ in JsonStreams.ReadJsonLinesAsync(stream, onCancel: () => cancelled = true)
+        )
         {
             break;
         }
@@ -76,14 +87,13 @@ public sealed class CreateJsonLinesResponseHandlerTests
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::throws EmptyResponseBodyError when the response body is null",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Json_lines_reject_a_missing_body()
     {
         var error = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
-            await foreach (var _ in JsonStreams.ReadJsonLinesAsync(null))
-            {
-            }
+            await foreach (var _ in JsonStreams.ReadJsonLinesAsync(null)) { }
         });
         Assert.Contains("Empty response body", error.Message);
     }
@@ -93,15 +103,16 @@ public sealed class CreateJsonLinesResponseHandlerTests
     [InlineData(-1)]
     [UpstreamTest(
         "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::rejects an invalid maxLineBytes: %s",
-        Coverage = UpstreamCoverage.Partial)]
+        Coverage = UpstreamCoverage.Partial
+    )]
     public async Task Rejects_an_invalid_maxLineBytes(int maxLineBytes)
     {
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes("{}\n"));
         var error = await Assert.ThrowsAsync<InvalidArgumentError>(async () =>
         {
-            await foreach (var _ in JsonStreams.ReadJsonLinesAsync(stream, maxLineBytes: maxLineBytes))
-            {
-            }
+            await foreach (
+                var _ in JsonStreams.ReadJsonLinesAsync(stream, maxLineBytes: maxLineBytes)
+            ) { }
         });
         Assert.Contains("maxLineBytes must be a positive safe integer.", error.Message);
     }
@@ -111,7 +122,8 @@ public sealed class CreateJsonLinesResponseHandlerTests
     [InlineData(4)]
     [UpstreamTest(
         "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::applies a custom byte limit of %s to each UTF-8 row",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Applies_a_custom_byte_limit_to_each_UTF8_row(int limit)
     {
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes("\"é\"\n\"é\"\n"));
@@ -137,12 +149,18 @@ public sealed class CreateJsonLinesResponseHandlerTests
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::allows raising the limit above the default",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Allows_raising_the_limit_above_the_default()
     {
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
         var values = new List<JsonElement>();
-        await foreach (var value in JsonStreams.ReadJsonLinesAsync(stream, maxLineBytes: JsonStreams.DefaultMaxLineBytes + 1))
+        await foreach (
+            var value in JsonStreams.ReadJsonLinesAsync(
+                stream,
+                maxLineBytes: JsonStreams.DefaultMaxLineBytes + 1
+            )
+        )
         {
             values.Add(value);
         }
@@ -157,13 +175,17 @@ public sealed class CreateJsonLinesResponseHandlerTests
     [InlineData(false)]
     [UpstreamTest(
         "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::rejects an oversized %s line across chunks and cancels the body",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_an_oversized_line_across_chunks_and_cancels_the_body(bool utf8)
     {
-        var chunks = Enumerable.Range(0, 6)
-            .Select(_ => utf8
-                ? Enumerable.Repeat(new byte[] { 0xC3, 0xB1 }, 8).SelectMany(b => b).ToArray()
-                : Enumerable.Repeat((byte)0x41, 16).ToArray())
+        var chunks = Enumerable
+            .Range(0, 6)
+            .Select(_ =>
+                utf8
+                    ? Enumerable.Repeat(new byte[] { 0xC3, 0xB1 }, 8).SelectMany(b => b).ToArray()
+                    : Enumerable.Repeat((byte)0x41, 16).ToArray()
+            )
             .ToArray();
         foreach (var throwOnCancel in new[] { false, true })
         {
@@ -171,20 +193,21 @@ public sealed class CreateJsonLinesResponseHandlerTests
             using var stream = new ChunkedStream(chunks);
             var error = await Assert.ThrowsAsync<DownloadError>(async () =>
             {
-                await foreach (var _ in JsonStreams.ReadJsonLinesAsync(
-                    stream,
-                    onCancel: () =>
-                    {
-                        cancelled = true;
-                        if (throwOnCancel)
+                await foreach (
+                    var _ in JsonStreams.ReadJsonLinesAsync(
+                        stream,
+                        onCancel: () =>
                         {
-                            throw new InvalidOperationException("cancel failed");
-                        }
-                    },
-                    maxLineBytes: 64,
-                    url: "test-url"))
-                {
-                }
+                            cancelled = true;
+                            if (throwOnCancel)
+                            {
+                                throw new InvalidOperationException("cancel failed");
+                            }
+                        },
+                        maxLineBytes: 64,
+                        url: "test-url"
+                    )
+                ) { }
             });
             Assert.Contains("maximum line size of 64 bytes", error.Message);
             Assert.Equal("test-url", error.Url);
@@ -197,7 +220,8 @@ public sealed class CreateJsonLinesResponseHandlerTests
     [InlineData(false)]
     [UpstreamTest(
         "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::rejects an oversized line in one chunk (trailing newline: %s)",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_an_oversized_line_in_one_chunk(bool trailingNewline)
     {
         const int limit = 1024;
@@ -213,9 +237,7 @@ public sealed class CreateJsonLinesResponseHandlerTests
         using var stream = new ChunkedStream(bytes);
         await Assert.ThrowsAsync<DownloadError>(async () =>
         {
-            await foreach (var _ in JsonStreams.ReadJsonLinesAsync(stream, maxLineBytes: limit))
-            {
-            }
+            await foreach (var _ in JsonStreams.ReadJsonLinesAsync(stream, maxLineBytes: limit)) { }
         });
     }
 
@@ -224,10 +246,13 @@ public sealed class CreateJsonLinesResponseHandlerTests
     [InlineData(false)]
     [UpstreamTest(
         "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::accepts a line at the byte limit (trailing newline: %s)",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Accepts_a_line_at_the_byte_limit(bool trailingNewline)
     {
-        var bytes = Encoding.UTF8.GetBytes(new string(' ', 62) + "{}" + (trailingNewline ? "\n" : string.Empty));
+        var bytes = Encoding.UTF8.GetBytes(
+            new string(' ', 62) + "{}" + (trailingNewline ? "\n" : string.Empty)
+        );
         using var stream = new MemoryStream(bytes);
         var values = new List<JsonElement>();
         await foreach (var value in JsonStreams.ReadJsonLinesAsync(stream, maxLineBytes: 64))
@@ -243,10 +268,13 @@ public sealed class CreateJsonLinesResponseHandlerTests
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::accepts a chunk larger than the limit when each line is below the limit",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Accepts_a_chunk_larger_than_the_limit_when_each_line_is_below_the_limit()
     {
-        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("     {}\n", 9))));
+        using var stream = new MemoryStream(
+            Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("     {}\n", 9)))
+        );
         var count = 0;
         await foreach (var value in JsonStreams.ReadJsonLinesAsync(stream, maxLineBytes: 64))
         {
@@ -303,14 +331,14 @@ public sealed class CreateJsonLinesResponseHandlerTests
             return take;
         }
 
-        public override void Flush()
-        {
-        }
+        public override void Flush() { }
 
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) =>
+            throw new NotSupportedException();
 
         public override void SetLength(long value) => throw new NotSupportedException();
 
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) =>
+            throw new NotSupportedException();
     }
 }

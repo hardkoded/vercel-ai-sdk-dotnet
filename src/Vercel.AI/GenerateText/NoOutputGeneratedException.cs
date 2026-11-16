@@ -11,21 +11,15 @@ public sealed class NoOutputGeneratedException : AiSdkException
 {
     /// <summary>Creates the exception with the default message.</summary>
     public NoOutputGeneratedException()
-        : base("No output generated.")
-    {
-    }
+        : base("No output generated.") { }
 
     /// <summary>Creates the exception with a message.</summary>
     public NoOutputGeneratedException(string message)
-        : base(message)
-    {
-    }
+        : base(message) { }
 
     /// <summary>Creates the exception with a message and the underlying error.</summary>
     public NoOutputGeneratedException(string message, Exception innerException)
-        : base(message, innerException)
-    {
-    }
+        : base(message, innerException) { }
 
     /// <summary>Stable error name.</summary>
     public string Name { get; } = "AI_NoOutputGeneratedError";

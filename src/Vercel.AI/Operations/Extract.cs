@@ -11,7 +11,13 @@ namespace Vercel.AI.Operations;
 public sealed class ExtractionResult
 {
     /// <summary>Creates a result.</summary>
-    public ExtractionResult(IReadOnlyDictionary<string, ExtractionAnswer> answers, OperationUsage usage, IReadOnlyList<OperationWarning> warnings, JsonElement? providerMetadata, ProviderResponse response)
+    public ExtractionResult(
+        IReadOnlyDictionary<string, ExtractionAnswer> answers,
+        OperationUsage usage,
+        IReadOnlyList<OperationWarning> warnings,
+        JsonElement? providerMetadata,
+        ProviderResponse response
+    )
     {
         Answers = answers;
         Usage = usage;
@@ -68,14 +74,20 @@ public sealed class ExtractRequest : OperationRequest
     /// <see cref="Download.CreateDownload"/> with a DNS-protected transport for untrusted URLs. The model's fetch is not used.
     /// Without it a URL file throws <see cref="DownloadError"/>.
     /// </summary>
-    public Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>? Download { get; set; }
+    public Func<
+        IReadOnlyList<DownloadRequestItem>,
+        Task<IReadOnlyList<DownloadResult>>
+    >? Download { get; set; }
 }
 
 /// <summary>Extracts typed field values from one shared state. Maps to <c>experimental_extract</c>.</summary>
 public static class Extract
 {
     /// <summary>Extracts every field in one model call.</summary>
-    public static async Task<ExtractionResult> ExtractAsync(ExtractRequest request, CancellationToken cancellationToken = default)
+    public static async Task<ExtractionResult> ExtractAsync(
+        ExtractRequest request,
+        CancellationToken cancellationToken = default
+    )
     {
         if (request == null)
         {
@@ -84,27 +96,64 @@ public static class Extract
 
         var model = DecisionModels.ResolveExtractionModel(request.Model);
 
-        LanguageModelCallPreparation.PrepareLanguageModelCallOptions(new LanguageModelCallOptionsInput { MaxOutputTokens = request.MaxOutputTokens });
-        ValidateExtraction.ValidateExtractionInput(request.State, request.Fields, request.ReferenceDate);
+        LanguageModelCallPreparation.PrepareLanguageModelCallOptions(
+            new LanguageModelCallOptionsInput { MaxOutputTokens = request.MaxOutputTokens }
+        );
+        ValidateExtraction.ValidateExtractionInput(
+            request.State,
+            request.Fields,
+            request.ReferenceDate
+        );
         var fields = request.Fields!;
         foreach (var pair in fields)
         {
             if (!model.SupportedFieldTypes.Contains(pair.Value.Type))
             {
-                throw new ExtractionUnsupportedFieldTypeError(pair.Key, pair.Value.Type, model.Provider, model.ModelId);
+                throw new ExtractionUnsupportedFieldTypeError(
+                    pair.Key,
+                    pair.Value.Type,
+                    model.Provider,
+                    model.ModelId
+                );
             }
         }
 
-        var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
+        var token = request.CancellationToken.CanBeCanceled
+            ? request.CancellationToken
+            : cancellationToken;
         OperationRetry.ResolveMaxRetries(request.MaxRetries);
         var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
-        var preparedState = await DecisionState.PrepareDecisionStateAsync(request.State!, token, request.Download).ConfigureAwait(false);
+        var preparedState = await DecisionState
+            .PrepareDecisionStateAsync(request.State!, token, request.Download)
+            .ConfigureAwait(false);
         var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
-        var result = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, async ct =>
-        {
-            OperationRetry.ThrowIfAborted(ct, request.AbortReason);
-            return await model.DoExtractAsync(new ExtractionModelCall(preparedState, fields, providerOptions, headers, ct, request.ReferenceDate, request.MaxOutputTokens, request.Reasoning), ct).ConfigureAwait(false);
-        }, null).ConfigureAwait(false);
+        var result = await OperationRetry
+            .ExecuteAsync(
+                request.MaxRetries,
+                token,
+                request.AbortReason,
+                async ct =>
+                {
+                    OperationRetry.ThrowIfAborted(ct, request.AbortReason);
+                    return await model
+                        .DoExtractAsync(
+                            new ExtractionModelCall(
+                                preparedState,
+                                fields,
+                                providerOptions,
+                                headers,
+                                ct,
+                                request.ReferenceDate,
+                                request.MaxOutputTokens,
+                                request.Reasoning
+                            ),
+                            ct
+                        )
+                        .ConfigureAwait(false);
+                },
+                null
+            )
+            .ConfigureAwait(false);
 
         OperationRetry.ThrowIfAborted(token, request.AbortReason);
         ValidateExtraction.ValidateExtractionAnswers(fields, preparedState, result.Answers);
@@ -117,9 +166,26 @@ public static class Extract
         WarningLog.Write(result.Warnings, model.Provider, model.ModelId);
         var input = result.Usage?.InputTokens;
         var output = result.Usage?.OutputTokens;
-        var usage = new OperationUsage(input, output, input != null && output != null ? input + output : null);
+        var usage = new OperationUsage(
+            input,
+            output,
+            input != null && output != null ? input + output : null
+        );
         var now = request.Now?.Invoke() ?? DateTime.UtcNow;
-        var response = new ProviderResponse(result.Response?.Headers, result.Response?.Body, result.Response?.Id, result.Response?.Timestamp ?? now, result.Response?.ModelId ?? model.ModelId, result.Response?.ProviderMetadata);
-        return new ExtractionResult(result.Answers, usage, result.Warnings, result.ProviderMetadata, response);
+        var response = new ProviderResponse(
+            result.Response?.Headers,
+            result.Response?.Body,
+            result.Response?.Id,
+            result.Response?.Timestamp ?? now,
+            result.Response?.ModelId ?? model.ModelId,
+            result.Response?.ProviderMetadata
+        );
+        return new ExtractionResult(
+            result.Answers,
+            usage,
+            result.Warnings,
+            result.ProviderMetadata,
+            response
+        );
     }
 }

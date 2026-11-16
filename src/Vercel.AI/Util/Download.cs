@@ -17,7 +17,13 @@ public sealed class DownloadError : AiSdkError
     public const string ErrorMarker = "vercel.ai.error.AI_DownloadError";
 
     /// <summary>Creates a download error.</summary>
-    public DownloadError(string url, string message, int? statusCode = null, string? statusText = null, Exception? cause = null)
+    public DownloadError(
+        string url,
+        string message,
+        int? statusCode = null,
+        string? statusText = null,
+        Exception? cause = null
+    )
         : base("AI_DownloadError", message, cause)
     {
         Url = url;
@@ -44,7 +50,12 @@ public sealed class DownloadError : AiSdkError
     /// <summary>Builds the message used for a non-success HTTP response.</summary>
     public static DownloadError FromStatus(string url, int statusCode, string statusText)
     {
-        return new DownloadError(url, "Failed to download " + url + ": " + statusCode + " " + statusText, statusCode, statusText);
+        return new DownloadError(
+            url,
+            "Failed to download " + url + ": " + statusCode + " " + statusText,
+            statusCode,
+            statusText
+        );
     }
 
     /// <summary>Builds the message used when the transport throws.</summary>
@@ -75,7 +86,11 @@ public sealed class DownloadResult
 public sealed class DownloadRequest
 {
     /// <summary>Creates the request.</summary>
-    public DownloadRequest(HeaderCollection? headers, CancellationToken abortSignal, string redirect)
+    public DownloadRequest(
+        HeaderCollection? headers,
+        CancellationToken abortSignal,
+        string redirect
+    )
     {
         Headers = headers ?? new HeaderCollection();
         AbortSignal = abortSignal;
@@ -111,7 +126,13 @@ public sealed class DownloadRequest
 public sealed class DownloadResponse
 {
     /// <summary>Creates a response.</summary>
-    public DownloadResponse(int status, string? statusText, HeaderCollection? headers, byte[]? body, string? type = "basic")
+    public DownloadResponse(
+        int status,
+        string? statusText,
+        HeaderCollection? headers,
+        byte[]? body,
+        string? type = "basic"
+    )
     {
         Status = status;
         StatusText = statusText ?? string.Empty;
@@ -159,9 +180,7 @@ public sealed class DownloadResponse
                 onCancel();
             }
         }
-        catch (Exception)
-        {
-        }
+        catch (Exception) { }
     }
 
     /// <summary>A successful body response.</summary>
@@ -213,7 +232,9 @@ public sealed class CreatedDownload
     }
 
     /// <summary>Downloads a batch. A URL the model supports is passed through as a null result.</summary>
-    public async Task<IReadOnlyList<DownloadResult>> InvokeAsync(IReadOnlyList<DownloadRequestItem> requests)
+    public async Task<IReadOnlyList<DownloadResult>> InvokeAsync(
+        IReadOnlyList<DownloadRequestItem> requests
+    )
     {
         if (requests == null)
         {
@@ -224,24 +245,35 @@ public sealed class CreatedDownload
         for (var i = 0; i < requests.Count; i++)
         {
             var item = requests[i];
-            tasks[i] = item.IsUrlSupportedByModel ? Task.FromResult<DownloadResult>(null!) : InvokeAsync(item);
+            tasks[i] = item.IsUrlSupportedByModel
+                ? Task.FromResult<DownloadResult>(null!)
+                : InvokeAsync(item);
         }
 
         return await Task.WhenAll(tasks).ConfigureAwait(false);
     }
 
     /// <summary>Converts to the batch shape of <c>ExperimentalDownload</c>.</summary>
-    public static implicit operator Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>(CreatedDownload download)
+    public static implicit operator Func<
+        IReadOnlyList<DownloadRequestItem>,
+        Task<IReadOnlyList<DownloadResult>>
+    >(CreatedDownload download)
     {
         return download.InvokeAsync;
     }
 
     /// <summary>Converts to the single-request shape of the <c>Download</c> option of transcribe and generateVideo.</summary>
-    public static implicit operator Func<string, CancellationToken, Task<DownloadedMedia>>(CreatedDownload download)
+    public static implicit operator Func<string, CancellationToken, Task<DownloadedMedia>>(
+        CreatedDownload download
+    )
     {
         return async (url, cancellationToken) =>
         {
-            var result = await download.InvokeAsync(new DownloadRequestItem(new Uri(url), false) { AbortSignal = cancellationToken }).ConfigureAwait(false);
+            var result = await download
+                .InvokeAsync(
+                    new DownloadRequestItem(new Uri(url), false) { AbortSignal = cancellationToken }
+                )
+                .ConfigureAwait(false);
             return new DownloadedMedia(result.Data, result.MediaType);
         };
     }
@@ -282,14 +314,21 @@ public static class Download
     }
 
     /// <summary>Downloads <paramref name="url"/>.</summary>
-    public static Task<DownloadResult> GetAsync(Uri url, long? maxBytes = null, CancellationToken abortSignal = default, DownloadFetch? fetch = null)
+    public static Task<DownloadResult> GetAsync(
+        Uri url,
+        long? maxBytes = null,
+        CancellationToken abortSignal = default,
+        DownloadFetch? fetch = null
+    )
     {
         if (url == null)
         {
             throw new ArgumentNullException(nameof(url));
         }
 
-        var urlText = string.Equals(url.Scheme, "data", StringComparison.OrdinalIgnoreCase) ? url.OriginalString : url.AbsoluteUri;
+        var urlText = string.Equals(url.Scheme, "data", StringComparison.OrdinalIgnoreCase)
+            ? url.OriginalString
+            : url.AbsoluteUri;
         return GetAsync(urlText, maxBytes ?? DefaultMaxBytes, abortSignal, fetch);
     }
 
@@ -311,14 +350,22 @@ public static class Download
             return;
         }
 
-        if (!string.Equals(parsed.Scheme, "http", StringComparison.OrdinalIgnoreCase)
-            && !string.Equals(parsed.Scheme, "https", StringComparison.OrdinalIgnoreCase))
+        if (
+            !string.Equals(parsed.Scheme, "http", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(parsed.Scheme, "https", StringComparison.OrdinalIgnoreCase)
+        )
         {
-            throw new DownloadError(url, "URL scheme must be http, https, or data, got " + parsed.Scheme + ":");
+            throw new DownloadError(
+                url,
+                "URL scheme must be http, https, or data, got " + parsed.Scheme + ":"
+            );
         }
 
         var hostname = (parsed.Host ?? string.Empty).ToLowerInvariant().TrimEnd('.');
-        if (hostname.StartsWith("[", StringComparison.Ordinal) && hostname.EndsWith("]", StringComparison.Ordinal))
+        if (
+            hostname.StartsWith("[", StringComparison.Ordinal)
+            && hostname.EndsWith("]", StringComparison.Ordinal)
+        )
         {
             hostname = hostname.Substring(1, hostname.Length - 2);
         }
@@ -328,7 +375,12 @@ public static class Download
             throw new DownloadError(url, "URL must have a hostname");
         }
 
-        if (hostname == "localhost" || hostname.EndsWith(".local", StringComparison.Ordinal) || hostname.EndsWith(".localhost", StringComparison.Ordinal) || hostname.EndsWith(".internal", StringComparison.Ordinal))
+        if (
+            hostname == "localhost"
+            || hostname.EndsWith(".local", StringComparison.Ordinal)
+            || hostname.EndsWith(".localhost", StringComparison.Ordinal)
+            || hostname.EndsWith(".internal", StringComparison.Ordinal)
+        )
         {
             throw new DownloadError(url, "URL with hostname " + hostname + " is not allowed");
         }
@@ -337,7 +389,10 @@ public static class Download
         {
             if (IsPrivateIPv6(hostname))
             {
-                throw new DownloadError(url, "URL with IPv6 address " + parsed.Host + " is not allowed");
+                throw new DownloadError(
+                    url,
+                    "URL with IPv6 address " + parsed.Host + " is not allowed"
+                );
             }
 
             return;
@@ -349,7 +404,12 @@ public static class Download
         }
     }
 
-    private static async Task<DownloadResult> GetAsync(string urlText, long maxBytes, CancellationToken abortSignal, DownloadFetch? fetch)
+    private static async Task<DownloadResult> GetAsync(
+        string urlText,
+        long maxBytes,
+        CancellationToken abortSignal,
+        DownloadFetch? fetch
+    )
     {
         try
         {
@@ -361,7 +421,16 @@ public static class Download
 
             var headers = new HeaderCollection();
             headers.Add("user-agent", UserAgent ?? "ai-sdk/dotnet");
-            var response = await FetchWithValidatedRedirectsAsync(urlText, maxBytes, headers, abortSignal, MaxRedirects, fetch, null).ConfigureAwait(false);
+            var response = await FetchWithValidatedRedirectsAsync(
+                    urlText,
+                    maxBytes,
+                    headers,
+                    abortSignal,
+                    MaxRedirects,
+                    fetch,
+                    null
+                )
+                .ConfigureAwait(false);
             if (!response.Ok)
             {
                 response.Cancel();
@@ -403,9 +472,18 @@ public static class Download
         CancellationToken abortSignal = default,
         int maxRedirects = MaxRedirects,
         DownloadFetch? fetch = null,
-        string? trustedOrigin = null)
+        string? trustedOrigin = null
+    )
     {
-        return FetchWithValidatedRedirectsAsync(url, DefaultMaxBytes, headers, abortSignal, maxRedirects, fetch, trustedOrigin);
+        return FetchWithValidatedRedirectsAsync(
+            url,
+            DefaultMaxBytes,
+            headers,
+            abortSignal,
+            maxRedirects,
+            fetch,
+            trustedOrigin
+        );
     }
 
     /// <summary>
@@ -428,7 +506,8 @@ public static class Download
         DownloadFetch? fetch = null,
         string? trustedOrigin = null,
         string redirect = "error",
-        bool requireDnsValidation = false)
+        bool requireDnsValidation = false
+    )
     {
         var isTrusted = trustedOrigin != null && ProviderValues.IsSameOrigin(url, trustedOrigin);
         if (!isTrusted)
@@ -437,11 +516,18 @@ public static class Download
 
             if (requireDnsValidation && (fetch == null || fetch == Fetch) && !IsBrowser)
             {
-                throw new DownloadError(url, "This server runtime requires a custom fetch with connect-time DNS validation for untrusted URLs");
+                throw new DownloadError(
+                    url,
+                    "This server runtime requires a custom fetch with connect-time DNS validation for untrusted URLs"
+                );
             }
         }
 
-        var init = new DownloadRequest(request == null ? null : new HeaderCollection(request.Headers.Entries()), request?.AbortSignal ?? default, redirect)
+        var init = new DownloadRequest(
+            request == null ? null : new HeaderCollection(request.Headers.Entries()),
+            request?.AbortSignal ?? default,
+            redirect
+        )
         {
             Method = request?.Method ?? "GET",
             Body = request?.Body,
@@ -451,35 +537,58 @@ public static class Download
         return await (fetch ?? Fetch ?? DefaultFetchAsync)(url, init).ConfigureAwait(false);
     }
 
-    private static async Task<DownloadResponse> FetchWithValidatedRedirectsAsync(string url, long maxBytes, HeaderCollection? headers, CancellationToken abortSignal, int maxRedirects, DownloadFetch? fetch, string? trustedOrigin)
+    private static async Task<DownloadResponse> FetchWithValidatedRedirectsAsync(
+        string url,
+        long maxBytes,
+        HeaderCollection? headers,
+        CancellationToken abortSignal,
+        int maxRedirects,
+        DownloadFetch? fetch,
+        string? trustedOrigin
+    )
     {
-        var currentHeaders = headers == null ? null : RequestHeaders.SanitizeRequestHeaders(headers);
+        var currentHeaders =
+            headers == null ? null : RequestHeaders.SanitizeRequestHeaders(headers);
 
         // Snapshot per hop: an injected fetch may defer, and hops between credential drops would otherwise share one instance.
         DownloadRequest PerHopInit(string redirect, bool isTrustedHop)
         {
-            return new DownloadRequest(currentHeaders == null ? null : new HeaderCollection(currentHeaders.Entries()), abortSignal, redirect) { MaxBytes = maxBytes, IsTrustedOrigin = isTrustedHop };
+            return new DownloadRequest(
+                currentHeaders == null ? null : new HeaderCollection(currentHeaders.Entries()),
+                abortSignal,
+                redirect
+            )
+            {
+                MaxBytes = maxBytes,
+                IsTrustedOrigin = isTrustedHop,
+            };
         }
 
         var currentUrl = url;
         for (var redirectCount = 0; redirectCount <= maxRedirects; redirectCount++)
         {
-            var isTrustedHop = trustedOrigin != null && ProviderValues.IsSameOrigin(currentUrl, trustedOrigin);
+            var isTrustedHop =
+                trustedOrigin != null && ProviderValues.IsSameOrigin(currentUrl, trustedOrigin);
             if (!isTrustedHop)
             {
                 ValidateDownloadUrl(currentUrl);
             }
 
             var currentFetch = fetch ?? Fetch ?? DefaultFetchAsync;
-            var response = await currentFetch(currentUrl, PerHopInit("manual", isTrustedHop)).ConfigureAwait(false);
+            var response = await currentFetch(currentUrl, PerHopInit("manual", isTrustedHop))
+                .ConfigureAwait(false);
             if (string.Equals(response.Type, "opaqueredirect", StringComparison.Ordinal))
             {
                 if (!IsBrowser)
                 {
-                    throw new DownloadError(url, "Redirect from " + currentUrl + " could not be validated and was blocked");
+                    throw new DownloadError(
+                        url,
+                        "Redirect from " + currentUrl + " could not be validated and was blocked"
+                    );
                 }
 
-                return await currentFetch(currentUrl, PerHopInit("follow", isTrustedHop)).ConfigureAwait(false);
+                return await currentFetch(currentUrl, PerHopInit("follow", isTrustedHop))
+                    .ConfigureAwait(false);
             }
 
             var location = response.Headers.Get("location");
@@ -489,13 +598,21 @@ public static class Download
                 // pending must not hold up the redirect.
                 _ = Task.Run(response.Cancel);
                 var next = new Uri(new Uri(currentUrl), location);
-                if (string.Equals(new Uri(currentUrl).Scheme, "https", StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(next.Scheme, "http", StringComparison.OrdinalIgnoreCase))
+                if (
+                    string.Equals(
+                        new Uri(currentUrl).Scheme,
+                        "https",
+                        StringComparison.OrdinalIgnoreCase
+                    ) && string.Equals(next.Scheme, "http", StringComparison.OrdinalIgnoreCase)
+                )
                 {
                     throw new DownloadError(url, "Redirect from HTTPS to HTTP was blocked");
                 }
 
-                if (currentHeaders != null && !ProviderValues.IsSameOrigin(next.AbsoluteUri, currentUrl))
+                if (
+                    currentHeaders != null
+                    && !ProviderValues.IsSameOrigin(next.AbsoluteUri, currentUrl)
+                )
                 {
                     var userAgent = currentHeaders.Get("user-agent");
                     currentHeaders = new HeaderCollection();
@@ -521,10 +638,27 @@ public static class Download
         if (!string.IsNullOrEmpty(contentLength))
         {
             long length;
-            if (long.TryParse(contentLength, NumberStyles.Integer, CultureInfo.InvariantCulture, out length) && length > maxBytes)
+            if (
+                long.TryParse(
+                    contentLength,
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out length
+                )
+                && length > maxBytes
+            )
             {
                 response.Cancel();
-                throw new DownloadError(url, "Download of " + url + " exceeded maximum size of " + maxBytes + " bytes (Content-Length: " + length + ").");
+                throw new DownloadError(
+                    url,
+                    "Download of "
+                        + url
+                        + " exceeded maximum size of "
+                        + maxBytes
+                        + " bytes (Content-Length: "
+                        + length
+                        + ")."
+                );
             }
         }
 
@@ -532,7 +666,10 @@ public static class Download
         if (body.LongLength > maxBytes)
         {
             response.Cancel();
-            throw new DownloadError(url, "Download of " + url + " exceeded maximum size of " + maxBytes + " bytes.");
+            throw new DownloadError(
+                url,
+                "Download of " + url + " exceeded maximum size of " + maxBytes + " bytes."
+            );
         }
 
         return body;
@@ -556,7 +693,10 @@ public static class Download
 
         if (data.LongLength > maxBytes)
         {
-            throw new DownloadError(urlText, "Download of " + urlText + " exceeded maximum size of " + maxBytes + " bytes.");
+            throw new DownloadError(
+                urlText,
+                "Download of " + urlText + " exceeded maximum size of " + maxBytes + " bytes."
+            );
         }
 
         return new DownloadResult(data, mediaType);
@@ -572,7 +712,10 @@ public static class Download
         return DefaultFetchCoreAsync(url, request);
     }
 
-    private static async Task<DownloadResponse> DefaultFetchCoreAsync(string url, DownloadRequest request)
+    private static async Task<DownloadResponse> DefaultFetchCoreAsync(
+        string url,
+        DownloadRequest request
+    )
     {
         // The default fetch uses the runtime transport. It does not validate resolved DNS addresses or pin connections. An
         // application that downloads untrusted URLs passes a DNS-validating fetch (the equivalent of guarded-fetch) instead.
@@ -593,9 +736,20 @@ public static class Download
                 }
             }
 
-            using (var response = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, request.AbortSignal).ConfigureAwait(false))
+            using (
+                var response = await client
+                    .SendAsync(
+                        message,
+                        HttpCompletionOption.ResponseHeadersRead,
+                        request.AbortSignal
+                    )
+                    .ConfigureAwait(false)
+            )
             {
-                if (string.Equals(request.Redirect, "error", StringComparison.Ordinal) && IsRedirectStatus((int)response.StatusCode))
+                if (
+                    string.Equals(request.Redirect, "error", StringComparison.Ordinal)
+                    && IsRedirectStatus((int)response.StatusCode)
+                )
                 {
                     throw new DownloadError(url, "Redirect from " + url + " was blocked");
                 }
@@ -619,9 +773,21 @@ public static class Download
 
                 // Only a successful body is read. It is read in chunks, so the size limit stops the transfer.
                 var body = response.IsSuccessStatusCode
-                    ? await ResponseBodies.ReadResponseWithSizeLimitAsync(response, url, request.MaxBytes, request.AbortSignal).ConfigureAwait(false)
+                    ? await ResponseBodies
+                        .ReadResponseWithSizeLimitAsync(
+                            response,
+                            url,
+                            request.MaxBytes,
+                            request.AbortSignal
+                        )
+                        .ConfigureAwait(false)
                     : null;
-                return new DownloadResponse((int)response.StatusCode, response.ReasonPhrase, headers, body);
+                return new DownloadResponse(
+                    (int)response.StatusCode,
+                    response.ReasonPhrase,
+                    headers,
+                    body
+                );
             }
         }
     }
@@ -637,7 +803,12 @@ public static class Download
         for (var i = 0; i < parts.Length; i++)
         {
             int number;
-            if (!int.TryParse(parts[i], NumberStyles.None, CultureInfo.InvariantCulture, out number) || number < 0 || number > 255 || number.ToString(CultureInfo.InvariantCulture) != parts[i])
+            if (
+                !int.TryParse(parts[i], NumberStyles.None, CultureInfo.InvariantCulture, out number)
+                || number < 0
+                || number > 255
+                || number.ToString(CultureInfo.InvariantCulture) != parts[i]
+            )
             {
                 return false;
             }
@@ -718,7 +889,11 @@ public static class Download
             return true;
         }
 
-        if ((groups[0] & 0xffc0) == 0xfe80 || (groups[0] & 0xffc0) == 0xfec0 || (groups[0] & 0xff00) == 0xff00)
+        if (
+            (groups[0] & 0xffc0) == 0xfe80
+            || (groups[0] & 0xffc0) == 0xfec0
+            || (groups[0] & 0xff00) == 0xff00
+        )
         {
             return true;
         }
@@ -733,10 +908,18 @@ public static class Download
             return true;
         }
 
-        var embeds = TopZero(groups, 6)
+        var embeds =
+            TopZero(groups, 6)
             || (TopZero(groups, 5) && groups[5] == 0xffff)
             || (TopZero(groups, 4) && groups[4] == 0xffff && groups[5] == 0)
-            || (groups[0] == 0x0064 && groups[1] == 0xff9b && groups[2] == 0 && groups[3] == 0 && groups[4] == 0 && groups[5] == 0)
+            || (
+                groups[0] == 0x0064
+                && groups[1] == 0xff9b
+                && groups[2] == 0
+                && groups[3] == 0
+                && groups[4] == 0
+                && groups[5] == 0
+            )
             || (groups[0] == 0x0064 && groups[1] == 0xff9b && groups[2] == 0x0001);
         if (!embeds)
         {
@@ -842,7 +1025,14 @@ public static class Download
             }
 
             int value;
-            if (!int.TryParse(part, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out value))
+            if (
+                !int.TryParse(
+                    part,
+                    NumberStyles.AllowHexSpecifier,
+                    CultureInfo.InvariantCulture,
+                    out value
+                )
+            )
             {
                 return null;
             }
@@ -879,9 +1069,15 @@ public sealed class AssetDownloadCall
 public static class DefaultDownloadFunction
 {
     /// <summary>Creates a function that downloads each URL the model does not support.</summary>
-    public static Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>> Create(Func<AssetDownloadCall, Task<DownloadResult>>? download = null, CancellationToken abortSignal = default)
+    public static Func<
+        IReadOnlyList<DownloadRequestItem>,
+        Task<IReadOnlyList<DownloadResult>>
+    > Create(
+        Func<AssetDownloadCall, Task<DownloadResult>>? download = null,
+        CancellationToken abortSignal = default
+    )
     {
-        return async delegate (IReadOnlyList<DownloadRequestItem> requested)
+        return async delegate(IReadOnlyList<DownloadRequestItem> requested)
         {
             var tasks = new Task<DownloadResult>[requested.Count];
             for (var i = 0; i < requested.Count; i++)
@@ -894,9 +1090,10 @@ public static class DefaultDownloadFunction
                 }
 
                 var call = new AssetDownloadCall(item.Url, item.IsUrlSupportedByModel, abortSignal);
-                tasks[i] = download != null
-                    ? download(call)
-                    : Download.GetAsync(item.Url, null, abortSignal);
+                tasks[i] =
+                    download != null
+                        ? download(call)
+                        : Download.GetAsync(item.Url, null, abortSignal);
             }
 
             var completed = await Task.WhenAll(tasks).ConfigureAwait(false);

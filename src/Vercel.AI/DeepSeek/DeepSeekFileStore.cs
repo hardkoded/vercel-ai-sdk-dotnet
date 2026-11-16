@@ -46,26 +46,56 @@ public sealed class DeepSeekFileStore : Provider.IFileStore, Operations.IFileSto
     public string SpecificationVersion => "v4";
 
     /// <inheritdoc />
-    public async Task<UploadedFile> UploadFileAsync(string fileName, byte[] data, string mediaType, CancellationToken cancellationToken)
+    public async Task<UploadedFile> UploadFileAsync(
+        string fileName,
+        byte[] data,
+        string mediaType,
+        CancellationToken cancellationToken
+    )
     {
-        var result = await UploadAsync(data ?? Array.Empty<byte>(), mediaType, fileName, ExpiresAfterSeconds, null, cancellationToken).ConfigureAwait(false);
+        var result = await UploadAsync(
+                data ?? Array.Empty<byte>(),
+                mediaType,
+                fileName,
+                ExpiresAfterSeconds,
+                null,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return new UploadedFile(result.ProviderReference.Id, result.Filename ?? fileName);
     }
 
     /// <summary>
     /// Uploads inline data. Streams are rejected. <c>deepseek.expiresAfter</c> overrides <see cref="ExpiresAfterSeconds"/>.
     /// </summary>
-    public Task<UploadFileModelResult> UploadFileAsync(UploadFileCall call, CancellationToken cancellationToken)
+    public Task<UploadFileModelResult> UploadFileAsync(
+        UploadFileCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (call == null)
         {
             throw new ArgumentNullException(nameof(call));
         }
 
-        return UploadAsync(InlineBytes(call.Data), call.MediaType, call.Filename, ExpiresAfter(call.ProviderOptions) ?? ExpiresAfterSeconds, call.Headers, cancellationToken);
+        return UploadAsync(
+            InlineBytes(call.Data),
+            call.MediaType,
+            call.Filename,
+            ExpiresAfter(call.ProviderOptions) ?? ExpiresAfterSeconds,
+            call.Headers,
+            cancellationToken
+        );
     }
 
-    private async Task<UploadFileModelResult> UploadAsync(byte[] data, string? mediaType, string? fileName, int? expiresAfter, IReadOnlyDictionary<string, string>? callHeaders, CancellationToken cancellationToken)
+    private async Task<UploadFileModelResult> UploadAsync(
+        byte[] data,
+        string? mediaType,
+        string? fileName,
+        int? expiresAfter,
+        IReadOnlyDictionary<string, string>? callHeaders,
+        CancellationToken cancellationToken
+    )
     {
         Validate(data.LongLength, fileName, mediaType ?? string.Empty, data);
         if (expiresAfter is { } expiry && (expiry < MinExpirySeconds || expiry > MaxExpirySeconds))
@@ -75,13 +105,18 @@ public sealed class DeepSeekFileStore : Provider.IFileStore, Operations.IFileSto
 
         var form = new MultipartFormDataContent();
         var file = new ByteArrayContent(data);
-        file.Headers.ContentType = new MediaTypeHeaderValue(string.IsNullOrEmpty(mediaType) ? "application/octet-stream" : mediaType);
+        file.Headers.ContentType = new MediaTypeHeaderValue(
+            string.IsNullOrEmpty(mediaType) ? "application/octet-stream" : mediaType
+        );
         form.Add(file, "file", string.IsNullOrEmpty(fileName) ? "file" : fileName);
         form.Add(new StringContent("user_data"), "purpose");
         if (expiresAfter is { } seconds)
         {
             form.Add(new StringContent("created_at"), "expires_after[anchor]");
-            form.Add(new StringContent(seconds.ToString(CultureInfo.InvariantCulture)), "expires_after[seconds]");
+            form.Add(
+                new StringContent(seconds.ToString(CultureInfo.InvariantCulture)),
+                "expires_after[seconds]"
+            );
         }
 
         var headers = _provider.CreateHeaders();
@@ -94,8 +129,12 @@ public sealed class DeepSeekFileStore : Provider.IFileStore, Operations.IFileSto
         }
 
         var uri = new Uri(_provider.Options.BaseUrl.TrimEnd('/') + "/files");
-        var response = await _provider.PostMultipartAsync(uri, form, headers, cancellationToken).ConfigureAwait(false);
-        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
+        var response = await _provider
+            .PostMultipartAsync(uri, form, headers, cancellationToken)
+            .ConfigureAwait(false);
+        using var document = JsonDocument.Parse(
+            string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+        );
         var root = document.RootElement;
         if (!root.TryGetProperty("id", out var id) || id.ValueKind != JsonValueKind.String)
         {
@@ -113,8 +152,13 @@ public sealed class DeepSeekFileStore : Provider.IFileStore, Operations.IFileSto
         return new UploadFileModelResult(
             new ProviderFileReference(id.GetString()!, "deepseek"),
             mediaType,
-            string.IsNullOrEmpty(returnedName) ? (string.IsNullOrEmpty(fileName) ? null : fileName) : returnedName,
-            providerMetadata: JsonSerializer.SerializeToElement(new JsonObject { ["deepseek"] = metadata }));
+            string.IsNullOrEmpty(returnedName)
+                ? (string.IsNullOrEmpty(fileName) ? null : fileName)
+                : returnedName,
+            providerMetadata: JsonSerializer.SerializeToElement(
+                new JsonObject { ["deepseek"] = metadata }
+            )
+        );
     }
 
     private static byte[] InlineBytes(UploadData data)
@@ -122,32 +166,55 @@ public sealed class DeepSeekFileStore : Provider.IFileStore, Operations.IFileSto
         switch (data.Type)
         {
             case "data":
-                return data.Data as byte[] ?? ByteEncoding.FromBase64(data.Data as string ?? string.Empty);
+                return data.Data as byte[]
+                    ?? ByteEncoding.FromBase64(data.Data as string ?? string.Empty);
             case "text":
                 return Encoding.UTF8.GetBytes(data.Data as string ?? string.Empty);
             default:
-                throw new UnsupportedFunctionalityException("stream file data", "DeepSeek file uploads do not support stream data. Pass bytes or base64 data instead.");
+                throw new UnsupportedFunctionalityException(
+                    "stream file data",
+                    "DeepSeek file uploads do not support stream data. Pass bytes or base64 data instead."
+                );
         }
     }
 
     private static int? ExpiresAfter(JsonElement? providerOptions)
     {
-        if (providerOptions is not { ValueKind: JsonValueKind.Object } options
-            || !options.TryGetProperty("deepseek", out var deepseek) || deepseek.ValueKind != JsonValueKind.Object
-            || !deepseek.TryGetProperty("expiresAfter", out var value) || value.ValueKind == JsonValueKind.Null)
+        if (
+            providerOptions is not { ValueKind: JsonValueKind.Object } options
+            || !options.TryGetProperty("deepseek", out var deepseek)
+            || deepseek.ValueKind != JsonValueKind.Object
+            || !deepseek.TryGetProperty("expiresAfter", out var value)
+            || value.ValueKind == JsonValueKind.Null
+        )
         {
             return null;
         }
 
-        return value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var seconds) ? seconds : throw ExpiryError();
+        return value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var seconds)
+            ? seconds
+            : throw ExpiryError();
     }
 
     private static AiSdkException ExpiryError()
     {
-        return new AiSdkException("DeepSeek expiresAfter must be an integer from " + MinExpirySeconds.ToString(CultureInfo.InvariantCulture) + " to " + MaxExpirySeconds.ToString(CultureInfo.InvariantCulture) + ".");
+        return new AiSdkException(
+            "DeepSeek expiresAfter must be an integer from "
+                + MinExpirySeconds.ToString(CultureInfo.InvariantCulture)
+                + " to "
+                + MaxExpirySeconds.ToString(CultureInfo.InvariantCulture)
+                + "."
+        );
     }
 
-    private static void AddLiteral(JsonObject metadata, JsonElement root, string field, string name, string expected, string body)
+    private static void AddLiteral(
+        JsonObject metadata,
+        JsonElement root,
+        string field,
+        string name,
+        string expected,
+        string body
+    )
     {
         if (!root.TryGetProperty(field, out var value) || value.ValueKind == JsonValueKind.Null)
         {
@@ -164,7 +231,10 @@ public sealed class DeepSeekFileStore : Provider.IFileStore, Operations.IFileSto
 
     private static void AddFilename(JsonObject metadata, JsonElement root, string body)
     {
-        if (!root.TryGetProperty("filename", out var value) || value.ValueKind == JsonValueKind.Null)
+        if (
+            !root.TryGetProperty("filename", out var value)
+            || value.ValueKind == JsonValueKind.Null
+        )
         {
             return;
         }
@@ -177,14 +247,24 @@ public sealed class DeepSeekFileStore : Provider.IFileStore, Operations.IFileSto
         metadata["filename"] = value.GetString();
     }
 
-    private static void AddCount(JsonObject metadata, JsonElement root, string field, string name, string body)
+    private static void AddCount(
+        JsonObject metadata,
+        JsonElement root,
+        string field,
+        string name,
+        string body
+    )
     {
         if (!root.TryGetProperty(field, out var value) || value.ValueKind == JsonValueKind.Null)
         {
             return;
         }
 
-        if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt64(out var count) || count < 0)
+        if (
+            value.ValueKind != JsonValueKind.Number
+            || !value.TryGetInt64(out var count)
+            || count < 0
+        )
         {
             throw InvalidResponse(field, body, root);
         }
@@ -194,7 +274,12 @@ public sealed class DeepSeekFileStore : Provider.IFileStore, Operations.IFileSto
 
     private static ApiException InvalidResponse(string field, string body, JsonElement root)
     {
-        var cause = new TypeValidationException("Invalid DeepSeek file response: \"" + field + "\" is missing or has an unexpected value.", root.Clone());
+        var cause = new TypeValidationException(
+            "Invalid DeepSeek file response: \""
+                + field
+                + "\" is missing or has an unexpected value.",
+            root.Clone()
+        );
         return new ApiException("Invalid JSON response", 200, body, cause);
     }
 
@@ -205,17 +290,22 @@ public sealed class DeepSeekFileStore : Provider.IFileStore, Operations.IFileSto
         {
             throw new AiSdkException(
                 "DeepSeek file uploads must not exceed 64 MiB ("
-                + MaxBytes.ToString("N0", CultureInfo.InvariantCulture)
-                + " bytes). Received "
-                + length.ToString("N0", CultureInfo.InvariantCulture)
-                + " bytes.");
+                    + MaxBytes.ToString("N0", CultureInfo.InvariantCulture)
+                    + " bytes). Received "
+                    + length.ToString("N0", CultureInfo.InvariantCulture)
+                    + " bytes."
+            );
         }
 
         if (fileName != null && fileName.Length > MaxFileNameLength)
         {
             throw new AiSdkException(
-                "DeepSeek filenames must not exceed " + MaxFileNameLength.ToString(CultureInfo.InvariantCulture)
-                + " characters. Received " + fileName.Length.ToString(CultureInfo.InvariantCulture) + " characters.");
+                "DeepSeek filenames must not exceed "
+                    + MaxFileNameLength.ToString(CultureInfo.InvariantCulture)
+                    + " characters. Received "
+                    + fileName.Length.ToString(CultureInfo.InvariantCulture)
+                    + " characters."
+            );
         }
 
         var normalized = Normalize(mediaType);
@@ -223,7 +313,10 @@ public sealed class DeepSeekFileStore : Provider.IFileStore, Operations.IFileSto
         if (detected != null && !IsSupported(detected))
         {
             throw new AiSdkException(
-                "DeepSeek file uploads support JPEG, PNG, GIF, and WebP images. Detected unsupported file content type \"" + detected + "\".");
+                "DeepSeek file uploads support JPEG, PNG, GIF, and WebP images. Detected unsupported file content type \""
+                    + detected
+                    + "\"."
+            );
         }
 
         if (IsSupported(normalized))
@@ -234,7 +327,10 @@ public sealed class DeepSeekFileStore : Provider.IFileStore, Operations.IFileSto
         if (!IsGeneric(normalized))
         {
             throw new AiSdkException(
-                "DeepSeek file uploads support JPEG, PNG, GIF, and WebP images. Received unsupported media type \"" + (mediaType ?? string.Empty) + "\".");
+                "DeepSeek file uploads support JPEG, PNG, GIF, and WebP images. Received unsupported media type \""
+                    + (mediaType ?? string.Empty)
+                    + "\"."
+            );
         }
 
         if (detected != null || HasSupportedExtension(fileName))
@@ -243,7 +339,10 @@ public sealed class DeepSeekFileStore : Provider.IFileStore, Operations.IFileSto
         }
 
         throw new AiSdkException(
-            "DeepSeek file uploads support JPEG, PNG, GIF, and WebP images. Provide a supported media type or a filename ending in .jpg, .jpeg, .png, .gif, or .webp. Received \"" + (mediaType ?? string.Empty) + "\".");
+            "DeepSeek file uploads support JPEG, PNG, GIF, and WebP images. Provide a supported media type or a filename ending in .jpg, .jpeg, .png, .gif, or .webp. Received \""
+                + (mediaType ?? string.Empty)
+                + "\"."
+        );
     }
 
     private static string Normalize(string? mediaType)
@@ -291,7 +390,11 @@ public sealed class DeepSeekFileStore : Provider.IFileStore, Operations.IFileSto
         }
 
         var extension = fileName.Substring(dot + 1).ToLowerInvariant();
-        return extension == "gif" || extension == "jpeg" || extension == "jpg" || extension == "png" || extension == "webp";
+        return extension == "gif"
+            || extension == "jpeg"
+            || extension == "jpg"
+            || extension == "png"
+            || extension == "webp";
     }
 
     private static string? Detect(byte[]? data)
@@ -316,14 +419,27 @@ public sealed class DeepSeekFileStore : Provider.IFileStore, Operations.IFileSto
             return "image/png";
         }
 
-        if (data[0] == (byte)'G' && data[1] == (byte)'I' && data[2] == (byte)'F' && data[3] == (byte)'8')
+        if (
+            data[0] == (byte)'G'
+            && data[1] == (byte)'I'
+            && data[2] == (byte)'F'
+            && data[3] == (byte)'8'
+        )
         {
             return "image/gif";
         }
 
-        if (data.Length >= 12
-            && data[0] == (byte)'R' && data[1] == (byte)'I' && data[2] == (byte)'F' && data[3] == (byte)'F'
-            && data[8] == (byte)'W' && data[9] == (byte)'E' && data[10] == (byte)'B' && data[11] == (byte)'P')
+        if (
+            data.Length >= 12
+            && data[0] == (byte)'R'
+            && data[1] == (byte)'I'
+            && data[2] == (byte)'F'
+            && data[3] == (byte)'F'
+            && data[8] == (byte)'W'
+            && data[9] == (byte)'E'
+            && data[10] == (byte)'B'
+            && data[11] == (byte)'P'
+        )
         {
             return "image/webp";
         }

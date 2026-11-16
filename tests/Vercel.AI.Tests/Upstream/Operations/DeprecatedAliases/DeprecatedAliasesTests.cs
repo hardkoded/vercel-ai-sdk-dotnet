@@ -19,33 +19,69 @@ public sealed class DeprecatedAliasesTests
 {
     private const string Prefix = "packages/ai/src/decide/deprecated-aliases.test.ts::";
 
-    private static readonly Dictionary<string, EvaluationQuestion> Questions = new Dictionary<string, EvaluationQuestion>
+    private static readonly Dictionary<string, EvaluationQuestion> Questions = new Dictionary<
+        string,
+        EvaluationQuestion
+    >
     {
-        ["route"] = EQ("choice", "Team?", new Dictionary<string, object?> { ["billing"] = null, ["support"] = null }),
+        ["route"] = EQ(
+            "choice",
+            "Team?",
+            new Dictionary<string, object?> { ["billing"] = null, ["support"] = null }
+        ),
     };
 
     private static DecisionModelResult Result()
     {
-        return new DecisionModelResult(new Dictionary<string, DecisionAnswer> { ["route"] = new DecisionAnswer("choice", choice: "billing") });
+        return new DecisionModelResult(
+            new Dictionary<string, DecisionAnswer>
+            {
+                ["route"] = new DecisionAnswer("choice", choice: "billing"),
+            }
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "keeps the function alias and accepts existing model implementations", Coverage = UpstreamCoverage.Partial, Note = "C# cannot make two methods the same object, so the test checks that EvaluateAsync and DecideAsync (through DecisionCaller.FromLegacy) return the same answers from a legacy model.")]
+    [UpstreamTest(
+        Prefix + "keeps the function alias and accepts existing model implementations",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "C# cannot make two methods the same object, so the test checks that EvaluateAsync and DecideAsync (through DecisionCaller.FromLegacy) return the same answers from a legacy model."
+    )]
     public async Task Keeps_the_function_alias_and_accepts_existing_model_implementations()
     {
         var legacy = new LegacyModel();
-        var output = await Evaluate.EvaluateAsync(new EvaluateRequest { Model = legacy, State = "message", Questions = Questions });
+        var output = await Evaluate.EvaluateAsync(
+            new EvaluateRequest
+            {
+                Model = legacy,
+                State = "message",
+                Questions = Questions,
+            }
+        );
         Assert.Equal("billing", output.Answers["route"].Choice);
         Assert.Equal(1, legacy.Calls);
 
         var wrapped = new LegacyModel();
-        var current = await DecideOperation.DecideAsync(new DecideRequest { Model = DecisionCaller.FromLegacy(wrapped), State = "message", Questions = new Dictionary<string, DecisionQuestion>(Questions.ToDictionary(pair => pair.Key, pair => (DecisionQuestion)pair.Value)) });
+        var current = await DecideOperation.DecideAsync(
+            new DecideRequest
+            {
+                Model = DecisionCaller.FromLegacy(wrapped),
+                State = "message",
+                Questions = new Dictionary<string, DecisionQuestion>(
+                    Questions.ToDictionary(pair => pair.Key, pair => (DecisionQuestion)pair.Value)
+                ),
+            }
+        );
         Assert.Equal(output.Answers["route"].Choice, current.Answers["route"].Choice);
         Assert.Equal(1, wrapped.Calls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "resolves deprecated provider factories through default, custom, and registry access", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "resolves deprecated provider factories through default, custom, and registry access",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Resolves_deprecated_provider_factories_through_default_custom_and_registry_access()
     {
         var legacy = new LegacyProvider();
@@ -79,25 +115,42 @@ public sealed class DeprecatedAliasesTests
             DecisionModels.DefaultProvider = null;
         }
 
-        var direct = await registry.EvaluationModel("legacy|model").DoEvaluateAsync(Call(), CancellationToken.None);
+        var direct = await registry
+            .EvaluationModel("legacy|model")
+            .DoEvaluateAsync(Call(), CancellationToken.None);
         Assert.Equal("billing", Assert.Single(direct.Answers).Value.Choice);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "prefers new model maps and factories and supports direct deprecated model calls", Coverage = UpstreamCoverage.Covered, Note = "EvaluateRequest has no ModelId, so the string id goes through Decide.DecideAsync. Upstream experimental_evaluate is the same function.")]
+    [UpstreamTest(
+        Prefix + "prefers new model maps and factories and supports direct deprecated model calls",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "EvaluateRequest has no ModelId, so the string id goes through Decide.DecideAsync. Upstream experimental_evaluate is the same function."
+    )]
     public async Task Prefers_new_model_maps_and_factories_and_supports_direct_deprecated_model_calls()
     {
         var model = new DecideModel { Result = Result() };
-        var provider = new CustomProvider().AddDecisionModel("alias", model).AddEvaluationModel("alias", new LegacyModel());
+        var provider = new CustomProvider()
+            .AddDecisionModel("alias", model)
+            .AddEvaluationModel("alias", new LegacyModel());
         Assert.Same(model, provider.DecisionModel("alias"));
-        var direct = await provider.EvaluationModel("alias").DoEvaluateAsync(Call(), CancellationToken.None);
+        var direct = await provider
+            .EvaluationModel("alias")
+            .DoEvaluateAsync(Call(), CancellationToken.None);
         Assert.Equal("billing", Assert.Single(direct.Answers).Value.Choice);
 
         var both = new BothFactoriesProvider(model);
         DecisionModels.DefaultProvider = both;
         try
         {
-            await DecideOperation.DecideAsync(new DecideRequest { ModelId = "model", State = "message", Questions = DecisionQuestions() });
+            await DecideOperation.DecideAsync(
+                new DecideRequest
+                {
+                    ModelId = "model",
+                    State = "message",
+                    Questions = DecisionQuestions(),
+                }
+            );
         }
         finally
         {
@@ -108,7 +161,10 @@ public sealed class DeprecatedAliasesTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "dispatches deprecated telemetry callbacks once with decision operation names", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "dispatches deprecated telemetry callbacks once with decision operation names",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Dispatches_deprecated_telemetry_callbacks_once_with_decision_operation_names()
     {
         var calls = new Dictionary<string, List<string>>
@@ -118,27 +174,51 @@ public sealed class DeprecatedAliasesTests
             ["OnModelEnd"] = new List<string>(),
             ["OnEvaluateEnd"] = new List<string>(),
         };
-        await Evaluate.EvaluateAsync(new EvaluateRequest
-        {
-            Model = new LegacyModel(),
-            State = "message",
-            Questions = Questions,
-            Telemetry = new EvaluateTelemetry
+        await Evaluate.EvaluateAsync(
+            new EvaluateRequest
             {
-                OnEvaluateStart = e => { calls["OnEvaluateStart"].Add(e.OperationId); return Task.CompletedTask; },
-                OnModelStart = e => { calls["OnModelStart"].Add(e.OperationId); return Task.CompletedTask; },
-                OnModelEnd = e => { calls["OnModelEnd"].Add(e.OperationId); return Task.CompletedTask; },
-                OnEvaluateEnd = e => { calls["OnEvaluateEnd"].Add(e.OperationId); return Task.CompletedTask; },
-            },
-        });
+                Model = new LegacyModel(),
+                State = "message",
+                Questions = Questions,
+                Telemetry = new EvaluateTelemetry
+                {
+                    OnEvaluateStart = e =>
+                    {
+                        calls["OnEvaluateStart"].Add(e.OperationId);
+                        return Task.CompletedTask;
+                    },
+                    OnModelStart = e =>
+                    {
+                        calls["OnModelStart"].Add(e.OperationId);
+                        return Task.CompletedTask;
+                    },
+                    OnModelEnd = e =>
+                    {
+                        calls["OnModelEnd"].Add(e.OperationId);
+                        return Task.CompletedTask;
+                    },
+                    OnEvaluateEnd = e =>
+                    {
+                        calls["OnEvaluateEnd"].Add(e.OperationId);
+                        return Task.CompletedTask;
+                    },
+                },
+            }
+        );
         foreach (var pair in calls)
         {
-            Assert.Equal(new[] { pair.Key.Contains("Model") ? "ai.decide.doDecide" : "ai.decide" }, pair.Value);
+            Assert.Equal(
+                new[] { pair.Key.Contains("Model") ? "ai.decide.doDecide" : "ai.decide" },
+                pair.Value
+            );
         }
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "prefers each decision telemetry callback over its deprecated alias", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "prefers each decision telemetry callback over its deprecated alias",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Prefers_each_decision_telemetry_callback_over_its_deprecated_alias()
     {
         var deprecated = 0;
@@ -155,31 +235,42 @@ public sealed class DeprecatedAliasesTests
             return Task.CompletedTask;
         }
 
-        await Evaluate.EvaluateAsync(new EvaluateRequest
-        {
-            Model = new LegacyModel(),
-            State = "message",
-            Questions = Questions,
-            Telemetry = new EvaluateTelemetry
+        await Evaluate.EvaluateAsync(
+            new EvaluateRequest
             {
-                OnDecideStart = Current,
-                OnEvaluateStart = Deprecated,
-                OnDecisionModelCallStart = Current,
-                OnModelStart = Deprecated,
-                OnDecisionModelCallEnd = Current,
-                OnModelEnd = Deprecated,
-                OnDecideEnd = Current,
-                OnEvaluateEnd = Deprecated,
-            },
-        });
+                Model = new LegacyModel(),
+                State = "message",
+                Questions = Questions,
+                Telemetry = new EvaluateTelemetry
+                {
+                    OnDecideStart = Current,
+                    OnEvaluateStart = Deprecated,
+                    OnDecisionModelCallStart = Current,
+                    OnModelStart = Deprecated,
+                    OnDecisionModelCallEnd = Current,
+                    OnModelEnd = Deprecated,
+                    OnDecideEnd = Current,
+                    OnEvaluateEnd = Deprecated,
+                },
+            }
+        );
         Assert.Equal(4, current);
         Assert.Equal(0, deprecated);
     }
 
     private static EvaluationModelCall Call()
     {
-        var state = new List<object?> { new Dictionary<string, object?> { ["type"] = "text", ["text"] = "message" } };
-        return new EvaluationModelCall(P(state), Questions, default, new Dictionary<string, string>(), CancellationToken.None);
+        var state = new List<object?>
+        {
+            new Dictionary<string, object?> { ["type"] = "text", ["text"] = "message" },
+        };
+        return new EvaluationModelCall(
+            P(state),
+            Questions,
+            default,
+            new Dictionary<string, string>(),
+            CancellationToken.None
+        );
     }
 
     private static Dictionary<string, DecisionQuestion> DecisionQuestions()
@@ -192,11 +283,10 @@ public sealed class DeprecatedAliasesTests
         private readonly LegacyModel _model = new LegacyModel();
 
         public LegacyProvider()
-            : base("legacy")
-        {
-        }
+            : base("legacy") { }
 
-        public override ILanguageModel LanguageModel(string modelId) => new TestLanguageModel(modelId);
+        public override ILanguageModel LanguageModel(string modelId) =>
+            new TestLanguageModel(modelId);
 
         IEvaluationCaller IEvaluationProvider.EvaluationModel(string modelId)
         {
@@ -205,7 +295,10 @@ public sealed class DeprecatedAliasesTests
         }
     }
 
-    private sealed class BothFactoriesProvider : ProviderBase, IDecisionProvider, IEvaluationProvider
+    private sealed class BothFactoriesProvider
+        : ProviderBase,
+            IDecisionProvider,
+            IEvaluationProvider
     {
         private readonly IDecisionCaller _model;
 
@@ -217,7 +310,8 @@ public sealed class DeprecatedAliasesTests
 
         public int DeprecatedCalls { get; private set; }
 
-        public override ILanguageModel LanguageModel(string modelId) => new TestLanguageModel(modelId);
+        public override ILanguageModel LanguageModel(string modelId) =>
+            new TestLanguageModel(modelId);
 
         public IDecisionCaller DecisionModel(string modelId) => _model;
 
@@ -240,7 +334,10 @@ public sealed class DeprecatedAliasesTests
 
         public int Calls { get; private set; }
 
-        public Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken)
+        public Task<EvaluationModelResult> DoEvaluateAsync(
+            EvaluationModelCall call,
+            CancellationToken cancellationToken
+        )
         {
             Calls++;
             return Task.FromResult(EvaluationModelResult.From(Result()));

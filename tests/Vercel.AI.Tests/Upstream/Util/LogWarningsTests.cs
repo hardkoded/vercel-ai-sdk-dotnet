@@ -9,7 +9,10 @@ namespace Vercel.AI.Tests;
 [Collection("LogWarnings")]
 public sealed class LogWarningsTests
 {
-    [UpstreamTest("packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is false::should not log any warnings (single)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is false::should not log any warnings (single)",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void False_logger_suppresses_one_warning()
     {
@@ -27,7 +30,10 @@ public sealed class LogWarningsTests
         }
     }
 
-    [UpstreamTest("packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is false::should not log any warnings (multiple)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is false::should not log any warnings (multiple)",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void False_logger_suppresses_several_warnings()
     {
@@ -35,7 +41,17 @@ public sealed class LogWarningsTests
         try
         {
             log.Install(false);
-            LogWarnings.Log(Options(new ModelWarning[] { new OtherWarning("Test warning 1"), new OtherWarning("Test warning 2") }, "provider", "model"));
+            LogWarnings.Log(
+                Options(
+                    new ModelWarning[]
+                    {
+                        new OtherWarning("Test warning 1"),
+                        new OtherWarning("Test warning 2"),
+                    },
+                    "provider",
+                    "model"
+                )
+            );
             Assert.Empty(log.Process);
             Assert.Empty(log.Console);
         }
@@ -45,7 +61,10 @@ public sealed class LogWarningsTests
         }
     }
 
-    [UpstreamTest("packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is false::should not count empty arrays as first call", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is false::should not count empty arrays as first call",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void False_logger_ignores_an_empty_call()
     {
@@ -64,7 +83,10 @@ public sealed class LogWarningsTests
         }
     }
 
-    [UpstreamTest("packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is a custom function::should call the custom function with warning options", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is a custom function::should call the custom function with warning options",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Custom_logger_receives_the_options()
     {
@@ -72,7 +94,13 @@ public sealed class LogWarningsTests
         LogWarningsOptions? seen = null;
         try
         {
-            log.Install((Action<LogWarningsOptions>)delegate (LogWarningsOptions options) { seen = options; });
+            log.Install(
+                (Action<LogWarningsOptions>)
+                    delegate(LogWarningsOptions options)
+                    {
+                        seen = options;
+                    }
+            );
             var options = Options(new OtherWarning("Test warning"), "pp", "mm");
             LogWarnings.Log(options);
             Assert.Same(options, seen);
@@ -85,7 +113,10 @@ public sealed class LogWarningsTests
         }
     }
 
-    [UpstreamTest("packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is a custom function::should call the custom function with multiple warnings", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is a custom function::should call the custom function with multiple warnings",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Custom_logger_receives_multiple_warnings()
     {
@@ -93,12 +124,24 @@ public sealed class LogWarningsTests
         var calls = 0;
         try
         {
-            log.Install((Action<LogWarningsOptions>)delegate { calls++; });
-            LogWarnings.Log(Options(new ModelWarning[]
-            {
-                new UnsupportedWarning("temperature", "Temperature not supported"),
-                new OtherWarning("Another warning"),
-            }, "provider", "model"));
+            log.Install(
+                (Action<LogWarningsOptions>)
+                    delegate
+                    {
+                        calls++;
+                    }
+            );
+            LogWarnings.Log(
+                Options(
+                    new ModelWarning[]
+                    {
+                        new UnsupportedWarning("temperature", "Temperature not supported"),
+                        new OtherWarning("Another warning"),
+                    },
+                    "provider",
+                    "model"
+                )
+            );
             Assert.Equal(1, calls);
             Assert.Empty(log.Process);
             Assert.Empty(log.Console);
@@ -109,7 +152,10 @@ public sealed class LogWarningsTests
         }
     }
 
-    [UpstreamTest("packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is a custom function::should not call the custom function with empty warnings array", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is a custom function::should not call the custom function with empty warnings array",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Custom_logger_skips_an_empty_list()
     {
@@ -117,7 +163,13 @@ public sealed class LogWarningsTests
         var calls = 0;
         try
         {
-            log.Install((Action<LogWarningsOptions>)delegate { calls++; });
+            log.Install(
+                (Action<LogWarningsOptions>)
+                    delegate
+                    {
+                        calls++;
+                    }
+            );
             LogWarnings.Log(Options(Array.Empty<ModelWarning>(), "x", "y"));
             Assert.Equal(0, calls);
             Assert.Empty(log.Process);
@@ -129,7 +181,10 @@ public sealed class LogWarningsTests
         }
     }
 
-    [UpstreamTest("packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is unset/undefined (default behavior)::should emit the information note and warning via process.emitWarning without logging to stdout", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is unset/undefined (default behavior)::should emit the information note and warning via process.emitWarning without logging to stdout",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Default_logger_emits_the_note_and_warning()
     {
@@ -137,11 +192,16 @@ public sealed class LogWarningsTests
         try
         {
             log.Install(null);
-            LogWarnings.Log(Options(new OtherWarning("Test warning message"), "myProvider", "myModel"));
+            LogWarnings.Log(
+                Options(new OtherWarning("Test warning message"), "myProvider", "myModel")
+            );
             Assert.Empty(log.Console);
             Assert.Equal(2, log.Process.Count);
             Assert.Equal((LogWarnings.FirstWarningInfoMessage, "Warning"), log.Process[0]);
-            Assert.Equal(("AI SDK Warning (myProvider / myModel): Test warning message", "Warning"), log.Process[1]);
+            Assert.Equal(
+                ("AI SDK Warning (myProvider / myModel): Test warning message", "Warning"),
+                log.Process[1]
+            );
         }
         finally
         {
@@ -149,7 +209,10 @@ public sealed class LogWarningsTests
         }
     }
 
-    [UpstreamTest("packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is unset/undefined (default behavior)::should only emit the information note on the first non-empty call", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is unset/undefined (default behavior)::should only emit the information note on the first non-empty call",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Default_logger_emits_the_note_once()
     {
@@ -171,7 +234,10 @@ public sealed class LogWarningsTests
         }
     }
 
-    [UpstreamTest("packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is unset/undefined (default behavior)::should log the information note and warnings with console.warn when process.emitWarning is unavailable", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is unset/undefined (default behavior)::should log the information note and warnings with console.warn when process.emitWarning is unavailable",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Default_logger_falls_back_to_console_warn()
     {
@@ -192,7 +258,10 @@ public sealed class LogWarningsTests
         }
     }
 
-    [UpstreamTest("packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is unset/undefined (default behavior)::should only log for non-empty warnings", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is unset/undefined (default behavior)::should only log for non-empty warnings",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Default_logger_skips_empty_lists()
     {
@@ -216,7 +285,10 @@ public sealed class LogWarningsTests
         }
     }
 
-    [UpstreamTest("packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is unset/undefined (default behavior)::should handle various warning types per formatWarning", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is unset/undefined (default behavior)::should handle various warning types per formatWarning",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Default_logger_formats_each_warning_type()
     {
@@ -224,19 +296,46 @@ public sealed class LogWarningsTests
         try
         {
             log.Install(null);
-            LogWarnings.Log(Options(new ModelWarning[]
-            {
-                new UnsupportedWarning("mediaType", "detail"),
-                new UnsupportedWarning("voice", "detail2"),
-                new DeprecatedWarning("providerOptions key 'old-key'", "Use 'oldKey' instead."),
-                new OtherWarning("other msg"),
-            }, "zzz", "MMM"));
+            LogWarnings.Log(
+                Options(
+                    new ModelWarning[]
+                    {
+                        new UnsupportedWarning("mediaType", "detail"),
+                        new UnsupportedWarning("voice", "detail2"),
+                        new DeprecatedWarning(
+                            "providerOptions key 'old-key'",
+                            "Use 'oldKey' instead."
+                        ),
+                        new OtherWarning("other msg"),
+                    },
+                    "zzz",
+                    "MMM"
+                )
+            );
             Assert.Empty(log.Console);
             Assert.Equal(5, log.Process.Count);
             Assert.Equal((LogWarnings.FirstWarningInfoMessage, "Warning"), log.Process[0]);
-            Assert.Equal(("AI SDK Warning (zzz / MMM): The feature \"mediaType\" is not supported. detail", "Warning"), log.Process[1]);
-            Assert.Equal(("AI SDK Warning (zzz / MMM): The feature \"voice\" is not supported. detail2", "Warning"), log.Process[2]);
-            Assert.Equal(("AI SDK Warning (zzz / MMM): Deprecated: \"providerOptions key 'old-key'\". Use 'oldKey' instead.", "DeprecationWarning"), log.Process[3]);
+            Assert.Equal(
+                (
+                    "AI SDK Warning (zzz / MMM): The feature \"mediaType\" is not supported. detail",
+                    "Warning"
+                ),
+                log.Process[1]
+            );
+            Assert.Equal(
+                (
+                    "AI SDK Warning (zzz / MMM): The feature \"voice\" is not supported. detail2",
+                    "Warning"
+                ),
+                log.Process[2]
+            );
+            Assert.Equal(
+                (
+                    "AI SDK Warning (zzz / MMM): Deprecated: \"providerOptions key 'old-key'\". Use 'oldKey' instead.",
+                    "DeprecationWarning"
+                ),
+                log.Process[3]
+            );
             Assert.Equal(("AI SDK Warning (zzz / MMM): other msg", "Warning"), log.Process[4]);
         }
         finally
@@ -245,7 +344,10 @@ public sealed class LogWarningsTests
         }
     }
 
-    [UpstreamTest("packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is unset/undefined (default behavior)::should include warning even with \"unknown provider\" and \"unknown model\"", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is unset/undefined (default behavior)::should include warning even with \"unknown provider\" and \"unknown model\"",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Default_logger_keeps_unknown_provider_and_model()
     {
@@ -253,9 +355,14 @@ public sealed class LogWarningsTests
         try
         {
             log.Install(null);
-            LogWarnings.Log(Options(new OtherWarning("messx"), "unknown provider", "unknown model"));
+            LogWarnings.Log(
+                Options(new OtherWarning("messx"), "unknown provider", "unknown model")
+            );
             Assert.Empty(log.Console);
-            Assert.Contains(("AI SDK Warning (unknown provider / unknown model): messx", "Warning"), log.Process);
+            Assert.Contains(
+                ("AI SDK Warning (unknown provider / unknown model): messx", "Warning"),
+                log.Process
+            );
         }
         finally
         {
@@ -263,7 +370,10 @@ public sealed class LogWarningsTests
         }
     }
 
-    [UpstreamTest("packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is undefined (explicitly set)::should use default behavior and emit via process.emitWarning", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is undefined (explicitly set)::should use default behavior and emit via process.emitWarning",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Explicit_null_logger_uses_the_default()
     {
@@ -271,11 +381,16 @@ public sealed class LogWarningsTests
         try
         {
             log.Install(null);
-            LogWarnings.Log(Options(new OtherWarning("Test warning with undefined logger"), "p1", "m1"));
+            LogWarnings.Log(
+                Options(new OtherWarning("Test warning with undefined logger"), "p1", "m1")
+            );
             Assert.Empty(log.Console);
             Assert.Equal(2, log.Process.Count);
             Assert.Equal((LogWarnings.FirstWarningInfoMessage, "Warning"), log.Process[0]);
-            Assert.Equal(("AI SDK Warning (p1 / m1): Test warning with undefined logger", "Warning"), log.Process[1]);
+            Assert.Equal(
+                ("AI SDK Warning (p1 / m1): Test warning with undefined logger", "Warning"),
+                log.Process[1]
+            );
         }
         finally
         {
@@ -283,7 +398,10 @@ public sealed class LogWarningsTests
         }
     }
 
-    [UpstreamTest("packages/ai/src/logger/log-warnings.test.ts::logWarnings > first-time information note::should not display the info message for empty warnings", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/logger/log-warnings.test.ts::logWarnings > first-time information note::should not display the info message for empty warnings",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Empty_warnings_do_not_emit_the_note()
     {
@@ -301,7 +419,10 @@ public sealed class LogWarningsTests
         }
     }
 
-    [UpstreamTest("packages/ai/src/logger/log-warnings.test.ts::logWarnings > first-time information note::should display informational note only on first real call", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/logger/log-warnings.test.ts::logWarnings > first-time information note::should display informational note only on first real call",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Note_appears_on_the_first_real_call_only()
     {
@@ -324,7 +445,10 @@ public sealed class LogWarningsTests
         }
     }
 
-    [UpstreamTest("packages/ai/src/logger/log-warnings.test.ts::logWarnings > first-time information note::should not display information note when using custom logger", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/logger/log-warnings.test.ts::logWarnings > first-time information note::should not display information note when using custom logger",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Custom_logger_does_not_emit_the_note()
     {
@@ -332,7 +456,13 @@ public sealed class LogWarningsTests
         var calls = 0;
         try
         {
-            log.Install((Action<LogWarningsOptions>)delegate { calls++; });
+            log.Install(
+                (Action<LogWarningsOptions>)
+                    delegate
+                    {
+                        calls++;
+                    }
+            );
             LogWarnings.Log(Options(new OtherWarning("Message"), "provV", "modZ"));
             Assert.Equal(1, calls);
             Assert.Empty(log.Process);
@@ -344,7 +474,10 @@ public sealed class LogWarningsTests
         }
     }
 
-    [UpstreamTest("packages/ai/src/logger/log-warnings.test.ts::logWarnings > first-time information note::should not display information note when AI_SDK_LOG_WARNINGS is false", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/logger/log-warnings.test.ts::logWarnings > first-time information note::should not display information note when AI_SDK_LOG_WARNINGS is false",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void False_logger_does_not_emit_the_note()
     {
@@ -367,7 +500,11 @@ public sealed class LogWarningsTests
         return Options(new ModelWarning[] { warning }, provider, model);
     }
 
-    private static LogWarningsOptions Options(IReadOnlyList<ModelWarning> warnings, string provider, string model)
+    private static LogWarningsOptions Options(
+        IReadOnlyList<ModelWarning> warnings,
+        string provider,
+        string model
+    )
     {
         return new LogWarningsOptions(warnings, provider, model);
     }
@@ -382,8 +519,14 @@ public sealed class LogWarningsTests
         {
             LogWarnings.ResetState();
             LogWarnings.Logger = logger;
-            LogWarnings.ProcessEmitWarning = delegate (string message, string type, string? code) { Process.Add((message, type)); };
-            LogWarnings.ConsoleWarn = delegate (string message) { Console.Add(message); };
+            LogWarnings.ProcessEmitWarning = delegate(string message, string type, string? code)
+            {
+                Process.Add((message, type));
+            };
+            LogWarnings.ConsoleWarn = delegate(string message)
+            {
+                Console.Add(message);
+            };
         }
 
         public void Restore()

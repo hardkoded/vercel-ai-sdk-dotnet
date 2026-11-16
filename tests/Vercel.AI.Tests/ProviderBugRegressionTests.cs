@@ -19,10 +19,24 @@ public sealed class ProviderBugRegressionTests
     {
         var handler = new ScriptedHandler();
         handler.Statuses.AddRange(new[] { HttpStatusCode.ServiceUnavailable, HttpStatusCode.OK });
-        var http = new ProviderHttp(new HttpClient(handler), new RetryPolicy { MaxRetries = 1, InitialDelay = TimeSpan.FromMilliseconds(1), MaxDelay = TimeSpan.FromMilliseconds(1) });
+        var http = new ProviderHttp(
+            new HttpClient(handler),
+            new RetryPolicy
+            {
+                MaxRetries = 1,
+                InitialDelay = TimeSpan.FromMilliseconds(1),
+                MaxDelay = TimeSpan.FromMilliseconds(1),
+            }
+        );
         var content = new StringContent("{\"a\":1}", Encoding.UTF8, "application/json");
 
-        await http.SendBytesAsync(HttpMethod.Post, new Uri("https://example.test/upload"), content, null, CancellationToken.None);
+        await http.SendBytesAsync(
+            HttpMethod.Post,
+            new Uri("https://example.test/upload"),
+            content,
+            null,
+            CancellationToken.None
+        );
 
         Assert.Equal(2, handler.Calls);
         Assert.Equal("{\"a\":1}", handler.Body);
@@ -31,7 +45,9 @@ public sealed class ProviderBugRegressionTests
     [Fact]
     public async Task SseParser_does_not_yield_a_pending_done_marker_at_the_end_of_the_stream()
     {
-        using var stream = new MemoryStream(Encoding.UTF8.GetBytes("data: {\"a\":1}\n\ndata: [DONE]"));
+        using var stream = new MemoryStream(
+            Encoding.UTF8.GetBytes("data: {\"a\":1}\n\ndata: [DONE]")
+        );
 
         var seen = new List<string>();
         await foreach (var data in SseParser.ReadDataAsync(stream))
@@ -65,9 +81,9 @@ public sealed class ProviderBugRegressionTests
 
         await Assert.ThrowsAsync<AiSdkException>(async () =>
         {
-            await foreach (var _ in AmazonBedrockEventStreamDecoder.Create<string>(stream, (_, _) => { }))
-            {
-            }
+            await foreach (
+                var _ in AmazonBedrockEventStreamDecoder.Create<string>(stream, (_, _) => { })
+            ) { }
         });
     }
 
@@ -76,9 +92,15 @@ public sealed class ProviderBugRegressionTests
     {
         var handler = new ScriptedHandler();
         handler.Statuses.AddRange(new[] { HttpStatusCode.TooManyRequests, HttpStatusCode.OK });
-        var provider = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key" }, handler);
+        var provider = OpenAIProvider.Create(
+            new OpenAIOptions { ApiKey = "test-api-key" },
+            handler
+        );
 
-        await new OpenAISpeechModel(provider, "tts-1").GenerateAsync(new OpenAISpeechCall("hello"), CancellationToken.None);
+        await new OpenAISpeechModel(provider, "tts-1").GenerateAsync(
+            new OpenAISpeechCall("hello"),
+            CancellationToken.None
+        );
 
         Assert.Equal(2, handler.Calls);
     }
@@ -86,26 +108,46 @@ public sealed class ProviderBugRegressionTests
     [Fact]
     public async Task OpenAI_speech_maps_a_network_failure_to_an_api_connection_exception()
     {
-        var provider = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key" }, new ThrowingHandler());
+        var provider = OpenAIProvider.Create(
+            new OpenAIOptions { ApiKey = "test-api-key" },
+            new ThrowingHandler()
+        );
 
         await Assert.ThrowsAsync<ApiConnectionException>(() =>
-            new OpenAISpeechModel(provider, "tts-1").GenerateAsync(new OpenAISpeechCall("hello"), CancellationToken.None));
+            new OpenAISpeechModel(provider, "tts-1").GenerateAsync(
+                new OpenAISpeechCall("hello"),
+                CancellationToken.None
+            )
+        );
     }
 
     [Fact]
     public async Task OpenAI_image_edit_reports_invalid_json_as_a_json_parse_exception()
     {
         var handler = new RawHandler("not json");
-        var provider = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key" }, handler);
-        var call = new OpenAIImageCall("edit") { Files = new[] { new OpenAIImageFile(new byte[] { 1 }, "image/png", "a.png") } };
+        var provider = OpenAIProvider.Create(
+            new OpenAIOptions { ApiKey = "test-api-key" },
+            handler
+        );
+        var call = new OpenAIImageCall("edit")
+        {
+            Files = new[] { new OpenAIImageFile(new byte[] { 1 }, "image/png", "a.png") },
+        };
 
         await Assert.ThrowsAsync<JsonParseException>(() =>
-            new OpenAIImageModel(provider, "gpt-image-1").GenerateAsync(call, CancellationToken.None));
+            new OpenAIImageModel(provider, "gpt-image-1").GenerateAsync(
+                call,
+                CancellationToken.None
+            )
+        );
     }
 
     private sealed class ThrowingHandler : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
         {
             throw new HttpRequestException("connection refused");
         }
@@ -113,9 +155,14 @@ public sealed class ProviderBugRegressionTests
 
     private sealed class RawHandler(string body) : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
         {
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body) });
+            return Task.FromResult(
+                new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body) }
+            );
         }
     }
 }

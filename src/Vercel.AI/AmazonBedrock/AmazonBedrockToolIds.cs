@@ -7,7 +7,8 @@ namespace Vercel.AI.AmazonBedrock;
 /// <summary>Mistral tool-call ids on Bedrock must be exactly nine alphanumeric characters.</summary>
 public static class AmazonBedrockToolIds
 {
-    private const string Base62Characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    private const string Base62Characters =
+        "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     private const int NormalizedLength = 9;
 
     /// <summary>True when <paramref name="modelId"/> is a Mistral model, including region-prefixed ids.</summary>
@@ -39,9 +40,13 @@ public static class AmazonBedrockToolIds
 
         foreach (var character in value)
         {
-            if (!((character >= 'a' && character <= 'z')
-                || (character >= 'A' && character <= 'Z')
-                || (character >= '0' && character <= '9')))
+            if (
+                !(
+                    (character >= 'a' && character <= 'z')
+                    || (character >= 'A' && character <= 'Z')
+                    || (character >= '0' && character <= '9')
+                )
+            )
             {
                 return false;
             }

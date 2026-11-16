@@ -54,14 +54,21 @@ internal static class AnthropicToolset
             }
         }
 
-        if (toolsetName != "computer"
+        if (
+            toolsetName != "computer"
             || toolset == null
             || Array.IndexOf(Members, memberName) < 0
-            || IsDisabled(toolset, memberName))
+            || IsDisabled(toolset, memberName)
+        )
         {
             throw new InvalidResponseDataException(
-                new JsonObject { ["toolsetName"] = toolsetName, ["memberName"] = memberName }.ToJsonString(),
-                "Received an unavailable toolset member: " + toolsetName + "." + memberName + ".");
+                new JsonObject
+                {
+                    ["toolsetName"] = toolsetName,
+                    ["memberName"] = memberName,
+                }.ToJsonString(),
+                "Received an unavailable toolset member: " + toolsetName + "." + memberName + "."
+            );
         }
     }
 
@@ -72,7 +79,8 @@ internal static class AnthropicToolset
         {
             throw new InvalidResponseDataException(
                 input?.ToJsonString() ?? "null",
-                "Invalid toolset member input: expected an object.");
+                "Invalid toolset member input: expected an object."
+            );
         }
 
         var wrapped = new JsonObject();

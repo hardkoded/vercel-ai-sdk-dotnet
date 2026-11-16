@@ -10,28 +10,39 @@ namespace Vercel.AI.Tests.Upstream.GenerateText;
 public sealed class OptionsAbortSignalTests
 {
     [Fact]
-    [UpstreamTest("packages/ai/src/generate-text/generate-text.test.ts::generateText > options.abortSignal::should forward abort signal to tool execution", Coverage = UpstreamCoverage.Partial, Note = "The token is not cancelled, because a cancelled token stops the call before the tool runs, while upstream's mock ignores the abort. A tool delegate gets the input and the token, not toolCallId, messages, or context.")]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/generate-text.test.ts::generateText > options.abortSignal::should forward abort signal to tool execution",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The token is not cancelled, because a cancelled token stops the call before the tool runs, while upstream's mock ignores the abort. A tool delegate gets the input and the token, not toolCallId, messages, or context."
+    )]
     public async Task Should_forward_abort_signal_to_tool_execution()
     {
         using var abort = new CancellationTokenSource();
         var toolCalls = new List<(string Input, CancellationToken Token)>();
-        var model = new DelegateModel { Generate = (_, _) => Task.FromResult(ToolCallResult("{ \"value\": \"value\" }")) };
+        var model = new DelegateModel
+        {
+            Generate = (_, _) => Task.FromResult(ToolCallResult("{ \"value\": \"value\" }")),
+        };
 
-        await Client().GenerateTextAsync(
-            new GenerateTextOptions
-            {
-                Model = model,
-                Prompt = "test-input",
-                Tools = new[]
+        await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
                 {
-                    ToolOne((input, token) =>
+                    Model = model,
+                    Prompt = "test-input",
+                    Tools = new[]
                     {
-                        toolCalls.Add((input.GetProperty("value").GetString()!, token));
-                        return Task.FromResult("\"tool result\"");
-                    }),
+                        ToolOne(
+                            (input, token) =>
+                            {
+                                toolCalls.Add((input.GetProperty("value").GetString()!, token));
+                                return Task.FromResult("\"tool result\"");
+                            }
+                        ),
+                    },
                 },
-            },
-            abort.Token);
+                abort.Token
+            );
 
         var call = Assert.Single(toolCalls);
         Assert.Equal("value", call.Input);

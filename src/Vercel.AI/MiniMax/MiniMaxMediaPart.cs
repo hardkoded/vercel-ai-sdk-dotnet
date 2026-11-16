@@ -31,7 +31,11 @@ internal static class MiniMaxMediaPart
                 var value = detail.ValueKind == JsonValueKind.String ? detail.GetString() : null;
                 if (value != "low" && value != "default" && value != "high")
                 {
-                    throw new InvalidArgumentException("providerOptions", detail.GetRawText(), "MiniMax image detail must be 'low', 'default', or 'high'.");
+                    throw new InvalidArgumentException(
+                        "providerOptions",
+                        detail.GetRawText(),
+                        "MiniMax image detail must be 'low', 'default', or 'high'."
+                    );
                 }
 
                 mediaOptions["detail"] = value;
@@ -39,23 +43,37 @@ internal static class MiniMaxMediaPart
         }
         else if (options != null && AnthropicJson.Property(options.Value, "fps") is { } fps)
         {
-            if (fps.ValueKind != JsonValueKind.Number || fps.GetDouble() < 0.2 || fps.GetDouble() > 5)
+            if (
+                fps.ValueKind != JsonValueKind.Number
+                || fps.GetDouble() < 0.2
+                || fps.GetDouble() > 5
+            )
             {
-                throw new InvalidArgumentException("providerOptions", fps.GetRawText(), "MiniMax video fps must be a number between 0.2 and 5.");
+                throw new InvalidArgumentException(
+                    "providerOptions",
+                    fps.GetRawText(),
+                    "MiniMax video fps must be a number between 0.2 and 5."
+                );
             }
 
             mediaOptions["fps"] = fps.GetDouble();
         }
 
         var data = part.TryGetProperty("data", out var dataValue) ? dataValue : default;
-        var dataType = data.ValueKind == JsonValueKind.Object ? AnthropicJson.String(data, "type") : null;
+        var dataType =
+            data.ValueKind == JsonValueKind.Object ? AnthropicJson.String(data, "type") : null;
         var source = new JsonObject();
         switch (dataType)
         {
             case "data":
                 var base64 = AnthropicJson.String(data, "data") ?? string.Empty;
                 source["type"] = "base64";
-                source["media_type"] = MediaTypes.IsFullMediaType(mediaType) ? mediaType : MediaTypes.ResolveFullMediaType(mediaType, System.Convert.FromBase64String(base64));
+                source["media_type"] = MediaTypes.IsFullMediaType(mediaType)
+                    ? mediaType
+                    : MediaTypes.ResolveFullMediaType(
+                        mediaType,
+                        System.Convert.FromBase64String(base64)
+                    );
                 source["data"] = base64;
                 break;
             case "url":
@@ -65,11 +83,17 @@ internal static class MiniMaxMediaPart
             case "reference":
                 if (type != "video")
                 {
-                    throw new UnsupportedFunctionalityException("MiniMax image file references", "Unsupported functionality: MiniMax image file references");
+                    throw new UnsupportedFunctionalityException(
+                        "MiniMax image file references",
+                        "Unsupported functionality: MiniMax image file references"
+                    );
                 }
 
                 var reference = new Dictionary<string, string>();
-                if (data.TryGetProperty("reference", out var referenceValue) && referenceValue.ValueKind == JsonValueKind.Object)
+                if (
+                    data.TryGetProperty("reference", out var referenceValue)
+                    && referenceValue.ValueKind == JsonValueKind.Object
+                )
                 {
                     foreach (var property in referenceValue.EnumerateObject())
                     {
@@ -82,11 +106,16 @@ internal static class MiniMaxMediaPart
 
                 var fileId = ProviderReferences.ResolveProviderReference(reference, "minimax");
                 source["type"] = "url";
-                source["url"] = fileId.StartsWith("mm_file://", StringComparison.Ordinal) ? fileId : "mm_file://" + fileId;
+                source["url"] = fileId.StartsWith("mm_file://", StringComparison.Ordinal)
+                    ? fileId
+                    : "mm_file://" + fileId;
                 break;
             default:
                 var functionality = "MiniMax " + type + " input with " + dataType + " data";
-                throw new UnsupportedFunctionalityException(functionality, "Unsupported functionality: " + functionality);
+                throw new UnsupportedFunctionalityException(
+                    functionality,
+                    "Unsupported functionality: " + functionality
+                );
         }
 
         foreach (var pair in mediaOptions)
@@ -99,11 +128,18 @@ internal static class MiniMaxMediaPart
 
     private static JsonElement? Options(JsonElement part)
     {
-        if (!part.TryGetProperty("providerOptions", out var all) || all.ValueKind != JsonValueKind.Object)
+        if (
+            !part.TryGetProperty("providerOptions", out var all)
+            || all.ValueKind != JsonValueKind.Object
+        )
         {
             return null;
         }
 
-        return all.TryGetProperty("minimax", out var minimax) && minimax.ValueKind == JsonValueKind.Object ? minimax : (JsonElement?)null;
+        return
+            all.TryGetProperty("minimax", out var minimax)
+            && minimax.ValueKind == JsonValueKind.Object
+            ? minimax
+            : (JsonElement?)null;
     }
 }

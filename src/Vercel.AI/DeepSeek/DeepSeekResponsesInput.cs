@@ -17,12 +17,23 @@ internal static class DeepSeekResponsesInput
 {
     private const int MaxImageUrlLength = 8192;
     private static readonly string[] ImageDetails = { "low", "high", "original", "auto" };
-    private static readonly string[] SupportedImageMediaTypes = { "image/gif", "image/jpeg", "image/jpg", "image/png", "image/webp" };
+    private static readonly string[] SupportedImageMediaTypes =
+    {
+        "image/gif",
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/webp",
+    };
 
     /// <exception cref="InvalidPromptException">An image URL is longer than 8192 characters.</exception>
     /// <exception cref="UnsupportedFunctionalityException">An image part cannot be sent.</exception>
     /// <exception cref="InvalidArgumentError">The provider options of an image part are invalid.</exception>
-    public static JsonArray Convert(IReadOnlyList<ModelMessage> prompt, string providerOptionsName, List<CallWarning> warnings)
+    public static JsonArray Convert(
+        IReadOnlyList<ModelMessage> prompt,
+        string providerOptionsName,
+        List<CallWarning> warnings
+    )
     {
         var input = new JsonArray();
         foreach (var message in ToolModelMessage.Flatten(prompt))
@@ -39,12 +50,14 @@ internal static class DeepSeekResponsesInput
                     ConvertAssistant(assistant, providerOptionsName, input, warnings);
                     break;
                 case ToolModelMessage tool:
-                    input.Add(new JsonObject
-                    {
-                        ["type"] = "function_call_output",
-                        ["call_id"] = tool.ToolCallId,
-                        ["output"] = ToolOutput(tool, providerOptionsName, warnings),
-                    });
+                    input.Add(
+                        new JsonObject
+                        {
+                            ["type"] = "function_call_output",
+                            ["call_id"] = tool.ToolCallId,
+                            ["output"] = ToolOutput(tool, providerOptionsName, warnings),
+                        }
+                    );
                     break;
             }
         }
@@ -52,7 +65,11 @@ internal static class DeepSeekResponsesInput
         return input;
     }
 
-    private static JsonObject ConvertUser(UserModelMessage user, string providerOptionsName, List<CallWarning> warnings)
+    private static JsonObject ConvertUser(
+        UserModelMessage user,
+        string providerOptionsName,
+        List<CallWarning> warnings
+    )
     {
         var content = new JsonArray();
         foreach (var part in user.Content)
@@ -67,7 +84,9 @@ internal static class DeepSeekResponsesInput
             }
             else
             {
-                warnings.Add(new CallWarning("unsupported", "user message part type: " + part.Type, null));
+                warnings.Add(
+                    new CallWarning("unsupported", "user message part type: " + part.Type, null)
+                );
             }
         }
 
@@ -80,7 +99,12 @@ internal static class DeepSeekResponsesInput
             && (file.ProviderReference != null || file.Url != null || file.Data != null);
     }
 
-    private static void ConvertAssistant(AssistantModelMessage assistant, string providerOptionsName, JsonArray input, List<CallWarning> warnings)
+    private static void ConvertAssistant(
+        AssistantModelMessage assistant,
+        string providerOptionsName,
+        JsonArray input,
+        List<CallWarning> warnings
+    )
     {
         foreach (var part in assistant.Parts)
         {
@@ -89,26 +113,36 @@ internal static class DeepSeekResponsesInput
                 case AssistantTextPart text:
                     if (text.Text.Length > 0)
                     {
-                        input.Add(new JsonObject { ["role"] = "assistant", ["content"] = text.Text });
+                        input.Add(
+                            new JsonObject { ["role"] = "assistant", ["content"] = text.Text }
+                        );
                     }
 
                     break;
                 case AssistantReasoningPart reasoning:
                     var item = new JsonObject { ["type"] = "reasoning" };
-                    if (Option(part, providerOptionsName, "itemId") is { ValueKind: JsonValueKind.String } itemId)
+                    if (
+                        Option(part, providerOptionsName, "itemId") is
+                        { ValueKind: JsonValueKind.String } itemId
+                    )
                     {
                         item["id"] = itemId.GetString();
                     }
 
-                    item["content"] = new JsonArray(new JsonObject { ["type"] = "reasoning_text", ["text"] = reasoning.Text });
+                    item["content"] = new JsonArray(
+                        new JsonObject { ["type"] = "reasoning_text", ["text"] = reasoning.Text }
+                    );
                     input.Add(item);
                     break;
                 case AssistantToolCallPart toolCall:
                     var call = toolCall.ToolCall;
                     if (call.ProviderExecuted)
                     {
-                        if (Option(part, providerOptionsName, "webSearchCall") is { ValueKind: JsonValueKind.Object } webSearchCall
-                            && OpenAI.OpenAIJson.String(webSearchCall, "type") == "web_search_call")
+                        if (
+                            Option(part, providerOptionsName, "webSearchCall")
+                                is { ValueKind: JsonValueKind.Object } webSearchCall
+                            && OpenAI.OpenAIJson.String(webSearchCall, "type") == "web_search_call"
+                        )
                         {
                             input.Add(JsonNode.Parse(webSearchCall.GetRawText()));
                         }
@@ -116,24 +150,36 @@ internal static class DeepSeekResponsesInput
                         break;
                     }
 
-                    input.Add(new JsonObject
-                    {
-                        ["type"] = "function_call",
-                        ["call_id"] = call.ToolCallId,
-                        ["name"] = call.ToolName,
-                        ["arguments"] = call.ArgumentsJson,
-                    });
+                    input.Add(
+                        new JsonObject
+                        {
+                            ["type"] = "function_call",
+                            ["call_id"] = call.ToolCallId,
+                            ["name"] = call.ToolName,
+                            ["arguments"] = call.ArgumentsJson,
+                        }
+                    );
                     break;
                 case AssistantToolResultPart:
                     break;
                 default:
-                    warnings.Add(new CallWarning("unsupported", "assistant message part type: " + part.Type, null));
+                    warnings.Add(
+                        new CallWarning(
+                            "unsupported",
+                            "assistant message part type: " + part.Type,
+                            null
+                        )
+                    );
                     break;
             }
         }
     }
 
-    private static JsonNode ToolOutput(ToolModelMessage tool, string providerOptionsName, List<CallWarning> warnings)
+    private static JsonNode ToolOutput(
+        ToolModelMessage tool,
+        string providerOptionsName,
+        List<CallWarning> warnings
+    )
     {
         switch (tool.OutputType)
         {
@@ -162,7 +208,13 @@ internal static class DeepSeekResponsesInput
             }
             else
             {
-                warnings.Add(new CallWarning("unsupported", "tool result content part type: " + item.Type, null));
+                warnings.Add(
+                    new CallWarning(
+                        "unsupported",
+                        "tool result content part type: " + item.Type,
+                        null
+                    )
+                );
             }
         }
 
@@ -176,7 +228,10 @@ internal static class DeepSeekResponsesInput
             return new JsonObject
             {
                 ["type"] = "input_image",
-                ["file_id"] = ProviderReferences.ResolveProviderReference(file.ProviderReference, DeepSeekProvider.ProviderId),
+                ["file_id"] = ProviderReferences.ResolveProviderReference(
+                    file.ProviderReference,
+                    DeepSeekProvider.ProviderId
+                ),
             };
         }
 
@@ -192,7 +247,9 @@ internal static class DeepSeekResponsesInput
         {
             if (file.Url.Length > MaxImageUrlLength)
             {
-                throw new InvalidPromptException("DeepSeek image URLs must not exceed 8192 characters.");
+                throw new InvalidPromptException(
+                    "DeepSeek image URLs must not exceed 8192 characters."
+                );
             }
 
             image["image_url"] = file.Url;
@@ -204,10 +261,17 @@ internal static class DeepSeekResponsesInput
             {
                 throw new UnsupportedFunctionalityException(
                     "DeepSeek image media type " + mediaType,
-                    "'DeepSeek image media type " + mediaType + "' functionality not supported. DeepSeek supports JPEG, PNG, GIF, and WebP image inputs.");
+                    "'DeepSeek image media type "
+                        + mediaType
+                        + "' functionality not supported. DeepSeek supports JPEG, PNG, GIF, and WebP image inputs."
+                );
             }
 
-            image["image_url"] = "data:" + (mediaType == "image/jpg" ? "image/jpeg" : mediaType) + ";base64," + System.Convert.ToBase64String(file.Data!);
+            image["image_url"] =
+                "data:"
+                + (mediaType == "image/jpg" ? "image/jpeg" : mediaType)
+                + ";base64,"
+                + System.Convert.ToBase64String(file.Data!);
         }
 
         if (options.ImageDetail != null)
@@ -218,11 +282,16 @@ internal static class DeepSeekResponsesInput
         return image;
     }
 
-    private static (string? ImageDetail, bool FileData) FilePartOptions(FileContentPart file, string providerOptionsName)
+    private static (string? ImageDetail, bool FileData) FilePartOptions(
+        FileContentPart file,
+        string providerOptionsName
+    )
     {
-        if (file.ProviderOptions == null
+        if (
+            file.ProviderOptions == null
             || !file.ProviderOptions.TryGetValue(providerOptionsName, out var options)
-            || options.ValueKind == JsonValueKind.Null)
+            || options.ValueKind == JsonValueKind.Null
+        )
         {
             return (null, false);
         }
@@ -235,16 +304,26 @@ internal static class DeepSeekResponsesInput
 
         string? detail = null;
         var fileData = false;
-        if (options.TryGetProperty("imageDetail", out var detailValue) && detailValue.ValueKind != JsonValueKind.Null)
+        if (
+            options.TryGetProperty("imageDetail", out var detailValue)
+            && detailValue.ValueKind != JsonValueKind.Null
+        )
         {
             detail = detailValue.ValueKind == JsonValueKind.String ? detailValue.GetString() : null;
             if (detail == null || Array.IndexOf(ImageDetails, detail) < 0)
             {
-                throw new InvalidArgumentError(scope + ".imageDetail", null, "expected one of low, high, original, auto.");
+                throw new InvalidArgumentError(
+                    scope + ".imageDetail",
+                    null,
+                    "expected one of low, high, original, auto."
+                );
             }
         }
 
-        if (options.TryGetProperty("fileData", out var fileDataValue) && fileDataValue.ValueKind != JsonValueKind.Null)
+        if (
+            options.TryGetProperty("fileData", out var fileDataValue)
+            && fileDataValue.ValueKind != JsonValueKind.Null
+        )
         {
             if (fileDataValue.ValueKind != JsonValueKind.True)
             {
@@ -257,13 +336,18 @@ internal static class DeepSeekResponsesInput
         return (detail, fileData);
     }
 
-    private static JsonElement? Option(AssistantContentPart part, string providerOptionsName, string name)
+    private static JsonElement? Option(
+        AssistantContentPart part,
+        string providerOptionsName,
+        string name
+    )
     {
-        return part.ProviderOptions != null
+        return
+            part.ProviderOptions != null
             && part.ProviderOptions.TryGetValue(providerOptionsName, out var options)
             && options.ValueKind == JsonValueKind.Object
             && options.TryGetProperty(name, out var value)
-                ? value
-                : null;
+            ? value
+            : null;
     }
 }

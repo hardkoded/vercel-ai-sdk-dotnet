@@ -129,13 +129,22 @@ public sealed class OpenResponsesExtension
     public Func<OpenResponsesToolContext, JsonObject?>? EncodeToolChoice { get; set; }
 
     /// <summary>Decodes a completed item into content parts. The model adds a <c>open-responses.extension-replay</c> custom part holding the original item. Present or absent together with <see cref="ItemTypes"/>.</summary>
-    public Func<OpenResponsesDecodeItemContext, IReadOnlyList<GeneratedContent>?>? DecodeItem { get; set; }
+    public Func<
+        OpenResponsesDecodeItemContext,
+        IReadOnlyList<GeneratedContent>?
+    >? DecodeItem { get; set; }
 
     /// <summary>Encodes a history part when no original wire item is available. Every returned item must use one of <see cref="ItemTypes"/>. Requires an item decoder.</summary>
-    public Func<OpenResponsesEncodeInputItemContext, IReadOnlyList<JsonObject>?>? EncodeInputItem { get; set; }
+    public Func<
+        OpenResponsesEncodeInputItemContext,
+        IReadOnlyList<JsonObject>?
+    >? EncodeInputItem { get; set; }
 
     /// <summary>Decodes a streaming event into stream parts. Present or absent together with <see cref="EventTypes"/>.</summary>
-    public Func<OpenResponsesDecodeEventContext, IReadOnlyList<LanguageModelStreamPart>?>? DecodeEvent { get; set; }
+    public Func<
+        OpenResponsesDecodeEventContext,
+        IReadOnlyList<LanguageModelStreamPart>?
+    >? DecodeEvent { get; set; }
 }
 
 /// <summary>Indexes extensions by id and by wire type.</summary>
@@ -170,13 +179,17 @@ public sealed class OpenResponsesExtensionRegistry
 /// <summary>Builds an <see cref="OpenResponsesExtensionRegistry"/>.</summary>
 public static class OpenResponsesExtensions
 {
-    private static readonly HashSet<string> CoreToolTypes = new HashSet<string>(StringComparer.Ordinal)
+    private static readonly HashSet<string> CoreToolTypes = new HashSet<string>(
+        StringComparer.Ordinal
+    )
     {
         "allowed_tools",
         "function",
     };
 
-    private static readonly HashSet<string> CoreItemTypes = new HashSet<string>(StringComparer.Ordinal)
+    private static readonly HashSet<string> CoreItemTypes = new HashSet<string>(
+        StringComparer.Ordinal
+    )
     {
         "function_call",
         "function_call_output",
@@ -185,7 +198,9 @@ public static class OpenResponsesExtensions
         "reasoning",
     };
 
-    private static readonly HashSet<string> CoreEventTypes = new HashSet<string>(StringComparer.Ordinal)
+    private static readonly HashSet<string> CoreEventTypes = new HashSet<string>(
+        StringComparer.Ordinal
+    )
     {
         "error",
         "response.completed",
@@ -211,7 +226,9 @@ public static class OpenResponsesExtensions
     };
 
     /// <summary>Indexes <paramref name="extensions"/> and rejects incomplete or colliding registrations.</summary>
-    public static OpenResponsesExtensionRegistry CreateRegistry(IReadOnlyList<OpenResponsesExtension>? extensions)
+    public static OpenResponsesExtensionRegistry CreateRegistry(
+        IReadOnlyList<OpenResponsesExtension>? extensions
+    )
     {
         var registry = new OpenResponsesExtensionRegistry();
         if (extensions == null)
@@ -230,23 +247,35 @@ public static class OpenResponsesExtensions
             if (separator <= 0)
             {
                 throw new InvalidOperationException(
-                    "Open Responses extension ID " + extension.Id + " must use <implementor>.<extension> format.");
+                    "Open Responses extension ID "
+                        + extension.Id
+                        + " must use <implementor>.<extension> format."
+                );
             }
 
             var ns = extension.Id!.Substring(0, separator);
             Register(registry.ByExtensionId, extension.Id, extension, "id");
 
-            var hasBareTypes = extension.BareToolType != null || extension.BareItemTypes != null || extension.BareEventTypes != null;
+            var hasBareTypes =
+                extension.BareToolType != null
+                || extension.BareItemTypes != null
+                || extension.BareEventTypes != null;
             if (hasBareTypes != extension.AllowBareTypes)
             {
                 throw new InvalidOperationException(
-                    "Open Responses extension " + extension.Id + " must set allowBareTypes to true exactly when registering bare types.");
+                    "Open Responses extension "
+                        + extension.Id
+                        + " must set allowBareTypes to true exactly when registering bare types."
+                );
             }
 
             if (extension.ToolType != null && extension.BareToolType != null)
             {
                 throw new InvalidOperationException(
-                    "Open Responses extension " + extension.Id + " cannot provide toolType and bareToolType together.");
+                    "Open Responses extension "
+                        + extension.Id
+                        + " cannot provide toolType and bareToolType together."
+                );
             }
 
             var toolType = GetOpenResponsesExtensionToolType(extension);
@@ -256,13 +285,21 @@ public static class OpenResponsesExtensions
             {
                 var typeField = extension.BareToolType != null ? "bareToolType" : "toolType";
                 throw new InvalidOperationException(
-                    "Open Responses extension " + extension.Id + " must provide " + typeField + " and encodeTool together.");
+                    "Open Responses extension "
+                        + extension.Id
+                        + " must provide "
+                        + typeField
+                        + " and encodeTool together."
+                );
             }
 
             if (extension.EncodeToolChoice != null && !hasToolEncoder)
             {
                 throw new InvalidOperationException(
-                    "Open Responses extension " + extension.Id + " cannot provide encodeToolChoice without a tool type and encodeTool.");
+                    "Open Responses extension "
+                        + extension.Id
+                        + " cannot provide encodeToolChoice without a tool type and encodeTool."
+                );
             }
 
             if (hasToolType && hasToolEncoder)
@@ -273,7 +310,12 @@ public static class OpenResponsesExtensions
                 }
                 else
                 {
-                    AssertBare(CoreToolTypes, extension.Id, extension.BareToolType!, "bareToolType");
+                    AssertBare(
+                        CoreToolTypes,
+                        extension.Id,
+                        extension.BareToolType!,
+                        "bareToolType"
+                    );
                 }
 
                 Register(registry.ByProviderToolId, extension.Id, extension, "provider-tool id");
@@ -285,13 +327,19 @@ public static class OpenResponsesExtensions
             if (hasItemTypes != hasItemDecoder)
             {
                 throw new InvalidOperationException(
-                    "Open Responses extension " + extension.Id + " must provide itemTypes or bareItemTypes together with decodeItem.");
+                    "Open Responses extension "
+                        + extension.Id
+                        + " must provide itemTypes or bareItemTypes together with decodeItem."
+                );
             }
 
             if (extension.EncodeInputItem != null && !hasItemDecoder)
             {
                 throw new InvalidOperationException(
-                    "Open Responses extension " + extension.Id + " cannot provide encodeInputItem without itemTypes or bareItemTypes and decodeItem.");
+                    "Open Responses extension "
+                        + extension.Id
+                        + " cannot provide encodeInputItem without itemTypes or bareItemTypes and decodeItem."
+                );
             }
 
             if (hasItemTypes && hasItemDecoder)
@@ -299,7 +347,10 @@ public static class OpenResponsesExtensions
                 if (GetOpenResponsesExtensionItemTypes(extension).Count == 0)
                 {
                     throw new InvalidOperationException(
-                        "Open Responses extension " + extension.Id + " must register at least one item type.");
+                        "Open Responses extension "
+                            + extension.Id
+                            + " must register at least one item type."
+                    );
                 }
 
                 foreach (var itemType in extension.ItemTypes ?? Array.Empty<string>())
@@ -320,15 +371,24 @@ public static class OpenResponsesExtensions
             if (hasEventTypes != hasEventDecoder)
             {
                 throw new InvalidOperationException(
-                    "Open Responses extension " + extension.Id + " must provide eventTypes or bareEventTypes together with decodeEvent.");
+                    "Open Responses extension "
+                        + extension.Id
+                        + " must provide eventTypes or bareEventTypes together with decodeEvent."
+                );
             }
 
             if (hasEventTypes && hasEventDecoder)
             {
-                if ((extension.EventTypes?.Count ?? 0) + (extension.BareEventTypes?.Count ?? 0) == 0)
+                if (
+                    (extension.EventTypes?.Count ?? 0) + (extension.BareEventTypes?.Count ?? 0)
+                    == 0
+                )
                 {
                     throw new InvalidOperationException(
-                        "Open Responses extension " + extension.Id + " must register at least one event type.");
+                        "Open Responses extension "
+                            + extension.Id
+                            + " must register at least one event type."
+                    );
                 }
 
                 foreach (var eventType in extension.EventTypes ?? Array.Empty<string>())
@@ -347,16 +407,23 @@ public static class OpenResponsesExtensions
             if (!hasToolEncoder && !hasItemDecoder && !hasEventDecoder)
             {
                 throw new InvalidOperationException(
-                    "Open Responses extension " + extension.Id + " must register a tool, item, or event capability.");
+                    "Open Responses extension "
+                        + extension.Id
+                        + " must register a tool, item, or event capability."
+                );
             }
         }
 
         return registry;
     }
 
-    internal static IReadOnlyList<string> GetOpenResponsesExtensionItemTypes(OpenResponsesExtension extension)
+    internal static IReadOnlyList<string> GetOpenResponsesExtensionItemTypes(
+        OpenResponsesExtension extension
+    )
     {
-        return (extension.ItemTypes ?? Array.Empty<string>()).Concat(extension.BareItemTypes ?? Array.Empty<string>()).ToList();
+        return (extension.ItemTypes ?? Array.Empty<string>())
+            .Concat(extension.BareItemTypes ?? Array.Empty<string>())
+            .ToList();
     }
 
     internal static string? GetOpenResponsesExtensionToolType(OpenResponsesExtension extension)
@@ -370,32 +437,74 @@ public static class OpenResponsesExtensions
         if (colon <= 0 || type!.Substring(0, colon) != ns)
         {
             throw new InvalidOperationException(
-                "Open Responses extension " + extensionId + " has invalid " + field + " value " + type + ". Extension wire types must use the " + ns + ": namespace.");
+                "Open Responses extension "
+                    + extensionId
+                    + " has invalid "
+                    + field
+                    + " value "
+                    + type
+                    + ". Extension wire types must use the "
+                    + ns
+                    + ": namespace."
+            );
         }
     }
 
-    private static void AssertBare(HashSet<string> coreTypes, string extensionId, string type, string field)
+    private static void AssertBare(
+        HashSet<string> coreTypes,
+        string extensionId,
+        string type,
+        string field
+    )
     {
         if (string.IsNullOrEmpty(type) || type.IndexOf(':') >= 0)
         {
             throw new InvalidOperationException(
-                "Open Responses extension " + extensionId + " has invalid " + field + " value " + type + ". Bare extension wire types must be non-empty and must not contain a colon.");
+                "Open Responses extension "
+                    + extensionId
+                    + " has invalid "
+                    + field
+                    + " value "
+                    + type
+                    + ". Bare extension wire types must be non-empty and must not contain a colon."
+            );
         }
 
         if (coreTypes.Contains(type))
         {
             throw new InvalidOperationException(
-                "Open Responses extension " + extensionId + " cannot register core " + field + " value " + type + ".");
+                "Open Responses extension "
+                    + extensionId
+                    + " cannot register core "
+                    + field
+                    + " value "
+                    + type
+                    + "."
+            );
         }
     }
 
-    private static void Register(IDictionary<string, OpenResponsesExtension> map, string key, OpenResponsesExtension extension, string field)
+    private static void Register(
+        IDictionary<string, OpenResponsesExtension> map,
+        string key,
+        OpenResponsesExtension extension,
+        string field
+    )
     {
         OpenResponsesExtension? existing;
         if (map.TryGetValue(key, out existing) && existing != null)
         {
             throw new InvalidOperationException(
-                "Open Responses extension " + extension.Id + " cannot register " + field + " " + key + " because it is already registered by " + existing.Id + ".");
+                "Open Responses extension "
+                    + extension.Id
+                    + " cannot register "
+                    + field
+                    + " "
+                    + key
+                    + " because it is already registered by "
+                    + existing.Id
+                    + "."
+            );
         }
 
         map[key] = extension;
@@ -412,10 +521,18 @@ internal static class OpenResponsesExtensionItems
     /// Decodes a completed extension item. Returns null when no extension decodes it. Otherwise the result starts with a replay
     /// part that holds the original item, followed by the decoded parts, each tagged with the extension id and item id.
     /// </summary>
-    public static List<GeneratedContent>? Decode(OpenResponsesExtensionRegistry registry, string providerOptionsName, JsonObject item, OpenResponsesItemMode mode)
+    public static List<GeneratedContent>? Decode(
+        OpenResponsesExtensionRegistry registry,
+        string providerOptionsName,
+        JsonObject item,
+        OpenResponsesItemMode mode
+    )
     {
         var type = (string)item["type"]!;
-        if (!registry.ByItemType.TryGetValue(type, out var extension) || extension.DecodeItem == null)
+        if (
+            !registry.ByItemType.TryGetValue(type, out var extension)
+            || extension.DecodeItem == null
+        )
         {
             return null;
         }
@@ -430,10 +547,18 @@ internal static class OpenResponsesExtensionItems
         {
             new GeneratedCustom(
                 ReplayKind,
-                ProviderMetadata(providerOptionsName, new JsonObject
-                {
-                    ["openResponsesExtension"] = new JsonObject { ["id"] = extension.Id, ["item"] = item.DeepClone() },
-                })),
+                ProviderMetadata(
+                    providerOptionsName,
+                    new JsonObject
+                    {
+                        ["openResponsesExtension"] = new JsonObject
+                        {
+                            ["id"] = extension.Id,
+                            ["item"] = item.DeepClone(),
+                        },
+                    }
+                )
+            ),
         };
         foreach (var part in decoded)
         {
@@ -449,13 +574,41 @@ internal static class OpenResponsesExtensionItems
         switch (part)
         {
             case GeneratedToolCall call:
-                return new ToolCallStreamPart(call.ToolCallId, call.ToolName, call.ArgumentsJson, call.ProviderMetadata) { ProviderExecuted = call.ProviderExecuted, Dynamic = call.Dynamic };
+                return new ToolCallStreamPart(
+                    call.ToolCallId,
+                    call.ToolName,
+                    call.ArgumentsJson,
+                    call.ProviderMetadata
+                )
+                {
+                    ProviderExecuted = call.ProviderExecuted,
+                    Dynamic = call.Dynamic,
+                };
             case GeneratedToolResult toolResult:
-                return new ToolResultStreamPart(toolResult.ToolCallId, toolResult.ToolName, JsonValues.ParseOrEmpty(toolResult.ResultJson)) { IsError = toolResult.IsError, ProviderMetadata = toolResult.ProviderMetadata };
+                return new ToolResultStreamPart(
+                    toolResult.ToolCallId,
+                    toolResult.ToolName,
+                    JsonValues.ParseOrEmpty(toolResult.ResultJson)
+                )
+                {
+                    IsError = toolResult.IsError,
+                    ProviderMetadata = toolResult.ProviderMetadata,
+                };
             case GeneratedSource source:
-                return new SourceStreamPart(source.Id, source.Url, source.Title, source.ProviderMetadata);
+                return new SourceStreamPart(
+                    source.Id,
+                    source.Url,
+                    source.Title,
+                    source.ProviderMetadata
+                );
             case GeneratedDocumentSource documentSource:
-                return new DocumentSourceStreamPart(documentSource.Id, documentSource.MediaType, documentSource.Title, documentSource.Filename, documentSource.ProviderMetadata);
+                return new DocumentSourceStreamPart(
+                    documentSource.Id,
+                    documentSource.MediaType,
+                    documentSource.Title,
+                    documentSource.Filename,
+                    documentSource.ProviderMetadata
+                );
             case GeneratedCustom custom:
                 return new CustomStreamPart(custom.Kind, custom.ProviderMetadata);
             case GeneratedReasoning reasoning:
@@ -463,11 +616,18 @@ internal static class OpenResponsesExtensionItems
             case GeneratedText text:
                 return new TextDeltaStreamPart(string.Empty, text.Text, text.ProviderMetadata);
             default:
-                throw new InvalidOperationException("Open Responses extension content of type " + part.Type + " cannot be streamed.");
+                throw new InvalidOperationException(
+                    "Open Responses extension content of type " + part.Type + " cannot be streamed."
+                );
         }
     }
 
-    private static GeneratedContent WithExtensionReference(GeneratedContent part, string providerOptionsName, OpenResponsesExtension extension, JsonObject item)
+    private static GeneratedContent WithExtensionReference(
+        GeneratedContent part,
+        string providerOptionsName,
+        OpenResponsesExtension extension,
+        JsonObject item
+    )
     {
         JsonElement? existing;
         switch (part)
@@ -501,7 +661,11 @@ internal static class OpenResponsesExtensionItems
             ? JsonNode.Parse(element.GetRawText())!.AsObject()
             : new JsonObject();
         var inner = metadata[providerOptionsName] as JsonObject ?? new JsonObject();
-        inner["openResponsesExtension"] = new JsonObject { ["id"] = extension.Id, ["itemId"] = (string)item["id"]! };
+        inner["openResponsesExtension"] = new JsonObject
+        {
+            ["id"] = extension.Id,
+            ["itemId"] = (string)item["id"]!,
+        };
         metadata[providerOptionsName] = inner;
         var merged = JsonSerializer.SerializeToElement(metadata);
 
@@ -512,13 +676,36 @@ internal static class OpenResponsesExtensionItems
             case GeneratedReasoning reasoning:
                 return new GeneratedReasoning(reasoning.Text, merged);
             case GeneratedToolCall call:
-                return new GeneratedToolCall(call.ToolCallId, call.ToolName, call.ArgumentsJson, merged) { ProviderExecuted = call.ProviderExecuted, Dynamic = call.Dynamic };
+                return new GeneratedToolCall(
+                    call.ToolCallId,
+                    call.ToolName,
+                    call.ArgumentsJson,
+                    merged
+                )
+                {
+                    ProviderExecuted = call.ProviderExecuted,
+                    Dynamic = call.Dynamic,
+                };
             case GeneratedToolResult toolResult:
-                return new GeneratedToolResult(toolResult.ToolCallId, toolResult.ToolName, toolResult.ResultJson, toolResult.IsError) { ProviderMetadata = merged };
+                return new GeneratedToolResult(
+                    toolResult.ToolCallId,
+                    toolResult.ToolName,
+                    toolResult.ResultJson,
+                    toolResult.IsError
+                )
+                {
+                    ProviderMetadata = merged,
+                };
             case GeneratedSource source:
                 return new GeneratedSource(source.Id, source.Url, source.Title, merged);
             case GeneratedDocumentSource documentSource:
-                return new GeneratedDocumentSource(documentSource.Id, documentSource.MediaType, documentSource.Title, documentSource.Filename, merged);
+                return new GeneratedDocumentSource(
+                    documentSource.Id,
+                    documentSource.MediaType,
+                    documentSource.Title,
+                    documentSource.Filename,
+                    merged
+                );
             default:
                 return new GeneratedCustom(((GeneratedCustom)part).Kind, merged);
         }

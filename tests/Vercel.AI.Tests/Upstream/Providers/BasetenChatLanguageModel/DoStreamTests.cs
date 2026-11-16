@@ -20,20 +20,31 @@ public sealed class DoStreamTests
         Assert.Equal("high", body["reasoning_effort"]!.GetValue<string>());
         var first = body["messages"]![0]!;
         Assert.Equal("system", first["role"]!.GetValue<string>());
-        Assert.Contains(BasetenChatCalls.Schema, first["content"]!.GetValue<string>(), StringComparison.Ordinal);
+        Assert.Contains(
+            BasetenChatCalls.Schema,
+            first["content"]!.GetValue<string>(),
+            StringComparison.Ordinal
+        );
         var rest = body["messages"]!.AsArray().Skip(1).ToArray();
         Assert.Equal(2, rest.Length);
         Assert.Equal("system", rest[0]!["role"]!.GetValue<string>());
         Assert.Equal("You are a helpful assistant.", rest[0]!["content"]!.GetValue<string>());
         Assert.Equal("user", rest[1]!["role"]!.GetValue<string>());
         Assert.Equal("Reply with PONG.", rest[1]!["content"]!.GetValue<string>());
-        Assert.Contains(warnings, w => w.Type == "compatibility" && w.Feature == "responseFormat" && w.Message.Contains("injected into the system message", StringComparison.Ordinal));
+        Assert.Contains(warnings, w =>
+            w.Type == "compatibility"
+            && w.Feature == "responseFormat"
+            && w.Message.Contains("injected into the system message", StringComparison.Ordinal)
+        );
     }
 
     [Fact]
     public async Task Should_omit_JSON_mode_without_a_schema_when_reasoning_uses_its_default()
     {
-        var (body, _) = await BasetenChatCalls.Call(Stream, BasetenChatCalls.Options(schema: false, reasoning: null));
+        var (body, _) = await BasetenChatCalls.Call(
+            Stream,
+            BasetenChatCalls.Options(schema: false, reasoning: null)
+        );
 
         Assert.Null(body["response_format"]);
         Assert.Null(body["reasoning_effort"]);
@@ -55,7 +66,10 @@ public sealed class DoStreamTests
         }
         else if (variant == 2)
         {
-            options.ProviderOptions = UpstreamChat.Bag("baseten", "{\"reasoning_effort\":\"none\"}");
+            options.ProviderOptions = UpstreamChat.Bag(
+                "baseten",
+                "{\"reasoning_effort\":\"none\"}"
+            );
         }
 
         var (body, warnings) = await BasetenChatCalls.Call(Stream, options);
@@ -69,7 +83,10 @@ public sealed class DoStreamTests
     [Fact]
     public async Task Should_leave_text_requests_unchanged()
     {
-        var (body, warnings) = await BasetenChatCalls.Call(Stream, BasetenChatCalls.Options(json: false));
+        var (body, warnings) = await BasetenChatCalls.Call(
+            Stream,
+            BasetenChatCalls.Options(json: false)
+        );
 
         Assert.Null(body["response_format"]);
         Assert.Equal(2, body["messages"]!.AsArray().Count);
@@ -79,7 +96,11 @@ public sealed class DoStreamTests
     [Fact]
     public async Task Should_retain_JSON_Schema_for_other_models()
     {
-        var (body, warnings) = await BasetenChatCalls.Call(Stream, BasetenChatCalls.Options(), id: "zai-org/GLM-4.7");
+        var (body, warnings) = await BasetenChatCalls.Call(
+            Stream,
+            BasetenChatCalls.Options(),
+            id: "zai-org/GLM-4.7"
+        );
 
         Assert.Equal("json_schema", body["response_format"]!["type"]!.GetValue<string>());
         Assert.Equal(2, body["messages"]!.AsArray().Count);
@@ -89,7 +110,11 @@ public sealed class DoStreamTests
     [Fact]
     public async Task Should_leave_dedicated_deployments_unchanged()
     {
-        var (body, warnings) = await BasetenChatCalls.Call(Stream, BasetenChatCalls.Options(), dedicated: true);
+        var (body, warnings) = await BasetenChatCalls.Call(
+            Stream,
+            BasetenChatCalls.Options(),
+            dedicated: true
+        );
 
         Assert.Equal("json_schema", body["response_format"]!["type"]!.GetValue<string>());
         Assert.Equal(2, body["messages"]!.AsArray().Count);

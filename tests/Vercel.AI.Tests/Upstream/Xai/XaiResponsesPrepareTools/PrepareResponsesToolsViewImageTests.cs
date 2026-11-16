@@ -17,7 +17,10 @@ public sealed class PrepareResponsesToolsViewImageTests
     [UpstreamTest(Prefix + "should prepare view_image tool", Coverage = UpstreamCoverage.Covered)]
     public void Should_prepare_view_image_tool()
     {
-        var result = XaiResponsesTools.Prepare(new[] { ProviderTool("xai.view_image", "view_image") }, null);
+        var result = XaiResponsesTools.Prepare(
+            new[] { ProviderTool("xai.view_image", "view_image") },
+            null
+        );
 
         JsonAssert.Equal(result.Tools, """[{"type":"view_image"}]""");
     }

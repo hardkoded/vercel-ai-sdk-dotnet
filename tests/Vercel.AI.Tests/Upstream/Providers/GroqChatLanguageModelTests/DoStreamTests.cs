@@ -15,24 +15,45 @@ public sealed class DoStreamTests
     [InlineData("missing", FinishReason.Interrupted)]
     [InlineData("unknown_reason", FinishReason.Other)]
     [InlineData("invalid-json", FinishReason.Error)]
-    [UpstreamTest("packages/groq/src/groq-chat-language-model.test.ts::doStream::handles a stream ending with %s as %s", Coverage = UpstreamCoverage.Covered)]
-    public async Task Handles_a_stream_ending_with_ending_as_unified(string ending, FinishReason unified)
+    [UpstreamTest(
+        "packages/groq/src/groq-chat-language-model.test.ts::doStream::handles a stream ending with %s as %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Handles_a_stream_ending_with_ending_as_unified(
+        string ending,
+        FinishReason unified
+    )
     {
         var handler = new SseStreamHandler(
             new[]
             {
                 "data: {\"id\":\"response-1\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"test-model\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Partial answer\"},\"finish_reason\":null}]}\n\n",
-            }.Concat(ending switch
-            {
-                "missing" => Array.Empty<string>(),
-                "invalid-json" => new[] { "data: {invalid-json}\n\n" },
-                _ => new[] { "data: {\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"" + ending + "\"}]}\n\n" },
-            }));
-        var model = (OpenAICompatibleLanguageModel)GroqProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, handler).LanguageModel("gemma2-9b-it");
+            }.Concat(
+                ending switch
+                {
+                    "missing" => Array.Empty<string>(),
+                    "invalid-json" => new[] { "data: {invalid-json}\n\n" },
+                    _ => new[]
+                    {
+                        "data: {\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\""
+                            + ending
+                            + "\"}]}\n\n",
+                    },
+                }
+            )
+        );
+        var model = (OpenAICompatibleLanguageModel)
+            GroqProvider
+                .Create(new OpenAICompatibleOptions { ApiKey = "secret" }, handler)
+                .LanguageModel("gemma2-9b-it");
 
-        var parts = await UpstreamChat.Read(await model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        var parts = await UpstreamChat.Read(
+            await model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)
+        );
 
-        Assert.Contains(parts.OfType<TextDeltaStreamPart>(), part => part.Delta == "Partial answer");
+        Assert.Contains(parts.OfType<TextDeltaStreamPart>(), part =>
+            part.Delta == "Partial answer"
+        );
         Assert.Equal(ending == "invalid-json" ? 1 : 0, parts.OfType<ErrorStreamPart>().Count());
         var finish = Assert.Single(parts.OfType<FinishStreamPart>());
         Assert.Equal(unified, finish.FinishReason);

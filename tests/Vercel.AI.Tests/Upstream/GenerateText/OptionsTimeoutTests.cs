@@ -16,21 +16,42 @@ namespace Vercel.AI.Tests.Upstream.GenerateText;
 [Collection("LogWarnings")]
 public sealed class OptionsTimeoutTests
 {
-    private const string Prefix = "packages/ai/src/generate-text/generate-text.test.ts::generateText > options.timeout::";
+    private const string Prefix =
+        "packages/ai/src/generate-text/generate-text.test.ts::generateText > options.timeout::";
 
     private static DelegateModel TextModel()
     {
-        return new DelegateModel { Generate = (_, _) => Task.FromResult(TextResult("Hello, world!")) };
+        return new DelegateModel
+        {
+            Generate = (_, _) => Task.FromResult(TextResult("Hello, world!")),
+        };
     }
 
     [Theory]
-    [InlineData("firstChunkMs", "timeout.firstChunkMs", "The firstChunkMs timeout is only supported by streaming functions.")]
-    [InlineData("chunkMs", "timeout.chunkMs", "The chunkMs timeout is only supported by streaming functions.")]
-    [UpstreamTest(Prefix + "should warn before the model responds when $warning.feature is configured", Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_warn_before_the_model_responds_when_feature_is_configured(string configured, string feature, string details)
+    [InlineData(
+        "firstChunkMs",
+        "timeout.firstChunkMs",
+        "The firstChunkMs timeout is only supported by streaming functions."
+    )]
+    [InlineData(
+        "chunkMs",
+        "timeout.chunkMs",
+        "The chunkMs timeout is only supported by streaming functions."
+    )]
+    [UpstreamTest(
+        Prefix + "should warn before the model responds when $warning.feature is configured",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_warn_before_the_model_responds_when_feature_is_configured(
+        string configured,
+        string feature,
+        string details
+    )
     {
         var logged = new List<LogWarningsOptions>();
-        using var recorder = new Upstream.Logger.LogWarningsRecorder((Action<LogWarningsOptions>)logged.Add);
+        using var recorder = new Upstream.Logger.LogWarningsRecorder(
+            (Action<LogWarningsOptions>)logged.Add
+        );
         var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var called = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var model = new DelegateModel
@@ -43,12 +64,18 @@ public sealed class OptionsTimeoutTests
             },
         };
 
-        var generation = Client().GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            Prompt = "test-input",
-            Timeout = configured == "firstChunkMs" ? new TimeoutConfiguration { FirstChunkMs = 5000 } : new TimeoutConfiguration { ChunkMs = 5000 },
-        });
+        var generation = Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = model,
+                    Prompt = "test-input",
+                    Timeout =
+                        configured == "firstChunkMs"
+                            ? new TimeoutConfiguration { FirstChunkMs = 5000 }
+                            : new TimeoutConfiguration { ChunkMs = 5000 },
+                }
+            );
 
         await called.Task.WaitAsync(SettleTimeout);
         var warned = Assert.Single(logged);
@@ -63,18 +90,26 @@ public sealed class OptionsTimeoutTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should warn about both streaming-only timeouts in one call", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should warn about both streaming-only timeouts in one call",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_warn_about_both_streaming_only_timeouts_in_one_call()
     {
         var logged = new List<LogWarningsOptions>();
-        using var recorder = new Upstream.Logger.LogWarningsRecorder((Action<LogWarningsOptions>)logged.Add);
+        using var recorder = new Upstream.Logger.LogWarningsRecorder(
+            (Action<LogWarningsOptions>)logged.Add
+        );
 
-        await Client().GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = TextModel(),
-            Prompt = "test-input",
-            Timeout = new TimeoutConfiguration { FirstChunkMs = 5000, ChunkMs = 5000 },
-        });
+        await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = TextModel(),
+                    Prompt = "test-input",
+                    Timeout = new TimeoutConfiguration { FirstChunkMs = 5000, ChunkMs = 5000 },
+                }
+            );
 
         var warned = logged[0];
         Assert.Collection(
@@ -83,49 +118,67 @@ public sealed class OptionsTimeoutTests
             {
                 var warning = Assert.IsType<UnsupportedWarning>(first);
                 Assert.Equal("timeout.firstChunkMs", warning.Feature);
-                Assert.Equal("The firstChunkMs timeout is only supported by streaming functions.", warning.Details);
+                Assert.Equal(
+                    "The firstChunkMs timeout is only supported by streaming functions.",
+                    warning.Details
+                );
             },
             second =>
             {
                 var warning = Assert.IsType<UnsupportedWarning>(second);
                 Assert.Equal("timeout.chunkMs", warning.Feature);
-                Assert.Equal("The chunkMs timeout is only supported by streaming functions.", warning.Details);
-            });
+                Assert.Equal(
+                    "The chunkMs timeout is only supported by streaming functions.",
+                    warning.Details
+                );
+            }
+        );
         Assert.Equal("mock-provider", warned.Provider);
         Assert.Equal("mock-model-id", warned.Model);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should forward timeout as abort signal to model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should forward timeout as abort signal to model",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_forward_timeout_as_abort_signal_to_model()
     {
         var model = TextModel();
 
-        await Client().GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            Prompt = "test-input",
-            Timeout = TimeSpan.FromMilliseconds(5000),
-        });
+        await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = model,
+                    Prompt = "test-input",
+                    Timeout = TimeSpan.FromMilliseconds(5000),
+                }
+            );
 
         Assert.NotNull(Assert.Single(model.Calls).AbortSignal);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should merge timeout with abort signal", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should merge timeout with abort signal",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_merge_timeout_with_abort_signal()
     {
         using var abort = new CancellationTokenSource();
         var model = TextModel();
 
-        await Client().GenerateTextAsync(
-            new GenerateTextOptions
-            {
-                Model = model,
-                Prompt = "test-input",
-                Timeout = TimeSpan.FromMilliseconds(5000),
-            },
-            abort.Token);
+        await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = model,
+                    Prompt = "test-input",
+                    Timeout = TimeSpan.FromMilliseconds(5000),
+                },
+                abort.Token
+            );
 
         // The merged signal differs from the caller's token.
         Assert.NotNull(Assert.Single(model.Calls).AbortSignal);
@@ -133,37 +186,53 @@ public sealed class OptionsTimeoutTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should pass undefined when no timeout or abortSignal provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should pass undefined when no timeout or abortSignal provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_pass_undefined_when_no_timeout_or_abortSignal_provided()
     {
         var model = TextModel();
 
-        await Client().GenerateTextAsync(new GenerateTextOptions { Model = model, Prompt = "test-input" });
+        await Client()
+            .GenerateTextAsync(new GenerateTextOptions { Model = model, Prompt = "test-input" });
 
         Assert.Null(Assert.Single(model.Calls).AbortSignal);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should forward timeout abort signal to tool execution", Coverage = UpstreamCoverage.Partial, Note = "A tool Execute delegate receives the input and the token, not toolCallId, messages, or context.")]
+    [UpstreamTest(
+        Prefix + "should forward timeout abort signal to tool execution",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "A tool Execute delegate receives the input and the token, not toolCallId, messages, or context."
+    )]
     public async Task Should_forward_timeout_abort_signal_to_tool_execution()
     {
         var toolCalls = new List<(string Input, CancellationToken Token)>();
-        var model = new DelegateModel { Generate = (_, _) => Task.FromResult(ToolCallResult("{ \"value\": \"value\" }")) };
-
-        await Client().GenerateTextAsync(new GenerateTextOptions
+        var model = new DelegateModel
         {
-            Model = model,
-            Prompt = "test-input",
-            Tools = new[]
-            {
-                ToolOne((input, token) =>
+            Generate = (_, _) => Task.FromResult(ToolCallResult("{ \"value\": \"value\" }")),
+        };
+
+        await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
                 {
-                    toolCalls.Add((input.GetProperty("value").GetString()!, token));
-                    return Task.FromResult("\"tool result\"");
-                }),
-            },
-            Timeout = TimeSpan.FromMilliseconds(5000),
-        });
+                    Model = model,
+                    Prompt = "test-input",
+                    Tools = new[]
+                    {
+                        ToolOne(
+                            (input, token) =>
+                            {
+                                toolCalls.Add((input.GetProperty("value").GetString()!, token));
+                                return Task.FromResult("\"tool result\"");
+                            }
+                        ),
+                    },
+                    Timeout = TimeSpan.FromMilliseconds(5000),
+                }
+            );
 
         var call = Assert.Single(toolCalls);
         Assert.Equal("value", call.Input);
@@ -171,36 +240,47 @@ public sealed class OptionsTimeoutTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should support timeout object with totalMs", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should support timeout object with totalMs",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_support_timeout_object_with_totalMs()
     {
         var model = TextModel();
 
-        await Client().GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            Prompt = "test-input",
-            Timeout = new TimeoutConfiguration { TotalMs = 5000 },
-        });
+        await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = model,
+                    Prompt = "test-input",
+                    Timeout = new TimeoutConfiguration { TotalMs = 5000 },
+                }
+            );
 
         Assert.NotNull(Assert.Single(model.Calls).AbortSignal);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should merge timeout object with abort signal", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should merge timeout object with abort signal",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_merge_timeout_object_with_abort_signal()
     {
         using var abort = new CancellationTokenSource();
         var model = TextModel();
 
-        await Client().GenerateTextAsync(
-            new GenerateTextOptions
-            {
-                Model = model,
-                Prompt = "test-input",
-                Timeout = new TimeoutConfiguration { TotalMs = 5000 },
-            },
-            abort.Token);
+        await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = model,
+                    Prompt = "test-input",
+                    Timeout = new TimeoutConfiguration { TotalMs = 5000 },
+                },
+                abort.Token
+            );
 
         // The merged signal differs from the caller's token.
         Assert.NotNull(Assert.Single(model.Calls).AbortSignal);
@@ -208,56 +288,79 @@ public sealed class OptionsTimeoutTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should pass undefined when timeout object has no totalMs", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should pass undefined when timeout object has no totalMs",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_pass_undefined_when_timeout_object_has_no_totalMs()
     {
         var model = TextModel();
 
-        await Client().GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            Prompt = "test-input",
-            Timeout = new TimeoutConfiguration(),
-        });
+        await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = model,
+                    Prompt = "test-input",
+                    Timeout = new TimeoutConfiguration(),
+                }
+            );
 
         Assert.Null(Assert.Single(model.Calls).AbortSignal);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should forward stepMs as abort signal to each step", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should forward stepMs as abort signal to each step",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_forward_stepMs_as_abort_signal_to_each_step()
     {
         var model = TextModel();
 
-        await Client().GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            Prompt = "test-input",
-            Timeout = new TimeoutConfiguration { StepMs = 5000 },
-        });
+        await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = model,
+                    Prompt = "test-input",
+                    Timeout = new TimeoutConfiguration { StepMs = 5000 },
+                }
+            );
 
         Assert.Single(model.Calls);
         Assert.NotNull(model.Calls[0].AbortSignal);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should reuse the same abort signal for all steps when stepMs is set", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should reuse the same abort signal for all steps when stepMs is set",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_reuse_the_same_abort_signal_for_all_steps_when_stepMs_is_set()
     {
         var stepCount = 0;
         var model = new DelegateModel
         {
-            Generate = (_, _) => Task.FromResult(++stepCount == 1 ? ToolCallResult("{ \"value\": \"test\" }") : TextResult("Final response")),
+            Generate = (_, _) =>
+                Task.FromResult(
+                    ++stepCount == 1
+                        ? ToolCallResult("{ \"value\": \"test\" }")
+                        : TextResult("Final response")
+                ),
         };
 
-        await Client().GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            Prompt = "test-input",
-            Tools = new[] { ToolOne() },
-            Timeout = new TimeoutConfiguration { StepMs = 5000 },
-            StopWhen = StopWhen.IsStepCount(2),
-        });
+        await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = model,
+                    Prompt = "test-input",
+                    Tools = new[] { ToolOne() },
+                    Timeout = new TimeoutConfiguration { StepMs = 5000 },
+                    StopWhen = StopWhen.IsStepCount(2),
+                }
+            );
 
         Assert.Equal(2, model.Calls.Count);
         Assert.NotNull(model.Calls[0].AbortSignal);
@@ -268,48 +371,68 @@ public sealed class OptionsTimeoutTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should forward stepMs abort signal to tool execution", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should forward stepMs abort signal to tool execution",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_forward_stepMs_abort_signal_to_tool_execution()
     {
         CancellationToken? toolAbortSignal = null;
-        var model = new DelegateModel { Generate = (_, _) => Task.FromResult(ToolCallResult("{ \"value\": \"test\" }")) };
-
-        await Client().GenerateTextAsync(new GenerateTextOptions
+        var model = new DelegateModel
         {
-            Model = model,
-            Prompt = "test-input",
-            Tools = new[]
-            {
-                ToolOne((_, token) =>
+            Generate = (_, _) => Task.FromResult(ToolCallResult("{ \"value\": \"test\" }")),
+        };
+
+        await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
                 {
-                    toolAbortSignal = token;
-                    return Task.FromResult("\"tool result\"");
-                }),
-            },
-            Timeout = new TimeoutConfiguration { StepMs = 5000 },
-        });
+                    Model = model,
+                    Prompt = "test-input",
+                    Tools = new[]
+                    {
+                        ToolOne(
+                            (_, token) =>
+                            {
+                                toolAbortSignal = token;
+                                return Task.FromResult("\"tool result\"");
+                            }
+                        ),
+                    },
+                    Timeout = new TimeoutConfiguration { StepMs = 5000 },
+                }
+            );
 
         Assert.True(toolAbortSignal?.CanBeCanceled);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should support both totalMs and stepMs together", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should support both totalMs and stepMs together",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_support_both_totalMs_and_stepMs_together()
     {
         var model = TextModel();
 
-        await Client().GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            Prompt = "test-input",
-            Timeout = new TimeoutConfiguration { TotalMs = 10000, StepMs = 5000 },
-        });
+        await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = model,
+                    Prompt = "test-input",
+                    Timeout = new TimeoutConfiguration { TotalMs = 10000, StepMs = 5000 },
+                }
+            );
 
         Assert.NotNull(Assert.Single(model.Calls).AbortSignal);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should abort when step timeout expires", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should abort when step timeout expires",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_abort_when_step_timeout_expires()
     {
         var delayed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -322,13 +445,16 @@ public sealed class OptionsTimeoutTests
             },
         };
 
-        var generation = Client().GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            Prompt = "test-input",
-            Timeout = new TimeoutConfiguration { StepMs = 50 },
-            MaxRetries = 0,
-        });
+        var generation = Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = model,
+                    Prompt = "test-input",
+                    Timeout = new TimeoutConfiguration { StepMs = 50 },
+                    MaxRetries = 0,
+                }
+            );
 
         // The step timeout fires and aborts the signal the model received.
         await WaitUntil(() => model.Calls.Count == 1 && model.Calls[0].AbortSignal!.Aborted);

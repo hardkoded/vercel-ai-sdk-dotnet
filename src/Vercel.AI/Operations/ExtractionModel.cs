@@ -11,7 +11,16 @@ namespace Vercel.AI.Operations;
 public sealed class ExtractionField
 {
     /// <summary>Field types an extraction model can support.</summary>
-    public static readonly IReadOnlyList<string> Types = new[] { "text", "number", "date", "time", "datetime", "duration", "list" };
+    public static readonly IReadOnlyList<string> Types = new[]
+    {
+        "text",
+        "number",
+        "date",
+        "time",
+        "datetime",
+        "duration",
+        "list",
+    };
 
     /// <summary>Creates a field.</summary>
     /// <param name="type"><c>text</c>, <c>number</c>, <c>date</c>, <c>time</c>, <c>datetime</c>, <c>duration</c>, or <c>list</c>.</param>
@@ -41,7 +50,8 @@ public sealed class ExtractionField
     public string? Items { get; init; }
 
     /// <summary>Valid duration units. Maps to <c>ExtractionModelV4DurationUnit</c>.</summary>
-    public static IReadOnlyList<string> DurationUnits { get; } = new[] { "seconds", "minutes", "hours", "days", "weeks", "months", "years" };
+    public static IReadOnlyList<string> DurationUnits { get; } =
+        new[] { "seconds", "minutes", "hours", "days", "weeks", "months", "years" };
 
     /// <summary>Valid item types of a list field.</summary>
     public static IReadOnlyList<string> ListItems { get; } = new[] { "text", "number", "date" };
@@ -112,7 +122,8 @@ public sealed class ExtractionAnswer
         double? pNull = null,
         double? confidence = null,
         ExtractionSource? source = null,
-        IReadOnlyList<ExtractionItem>? items = null)
+        IReadOnlyList<ExtractionItem>? items = null
+    )
     {
         Type = type;
         Text = text;
@@ -165,7 +176,13 @@ public sealed class ExtractionAnswer
 public sealed class ExtractionModelResult
 {
     /// <summary>Creates a model result.</summary>
-    public ExtractionModelResult(IReadOnlyDictionary<string, ExtractionAnswer> answers, IReadOnlyList<OperationWarning>? warnings = null, OperationUsage? usage = null, JsonElement? providerMetadata = null, ProviderResponse? response = null)
+    public ExtractionModelResult(
+        IReadOnlyDictionary<string, ExtractionAnswer> answers,
+        IReadOnlyList<OperationWarning>? warnings = null,
+        OperationUsage? usage = null,
+        JsonElement? providerMetadata = null,
+        ProviderResponse? response = null
+    )
     {
         Answers = answers ?? new Dictionary<string, ExtractionAnswer>();
         Warnings = warnings ?? Array.Empty<OperationWarning>();
@@ -194,7 +211,16 @@ public sealed class ExtractionModelResult
 public sealed class ExtractionModelCall
 {
     /// <summary>Creates a call.</summary>
-    public ExtractionModelCall(IReadOnlyList<DecisionModelStatePart> state, IReadOnlyDictionary<string, ExtractionField> fields, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken, string? referenceDate = null, double? maxOutputTokens = null, string? reasoning = null)
+    public ExtractionModelCall(
+        IReadOnlyList<DecisionModelStatePart> state,
+        IReadOnlyDictionary<string, ExtractionField> fields,
+        JsonElement providerOptions,
+        IReadOnlyDictionary<string, string> headers,
+        CancellationToken cancellationToken,
+        string? referenceDate = null,
+        double? maxOutputTokens = null,
+        string? reasoning = null
+    )
     {
         State = state;
         Fields = fields;
@@ -247,5 +273,8 @@ public interface IExtractionCaller
     IReadOnlyList<string> SupportedFieldTypes { get; }
 
     /// <summary>Extracts every field from the same state. No partial results.</summary>
-    Task<ExtractionModelResult> DoExtractAsync(ExtractionModelCall call, CancellationToken cancellationToken);
+    Task<ExtractionModelResult> DoExtractAsync(
+        ExtractionModelCall call,
+        CancellationToken cancellationToken
+    );
 }

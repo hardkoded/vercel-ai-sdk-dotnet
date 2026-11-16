@@ -89,14 +89,22 @@ internal sealed class StreamingToolCallTracker
     public StreamingToolCallInput? ProcessDelta(StreamingToolCallDelta toolCallDelta)
     {
         var rawName = toolCallDelta.NameIsString ? toolCallDelta.Name : null;
-        var hasBlankName = toolCallDelta.NameIsString && string.IsNullOrWhiteSpace(toolCallDelta.Name);
+        var hasBlankName =
+            toolCallDelta.NameIsString && string.IsNullOrWhiteSpace(toolCallDelta.Name);
         var wireId = GetNonBlankString(toolCallDelta.Id);
         var name = GetNonBlankString(rawName);
         var index = toolCallDelta.Index;
         var arguments = toolCallDelta.HasArguments ? toolCallDelta.Arguments : null;
-        var hasExplicitCallStart = name != null && StreamingToolCallArgumentState.StartsWithStructuredValue(arguments);
+        var hasExplicitCallStart =
+            name != null && StreamingToolCallArgumentState.StartsWithStructuredValue(arguments);
         var hasEmptyArguments = string.IsNullOrWhiteSpace(arguments);
-        var resolution = ResolveToolCall(wireId, index, name, hasExplicitCallStart, hasEmptyArguments);
+        var resolution = ResolveToolCall(
+            wireId,
+            index,
+            name,
+            hasExplicitCallStart,
+            hasEmptyArguments
+        );
         if (resolution.Kind == ToolCallResolutionKind.Ambiguous)
         {
             return null;
@@ -113,7 +121,12 @@ internal sealed class StreamingToolCallTracker
             }
 
             call = ProcessNewToolCall(wireId, index, name, arguments ?? string.Empty);
-            input = new StreamingToolCallInput(call.Id, call.Name, true, string.IsNullOrEmpty(arguments) ? null : arguments);
+            input = new StreamingToolCallInput(
+                call.Id,
+                call.Name,
+                true,
+                string.IsNullOrEmpty(arguments) ? null : arguments
+            );
         }
         else
         {
@@ -161,7 +174,13 @@ internal sealed class StreamingToolCallTracker
         return parts;
     }
 
-    private ToolCallResolution ResolveToolCall(string? wireId, int? index, string? name, bool hasExplicitCallStart, bool hasEmptyArguments)
+    private ToolCallResolution ResolveToolCall(
+        string? wireId,
+        int? index,
+        string? name,
+        bool hasExplicitCallStart,
+        bool hasEmptyArguments
+    )
     {
         List<TrackedToolCall>? indexed = null;
         if (index != null && _byIndex.TryGetValue(index.Value, out var indexedCalls))
@@ -257,7 +276,10 @@ internal sealed class StreamingToolCallTracker
         return ResolveMatchingToolCall(unfinished, false);
     }
 
-    private static ToolCallResolution ResolveMatchingToolCall(List<TrackedToolCall> calls, bool hasExplicitCallStart)
+    private static ToolCallResolution ResolveMatchingToolCall(
+        List<TrackedToolCall> calls,
+        bool hasExplicitCallStart
+    )
     {
         if (calls.Count == 0)
         {
@@ -286,10 +308,15 @@ internal sealed class StreamingToolCallTracker
             return ToolCallResolution.Existing(continuable[0]);
         }
 
-        return continuable.Count > 1 || !hasExplicitCallStart ? ToolCallResolution.Ambiguous() : ToolCallResolution.New();
+        return continuable.Count > 1 || !hasExplicitCallStart
+            ? ToolCallResolution.Ambiguous()
+            : ToolCallResolution.New();
     }
 
-    private static List<TrackedToolCall> FilterToolCallsByName(List<TrackedToolCall>? calls, string? name)
+    private static List<TrackedToolCall> FilterToolCallsByName(
+        List<TrackedToolCall>? calls,
+        string? name
+    )
     {
         var result = new List<TrackedToolCall>();
         if (calls == null)
@@ -308,14 +335,25 @@ internal sealed class StreamingToolCallTracker
         return result;
     }
 
-    private TrackedToolCall ProcessNewToolCall(string? wireId, int? index, string? name, string arguments)
+    private TrackedToolCall ProcessNewToolCall(
+        string? wireId,
+        int? index,
+        string? name,
+        string arguments
+    )
     {
         if (name == null)
         {
             throw new AiSdkException("Expected 'function.name' to be a string.");
         }
 
-        var call = new TrackedToolCall(CreateToolCallId(wireId), index, _calls.Count, name, arguments);
+        var call = new TrackedToolCall(
+            CreateToolCallId(wireId),
+            index,
+            _calls.Count,
+            name,
+            arguments
+        );
         _calls.Add(call);
         if (wireId != null)
         {

@@ -40,3 +40,7 @@ Also check these points. Upstream parity, the last but one point, wins over the 
 - **Compatibility.** Code in `src/` must build for `netstandard2.0` and `net10.0`. Use a polyfill from `src/Polyfill` when a newer API is missing.
 - **Upstream parity.** Check each fix against upstream first. If upstream behaves the same on purpose, report it. Do not "fix" it in the port.
 - **Modern C#.** Match the file you edit. Use collection expressions, primary constructors, and `field` in new code where `netstandard2.0` allows. Do not rewrite untouched code to modernize it.
+
+# Before you push
+
+- CSharpier owns formatting. Run `dotnet csharpier format .` from the repo root before every commit/push. The Husky.Net pre-push hook runs `dotnet csharpier check .` and blocks unformatted pushes. Do not run `dotnet format whitespace` or a plain `dotnet format`, because their whitespace pass fights CSharpier. Use `dotnet format style` / `dotnet format analyzers` only.

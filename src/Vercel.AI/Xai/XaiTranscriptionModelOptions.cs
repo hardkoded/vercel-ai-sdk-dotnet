@@ -74,9 +74,11 @@ public sealed class XaiTranscriptionModelOptions
     /// </summary>
     internal static XaiTranscriptionModelOptions? Parse(JsonElement providerOptions)
     {
-        if (providerOptions.ValueKind != JsonValueKind.Object
+        if (
+            providerOptions.ValueKind != JsonValueKind.Object
             || !providerOptions.TryGetProperty("xai", out var xai)
-            || xai.ValueKind == JsonValueKind.Null)
+            || xai.ValueKind == JsonValueKind.Null
+        )
         {
             return null;
         }
@@ -90,7 +92,11 @@ public sealed class XaiTranscriptionModelOptions
         foreach (var property in xai.EnumerateObject())
         {
             var value = property.Value;
-            if (value.ValueKind == JsonValueKind.Null && property.Name != "vadThreshold" && property.Name != "streaming")
+            if (
+                value.ValueKind == JsonValueKind.Null
+                && property.Name != "vadThreshold"
+                && property.Name != "streaming"
+            )
             {
                 continue;
             }
@@ -98,14 +104,25 @@ public sealed class XaiTranscriptionModelOptions
             switch (property.Name)
             {
                 case "audioFormat":
-                    options.AudioFormat = value.ValueKind == JsonValueKind.String && value.GetString() is "pcm" or "mulaw" or "alaw" or "opus"
-                        ? value.GetString()
-                        : throw Invalid(xai, "audioFormat must be one of pcm, mulaw, alaw, opus");
+                    options.AudioFormat =
+                        value.ValueKind == JsonValueKind.String
+                        && value.GetString() is "pcm" or "mulaw" or "alaw" or "opus"
+                            ? value.GetString()
+                            : throw Invalid(
+                                xai,
+                                "audioFormat must be one of pcm, mulaw, alaw, opus"
+                            );
                     break;
                 case "sampleRate":
-                    options.SampleRate = value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var rate) && Array.IndexOf(SampleRates, rate) >= 0
-                        ? rate
-                        : throw Invalid(xai, "sampleRate must be one of " + string.Join(", ", SampleRates));
+                    options.SampleRate =
+                        value.ValueKind == JsonValueKind.Number
+                        && value.TryGetInt32(out var rate)
+                        && Array.IndexOf(SampleRates, rate) >= 0
+                            ? rate
+                            : throw Invalid(
+                                xai,
+                                "sampleRate must be one of " + string.Join(", ", SampleRates)
+                            );
                     break;
                 case "language":
                     options.Language = String(xai, value, "language");
@@ -117,32 +134,42 @@ public sealed class XaiTranscriptionModelOptions
                     options.Multichannel = Bool(xai, value, "multichannel");
                     break;
                 case "channels":
-                    options.Channels = value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var channels) && channels >= 2 && channels <= 8
-                        ? channels
-                        : throw Invalid(xai, "channels must be an integer between 2 and 8");
+                    options.Channels =
+                        value.ValueKind == JsonValueKind.Number
+                        && value.TryGetInt32(out var channels)
+                        && channels >= 2
+                        && channels <= 8
+                            ? channels
+                            : throw Invalid(xai, "channels must be an integer between 2 and 8");
                     break;
                 case "diarize":
                     options.Diarize = Bool(xai, value, "diarize");
                     break;
                 case "keyterm":
-                    options.Keyterm = value.ValueKind == JsonValueKind.String
-                        ? new[] { value.GetString()! }
-                        : value.ValueKind == JsonValueKind.Array && value.EnumerateArray().All(item => item.ValueKind == JsonValueKind.String)
+                    options.Keyterm =
+                        value.ValueKind == JsonValueKind.String ? new[] { value.GetString()! }
+                        : value.ValueKind == JsonValueKind.Array
+                        && value
+                            .EnumerateArray()
+                            .All(item => item.ValueKind == JsonValueKind.String)
                             ? value.EnumerateArray().Select(item => item.GetString()!).ToArray()
-                            : throw Invalid(xai, "keyterm must be a string or an array of strings");
+                        : throw Invalid(xai, "keyterm must be a string or an array of strings");
                     break;
                 case "fillerWords":
                     options.FillerWords = Bool(xai, value, "fillerWords");
                     break;
                 case "vadThreshold":
-                    options.VadThreshold = value.ValueKind == JsonValueKind.Number && value.GetDouble() >= 0 && value.GetDouble() <= 1
-                        ? value.GetDouble()
-                        : value.ValueKind == JsonValueKind.Null
-                            ? null
-                            : throw Invalid(xai, "vadThreshold must be a number between 0 and 1");
+                    options.VadThreshold =
+                        value.ValueKind == JsonValueKind.Number
+                        && value.GetDouble() >= 0
+                        && value.GetDouble() <= 1
+                            ? value.GetDouble()
+                        : value.ValueKind == JsonValueKind.Null ? null
+                        : throw Invalid(xai, "vadThreshold must be a number between 0 and 1");
                     break;
                 case "streaming":
-                    options.Streaming = value.ValueKind == JsonValueKind.Null ? null : ParseStreaming(xai, value);
+                    options.Streaming =
+                        value.ValueKind == JsonValueKind.Null ? null : ParseStreaming(xai, value);
                     break;
             }
         }
@@ -150,7 +177,10 @@ public sealed class XaiTranscriptionModelOptions
         return options;
     }
 
-    private static XaiTranscriptionStreamingOptions ParseStreaming(JsonElement xai, JsonElement streaming)
+    private static XaiTranscriptionStreamingOptions ParseStreaming(
+        JsonElement xai,
+        JsonElement streaming
+    )
     {
         if (streaming.ValueKind != JsonValueKind.Object)
         {
@@ -170,12 +200,24 @@ public sealed class XaiTranscriptionModelOptions
                     options.Endpointing = Integer(xai, value, "streaming.endpointing", 0, 5000);
                     break;
                 case "smartTurn":
-                    options.SmartTurn = value.ValueKind == JsonValueKind.Number && value.GetDouble() >= 0 && value.GetDouble() <= 1
-                        ? value.GetDouble()
-                        : throw Invalid(xai, "streaming.smartTurn must be a number between 0 and 1");
+                    options.SmartTurn =
+                        value.ValueKind == JsonValueKind.Number
+                        && value.GetDouble() >= 0
+                        && value.GetDouble() <= 1
+                            ? value.GetDouble()
+                            : throw Invalid(
+                                xai,
+                                "streaming.smartTurn must be a number between 0 and 1"
+                            );
                     break;
                 case "smartTurnTimeout":
-                    options.SmartTurnTimeout = Integer(xai, value, "streaming.smartTurnTimeout", 1, 5000);
+                    options.SmartTurnTimeout = Integer(
+                        xai,
+                        value,
+                        "streaming.smartTurnTimeout",
+                        1,
+                        5000
+                    );
                     break;
             }
         }
@@ -185,7 +227,11 @@ public sealed class XaiTranscriptionModelOptions
 
     private static int Integer(JsonElement xai, JsonElement value, string name, int min, int max)
     {
-        return value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number) && number >= min && number <= max
+        return
+            value.ValueKind == JsonValueKind.Number
+            && value.TryGetInt32(out var number)
+            && number >= min
+            && number <= max
             ? number
             : throw Invalid(xai, name + " must be an integer between " + min + " and " + max);
     }
@@ -206,6 +252,10 @@ public sealed class XaiTranscriptionModelOptions
 
     private static InvalidArgumentException Invalid(JsonElement xai, string reason)
     {
-        return new InvalidArgumentException("providerOptions", xai.GetRawText(), "Invalid xai provider options: " + reason + ".");
+        return new InvalidArgumentException(
+            "providerOptions",
+            xai.GetRawText(),
+            "Invalid xai provider options: " + reason + "."
+        );
     }
 }

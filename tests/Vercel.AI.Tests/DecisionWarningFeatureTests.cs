@@ -16,11 +16,19 @@ public sealed class DecisionWarningFeatureTests
     {
         var language = new RecordingLanguageModel
         {
-            OnGenerate = (_, _) => Task.FromResult(new LanguageModelGenerateResult(
-                new GeneratedContent[] { new GeneratedText("{\"q1\":1.25,\"q0\":\"c1\"}") },
-                FinishReason.Stop,
-                new LanguageModelUsage(1, 1, 2),
-                warnings: new[] { new CallWarning("unsupported", "topK", "topK is ignored"), new CallWarning("other", "plain") })),
+            OnGenerate = (_, _) =>
+                Task.FromResult(
+                    new LanguageModelGenerateResult(
+                        new GeneratedContent[] { new GeneratedText("{\"q1\":1.25,\"q0\":\"c1\"}") },
+                        FinishReason.Stop,
+                        new LanguageModelUsage(1, 1, 2),
+                        warnings: new[]
+                        {
+                            new CallWarning("unsupported", "topK", "topK is ignored"),
+                            new CallWarning("other", "plain"),
+                        }
+                    )
+                ),
         };
 
         var output = await new DecisionModel(language, "test.decision").DoDecideAsync(Call());
@@ -38,6 +46,7 @@ public sealed class DecisionWarningFeatureTests
                 Assert.Equal("other", warning.Type);
                 Assert.Null(warning.Feature);
                 Assert.Equal("plain", warning.Message);
-            });
+            }
+        );
     }
 }

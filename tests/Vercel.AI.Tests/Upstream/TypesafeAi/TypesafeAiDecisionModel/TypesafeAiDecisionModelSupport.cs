@@ -33,7 +33,8 @@ internal sealed class TypeSafeAiServerCall
 
     public string Body { get; init; } = string.Empty;
 
-    public Dictionary<string, string> Headers { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string> Headers { get; init; } =
+        new(StringComparer.OrdinalIgnoreCase);
 
     public List<TypeSafeAiFormPart> Form { get; init; } = new();
 }
@@ -47,26 +48,35 @@ internal sealed class TypeSafeAiServer : HttpMessageHandler
 
     public string ResponseBody { get; set; } = string.Empty;
 
-    public Dictionary<string, string> ResponseHeaders { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string> ResponseHeaders { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         var call = new TypeSafeAiServerCall
         {
             Url = request.RequestUri!.AbsoluteUri,
-            Body = request.Content == null || request.Content is MultipartContent ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false),
+            Body =
+                request.Content == null || request.Content is MultipartContent
+                    ? string.Empty
+                    : await request.Content.ReadAsStringAsync().ConfigureAwait(false),
         };
         if (request.Content is MultipartContent multipart)
         {
             foreach (var part in multipart)
             {
-                call.Form.Add(new TypeSafeAiFormPart
-                {
-                    Name = part.Headers.ContentDisposition!.Name!.Trim('"'),
-                    FileName = part.Headers.ContentDisposition.FileName?.Trim('"'),
-                    ContentType = part.Headers.ContentType?.ToString(),
-                    Bytes = await part.ReadAsByteArrayAsync().ConfigureAwait(false),
-                });
+                call.Form.Add(
+                    new TypeSafeAiFormPart
+                    {
+                        Name = part.Headers.ContentDisposition!.Name!.Trim('"'),
+                        FileName = part.Headers.ContentDisposition.FileName?.Trim('"'),
+                        ContentType = part.Headers.ContentType?.ToString(),
+                        Bytes = await part.ReadAsByteArrayAsync().ConfigureAwait(false),
+                    }
+                );
             }
         }
 
@@ -84,7 +94,10 @@ internal sealed class TypeSafeAiServer : HttpMessageHandler
         }
 
         Calls.Add(call);
-        var response = new HttpResponseMessage(Status) { Content = new StringContent(ResponseBody, Encoding.UTF8, "application/json") };
+        var response = new HttpResponseMessage(Status)
+        {
+            Content = new StringContent(ResponseBody, Encoding.UTF8, "application/json"),
+        };
         foreach (var pair in ResponseHeaders)
         {
             response.Headers.TryAddWithoutValidation(pair.Key, pair.Value);
@@ -107,7 +120,9 @@ internal static class TypesafeAiDecisionModelSupport
 
     internal static string Fixture(string name)
     {
-        return File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "TypesafeAi", name));
+        return File.ReadAllText(
+            Path.Combine(AppContext.BaseDirectory, "Fixtures", "TypesafeAi", name)
+        );
     }
 
     internal static TypeSafeAiServer Server()
@@ -115,7 +130,10 @@ internal static class TypesafeAiDecisionModelSupport
         return new TypeSafeAiServer { ResponseBody = NativeResponseJson };
     }
 
-    internal static TypeSafeAiProvider CreateProvider(TypeSafeAiServer server, string? apiKey = "test-api-key")
+    internal static TypeSafeAiProvider CreateProvider(
+        TypeSafeAiServer server,
+        string? apiKey = "test-api-key"
+    )
     {
         return TypeSafeAiProvider.Create(new TypeSafeAiOptions { ApiKey = apiKey }, server);
     }
@@ -131,7 +149,8 @@ internal static class TypesafeAiDecisionModelSupport
             questions[pair.Key] = Q(
                 type == "noul" ? "boolean" : type,
                 ToObject(question["instructions"]),
-                ToObject(question["criteria"]));
+                ToObject(question["criteria"])
+            );
         }
 
         return questions;
@@ -143,7 +162,8 @@ internal static class TypesafeAiDecisionModelSupport
         string providerOptions = "{}",
         IReadOnlyDictionary<string, string>? headers = null,
         double? maxOutputTokens = null,
-        string? reasoning = null)
+        string? reasoning = null
+    )
     {
         using var document = JsonDocument.Parse(providerOptions);
         return new DecisionModelCall(
@@ -153,16 +173,27 @@ internal static class TypesafeAiDecisionModelSupport
             headers ?? new Dictionary<string, string>(),
             CancellationToken.None,
             maxOutputTokens,
-            reasoning);
+            reasoning
+        );
     }
 
-    internal static Dictionary<string, object?> FilePart(string mediaType, object? data, string? filename = null, object? reference = null, bool withReference = false, bool? insertReference = null)
+    internal static Dictionary<string, object?> FilePart(
+        string mediaType,
+        object? data,
+        string? filename = null,
+        object? reference = null,
+        bool withReference = false,
+        bool? insertReference = null
+    )
     {
         var part = new Dictionary<string, object?>
         {
             ["type"] = "file",
             ["mediaType"] = mediaType,
-            ["data"] = data is IDictionary<string, object?> ? data : new Dictionary<string, object?> { ["type"] = "data", ["data"] = data },
+            ["data"] =
+                data is IDictionary<string, object?>
+                    ? data
+                    : new Dictionary<string, object?> { ["type"] = "data", ["data"] = data },
         };
         if (filename != null)
         {
@@ -200,7 +231,10 @@ internal static class TypesafeAiDecisionModelSupport
 
     internal static List<object?> JsonState(object? value)
     {
-        return new List<object?> { new Dictionary<string, object?> { ["type"] = "json", ["value"] = value } };
+        return new List<object?>
+        {
+            new Dictionary<string, object?> { ["type"] = "json", ["value"] = value },
+        };
     }
 
     internal static object? ToObject(JsonNode? node)

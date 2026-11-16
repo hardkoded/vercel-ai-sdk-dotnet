@@ -40,10 +40,17 @@ public sealed class AzureImageModelOptions : AzureImageModelMaiOptions
             switch (property.Name)
             {
                 case "api" when property.Value.ValueKind != JsonValueKind.Null:
-                    var api = property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() : null;
+                    var api =
+                        property.Value.ValueKind == JsonValueKind.String
+                            ? property.Value.GetString()
+                            : null;
                     if (api is not ("openai" or "mai"))
                     {
-                        throw new InvalidArgumentException("providerOptions.azure.api", property.Value.ToString(), "api must be 'openai' or 'mai'.");
+                        throw new InvalidArgumentException(
+                            "providerOptions.azure.api",
+                            property.Value.ToString(),
+                            "api must be 'openai' or 'mai'."
+                        );
                     }
 
                     options.Api = api;
@@ -67,7 +74,11 @@ public sealed class AzureImageModelOptions : AzureImageModelMaiOptions
             JsonValueKind.True => true,
             JsonValueKind.False => false,
             JsonValueKind.Null => null,
-            _ => throw new InvalidArgumentException("providerOptions.azure." + property.Name, property.Value.ToString(), property.Name + " must be a boolean."),
+            _ => throw new InvalidArgumentException(
+                "providerOptions.azure." + property.Name,
+                property.Value.ToString(),
+                property.Name + " must be a boolean."
+            ),
         };
     }
 }

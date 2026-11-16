@@ -37,7 +37,10 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
     private readonly string? _requestModelId;
     private readonly string[] _providerOptionsNames = OpenAIProviderOptionsNames;
     private readonly Func<Uri> _url;
-    private readonly Func<IReadOnlyDictionary<string, string?>?, Dictionary<string, string?>> _headers;
+    private readonly Func<
+        IReadOnlyDictionary<string, string?>?,
+        Dictionary<string, string?>
+    > _headers;
 
     /// <summary>Creates a Chat Completions model.</summary>
     public OpenAIChatLanguageModel(OpenAIProvider provider, string modelId)
@@ -59,7 +62,11 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
     /// <paramref name="settings"/>.<see cref="Azure.AzureOpenAILanguageModelSettings.ModelId"/> when set and
     /// drives capability detection. Requests always use <paramref name="deploymentId"/>.
     /// </summary>
-    public OpenAIChatLanguageModel(Azure.AzureOpenAIProvider provider, string deploymentId, Azure.AzureOpenAILanguageModelSettings? settings)
+    public OpenAIChatLanguageModel(
+        Azure.AzureOpenAIProvider provider,
+        string deploymentId,
+        Azure.AzureOpenAILanguageModelSettings? settings
+    )
     {
         if (provider == null)
         {
@@ -80,10 +87,8 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<string, string> SupportedUrls { get; } = new Dictionary<string, string>
-    {
-        ["image/*"] = "^https?://.*\\z",
-    };
+    public IReadOnlyDictionary<string, string> SupportedUrls { get; } =
+        new Dictionary<string, string> { ["image/*"] = "^https?://.*\\z" };
 
     /// <inheritdoc />
     public string Provider => _providerName + ".chat";
@@ -92,7 +97,10 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
     public string ModelId { get; }
 
     /// <summary>Builds the Chat Completions body for <paramref name="modelId"/>.</summary>
-    public static OpenAIChatPreparedRequest Prepare(string modelId, LanguageModelCallOptions options)
+    public static OpenAIChatPreparedRequest Prepare(
+        string modelId,
+        LanguageModelCallOptions options
+    )
     {
         return Prepare(modelId, options, null);
     }
@@ -101,7 +109,11 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
     /// Builds the Chat Completions body. <paramref name="modelId"/> drives capability detection and
     /// <paramref name="requestModelId"/>, when set, is sent as the request <c>model</c>.
     /// </summary>
-    public static OpenAIChatPreparedRequest Prepare(string modelId, LanguageModelCallOptions options, string? requestModelId)
+    public static OpenAIChatPreparedRequest Prepare(
+        string modelId,
+        LanguageModelCallOptions options,
+        string? requestModelId
+    )
     {
         return Prepare(modelId, options, requestModelId, OpenAIProviderOptionsNames);
     }
@@ -114,11 +126,15 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         string modelId,
         LanguageModelCallOptions options,
         string? requestModelId,
-        IReadOnlyList<string> providerOptionsNames)
+        IReadOnlyList<string> providerOptionsNames
+    )
     {
         options ??= new LanguageModelCallOptions();
         var warnings = new List<OpenAICallWarning>();
-        var openai = OpenAIJson.MergedProvider(options.ProviderOptions, providerOptionsNames.ToArray());
+        var openai = OpenAIJson.MergedProvider(
+            options.ProviderOptions,
+            providerOptionsNames.ToArray()
+        );
         var capabilities = OpenAILanguageModelCapabilities.ForModel(modelId);
         var effort = ResolveEffort(openai, options.Reasoning, capabilities, modelId, warnings);
         var reasoning = OpenAIJson.Bool(openai, "forceReasoning") ?? capabilities.IsReasoningModel;
@@ -214,17 +230,27 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         Copy(body, "reasoning_effort", effort);
         Copy(body, "service_tier", OpenAIJson.String(openai, "serviceTier"));
         Copy(body, "prompt_cache_key", OpenAIJson.String(openai, "promptCacheKey"));
-        Copy(body, "prompt_cache_options", OpenAIJson.Node(OpenAIJson.Child(openai, "promptCacheOptions")));
+        Copy(
+            body,
+            "prompt_cache_options",
+            OpenAIJson.Node(OpenAIJson.Child(openai, "promptCacheOptions"))
+        );
         Copy(body, "prompt_cache_retention", OpenAIJson.String(openai, "promptCacheRetention"));
         Copy(body, "safety_identifier", OpenAIJson.String(openai, "safetyIdentifier"));
 
-        if (capabilities.SupportedReasoningEfforts != null && body["prompt_cache_retention"] != null)
+        if (
+            capabilities.SupportedReasoningEfforts != null
+            && body["prompt_cache_retention"] != null
+        )
         {
             body.Remove("prompt_cache_retention");
-            warnings.Add(new OpenAICallWarning(
-                "unsupported",
-                "promptCacheRetention",
-                "promptCacheRetention is not supported by GPT-6 and later models; use promptCacheOptions instead"));
+            warnings.Add(
+                new OpenAICallWarning(
+                    "unsupported",
+                    "promptCacheRetention",
+                    "promptCacheRetention is not supported by GPT-6 and later models; use promptCacheOptions instead"
+                )
+            );
         }
 
         if (reasoning)
@@ -232,15 +258,67 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
             var keepSampling = effort == "none" && capabilities.SupportsNonReasoningParameters;
             if (!keepSampling)
             {
-                Remove(body, warnings, "temperature", "unsupported", "temperature", "temperature is not supported for reasoning models");
-                Remove(body, warnings, "top_p", "unsupported", "topP", "topP is not supported for reasoning models");
-                Remove(body, warnings, "logprobs", "other", null, null, "logprobs is not supported for reasoning models");
+                Remove(
+                    body,
+                    warnings,
+                    "temperature",
+                    "unsupported",
+                    "temperature",
+                    "temperature is not supported for reasoning models"
+                );
+                Remove(
+                    body,
+                    warnings,
+                    "top_p",
+                    "unsupported",
+                    "topP",
+                    "topP is not supported for reasoning models"
+                );
+                Remove(
+                    body,
+                    warnings,
+                    "logprobs",
+                    "other",
+                    null,
+                    null,
+                    "logprobs is not supported for reasoning models"
+                );
             }
 
-            Remove(body, warnings, "frequency_penalty", "unsupported", "frequencyPenalty", "frequencyPenalty is not supported for reasoning models");
-            Remove(body, warnings, "presence_penalty", "unsupported", "presencePenalty", "presencePenalty is not supported for reasoning models");
-            Remove(body, warnings, "logit_bias", "other", null, null, "logitBias is not supported for reasoning models");
-            Remove(body, warnings, "top_logprobs", "other", null, null, "topLogprobs is not supported for reasoning models");
+            Remove(
+                body,
+                warnings,
+                "frequency_penalty",
+                "unsupported",
+                "frequencyPenalty",
+                "frequencyPenalty is not supported for reasoning models"
+            );
+            Remove(
+                body,
+                warnings,
+                "presence_penalty",
+                "unsupported",
+                "presencePenalty",
+                "presencePenalty is not supported for reasoning models"
+            );
+            Remove(
+                body,
+                warnings,
+                "logit_bias",
+                "other",
+                null,
+                null,
+                "logitBias is not supported for reasoning models"
+            );
+            Remove(
+                body,
+                warnings,
+                "top_logprobs",
+                "other",
+                null,
+                null,
+                "topLogprobs is not supported for reasoning models"
+            );
             if (body["max_tokens"] != null)
             {
                 if (body["max_completion_tokens"] == null)
@@ -251,8 +329,10 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
                 body.Remove("max_tokens");
             }
         }
-        else if (modelId.StartsWith("gpt-4o-search-preview", StringComparison.Ordinal)
-            || modelId.StartsWith("gpt-4o-mini-search-preview", StringComparison.Ordinal))
+        else if (
+            modelId.StartsWith("gpt-4o-search-preview", StringComparison.Ordinal)
+            || modelId.StartsWith("gpt-4o-mini-search-preview", StringComparison.Ordinal)
+        )
         {
             Remove(
                 body,
@@ -260,26 +340,36 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
                 "temperature",
                 "unsupported",
                 "temperature",
-                "temperature is not supported for the search preview models and has been removed.");
+                "temperature is not supported for the search preview models and has been removed."
+            );
         }
 
         var serviceTier = OpenAIJson.String(openai, "serviceTier");
         if (serviceTier == "flex" && !capabilities.SupportsFlexProcessing)
         {
             body.Remove("service_tier");
-            warnings.Add(new OpenAICallWarning(
-                "unsupported",
-                "serviceTier",
-                "flex processing is only available for o3, o4-mini, and gpt-5 models"));
+            warnings.Add(
+                new OpenAICallWarning(
+                    "unsupported",
+                    "serviceTier",
+                    "flex processing is only available for o3, o4-mini, and gpt-5 models"
+                )
+            );
         }
 
-        if ((serviceTier == "priority" || serviceTier == "fast") && !capabilities.SupportsPriorityProcessing)
+        if (
+            (serviceTier == "priority" || serviceTier == "fast")
+            && !capabilities.SupportsPriorityProcessing
+        )
         {
             body.Remove("service_tier");
-            warnings.Add(new OpenAICallWarning(
-                "unsupported",
-                "serviceTier",
-                "priority processing is only available for supported models (gpt-4, gpt-5, gpt-5-mini, o3, o4-mini) and requires Enterprise access. gpt-5-nano is not supported"));
+            warnings.Add(
+                new OpenAICallWarning(
+                    "unsupported",
+                    "serviceTier",
+                    "priority processing is only available for supported models (gpt-4, gpt-5, gpt-5-mini, o3, o4-mini) and requires Enterprise access. gpt-5-nano is not supported"
+                )
+            );
         }
 
         var tools = OpenAIChatTools.Prepare(options.Tools, options.ToolChoice);
@@ -298,48 +388,62 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var prepared = Prepare(ModelId, options, _requestModelId, _providerOptionsNames);
-        var response = await _http.SendJsonStringAsync(
-            HttpMethod.Post,
-            _url(),
-            prepared.Body.ToJsonString(),
-            _headers(options.Headers),
-            cancellationToken).ConfigureAwait(false);
-        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
+        var response = await _http
+            .SendJsonStringAsync(
+                HttpMethod.Post,
+                _url(),
+                prepared.Body.ToJsonString(),
+                _headers(options.Headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        using var document = JsonDocument.Parse(
+            string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+        );
         return Parse(document.RootElement, prepared.Warnings, response.Body, response.Headers);
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var prepared = Prepare(ModelId, options, _requestModelId, _providerOptionsNames);
         var body = prepared.Body;
         body["stream"] = true;
         body["stream_options"] = new JsonObject { ["include_usage"] = true };
         var json = body.ToJsonString();
-        var sse = await _http.OpenSseResponseAsync(
-            _url(),
-            json,
-            _headers(options.Headers),
-            cancellationToken).ConfigureAwait(false);
-        return sse.ToStreamResult(StreamAsync(options, prepared, sse.Events, cancellationToken), json);
+        var sse = await _http
+            .OpenSseResponseAsync(_url(), json, _headers(options.Headers), cancellationToken)
+            .ConfigureAwait(false);
+        return sse.ToStreamResult(
+            StreamAsync(options, prepared, sse.Events, cancellationToken),
+            json
+        );
     }
 
     private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
         LanguageModelCallOptions options,
         OpenAIChatPreparedRequest prepared,
         IAsyncEnumerable<string> events,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         var enumerator = events.GetAsyncEnumerator(cancellationToken);
         try
         {
-            var checkedStream = await OpenAIStreamError.ThrowIfErrorBeforeOutputAsync(
-                enumerator,
-                ErrorFrame,
-                data => !IsJsonObject(data) || IsOutputChunk(data)).ConfigureAwait(false);
+            var checkedStream = await OpenAIStreamError
+                .ThrowIfErrorBeforeOutputAsync(enumerator, ErrorFrame, data =>
+                    !IsJsonObject(data) || IsOutputChunk(data)
+                )
+                .ConfigureAwait(false);
             yield return new StreamStartStreamPart(ToCallWarnings(prepared.Warnings));
             var state = new StreamState();
             await foreach (var data in checkedStream.ConfigureAwait(false))
@@ -365,30 +469,41 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         JsonElement root,
         IReadOnlyList<OpenAICallWarning> warnings,
         string raw,
-        IReadOnlyDictionary<string, string> headers)
+        IReadOnlyDictionary<string, string> headers
+    )
     {
-        if (!root.TryGetProperty("choices", out var choices) || choices.ValueKind != JsonValueKind.Array || choices.GetArrayLength() == 0)
+        if (
+            !root.TryGetProperty("choices", out var choices)
+            || choices.ValueKind != JsonValueKind.Array
+            || choices.GetArrayLength() == 0
+        )
         {
             throw new AiSdkException("Response did not contain any choices.");
         }
 
         var choice = choices[0];
-        var message = choice.TryGetProperty("message", out var messageElement) ? messageElement : default;
+        var message = choice.TryGetProperty("message", out var messageElement)
+            ? messageElement
+            : default;
         var content = new List<GeneratedContent>();
         string? text = null;
-        if (message.ValueKind == JsonValueKind.Object
+        if (
+            message.ValueKind == JsonValueKind.Object
             && message.TryGetProperty("content", out var contentElement)
-            && contentElement.ValueKind == JsonValueKind.String)
+            && contentElement.ValueKind == JsonValueKind.String
+        )
         {
             text = contentElement.GetString();
         }
 
-        if (string.IsNullOrEmpty(text)
+        if (
+            string.IsNullOrEmpty(text)
             && message.ValueKind == JsonValueKind.Object
             && message.TryGetProperty("audio", out var audio)
             && audio.ValueKind == JsonValueKind.Object
             && audio.TryGetProperty("transcript", out var transcript)
-            && transcript.ValueKind == JsonValueKind.String)
+            && transcript.ValueKind == JsonValueKind.String
+        )
         {
             text = transcript.GetString();
         }
@@ -401,84 +516,131 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         // When the model refuses to answer, the API returns the refusal in `refusal` and sets `content` to null.
         // Content and refusal are both returned when the model refuses after answering, so keep both.
         var hasRefusal = false;
-        if (message.ValueKind == JsonValueKind.Object
+        if (
+            message.ValueKind == JsonValueKind.Object
             && message.TryGetProperty("refusal", out var refusalElement)
             && refusalElement.ValueKind == JsonValueKind.String
-            && !string.IsNullOrEmpty(refusalElement.GetString()))
+            && !string.IsNullOrEmpty(refusalElement.GetString())
+        )
         {
             hasRefusal = true;
             content.Add(new GeneratedText(refusalElement.GetString()!));
         }
 
-        if (message.ValueKind == JsonValueKind.Object && message.TryGetProperty("tool_calls", out var toolCalls) && toolCalls.ValueKind == JsonValueKind.Array)
+        if (
+            message.ValueKind == JsonValueKind.Object
+            && message.TryGetProperty("tool_calls", out var toolCalls)
+            && toolCalls.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var call in toolCalls.EnumerateArray())
             {
-                var id = call.TryGetProperty("id", out var idElement) && idElement.ValueKind == JsonValueKind.String
-                    ? idElement.GetString()
-                    : null;
-                var function = call.TryGetProperty("function", out var functionElement) ? functionElement : default;
-                var name = function.ValueKind == JsonValueKind.Object && function.TryGetProperty("name", out var nameElement)
-                    ? nameElement.GetString() ?? string.Empty
-                    : string.Empty;
-                var arguments = function.ValueKind == JsonValueKind.Object && function.TryGetProperty("arguments", out var argumentsElement)
-                    ? argumentsElement.GetString() ?? "{}"
-                    : "{}";
-                content.Add(new GeneratedToolCall(string.IsNullOrEmpty(id) ? JsonValues.GenerateId("call_") : id!, name, arguments));
+                var id =
+                    call.TryGetProperty("id", out var idElement)
+                    && idElement.ValueKind == JsonValueKind.String
+                        ? idElement.GetString()
+                        : null;
+                var function = call.TryGetProperty("function", out var functionElement)
+                    ? functionElement
+                    : default;
+                var name =
+                    function.ValueKind == JsonValueKind.Object
+                    && function.TryGetProperty("name", out var nameElement)
+                        ? nameElement.GetString() ?? string.Empty
+                        : string.Empty;
+                var arguments =
+                    function.ValueKind == JsonValueKind.Object
+                    && function.TryGetProperty("arguments", out var argumentsElement)
+                        ? argumentsElement.GetString() ?? "{}"
+                        : "{}";
+                content.Add(
+                    new GeneratedToolCall(
+                        string.IsNullOrEmpty(id) ? JsonValues.GenerateId("call_") : id!,
+                        name,
+                        arguments
+                    )
+                );
             }
         }
 
-        if (message.ValueKind == JsonValueKind.Object && message.TryGetProperty("annotations", out var annotations) && annotations.ValueKind == JsonValueKind.Array)
+        if (
+            message.ValueKind == JsonValueKind.Object
+            && message.TryGetProperty("annotations", out var annotations)
+            && annotations.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var annotation in annotations.EnumerateArray())
             {
-                if (!annotation.TryGetProperty("url_citation", out var citation) || citation.ValueKind != JsonValueKind.Object)
+                if (
+                    !annotation.TryGetProperty("url_citation", out var citation)
+                    || citation.ValueKind != JsonValueKind.Object
+                )
                 {
                     continue;
                 }
 
-                var url = citation.TryGetProperty("url", out var urlElement) ? urlElement.GetString() ?? string.Empty : string.Empty;
-                var title = citation.TryGetProperty("title", out var titleElement) && titleElement.ValueKind == JsonValueKind.String
-                    ? titleElement.GetString()
-                    : null;
+                var url = citation.TryGetProperty("url", out var urlElement)
+                    ? urlElement.GetString() ?? string.Empty
+                    : string.Empty;
+                var title =
+                    citation.TryGetProperty("title", out var titleElement)
+                    && titleElement.ValueKind == JsonValueKind.String
+                        ? titleElement.GetString()
+                        : null;
                 content.Add(new GeneratedSource(JsonValues.GenerateId("source_"), url, title));
             }
         }
 
         var metadata = new JsonObject();
-        if (root.TryGetProperty("usage", out var usage)
+        if (
+            root.TryGetProperty("usage", out var usage)
             && usage.TryGetProperty("completion_tokens_details", out var details)
-            && details.ValueKind == JsonValueKind.Object)
+            && details.ValueKind == JsonValueKind.Object
+        )
         {
-            if (details.TryGetProperty("accepted_prediction_tokens", out var accepted) && accepted.ValueKind == JsonValueKind.Number)
+            if (
+                details.TryGetProperty("accepted_prediction_tokens", out var accepted)
+                && accepted.ValueKind == JsonValueKind.Number
+            )
             {
                 metadata["acceptedPredictionTokens"] = accepted.GetInt32();
             }
 
-            if (details.TryGetProperty("rejected_prediction_tokens", out var rejected) && rejected.ValueKind == JsonValueKind.Number)
+            if (
+                details.TryGetProperty("rejected_prediction_tokens", out var rejected)
+                && rejected.ValueKind == JsonValueKind.Number
+            )
             {
                 metadata["rejectedPredictionTokens"] = rejected.GetInt32();
             }
         }
 
-        if (choice.TryGetProperty("logprobs", out var logprobs)
+        if (
+            choice.TryGetProperty("logprobs", out var logprobs)
             && logprobs.ValueKind == JsonValueKind.Object
             && logprobs.TryGetProperty("content", out var logprobContent)
-            && logprobContent.ValueKind != JsonValueKind.Null)
+            && logprobContent.ValueKind != JsonValueKind.Null
+        )
         {
             metadata["logprobs"] = JsonNode.Parse(logprobContent.GetRawText());
         }
 
-        var rawReason = choice.TryGetProperty("finish_reason", out var finish) && finish.ValueKind == JsonValueKind.String
-            ? finish.GetString()
-            : null;
+        var rawReason =
+            choice.TryGetProperty("finish_reason", out var finish)
+            && finish.ValueKind == JsonValueKind.String
+                ? finish.GetString()
+                : null;
         var responseId = StringOrNull(root, "id");
         var responseModel = StringOrNull(root, "model");
         var created = OpenAIJson.Unix(root, "created");
         return new LanguageModelGenerateResult(
             content,
             MapOpenAIFinishReason(rawReason, hasRefusal),
-            OpenAIJson.ChatUsage(root.TryGetProperty("usage", out var usageElement) ? usageElement : (JsonElement?)null),
+            OpenAIJson.ChatUsage(
+                root.TryGetProperty("usage", out var usageElement)
+                    ? usageElement
+                    : (JsonElement?)null
+            ),
             rawReason,
             ToCallWarnings(warnings),
             responseId,
@@ -486,7 +648,8 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
             raw,
             responseModel,
             OpenAIJson.UnixSeconds(created),
-            headers);
+            headers
+        );
     }
 
     private static List<CallWarning> ToCallWarnings(IReadOnlyList<OpenAICallWarning> warnings)
@@ -505,7 +668,8 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         List<OpenAICallWarning> warnings,
         LanguageModelCallOptions options,
         JsonElement? openai,
-        bool strictJsonSchema)
+        bool strictJsonSchema
+    )
     {
         var format = OpenAIJson.Child(openai, "responseFormat");
         JsonElement? schema = options.JsonSchema;
@@ -567,7 +731,8 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         string? reasoning,
         OpenAILanguageModelCapabilities capabilities,
         string modelId,
-        List<OpenAICallWarning> warnings)
+        List<OpenAICallWarning> warnings
+    )
     {
         var effort = OpenAIJson.String(openai, "reasoningEffort");
         if (effort == null && !string.IsNullOrEmpty(reasoning) && reasoning != "provider-default")
@@ -575,12 +740,21 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
             effort = reasoning;
         }
 
-        if (effort != null && capabilities.SupportedReasoningEfforts != null && !Contains(capabilities.SupportedReasoningEfforts, effort))
+        if (
+            effort != null
+            && capabilities.SupportedReasoningEfforts != null
+            && !Contains(capabilities.SupportedReasoningEfforts, effort)
+        )
         {
-            warnings.Add(new OpenAICallWarning(
-                "unsupported",
-                "reasoningEffort",
-                modelId + " only supports the following reasoning efforts: " + string.Join(", ", capabilities.SupportedReasoningEfforts)));
+            warnings.Add(
+                new OpenAICallWarning(
+                    "unsupported",
+                    "reasoningEffort",
+                    modelId
+                        + " only supports the following reasoning efforts: "
+                        + string.Join(", ", capabilities.SupportedReasoningEfforts)
+                )
+            );
             return null;
         }
 
@@ -618,7 +792,10 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
             return (false, null);
         }
 
-        if (child.Value.ValueKind == JsonValueKind.Number && child.Value.TryGetInt32(out var number))
+        if (
+            child.Value.ValueKind == JsonValueKind.Number
+            && child.Value.TryGetInt32(out var number)
+        )
         {
             return (true, number);
         }
@@ -649,7 +826,8 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         string type,
         string? feature,
         string? details,
-        string? message = null)
+        string? message = null
+    )
     {
         if (body[field] == null)
         {
@@ -704,34 +882,56 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
             return false;
         }
 
-        if (!root.TryGetProperty("choices", out var choices) || choices.ValueKind != JsonValueKind.Array)
+        if (
+            !root.TryGetProperty("choices", out var choices)
+            || choices.ValueKind != JsonValueKind.Array
+        )
         {
             return false;
         }
 
         foreach (var choice in choices.EnumerateArray())
         {
-            if (!choice.TryGetProperty("delta", out var delta) || delta.ValueKind != JsonValueKind.Object)
+            if (
+                !choice.TryGetProperty("delta", out var delta)
+                || delta.ValueKind != JsonValueKind.Object
+            )
             {
                 continue;
             }
 
-            if (delta.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.String && (content.GetString() ?? string.Empty).Length > 0)
+            if (
+                delta.TryGetProperty("content", out var content)
+                && content.ValueKind == JsonValueKind.String
+                && (content.GetString() ?? string.Empty).Length > 0
+            )
             {
                 return true;
             }
 
-            if (delta.TryGetProperty("refusal", out var refusal) && refusal.ValueKind == JsonValueKind.String && (refusal.GetString() ?? string.Empty).Length > 0)
+            if (
+                delta.TryGetProperty("refusal", out var refusal)
+                && refusal.ValueKind == JsonValueKind.String
+                && (refusal.GetString() ?? string.Empty).Length > 0
+            )
             {
                 return true;
             }
 
-            if (delta.TryGetProperty("tool_calls", out var tools) && tools.ValueKind == JsonValueKind.Array && tools.GetArrayLength() > 0)
+            if (
+                delta.TryGetProperty("tool_calls", out var tools)
+                && tools.ValueKind == JsonValueKind.Array
+                && tools.GetArrayLength() > 0
+            )
             {
                 return true;
             }
 
-            if (delta.TryGetProperty("annotations", out var annotations) && annotations.ValueKind == JsonValueKind.Array && annotations.GetArrayLength() > 0)
+            if (
+                delta.TryGetProperty("annotations", out var annotations)
+                && annotations.ValueKind == JsonValueKind.Array
+                && annotations.GetArrayLength() > 0
+            )
             {
                 return true;
             }
@@ -748,7 +948,10 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         }
 
         using var document = JsonDocument.Parse(data);
-        return document.RootElement.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object && error.TryGetProperty("message", out _)
+        return
+            document.RootElement.TryGetProperty("error", out var error)
+            && error.ValueKind == JsonValueKind.Object
+            && error.TryGetProperty("message", out _)
             ? error.Clone()
             : null;
     }
@@ -794,13 +997,18 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
             using (document)
             {
                 var root = document.RootElement;
-                if (root.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
+                if (
+                    root.TryGetProperty("error", out var error)
+                    && error.ValueKind == JsonValueKind.Object
+                )
                 {
                     _failed = true;
                     _finish = FinishReason.Error;
-                    var message = error.TryGetProperty("message", out var messageElement) && messageElement.ValueKind == JsonValueKind.String
-                        ? messageElement.GetString() ?? "stream error"
-                        : "stream error";
+                    var message =
+                        error.TryGetProperty("message", out var messageElement)
+                        && messageElement.ValueKind == JsonValueKind.String
+                            ? messageElement.GetString() ?? "stream error"
+                            : "stream error";
                     yield return new ErrorStreamPart(message);
                     yield break;
                 }
@@ -817,44 +1025,68 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
                     }
                 }
 
-                if (root.TryGetProperty("usage", out var usage) && usage.ValueKind == JsonValueKind.Object)
+                if (
+                    root.TryGetProperty("usage", out var usage)
+                    && usage.ValueKind == JsonValueKind.Object
+                )
                 {
                     _usage = OpenAIJson.ChatUsage(usage);
-                    if (usage.TryGetProperty("completion_tokens_details", out var details) && details.ValueKind == JsonValueKind.Object)
+                    if (
+                        usage.TryGetProperty("completion_tokens_details", out var details)
+                        && details.ValueKind == JsonValueKind.Object
+                    )
                     {
-                        if (details.TryGetProperty("accepted_prediction_tokens", out var accepted) && accepted.ValueKind == JsonValueKind.Number)
+                        if (
+                            details.TryGetProperty("accepted_prediction_tokens", out var accepted)
+                            && accepted.ValueKind == JsonValueKind.Number
+                        )
                         {
                             _metadataObject["acceptedPredictionTokens"] = accepted.GetInt32();
                         }
 
-                        if (details.TryGetProperty("rejected_prediction_tokens", out var rejected) && rejected.ValueKind == JsonValueKind.Number)
+                        if (
+                            details.TryGetProperty("rejected_prediction_tokens", out var rejected)
+                            && rejected.ValueKind == JsonValueKind.Number
+                        )
                         {
                             _metadataObject["rejectedPredictionTokens"] = rejected.GetInt32();
                         }
                     }
                 }
 
-                if (!root.TryGetProperty("choices", out var choices) || choices.ValueKind != JsonValueKind.Array || choices.GetArrayLength() == 0)
+                if (
+                    !root.TryGetProperty("choices", out var choices)
+                    || choices.ValueKind != JsonValueKind.Array
+                    || choices.GetArrayLength() == 0
+                )
                 {
                     yield break;
                 }
 
                 var choice = choices[0];
-                if (choice.TryGetProperty("finish_reason", out var finish) && finish.ValueKind == JsonValueKind.String)
+                if (
+                    choice.TryGetProperty("finish_reason", out var finish)
+                    && finish.ValueKind == JsonValueKind.String
+                )
                 {
                     _rawFinish = finish.GetString();
                     _finish = MapOpenAIFinishReason(_rawFinish, _hasRefusal);
                 }
 
-                if (choice.TryGetProperty("logprobs", out var logprobs)
+                if (
+                    choice.TryGetProperty("logprobs", out var logprobs)
                     && logprobs.ValueKind == JsonValueKind.Object
                     && logprobs.TryGetProperty("content", out var logprobContent)
-                    && logprobContent.ValueKind != JsonValueKind.Null)
+                    && logprobContent.ValueKind != JsonValueKind.Null
+                )
                 {
                     _metadataObject["logprobs"] = JsonNode.Parse(logprobContent.GetRawText());
                 }
 
-                if (!choice.TryGetProperty("delta", out var delta) || delta.ValueKind != JsonValueKind.Object)
+                if (
+                    !choice.TryGetProperty("delta", out var delta)
+                    || delta.ValueKind != JsonValueKind.Object
+                )
                 {
                     yield break;
                 }
@@ -862,12 +1094,20 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
                 // When the model refuses to answer, the API streams the refusal in `refusal` instead of `content`.
                 // Content and refusal deltas can both occur, so append each to the same text part.
                 var textDeltas = new List<string>();
-                if (delta.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.String && (content.GetString() ?? string.Empty).Length > 0)
+                if (
+                    delta.TryGetProperty("content", out var content)
+                    && content.ValueKind == JsonValueKind.String
+                    && (content.GetString() ?? string.Empty).Length > 0
+                )
                 {
                     textDeltas.Add(content.GetString()!);
                 }
 
-                if (delta.TryGetProperty("refusal", out var refusal) && refusal.ValueKind == JsonValueKind.String && (refusal.GetString() ?? string.Empty).Length > 0)
+                if (
+                    delta.TryGetProperty("refusal", out var refusal)
+                    && refusal.ValueKind == JsonValueKind.String
+                    && (refusal.GetString() ?? string.Empty).Length > 0
+                )
                 {
                     _hasRefusal = true;
                     textDeltas.Add(refusal.GetString()!);
@@ -890,34 +1130,64 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
                     yield return new TextDeltaStreamPart("0", text);
                 }
 
-                if (delta.TryGetProperty("tool_calls", out var toolCalls) && toolCalls.ValueKind == JsonValueKind.Array)
+                if (
+                    delta.TryGetProperty("tool_calls", out var toolCalls)
+                    && toolCalls.ValueKind == JsonValueKind.Array
+                )
                 {
                     foreach (var call in toolCalls.EnumerateArray())
                     {
-                        int? index = call.TryGetProperty("index", out var indexElement) && indexElement.TryGetInt32(out var indexValue) ? indexValue : null;
-                        var id = call.TryGetProperty("id", out var idElement) && idElement.ValueKind == JsonValueKind.String ? idElement.GetString() : null;
+                        int? index =
+                            call.TryGetProperty("index", out var indexElement)
+                            && indexElement.TryGetInt32(out var indexValue)
+                                ? indexValue
+                                : null;
+                        var id =
+                            call.TryGetProperty("id", out var idElement)
+                            && idElement.ValueKind == JsonValueKind.String
+                                ? idElement.GetString()
+                                : null;
                         string? name = null;
                         string? arguments = null;
                         var hasArguments = false;
-                        if (call.TryGetProperty("function", out var function) && function.ValueKind == JsonValueKind.Object)
+                        if (
+                            call.TryGetProperty("function", out var function)
+                            && function.ValueKind == JsonValueKind.Object
+                        )
                         {
-                            if (function.TryGetProperty("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String)
+                            if (
+                                function.TryGetProperty("name", out var nameElement)
+                                && nameElement.ValueKind == JsonValueKind.String
+                            )
                             {
                                 name = nameElement.GetString();
                             }
 
-                            if (function.TryGetProperty("arguments", out var argumentsElement) && argumentsElement.ValueKind == JsonValueKind.String)
+                            if (
+                                function.TryGetProperty("arguments", out var argumentsElement)
+                                && argumentsElement.ValueKind == JsonValueKind.String
+                            )
                             {
                                 arguments = argumentsElement.GetString();
                                 hasArguments = true;
                             }
                         }
 
-                        _tools.ProcessDelta(new StreamingToolCallDelta(index, id, name, hasArguments ? arguments : null));
+                        _tools.ProcessDelta(
+                            new StreamingToolCallDelta(
+                                index,
+                                id,
+                                name,
+                                hasArguments ? arguments : null
+                            )
+                        );
                     }
                 }
 
-                if (delta.TryGetProperty("annotations", out var annotations) && annotations.ValueKind == JsonValueKind.Array)
+                if (
+                    delta.TryGetProperty("annotations", out var annotations)
+                    && annotations.ValueKind == JsonValueKind.Array
+                )
                 {
                     foreach (var annotation in annotations.EnumerateArray())
                     {
@@ -926,11 +1196,19 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
                             continue;
                         }
 
-                        var url = citation.TryGetProperty("url", out var urlElement) ? urlElement.GetString() ?? string.Empty : string.Empty;
-                        var title = citation.TryGetProperty("title", out var titleElement) && titleElement.ValueKind == JsonValueKind.String
-                            ? titleElement.GetString()
-                            : null;
-                        yield return new SourceStreamPart(JsonValues.GenerateId("source_"), url, title);
+                        var url = citation.TryGetProperty("url", out var urlElement)
+                            ? urlElement.GetString() ?? string.Empty
+                            : string.Empty;
+                        var title =
+                            citation.TryGetProperty("title", out var titleElement)
+                            && titleElement.ValueKind == JsonValueKind.String
+                                ? titleElement.GetString()
+                                : null;
+                        yield return new SourceStreamPart(
+                            JsonValues.GenerateId("source_"),
+                            url,
+                            title
+                        );
                     }
                 }
             }
@@ -957,7 +1235,8 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
                 _finish,
                 _usage ?? new LanguageModelUsage(null, null, null),
                 _rawFinish,
-                OpenAIJson.ProviderMetadata(_metadataObject));
+                OpenAIJson.ProviderMetadata(_metadataObject)
+            );
         }
     }
 }

@@ -11,12 +11,24 @@ public sealed class NoSuchProviderError : NoSuchModelError
     public new const string ErrorMarker = "vercel.ai.error.AI_NoSuchProviderError";
 
     /// <summary>Creates the error.</summary>
-    public NoSuchProviderError(string modelId, string modelType, string providerId, IReadOnlyList<string> availableProviders, string? message = null)
+    public NoSuchProviderError(
+        string modelId,
+        string modelType,
+        string providerId,
+        IReadOnlyList<string> availableProviders,
+        string? message = null
+    )
         : base(
             "AI_NoSuchProviderError",
             modelId,
             modelType,
-            message ?? "No such provider: " + providerId + " (available providers: " + string.Join(",", availableProviders) + ")")
+            message
+                ?? "No such provider: "
+                    + providerId
+                    + " (available providers: "
+                    + string.Join(",", availableProviders)
+                    + ")"
+        )
     {
         ProviderId = providerId;
         AvailableProviders = availableProviders;

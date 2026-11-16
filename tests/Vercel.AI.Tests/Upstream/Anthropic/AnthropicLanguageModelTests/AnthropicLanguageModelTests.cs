@@ -12,7 +12,11 @@ namespace Vercel.AI.Tests.AnthropicLanguageModelTests;
 public sealed class AnthropicLanguageModelTests
 {
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel::ignores typed ping opt-in for non-streaming requests", Coverage = UpstreamCoverage.Covered, Commit = "97540149254736e8d566d432ccb7abf7b1cebbb3")]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel::ignores typed ping opt-in for non-streaming requests",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "97540149254736e8d566d432ccb7abf7b1cebbb3"
+    )]
     public async Task Ignores_typed_ping_opt_in_for_non_streaming_requests()
     {
         var handler = AnthropicParity.Ok();
@@ -20,7 +24,8 @@ public sealed class AnthropicLanguageModelTests
         var result = await AnthropicParity.Generate(
             AnthropicParity.Client(handler),
             "claude-3-haiku-20240307",
-            AnthropicParity.WithProvider("{\"includePings\":true}"));
+            AnthropicParity.WithProvider("{\"includePings\":true}")
+        );
 
         Assert.Contains(result.Content, part => part is GeneratedText);
         using var body = JsonDocument.Parse(handler.Body);

@@ -12,7 +12,8 @@ public sealed class ConstructorTests
     [Fact]
     [UpstreamTest(
         "packages/black-forest-labs/src/black-forest-labs-image-model.test.ts::BlackForestLabsImageModel > constructor::exposes correct provider and model information",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void ExposesCorrectProviderAndModelInformation()
     {
         var model = CreateBasicModel(new BlackForestLabsServer());

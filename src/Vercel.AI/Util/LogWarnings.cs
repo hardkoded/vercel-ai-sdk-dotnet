@@ -105,7 +105,11 @@ public sealed class OtherWarning : ModelWarning
 public sealed class LogWarningsOptions
 {
     /// <summary>Creates the options.</summary>
-    public LogWarningsOptions(IReadOnlyList<ModelWarning>? warnings, string? provider = null, string? model = null)
+    public LogWarningsOptions(
+        IReadOnlyList<ModelWarning>? warnings,
+        string? provider = null,
+        string? model = null
+    )
     {
         Warnings = warnings ?? Array.Empty<ModelWarning>();
         Provider = provider;
@@ -129,18 +133,27 @@ public sealed class LogWarningsOptions
 public static class LogWarnings
 {
     /// <summary>Note emitted once before the first default warning.</summary>
-    public const string FirstWarningInfoMessage = "AI SDK Warning System: To turn off warning logging, set the AI_SDK_LOG_WARNINGS global to false.";
+    public const string FirstWarningInfoMessage =
+        "AI SDK Warning System: To turn off warning logging, set the AI_SDK_LOG_WARNINGS global to false.";
 
     private static readonly object Gate = new object();
-    private static readonly HashSet<string> EmittedDeprecationCodes = new HashSet<string>(StringComparer.Ordinal);
+    private static readonly HashSet<string> EmittedDeprecationCodes = new HashSet<string>(
+        StringComparer.Ordinal
+    );
     private static bool _hasLoggedBefore;
     private static object? _logger;
-    private static Action<string, string, string?>? _processEmitWarning = delegate (string message, string type, string? code)
+    private static Action<string, string, string?>? _processEmitWarning = delegate(
+        string message,
+        string type,
+        string? code
+    )
     {
-        System.Diagnostics.Trace.TraceWarning((code == null ? string.Empty : "[" + code + "] ") + type + ": " + message);
+        System.Diagnostics.Trace.TraceWarning(
+            (code == null ? string.Empty : "[" + code + "] ") + type + ": " + message
+        );
     };
 
-    private static Action<string>? _consoleWarn = delegate (string message)
+    private static Action<string>? _consoleWarn = delegate(string message)
     {
         System.Diagnostics.Trace.TraceWarning(message);
     };
@@ -158,7 +171,6 @@ public static class LogWarnings
                 return _logger;
             }
         }
-
         set
         {
             lock (Gate)
@@ -181,7 +193,6 @@ public static class LogWarnings
                 return _processEmitWarning;
             }
         }
-
         set
         {
             lock (Gate)
@@ -201,7 +212,6 @@ public static class LogWarnings
                 return _consoleWarn;
             }
         }
-
         set
         {
             lock (Gate)
@@ -266,7 +276,10 @@ public static class LogWarnings
         {
             var warning = options.Warnings[i];
             var deprecated = warning as DeprecatedWarning;
-            var code = deprecated == null ? null : Deprecations.GetDeprecationCode(deprecated.Setting, options.Provider);
+            var code =
+                deprecated == null
+                    ? null
+                    : Deprecations.GetDeprecationCode(deprecated.Setting, options.Provider);
             if (code != null)
             {
                 lock (Gate)
@@ -278,7 +291,11 @@ public static class LogWarnings
                 }
             }
 
-            Emit(FormatWarning(warning, options.Provider, options.Model), deprecated == null ? "Warning" : "DeprecationWarning", code);
+            Emit(
+                FormatWarning(warning, options.Provider, options.Model),
+                deprecated == null ? "Warning" : "DeprecationWarning",
+                code
+            );
         }
     }
 
@@ -306,7 +323,10 @@ public static class LogWarnings
 
     private static string FormatWarning(ModelWarning warning, string? provider, string? model)
     {
-        var scope = provider != null && model != null ? " (" + provider + " / " + model + ")" : string.Empty;
+        var scope =
+            provider != null && model != null
+                ? " (" + provider + " / " + model + ")"
+                : string.Empty;
         var prefix = "AI SDK Warning" + scope + ":";
         var unsupported = warning as UnsupportedWarning;
         if (unsupported != null)
@@ -323,7 +343,11 @@ public static class LogWarnings
         var compatibility = warning as CompatibilityWarning;
         if (compatibility != null)
         {
-            var message = prefix + " The feature \"" + compatibility.Feature + "\" is used in a compatibility mode.";
+            var message =
+                prefix
+                + " The feature \""
+                + compatibility.Feature
+                + "\" is used in a compatibility mode.";
             if (!string.IsNullOrEmpty(compatibility.Details))
             {
                 message += " " + compatibility.Details;
@@ -344,6 +368,8 @@ public static class LogWarnings
             return prefix + " " + other.Message;
         }
 
-        return prefix + " " + JsonSerializer.Serialize(warning, new JsonSerializerOptions { WriteIndented = true });
+        return prefix
+            + " "
+            + JsonSerializer.Serialize(warning, new JsonSerializerOptions { WriteIndented = true });
     }
 }

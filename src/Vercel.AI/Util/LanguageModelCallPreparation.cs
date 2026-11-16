@@ -39,13 +39,17 @@ public sealed class LanguageModelCallOptionsInput
 public static class LanguageModelCallPreparation
 {
     /// <summary>Deprecated alias of <see cref="PrepareLanguageModelCallOptions"/>.</summary>
-    public static LanguageModelCallOptionsInput PrepareCallSettings(LanguageModelCallOptionsInput options)
+    public static LanguageModelCallOptionsInput PrepareCallSettings(
+        LanguageModelCallOptionsInput options
+    )
     {
         return PrepareLanguageModelCallOptions(options);
     }
 
     /// <summary>Validates <paramref name="options"/> and returns a copy of the normalized values.</summary>
-    public static LanguageModelCallOptionsInput PrepareLanguageModelCallOptions(LanguageModelCallOptionsInput options)
+    public static LanguageModelCallOptionsInput PrepareLanguageModelCallOptions(
+        LanguageModelCallOptionsInput options
+    )
     {
         if (options == null)
         {
@@ -56,12 +60,20 @@ public static class LanguageModelCallPreparation
         {
             if (!IsInteger(options.MaxOutputTokens.Value))
             {
-                throw new InvalidArgumentError("maxOutputTokens", options.MaxOutputTokens, "maxOutputTokens must be an integer");
+                throw new InvalidArgumentError(
+                    "maxOutputTokens",
+                    options.MaxOutputTokens,
+                    "maxOutputTokens must be an integer"
+                );
             }
 
             if (options.MaxOutputTokens.Value < 1)
             {
-                throw new InvalidArgumentError("maxOutputTokens", options.MaxOutputTokens, "maxOutputTokens must be >= 1");
+                throw new InvalidArgumentError(
+                    "maxOutputTokens",
+                    options.MaxOutputTokens,
+                    "maxOutputTokens must be >= 1"
+                );
             }
         }
 

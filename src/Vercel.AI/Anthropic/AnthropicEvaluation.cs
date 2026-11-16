@@ -35,7 +35,12 @@ public sealed class AnthropicEvaluationQuestion
 public sealed class AnthropicEvaluationAnswer
 {
     /// <summary>Creates an answer.</summary>
-    public AnthropicEvaluationAnswer(string type, string? choice, double? score, double? probability)
+    public AnthropicEvaluationAnswer(
+        string type,
+        string? choice,
+        double? score,
+        double? probability
+    )
     {
         Type = type;
         Choice = choice;
@@ -60,7 +65,12 @@ public sealed class AnthropicEvaluationAnswer
 public sealed class AnthropicEvaluationResult
 {
     /// <summary>Creates a result.</summary>
-    public AnthropicEvaluationResult(IReadOnlyDictionary<string, AnthropicEvaluationAnswer> answers, LanguageModelUsage usage, IReadOnlyDictionary<string, string> headers, string provider)
+    public AnthropicEvaluationResult(
+        IReadOnlyDictionary<string, AnthropicEvaluationAnswer> answers,
+        LanguageModelUsage usage,
+        IReadOnlyDictionary<string, string> headers,
+        string provider
+    )
     {
         Answers = answers;
         Usage = usage;
@@ -101,15 +111,27 @@ public sealed class AnthropicEvaluationModel : IRubricModel
     public string ModelId => _modelId;
 
     /// <summary>Question types this model accepts.</summary>
-    public IReadOnlyList<string> SupportedQuestionTypes { get; } = new[] { "choice", "score", "boolean" };
+    public IReadOnlyList<string> SupportedQuestionTypes { get; } =
+        new[] { "choice", "score", "boolean" };
 
     /// <inheritdoc />
-    public async Task<RubricResult> DoEvaluateAsync(string rubric, string candidate, CancellationToken cancellationToken)
+    public async Task<RubricResult> DoEvaluateAsync(
+        string rubric,
+        string candidate,
+        CancellationToken cancellationToken
+    )
     {
-        var questions = new[] { new AnthropicEvaluationQuestion("score", "score", new[] { "low", "high" }) };
+        var questions = new[]
+        {
+            new AnthropicEvaluationQuestion("score", "score", new[] { "low", "high" }),
+        };
         var result = await EvaluateAsync(questions, null, cancellationToken).ConfigureAwait(false);
         AnthropicEvaluationAnswer? answer;
-        if (!result.Answers.TryGetValue("score", out answer) || answer == null || answer.Score == null)
+        if (
+            !result.Answers.TryGetValue("score", out answer)
+            || answer == null
+            || answer.Score == null
+        )
         {
             return new RubricResult(0, candidate);
         }
@@ -118,12 +140,17 @@ public sealed class AnthropicEvaluationModel : IRubricModel
     }
 
     /// <summary>Evaluates questions and maps <c>q0</c>, <c>q1</c>, … back onto the question names.</summary>
-    public async Task<AnthropicEvaluationResult> EvaluateAsync(IReadOnlyList<AnthropicEvaluationQuestion> questions, LanguageModelCallOptions? options, CancellationToken cancellationToken)
+    public async Task<AnthropicEvaluationResult> EvaluateAsync(
+        IReadOnlyList<AnthropicEvaluationQuestion> questions,
+        LanguageModelCallOptions? options,
+        CancellationToken cancellationToken
+    )
     {
         var call = options ?? new LanguageModelCallOptions();
-        call.Prompt = call.Prompt == null || call.Prompt.Count == 0
-            ? new ModelMessage[] { new UserModelMessage("Evaluate.") }
-            : call.Prompt;
+        call.Prompt =
+            call.Prompt == null || call.Prompt.Count == 0
+                ? new ModelMessage[] { new UserModelMessage("Evaluate.") }
+                : call.Prompt;
         call.JsonSchema = BuildSchema(questions);
         if (call.ProviderOptions == null || !HasThinking(call))
         {
@@ -142,7 +169,9 @@ public sealed class AnthropicEvaluationModel : IRubricModel
             }
             else if (!HasThinking(call))
             {
-                var node = JsonNode.Parse(providerOptions["anthropic"].GetRawText()) as JsonObject ?? new JsonObject();
+                var node =
+                    JsonNode.Parse(providerOptions["anthropic"].GetRawText()) as JsonObject
+                    ?? new JsonObject();
                 node["thinking"] = new JsonObject { ["type"] = "disabled" };
                 using var document = JsonDocument.Parse(node.ToJsonString());
                 providerOptions["anthropic"] = document.RootElement.Clone();
@@ -163,17 +192,27 @@ public sealed class AnthropicEvaluationModel : IRubricModel
                 prepared.UsedCustomProviderKey,
                 prepared.MarkCodeExecutionDynamic,
                 prepared.PreparedTools,
-                prepared.ComputerToolsetName);
+                prepared.ComputerToolsetName
+            );
         }
 
-        var headers = await _provider.CreateHeadersAsync(prepared.Betas, call.Headers, null, cancellationToken).ConfigureAwait(false);
-        var response = await _provider.Http.SendJsonStringAsync(
-            HttpMethod.Post,
-            _provider.MessagesUri(),
-            prepared.Body.ToJsonString(),
-            headers,
-            cancellationToken).ConfigureAwait(false);
-        var context = new AnthropicParseContext(prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey);
+        var headers = await _provider
+            .CreateHeadersAsync(prepared.Betas, call.Headers, null, cancellationToken)
+            .ConfigureAwait(false);
+        var response = await _provider
+            .Http.SendJsonStringAsync(
+                HttpMethod.Post,
+                _provider.MessagesUri(),
+                prepared.Body.ToJsonString(),
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        var context = new AnthropicParseContext(
+            prepared.UsesJsonResponseTool,
+            prepared.ProviderOptionsName,
+            prepared.UsedCustomProviderKey
+        );
         var generated = AnthropicResponse.Parse(response.Body, context, response.Headers);
         if (generated.FinishReason != FinishReason.Stop)
         {
@@ -192,7 +231,12 @@ public sealed class AnthropicEvaluationModel : IRubricModel
             }
         }
 
-        return new AnthropicEvaluationResult(ParseAnswers(questions, json), generated.Usage, response.Headers, Provider);
+        return new AnthropicEvaluationResult(
+            ParseAnswers(questions, json),
+            generated.Usage,
+            response.Headers,
+            Provider
+        );
     }
 
     /// <summary>Builds the json schema. Choice values are <c>c0</c>, <c>c1</c>, …. Number bounds are omitted.</summary>
@@ -233,7 +277,10 @@ public sealed class AnthropicEvaluationModel : IRubricModel
     }
 
     /// <summary>Maps encoded answers back to criteria labels and checks score and probability bounds.</summary>
-    public static IReadOnlyDictionary<string, AnthropicEvaluationAnswer> ParseAnswers(IReadOnlyList<AnthropicEvaluationQuestion> questions, string json)
+    public static IReadOnlyDictionary<string, AnthropicEvaluationAnswer> ParseAnswers(
+        IReadOnlyList<AnthropicEvaluationQuestion> questions,
+        string json
+    )
     {
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
@@ -250,12 +297,28 @@ public sealed class AnthropicEvaluationModel : IRubricModel
             if (question.Type == "choice")
             {
                 var code = value.GetString() ?? string.Empty;
-                if (code.Length < 2 || code[0] != 'c' || !int.TryParse(code.Substring(1), NumberStyles.None, CultureInfo.InvariantCulture, out var index) || index < 0 || index >= question.Criteria.Count)
+                if (
+                    code.Length < 2
+                    || code[0] != 'c'
+                    || !int.TryParse(
+                        code.Substring(1),
+                        NumberStyles.None,
+                        CultureInfo.InvariantCulture,
+                        out var index
+                    )
+                    || index < 0
+                    || index >= question.Criteria.Count
+                )
                 {
                     throw new AiSdkException("Evaluation choice is outside the criteria.");
                 }
 
-                answers[question.Name] = new AnthropicEvaluationAnswer("choice", question.Criteria[index], null, null);
+                answers[question.Name] = new AnthropicEvaluationAnswer(
+                    "choice",
+                    question.Criteria[index],
+                    null,
+                    null
+                );
             }
             else if (question.Type == "score")
             {
@@ -263,7 +326,11 @@ public sealed class AnthropicEvaluationModel : IRubricModel
                 var max = Math.Max(0, question.Criteria.Count - 1);
                 if (double.IsNaN(score) || double.IsInfinity(score) || score < 0 || score > max)
                 {
-                    throw new AiSdkException("Evaluation score is outside 0.." + max.ToString(CultureInfo.InvariantCulture) + ".");
+                    throw new AiSdkException(
+                        "Evaluation score is outside 0.."
+                            + max.ToString(CultureInfo.InvariantCulture)
+                            + "."
+                    );
                 }
 
                 answers[question.Name] = new AnthropicEvaluationAnswer("score", null, score, null);
@@ -276,7 +343,12 @@ public sealed class AnthropicEvaluationModel : IRubricModel
                     throw new AiSdkException("Evaluation probability must be between 0 and 1.");
                 }
 
-                answers[question.Name] = new AnthropicEvaluationAnswer("boolean", null, null, probability);
+                answers[question.Name] = new AnthropicEvaluationAnswer(
+                    "boolean",
+                    null,
+                    null,
+                    probability
+                );
             }
         }
 
@@ -286,11 +358,16 @@ public sealed class AnthropicEvaluationModel : IRubricModel
     private static bool HasThinking(LanguageModelCallOptions call)
     {
         JsonElement anthropic;
-        if (call.ProviderOptions == null || !call.ProviderOptions.TryGetValue("anthropic", out anthropic))
+        if (
+            call.ProviderOptions == null
+            || !call.ProviderOptions.TryGetValue("anthropic", out anthropic)
+        )
         {
             return false;
         }
 
-        return anthropic.ValueKind == JsonValueKind.Object && anthropic.TryGetProperty("thinking", out var thinking) && thinking.ValueKind == JsonValueKind.Object;
+        return anthropic.ValueKind == JsonValueKind.Object
+            && anthropic.TryGetProperty("thinking", out var thinking)
+            && thinking.ValueKind == JsonValueKind.Object;
     }
 }

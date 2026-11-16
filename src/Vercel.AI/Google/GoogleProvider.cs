@@ -50,9 +50,7 @@ public class GoogleProvider : ProviderBase, Operations.IBatchProvider
 
     /// <summary>Creates a provider.</summary>
     public GoogleProvider(HttpClient httpClient, GoogleOptions? options = null)
-        : this(httpClient, options, "google.generative-ai")
-    {
-    }
+        : this(httpClient, options, "google.generative-ai") { }
 
     /// <summary>Creates a provider with an explicit model provider id.</summary>
     protected GoogleProvider(HttpClient httpClient, GoogleOptions? options, string modelProvider)
@@ -78,12 +76,21 @@ public class GoogleProvider : ProviderBase, Operations.IBatchProvider
         var baseUrl = System.Text.RegularExpressions.Regex.Escape(Options.BaseUrl);
         var urls = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["*"] = "^https://generativelanguage\\.googleapis\\.com/v1beta/files/.*\\z"
-                + "|^" + baseUrl + "/files/.*\\z"
+            ["*"] =
+                "^https://generativelanguage\\.googleapis\\.com/v1beta/files/.*\\z"
+                + "|^"
+                + baseUrl
+                + "/files/.*\\z"
                 + "|^https://(?:www\\.)?youtube\\.com/watch\\?v=[\\w-]+(?:&[\\w=&.-]*)?\\z"
                 + "|^https://youtu\\.be/[\\w-]+(?:\\?[\\w=&.-]*)?\\z",
         };
-        if (modelId is null || (System.Text.RegularExpressions.Regex.IsMatch(modelId, "(^|/)gemini-") && !System.Text.RegularExpressions.Regex.IsMatch(modelId, "(^|/)gemini-2\\.0")))
+        if (
+            modelId is null
+            || (
+                System.Text.RegularExpressions.Regex.IsMatch(modelId, "(^|/)gemini-")
+                && !System.Text.RegularExpressions.Regex.IsMatch(modelId, "(^|/)gemini-2\\.0")
+            )
+        )
         {
             foreach (var mediaType in ExternalUrlMediaTypes)
             {
@@ -96,9 +103,28 @@ public class GoogleProvider : ProviderBase, Operations.IBatchProvider
 
     private static readonly string[] ExternalUrlMediaTypes =
     {
-        "text/html", "text/css", "text/plain", "text/xml", "text/csv", "text/rtf", "text/javascript", "application/json", "application/pdf",
-        "image/bmp", "image/jpeg", "image/png", "image/webp", "video/mp4", "video/mpeg", "video/quicktime", "video/avi",
-        "video/x-flv", "video/mpg", "video/webm", "video/wmv", "video/3gpp",
+        "text/html",
+        "text/css",
+        "text/plain",
+        "text/xml",
+        "text/csv",
+        "text/rtf",
+        "text/javascript",
+        "application/json",
+        "application/pdf",
+        "image/bmp",
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "video/mp4",
+        "video/mpeg",
+        "video/quicktime",
+        "video/avi",
+        "video/x-flv",
+        "video/mpg",
+        "video/webm",
+        "video/wmv",
+        "video/3gpp",
     };
 
     /// <summary>Gemini Batch API. Downloads batch results.</summary>
@@ -117,9 +143,14 @@ public class GoogleProvider : ProviderBase, Operations.IBatchProvider
     public Func<DateTimeOffset> Clock { get; set; } = () => DateTimeOffset.UtcNow;
 
     /// <summary>Creates a provider.</summary>
-    public static GoogleProvider Create(GoogleOptions? options = null, HttpMessageHandler? handler = null)
+    public static GoogleProvider Create(
+        GoogleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new GoogleProvider(client, options);
     }
 
@@ -135,7 +166,12 @@ public class GoogleProvider : ProviderBase, Operations.IBatchProvider
     /// </summary>
     public GoogleDecisionModel DecisionModel(string modelId)
     {
-        var provider = System.Text.RegularExpressions.Regex.Replace(ModelProvider, @"\.generative-ai$", string.Empty) + ".decision";
+        var provider =
+            System.Text.RegularExpressions.Regex.Replace(
+                ModelProvider,
+                @"\.generative-ai$",
+                string.Empty
+            ) + ".decision";
         return new GoogleDecisionModel(this, modelId, provider);
     }
 
@@ -149,7 +185,12 @@ public class GoogleProvider : ProviderBase, Operations.IBatchProvider
     /// <summary>Experimental typed field extraction model that uses Gemini structured output. The provider id is <c>google.extraction</c>.</summary>
     public Operations.ExtractionLanguageModel ExtractionModel(string modelId)
     {
-        var provider = System.Text.RegularExpressions.Regex.Replace(ModelProvider, @"\.generative-ai$", string.Empty) + ".extraction";
+        var provider =
+            System.Text.RegularExpressions.Regex.Replace(
+                ModelProvider,
+                @"\.generative-ai$",
+                string.Empty
+            ) + ".extraction";
         return new Operations.ExtractionLanguageModel(LanguageModel(modelId), provider);
     }
 
@@ -196,7 +237,9 @@ public class GoogleProvider : ProviderBase, Operations.IBatchProvider
     }
 
     /// <summary>Builds request headers. An API key or a bearer token is required.</summary>
-    internal async Task<Dictionary<string, string?>> HeadersAsync(CancellationToken cancellationToken)
+    internal async Task<Dictionary<string, string?>> HeadersAsync(
+        CancellationToken cancellationToken
+    )
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         foreach (var pair in Options.Headers)
@@ -277,7 +320,11 @@ public sealed class GoogleRealtimeClientSecret
 public sealed class GoogleRealtimeModelConfig
 {
     /// <summary>Creates a config.</summary>
-    public GoogleRealtimeModelConfig(string provider, string baseUrl, Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> headers)
+    public GoogleRealtimeModelConfig(
+        string provider,
+        string baseUrl,
+        Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> headers
+    )
     {
         Provider = provider ?? throw new ArgumentNullException(nameof(provider));
         BaseUrl = baseUrl ?? throw new ArgumentNullException(nameof(baseUrl));
@@ -306,15 +353,19 @@ public sealed class GoogleRealtimeModelConfig
 /// </summary>
 public sealed class GoogleRealtimeModel : IServerWebSocketRealtimeModel
 {
-    private const string RealtimeWebSocketPath = "google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained";
+    private const string RealtimeWebSocketPath =
+        "google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained";
 
     // Server-side connections use the unconstrained Bidi endpoint: a trusted server
     // holds the API key and sends the session `setup` over the socket, rather than
     // baking it into an ephemeral token at mint time (which the constrained
     // endpoint requires).
-    private const string RealtimeServerWebSocketPath = "google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
+    private const string RealtimeServerWebSocketPath =
+        "google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
 
-    private static readonly Lazy<ProviderHttp> DefaultHttp = new(() => new ProviderHttp(new HttpClient()));
+    private static readonly Lazy<ProviderHttp> DefaultHttp = new(() =>
+        new ProviderHttp(new HttpClient())
+    );
 
     private readonly GoogleRealtimeModelConfig _config;
     private readonly GoogleRealtimeEventMapper _mapper = new();
@@ -333,13 +384,14 @@ public sealed class GoogleRealtimeModel : IServerWebSocketRealtimeModel
             new GoogleRealtimeModelConfig(
                 (provider ?? throw new ArgumentNullException(nameof(provider))).ModelProvider,
                 provider.Options.BaseUrl,
-                async cancellationToken => await provider.HeadersAsync(cancellationToken).ConfigureAwait(false))
+                async cancellationToken =>
+                    await provider.HeadersAsync(cancellationToken).ConfigureAwait(false)
+            )
             {
                 Http = provider.Http,
                 Clock = () => provider.Clock(),
-            })
-    {
-    }
+            }
+        ) { }
 
     /// <inheritdoc />
     public string Provider
@@ -359,7 +411,9 @@ public sealed class GoogleRealtimeModel : IServerWebSocketRealtimeModel
     /// <inheritdoc />
     public Task<IRealtimeSession> ConnectAsync(CancellationToken cancellationToken)
     {
-        throw new AiSdkException("Gemini Live WebSocket sessions are not opened by this port. Map events with GoogleRealtimeEventMapper instead.");
+        throw new AiSdkException(
+            "Gemini Live WebSocket sessions are not opened by this port. Map events with GoogleRealtimeEventMapper instead."
+        );
     }
 
     /// <summary>
@@ -368,13 +422,19 @@ public sealed class GoogleRealtimeModel : IServerWebSocketRealtimeModel
     /// The token itself lives 30 minutes longer, so the opened session has room to run.
     /// Maps to <c>doCreateClientSecret</c>.
     /// </summary>
-    public async Task<GoogleRealtimeClientSecret> CreateClientSecretAsync(RealtimeModelV4SessionConfig? sessionConfig, int? expiresAfterSeconds, CancellationToken cancellationToken)
+    public async Task<GoogleRealtimeClientSecret> CreateClientSecretAsync(
+        RealtimeModelV4SessionConfig? sessionConfig,
+        int? expiresAfterSeconds,
+        CancellationToken cancellationToken
+    )
     {
         var headers = await _config.Headers(cancellationToken).ConfigureAwait(false);
         var key = GetHeader(headers, "x-goog-api-key");
         if (string.IsNullOrEmpty(key))
         {
-            throw new AiSdkException("Google Generative AI API key is required for realtime token creation.");
+            throw new AiSdkException(
+                "Google Generative AI API key is required for realtime token creation."
+            );
         }
 
         // `newSessionExpireTime` controls how long the token can be used to *open*
@@ -390,23 +450,39 @@ public sealed class GoogleRealtimeModel : IServerWebSocketRealtimeModel
             ["uses"] = 0,
             ["expireTime"] = Iso(newSessionExpireTime.AddMinutes(30)),
             ["newSessionExpireTime"] = Iso(newSessionExpireTime),
-            ["bidiGenerateContentSetup"] = GoogleRealtimeEventMapper.BuildGoogleSessionConfig(sessionConfig, ModelId),
+            ["bidiGenerateContentSetup"] = GoogleRealtimeEventMapper.BuildGoogleSessionConfig(
+                sessionConfig,
+                ModelId
+            ),
         };
         var uri = GoogleSpeechTranslation.LiveBaseUrl(_config.BaseUrl);
         uri.Path = uri.Path.TrimEnd('/') + "/v1alpha/auth_tokens";
         uri.Query = "key=" + Uri.EscapeDataString(key!);
-        var response = await (_config.Http ?? DefaultHttp.Value).SendJsonStringAsync(HttpMethod.Post, uri.Uri, body.ToJsonString(), null, cancellationToken).ConfigureAwait(false);
+        var response = await (_config.Http ?? DefaultHttp.Value)
+            .SendJsonStringAsync(
+                HttpMethod.Post,
+                uri.Uri,
+                body.ToJsonString(),
+                null,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         using var document = JsonDocument.Parse(response.Body);
         long? expiresAt = null;
         if (GoogleJson.String(document.RootElement, "expireTime") is { } expireTime)
         {
-            expiresAt = DateTimeOffset.Parse(expireTime, CultureInfo.InvariantCulture).ToUnixTimeSeconds();
+            expiresAt = DateTimeOffset
+                .Parse(expireTime, CultureInfo.InvariantCulture)
+                .ToUnixTimeSeconds();
         }
 
         return new GoogleRealtimeClientSecret(
             GoogleJson.String(document.RootElement, "name") ?? string.Empty,
-            GoogleSpeechTranslation.LiveWebSocketUrl(_config.BaseUrl, RealtimeWebSocketPath).Uri.ToString(),
-            expiresAt);
+            GoogleSpeechTranslation
+                .LiveWebSocketUrl(_config.BaseUrl, RealtimeWebSocketPath)
+                .Uri.ToString(),
+            expiresAt
+        );
     }
 
     /// <summary>
@@ -415,11 +491,16 @@ public sealed class GoogleRealtimeModel : IServerWebSocketRealtimeModel
     /// </summary>
     public RealtimeModelV4WebSocketConfig GetWebSocketConfig(string token, string url)
     {
-        return new RealtimeModelV4WebSocketConfig(url + "?access_token=" + Uri.EscapeDataString(token));
+        return new RealtimeModelV4WebSocketConfig(
+            url + "?access_token=" + Uri.EscapeDataString(token)
+        );
     }
 
     /// <inheritdoc />
-    public Task<RealtimeModelV4ServerConnection> GetServerWebSocketConfigAsync(RealtimeModelV4SessionIntent? intent, CancellationToken cancellationToken)
+    public Task<RealtimeModelV4ServerConnection> GetServerWebSocketConfigAsync(
+        RealtimeModelV4SessionIntent? intent,
+        CancellationToken cancellationToken
+    )
     {
         // Gemini Live exposes only the conversational endpoint; fail fast instead
         // of silently downgrading unsupported intents.
@@ -444,14 +525,20 @@ public sealed class GoogleRealtimeModel : IServerWebSocketRealtimeModel
     }
 
     /// <summary>Serializes a client event with this model's event mapper.</summary>
-    public JsonObject? SerializeClientEvent(RealtimeModelV4ClientEvent clientEvent, RealtimeModelV4SessionIntent? intent = null)
+    public JsonObject? SerializeClientEvent(
+        RealtimeModelV4ClientEvent clientEvent,
+        RealtimeModelV4SessionIntent? intent = null
+    )
     {
         AssertConversationIntent(intent);
         return _mapper.SerializeClientEvent(clientEvent, ModelId);
     }
 
     /// <summary>Builds the Live <c>setup</c> object for a normalized session config.</summary>
-    public JsonObject BuildSessionConfig(RealtimeModelV4SessionConfig config, RealtimeModelV4SessionIntent? intent = null)
+    public JsonObject BuildSessionConfig(
+        RealtimeModelV4SessionConfig config,
+        RealtimeModelV4SessionIntent? intent = null
+    )
     {
         AssertConversationIntent(intent);
         return GoogleRealtimeEventMapper.BuildGoogleSessionConfig(config, ModelId);
@@ -487,11 +574,15 @@ public sealed class GoogleRealtimeModel : IServerWebSocketRealtimeModel
     {
         if (intent != null && intent != RealtimeModelV4SessionIntent.Conversation)
         {
-            throw new AiSdkException($"Google realtime does not support the '{intent.Value.ToString().ToLowerInvariant()}' session intent.");
+            throw new AiSdkException(
+                $"Google realtime does not support the '{intent.Value.ToString().ToLowerInvariant()}' session intent."
+            );
         }
     }
 
-    private async Task<RealtimeModelV4ServerConnection> ResolveServerConnectionAsync(CancellationToken cancellationToken)
+    private async Task<RealtimeModelV4ServerConnection> ResolveServerConnectionAsync(
+        CancellationToken cancellationToken
+    )
     {
         var headers = await _config.Headers(cancellationToken).ConfigureAwait(false);
         var defined = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -511,27 +602,40 @@ public sealed class GoogleRealtimeModel : IServerWebSocketRealtimeModel
 public static class GoogleServiceCollectionExtensions
 {
     /// <summary>Adds <see cref="GoogleProvider"/>.</summary>
-    public static IServiceCollection AddGoogle(this IServiceCollection services, Action<GoogleOptions>? configure = null)
+    public static IServiceCollection AddGoogle(
+        this IServiceCollection services,
+        Action<GoogleOptions>? configure = null
+    )
     {
         services.AddHttpClient(GoogleProvider.ProviderName);
         services.AddSingleton(sp =>
         {
             var options = new GoogleOptions();
             configure?.Invoke(options);
-            return new GoogleProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(GoogleProvider.ProviderName), options);
+            return new GoogleProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(GoogleProvider.ProviderName),
+                options
+            );
         });
         return services;
     }
 
     /// <summary>Adds <see cref="GoogleVertexProvider"/>.</summary>
-    public static IServiceCollection AddGoogleVertex(this IServiceCollection services, Action<VertexOptions>? configure = null)
+    public static IServiceCollection AddGoogleVertex(
+        this IServiceCollection services,
+        Action<VertexOptions>? configure = null
+    )
     {
         services.AddHttpClient("google-vertex");
         services.AddSingleton(sp =>
         {
             var options = new VertexOptions();
             configure?.Invoke(options);
-            return new GoogleVertexProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient("google-vertex"), options);
+            return new GoogleVertexProvider(
+                sp.GetRequiredService<IHttpClientFactory>().CreateClient("google-vertex"),
+                options
+            );
         });
         return services;
     }

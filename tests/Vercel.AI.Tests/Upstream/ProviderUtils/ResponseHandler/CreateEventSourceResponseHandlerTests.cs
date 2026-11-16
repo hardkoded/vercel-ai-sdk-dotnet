@@ -15,28 +15,40 @@ public sealed class CreateEventSourceResponseHandlerTests
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/response-handler.test.ts::createEventSourceResponseHandler::should preserve context and mark response body socket errors as retryable",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_preserve_context_and_mark_response_body_socket_errors_as_retryable()
     {
         var socketError = new IOException("other side closed");
         var response = new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new FailingContent(Encoding.UTF8.GetBytes("data: {\"value\":\"partial\"}\n\n"), socketError),
+            Content = new FailingContent(
+                Encoding.UTF8.GetBytes("data: {\"value\":\"partial\"}\n\n"),
+                socketError
+            ),
         };
         response.Headers.TryAddWithoutValidation("x-request-id", "request-id");
         var schema = JsonSchemas.Object(
             new[] { new KeyValuePair<string, JsonNode>("value", JsonSchemas.String()) },
-            new[] { "value" });
+            new[] { "value" }
+        );
         var requestBodyValues = new Dictionary<string, string> { ["prompt"] = "test" };
 
-        var result = await ResponseHandlers.CreateEventSourceResponseAsync(response, "test-url", requestBodyValues, schema);
+        var result = await ResponseHandlers.CreateEventSourceResponseAsync(
+            response,
+            "test-url",
+            requestBodyValues,
+            schema
+        );
         var enumerator = result.Value.GetAsyncEnumerator();
 
         Assert.True(await enumerator.MoveNextAsync());
         Assert.True(enumerator.Current.Success);
         Assert.Equal("partial", enumerator.Current.Value!.Value.GetProperty("value").GetString());
 
-        var error = await Assert.ThrowsAsync<ApiException>(async () => await enumerator.MoveNextAsync());
+        var error = await Assert.ThrowsAsync<ApiException>(async () =>
+            await enumerator.MoveNextAsync()
+        );
         Assert.Equal("Failed to process successful response", error.Message);
         Assert.True(error.IsRetryable);
         Assert.Equal(200, error.StatusCode);
@@ -58,9 +70,11 @@ public sealed class CreateEventSourceResponseHandlerTests
             _error = error;
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) => throw new NotSupportedException();
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+            throw new NotSupportedException();
 
-        protected override Task<Stream> CreateContentReadStreamAsync() => Task.FromResult<Stream>(new FailingStream(_first, _error));
+        protected override Task<Stream> CreateContentReadStreamAsync() =>
+            Task.FromResult<Stream>(new FailingStream(_first, _error));
 
         protected override bool TryComputeLength(out long length)
         {
@@ -106,14 +120,14 @@ public sealed class CreateEventSourceResponseHandlerTests
             throw _error;
         }
 
-        public override void Flush()
-        {
-        }
+        public override void Flush() { }
 
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) =>
+            throw new NotSupportedException();
 
         public override void SetLength(long value) => throw new NotSupportedException();
 
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) =>
+            throw new NotSupportedException();
     }
 }

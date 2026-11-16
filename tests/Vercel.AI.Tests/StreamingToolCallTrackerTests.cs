@@ -24,7 +24,9 @@ public sealed class StreamingToolCallTrackerTests
     public void ShouldThrowWhenFunctionNameIsMissing(string absentName)
     {
         var tracker = new StreamingToolCallTracker();
-        var error = Assert.Throws<AiSdkException>(() => tracker.ProcessDelta(Delta(0, "call_1", absentName == "present" ? "fn" : null, null)));
+        var error = Assert.Throws<AiSdkException>(() =>
+            tracker.ProcessDelta(Delta(0, "call_1", absentName == "present" ? "fn" : null, null))
+        );
         Assert.Equal("Expected 'function.name' to be a string.", error.Message);
     }
 
@@ -32,7 +34,9 @@ public sealed class StreamingToolCallTrackerTests
     public void ShouldThrowWhenFunctionNameIsMissingFromANewCall()
     {
         var tracker = new StreamingToolCallTracker();
-        var error = Assert.Throws<AiSdkException>(() => tracker.ProcessDelta(Delta(0, "call_1", null, null)));
+        var error = Assert.Throws<AiSdkException>(() =>
+            tracker.ProcessDelta(Delta(0, "call_1", null, null))
+        );
         Assert.Equal("Expected 'function.name' to be a string.", error.Message);
     }
 
@@ -53,8 +57,13 @@ public sealed class StreamingToolCallTrackerTests
     [InlineData(0, null, "   ")]
     [UpstreamTest(
         "packages/provider-utils/src/streaming-tool-call-tracker.test.ts::StreamingToolCallTracker > processDelta::should retain continuation arguments for a $description",
-        Coverage = UpstreamCoverage.Covered)]
-    public void ShouldRetainContinuationArgumentsForABlankName(int? continuationIndex, string? continuationId, string name)
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void ShouldRetainContinuationArgumentsForABlankName(
+        int? continuationIndex,
+        string? continuationId,
+        string name
+    )
     {
         var tracker = new StreamingToolCallTracker();
         tracker.ProcessDelta(Delta(0, "call_1", "read_file", "{\"pa"));
@@ -66,7 +75,9 @@ public sealed class StreamingToolCallTrackerTests
     [Fact]
     public void ShouldKeepIdLessCallsDistinctWhenAnIndexIsReusedAndTypeIsOmitted()
     {
-        var tracker = new StreamingToolCallTracker(Sequence("generated-1", "generated-2", "generated-3"));
+        var tracker = new StreamingToolCallTracker(
+            Sequence("generated-1", "generated-2", "generated-3")
+        );
         tracker.ProcessDelta(Delta(0, null, "read_file", "{\"path\":\"p0\"}"));
         tracker.ProcessDelta(Delta(0, null, "write_file", "{\"path\":\"p1\"}"));
         tracker.ProcessDelta(Delta(0, null, "read_file", "{\"path\":\"p2\"}"));
@@ -82,7 +93,8 @@ public sealed class StreamingToolCallTrackerTests
     [InlineData("dup")]
     [UpstreamTest(
         "packages/provider-utils/src/streaming-tool-call-tracker.test.ts::StreamingToolCallTracker > processDelta::should keep complete same-name calls distinct with $description and a reused index",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void ShouldKeepCompleteSameNameCallsDistinctWithAReusedIndex(string? id)
     {
         AssertSameNameCallsStayDistinct(id, "{\"value\":2}");
@@ -93,7 +105,8 @@ public sealed class StreamingToolCallTrackerTests
     [InlineData("dup")]
     [UpstreamTest(
         "packages/provider-utils/src/streaming-tool-call-tracker.test.ts::StreamingToolCallTracker > processDelta::should keep a partial same-name call distinct with $description and a reused index",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void ShouldKeepAPartialSameNameCallDistinctWithAReusedIndex(string? id)
     {
         AssertSameNameCallsStayDistinct(id, "{\"value\":");
@@ -306,8 +319,12 @@ public sealed class StreamingToolCallTrackerTests
     [InlineData(null, null)]
     [UpstreamTest(
         "packages/provider-utils/src/streaming-tool-call-tracker.test.ts::StreamingToolCallTracker > processDelta::should keep same-name calls with empty opening arguments distinct when continuations $description",
-        Coverage = UpstreamCoverage.Covered)]
-    public void Should_keep_same_name_calls_with_empty_opening_arguments_distinct_when_continuations_repeat_or_omit_their_ids(string? firstContinuationId, string? secondContinuationId)
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Should_keep_same_name_calls_with_empty_opening_arguments_distinct_when_continuations_repeat_or_omit_their_ids(
+        string? firstContinuationId,
+        string? secondContinuationId
+    )
     {
         var tracker = new StreamingToolCallTracker();
         tracker.ProcessDelta(Delta(0, "call_1", "get_weather", ""));
@@ -326,8 +343,11 @@ public sealed class StreamingToolCallTrackerTests
     [InlineData(" \n")]
     [UpstreamTest(
         "packages/provider-utils/src/streaming-tool-call-tracker.test.ts::StreamingToolCallTracker > processDelta::should retain an incomplete call when its id changes on a named fragment with arguments %j",
-        Coverage = UpstreamCoverage.Covered)]
-    public void Should_retain_an_incomplete_call_when_its_id_changes_on_a_named_fragment(string? argumentsDelta)
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Should_retain_an_incomplete_call_when_its_id_changes_on_a_named_fragment(
+        string? argumentsDelta
+    )
     {
         var tracker = new StreamingToolCallTracker();
         var inputs = new[]
@@ -348,7 +368,8 @@ public sealed class StreamingToolCallTrackerTests
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/streaming-tool-call-tracker.test.ts::StreamingToolCallTracker > processDelta::should use an unlabeled continuation for the only call without complete structured arguments",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_use_an_unlabeled_continuation_for_the_only_call_without_complete_structured_arguments()
     {
         var tracker = new StreamingToolCallTracker();
@@ -372,7 +393,12 @@ public sealed class StreamingToolCallTrackerTests
         Assert.Equal(2, DistinctIds(calls));
     }
 
-    private static StreamingToolCallDelta Delta(int? index, string? id, string? name, string? arguments)
+    private static StreamingToolCallDelta Delta(
+        int? index,
+        string? id,
+        string? name,
+        string? arguments
+    )
     {
         return new StreamingToolCallDelta(index, id, name, arguments);
     }
@@ -383,7 +409,12 @@ public sealed class StreamingToolCallTrackerTests
         return () => queue.Dequeue();
     }
 
-    private static void AssertCall(ToolCallStreamPart call, string id, string name, string arguments)
+    private static void AssertCall(
+        ToolCallStreamPart call,
+        string id,
+        string name,
+        string arguments
+    )
     {
         Assert.Equal(id, call.ToolCallId);
         Assert.Equal(name, call.ToolName);

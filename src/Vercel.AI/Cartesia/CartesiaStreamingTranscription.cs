@@ -26,17 +26,29 @@ public sealed class CartesiaTranscriptionCapabilities
 public static class CartesiaModelCatalog
 {
     /// <summary>Returns the capabilities of a transcription model id. Future ids inherit the streaming protocol.</summary>
-    public static CartesiaTranscriptionCapabilities GetCartesiaTranscriptionModelEntry(string modelId)
+    public static CartesiaTranscriptionCapabilities GetCartesiaTranscriptionModelEntry(
+        string modelId
+    )
     {
         var id = modelId ?? string.Empty;
-        return new CartesiaTranscriptionCapabilities(id != "ink-whisper" && !id.StartsWith("ink-whisper-", StringComparison.Ordinal));
+        return new CartesiaTranscriptionCapabilities(
+            id != "ink-whisper" && !id.StartsWith("ink-whisper-", StringComparison.Ordinal)
+        );
     }
 }
 
 /// <summary>Realtime Ink 2 transcription over the Cartesia WebSocket. Maps to the streaming half of <c>cartesia-transcription-model.ts</c>.</summary>
 internal static class CartesiaStreamingTranscription
 {
-    private static readonly string[] StreamingEncodings = { "pcm_alaw", "pcm_f16le", "pcm_f32le", "pcm_mulaw", "pcm_s16le", "pcm_s32le" };
+    private static readonly string[] StreamingEncodings =
+    {
+        "pcm_alaw",
+        "pcm_f16le",
+        "pcm_f32le",
+        "pcm_mulaw",
+        "pcm_s16le",
+        "pcm_s32le",
+    };
 
     private static readonly string[] G711StreamingEncodings = { "pcm_mulaw", "pcm_alaw" };
 
@@ -48,7 +60,18 @@ internal static class CartesiaStreamingTranscription
         ("turnEndTimeoutMs", "turn_end_timeout_ms"),
     };
 
-    public static async Task<TranscriptionStreamStart> StreamAsync(string modelId, CartesiaProvider provider, TranscriptionStreamCall options, DateTime timestamp, Func<IReadOnlyDictionary<string, string?>, CancellationToken, Task<string>> createStreamingAccessToken, CancellationToken cancellationToken)
+    public static async Task<TranscriptionStreamStart> StreamAsync(
+        string modelId,
+        CartesiaProvider provider,
+        TranscriptionStreamCall options,
+        DateTime timestamp,
+        Func<
+            IReadOnlyDictionary<string, string?>,
+            CancellationToken,
+            Task<string>
+        > createStreamingAccessToken,
+        CancellationToken cancellationToken
+    )
     {
         var warnings = new List<OperationWarning>();
         var cartesia = CartesiaProvider.CartesiaOptions(options.ProviderOptions);
@@ -56,21 +79,49 @@ internal static class CartesiaStreamingTranscription
         var language = CartesiaProvider.ReadString(cartesia, "language");
         if (language is not null && language != "en")
         {
-            throw new InvalidArgumentException("providerOptions", options.ProviderOptions.GetRawText(), "Cartesia Ink 2 currently supports English only.");
+            throw new InvalidArgumentException(
+                "providerOptions",
+                options.ProviderOptions.GetRawText(),
+                "Cartesia Ink 2 currently supports English only."
+            );
         }
 
-        if (cartesia is { } bag && bag.TryGetProperty("timestampGranularities", out var granularities) && granularities.ValueKind != JsonValueKind.Null)
+        if (
+            cartesia is { } bag
+            && bag.TryGetProperty("timestampGranularities", out var granularities)
+            && granularities.ValueKind != JsonValueKind.Null
+        )
         {
-            warnings.Add(OperationWarning.Unsupported("providerOptions.cartesia.timestampGranularities", "Cartesia streaming transcription does not support timestamp granularities."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "providerOptions.cartesia.timestampGranularities",
+                    "Cartesia streaming transcription does not support timestamp granularities."
+                )
+            );
         }
 
         var streaming = Child(cartesia, "streaming");
-        var turnDetection = streaming is { } s && s.TryGetProperty("turnDetection", out var td) && td.ValueKind == JsonValueKind.False ? false : true;
+        var turnDetection =
+            streaming is { } s
+            && s.TryGetProperty("turnDetection", out var td)
+            && td.ValueKind == JsonValueKind.False
+                ? false
+                : true;
         foreach (var (option, _) in TurnThresholdParams)
         {
-            if (!turnDetection && streaming is { } values && values.TryGetProperty(option, out var value) && value.ValueKind != JsonValueKind.Null)
+            if (
+                !turnDetection
+                && streaming is { } values
+                && values.TryGetProperty(option, out var value)
+                && value.ValueKind != JsonValueKind.Null
+            )
             {
-                warnings.Add(OperationWarning.Unsupported("providerOptions.cartesia.streaming." + option, "Turn thresholds require turnDetection to be enabled."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "providerOptions.cartesia.streaming." + option,
+                        "Turn thresholds require turnDetection to be enabled."
+                    )
+                );
             }
         }
 
@@ -79,20 +130,49 @@ internal static class CartesiaStreamingTranscription
         var encoding = CartesiaProvider.ReadString(streaming, "encoding") ?? inferredEncoding;
         // audio/pcm is generic linear PCM, so widening its default 16-bit reading is the intended use of the option.
         // Overriding a G.711 media type (or turning generic PCM into G.711) contradicts the declared format.
-        if (encoding != inferredEncoding && !(inferredEncoding == "pcm_s16le" && Array.IndexOf(G711StreamingEncodings, encoding) < 0))
+        if (
+            encoding != inferredEncoding
+            && !(
+                inferredEncoding == "pcm_s16le"
+                && Array.IndexOf(G711StreamingEncodings, encoding) < 0
+            )
+        )
         {
-            warnings.Add(OperationWarning.Other(
-                "providerOptions.cartesia.streaming.encoding '" + encoding + "' contradicts inputAudioFormat.type '" + options.InputAudioFormat.Type + "' (inferred '" + inferredEncoding + "'); sending '" + encoding + "'."));
+            warnings.Add(
+                OperationWarning.Other(
+                    "providerOptions.cartesia.streaming.encoding '"
+                        + encoding
+                        + "' contradicts inputAudioFormat.type '"
+                        + options.InputAudioFormat.Type
+                        + "' (inferred '"
+                        + inferredEncoding
+                        + "'); sending '"
+                        + encoding
+                        + "'."
+                )
+            );
         }
 
-        var token = await createStreamingAccessToken(options.Headers, cancellationToken).ConfigureAwait(false);
-        var url = BuildCartesiaStreamingTranscriptionUrl(provider.Options.BaseUrl, provider.Version, modelId, encoding, options.InputAudioFormat, cartesia, token, turnDetection, out var requestUrl);
+        var token = await createStreamingAccessToken(options.Headers, cancellationToken)
+            .ConfigureAwait(false);
+        var url = BuildCartesiaStreamingTranscriptionUrl(
+            provider.Options.BaseUrl,
+            provider.Version,
+            modelId,
+            encoding,
+            options.InputAudioFormat,
+            cartesia,
+            token,
+            turnDetection,
+            out var requestUrl
+        );
         var session = new Session(options, warnings, language ?? "en", turnDetection);
         session.Start(url, provider.WebSocket);
         return new TranscriptionStreamStart(
             new ModelPartStream(session.Queue, session.Cancel),
             new ProviderResponse(timestamp: timestamp, modelId: modelId),
-            new ProviderRequest(requestUrl));
+            new ProviderRequest(requestUrl)
+        );
     }
 
     // Maps to cartesiaTranscriptionModelOptionsSchema.
@@ -111,8 +191,16 @@ internal static class CartesiaStreamingTranscription
 
         if (bag.TryGetProperty("timestampGranularities", out var granularities))
         {
-            valid &= granularities.ValueKind == JsonValueKind.Null
-                || (granularities.ValueKind == JsonValueKind.Array && granularities.EnumerateArray().All(entry => entry.ValueKind == JsonValueKind.String && entry.GetString() == "word"));
+            valid &=
+                granularities.ValueKind == JsonValueKind.Null
+                || (
+                    granularities.ValueKind == JsonValueKind.Array
+                    && granularities
+                        .EnumerateArray()
+                        .All(entry =>
+                            entry.ValueKind == JsonValueKind.String && entry.GetString() == "word"
+                        )
+                );
         }
 
         if (bag.TryGetProperty("streaming", out var streaming))
@@ -122,7 +210,11 @@ internal static class CartesiaStreamingTranscription
 
         if (!valid)
         {
-            throw new InvalidArgumentException("providerOptions", bag.GetRawText(), "Invalid cartesia provider options.");
+            throw new InvalidArgumentException(
+                "providerOptions",
+                bag.GetRawText(),
+                "Invalid cartesia provider options."
+            );
         }
     }
 
@@ -133,29 +225,55 @@ internal static class CartesiaStreamingTranscription
             "audio/pcm" => "pcm_s16le",
             "audio/pcmu" => "pcm_mulaw",
             "audio/pcma" => "pcm_alaw",
-            _ => throw new InvalidArgumentException("inputAudioFormat", type, "Unsupported Cartesia streaming audio format: " + type),
+            _ => throw new InvalidArgumentException(
+                "inputAudioFormat",
+                type,
+                "Unsupported Cartesia streaming audio format: " + type
+            ),
         };
     }
 
-    internal static Uri BuildCartesiaStreamingTranscriptionUrl(string baseUrl, string version, string modelId, string encoding, AudioFormat inputAudioFormat, JsonElement? providerOptions, string token, bool useTurnDetection, out string requestUrl)
+    internal static Uri BuildCartesiaStreamingTranscriptionUrl(
+        string baseUrl,
+        string version,
+        string modelId,
+        string encoding,
+        AudioFormat inputAudioFormat,
+        JsonElement? providerOptions,
+        string token,
+        bool useTurnDetection,
+        out string requestUrl
+    )
     {
-        var root = WebSocketUtils.ToWebSocketUrl(new Uri(new Uri(baseUrl), useTurnDetection ? "/stt/turns/websocket" : "/stt/websocket"));
+        var root = WebSocketUtils.ToWebSocketUrl(
+            new Uri(new Uri(baseUrl), useTurnDetection ? "/stt/turns/websocket" : "/stt/websocket")
+        );
         var query = new List<KeyValuePair<string, string>>
         {
             new KeyValuePair<string, string>("model", modelId),
             new KeyValuePair<string, string>("encoding", encoding),
-            new KeyValuePair<string, string>("sample_rate", (inputAudioFormat.Rate ?? 24000).ToString(CultureInfo.InvariantCulture)),
+            new KeyValuePair<string, string>(
+                "sample_rate",
+                (inputAudioFormat.Rate ?? 24000).ToString(CultureInfo.InvariantCulture)
+            ),
             new KeyValuePair<string, string>("cartesia_version", version),
         };
         var tokenIndex = query.Count;
         query.Add(new KeyValuePair<string, string>("access_token", token));
-        if (!useTurnDetection && CartesiaProvider.ReadString(providerOptions, "language") is { } language)
+        if (
+            !useTurnDetection
+            && CartesiaProvider.ReadString(providerOptions, "language") is { } language
+        )
         {
             query.Add(new KeyValuePair<string, string>("language", language));
         }
 
         var streaming = Child(providerOptions, "streaming");
-        if (streaming is { } values && values.TryGetProperty("keyterms", out var keyterms) && keyterms.ValueKind == JsonValueKind.Array)
+        if (
+            streaming is { } values
+            && values.TryGetProperty("keyterms", out var keyterms)
+            && keyterms.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var keyterm in keyterms.EnumerateArray())
             {
@@ -167,16 +285,32 @@ internal static class CartesiaStreamingTranscription
         {
             foreach (var (option, parameter) in TurnThresholdParams)
             {
-                if (thresholds.TryGetProperty(option, out var value) && value.ValueKind == JsonValueKind.Number)
+                if (
+                    thresholds.TryGetProperty(option, out var value)
+                    && value.ValueKind == JsonValueKind.Number
+                )
                 {
-                    query.Add(new KeyValuePair<string, string>(parameter, value.GetDouble().ToString(CultureInfo.InvariantCulture)));
+                    query.Add(
+                        new KeyValuePair<string, string>(
+                            parameter,
+                            value.GetDouble().ToString(CultureInfo.InvariantCulture)
+                        )
+                    );
                 }
             }
         }
 
         string Build(IEnumerable<KeyValuePair<string, string>> pairs)
         {
-            return new UriBuilder(root) { Query = string.Join("&", pairs.Select(pair => Escape(pair.Key) + "=" + Escape(pair.Value))) }.Uri.AbsoluteUri;
+            return new UriBuilder(root)
+            {
+                Query = string.Join(
+                    "&",
+                    pairs.Select(pair => Escape(pair.Key) + "=" + Escape(pair.Value))
+                ),
+            }
+                .Uri
+                .AbsoluteUri;
         }
 
         requestUrl = Build(query.Where((_, index) => index != tokenIndex));
@@ -191,7 +325,12 @@ internal static class CartesiaStreamingTranscription
 
     private static JsonElement? Child(JsonElement? parent, string name)
     {
-        return parent is { } element && element.TryGetProperty(name, out var child) && child.ValueKind == JsonValueKind.Object ? child : (JsonElement?)null;
+        return
+            parent is { } element
+            && element.TryGetProperty(name, out var child)
+            && child.ValueKind == JsonValueKind.Object
+            ? child
+            : (JsonElement?)null;
     }
 
     private static bool IsValidStreaming(JsonElement streaming)
@@ -206,11 +345,16 @@ internal static class CartesiaStreamingTranscription
             var value = property.Value;
             var valid = property.Name switch
             {
-                "encoding" => value.ValueKind == JsonValueKind.String && Array.IndexOf(StreamingEncodings, value.GetString()) >= 0,
+                "encoding" => value.ValueKind == JsonValueKind.String
+                    && Array.IndexOf(StreamingEncodings, value.GetString()) >= 0,
                 "turnDetection" => value.ValueKind is JsonValueKind.True or JsonValueKind.False,
-                "keyterms" => value.ValueKind == JsonValueKind.Array && value.GetArrayLength() <= 100 && value.EnumerateArray().All(entry => entry.ValueKind == JsonValueKind.String),
-                "turnStartThreshold" or "turnEagerEndThreshold" or "turnEndThreshold" => value.ValueKind == JsonValueKind.Number,
-                "turnEndTimeoutMs" => value.ValueKind == JsonValueKind.Number && value.GetDouble() == Math.Floor(value.GetDouble()),
+                "keyterms" => value.ValueKind == JsonValueKind.Array
+                    && value.GetArrayLength() <= 100
+                    && value.EnumerateArray().All(entry => entry.ValueKind == JsonValueKind.String),
+                "turnStartThreshold" or "turnEagerEndThreshold" or "turnEndThreshold" =>
+                    value.ValueKind == JsonValueKind.Number,
+                "turnEndTimeoutMs" => value.ValueKind == JsonValueKind.Number
+                    && value.GetDouble() == Math.Floor(value.GetDouble()),
                 _ => true,
             };
             if (!valid)
@@ -235,7 +379,12 @@ internal static class CartesiaStreamingTranscription
         private bool _finished;
         private double _durationInSeconds;
 
-        public Session(TranscriptionStreamCall options, IReadOnlyList<OperationWarning> warnings, string language, bool useTurnDetection)
+        public Session(
+            TranscriptionStreamCall options,
+            IReadOnlyList<OperationWarning> warnings,
+            string language,
+            bool useTurnDetection
+        )
         {
             _options = options;
             _warnings = warnings;
@@ -258,25 +407,28 @@ internal static class CartesiaStreamingTranscription
 
         public void Start(Uri url, WebSocketFactory? webSocket)
         {
-            _connection = ConnectToWebSocket.Connect(new ConnectToWebSocketOptions
-            {
-                Url = url,
-                WebSocket = webSocket,
-                AbortSignal = _options.CancellationToken,
-                AbortReason = _options.AbortReason,
-                OnAbort = Fail,
-                OnProcessingError = Fail,
-                OnOpen = OnOpen,
-                OnMessageText = OnMessageTextAsync,
-                OnSocketError = () => Fail(new AiSdkException("Cartesia streaming transcription error")),
-                OnClose = (_, _) =>
+            _connection = ConnectToWebSocket.Connect(
+                new ConnectToWebSocketOptions
                 {
-                    if (!IsFinished)
+                    Url = url,
+                    WebSocket = webSocket,
+                    AbortSignal = _options.CancellationToken,
+                    AbortReason = _options.AbortReason,
+                    OnAbort = Fail,
+                    OnProcessingError = Fail,
+                    OnOpen = OnOpen,
+                    OnMessageText = OnMessageTextAsync,
+                    OnSocketError = () =>
+                        Fail(new AiSdkException("Cartesia streaming transcription error")),
+                    OnClose = (_, _) =>
                     {
-                        Finish();
-                    }
-                },
-            });
+                        if (!IsFinished)
+                        {
+                            Finish();
+                        }
+                    },
+                }
+            );
         }
 
         public void Cancel()
@@ -354,14 +506,16 @@ internal static class CartesiaStreamingTranscription
                 return;
             }
 
-            Queue.Enqueue(new ModelStreamPart
-            {
-                Type = "finish",
-                Text = string.Join(_useTurnDetection ? " " : string.Empty, _finalTexts),
-                Segments = new List<TranscriptSegment>(),
-                Language = _language,
-                DurationInSeconds = _durationInSeconds > 0 ? _durationInSeconds : (double?)null,
-            });
+            Queue.Enqueue(
+                new ModelStreamPart
+                {
+                    Type = "finish",
+                    Text = string.Join(_useTurnDetection ? " " : string.Empty, _finalTexts),
+                    Segments = new List<TranscriptSegment>(),
+                    Language = _language,
+                    DurationInSeconds = _durationInSeconds > 0 ? _durationInSeconds : (double?)null,
+                }
+            );
             Queue.Complete(null);
             Cleanup(1000);
         }
@@ -369,7 +523,11 @@ internal static class CartesiaStreamingTranscription
         private void OnOpen(IWebSocketLike socket)
         {
             Queue.Enqueue(new ModelStreamPart { Type = "stream-start", Warnings = _warnings });
-            _ = SendAudioAsync(socket).ContinueWith(task => Fail(task.Exception!.GetBaseException()), TaskContinuationOptions.OnlyOnFaulted);
+            _ = SendAudioAsync(socket)
+                .ContinueWith(
+                    task => Fail(task.Exception!.GetBaseException()),
+                    TaskContinuationOptions.OnlyOnFaulted
+                );
         }
 
         private async Task SendAudioAsync(IWebSocketLike socket)
@@ -384,14 +542,21 @@ internal static class CartesiaStreamingTranscription
             {
                 while (true)
                 {
-                    var bytes = await reader.ReadAsync(_options.CancellationToken).ConfigureAwait(false);
+                    var bytes = await reader
+                        .ReadAsync(_options.CancellationToken)
+                        .ConfigureAwait(false);
                     if (bytes is null || IsFinished)
                     {
                         break;
                     }
 
                     socket.Send(bytes);
-                    await WebSocketUtils.WaitForWebSocketBufferDrainAsync(socket, cancellationToken: _options.CancellationToken).ConfigureAwait(false);
+                    await WebSocketUtils
+                        .WaitForWebSocketBufferDrainAsync(
+                            socket,
+                            cancellationToken: _options.CancellationToken
+                        )
+                        .ConfigureAwait(false);
                 }
             }
             finally
@@ -439,25 +604,58 @@ internal static class CartesiaStreamingTranscription
                 {
                     case "turn.update":
                     case "turn.eager_end":
-                        Queue.Enqueue(new ModelStreamPart { Type = "transcript-partial", Id = id, Text = CartesiaProvider.ReadString(raw, "transcript") ?? string.Empty });
+                        Queue.Enqueue(
+                            new ModelStreamPart
+                            {
+                                Type = "transcript-partial",
+                                Id = id,
+                                Text = CartesiaProvider.ReadString(raw, "transcript")
+                                    ?? string.Empty,
+                            }
+                        );
                         break;
                     case "turn.end":
                         var turn = CartesiaProvider.ReadString(raw, "transcript") ?? string.Empty;
                         _finalTexts.Add(turn);
-                        Queue.Enqueue(new ModelStreamPart { Type = "transcript-final", Id = id, Text = turn });
+                        Queue.Enqueue(
+                            new ModelStreamPart
+                            {
+                                Type = "transcript-final",
+                                Id = id,
+                                Text = turn,
+                            }
+                        );
                         break;
                     case "transcript":
                         var transcript = CartesiaProvider.ReadString(raw, "text") ?? string.Empty;
                         var duration = CartesiaProvider.ReadNumber(raw, "duration");
-                        if (raw.TryGetProperty("is_final", out var isFinal) && isFinal.ValueKind == JsonValueKind.True)
+                        if (
+                            raw.TryGetProperty("is_final", out var isFinal)
+                            && isFinal.ValueKind == JsonValueKind.True
+                        )
                         {
                             _finalTexts.Add(transcript);
                             _durationInSeconds += duration ?? 0;
-                            Queue.Enqueue(new ModelStreamPart { Type = "transcript-final", Id = id, Text = transcript });
+                            Queue.Enqueue(
+                                new ModelStreamPart
+                                {
+                                    Type = "transcript-final",
+                                    Id = id,
+                                    Text = transcript,
+                                }
+                            );
                         }
                         else
                         {
-                            Queue.Enqueue(new ModelStreamPart { Type = "transcript-partial", Id = id, Text = transcript, DurationInSeconds = duration });
+                            Queue.Enqueue(
+                                new ModelStreamPart
+                                {
+                                    Type = "transcript-partial",
+                                    Id = id,
+                                    Text = transcript,
+                                    DurationInSeconds = duration,
+                                }
+                            );
                         }
 
                         break;
@@ -468,7 +666,13 @@ internal static class CartesiaStreamingTranscription
                         Finish();
                         break;
                     case "error":
-                        Fail(new AiSdkException(CartesiaProvider.ReadString(raw, "message") ?? CartesiaProvider.ReadString(raw, "error_code") ?? "Cartesia streaming transcription error"));
+                        Fail(
+                            new AiSdkException(
+                                CartesiaProvider.ReadString(raw, "message")
+                                    ?? CartesiaProvider.ReadString(raw, "error_code")
+                                    ?? "Cartesia streaming transcription error"
+                            )
+                        );
                         break;
                 }
             }

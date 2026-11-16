@@ -25,9 +25,7 @@ public sealed class BasetenProvider : OpenAICompatibleProvider
 
     /// <summary>Creates a provider.</summary>
     public BasetenProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
-        : base(Prepare(options), httpClient)
-    {
-    }
+        : base(Prepare(options), httpClient) { }
 
     /// <inheritdoc />
     public override OpenAICompatibleLanguageModel CreateChatModel(string modelId)
@@ -35,11 +33,16 @@ public sealed class BasetenProvider : OpenAICompatibleProvider
         var url = (Options as BasetenOptions)?.ModelUrl;
         if (!string.IsNullOrEmpty(url) && url!.IndexOf("/predict", StringComparison.Ordinal) >= 0)
         {
-            throw new AiSdkException("Not supported. You must use a /sync/v1 endpoint for chat models.");
+            throw new AiSdkException(
+                "Not supported. You must use a /sync/v1 endpoint for chat models."
+            );
         }
 
-        var deployment = !string.IsNullOrEmpty(url) && url!.IndexOf("/sync/v1", StringComparison.Ordinal) >= 0;
-        var model = base.CreateChatModel(string.IsNullOrEmpty(modelId) ? (deployment ? "placeholder" : "chat") : modelId);
+        var deployment =
+            !string.IsNullOrEmpty(url) && url!.IndexOf("/sync/v1", StringComparison.Ordinal) >= 0;
+        var model = base.CreateChatModel(
+            string.IsNullOrEmpty(modelId) ? (deployment ? "placeholder" : "chat") : modelId
+        );
         if (deployment)
         {
             model.Endpoint = ApiKeys.Combine(url!, "chat/completions");
@@ -54,13 +57,19 @@ public sealed class BasetenProvider : OpenAICompatibleProvider
         var url = (Options as BasetenOptions)?.ModelUrl;
         if (string.IsNullOrEmpty(url))
         {
-            throw new AiSdkException("No model URL provided for embeddings. Please set modelURL option for embeddings.");
+            throw new AiSdkException(
+                "No model URL provided for embeddings. Please set modelURL option for embeddings."
+            );
         }
 
-        if (url!.IndexOf("/sync", StringComparison.Ordinal) < 0
-            || url.IndexOf("/predict", StringComparison.Ordinal) >= 0)
+        if (
+            url!.IndexOf("/sync", StringComparison.Ordinal) < 0
+            || url.IndexOf("/predict", StringComparison.Ordinal) >= 0
+        )
         {
-            throw new AiSdkException("Not supported. You must use a /sync or /sync/v1 endpoint for embeddings.");
+            throw new AiSdkException(
+                "Not supported. You must use a /sync or /sync/v1 endpoint for embeddings."
+            );
         }
 
         var baseUrl = url!;
@@ -69,23 +78,34 @@ public sealed class BasetenProvider : OpenAICompatibleProvider
             baseUrl = baseUrl.TrimEnd('/') + "/v1";
         }
 
-        var model = new OpenAICompatibleEmbeddingModel(this, string.IsNullOrEmpty(modelId) ? "embeddings" : modelId);
+        var model = new OpenAICompatibleEmbeddingModel(
+            this,
+            string.IsNullOrEmpty(modelId) ? "embeddings" : modelId
+        );
         model.Endpoint = ApiKeys.Combine(baseUrl, "embeddings");
         model.MaxEmbeddingsPerCall = 128;
         return model;
     }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static new BasetenProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new BasetenProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new BasetenProvider(client, options);
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
-        if (string.IsNullOrEmpty(options.ProviderName) || options.ProviderName == "openai-compatible")
+        if (
+            string.IsNullOrEmpty(options.ProviderName)
+            || options.ProviderName == "openai-compatible"
+        )
         {
             options.ProviderName = ProviderId;
         }
@@ -112,7 +132,10 @@ public sealed class BasetenProvider : OpenAICompatibleProvider
         options.SupportsStructuredOutputs = true;
         options.MaxEmbeddingsPerCall = 128;
         var modelUrl = (options as BasetenOptions)?.ModelUrl;
-        if (string.IsNullOrEmpty(modelUrl) || modelUrl!.IndexOf("/sync/v1", StringComparison.Ordinal) < 0)
+        if (
+            string.IsNullOrEmpty(modelUrl)
+            || modelUrl!.IndexOf("/sync/v1", StringComparison.Ordinal) < 0
+        )
         {
             options.TransformRequestBody = TransformRequestBody;
         }
@@ -126,22 +149,30 @@ public sealed class BasetenProvider : OpenAICompatibleProvider
     {
         var responseFormat = body["response_format"] as JsonObject;
         var formatType = TextOf(responseFormat?["type"]);
-        if (TextOf(body["model"]) != DeepSeekV4ProModel
+        if (
+            TextOf(body["model"]) != DeepSeekV4ProModel
             || TextOf(body["reasoning_effort"]) == "none"
-            || (formatType != "json_schema" && formatType != "json_object"))
+            || (formatType != "json_schema" && formatType != "json_object")
+        )
         {
             return body;
         }
 
         // With JSON mode enabled, Baseten returns this model's answer as reasoning
         // and leaves content empty. Keep reasoning and prompt for JSON instead.
-        warnings.Add(new CallWarning(
-            "compatibility",
-            "responseFormat",
-            "JSON instructions are injected into the system message and response_format is omitted because Baseten DeepSeek V4 Pro 0813 returns JSON as reasoning when JSON mode and reasoning are combined. The response is not constrained by the server."));
+        warnings.Add(
+            new CallWarning(
+                "compatibility",
+                "responseFormat",
+                "JSON instructions are injected into the system message and response_format is omitted because Baseten DeepSeek V4 Pro 0813 returns JSON as reasoning when JSON mode and reasoning are combined. The response is not constrained by the server."
+            )
+        );
 
         JsonElement? schema = null;
-        if (responseFormat!["json_schema"] is JsonObject jsonSchema && jsonSchema["schema"] is { } schemaNode)
+        if (
+            responseFormat!["json_schema"] is JsonObject jsonSchema
+            && jsonSchema["schema"] is { } schemaNode
+        )
         {
             using var document = JsonDocument.Parse(schemaNode.ToJsonString());
             schema = document.RootElement.Clone();
@@ -155,7 +186,10 @@ public sealed class BasetenProvider : OpenAICompatibleProvider
             new JsonObject
             {
                 ["role"] = "system",
-                ["content"] = Vercel.AI.GenerateText.JsonInstructions.InjectJsonInstruction(null, schema),
+                ["content"] = Vercel.AI.GenerateText.JsonInstructions.InjectJsonInstruction(
+                    null,
+                    schema
+                ),
             },
         };
         foreach (var message in messages)
@@ -184,14 +218,21 @@ public sealed class BasetenOptions : OpenAICompatibleOptions
 public static class BasetenServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddBaseten(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddBaseten(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(BasetenProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new BasetenProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(BasetenProvider.ProviderId), options);
+            return new BasetenProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(BasetenProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

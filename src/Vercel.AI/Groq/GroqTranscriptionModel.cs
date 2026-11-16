@@ -15,18 +15,26 @@ using Vercel.AI.ProviderUtils;
 namespace Vercel.AI.Groq;
 
 /// <summary>Groq speech-to-text model. Maps to <c>GroqTranscriptionModel</c>.</summary>
-public sealed class GroqTranscriptionModel : ITranscriptionModel, ITranscriptionCaller, ITranscriptionUrlCaller
+public sealed class GroqTranscriptionModel
+    : ITranscriptionModel,
+        ITranscriptionCaller,
+        ITranscriptionUrlCaller
 {
     private static readonly Regex RedirectFailure = new Regex(
         @"^failed to retrieve media: received status code: (301|302|303|307|308)\b",
         RegexOptions.CultureInvariant,
-        TimeSpan.FromSeconds(1));
+        TimeSpan.FromSeconds(1)
+    );
 
     private readonly GroqProvider _provider;
     private readonly Func<DateTimeOffset>? _clock;
 
     /// <summary>Creates a transcription model. <paramref name="clock"/> sets the response timestamp and defaults to UTC now.</summary>
-    public GroqTranscriptionModel(GroqProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
+    public GroqTranscriptionModel(
+        GroqProvider provider,
+        string modelId,
+        Func<DateTimeOffset>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -46,29 +54,64 @@ public sealed class GroqTranscriptionModel : ITranscriptionModel, ITranscription
     public bool CanStream => false;
 
     /// <inheritdoc />
-    public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+    public async Task<TranscriptionResult> DoTranscribeAsync(
+        AudioInput audio,
+        CancellationToken cancellationToken
+    )
     {
         audio = audio ?? throw new ArgumentNullException(nameof(audio));
-        var result = await DoGenerateAsync(new TranscriptionModelCall(audio.Data, string.IsNullOrEmpty(audio.MediaType) ? "audio/wav" : audio.MediaType, OperationJson.Parse("{}"), new Dictionary<string, string>(), cancellationToken), cancellationToken).ConfigureAwait(false);
+        var result = await DoGenerateAsync(
+                new TranscriptionModelCall(
+                    audio.Data,
+                    string.IsNullOrEmpty(audio.MediaType) ? "audio/wav" : audio.MediaType,
+                    OperationJson.Parse("{}"),
+                    new Dictionary<string, string>(),
+                    cancellationToken
+                ),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return new TranscriptionResult(result.Text ?? string.Empty);
     }
 
     /// <inheritdoc />
-    public Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
+    public Task<TranscriptionModelResult> DoGenerateAsync(
+        TranscriptionModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
-        return GenerateAsync(call.Audio, call.MediaType, null, call.ProviderOptions, call.Headers, cancellationToken);
+        return GenerateAsync(
+            call.Audio,
+            call.MediaType,
+            null,
+            call.ProviderOptions,
+            call.Headers,
+            cancellationToken
+        );
     }
 
     /// <inheritdoc />
-    public async Task<TranscriptionModelResult?> DoGenerateFromUrlAsync(TranscriptionModelUrlCall call, CancellationToken cancellationToken)
+    public async Task<TranscriptionModelResult?> DoGenerateFromUrlAsync(
+        TranscriptionModelUrlCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         try
         {
-            return await GenerateAsync(null, null, call.Audio, call.ProviderOptions, call.Headers, cancellationToken).ConfigureAwait(false);
+            return await GenerateAsync(
+                    null,
+                    null,
+                    call.Audio,
+                    call.ProviderOptions,
+                    call.Headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
-        catch (ApiException error) when (error.StatusCode == 400 && RedirectFailure.IsMatch(error.Message))
+        catch (ApiException error)
+            when (error.StatusCode == 400 && RedirectFailure.IsMatch(error.Message))
         {
             // Groq does not follow redirects for its URL parameter. Let core use
             // the existing secure local downloader for that specific limitation.
@@ -77,14 +120,21 @@ public sealed class GroqTranscriptionModel : ITranscriptionModel, ITranscription
     }
 
     /// <inheritdoc />
-    public Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+    public Task<TranscriptionStreamStart?> DoStreamAsync(
+        TranscriptionStreamCall call,
+        CancellationToken cancellationToken
+    )
     {
         return Task.FromResult<TranscriptionStreamStart?>(null);
     }
 
     private static JsonElement? GroqObject(JsonElement providerOptions)
     {
-        if (providerOptions.ValueKind == JsonValueKind.Object && providerOptions.TryGetProperty("groq", out var groq) && groq.ValueKind == JsonValueKind.Object)
+        if (
+            providerOptions.ValueKind == JsonValueKind.Object
+            && providerOptions.TryGetProperty("groq", out var groq)
+            && groq.ValueKind == JsonValueKind.Object
+        )
         {
             return groq;
         }
@@ -92,20 +142,36 @@ public sealed class GroqTranscriptionModel : ITranscriptionModel, ITranscription
         return null;
     }
 
-    private static void AddOptionalString(MultipartFormDataContent form, JsonElement groq, string name, string field)
+    private static void AddOptionalString(
+        MultipartFormDataContent form,
+        JsonElement groq,
+        string name,
+        string field
+    )
     {
         if (groq.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null)
         {
             if (value.ValueKind != JsonValueKind.String)
             {
-                throw new InvalidArgumentException("providerOptions", value.GetRawText(), "invalid groq provider options: " + name + " must be a string");
+                throw new InvalidArgumentException(
+                    "providerOptions",
+                    value.GetRawText(),
+                    "invalid groq provider options: " + name + " must be a string"
+                );
             }
 
             form.Add(new StringContent(value.GetString()!), field);
         }
     }
 
-    private async Task<TranscriptionModelResult> GenerateAsync(byte[]? audio, string? mediaType, Uri? audioUrl, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
+    private async Task<TranscriptionModelResult> GenerateAsync(
+        byte[]? audio,
+        string? mediaType,
+        Uri? audioUrl,
+        JsonElement providerOptions,
+        IReadOnlyDictionary<string, string> headers,
+        CancellationToken cancellationToken
+    )
     {
         var timestamp = _clock?.Invoke() ?? DateTimeOffset.UtcNow;
         var warnings = new List<OperationWarning>();
@@ -114,14 +180,28 @@ public sealed class GroqTranscriptionModel : ITranscriptionModel, ITranscription
         form.Add(new StringContent(ModelId), "model");
         if (audioUrl != null)
         {
-            if ((audioUrl.Scheme != Uri.UriSchemeHttps && audioUrl.Scheme != Uri.UriSchemeHttp) || audioUrl.UserInfo.Length != 0)
+            if (
+                (audioUrl.Scheme != Uri.UriSchemeHttps && audioUrl.Scheme != Uri.UriSchemeHttp)
+                || audioUrl.UserInfo.Length != 0
+            )
             {
-                throw new InvalidArgumentException("audio", null, "Groq URL transcription requires an HTTP(S) URL without userinfo.");
+                throw new InvalidArgumentException(
+                    "audio",
+                    null,
+                    "Groq URL transcription requires an HTTP(S) URL without userinfo."
+                );
             }
 
             // Fetch does not send fragments to the audio host. Preserve that behavior
             // without changing the caller's URL object.
-            form.Add(new StringContent(new UriBuilder(audioUrl) { Fragment = string.Empty }.Uri.AbsoluteUri), "url");
+            form.Add(
+                new StringContent(
+                    new UriBuilder(audioUrl) { Fragment = string.Empty }
+                        .Uri
+                        .AbsoluteUri
+                ),
+                "url"
+            );
         }
         else
         {
@@ -136,42 +216,82 @@ public sealed class GroqTranscriptionModel : ITranscriptionModel, ITranscription
             AddOptionalString(form, groq, "language", "language");
             AddOptionalString(form, groq, "prompt", "prompt");
             AddOptionalString(form, groq, "responseFormat", "response_format");
-            if (groq.TryGetProperty("responseFormat", out var format) && format.ValueKind == JsonValueKind.String)
+            if (
+                groq.TryGetProperty("responseFormat", out var format)
+                && format.ValueKind == JsonValueKind.String
+            )
             {
                 responseFormat = format.GetString();
             }
 
-            if (groq.TryGetProperty("temperature", out var temperature) && temperature.ValueKind != JsonValueKind.Null)
+            if (
+                groq.TryGetProperty("temperature", out var temperature)
+                && temperature.ValueKind != JsonValueKind.Null
+            )
             {
-                if (temperature.ValueKind != JsonValueKind.Number || temperature.GetDouble() < 0 || temperature.GetDouble() > 1)
+                if (
+                    temperature.ValueKind != JsonValueKind.Number
+                    || temperature.GetDouble() < 0
+                    || temperature.GetDouble() > 1
+                )
                 {
-                    throw new InvalidArgumentException("providerOptions", temperature.GetRawText(), "invalid groq provider options: temperature must be a number between 0 and 1");
+                    throw new InvalidArgumentException(
+                        "providerOptions",
+                        temperature.GetRawText(),
+                        "invalid groq provider options: temperature must be a number between 0 and 1"
+                    );
                 }
 
-                form.Add(new StringContent(temperature.GetDouble().ToString(CultureInfo.InvariantCulture)), "temperature");
+                form.Add(
+                    new StringContent(
+                        temperature.GetDouble().ToString(CultureInfo.InvariantCulture)
+                    ),
+                    "temperature"
+                );
             }
 
-            if (groq.TryGetProperty("timestampGranularities", out var granularities) && granularities.ValueKind != JsonValueKind.Null)
+            if (
+                groq.TryGetProperty("timestampGranularities", out var granularities)
+                && granularities.ValueKind != JsonValueKind.Null
+            )
             {
                 if (granularities.ValueKind != JsonValueKind.Array)
                 {
-                    throw new InvalidArgumentException("providerOptions", granularities.GetRawText(), "invalid groq provider options: timestampGranularities must be an array of strings");
+                    throw new InvalidArgumentException(
+                        "providerOptions",
+                        granularities.GetRawText(),
+                        "invalid groq provider options: timestampGranularities must be an array of strings"
+                    );
                 }
 
                 foreach (var item in granularities.EnumerateArray())
                 {
-                    form.Add(new StringContent(item.ValueKind == JsonValueKind.String ? item.GetString()! : item.GetRawText()), "timestamp_granularities[]");
+                    form.Add(
+                        new StringContent(
+                            item.ValueKind == JsonValueKind.String
+                                ? item.GetString()!
+                                : item.GetRawText()
+                        ),
+                        "timestamp_granularities[]"
+                    );
                 }
             }
         }
 
-        var requestHeaders = _provider.CreateHeaders(headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value));
-        var response = await _provider.Http.SendBinaryAsync(
-            HttpMethod.Post,
-            _provider.WithQuery(ApiKeys.Combine(_provider.Options.BaseUrl, "audio/transcriptions")),
-            form,
-            requestHeaders,
-            cancellationToken).ConfigureAwait(false);
+        var requestHeaders = _provider.CreateHeaders(
+            headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)
+        );
+        var response = await _provider
+            .Http.SendBinaryAsync(
+                HttpMethod.Post,
+                _provider.WithQuery(
+                    ApiKeys.Combine(_provider.Options.BaseUrl, "audio/transcriptions")
+                ),
+                form,
+                requestHeaders,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var body = Encoding.UTF8.GetString(response.Body);
         string text;
         JsonElement rawBody;
@@ -192,45 +312,89 @@ public sealed class GroqTranscriptionModel : ITranscriptionModel, ITranscription
             }
             catch (JsonException)
             {
-                throw new InvalidResponseDataException(body, "Invalid Groq transcription response: the body is not valid JSON.");
+                throw new InvalidResponseDataException(
+                    body,
+                    "Invalid Groq transcription response: the body is not valid JSON."
+                );
             }
 
             using var parsed = document;
             var root = parsed.RootElement;
             rawBody = root.Clone();
-            if (root.ValueKind != JsonValueKind.Object
-                || !root.TryGetProperty("text", out var textElement) || textElement.ValueKind != JsonValueKind.String
-                || !root.TryGetProperty("x_groq", out var xGroq) || xGroq.ValueKind != JsonValueKind.Object
-                || !xGroq.TryGetProperty("id", out var xId) || xId.ValueKind != JsonValueKind.String)
+            if (
+                root.ValueKind != JsonValueKind.Object
+                || !root.TryGetProperty("text", out var textElement)
+                || textElement.ValueKind != JsonValueKind.String
+                || !root.TryGetProperty("x_groq", out var xGroq)
+                || xGroq.ValueKind != JsonValueKind.Object
+                || !xGroq.TryGetProperty("id", out var xId)
+                || xId.ValueKind != JsonValueKind.String
+            )
             {
-                throw new InvalidResponseDataException(body, "Invalid Groq transcription response: expected text and x_groq.id.");
+                throw new InvalidResponseDataException(
+                    body,
+                    "Invalid Groq transcription response: expected text and x_groq.id."
+                );
             }
 
             text = textElement.GetString()!;
             try
             {
-                if (root.TryGetProperty("segments", out var segmentItems) && segmentItems.ValueKind == JsonValueKind.Array)
+                if (
+                    root.TryGetProperty("segments", out var segmentItems)
+                    && segmentItems.ValueKind == JsonValueKind.Array
+                )
                 {
                     foreach (var segment in segmentItems.EnumerateArray())
                     {
-                        segments.Add(new TranscriptSegment(segment.GetProperty("text").GetString() ?? string.Empty, segment.GetProperty("start").GetDouble(), segment.GetProperty("end").GetDouble()));
+                        segments.Add(
+                            new TranscriptSegment(
+                                segment.GetProperty("text").GetString() ?? string.Empty,
+                                segment.GetProperty("start").GetDouble(),
+                                segment.GetProperty("end").GetDouble()
+                            )
+                        );
                     }
                 }
-                else if (root.TryGetProperty("words", out var wordItems) && wordItems.ValueKind == JsonValueKind.Array)
+                else if (
+                    root.TryGetProperty("words", out var wordItems)
+                    && wordItems.ValueKind == JsonValueKind.Array
+                )
                 {
                     foreach (var word in wordItems.EnumerateArray())
                     {
-                        segments.Add(new TranscriptSegment(word.GetProperty("word").GetString() ?? string.Empty, word.GetProperty("start").GetDouble(), word.GetProperty("end").GetDouble()));
+                        segments.Add(
+                            new TranscriptSegment(
+                                word.GetProperty("word").GetString() ?? string.Empty,
+                                word.GetProperty("start").GetDouble(),
+                                word.GetProperty("end").GetDouble()
+                            )
+                        );
                     }
                 }
             }
-            catch (Exception error) when (error is KeyNotFoundException || error is InvalidOperationException || error is FormatException)
+            catch (Exception error)
+                when (error is KeyNotFoundException
+                    || error is InvalidOperationException
+                    || error is FormatException
+                )
             {
-                throw new InvalidResponseDataException(body, "Invalid Groq transcription response: a segment or word is malformed.");
+                throw new InvalidResponseDataException(
+                    body,
+                    "Invalid Groq transcription response: a segment or word is malformed."
+                );
             }
 
-            language = root.TryGetProperty("language", out var languageElement) && languageElement.ValueKind == JsonValueKind.String ? languageElement.GetString() : null;
-            duration = root.TryGetProperty("duration", out var durationElement) && durationElement.ValueKind == JsonValueKind.Number ? durationElement.GetDouble() : null;
+            language =
+                root.TryGetProperty("language", out var languageElement)
+                && languageElement.ValueKind == JsonValueKind.String
+                    ? languageElement.GetString()
+                    : null;
+            duration =
+                root.TryGetProperty("duration", out var durationElement)
+                && durationElement.ValueKind == JsonValueKind.Number
+                    ? durationElement.GetDouble()
+                    : null;
         }
 
         return new TranscriptionModelResult(
@@ -240,6 +404,12 @@ public sealed class GroqTranscriptionModel : ITranscriptionModel, ITranscription
             duration,
             warnings,
             null,
-            new ProviderResponse(response.Headers, rawBody, timestamp: timestamp.UtcDateTime, modelId: ModelId));
+            new ProviderResponse(
+                response.Headers,
+                rawBody,
+                timestamp: timestamp.UtcDateTime,
+                modelId: ModelId
+            )
+        );
     }
 }

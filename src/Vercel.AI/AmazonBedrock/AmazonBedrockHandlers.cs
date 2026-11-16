@@ -22,7 +22,10 @@ internal sealed class HttpClientMessageHandler : HttpMessageHandler
         _client = client ?? throw new ArgumentNullException(nameof(client));
     }
 
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         // A request can be sent once, so the inner client gets a copy that shares the content.
         var copy = new HttpRequestMessage(request.Method, request.RequestUri)
@@ -63,7 +66,8 @@ internal sealed class AmazonBedrockSigningHandler : DelegatingHandler
         string? secretAccessKey,
         string? sessionToken,
         Func<DateTimeOffset>? utcNow,
-        Func<CancellationToken, Task<AmazonBedrockCredentials>>? credentialProvider = null)
+        Func<CancellationToken, Task<AmazonBedrockCredentials>>? credentialProvider = null
+    )
         : base(inner)
     {
         _credentialProvider = credentialProvider;
@@ -76,11 +80,15 @@ internal sealed class AmazonBedrockSigningHandler : DelegatingHandler
         _utcNow = utcNow;
     }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
-        var payload = request.Content == null
-            ? Array.Empty<byte>()
-            : await request.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+        var payload =
+            request.Content == null
+                ? Array.Empty<byte>()
+                : await request.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
         request.Headers.Remove("Authorization");
         var accessKeyId = _accessKeyId;
         var secretAccessKey = _secretAccessKey;
@@ -95,7 +103,12 @@ internal sealed class AmazonBedrockSigningHandler : DelegatingHandler
             }
             catch (Exception exception) when (!(exception is OperationCanceledException))
             {
-                throw new AiSdkException("AWS credential provider failed: " + exception.Message + ". Please ensure your credential provider returns valid AWS credentials with accessKeyId and secretAccessKey properties.", exception);
+                throw new AiSdkException(
+                    "AWS credential provider failed: "
+                        + exception.Message
+                        + ". Please ensure your credential provider returns valid AWS credentials with accessKeyId and secretAccessKey properties.",
+                    exception
+                );
             }
 
             accessKeyId = credentials.AccessKeyId;
@@ -112,7 +125,8 @@ internal sealed class AmazonBedrockSigningHandler : DelegatingHandler
             accessKeyId,
             secretAccessKey,
             sessionToken,
-            _utcNow?.Invoke() ?? DateTimeOffset.UtcNow);
+            _utcNow?.Invoke() ?? DateTimeOffset.UtcNow
+        );
         return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
     }
 }
@@ -127,20 +141,26 @@ public static class AmazonBedrockAnthropicFetch
     /// <summary>Wraps <paramref name="baseHandler"/>. Disposing the result disposes <paramref name="baseHandler"/>.</summary>
     public static DelegatingHandler Create(HttpMessageHandler baseHandler)
     {
-        return new AmazonBedrockAnthropicResponseHandler(baseHandler ?? throw new ArgumentNullException(nameof(baseHandler)));
+        return new AmazonBedrockAnthropicResponseHandler(
+            baseHandler ?? throw new ArgumentNullException(nameof(baseHandler))
+        );
     }
 }
 
 internal sealed class AmazonBedrockAnthropicResponseHandler : DelegatingHandler
 {
-    private static readonly JsonSerializerOptions Compact = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    private static readonly JsonSerializerOptions Compact = new()
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     public AmazonBedrockAnthropicResponseHandler(HttpMessageHandler inner)
-        : base(inner)
-    {
-    }
+        : base(inner) { }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
         try
@@ -148,23 +168,37 @@ internal sealed class AmazonBedrockAnthropicResponseHandler : DelegatingHandler
             // Bedrock errors become the Anthropic { type: error, error } shape so the model can read the message.
             if (!response.IsSuccessStatusCode)
             {
-                var text = response.Content == null
-                    ? string.Empty
-                    : await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var text =
+                    response.Content == null
+                        ? string.Empty
+                        : await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 var failed = CopyStatus(response);
-                failed.Content = new StringContent(AmazonBedrockAnthropicRequests.ToAnthropicErrorBody(text), Encoding.UTF8, "application/json");
+                failed.Content = new StringContent(
+                    AmazonBedrockAnthropicRequests.ToAnthropicErrorBody(text),
+                    Encoding.UTF8,
+                    "application/json"
+                );
                 response.Dispose();
                 return failed;
             }
 
             var contentType = response.Content?.Headers.ContentType?.ToString();
-            if (contentType != null
-                && contentType.IndexOf("application/vnd.amazon.eventstream", StringComparison.OrdinalIgnoreCase) >= 0)
+            if (
+                contentType != null
+                && contentType.IndexOf(
+                    "application/vnd.amazon.eventstream",
+                    StringComparison.OrdinalIgnoreCase
+                ) >= 0
+            )
             {
                 var source = await response.Content!.ReadAsStreamAsync().ConfigureAwait(false);
                 var transformed = CopyStatus(response);
-                transformed.Content = new StreamContent(new EventStreamSseStream(source, response, ProcessEvent));
-                transformed.Content.Headers.ContentType = new MediaTypeHeaderValue("text/event-stream");
+                transformed.Content = new StreamContent(
+                    new EventStreamSseStream(source, response, ProcessEvent)
+                );
+                transformed.Content.Headers.ContentType = new MediaTypeHeaderValue(
+                    "text/event-stream"
+                );
                 return transformed;
             }
 
@@ -224,10 +258,12 @@ internal sealed class AmazonBedrockAnthropicResponseHandler : DelegatingHandler
             return data;
         }
 
-        if (parsed is JsonObject chunk
+        if (
+            parsed is JsonObject chunk
             && chunk["bytes"] is JsonValue bytes
             && bytes.TryGetValue<string>(out var encoded)
-            && encoded.Length > 0)
+            && encoded.Length > 0
+        )
         {
             return Encoding.UTF8.GetString(Convert.FromBase64String(encoded));
         }
@@ -248,17 +284,17 @@ internal sealed class AmazonBedrockAnthropicResponseHandler : DelegatingHandler
         }
 
         var message = decoded.Data;
-        if (data is JsonObject fields && fields["message"] is JsonValue value && value.TryGetValue<string>(out var text))
+        if (
+            data is JsonObject fields
+            && fields["message"] is JsonValue value
+            && value.TryGetValue<string>(out var text)
+        )
         {
             message = text;
         }
 
         var type = decoded.EventType ?? decoded.ExceptionType ?? "error";
-        var error = new JsonObject
-        {
-            ["type"] = type,
-            ["message"] = message,
-        };
+        var error = new JsonObject { ["type"] = type, ["message"] = message };
         var (statusCode, isRetryable) = AmazonBedrockStreamError.Metadata(type);
         if (statusCode != null)
         {
@@ -290,7 +326,11 @@ internal sealed class EventStreamSseStream : Stream
     private byte[] _pending = Array.Empty<byte>();
     private int _offset;
 
-    public EventStreamSseStream(Stream source, HttpResponseMessage response, Action<DecodedEvent, Action<byte[]>> process)
+    public EventStreamSseStream(
+        Stream source,
+        HttpResponseMessage response,
+        Action<DecodedEvent, Action<byte[]>> process
+    )
     {
         _source = source;
         _response = response;
@@ -311,11 +351,18 @@ internal sealed class EventStreamSseStream : Stream
         set => throw new NotSupportedException();
     }
 
-    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    public override async Task<int> ReadAsync(
+        byte[] buffer,
+        int offset,
+        int count,
+        CancellationToken cancellationToken
+    )
     {
         if (_offset >= _pending.Length)
         {
-            _events ??= AmazonBedrockEventStreamDecoder.Create(_source, _process, cancellationToken).GetAsyncEnumerator(cancellationToken);
+            _events ??= AmazonBedrockEventStreamDecoder
+                .Create(_source, _process, cancellationToken)
+                .GetAsyncEnumerator(cancellationToken);
             if (!await _events.MoveNextAsync().ConfigureAwait(false))
             {
                 return 0;
@@ -336,15 +383,14 @@ internal sealed class EventStreamSseStream : Stream
         throw new NotSupportedException("Read the Bedrock event stream asynchronously.");
     }
 
-    public override void Flush()
-    {
-    }
+    public override void Flush() { }
 
     public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 
     public override void SetLength(long value) => throw new NotSupportedException();
 
-    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    public override void Write(byte[] buffer, int offset, int count) =>
+        throw new NotSupportedException();
 
     protected override void Dispose(bool disposing)
     {

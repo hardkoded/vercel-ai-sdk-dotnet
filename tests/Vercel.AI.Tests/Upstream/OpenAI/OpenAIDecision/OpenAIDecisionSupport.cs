@@ -18,20 +18,34 @@ internal static class OpenAIDecisionSupport
 
     internal static List<object?> State()
     {
-        return new List<object?> { new Dictionary<string, object?> { ["type"] = "text", ["text"] = StateText } };
+        return new List<object?>
+        {
+            new Dictionary<string, object?> { ["type"] = "text", ["text"] = StateText },
+        };
     }
 
     internal static JsonObject Fixture(string name = "decision.json")
     {
-        return (JsonObject)JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", name)))!;
+        return (JsonObject)
+            JsonNode.Parse(
+                File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", name))
+            )!;
     }
 
     internal static Dictionary<string, DecisionQuestion> Questions()
     {
         return new Dictionary<string, DecisionQuestion>
         {
-            ["department"] = Q("choice", "Pick the team.", new Dictionary<string, object?> { ["technical"] = "Bugs", ["billing"] = "Charges" }),
-            ["severity"] = Q("score", "Rate severity.", new List<object?> { "Low", "Medium", "High" }),
+            ["department"] = Q(
+                "choice",
+                "Pick the team.",
+                new Dictionary<string, object?> { ["technical"] = "Bugs", ["billing"] = "Charges" }
+            ),
+            ["severity"] = Q(
+                "score",
+                "Rate severity.",
+                new List<object?> { "Low", "Medium", "High" }
+            ),
             ["refund"] = Q("boolean", "Is a refund requested?"),
         };
     }
@@ -43,7 +57,8 @@ internal static class OpenAIDecisionSupport
         IReadOnlyDictionary<string, string>? headers = null,
         CancellationToken cancellationToken = default,
         double? maxOutputTokens = null,
-        string? reasoning = null)
+        string? reasoning = null
+    )
     {
         using var document = JsonDocument.Parse(providerOptions);
         return new DecisionModelCall(
@@ -53,10 +68,14 @@ internal static class OpenAIDecisionSupport
             headers ?? new Dictionary<string, string>(),
             cancellationToken,
             maxOutputTokens,
-            reasoning);
+            reasoning
+        );
     }
 
-    internal static (OpenAIDecisionModel Model, OpenAICapture Capture) Setup(JsonNode? body = null, HttpStatusCode status = HttpStatusCode.OK)
+    internal static (OpenAIDecisionModel Model, OpenAICapture Capture) Setup(
+        JsonNode? body = null,
+        HttpStatusCode status = HttpStatusCode.OK
+    )
     {
         var capture = new OpenAICapture
         {
@@ -82,7 +101,14 @@ internal static class OpenAIDecisionSupport
         return (JsonObject)JsonNode.Parse(capture.Body)!;
     }
 
-    internal static void AssertAnswer(DecisionAnswer answer, string type, string? choice = null, double? score = null, double? probability = null, params (string Key, double Value)[] probabilities)
+    internal static void AssertAnswer(
+        DecisionAnswer answer,
+        string type,
+        string? choice = null,
+        double? score = null,
+        double? probability = null,
+        params (string Key, double Value)[] probabilities
+    )
     {
         Assert.Equal(type, answer.Type);
         Assert.Equal(choice, answer.Choice);
@@ -94,7 +120,10 @@ internal static class OpenAIDecisionSupport
             return;
         }
 
-        Assert.Equal(probabilities.ToDictionary(pair => pair.Key, pair => pair.Value), answer.Probabilities);
+        Assert.Equal(
+            probabilities.ToDictionary(pair => pair.Key, pair => pair.Value),
+            answer.Probabilities
+        );
     }
 
     /// <summary>Converts parsed JSON into the values <see cref="DecisionQuestion"/> accepts.</summary>

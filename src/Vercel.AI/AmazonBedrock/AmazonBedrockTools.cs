@@ -15,7 +15,12 @@ public static class AmazonBedrockTools
     /// Prepares function tools. An empty or missing list returns an empty object.
     /// Tool choice <c>none</c> clears the tools. A named choice keeps only that tool.
     /// </summary>
-    public static JsonObject Prepare(string modelId, IReadOnlyList<LanguageModelTool>? tools, ToolChoice? toolChoice, out List<CallWarning> warnings)
+    public static JsonObject Prepare(
+        string modelId,
+        IReadOnlyList<LanguageModelTool>? tools,
+        ToolChoice? toolChoice,
+        out List<CallWarning> warnings
+    )
     {
         warnings = new List<CallWarning>();
         if (tools == null || tools.Count == 0 || toolChoice is { Type: "none" })
@@ -26,7 +31,10 @@ public static class AmazonBedrockTools
         var selected = new List<LanguageModelTool>();
         foreach (var tool in tools)
         {
-            if (toolChoice is ToolChoice.NamedChoice named && !string.Equals(tool.Name, named.ToolName, StringComparison.Ordinal))
+            if (
+                toolChoice is ToolChoice.NamedChoice named
+                && !string.Equals(tool.Name, named.ToolName, StringComparison.Ordinal)
+            )
             {
                 continue;
             }
@@ -50,18 +58,28 @@ public static class AmazonBedrockTools
                 {
                     if (tool.Strict.Value)
                     {
-                        warnings.Add(new CallWarning(
-                            "unsupported",
-                            "strict",
-                            "Tool '" + tool.Name + "' has strict: true, but strict mode is not supported by this model on Amazon Bedrock. The strict property will be ignored."));
+                        warnings.Add(
+                            new CallWarning(
+                                "unsupported",
+                                "strict",
+                                "Tool '"
+                                    + tool.Name
+                                    + "' has strict: true, but strict mode is not supported by this model on Amazon Bedrock. The strict property will be ignored."
+                            )
+                        );
                     }
                 }
                 else if (tool.Strict.Value && !IsStrictSchemaCompatible(tool.InputSchema))
                 {
-                    warnings.Add(new CallWarning(
-                        "unsupported",
-                        "strict",
-                        "Tool '" + tool.Name + "' has strict: true, but Amazon Bedrock requires every object in a strict tool schema to set additionalProperties: false. The strict property will be ignored."));
+                    warnings.Add(
+                        new CallWarning(
+                            "unsupported",
+                            "strict",
+                            "Tool '"
+                                + tool.Name
+                                + "' has strict: true, but Amazon Bedrock requires every object in a strict tool schema to set additionalProperties: false. The strict property will be ignored."
+                        )
+                    );
                 }
                 else
                 {
@@ -80,7 +98,10 @@ public static class AmazonBedrockTools
                 spec["strict"] = tool.Strict!.Value;
             }
 
-            spec["inputSchema"] = new JsonObject { ["json"] = JsonNode.Parse(tool.InputSchema.GetRawText()) };
+            spec["inputSchema"] = new JsonObject
+            {
+                ["json"] = JsonNode.Parse(tool.InputSchema.GetRawText()),
+            };
             prepared.Add(new JsonObject { ["toolSpec"] = spec });
         }
 
@@ -114,8 +135,13 @@ public static class AmazonBedrockTools
             return true;
         }
 
-        if (IsObjectType(schema)
-            && (!schema.TryGetProperty("additionalProperties", out var additional) || additional.ValueKind != JsonValueKind.False))
+        if (
+            IsObjectType(schema)
+            && (
+                !schema.TryGetProperty("additionalProperties", out var additional)
+                || additional.ValueKind != JsonValueKind.False
+            )
+        )
         {
             return false;
         }
@@ -154,7 +180,10 @@ public static class AmazonBedrockTools
 
         foreach (var name in new[] { "anyOf", "allOf", "oneOf" })
         {
-            if (schema.TryGetProperty(name, out var alternatives) && alternatives.ValueKind == JsonValueKind.Array)
+            if (
+                schema.TryGetProperty(name, out var alternatives)
+                && alternatives.ValueKind == JsonValueKind.Array
+            )
             {
                 foreach (var alternative in alternatives.EnumerateArray())
                 {

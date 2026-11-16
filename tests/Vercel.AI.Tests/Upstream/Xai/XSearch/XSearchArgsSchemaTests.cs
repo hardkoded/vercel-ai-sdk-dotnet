@@ -18,7 +18,10 @@ public sealed class XSearchArgsSchemaTests
     [UpstreamTest(Prefix + "accepts 20 %s", Coverage = UpstreamCoverage.Covered)]
     public void Accepts_20(string field)
     {
-        var result = JsonParsing.SafeValidateTypes(Handles(field, 20), XaiResponsesTools.XSearchArgsSchema);
+        var result = JsonParsing.SafeValidateTypes(
+            Handles(field, 20),
+            XaiResponsesTools.XSearchArgsSchema
+        );
 
         Assert.True(result.Success);
     }
@@ -29,14 +32,20 @@ public sealed class XSearchArgsSchemaTests
     [UpstreamTest(Prefix + "rejects 21 %s", Coverage = UpstreamCoverage.Covered)]
     public void Rejects_21(string field)
     {
-        var result = JsonParsing.SafeValidateTypes(Handles(field, 21), XaiResponsesTools.XSearchArgsSchema);
+        var result = JsonParsing.SafeValidateTypes(
+            Handles(field, 21),
+            XaiResponsesTools.XSearchArgsSchema
+        );
 
         Assert.False(result.Success);
     }
 
     private static System.Text.Json.JsonElement Handles(string field, int count)
     {
-        var handles = string.Join(",", Enumerable.Range(0, count).Select(i => "\"handle" + i + "\""));
+        var handles = string.Join(
+            ",",
+            Enumerable.Range(0, count).Select(i => "\"handle" + i + "\"")
+        );
         return UpstreamChat.Json("{\"" + field + "\":[" + handles + "]}");
     }
 }

@@ -12,7 +12,10 @@ internal static class LiveStreamAssertions
     private static readonly TimeSpan Wait = TimeSpan.FromSeconds(10);
 
     /// <summary>Opens the stream, takes parts until one matches, and checks the response body is still open.</summary>
-    public static async Task<LanguageModelStreamPart> NextAsync(IAsyncEnumerator<LanguageModelStreamPart> parts, Func<LanguageModelStreamPart, bool> match)
+    public static async Task<LanguageModelStreamPart> NextAsync(
+        IAsyncEnumerator<LanguageModelStreamPart> parts,
+        Func<LanguageModelStreamPart, bool> match
+    )
     {
         while (await parts.MoveNextAsync().AsTask().WaitAsync(Wait))
         {
@@ -25,7 +28,9 @@ internal static class LiveStreamAssertions
         throw new Xunit.Sdk.XunitException("The stream ended before the expected part arrived.");
     }
 
-    public static async Task<List<LanguageModelStreamPart>> DrainAsync(IAsyncEnumerator<LanguageModelStreamPart> parts)
+    public static async Task<List<LanguageModelStreamPart>> DrainAsync(
+        IAsyncEnumerator<LanguageModelStreamPart> parts
+    )
     {
         var all = new List<LanguageModelStreamPart>();
         while (await parts.MoveNextAsync().AsTask().WaitAsync(Wait))
@@ -42,7 +47,8 @@ internal static class LiveStreamAssertions
         Func<Task<LanguageModelStreamResult>> open,
         Action first,
         Action<string> check,
-        Action rest)
+        Action rest
+    )
     {
         first();
         var result = await open().WaitAsync(Wait);
@@ -60,7 +66,8 @@ internal static class LiveStreamAssertions
         GatedStream body,
         Func<Task<LanguageModelStreamResult>> open,
         Action first,
-        Action later)
+        Action later
+    )
     {
         first();
         var result = await open().WaitAsync(Wait);
@@ -77,7 +84,8 @@ internal static class LiveStreamAssertions
     public static async Task CancellingTheTokenStopsTheReadAsync(
         GatedStream body,
         Func<CancellationToken, Task<LanguageModelStreamResult>> open,
-        Action first)
+        Action first
+    )
     {
         using var cancellation = new CancellationTokenSource();
         first();

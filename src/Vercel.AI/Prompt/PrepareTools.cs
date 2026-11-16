@@ -109,7 +109,8 @@ public static class PromptTools
         IReadOnlyDictionary<string, PromptTool>? tools,
         IReadOnlyList<string>? toolOrder = null,
         IReadOnlyDictionary<string, object?>? toolsContext = null,
-        string? sandboxDescription = null)
+        string? sandboxDescription = null
+    )
     {
         if (tools is null || tools.Count == 0)
         {
@@ -122,15 +123,17 @@ public static class PromptTools
             var tool = pair.Value;
             if (string.Equals(tool.Type, "provider", StringComparison.Ordinal))
             {
-                prepared.Add(new PreparedTool("provider", pair.Key)
-                {
-                    Id = tool.Id,
-                    Args = tool.Args,
-                });
+                prepared.Add(
+                    new PreparedTool("provider", pair.Key) { Id = tool.Id, Args = tool.Args }
+                );
                 continue;
             }
 
-            if (tool.Type != null && !string.Equals(tool.Type, "function", StringComparison.Ordinal) && !string.Equals(tool.Type, "dynamic", StringComparison.Ordinal))
+            if (
+                tool.Type != null
+                && !string.Equals(tool.Type, "function", StringComparison.Ordinal)
+                && !string.Equals(tool.Type, "dynamic", StringComparison.Ordinal)
+            )
             {
                 throw new InvalidOperationException("Unsupported tool type: " + tool.Type);
             }
@@ -144,23 +147,30 @@ public static class PromptTools
             string? description = tool.Description;
             if (tool.DescriptionFactory != null)
             {
-                description = tool.DescriptionFactory(new ToolDescriptionContext(context, sandboxDescription));
+                description = tool.DescriptionFactory(
+                    new ToolDescriptionContext(context, sandboxDescription)
+                );
             }
 
-            prepared.Add(new PreparedTool("function", pair.Key)
-            {
-                Description = description,
-                InputSchema = tool.InputSchema,
-                Strict = tool.Strict,
-                ProviderOptions = tool.ProviderOptions,
-                InputExamples = tool.InputExamples,
-            });
+            prepared.Add(
+                new PreparedTool("function", pair.Key)
+                {
+                    Description = description,
+                    InputSchema = tool.InputSchema,
+                    Strict = tool.Strict,
+                    ProviderOptions = tool.ProviderOptions,
+                    InputExamples = tool.InputExamples,
+                }
+            );
         }
 
         return prepared;
     }
 
-    private static List<KeyValuePair<string, PromptTool>> Order(IReadOnlyDictionary<string, PromptTool> tools, IReadOnlyList<string>? toolOrder)
+    private static List<KeyValuePair<string, PromptTool>> Order(
+        IReadOnlyDictionary<string, PromptTool> tools,
+        IReadOnlyList<string>? toolOrder
+    )
     {
         var entries = new List<KeyValuePair<string, PromptTool>>();
         foreach (var pair in tools)
@@ -182,7 +192,9 @@ public static class PromptTools
             }
         }
 
-        ordered.Sort((left, right) => IndexOf(toolOrder, left.Key).CompareTo(IndexOf(toolOrder, right.Key)));
+        ordered.Sort(
+            (left, right) => IndexOf(toolOrder, left.Key).CompareTo(IndexOf(toolOrder, right.Key))
+        );
         var rest = new List<KeyValuePair<string, PromptTool>>();
         foreach (var pair in entries)
         {

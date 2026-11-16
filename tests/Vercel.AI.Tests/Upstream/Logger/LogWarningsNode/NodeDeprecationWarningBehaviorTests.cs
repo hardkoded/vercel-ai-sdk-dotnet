@@ -12,14 +12,22 @@ namespace Vercel.AI.Tests.Upstream.Logger.LogWarningsNode;
 public sealed class NodeDeprecationWarningBehaviorTests
 {
     [Fact]
-    [UpstreamTest("packages/ai/src/logger/log-warnings.node.test.ts::Node deprecation warning behavior::emits a coded warning event and prints the deprecation only once", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/logger/log-warnings.node.test.ts::Node deprecation warning behavior::emits a coded warning event and prints the deprecation only once",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Emits_a_coded_warning_event_and_prints_the_deprecation_only_once()
     {
         using var log = new LogWarningsRecorder();
-        var options = new LogWarningsOptions(new ModelWarning[]
-        {
-            new DeprecatedWarning("generateObject", "Use generateText with an output setting instead."),
-        });
+        var options = new LogWarningsOptions(
+            new ModelWarning[]
+            {
+                new DeprecatedWarning(
+                    "generateObject",
+                    "Use generateText with an output setting instead."
+                ),
+            }
+        );
 
         WarningLog.Log(options);
         WarningLog.Log(options);

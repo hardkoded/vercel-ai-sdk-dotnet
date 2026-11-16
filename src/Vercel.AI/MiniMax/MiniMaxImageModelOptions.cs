@@ -13,7 +13,8 @@ public sealed class MiniMaxImageModelOptions
     public static IReadOnlyList<string> MiniMaxImageAreas { get; } = new[] { "1K", "2K", "4K" };
 
     /// <summary>Output formats accepted by <see cref="OutputFormat"/>.</summary>
-    public static IReadOnlyList<string> MiniMaxImageOutputFormats { get; } = new[] { "jpeg", "jpg", "png", "webp" };
+    public static IReadOnlyList<string> MiniMaxImageOutputFormats { get; } =
+        new[] { "jpeg", "jpg", "png", "webp" };
 
     /// <summary>Output area when a pixel size is not supplied: <c>1K</c>, <c>2K</c>, or <c>4K</c>. Defaults to 4K.</summary>
     [JsonPropertyName("area")]

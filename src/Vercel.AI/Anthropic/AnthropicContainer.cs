@@ -23,9 +23,13 @@ public static class AnthropicContainer
 
         for (var i = steps.Count - 1; i >= 0; i--)
         {
-            if (steps[i].ProviderMetadata is not { ValueKind: JsonValueKind.Object } metadata
-                || !metadata.TryGetProperty("anthropic", out var anthropic) || anthropic.ValueKind != JsonValueKind.Object
-                || !anthropic.TryGetProperty("container", out var container) || container.ValueKind != JsonValueKind.Object)
+            if (
+                steps[i].ProviderMetadata is not { ValueKind: JsonValueKind.Object } metadata
+                || !metadata.TryGetProperty("anthropic", out var anthropic)
+                || anthropic.ValueKind != JsonValueKind.Object
+                || !anthropic.TryGetProperty("container", out var container)
+                || container.ValueKind != JsonValueKind.Object
+            )
             {
                 continue;
             }
@@ -36,10 +40,15 @@ public static class AnthropicContainer
                 continue;
             }
 
-            using var options = JsonDocument.Parse("{\"container\":{\"id\":" + JsonSerializer.Serialize(id) + "}}");
+            using var options = JsonDocument.Parse(
+                "{\"container\":{\"id\":" + JsonSerializer.Serialize(id) + "}}"
+            );
             return new PrepareStepUpdate
             {
-                ProviderOptions = new Dictionary<string, JsonElement> { ["anthropic"] = options.RootElement.Clone() },
+                ProviderOptions = new Dictionary<string, JsonElement>
+                {
+                    ["anthropic"] = options.RootElement.Clone(),
+                },
             };
         }
 

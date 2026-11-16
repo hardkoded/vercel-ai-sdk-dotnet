@@ -176,7 +176,8 @@ public static class ToolOutputs
         object? output,
         bool hasOutput,
         Func<ToolModelOutputCall, ToolModelOutput>? toModelOutput,
-        string errorMode)
+        string errorMode
+    )
     {
         var value = hasOutput ? output : null;
         if (string.Equals(errorMode, "text", StringComparison.Ordinal))

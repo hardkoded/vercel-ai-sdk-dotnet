@@ -16,11 +16,16 @@ namespace Vercel.AI.Tests.Upstream.GenerateText.StreamText;
 /// <summary>Port of <c>stream-text.test.ts</c> &gt; <c>streamText &gt; tool execution errors</c>. Only the UI message stream tests are ported here.</summary>
 public sealed class ToolExecutionErrorsTests
 {
-    private const string Prefix = "packages/ai/src/generate-text/stream-text.test.ts::streamText > tool execution errors::";
-    private const string RedactPrefix = "packages/ai/src/generate-text/stream-text.test.ts::streamText > tool execution errors > redactToolErrors: true::";
+    private const string Prefix =
+        "packages/ai/src/generate-text/stream-text.test.ts::streamText > tool execution errors::";
+    private const string RedactPrefix =
+        "packages/ai/src/generate-text/stream-text.test.ts::streamText > tool execution errors > redactToolErrors: true::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should add tool-error parts to ui message stream", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should add tool-error parts to ui message stream",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_add_tool_error_parts_to_ui_message_stream()
     {
         var chunks = await SingleProviderExecutedToolCallAndResultTests.ReadUiChunks(Run());
@@ -28,7 +33,8 @@ public sealed class ToolExecutionErrorsTests
         // The .NET stream always sends a generated messageId on start.
         Assert.NotNull(chunks[0]!["messageId"]);
         chunks[0]!.AsObject().Remove("messageId");
-        var expected = JsonNode.Parse("""
+        var expected = JsonNode.Parse(
+            """
             [
               { "type": "start" },
               { "type": "start-step" },
@@ -37,7 +43,8 @@ public sealed class ToolExecutionErrorsTests
               { "type": "finish-step" },
               { "finishReason": "stop", "type": "finish" }
             ]
-            """);
+            """
+        );
         Assert.True(JsonNode.DeepEquals(expected, chunks), chunks.ToJsonString());
     }
 
@@ -45,19 +52,29 @@ public sealed class ToolExecutionErrorsTests
     [UpstreamTest(
         RedactPrefix + "should redact the tool error in toUIMessageStream",
         Coverage = UpstreamCoverage.Covered,
-        Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
+        Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc"
+    )]
     public async Task Should_redact_the_tool_error_in_toUIMessageStream()
     {
-        var chunks = await SingleProviderExecutedToolCallAndResultTests.ReadUiChunks(Run(), redactToolErrors: true);
+        var chunks = await SingleProviderExecutedToolCallAndResultTests.ReadUiChunks(
+            Run(),
+            redactToolErrors: true
+        );
 
-        var errors = chunks.Where(chunk => (string?)chunk!["type"] == "tool-output-error").ToArray();
+        var errors = chunks
+            .Where(chunk => (string?)chunk!["type"] == "tool-output-error")
+            .ToArray();
         var error = Assert.Single(errors)!;
         Assert.Equal("An error occurred.", (string?)error["errorText"]);
         Assert.Equal("call-1", (string?)error["toolCallId"]);
     }
 
     [Fact]
-    [UpstreamTest(RedactPrefix + "should redact the tool error in toUIMessageStreamResponse", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
+    [UpstreamTest(
+        RedactPrefix + "should redact the tool error in toUIMessageStreamResponse",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc"
+    )]
     public async Task Should_redact_the_tool_error_in_toUIMessageStreamResponse()
     {
         var body = new MemoryStream();
@@ -72,7 +89,11 @@ public sealed class ToolExecutionErrorsTests
     }
 
     [Fact]
-    [UpstreamTest(RedactPrefix + "should redact the tool error in pipeUIMessageStreamToResponse", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
+    [UpstreamTest(
+        RedactPrefix + "should redact the tool error in pipeUIMessageStreamToResponse",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc"
+    )]
     public async Task Should_redact_the_tool_error_in_pipeUIMessageStreamToResponse()
     {
         var mockResponse = new ServerResponse();
@@ -91,22 +112,35 @@ public sealed class ToolExecutionErrorsTests
         {
             StreamParts = new LanguageModelStreamPart[]
             {
-                new ResponseMetadataStreamPart("id-0", "mock-model-id", DateTimeOffset.FromUnixTimeMilliseconds(0)),
+                new ResponseMetadataStreamPart(
+                    "id-0",
+                    "mock-model-id",
+                    DateTimeOffset.FromUnixTimeMilliseconds(0)
+                ),
                 new ToolCallStreamPart("call-1", "tool1", "{ \"value\": \"value\" }"),
-                new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(3, 10, 13, noCacheInputTokens: 3, textTokens: 10), "stop"),
+                new FinishStreamPart(
+                    FinishReason.Stop,
+                    new LanguageModelUsage(3, 10, 13, noCacheInputTokens: 3, textTokens: 10),
+                    "stop"
+                ),
             },
         };
         var tool = Tool.Function(
             "tool1",
             null,
             "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}",
-            (_, _) => throw new JsError("test error"));
-        return new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })).StreamTextAsync(new StreamTextOptions
-        {
-            Model = model,
-            Prompt = "test-input",
-            Tools = new[] { tool },
-            NowMs = () => 0,
-        });
+            (_, _) => throw new JsError("test error")
+        );
+        return new AiClient(
+            GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })
+        ).StreamTextAsync(
+            new StreamTextOptions
+            {
+                Model = model,
+                Prompt = "test-input",
+                Tools = new[] { tool },
+                NowMs = () => 0,
+            }
+        );
     }
 }

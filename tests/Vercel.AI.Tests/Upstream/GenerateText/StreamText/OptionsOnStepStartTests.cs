@@ -15,31 +15,43 @@ public sealed class OptionsOnStepStartTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/generate-text/stream-text.test.ts::streamText > options.onStepStart::should pass initialInstructions, initialMessages, and responseMessages to prepareStep",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_pass_initialInstructions_initialMessages_and_responseMessages_to_prepareStep()
     {
         var calls = new List<PrepareStepContext>();
         var responseCount = 0;
         var prompts = new List<IReadOnlyList<ModelMessage>>();
         var model = new PromptRecordingModel(
-            new StreamTextAbortSupport.ScriptedStreamModel(
-                () => responseCount++ == 0 ? ToolCallStream(("call-1", "{ \"value\": \"test\" }")) : TextStream()),
-            prompts);
+            new StreamTextAbortSupport.ScriptedStreamModel(() =>
+                responseCount++ == 0
+                    ? ToolCallStream(("call-1", "{ \"value\": \"test\" }"))
+                    : TextStream()
+            ),
+            prompts
+        );
         var initialMessage = new UserModelMessage("test-input");
 
-        await ConsumeAsync(Client().StreamTextAsync(new StreamTextOptions
-        {
-            Model = model,
-            Tools = new[] { Tool1((input, _) => Task.FromResult("\"test-result\"")) },
-            Instructions = "test instructions",
-            Messages = new ModelMessage[] { initialMessage },
-            StopWhen = StopWhen.IsStepCount(3),
-            PrepareStep = context =>
-            {
-                calls.Add(context);
-                return context.StepNumber == 0 ? new PrepareStepUpdate { Instructions = "prepared instructions" } : null;
-            },
-        }));
+        await ConsumeAsync(
+            Client()
+                .StreamTextAsync(
+                    new StreamTextOptions
+                    {
+                        Model = model,
+                        Tools = new[] { Tool1((input, _) => Task.FromResult("\"test-result\"")) },
+                        Instructions = "test instructions",
+                        Messages = new ModelMessage[] { initialMessage },
+                        StopWhen = StopWhen.IsStepCount(3),
+                        PrepareStep = context =>
+                        {
+                            calls.Add(context);
+                            return context.StepNumber == 0
+                                ? new PrepareStepUpdate { Instructions = "prepared instructions" }
+                                : null;
+                        },
+                    }
+                )
+        );
 
         Assert.Equal(2, calls.Count);
         Assert.Equal("test instructions", calls[0].Instructions!.Text);
@@ -61,9 +73,13 @@ public sealed class OptionsOnStepStartTests
         Assert.Equal("prepared instructions", prompt.Content);
     }
 
-    private sealed class PromptRecordingModel(ILanguageModel inner, List<IReadOnlyList<ModelMessage>> prompts) : ILanguageModel
+    private sealed class PromptRecordingModel(
+        ILanguageModel inner,
+        List<IReadOnlyList<ModelMessage>> prompts
+    ) : ILanguageModel
     {
-        public IReadOnlyDictionary<string, string> SupportedUrls => Vercel.AI.ProviderUtils.UrlSupport.None;
+        public IReadOnlyDictionary<string, string> SupportedUrls =>
+            Vercel.AI.ProviderUtils.UrlSupport.None;
 
         public string SpecificationVersion => inner.SpecificationVersion;
 
@@ -71,12 +87,18 @@ public sealed class OptionsOnStepStartTests
 
         public string ModelId => inner.ModelId;
 
-        public Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        public Task<LanguageModelGenerateResult> DoGenerateAsync(
+            LanguageModelCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
             return inner.DoGenerateAsync(options, cancellationToken);
         }
 
-        public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        public Task<LanguageModelStreamResult> DoStreamAsync(
+            LanguageModelCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
             prompts.Add(options.Prompt);
             return inner.DoStreamAsync(options, cancellationToken);

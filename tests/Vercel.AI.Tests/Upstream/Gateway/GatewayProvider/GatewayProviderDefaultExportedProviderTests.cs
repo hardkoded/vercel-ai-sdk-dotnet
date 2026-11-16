@@ -9,17 +9,25 @@ namespace Vercel.AI.Tests.Upstream.Gateway.GatewayProviderTests;
 /// <summary>Port of the <c>getAvailableModels</c> tests of <c>gateway-provider.test.ts</c> &gt; <c>GatewayProvider &gt; default exported provider</c>.</summary>
 public sealed class GatewayProviderDefaultExportedProviderTests
 {
-    private const string Prefix = "packages/gateway/src/gateway-provider.test.ts::GatewayProvider > default exported provider::";
+    private const string Prefix =
+        "packages/gateway/src/gateway-provider.test.ts::GatewayProvider > default exported provider::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should use apiKey over OIDC token when provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should use apiKey over OIDC token when provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_use_apiKey_over_OIDC_token_when_provided()
     {
-        VercelEnvironment.OidcTokenOverride = _ => throw new InvalidOperationException("Should not be called");
+        VercelEnvironment.OidcTokenOverride = _ =>
+            throw new InvalidOperationException("Should not be called");
         try
         {
             var server = new GatewayTestServer("{\"models\":[]}");
-            var provider = GatewayProvider.Create(new GatewayOptions { ApiKey = "test-api-key-123" }, server);
+            var provider = GatewayProvider.Create(
+                new GatewayOptions { ApiKey = "test-api-key-123" },
+                server
+            );
 
             await provider.GetAvailableModelsAsync();
 
@@ -35,14 +43,21 @@ public sealed class GatewayProviderDefaultExportedProviderTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should use apiKey and teamIdOrSlug for getAvailableModels", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should use apiKey and teamIdOrSlug for getAvailableModels",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_use_apiKey_and_teamIdOrSlug_for_getAvailableModels()
     {
-        VercelEnvironment.OidcTokenOverride = _ => throw new InvalidOperationException("Should not be called");
+        VercelEnvironment.OidcTokenOverride = _ =>
+            throw new InvalidOperationException("Should not be called");
         try
         {
             var server = new GatewayTestServer("{\"models\":[]}");
-            var provider = GatewayProvider.Create(new GatewayOptions { ApiKey = "vca_test-token", TeamIdOrSlug = "vercel" }, server);
+            var provider = GatewayProvider.Create(
+                new GatewayOptions { ApiKey = "vca_test-token", TeamIdOrSlug = "vercel" },
+                server
+            );
 
             await provider.GetAvailableModelsAsync();
 
@@ -57,7 +72,11 @@ public sealed class GatewayProviderDefaultExportedProviderTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should use OIDC and teamIdOrSlug for getAvailableModels when no apiKey is configured", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "should use OIDC and teamIdOrSlug for getAvailableModels when no apiKey is configured",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_use_OIDC_and_teamIdOrSlug_for_getAvailableModels_when_no_apiKey_is_configured()
     {
         var oidcCalls = 0;
@@ -69,7 +88,10 @@ public sealed class GatewayProviderDefaultExportedProviderTests
         try
         {
             var server = new GatewayTestServer("{\"models\":[]}");
-            var provider = GatewayProvider.Create(new GatewayOptions { ApiKey = string.Empty, TeamIdOrSlug = "vercel" }, server);
+            var provider = GatewayProvider.Create(
+                new GatewayOptions { ApiKey = string.Empty, TeamIdOrSlug = "vercel" },
+                server
+            );
 
             await provider.GetAvailableModelsAsync();
 

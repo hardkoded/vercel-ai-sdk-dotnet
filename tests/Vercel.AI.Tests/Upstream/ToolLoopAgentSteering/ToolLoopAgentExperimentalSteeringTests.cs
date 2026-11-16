@@ -15,12 +15,17 @@ namespace Vercel.AI.Tests.Upstream.ToolLoopAgentSteering;
 /// </summary>
 public sealed class ToolLoopAgentExperimentalSteeringTests
 {
-    private const string Prefix = "packages/ai/src/agent/tool-loop-agent-steering.test.ts::ToolLoopAgent experimental_steering::";
+    private const string Prefix =
+        "packages/ai/src/agent/tool-loop-agent-steering.test.ts::ToolLoopAgent experimental_steering::";
     private const string Commit = "b8c01eb49d82fd32efe8a2a1e4cd02fbb2b7ae97";
     private const string Prompt = "What is the weather in Paris?";
 
     [Fact]
-    [UpstreamTest(Prefix + "should deliver messages in generate() with the default stop condition", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "should deliver messages in generate() with the default stop condition",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Should_deliver_messages_in_generate_with_the_default_stop_condition()
     {
         var steering = CreateSteering();
@@ -31,7 +36,8 @@ public sealed class ToolLoopAgentExperimentalSteeringTests
                 outcome = steering.SteerAsync("Also tell me about Tokyo.");
                 return TextResponse("It is sunny in Paris.");
             },
-            _ => TextResponse("Tokyo is rainy."));
+            _ => TextResponse("Tokyo is rainy.")
+        );
 
         var agent = new Agent(new AgentOptions { Model = model }, Client());
 
@@ -42,7 +48,11 @@ public sealed class ToolLoopAgentExperimentalSteeringTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should deliver queued messages one task at a time in generate()", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "should deliver queued messages one task at a time in generate()",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Should_deliver_queued_messages_one_task_at_a_time_in_generate()
     {
         var steering = CreateSteering();
@@ -51,7 +61,8 @@ public sealed class ToolLoopAgentExperimentalSteeringTests
         var model = SteeringTestModel.Generate(
             _ => TextResponse("It is sunny in Paris."),
             _ => TextResponse("Tokyo is rainy."),
-            _ => TextResponse("Lagos is hot."));
+            _ => TextResponse("Lagos is hot.")
+        );
 
         var agent = new Agent(new AgentOptions { Model = model }, Client());
 
@@ -63,7 +74,11 @@ public sealed class ToolLoopAgentExperimentalSteeringTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should deliver messages in stream()", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "should deliver messages in stream()",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Should_deliver_messages_in_stream()
     {
         var steering = CreateSteering();
@@ -74,9 +89,13 @@ public sealed class ToolLoopAgentExperimentalSteeringTests
                 outcome = steering.SteerAsync("Also tell me about Tokyo.");
                 return TextStream("Sunny.");
             },
-            () => TextStream("Tokyo is rainy."));
+            () => TextStream("Tokyo is rainy.")
+        );
 
-        var agent = new Agent(new AgentOptions { Model = model, Tools = [Weather(() => "sunny")] }, Client());
+        var agent = new Agent(
+            new AgentOptions { Model = model, Tools = [Weather(() => "sunny")] },
+            Client()
+        );
 
         var result = agent.Stream(Prompt, experimentalSteering: steering);
 
@@ -85,17 +104,27 @@ public sealed class ToolLoopAgentExperimentalSteeringTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should stream delivered messages in stream()", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "should stream delivered messages in stream()",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Should_stream_delivered_messages_in_stream()
     {
         var steering = CreateSteering();
         var model = SteeringTestModel.Stream(
             () =>
             {
-                Ignore(steering.SteerAsync("Also tell me about Tokyo.", new SteerOptions { Id = "steer-1" }));
+                Ignore(
+                    steering.SteerAsync(
+                        "Also tell me about Tokyo.",
+                        new SteerOptions { Id = "steer-1" }
+                    )
+                );
                 return TextStream("Sunny.");
             },
-            () => TextStream("Tokyo is rainy."));
+            () => TextStream("Tokyo is rainy.")
+        );
 
         var agent = new Agent(new AgentOptions { Model = model }, Client());
 
@@ -117,7 +146,11 @@ public sealed class ToolLoopAgentExperimentalSteeringTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should not pass the steering object to prepareCall", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "should not pass the steering object to prepareCall",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Should_not_pass_the_steering_object_to_prepareCall()
     {
         var steering = CreateSteering();
@@ -133,7 +166,8 @@ public sealed class ToolLoopAgentExperimentalSteeringTests
                     return options;
                 },
             },
-            Client());
+            Client()
+        );
 
         await agent.GenerateAsync("hello", experimentalSteering: steering);
 

@@ -12,7 +12,8 @@ public sealed class GenAiConventionTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/gen-ai-format-messages.test.ts::mapProviderName::should map known providers to well-known values",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Maps_known_providers_to_well_known_values()
     {
         Assert.Equal("anthropic", GenAiConventions.MapProviderName("anthropic.messages"));
@@ -26,7 +27,8 @@ public sealed class GenAiConventionTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/gen-ai-format-messages.test.ts::mapProviderName::should map google vertex provider strings",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Maps_google_vertex_provider_strings()
     {
         Assert.Equal("gcp.vertex_ai", GenAiConventions.MapProviderName("google.vertex.chat"));
@@ -38,7 +40,8 @@ public sealed class GenAiConventionTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/gen-ai-format-messages.test.ts::mapProviderName::should map bare google prefix to gcp.gemini",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Maps_a_bare_google_prefix_to_gcp_gemini()
     {
         Assert.Equal("gcp.gemini", GenAiConventions.MapProviderName("google.chat"));
@@ -47,7 +50,8 @@ public sealed class GenAiConventionTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/gen-ai-format-messages.test.ts::mapProviderName::should map bedrock provider",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Maps_bedrock_providers()
     {
         Assert.Equal("aws.bedrock", GenAiConventions.MapProviderName("amazon-bedrock.chat"));
@@ -57,7 +61,8 @@ public sealed class GenAiConventionTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/gen-ai-format-messages.test.ts::mapProviderName::should map azure providers",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Maps_azure_providers()
     {
         Assert.Equal("azure.ai.inference", GenAiConventions.MapProviderName("azure.chat"));
@@ -67,16 +72,21 @@ public sealed class GenAiConventionTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/gen-ai-format-messages.test.ts::mapProviderName::should return the original string for unknown providers",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Returns_the_original_string_for_an_unknown_provider()
     {
-        Assert.Equal("custom-provider.chat", GenAiConventions.MapProviderName("custom-provider.chat"));
+        Assert.Equal(
+            "custom-provider.chat",
+            GenAiConventions.MapProviderName("custom-provider.chat")
+        );
     }
 
     [Fact]
     [UpstreamTest(
         "packages/otel/src/gen-ai-format-messages.test.ts::mapOperationName::should map generateText/streamText to invoke_agent",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Maps_generate_text_and_stream_text_to_invoke_agent()
     {
         Assert.Equal("invoke_agent", GenAiConventions.MapOperationName("ai.generateText"));
@@ -86,7 +96,8 @@ public sealed class GenAiConventionTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/gen-ai-format-messages.test.ts::mapOperationName::should map generateObject/streamObject to invoke_agent",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Maps_object_generation_to_invoke_agent()
     {
         Assert.Equal("invoke_agent", GenAiConventions.MapOperationName("ai.generateObject"));
@@ -96,7 +107,8 @@ public sealed class GenAiConventionTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/gen-ai-format-messages.test.ts::mapOperationName::should map embed/embedMany to embeddings",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Maps_embed_operations_to_embeddings()
     {
         Assert.Equal("embeddings", GenAiConventions.MapOperationName("ai.embed"));
@@ -106,7 +118,8 @@ public sealed class GenAiConventionTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/gen-ai-format-messages.test.ts::mapOperationName::should map rerank to rerank",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Maps_rerank_to_rerank()
     {
         Assert.Equal("rerank", GenAiConventions.MapOperationName("ai.rerank"));
@@ -115,7 +128,8 @@ public sealed class GenAiConventionTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/gen-ai-format-messages.test.ts::mapOperationName::should return the original string for unknown operations",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Returns_the_original_string_for_an_unknown_operation()
     {
         Assert.Equal("ai.unknown", GenAiConventions.MapOperationName("ai.unknown"));
@@ -130,7 +144,10 @@ public sealed class GenAiConventionTests
     {
         Assert.Equal("stop", GenAiConventions.FormatFinishReason(FinishReason.Stop));
         Assert.Equal("length", GenAiConventions.FormatFinishReason(FinishReason.Length));
-        Assert.Equal("content-filter", GenAiConventions.FormatFinishReason(FinishReason.ContentFilter));
+        Assert.Equal(
+            "content-filter",
+            GenAiConventions.FormatFinishReason(FinishReason.ContentFilter)
+        );
         Assert.Equal("tool-calls", GenAiConventions.FormatFinishReason(FinishReason.ToolCalls));
         Assert.Equal("error", GenAiConventions.FormatFinishReason(FinishReason.Error));
         Assert.Equal("other", GenAiConventions.FormatFinishReason(FinishReason.Other));

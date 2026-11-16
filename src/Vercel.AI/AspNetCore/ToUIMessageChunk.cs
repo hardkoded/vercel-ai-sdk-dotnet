@@ -94,10 +94,16 @@ public static partial class UIMessageStreamConverter
     /// </summary>
     /// <param name="part">The part to convert.</param>
     /// <param name="options">Conversion options.</param>
-    public static JsonObject? ToUIMessageChunk(TextStreamPart part, ToUIMessageChunkOptions? options = null)
-        => ToUIMessageChunkWithMetadata(part, options, options?.MessageMetadata);
+    public static JsonObject? ToUIMessageChunk(
+        TextStreamPart part,
+        ToUIMessageChunkOptions? options = null
+    ) => ToUIMessageChunkWithMetadata(part, options, options?.MessageMetadata);
 
-    internal static JsonObject? ToUIMessageChunkWithMetadata(TextStreamPart part, ToUIMessageChunkOptions? options, JsonElement? messageMetadata)
+    internal static JsonObject? ToUIMessageChunkWithMetadata(
+        TextStreamPart part,
+        ToUIMessageChunkOptions? options,
+        JsonElement? messageMetadata
+    )
     {
         if (part is null)
         {
@@ -115,7 +121,9 @@ public static partial class UIMessageStreamConverter
         // provider-executed, dynamic tools are not listed in the tools. Maps to isDynamic.
         bool? IsDynamic(string toolName, bool dynamic)
         {
-            var tool = options.Tools?.FirstOrDefault(candidate => string.Equals(candidate.Name, toolName, StringComparison.Ordinal));
+            var tool = options.Tools?.FirstOrDefault(candidate =>
+                string.Equals(candidate.Name, toolName, StringComparison.Ordinal)
+            );
             if (tool is null)
             {
                 return dynamic ? true : null;
@@ -127,11 +135,20 @@ public static partial class UIMessageStreamConverter
         switch (part)
         {
             case TextStartPart textStart:
-                var textStartChunk = new JsonObject { ["type"] = "text-start", ["id"] = textStart.Id };
+                var textStartChunk = new JsonObject
+                {
+                    ["type"] = "text-start",
+                    ["id"] = textStart.Id,
+                };
                 AddProviderMetadata(textStartChunk, textStart.ProviderMetadata);
                 return textStartChunk;
             case TextDeltaPart text:
-                var textChunk = new JsonObject { ["type"] = "text-delta", ["id"] = text.Id, ["delta"] = text.Text };
+                var textChunk = new JsonObject
+                {
+                    ["type"] = "text-delta",
+                    ["id"] = text.Id,
+                    ["delta"] = text.Text,
+                };
                 AddProviderMetadata(textChunk, text.ProviderMetadata);
                 return textChunk;
             case TextEndPart textEnd:
@@ -149,7 +166,11 @@ public static partial class UIMessageStreamConverter
                     return null;
                 }
 
-                var reasoningStartChunk = new JsonObject { ["type"] = "reasoning-start", ["id"] = reasoningStart.Id };
+                var reasoningStartChunk = new JsonObject
+                {
+                    ["type"] = "reasoning-start",
+                    ["id"] = reasoningStart.Id,
+                };
                 AddProviderMetadata(reasoningStartChunk, reasoningStart.ProviderMetadata);
                 return reasoningStartChunk;
             case ReasoningDeltaPart reasoning:
@@ -158,7 +179,12 @@ public static partial class UIMessageStreamConverter
                     return null;
                 }
 
-                var reasoningChunk = new JsonObject { ["type"] = "reasoning-delta", ["id"] = reasoning.Id, ["delta"] = reasoning.Text };
+                var reasoningChunk = new JsonObject
+                {
+                    ["type"] = "reasoning-delta",
+                    ["id"] = reasoning.Id,
+                    ["delta"] = reasoning.Text,
+                };
                 AddProviderMetadata(reasoningChunk, reasoning.ProviderMetadata);
                 return reasoningChunk;
             case ReasoningEndPart reasoningEnd:
@@ -167,7 +193,11 @@ public static partial class UIMessageStreamConverter
                     return null;
                 }
 
-                var reasoningEndChunk = new JsonObject { ["type"] = "reasoning-end", ["id"] = reasoningEnd.Id };
+                var reasoningEndChunk = new JsonObject
+                {
+                    ["type"] = "reasoning-end",
+                    ["id"] = reasoningEnd.Id,
+                };
                 AddProviderMetadata(reasoningEndChunk, reasoningEnd.ProviderMetadata);
                 return reasoningEndChunk;
             case FilePart file:
@@ -175,7 +205,11 @@ public static partial class UIMessageStreamConverter
                 {
                     ["type"] = "file",
                     ["mediaType"] = file.File.MediaType,
-                    ["url"] = "data:" + file.File.MediaType + ";base64," + Convert.ToBase64String(file.File.Data),
+                    ["url"] =
+                        "data:"
+                        + file.File.MediaType
+                        + ";base64,"
+                        + Convert.ToBase64String(file.File.Data),
                 };
                 AddProviderMetadata(fileChunk, file.ProviderMetadata);
                 return fileChunk;
@@ -189,7 +223,11 @@ public static partial class UIMessageStreamConverter
                 {
                     ["type"] = "reasoning-file",
                     ["mediaType"] = reasoningFile.File.MediaType,
-                    ["url"] = "data:" + reasoningFile.File.MediaType + ";base64," + Convert.ToBase64String(reasoningFile.File.Data),
+                    ["url"] =
+                        "data:"
+                        + reasoningFile.File.MediaType
+                        + ";base64,"
+                        + Convert.ToBase64String(reasoningFile.File.Data),
                 };
                 AddProviderMetadata(reasoningFileChunk, reasoningFile.ProviderMetadata);
                 return reasoningFileChunk;
@@ -252,7 +290,8 @@ public static partial class UIMessageStreamConverter
                 };
                 if (inputStart.InputEncoding is ToolInputEncoding inputEncoding)
                 {
-                    inputStartChunk["inputEncoding"] = inputEncoding == ToolInputEncoding.Text ? "text" : "json";
+                    inputStartChunk["inputEncoding"] =
+                        inputEncoding == ToolInputEncoding.Text ? "text" : "json";
                 }
 
                 if (inputStart.ProviderExecuted is bool providerExecuted)
@@ -307,7 +346,12 @@ public static partial class UIMessageStreamConverter
                     var invalidError = call.ToolCall.Error!;
                     toolInput["errorText"] = call.ToolCall.ProviderExecuted
                         ? onError(invalidError)
-                        : ToolErrorText(ModelToolErrorText(invalidError), invalidError, redactToolErrors, onError);
+                        : ToolErrorText(
+                            ModelToolErrorText(invalidError),
+                            invalidError,
+                            redactToolErrors,
+                            onError
+                        );
                 }
 
                 if (call.ToolCall.Title != null)
@@ -323,10 +367,17 @@ public static partial class UIMessageStreamConverter
                     ["approvalId"] = approvalRequest.ApprovalId,
                     ["toolCallId"] = approvalRequest.ToolCall.ToolCallId,
                 };
-                if (approvalRequest.ToolCall.InputSchemaInput is { } inputSchemaInput
-                    && !JsonNode.DeepEquals(JsonNode.Parse(inputSchemaInput.GetRawText()), ParseJson(approvalRequest.ToolCall.ArgumentsJson)))
+                if (
+                    approvalRequest.ToolCall.InputSchemaInput is { } inputSchemaInput
+                    && !JsonNode.DeepEquals(
+                        JsonNode.Parse(inputSchemaInput.GetRawText()),
+                        ParseJson(approvalRequest.ToolCall.ArgumentsJson)
+                    )
+                )
                 {
-                    approvalRequestChunk["inputSchemaInput"] = JsonNode.Parse(inputSchemaInput.GetRawText());
+                    approvalRequestChunk["inputSchemaInput"] = JsonNode.Parse(
+                        inputSchemaInput.GetRawText()
+                    );
                 }
 
                 if (approvalRequest.Reason != null)
@@ -364,14 +415,20 @@ public static partial class UIMessageStreamConverter
 
                 return approvalResponseChunk;
             case ToolOutputDeniedPart outputDenied:
-                return new JsonObject { ["type"] = "tool-output-denied", ["toolCallId"] = outputDenied.ToolCallId };
+                return new JsonObject
+                {
+                    ["type"] = "tool-output-denied",
+                    ["toolCallId"] = outputDenied.ToolCallId,
+                };
             case ToolResultPart toolResult:
                 var toolOutput = new JsonObject
                 {
                     ["type"] = "tool-output-available",
                     ["toolCallId"] = toolResult.Result.ToolCallId,
                     // UI stream chunks are serialized as JSON, which drops undefined properties. Use null so tool outputs always keep the output field.
-                    ["output"] = string.IsNullOrWhiteSpace(toolResult.Result.OutputJson) ? null : ParseJson(toolResult.Result.OutputJson),
+                    ["output"] = string.IsNullOrWhiteSpace(toolResult.Result.OutputJson)
+                        ? null
+                        : ParseJson(toolResult.Result.OutputJson),
                 };
                 if (toolResult.Result.ProviderExecuted)
                 {
@@ -385,7 +442,10 @@ public static partial class UIMessageStreamConverter
                     toolOutput["preliminary"] = preliminary;
                 }
 
-                if (IsDynamic(toolResult.Result.ToolName, toolResult.Result.Dynamic) is { } resultDynamic)
+                if (
+                    IsDynamic(toolResult.Result.ToolName, toolResult.Result.Dynamic) is
+                    { } resultDynamic
+                )
                 {
                     toolOutput["dynamic"] = resultDynamic;
                 }
@@ -401,7 +461,12 @@ public static partial class UIMessageStreamConverter
                     ["toolCallId"] = toolError.Result.ToolCallId,
                     ["errorText"] = providerError
                         ? ProviderErrorText(toolError.Result.OutputJson)
-                        : ToolErrorText(ModelToolErrorText(toolError.Result), toolError.Result.Error ?? new JsError(toolError.Result.OutputJson), redactToolErrors, onError),
+                        : ToolErrorText(
+                            ModelToolErrorText(toolError.Result),
+                            toolError.Result.Error ?? new JsError(toolError.Result.OutputJson),
+                            redactToolErrors,
+                            onError
+                        ),
                 };
                 if (providerError)
                 {
@@ -410,14 +475,21 @@ public static partial class UIMessageStreamConverter
                 }
 
                 AddToolMetadata(errorOutput, toolError.Result.ToolMetadata);
-                if (IsDynamic(toolError.Result.ToolName, toolError.Result.Dynamic) is { } errorDynamic)
+                if (
+                    IsDynamic(toolError.Result.ToolName, toolError.Result.Dynamic) is
+                    { } errorDynamic
+                )
                 {
                     errorOutput["dynamic"] = errorDynamic;
                 }
 
                 return errorOutput;
             case ErrorPart error:
-                return new JsonObject { ["type"] = "error", ["errorText"] = onError(error.Error ?? new JsError(error.Message)) };
+                return new JsonObject
+                {
+                    ["type"] = "error",
+                    ["errorText"] = onError(error.Error ?? new JsError(error.Message)),
+                };
             case StartStepPart:
                 return new JsonObject { ["type"] = "start-step" };
             case StepFinishPart:
@@ -442,7 +514,11 @@ public static partial class UIMessageStreamConverter
                     return null;
                 }
 
-                var finishChunk = new JsonObject { ["type"] = "finish", ["finishReason"] = GenAiConventions.FormatFinishReason(finish.FinishReason) };
+                var finishChunk = new JsonObject
+                {
+                    ["type"] = "finish",
+                    ["finishReason"] = GenAiConventions.FormatFinishReason(finish.FinishReason),
+                };
                 AddMessageMetadata(finishChunk, messageMetadata);
                 return finishChunk;
             case AbortPart abort:
@@ -480,7 +556,9 @@ public static partial class UIMessageStreamConverter
                     {
                         // the provider reference takes precedence over the url in model messages:
                         uiPart["url"] = string.Empty;
-                        uiPart["providerReference"] = JsonSerializer.SerializeToNode(file.ProviderReference);
+                        uiPart["providerReference"] = JsonSerializer.SerializeToNode(
+                            file.ProviderReference
+                        );
                     }
                     else if (file.Url != null)
                     {
@@ -488,11 +566,21 @@ public static partial class UIMessageStreamConverter
                     }
                     else if (file.Data != null)
                     {
-                        uiPart["url"] = "data:" + file.MediaType + ";base64," + Convert.ToBase64String(file.Data);
+                        uiPart["url"] =
+                            "data:"
+                            + file.MediaType
+                            + ";base64,"
+                            + Convert.ToBase64String(file.Data);
                     }
                     else
                     {
-                        uiPart["url"] = "data:" + file.MediaType + ";base64," + Convert.ToBase64String(Encoding.UTF8.GetBytes(file.Text ?? string.Empty));
+                        uiPart["url"] =
+                            "data:"
+                            + file.MediaType
+                            + ";base64,"
+                            + Convert.ToBase64String(
+                                Encoding.UTF8.GetBytes(file.Text ?? string.Empty)
+                            );
                     }
 
                     break;
@@ -500,20 +588,26 @@ public static partial class UIMessageStreamConverter
                     continue;
             }
 
-            AddProviderMetadata(uiPart, OptionsToElement(part switch
-            {
-                TextContentPart t => t.ProviderOptions,
-                FileContentPart f => f.ProviderOptions,
-                _ => null,
-            }));
+            AddProviderMetadata(
+                uiPart,
+                OptionsToElement(
+                    part switch
+                    {
+                        TextContentPart t => t.ProviderOptions,
+                        FileContentPart f => f.ProviderOptions,
+                        _ => null,
+                    }
+                )
+            );
             parts.Add(uiPart);
         }
 
         return parts;
     }
 
-    private static JsonElement? OptionsToElement(IReadOnlyDictionary<string, JsonElement>? options)
-        => options is null ? null : JsonSerializer.SerializeToElement(options);
+    private static JsonElement? OptionsToElement(
+        IReadOnlyDictionary<string, JsonElement>? options
+    ) => options is null ? null : JsonSerializer.SerializeToElement(options);
 
     private static void AddMessageMetadata(JsonObject payload, JsonElement? metadata)
     {
@@ -552,10 +646,17 @@ public static partial class UIMessageStreamConverter
     // The error text of a failed tool call is not altered by default. The UI message is the record that ConvertToModelMessages sends back
     // to the model on the next request, so a replaced text changes the history after the model has received the original. When the text
     // cannot be serialized, onError formats the error.
-    private static string ToolErrorText(string? modelErrorText, Exception onErrorInput, bool redactToolErrors, Func<Exception, string> onError)
-        => redactToolErrors ? onError(onErrorInput) : modelErrorText ?? onError(onErrorInput);
+    private static string ToolErrorText(
+        string? modelErrorText,
+        Exception onErrorInput,
+        bool redactToolErrors,
+        Func<Exception, string> onError
+    ) => redactToolErrors ? onError(onErrorInput) : modelErrorText ?? onError(onErrorInput);
 
-    private static void AddToolMetadata(JsonObject payload, IReadOnlyDictionary<string, JsonElement>? metadata)
+    private static void AddToolMetadata(
+        JsonObject payload,
+        IReadOnlyDictionary<string, JsonElement>? metadata
+    )
     {
         if (metadata != null)
         {
@@ -565,7 +666,10 @@ public static partial class UIMessageStreamConverter
 
     private static void AddProviderMetadata(JsonObject payload, JsonElement? metadata)
     {
-        if (metadata is not JsonElement element || element.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        if (
+            metadata is not JsonElement element
+            || element.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined
+        )
         {
             return;
         }
@@ -583,7 +687,9 @@ public static partial class UIMessageStreamConverter
         try
         {
             using var document = JsonDocument.Parse(outputJson);
-            return document.RootElement.ValueKind == JsonValueKind.String ? document.RootElement.GetString()! : outputJson;
+            return document.RootElement.ValueKind == JsonValueKind.String
+                ? document.RootElement.GetString()!
+                : outputJson;
         }
         catch (JsonException)
         {

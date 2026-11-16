@@ -9,535 +9,1062 @@ namespace Vercel.AI.Tests;
 public sealed partial class AnthropicUpstreamTests
 {
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should bypass signing for non-POST requests", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should bypass signing for non-POST requests",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0001()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should bypass signing for non-POST requests").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should bypass signing for non-POST requests"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should bypass signing if POST request has no body", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should bypass signing if POST request has no body",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0002()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should bypass signing if POST request has no body").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should bypass signing if POST request has no body"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle a POST request with a string body and merge signed headers including user-agent", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle a POST request with a string body and merge signed headers including user-agent",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0003()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle a POST request with a string body and merge signed headers including user-agent").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle a POST request with a string body and merge signed headers including user-agent"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::shold handle a POST request with a Request object", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::shold handle a POST request with a Request object",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0004()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::shold handle a POST request with a Request object").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::shold handle a POST request with a Request object"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should sign when input is a POST Request with body and no init", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should sign when input is a POST Request with body and no init",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0005()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should sign when input is a POST Request with body and no init").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should sign when input is a POST Request with body and no init"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle non-string body by stringifying it", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle non-string body by stringifying it",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0006()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle non-string body by stringifying it").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle non-string body by stringifying it"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle Uint8Array body", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle Uint8Array body",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0007()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle Uint8Array body").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle Uint8Array body"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle ArrayBuffer body", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle ArrayBuffer body",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0008()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle ArrayBuffer body").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle ArrayBuffer body"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should extract headers from a Headers instance", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should extract headers from a Headers instance",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0009()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should extract headers from a Headers instance").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should extract headers from a Headers instance"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle headers provided as an array", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle headers provided as an array",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0010()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle headers provided as an array").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle headers provided as an array"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should call original fetch if init is undefined", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should call original fetch if init is undefined",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0011()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should call original fetch if init is undefined").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should call original fetch if init is undefined"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should correctly handle async credential providers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should correctly handle async credential providers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0012()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should correctly handle async credential providers").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should correctly handle async credential providers"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle async credential providers that reject", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle async credential providers that reject",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0013()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle async credential providers that reject").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle async credential providers that reject"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should send non-ASCII header values without signing them", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should send non-ASCII header values without signing them",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_send_non_ASCII_header_values_without_signing_them()
     {
         AnthropicAssertions.FetchNonAsciiHeader();
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should add x-api-key header with user-agent", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should add x-api-key header with user-agent",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0014()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should add x-api-key header with user-agent").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should add x-api-key header with user-agent"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should merge x-api-key header with existing headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should merge x-api-key header with existing headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0015()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should merge x-api-key header with existing headers").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should merge x-api-key header with existing headers"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work with Headers instance", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work with Headers instance",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0016()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work with Headers instance").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work with Headers instance"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work with headers as array", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work with headers as array",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0017()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work with headers as array").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work with headers as array"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work with GET requests", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work with GET requests",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0018()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work with GET requests").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work with GET requests"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work when no headers are provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work when no headers are provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0019()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work when no headers are provided").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work when no headers are provided"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work when init is undefined", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work when init is undefined",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0020()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work when init is undefined").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should work when init is undefined"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should override existing x-api-key header", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should override existing x-api-key header",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0021()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should override existing x-api-key header").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should override existing x-api-key header"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should use default fetch when no custom fetch provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should use default fetch when no custom fetch provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0022()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should use default fetch when no custom fetch provided").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should use default fetch when no custom fetch provided"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should resolve default fetch lazily when no custom fetch provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should resolve default fetch lazily when no custom fetch provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0023()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should resolve default fetch lazily when no custom fetch provided").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should resolve default fetch lazily when no custom fetch provided"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should handle empty string API key", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should handle empty string API key",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0024()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should handle empty string API key").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should handle empty string API key"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should preserve request body and other properties", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should preserve request body and other properties",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0025()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should preserve request body and other properties").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should preserve request body and other properties"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::createAnthropicAws > baseURL configuration::uses the default Claude Platform on AWS base URL with region templating", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::createAnthropicAws > baseURL configuration::uses the default Claude Platform on AWS base URL with region templating",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0026()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::createAnthropicAws > baseURL configuration::uses the default Claude Platform on AWS base URL with region templating").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::createAnthropicAws > baseURL configuration::uses the default Claude Platform on AWS base URL with region templating"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::createAnthropicAws > baseURL configuration::reads AWS_REGION from the environment when region option is omitted", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::createAnthropicAws > baseURL configuration::reads AWS_REGION from the environment when region option is omitted",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0027()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::createAnthropicAws > baseURL configuration::reads AWS_REGION from the environment when region option is omitted").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::createAnthropicAws > baseURL configuration::reads AWS_REGION from the environment when region option is omitted"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::createAnthropicAws > baseURL configuration::prefers the baseURL option over the default template", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::createAnthropicAws > baseURL configuration::prefers the baseURL option over the default template",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0028()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::createAnthropicAws > baseURL configuration::prefers the baseURL option over the default template").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::createAnthropicAws > baseURL configuration::prefers the baseURL option over the default template"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > apiKey option::sends x-api-key header when apiKey is provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > apiKey option::sends x-api-key header when apiKey is provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0029()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > apiKey option::sends x-api-key header when apiKey is provided").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > apiKey option::sends x-api-key header when apiKey is provided"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > apiKey option::reads apiKey from ANTHROPIC_AWS_API_KEY when option is omitted", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > apiKey option::reads apiKey from ANTHROPIC_AWS_API_KEY when option is omitted",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0030()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > apiKey option::reads apiKey from ANTHROPIC_AWS_API_KEY when option is omitted").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > apiKey option::reads apiKey from ANTHROPIC_AWS_API_KEY when option is omitted"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > SigV4 path::signs requests with SigV4 when apiKey is not provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > SigV4 path::signs requests with SigV4 when apiKey is not provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0031()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > SigV4 path::signs requests with SigV4 when apiKey is not provided").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > SigV4 path::signs requests with SigV4 when apiKey is not provided"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > SigV4 path::honors a credentialProvider for dynamic SigV4 credentials", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > SigV4 path::honors a credentialProvider for dynamic SigV4 credentials",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0032()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > SigV4 path::honors a credentialProvider for dynamic SigV4 credentials").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > SigV4 path::honors a credentialProvider for dynamic SigV4 credentials"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > SigV4 path::throws a guided error when SigV4 credentials are missing", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > SigV4 path::throws a guided error when SigV4 credentials are missing",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0033()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > SigV4 path::throws a guided error when SigV4 credentials are missing").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > SigV4 path::throws a guided error when SigV4 credentials are missing"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > SigV4 path::wraps credentialProvider rejections with a guided message", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > SigV4 path::wraps credentialProvider rejections with a guided message",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0034()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > SigV4 path::wraps credentialProvider rejections with a guided message").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - authentication > SigV4 path::wraps credentialProvider rejections with a guided message"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - workspaceId::sends the anthropic-version header on every request", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - workspaceId::sends the anthropic-version header on every request",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0035()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - workspaceId::sends the anthropic-version header on every request").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - workspaceId::sends the anthropic-version header on every request"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - workspaceId::sends the anthropic-workspace-id header on every request", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - workspaceId::sends the anthropic-workspace-id header on every request",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0036()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - workspaceId::sends the anthropic-workspace-id header on every request").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - workspaceId::sends the anthropic-workspace-id header on every request"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - workspaceId::reads workspaceId from ANTHROPIC_AWS_WORKSPACE_ID when option is omitted", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - workspaceId::reads workspaceId from ANTHROPIC_AWS_WORKSPACE_ID when option is omitted",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0037()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - workspaceId::reads workspaceId from ANTHROPIC_AWS_WORKSPACE_ID when option is omitted").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - workspaceId::reads workspaceId from ANTHROPIC_AWS_WORKSPACE_ID when option is omitted"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - workspaceId::throws when workspaceId is not resolvable at request time", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - workspaceId::throws when workspaceId is not resolvable at request time",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0038()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - workspaceId::throws when workspaceId is not resolvable at request time").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - workspaceId::throws when workspaceId is not resolvable at request time"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - region::throws when region is not resolvable at model creation time", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - region::throws when region is not resolvable at model creation time",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0039()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - region::throws when region is not resolvable at model creation time").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - region::throws when region is not resolvable at model creation time"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - headers::merges custom headers with the workspace-id header", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - headers::merges custom headers with the workspace-id header",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0040()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - headers::merges custom headers with the workspace-id header").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - headers::merges custom headers with the workspace-id header"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - supportedUrls::should support image/* URLs", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - supportedUrls::should support image/* URLs",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0041()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - supportedUrls::should support image/* URLs").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - supportedUrls::should support image/* URLs"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - supportedUrls::should support application/pdf URLs", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - supportedUrls::should support application/pdf URLs",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0042()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - supportedUrls::should support application/pdf URLs").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - supportedUrls::should support application/pdf URLs"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::sets the provider name to anthropic-aws.messages on the model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::sets the provider name to anthropic-aws.messages on the model",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0043()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::sets the provider name to anthropic-aws.messages on the model").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::sets the provider name to anthropic-aws.messages on the model"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::throws NoSuchModelError when embeddingModel is invoked", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::throws NoSuchModelError when embeddingModel is invoked",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0044()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::throws NoSuchModelError when embeddingModel is invoked").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::throws NoSuchModelError when embeddingModel is invoked"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::throws NoSuchModelError when imageModel is invoked", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::throws NoSuchModelError when imageModel is invoked",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0045()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::throws NoSuchModelError when imageModel is invoked").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::throws NoSuchModelError when imageModel is invoked"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::exposes files() returning an AnthropicFiles instance", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::exposes files() returning an AnthropicFiles instance",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0046()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::exposes files() returning an AnthropicFiles instance").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::exposes files() returning an AnthropicFiles instance"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::exposes skills() returning an AnthropicSkills instance", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::exposes skills() returning an AnthropicSkills instance",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0047()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::exposes skills() returning an AnthropicSkills instance").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::exposes skills() returning an AnthropicSkills instance"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::throws if the provider function is called with new", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::throws if the provider function is called with new",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0048()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::throws if the provider function is called with new").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::throws if the provider function is called with new"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - auth precedence::prefers the API-key path when both apiKey and AWS SigV4 creds are present", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - auth precedence::prefers the API-key path when both apiKey and AWS SigV4 creds are present",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0049()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - auth precedence::prefers the API-key path when both apiKey and AWS SigV4 creds are present").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - auth precedence::prefers the API-key path when both apiKey and AWS SigV4 creds are present"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - streaming::forwards doStream through the SigV4 / api-key fetch wrapper and yields stream events", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - streaming::forwards doStream through the SigV4 / api-key fetch wrapper and yields stream events",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0050()
     {
-        await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - streaming::forwards doStream through the SigV4 / api-key fetch wrapper and yields stream events").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - streaming::forwards doStream through the SigV4 / api-key fetch wrapper and yields stream events"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-error.test.ts::anthropicError > anthropicErrorDataSchema::should parse overloaded error", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-error.test.ts::anthropicError > anthropicErrorDataSchema::should parse overloaded error",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0086()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-error.test.ts::anthropicError > anthropicErrorDataSchema::should parse overloaded error").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-error.test.ts::anthropicError > anthropicErrorDataSchema::should parse overloaded error"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should pass thinking config; add budget tokens; clear out temperature, top_p, top_k; and return warnings", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should pass thinking config; add budget tokens; clear out temperature, top_p, top_k; and return warnings",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0108()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should pass thinking config; add budget tokens; clear out temperature, top_p, top_k; and return warnings").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should pass thinking config; add budget tokens; clear out temperature, top_p, top_k; and return warnings"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should extract reasoning response", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should extract reasoning response",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0109()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should extract reasoning response").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should extract reasoning response"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should preserve container upload response blocks as custom content", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should preserve container upload response blocks as custom content",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0110()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should preserve container upload response blocks as custom content").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should preserve container upload response blocks as custom content"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should use default budget when thinking type is enabled without budgetTokens", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should use default budget when thinking type is enabled without budgetTokens",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0111()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should use default budget when thinking type is enabled without budgetTokens").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should use default budget when thinking type is enabled without budgetTokens"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking disabled)::should forward thinking { type: \"disabled\" } to the API instead of stripping it", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking disabled)::should forward thinking { type: \"disabled\" } to the API instead of stripping it",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0114()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking disabled)::should forward thinking { type: \"disabled\" } to the API instead of stripping it").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking disabled)::should forward thinking { type: \"disabled\" } to the API instead of stripping it"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking disabled)::should not strip temperature / topP / topK when thinking is disabled", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking disabled)::should not strip temperature / topP / topK when thinking is disabled",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0115()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking disabled)::should not strip temperature / topP / topK when thinking is disabled").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking disabled)::should not strip temperature / topP / topK when thinking is disabled"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"none\" to thinking disabled", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"none\" to thinking disabled",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0117()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"none\" to thinking disabled").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"none\" to thinking disabled"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"low\" to adaptive thinking with effort \"low\"", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"low\" to adaptive thinking with effort \"low\"",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0118()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"low\" to adaptive thinking with effort \"low\"").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"low\" to adaptive thinking with effort \"low\""
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"medium\" to adaptive thinking with effort \"medium\"", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"medium\" to adaptive thinking with effort \"medium\"",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0119()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"medium\" to adaptive thinking with effort \"medium\"").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"medium\" to adaptive thinking with effort \"medium\""
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"high\" to adaptive thinking with effort \"high\"", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"high\" to adaptive thinking with effort \"high\"",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0120()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"high\" to adaptive thinking with effort \"high\"").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"high\" to adaptive thinking with effort \"high\""
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"xhigh\" to adaptive thinking with effort \"max\"", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"xhigh\" to adaptive thinking with effort \"max\"",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0121()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"xhigh\" to adaptive thinking with effort \"max\"").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"xhigh\" to adaptive thinking with effort \"max\""
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"minimal\" to adaptive thinking with effort \"low\" and emit compatibility warning", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"minimal\" to adaptive thinking with effort \"low\" and emit compatibility warning",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0122()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"minimal\" to adaptive thinking with effort \"low\" and emit compatibility warning").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"minimal\" to adaptive thinking with effort \"low\" and emit compatibility warning"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"none\" to thinking disabled", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"none\" to thinking disabled",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0125()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"none\" to thinking disabled").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"none\" to thinking disabled"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"minimal\" to enabled thinking with ~2% budget", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"minimal\" to enabled thinking with ~2% budget",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0126()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"minimal\" to enabled thinking with ~2% budget").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"minimal\" to enabled thinking with ~2% budget"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"low\" to enabled thinking with ~10% budget", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"low\" to enabled thinking with ~10% budget",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0127()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"low\" to enabled thinking with ~10% budget").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"low\" to enabled thinking with ~10% budget"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"medium\" to enabled thinking with ~30% budget", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"medium\" to enabled thinking with ~30% budget",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0128()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"medium\" to enabled thinking with ~30% budget").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"medium\" to enabled thinking with ~30% budget"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"high\" to enabled thinking with ~60% budget", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"high\" to enabled thinking with ~60% budget",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0129()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"high\" to enabled thinking with ~60% budget").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"high\" to enabled thinking with ~60% budget"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"xhigh\" to enabled thinking with ~90% budget", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"xhigh\" to enabled thinking with ~90% budget",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0130()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"xhigh\" to enabled thinking with ~90% budget").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should map reasoning \"xhigh\" to enabled thinking with ~90% budget"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should clamp budget to minimum 1024 tokens", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should clamp budget to minimum 1024 tokens",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0131()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should clamp budget to minimum 1024 tokens").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (older models with budget-based thinking)::should clamp budget to minimum 1024 tokens"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should extract text response", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should extract text response",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0167()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should extract text response").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should extract text response"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should extract usage", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should extract usage",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0168()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should extract usage").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should extract usage"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should send additional response information", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should send additional response information",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0169()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should send additional response information").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should send additional response information"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should include stop_sequence in provider metadata", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should include stop_sequence in provider metadata",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Case_0170()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should include stop_sequence in provider metadata").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should include stop_sequence in provider metadata"
+            )
+            .ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should expose the raw response headers", Coverage = UpstreamCoverage.Partial)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should expose the raw response headers",
+        Coverage = UpstreamCoverage.Partial
+    )]
     public async Task Case_0178()
     {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should expose the raw response headers").ConfigureAwait(false);
+        await AnthropicCases
+            .Run(
+                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should expose the raw response headers"
+            )
+            .ConfigureAwait(false);
     }
-
 }

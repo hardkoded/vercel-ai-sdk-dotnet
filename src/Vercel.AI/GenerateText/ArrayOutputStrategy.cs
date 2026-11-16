@@ -42,10 +42,7 @@ public static class OutputStrategies
             items[property.Name] = clone;
         }
 
-        var root = new JsonObject
-        {
-            ["$schema"] = "http://json-schema.org/draft-07/schema#",
-        };
+        var root = new JsonObject { ["$schema"] = "http://json-schema.org/draft-07/schema#" };
         if (definitions != null)
         {
             root["definitions"] = definitions;
@@ -59,11 +56,7 @@ public static class OutputStrategies
         root["type"] = "object";
         root["properties"] = new JsonObject
         {
-            ["elements"] = new JsonObject
-            {
-                ["type"] = "array",
-                ["items"] = items,
-            },
+            ["elements"] = new JsonObject { ["type"] = "array", ["items"] = items },
         };
         root["required"] = new JsonArray(JsonValue.Create("elements"));
         root["additionalProperties"] = false;

@@ -12,7 +12,8 @@ namespace Vercel.AI.Gateway;
 /// </summary>
 internal static class VercelEnvironment
 {
-    private static readonly AsyncLocal<Func<CancellationToken, Task<string>>?> s_oidcTokenOverride = new();
+    private static readonly AsyncLocal<Func<CancellationToken, Task<string>>?> s_oidcTokenOverride =
+        new();
 
     /// <summary>Environment variable that carries the Vercel OIDC token.</summary>
     public const string OidcTokenEnvironmentVariable = "VERCEL_OIDC_TOKEN";
@@ -36,7 +37,9 @@ internal static class VercelEnvironment
         var token = Environment.GetEnvironmentVariable(OidcTokenEnvironmentVariable);
         if (string.IsNullOrWhiteSpace(token))
         {
-            throw new AiSdkException("The '" + OidcTokenEnvironmentVariable + "' environment variable is not set.");
+            throw new AiSdkException(
+                "The '" + OidcTokenEnvironmentVariable + "' environment variable is not set."
+            );
         }
 
         return Task.FromResult(token!);

@@ -14,7 +14,10 @@ public sealed class PrepareResponsesToolsEmptyToolsTests
     private const string Prefix = TestFile + " > empty tools::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should return undefined for empty tools array", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should return undefined for empty tools array",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_return_undefined_for_empty_tools_array()
     {
         var result = XaiResponsesTools.Prepare(Array.Empty<LanguageModelTool>(), null);
@@ -24,7 +27,10 @@ public sealed class PrepareResponsesToolsEmptyToolsTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should return undefined for undefined tools", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should return undefined for undefined tools",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_return_undefined_for_undefined_tools()
     {
         var result = XaiResponsesTools.Prepare(null, null);

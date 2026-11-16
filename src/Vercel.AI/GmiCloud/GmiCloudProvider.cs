@@ -21,21 +21,27 @@ public sealed class GmiCloudProvider : OpenAICompatibleProvider
 
     /// <summary>Creates a provider.</summary>
     public GmiCloudProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
-        : base(Prepare(options), httpClient)
-    {
-    }
+        : base(Prepare(options), httpClient) { }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static new GmiCloudProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new GmiCloudProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new GmiCloudProvider(client, options);
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
-        if (string.IsNullOrEmpty(options.ProviderName) || options.ProviderName == "openai-compatible")
+        if (
+            string.IsNullOrEmpty(options.ProviderName)
+            || options.ProviderName == "openai-compatible"
+        )
         {
             options.ProviderName = ProviderId;
         }
@@ -67,14 +73,21 @@ public sealed class GmiCloudProvider : OpenAICompatibleProvider
 public static class GmiCloudServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddGmiCloud(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddGmiCloud(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(GmiCloudProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new GmiCloudProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(GmiCloudProvider.ProviderId), options);
+            return new GmiCloudProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(GmiCloudProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

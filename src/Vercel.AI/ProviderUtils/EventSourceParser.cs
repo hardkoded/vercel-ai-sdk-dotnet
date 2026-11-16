@@ -48,7 +48,8 @@ public sealed class EventSourceParser
         Action<EventSourceMessage> onEvent,
         Action<int>? onRetry = null,
         Action<string>? onComment = null,
-        Action<string>? onError = null)
+        Action<string>? onError = null
+    )
     {
         if (onEvent is null)
         {
@@ -88,7 +89,12 @@ public sealed class EventSourceParser
 
             ParseLine(text, index, lineEnd, onEvent, onRetry, onComment, onError);
             index = lineEnd + 1;
-            if (lineEnd < text.Length && text[lineEnd] == '\r' && index < text.Length && text[index] == '\n')
+            if (
+                lineEnd < text.Length
+                && text[lineEnd] == '\r'
+                && index < text.Length
+                && text[index] == '\n'
+            )
             {
                 index++;
             }
@@ -110,7 +116,8 @@ public sealed class EventSourceParser
         bool consume = false,
         Action<int>? onRetry = null,
         Action<string>? onComment = null,
-        Action<string>? onError = null)
+        Action<string>? onError = null
+    )
     {
         if (consume && _pending.Length > 0)
         {
@@ -133,7 +140,8 @@ public sealed class EventSourceParser
         Action<EventSourceMessage> onEvent,
         Action<int>? onRetry,
         Action<string>? onComment,
-        Action<string>? onError)
+        Action<string>? onError
+    )
     {
         if (start == end)
         {
@@ -195,7 +203,15 @@ public sealed class EventSourceParser
                 _id = value.IndexOf('\0') >= 0 ? null : value;
                 break;
             case "retry":
-                if (IsDigits(value) && int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var retry))
+                if (
+                    IsDigits(value)
+                    && int.TryParse(
+                        value,
+                        NumberStyles.None,
+                        CultureInfo.InvariantCulture,
+                        out var retry
+                    )
+                )
                 {
                     if (onRetry != null)
                     {
@@ -288,7 +304,12 @@ public sealed class EventSourceParser
             return chunk.Substring(1);
         }
 
-        if (chunk.Length >= 3 && chunk[0] == '\u00EF' && chunk[1] == '\u00BB' && chunk[2] == '\u00BF')
+        if (
+            chunk.Length >= 3
+            && chunk[0] == '\u00EF'
+            && chunk[1] == '\u00BB'
+            && chunk[2] == '\u00BF'
+        )
         {
             return chunk.Substring(3);
         }

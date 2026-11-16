@@ -22,7 +22,8 @@ public static class LanguageModelPrompts
         IReadOnlyList<ModelMessage> messages,
         IReadOnlyDictionary<string, string> supportedUrls,
         Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>? download,
-        CancellationToken abortSignal = default)
+        CancellationToken abortSignal = default
+    )
     {
         if (messages is null)
         {
@@ -30,10 +31,12 @@ public static class LanguageModelPrompts
         }
 
         var downloaded = await DownloadAssetsAsync(
-            messages,
-            download ?? DefaultDownloadFunction.Create(null, abortSignal),
-            supportedUrls ?? UrlSupport.None,
-            abortSignal).ConfigureAwait(false);
+                messages,
+                download ?? DefaultDownloadFunction.Create(null, abortSignal),
+                supportedUrls ?? UrlSupport.None,
+                abortSignal
+            )
+            .ConfigureAwait(false);
         if (downloaded.Count == 0)
         {
             return messages;
@@ -42,13 +45,18 @@ public static class LanguageModelPrompts
         var converted = new List<ModelMessage>(messages.Count);
         foreach (var message in messages)
         {
-            converted.Add(message switch
-            {
-                UserModelMessage user => ConvertUserMessage(user, downloaded),
-                ToolModelMessage tool => ConvertToolMessage(tool, downloaded),
-                AssistantModelMessage assistant => ConvertAssistantMessage(assistant, downloaded),
-                _ => message,
-            });
+            converted.Add(
+                message switch
+                {
+                    UserModelMessage user => ConvertUserMessage(user, downloaded),
+                    ToolModelMessage tool => ConvertToolMessage(tool, downloaded),
+                    AssistantModelMessage assistant => ConvertAssistantMessage(
+                        assistant,
+                        downloaded
+                    ),
+                    _ => message,
+                }
+            );
         }
 
         return converted;
@@ -60,7 +68,8 @@ public static class LanguageModelPrompts
         IReadOnlyList<ModelMessage> messages,
         Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>> download,
         IReadOnlyDictionary<string, string> supportedUrls,
-        CancellationToken abortSignal = default)
+        CancellationToken abortSignal = default
+    )
     {
         var planned = new List<DownloadRequestItem>();
         foreach (var message in messages)
@@ -85,7 +94,12 @@ public static class LanguageModelPrompts
                 {
                     if (part is AssistantToolResultPart assistantResult)
                     {
-                        PlanToolResultDownloads(assistantResult.Output, planned, supportedUrls, abortSignal);
+                        PlanToolResultDownloads(
+                            assistantResult.Output,
+                            planned,
+                            supportedUrls,
+                            abortSignal
+                        );
                     }
                 }
             }
@@ -96,7 +110,13 @@ public static class LanguageModelPrompts
         var downloadedFiles = await download(planned).ConfigureAwait(false);
         if (downloadedFiles.Count != planned.Count)
         {
-            throw new InvalidOperationException("The download function returned " + downloadedFiles.Count + " results for " + planned.Count + " requested downloads.");
+            throw new InvalidOperationException(
+                "The download function returned "
+                    + downloadedFiles.Count
+                    + " results for "
+                    + planned.Count
+                    + " requested downloads."
+            );
         }
 
         for (var i = 0; i < downloadedFiles.Count && i < planned.Count; i++)
@@ -110,16 +130,34 @@ public static class LanguageModelPrompts
         return result;
     }
 
-    private static void PlanDownload(UserContentPart part, List<DownloadRequestItem> planned, IReadOnlyDictionary<string, string> supportedUrls, CancellationToken abortSignal)
+    private static void PlanDownload(
+        UserContentPart part,
+        List<DownloadRequestItem> planned,
+        IReadOnlyDictionary<string, string> supportedUrls,
+        CancellationToken abortSignal
+    )
     {
         if (part is FileContentPart file && TryGetUrl(file, out var url))
         {
-            planned.Add(new DownloadRequestItem(url, UrlSupport.IsUrlSupported(file.MediaType, url.ToString(), supportedUrls)) { AbortSignal = abortSignal });
+            planned.Add(
+                new DownloadRequestItem(
+                    url,
+                    UrlSupport.IsUrlSupported(file.MediaType, url.ToString(), supportedUrls)
+                )
+                {
+                    AbortSignal = abortSignal,
+                }
+            );
         }
     }
 
     // Tool results (and provider-executed tool results in assistant messages) with output type "content" carry files that are downloaded like user files.
-    private static void PlanToolResultDownloads(ToolModelMessage result, List<DownloadRequestItem> planned, IReadOnlyDictionary<string, string> supportedUrls, CancellationToken abortSignal)
+    private static void PlanToolResultDownloads(
+        ToolModelMessage result,
+        List<DownloadRequestItem> planned,
+        IReadOnlyDictionary<string, string> supportedUrls,
+        CancellationToken abortSignal
+    )
     {
         if (result.OutputContent is null)
         {
@@ -132,7 +170,10 @@ public static class LanguageModelPrompts
         }
     }
 
-    private static ToolModelMessage ConvertToolResult(ToolModelMessage result, IReadOnlyDictionary<string, DownloadResult> downloaded)
+    private static ToolModelMessage ConvertToolResult(
+        ToolModelMessage result,
+        IReadOnlyDictionary<string, DownloadResult> downloaded
+    )
     {
         if (result.OutputContent is null)
         {
@@ -153,7 +194,12 @@ public static class LanguageModelPrompts
             return result;
         }
 
-        return new ToolModelMessage(result.ToolCallId, result.ToolName, content, result.ProviderMetadata)
+        return new ToolModelMessage(
+            result.ToolCallId,
+            result.ToolName,
+            content,
+            result.ProviderMetadata
+        )
         {
             ProviderOptions = result.ProviderOptions,
             OutputProviderOptions = result.OutputProviderOptions,
@@ -161,7 +207,10 @@ public static class LanguageModelPrompts
         };
     }
 
-    private static ToolModelMessage ConvertToolMessage(ToolModelMessage tool, IReadOnlyDictionary<string, DownloadResult> downloaded)
+    private static ToolModelMessage ConvertToolMessage(
+        ToolModelMessage tool,
+        IReadOnlyDictionary<string, DownloadResult> downloaded
+    )
     {
         if (tool.Results.Count == 1 && ReferenceEquals(tool.Results[0], tool))
         {
@@ -177,10 +226,15 @@ public static class LanguageModelPrompts
             results.Add(converted);
         }
 
-        return changed ? new ToolModelMessage(results) { MessageProviderOptions = tool.MessageProviderOptions } : tool;
+        return changed
+            ? new ToolModelMessage(results) { MessageProviderOptions = tool.MessageProviderOptions }
+            : tool;
     }
 
-    private static AssistantModelMessage ConvertAssistantMessage(AssistantModelMessage assistant, IReadOnlyDictionary<string, DownloadResult> downloaded)
+    private static AssistantModelMessage ConvertAssistantMessage(
+        AssistantModelMessage assistant,
+        IReadOnlyDictionary<string, DownloadResult> downloaded
+    )
     {
         var changed = false;
         var parts = new List<AssistantContentPart>(assistant.Parts.Count);
@@ -192,7 +246,14 @@ public static class LanguageModelPrompts
                 if (!ReferenceEquals(output, toolResult.Output))
                 {
                     changed = true;
-                    parts.Add(new AssistantToolResultPart(toolResult.ToolCallId, toolResult.ToolName, output, toolResult.ProviderOptions));
+                    parts.Add(
+                        new AssistantToolResultPart(
+                            toolResult.ToolCallId,
+                            toolResult.ToolName,
+                            output,
+                            toolResult.ProviderOptions
+                        )
+                    );
                     continue;
                 }
             }
@@ -201,7 +262,16 @@ public static class LanguageModelPrompts
         }
 
         return changed
-            ? new AssistantModelMessage(assistant.Text, assistant.ToolCalls, assistant.Reasoning, assistant.ReasoningProviderOptions, parts) { ProviderOptions = assistant.ProviderOptions }
+            ? new AssistantModelMessage(
+                assistant.Text,
+                assistant.ToolCalls,
+                assistant.Reasoning,
+                assistant.ReasoningProviderOptions,
+                parts
+            )
+            {
+                ProviderOptions = assistant.ProviderOptions,
+            }
             : assistant;
     }
 
@@ -213,7 +283,9 @@ public static class LanguageModelPrompts
             return false;
         }
 
-        var converted = FileParts.ConvertToLanguageModelV4FilePart(FilePartInput.FromString(file.Url));
+        var converted = FileParts.ConvertToLanguageModelV4FilePart(
+            FilePartInput.FromString(file.Url)
+        );
         if (converted.DataType != "url" || converted.Url is null)
         {
             return false;
@@ -223,7 +295,10 @@ public static class LanguageModelPrompts
         return true;
     }
 
-    private static UserModelMessage ConvertUserMessage(UserModelMessage user, IReadOnlyDictionary<string, DownloadResult> downloaded)
+    private static UserModelMessage ConvertUserMessage(
+        UserModelMessage user,
+        IReadOnlyDictionary<string, DownloadResult> downloaded
+    )
     {
         var content = new List<UserContentPart>(user.Content.Count);
         foreach (var part in user.Content)
@@ -235,15 +310,25 @@ public static class LanguageModelPrompts
     }
 
     // Maps to convertPartToLanguageModelPart for a URL that was downloaded.
-    private static UserContentPart ConvertFilePart(FileContentPart file, IReadOnlyDictionary<string, DownloadResult> downloaded)
+    private static UserContentPart ConvertFilePart(
+        FileContentPart file,
+        IReadOnlyDictionary<string, DownloadResult> downloaded
+    )
     {
-        if (!TryGetUrl(file, out var url) || !downloaded.TryGetValue(url.ToString(), out var result) || result.Data is null)
+        if (
+            !TryGetUrl(file, out var url)
+            || !downloaded.TryGetValue(url.ToString(), out var result)
+            || result.Data is null
+        )
         {
             return file;
         }
 
         var mediaType = file.MediaType;
-        if (result.MediaType != null && (string.IsNullOrEmpty(mediaType) || !MediaTypes.IsFullMediaType(mediaType)))
+        if (
+            result.MediaType != null
+            && (string.IsNullOrEmpty(mediaType) || !MediaTypes.IsFullMediaType(mediaType))
+        )
         {
             mediaType = result.MediaType;
         }
@@ -254,6 +339,9 @@ public static class LanguageModelPrompts
             mediaType = imageMediaType;
         }
 
-        return new FileContentPart(mediaType, null, result.Data, file.FileName) { ProviderOptions = file.ProviderOptions };
+        return new FileContentPart(mediaType, null, result.Data, file.FileName)
+        {
+            ProviderOptions = file.ProviderOptions,
+        };
     }
 }

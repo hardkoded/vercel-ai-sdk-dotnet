@@ -15,11 +15,16 @@ public sealed class TruncationTests
     private const string Prefix = FilePath + "::createWebFetchTool > truncation::";
 
     [Fact]
-    [UpstreamTest(Prefix + "truncates long content and continues at an offset from the cache", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "truncates long content and continues at an offset from the cache",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task TruncatesLongContentAndContinuesAtAnOffsetFromTheCache()
     {
         var fetch = new RecordingFetch((_, _) => DownloadResponse.Text(new string('a', 25)));
-        var webFetch = WebFetchTools.Create(new WebFetchToolOptions { Fetch = fetch.Fetch, MaxLength = 10 });
+        var webFetch = WebFetchTools.Create(
+            new WebFetchToolOptions { Fetch = fetch.Fetch, MaxLength = 10 }
+        );
 
         var first = await ExecuteAsync(webFetch, "https://example.com/");
         Assert.Equal(new string('a', 10), Content(first));
@@ -27,7 +32,10 @@ public sealed class TruncationTests
         Assert.Equal(25, first.GetProperty("totalLength").GetInt32());
         Assert.Equal(10, first.GetProperty("nextOffset").GetInt32());
         var modelOutput = Assert.IsType<TextToolModelOutput>(ToModelOutput(webFetch, first));
-        Assert.Contains("Call the tool again with offset 10 to continue reading.", modelOutput.Value);
+        Assert.Contains(
+            "Call the tool again with offset 10 to continue reading.",
+            modelOutput.Value
+        );
 
         var last = await ExecuteAsync(webFetch, "https://example.com/", offset: 20);
         Assert.Equal(new string('a', 5), Content(last));
@@ -42,7 +50,9 @@ public sealed class TruncationTests
     public async Task RefetchesAtOffset0()
     {
         var fetch = new RecordingFetch((_, _) => DownloadResponse.Text(new string('a', 25)));
-        var webFetch = WebFetchTools.Create(new WebFetchToolOptions { Fetch = fetch.Fetch, MaxLength = 10 });
+        var webFetch = WebFetchTools.Create(
+            new WebFetchToolOptions { Fetch = fetch.Fetch, MaxLength = 10 }
+        );
 
         await ExecuteAsync(webFetch, "https://example.com/");
         await ExecuteAsync(webFetch, "https://example.com/");
@@ -55,7 +65,9 @@ public sealed class TruncationTests
     public async Task DoesNotSplitSurrogatePairs()
     {
         var fetch = new RecordingFetch((_, _) => DownloadResponse.Text("abc😀def"));
-        var webFetch = WebFetchTools.Create(new WebFetchToolOptions { Fetch = fetch.Fetch, MaxLength = 4 });
+        var webFetch = WebFetchTools.Create(
+            new WebFetchToolOptions { Fetch = fetch.Fetch, MaxLength = 4 }
+        );
 
         var output = await ExecuteAsync(webFetch, "https://example.com/");
 
@@ -64,7 +76,10 @@ public sealed class TruncationTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "returns empty content past the end", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "returns empty content past the end",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ReturnsEmptyContentPastTheEnd()
     {
         var fetch = new RecordingFetch((_, _) => DownloadResponse.Text("short"));

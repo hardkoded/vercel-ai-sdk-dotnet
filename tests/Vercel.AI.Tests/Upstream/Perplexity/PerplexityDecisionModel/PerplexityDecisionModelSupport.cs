@@ -18,7 +18,12 @@ internal static class PerplexityDecisionModelSupport
     internal static JsonObject Fixture()
     {
         // Illustrative response from the official OpenAPI schema, not a live capture.
-        return (JsonObject)JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "perplexity-decisions.json")))!;
+        return (JsonObject)
+            JsonNode.Parse(
+                File.ReadAllText(
+                    Path.Combine(AppContext.BaseDirectory, "Fixtures", "perplexity-decisions.json")
+                )
+            )!;
     }
 
     internal static Dictionary<string, DecisionQuestion> Questions()
@@ -29,8 +34,18 @@ internal static class PerplexityDecisionModelSupport
             ["sentiment"] = Q(
                 "choice",
                 "What is the sentiment?",
-                new Dictionary<string, object?> { ["positive"] = "Satisfied", ["mixed"] = "Praise and complaints", ["negative"] = "Dissatisfied" }),
-            ["severity"] = Q("score", "How severe is the problem?", new List<object?> { "Cosmetic", "Inconvenient", "Product unusable" }),
+                new Dictionary<string, object?>
+                {
+                    ["positive"] = "Satisfied",
+                    ["mixed"] = "Praise and complaints",
+                    ["negative"] = "Dissatisfied",
+                }
+            ),
+            ["severity"] = Q(
+                "score",
+                "How severe is the problem?",
+                new List<object?> { "Cosmetic", "Inconvenient", "Product unusable" }
+            ),
         };
     }
 
@@ -57,7 +72,10 @@ internal static class PerplexityDecisionModelSupport
             new Dictionary<string, object?>
             {
                 ["type"] = "json",
-                ["value"] = new Dictionary<string, object?> { ["review"] = "Great sound, but the battery broke." },
+                ["value"] = new Dictionary<string, object?>
+                {
+                    ["review"] = "Great sound, but the battery broke.",
+                },
             },
         };
     }
@@ -68,25 +86,53 @@ internal static class PerplexityDecisionModelSupport
         IReadOnlyDictionary<string, string>? headers = null,
         CancellationToken cancellationToken = default,
         double? maxOutputTokens = null,
-        string? reasoning = null)
+        string? reasoning = null
+    )
     {
         using var document = JsonDocument.Parse(providerOptions);
-        return new DecisionModelCall(P(State()), questions ?? Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), cancellationToken, maxOutputTokens, reasoning);
+        return new DecisionModelCall(
+            P(State()),
+            questions ?? Questions(),
+            document.RootElement.Clone(),
+            headers ?? new Dictionary<string, string>(),
+            cancellationToken,
+            maxOutputTokens,
+            reasoning
+        );
     }
 
-    internal static (PerplexityProvider Provider, OpenAICapture Capture) SetupProvider(JsonNode? body = null, HttpStatusCode status = HttpStatusCode.OK, string? rawBody = null)
+    internal static (PerplexityProvider Provider, OpenAICapture Capture) SetupProvider(
+        JsonNode? body = null,
+        HttpStatusCode status = HttpStatusCode.OK,
+        string? rawBody = null
+    )
     {
-        var capture = new OpenAICapture { ResponseJson = rawBody ?? (body ?? Fixture()).ToJsonString(), Status = status };
+        var capture = new OpenAICapture
+        {
+            ResponseJson = rawBody ?? (body ?? Fixture()).ToJsonString(),
+            Status = status,
+        };
         capture.ResponseHeaders["x-request-id"] = "request-123";
         capture.ResponseHeaders["retry-after"] = "2";
         capture.ResponseHeaders["x-ratelimit-remaining"] = "9";
-        var options = new OpenAICompatibleOptions { ApiKey = "test-key", BaseUrl = "https://example.com/" };
+        var options = new OpenAICompatibleOptions
+        {
+            ApiKey = "test-key",
+            BaseUrl = "https://example.com/",
+        };
         options.Headers["x-provider"] = "custom";
         options.Headers["shared"] = "provider";
         return (PerplexityProvider.Create(options, capture), capture);
     }
 
-    internal static (Vercel.AI.Perplexity.PerplexityDecisionModel Model, OpenAICapture Capture) Setup(JsonNode? body = null, HttpStatusCode status = HttpStatusCode.OK, string? rawBody = null)
+    internal static (
+        Vercel.AI.Perplexity.PerplexityDecisionModel Model,
+        OpenAICapture Capture
+    ) Setup(
+        JsonNode? body = null,
+        HttpStatusCode status = HttpStatusCode.OK,
+        string? rawBody = null
+    )
     {
         var (provider, capture) = SetupProvider(body, status, rawBody);
         return (provider.DecisionModel("pplx-decider-latest"), capture);

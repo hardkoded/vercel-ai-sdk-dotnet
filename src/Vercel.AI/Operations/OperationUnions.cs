@@ -26,13 +26,19 @@ public sealed class ApiOrProvider<TApi, TProvider>
     /// <summary>Wraps an API.</summary>
     public static ApiOrProvider<TApi, TProvider> FromApi(TApi api)
     {
-        return new ApiOrProvider<TApi, TProvider>(api ?? throw new ArgumentNullException(nameof(api)), null);
+        return new ApiOrProvider<TApi, TProvider>(
+            api ?? throw new ArgumentNullException(nameof(api)),
+            null
+        );
     }
 
     /// <summary>Wraps a provider.</summary>
     public static ApiOrProvider<TApi, TProvider> FromProvider(TProvider provider)
     {
-        return new ApiOrProvider<TApi, TProvider>(null, provider ?? throw new ArgumentNullException(nameof(provider)));
+        return new ApiOrProvider<TApi, TProvider>(
+            null,
+            provider ?? throw new ArgumentNullException(nameof(provider))
+        );
     }
 }
 

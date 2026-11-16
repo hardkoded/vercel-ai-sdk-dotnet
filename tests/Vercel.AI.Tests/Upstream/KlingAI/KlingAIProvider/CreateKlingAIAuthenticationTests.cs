@@ -13,7 +13,8 @@ namespace Vercel.AI.Tests.Upstream.KlingAI.KlingAIProvider;
 [Collection(KlingAIEnvironmentCollection.Name)]
 public sealed class CreateKlingAIAuthenticationTests : IDisposable
 {
-    private const string Prefix = "packages/klingai/src/klingai-provider.test.ts::createKlingAI > authentication::";
+    private const string Prefix =
+        "packages/klingai/src/klingai-provider.test.ts::createKlingAI > authentication::";
 
     private readonly KlingAIEnvironment _env = new();
 
@@ -23,7 +24,10 @@ public sealed class CreateKlingAIAuthenticationTests : IDisposable
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should send the resolved token as a bearer token", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should send the resolved token as a bearer token",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_send_the_resolved_token_as_a_bearer_token()
     {
         // Upstream mocks the resolver; here the real resolver runs: an api key is resolved verbatim.
@@ -33,16 +37,25 @@ public sealed class CreateKlingAIAuthenticationTests : IDisposable
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should forward legacy credentials to the token resolver", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should forward legacy credentials to the token resolver",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_forward_legacy_credentials_to_the_token_resolver()
     {
-        var call = await SendAsync(new KlingAIOptions { AccessKey = "test-ak", SecretKey = "test-sk" });
+        var call = await SendAsync(
+            new KlingAIOptions { AccessKey = "test-ak", SecretKey = "test-sk" }
+        );
 
         var token = call.Header("Authorization")!.Substring("Bearer ".Length);
         Assert.Equal("test-ak", (string?)KlingAIJwt.Decode(token, 1)["iss"]);
         var parts = token.Split('.');
         using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes("test-sk"));
-        var expected = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(parts[0] + "." + parts[1]))).Replace('+', '-').Replace('/', '_').TrimEnd('=');
+        var expected = Convert
+            .ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(parts[0] + "." + parts[1])))
+            .Replace('+', '-')
+            .Replace('/', '_')
+            .TrimEnd('=');
         Assert.Equal(expected, parts[2]);
     }
 

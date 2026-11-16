@@ -10,9 +10,11 @@ namespace Vercel.AI.Tests.Upstream.Providers.NormalizeJsonSchemaForMfjs;
 /// <summary>Helpers shared by the <c>normalize-json-schema-for-mfjs.test.ts</c> ports.</summary>
 internal static class NormalizeJsonSchemaForMfjsSupport
 {
-    internal const string TestFile = "packages/moonshotai/src/normalize-json-schema-for-mfjs.test.ts";
+    internal const string TestFile =
+        "packages/moonshotai/src/normalize-json-schema-for-mfjs.test.ts";
 
-    internal const string RootMessage = "tool and response schemas must be a JSON Schema object with type \"object\" for moonshotai (MFJS)";
+    internal const string RootMessage =
+        "tool and response schemas must be a JSON Schema object with type \"object\" for moonshotai (MFJS)";
 
     internal static JsonNode Json(string json)
     {
@@ -26,6 +28,9 @@ internal static class NormalizeJsonSchemaForMfjsSupport
 
     internal static void AssertEqual(JsonNode expected, JsonNode? actual)
     {
-        Assert.True(JsonNode.DeepEquals(expected, actual), "Expected " + expected.ToJsonString() + " but got " + actual?.ToJsonString());
+        Assert.True(
+            JsonNode.DeepEquals(expected, actual),
+            "Expected " + expected.ToJsonString() + " but got " + actual?.ToJsonString()
+        );
     }
 }

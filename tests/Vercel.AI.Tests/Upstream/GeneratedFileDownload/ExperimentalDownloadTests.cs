@@ -13,13 +13,21 @@ namespace Vercel.AI.Tests.Upstream.GeneratedFileDownload;
 [Collection("DownloadFetch")]
 public sealed class ExperimentalDownloadTests
 {
-    private const string Id = "packages/ai/src/generate-text/generated-file-download.test.ts::generated file downloads > experimental_download::";
+    private const string Id =
+        "packages/ai/src/generate-text/generated-file-download.test.ts::generated file downloads > experimental_download::";
 
     [Theory]
     [InlineData("generate")]
     [InlineData("stream")]
-    [UpstreamTest(Id + "downloads %s file URLs through the configured download function instead of global fetch", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
-    public async Task Downloads_file_urls_through_the_configured_download_function_instead_of_global_fetch(string mode)
+    [UpstreamTest(
+        Id
+            + "downloads %s file URLs through the configured download function instead of global fetch",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "2ebc78b65435926718879f85a1a85687b053c542"
+    )]
+    public async Task Downloads_file_urls_through_the_configured_download_function_instead_of_global_fetch(
+        string mode
+    )
     {
         var globalFetches = 0;
         var calls = new List<IReadOnlyList<DownloadRequestItem>>();
@@ -31,29 +39,52 @@ public sealed class ExperimentalDownloadTests
                 globalFetches++;
                 return Task.FromResult(new DownloadResponse(500, "Unexpected", null, null));
             };
-            Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>> download = requests =>
-            {
-                calls.Add(requests);
-                return Task.FromResult<IReadOnlyList<DownloadResult>>(requests.Select(_ => new DownloadResult(Encoding.UTF8.GetBytes("Hello World"), "text/plain")).ToArray());
-            };
+            Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>> download =
+                requests =>
+                {
+                    calls.Add(requests);
+                    return Task.FromResult<IReadOnlyList<DownloadResult>>(
+                        requests
+                            .Select(_ => new DownloadResult(
+                                Encoding.UTF8.GetBytes("Hello World"),
+                                "text/plain"
+                            ))
+                            .ToArray()
+                    );
+                };
             IReadOnlyList<GeneratedFile> files;
             if (mode == "generate")
             {
-                files = (await GeneratedFileDownloadTests.Client().GenerateTextAsync(new GenerateTextOptions
-                {
-                    Model = GeneratedFileDownloadTests.FileModel("https://example.com/generated.txt"),
-                    Prompt = "image",
-                    ExperimentalDownload = download,
-                })).Files;
+                files = (
+                    await GeneratedFileDownloadTests
+                        .Client()
+                        .GenerateTextAsync(
+                            new GenerateTextOptions
+                            {
+                                Model = GeneratedFileDownloadTests.FileModel(
+                                    "https://example.com/generated.txt"
+                                ),
+                                Prompt = "image",
+                                ExperimentalDownload = download,
+                            }
+                        )
+                ).Files;
             }
             else
             {
-                files = await GeneratedFileDownloadTests.Client().StreamTextAsync(new StreamTextOptions
-                {
-                    Model = GeneratedFileDownloadTests.FileModel("https://example.com/generated.txt"),
-                    Prompt = "image",
-                    ExperimentalDownload = download,
-                }).Files;
+                files = await GeneratedFileDownloadTests
+                    .Client()
+                    .StreamTextAsync(
+                        new StreamTextOptions
+                        {
+                            Model = GeneratedFileDownloadTests.FileModel(
+                                "https://example.com/generated.txt"
+                            ),
+                            Prompt = "image",
+                            ExperimentalDownload = download,
+                        }
+                    )
+                    .Files;
             }
 
             Assert.Equal(Encoding.UTF8.GetBytes("Hello World"), files[0].Data);
@@ -73,7 +104,11 @@ public sealed class ExperimentalDownloadTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "uses the fetch transport of createDownload for generated file URLs", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
+    [UpstreamTest(
+        Id + "uses the fetch transport of createDownload for generated file URLs",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "2ebc78b65435926718879f85a1a85687b053c542"
+    )]
     public async Task Uses_the_fetch_transport_of_createDownload_for_generated_file_urls()
     {
         var globalFetches = 0;
@@ -86,16 +121,24 @@ public sealed class ExperimentalDownloadTests
                 globalFetches++;
                 return Task.FromResult(new DownloadResponse(500, "Unexpected", null, null));
             };
-            var result = await GeneratedFileDownloadTests.Client().GenerateTextAsync(new GenerateTextOptions
-            {
-                Model = GeneratedFileDownloadTests.FileModel("https://example.com/generated.txt"),
-                Prompt = "image",
-                ExperimentalDownload = Download.CreateDownload(fetch: (url, request) =>
-                {
-                    fetched.Add((url, request.Redirect));
-                    return Task.FromResult(DownloadResponse.Text("Hello World"));
-                }),
-            });
+            var result = await GeneratedFileDownloadTests
+                .Client()
+                .GenerateTextAsync(
+                    new GenerateTextOptions
+                    {
+                        Model = GeneratedFileDownloadTests.FileModel(
+                            "https://example.com/generated.txt"
+                        ),
+                        Prompt = "image",
+                        ExperimentalDownload = Download.CreateDownload(
+                            fetch: (url, request) =>
+                            {
+                                fetched.Add((url, request.Redirect));
+                                return Task.FromResult(DownloadResponse.Text("Hello World"));
+                            }
+                        ),
+                    }
+                );
 
             Assert.Equal(Encoding.UTF8.GetBytes("Hello World"), result.Files[0].Data);
         }
@@ -111,15 +154,30 @@ public sealed class ExperimentalDownloadTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "rejects a null result for a generated file URL", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
+    [UpstreamTest(
+        Id + "rejects a null result for a generated file URL",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "2ebc78b65435926718879f85a1a85687b053c542"
+    )]
     public async Task Rejects_a_null_result_for_a_generated_file_url()
     {
-        var exception = await Assert.ThrowsAsync<DownloadException>(() => GeneratedFileDownloadTests.Client().GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = GeneratedFileDownloadTests.FileModel("https://example.com/generated.txt"),
-            Prompt = "image",
-            ExperimentalDownload = requests => Task.FromResult<IReadOnlyList<DownloadResult>>(requests.Select(_ => (DownloadResult)null!).ToArray()),
-        }));
+        var exception = await Assert.ThrowsAsync<DownloadException>(() =>
+            GeneratedFileDownloadTests
+                .Client()
+                .GenerateTextAsync(
+                    new GenerateTextOptions
+                    {
+                        Model = GeneratedFileDownloadTests.FileModel(
+                            "https://example.com/generated.txt"
+                        ),
+                        Prompt = "image",
+                        ExperimentalDownload = requests =>
+                            Task.FromResult<IReadOnlyList<DownloadResult>>(
+                                requests.Select(_ => (DownloadResult)null!).ToArray()
+                            ),
+                    }
+                )
+        );
 
         Assert.Equal("AI_DownloadError", exception.Name);
         Assert.Equal("https://example.com/generated.txt", exception.Url);

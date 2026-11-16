@@ -13,45 +13,74 @@ namespace Vercel.AI.Tests.OpenAIResponsesLanguageModelTests;
 /// <summary>Port of <c>openai-responses-language-model.test.ts</c> &gt; <c>OpenAIResponsesLanguageModel &gt; doStream &gt; custom tool</c>.</summary>
 public sealed class DoStreamCustomToolTests
 {
-    private const string Prefix = "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doStream > custom tool::";
+    private const string Prefix =
+        "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doStream > custom tool::";
 
-    public static TheoryData<string[]> RawDeltas => new()
-    {
-        { new[] { "text(", "\"probe\"", ");\n" } },
-        { new[] { "path\\", "\t\r\n", "\u0000" } },
-        { new[] { "\"", "quoted", "\"" } },
-        { new[] { "\ud83d", "\ude00" } },
-        { Array.Empty<string>() },
-    };
+    public static TheoryData<string[]> RawDeltas =>
+        new()
+        {
+            { new[] { "text(", "\"probe\"", ");\n" } },
+            { new[] { "path\\", "\t\r\n", "\u0000" } },
+            { new[] { "\"", "quoted", "\"" } },
+            { new[] { "\ud83d", "\ude00" } },
+            { Array.Empty<string>() },
+        };
 
     [Theory]
     [MemberData(nameof(RawDeltas))]
     [UpstreamTest(
         Prefix + "should preserve raw custom tool input deltas: %j",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_preserve_raw_custom_tool_input_deltas(string[] deltas)
     {
-        JsonObject Item(string input) => new()
-        {
-            ["type"] = "custom_tool_call",
-            ["id"] = "ct_probe",
-            ["call_id"] = "call_probe",
-            ["name"] = "exec",
-            ["status"] = "completed",
-            ["input"] = input,
-        };
+        JsonObject Item(string input) =>
+            new()
+            {
+                ["type"] = "custom_tool_call",
+                ["id"] = "ct_probe",
+                ["call_id"] = "call_probe",
+                ["name"] = "exec",
+                ["status"] = "completed",
+                ["input"] = input,
+            };
 
         // JsonNode cannot write a lone surrogate, so each delta is written as \uXXXX escapes.
         static string Data(JsonNode node) => "data: " + node.ToJsonString() + "\n\n";
-        static string Escape(string text) => string.Concat(text.Select(c => "\\u" + ((int)c).ToString("x4", CultureInfo.InvariantCulture)));
+        static string Escape(string text) =>
+            string.Concat(
+                text.Select(c => "\\u" + ((int)c).ToString("x4", CultureInfo.InvariantCulture))
+            );
 
-        var body = new StringBuilder(Data(new JsonObject { ["type"] = "response.output_item.added", ["output_index"] = 0, ["item"] = Item(string.Empty) }));
+        var body = new StringBuilder(
+            Data(
+                new JsonObject
+                {
+                    ["type"] = "response.output_item.added",
+                    ["output_index"] = 0,
+                    ["item"] = Item(string.Empty),
+                }
+            )
+        );
         foreach (var delta in deltas)
         {
-            body.Append("data: {\"type\":\"response.custom_tool_call_input.delta\",\"item_id\":\"ct_probe\",\"output_index\":0,\"delta\":\"" + Escape(delta) + "\"}\n\n");
+            body.Append(
+                "data: {\"type\":\"response.custom_tool_call_input.delta\",\"item_id\":\"ct_probe\",\"output_index\":0,\"delta\":\""
+                    + Escape(delta)
+                    + "\"}\n\n"
+            );
         }
 
-        body.Append(Data(new JsonObject { ["type"] = "response.output_item.done", ["output_index"] = 0, ["item"] = Item(string.Concat(deltas)) }));
+        body.Append(
+            Data(
+                new JsonObject
+                {
+                    ["type"] = "response.output_item.done",
+                    ["output_index"] = 0,
+                    ["item"] = Item(string.Concat(deltas)),
+                }
+            )
+        );
 
         var parts = await OpenAIResponsesSupport.Stream(body.ToString());
 
@@ -63,14 +92,18 @@ public sealed class DoStreamCustomToolTests
         Assert.Equal(deltas, parts.OfType<ToolInputDeltaStreamPart>().Select(part => part.Delta));
         var call = Assert.Single(parts.OfType<ToolCallStreamPart>());
         Assert.Equal(string.Concat(deltas), JsonNode.Parse(call.ArgumentsJson)!.GetValue<string>());
-        Assert.True(parts.FindIndex(part => part is ToolInputEndStreamPart) < parts.FindIndex(part => part is ToolCallStreamPart));
+        Assert.True(
+            parts.FindIndex(part => part is ToolInputEndStreamPart)
+                < parts.FindIndex(part => part is ToolCallStreamPart)
+        );
     }
 
     [Fact]
     [UpstreamTest(Prefix + "should stream custom tool call", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_stream_custom_tool_call()
     {
-        var events = OpenAIResponsesSupport.Fixture("openai-custom-tool.1.chunks.txt")
+        var events = OpenAIResponsesSupport
+            .Fixture("openai-custom-tool.1.chunks.txt")
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
             .Select(line => JsonNode.Parse(line)!);
 
@@ -87,21 +120,35 @@ public sealed class DoStreamCustomToolTests
         Assert.Equal("call_custom_sql_001", start.Id);
         Assert.Equal("write_sql", start.ToolName);
         Assert.Equal(ToolInputEncoding.Text, start.InputEncoding);
-        Assert.Equal(new[] { "SELECT * ", "FROM users ", "WHERE age > 25" }, parts.OfType<ToolInputDeltaStreamPart>().Select(part => part.Delta));
-        Assert.All(parts.OfType<ToolInputDeltaStreamPart>(), part => Assert.Equal("call_custom_sql_001", part.Id));
-        Assert.Equal("call_custom_sql_001", Assert.Single(parts.OfType<ToolInputEndStreamPart>()).Id);
+        Assert.Equal(
+            new[] { "SELECT * ", "FROM users ", "WHERE age > 25" },
+            parts.OfType<ToolInputDeltaStreamPart>().Select(part => part.Delta)
+        );
+        Assert.All(parts.OfType<ToolInputDeltaStreamPart>(), part =>
+            Assert.Equal("call_custom_sql_001", part.Id)
+        );
+        Assert.Equal(
+            "call_custom_sql_001",
+            Assert.Single(parts.OfType<ToolInputEndStreamPart>()).Id
+        );
 
         var call = Assert.Single(parts.OfType<ToolCallStreamPart>());
         Assert.Equal("call_custom_sql_001", call.ToolCallId);
         Assert.Equal("write_sql", call.ToolName);
         Assert.Equal("\"SELECT * FROM users WHERE age > 25\"", call.ArgumentsJson);
-        JsonAssert.Equal(call.ProviderMetadata!.Value, "{\"openai\":{\"itemId\":\"ct_abc123def456\"}}");
+        JsonAssert.Equal(
+            call.ProviderMetadata!.Value,
+            "{\"openai\":{\"itemId\":\"ct_abc123def456\"}}"
+        );
 
         var finish = Assert.IsType<FinishStreamPart>(parts[^1]);
         Assert.Equal(FinishReason.ToolCalls, finish.FinishReason);
         Assert.Equal(50, finish.Usage.InputTokens);
         Assert.Equal(20, finish.Usage.OutputTokens);
         Assert.Equal(70, finish.Usage.TotalTokens);
-        JsonAssert.Equal(finish.ProviderMetadata!.Value.GetProperty("openai").GetProperty("responseId"), "\"resp_custom_tool_test_001\"");
+        JsonAssert.Equal(
+            finish.ProviderMetadata!.Value.GetProperty("openai").GetProperty("responseId"),
+            "\"resp_custom_tool_test_001\""
+        );
     }
 }

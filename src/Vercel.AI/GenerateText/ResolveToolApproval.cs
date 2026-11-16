@@ -43,7 +43,8 @@ public static class ToolApprovalResolution
         IReadOnlyList<Tool>? tools,
         GeneratedToolCall toolCall,
         ToolApprovalConfiguration? toolApproval,
-        IReadOnlyList<ModelMessage> messages)
+        IReadOnlyList<ModelMessage> messages
+    )
     {
         if (toolCall is null)
         {
@@ -53,7 +54,11 @@ public static class ToolApprovalResolution
         // user-defined generic tool approval
         if (toolApproval?.Function != null)
         {
-            return Normalize(await toolApproval.Function(new GenericToolApprovalOptions(toolCall, tools, messages)).ConfigureAwait(false));
+            return Normalize(
+                await toolApproval
+                    .Function(new GenericToolApprovalOptions(toolCall, tools, messages))
+                    .ConfigureAwait(false)
+            );
         }
 
         // The tool name can be client-controlled, so tools and approvals are looked up by exact name only.
@@ -71,15 +76,27 @@ public static class ToolApprovalResolution
         }
 
         // assume that the input has been validated and matches the tool's input schema
-        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(toolCall.ArgumentsJson) ? "{}" : toolCall.ArgumentsJson);
+        using var document = JsonDocument.Parse(
+            string.IsNullOrWhiteSpace(toolCall.ArgumentsJson) ? "{}" : toolCall.ArgumentsJson
+        );
         var input = document.RootElement.Clone();
 
         // user-defined per-tool approval
-        if (toolApproval != null && toolApproval.TryGetValue(toolCall.ToolName, out var entry) && entry != null)
+        if (
+            toolApproval != null
+            && toolApproval.TryGetValue(toolCall.ToolName, out var entry)
+            && entry != null
+        )
         {
-            var status = entry.Function != null
-                ? await entry.Function(input, new SingleToolApprovalOptions(toolCall.ToolCallId, messages)).ConfigureAwait(false)
-                : entry.Status;
+            var status =
+                entry.Function != null
+                    ? await entry
+                        .Function(
+                            input,
+                            new SingleToolApprovalOptions(toolCall.ToolCallId, messages)
+                        )
+                        .ConfigureAwait(false)
+                    : entry.Status;
             return Normalize(status);
         }
 
@@ -89,12 +106,18 @@ public static class ToolApprovalResolution
             return ToolApprovalStatus.NotApplicable;
         }
 
-        var needsApproval = tool.NeedsApprovalFunction != null
-            ? await tool.NeedsApprovalFunction(input, new ToolNeedsApprovalOptions(toolCall.ToolCallId, messages)).ConfigureAwait(false)
-            : tool.NeedsApproval;
+        var needsApproval =
+            tool.NeedsApprovalFunction != null
+                ? await tool.NeedsApprovalFunction(
+                        input,
+                        new ToolNeedsApprovalOptions(toolCall.ToolCallId, messages)
+                    )
+                    .ConfigureAwait(false)
+                : tool.NeedsApproval;
 
         return needsApproval ? ToolApprovalStatus.UserApproval : ToolApprovalStatus.NotApplicable;
     }
 
-    private static ToolApprovalStatus Normalize(ToolApprovalStatus? status) => status ?? ToolApprovalStatus.NotApplicable;
+    private static ToolApprovalStatus Normalize(ToolApprovalStatus? status) =>
+        status ?? ToolApprovalStatus.NotApplicable;
 }

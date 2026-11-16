@@ -9,15 +9,24 @@ namespace Vercel.AI.Tests.Upstream.Gateway.GatewayProviderTests;
 /// <summary>Port of the <c>getAvailableModels</c> tests of <c>gateway-provider.test.ts</c> &gt; <c>GatewayProvider &gt; createGateway</c>.</summary>
 public sealed class GatewayProviderTests
 {
-    private const string Prefix = "packages/gateway/src/gateway-provider.test.ts::GatewayProvider > createGateway";
-    private const string OneModel = "{\"models\":[{\"id\":\"test-model\",\"name\":\"Test\",\"specification\":{\"specificationVersion\":\"v4\",\"provider\":\"p\",\"modelId\":\"test-model\"}}]}";
+    private const string Prefix =
+        "packages/gateway/src/gateway-provider.test.ts::GatewayProvider > createGateway";
+    private const string OneModel =
+        "{\"models\":[{\"id\":\"test-model\",\"name\":\"Test\",\"specification\":{\"specificationVersion\":\"v4\",\"provider\":\"p\",\"modelId\":\"test-model\"}}]}";
 
     [Fact]
-    [UpstreamTest(Prefix + "::should fetch available models", Coverage = UpstreamCoverage.Partial, Note = "Checks the base URL and the call through the HTTP handler. The upstream test mocks the GatewayFetchMetadata constructor.")]
+    [UpstreamTest(
+        Prefix + "::should fetch available models",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Checks the base URL and the call through the HTTP handler. The upstream test mocks the GatewayFetchMetadata constructor."
+    )]
     public async Task Should_fetch_available_models()
     {
         var server = new GatewayTestServer("{\"models\":[]}");
-        var provider = GatewayProvider.Create(new GatewayOptions { BaseUrl = "https://api.example.com", ApiKey = "test-api-key" }, server);
+        var provider = GatewayProvider.Create(
+            new GatewayOptions { BaseUrl = "https://api.example.com", ApiKey = "test-api-key" },
+            server
+        );
 
         await provider.GetAvailableModelsAsync();
 
@@ -25,7 +34,10 @@ public sealed class GatewayProviderTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + " > metadata caching::should cache metadata for the specified refresh interval", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + " > metadata caching::should cache metadata for the specified refresh interval",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_cache_metadata_for_the_specified_refresh_interval()
     {
         var server = new GatewayTestServer(OneModel);
@@ -38,7 +50,8 @@ public sealed class GatewayProviderTests
                 MetadataCacheRefreshMillis = 10000, // 10 seconds
                 CurrentDate = () => currentTime,
             },
-            server);
+            server
+        );
 
         // First call should fetch metadata
         await provider.GetAvailableModelsAsync();
@@ -60,14 +73,24 @@ public sealed class GatewayProviderTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + " > metadata caching::should use default 5 minute refresh interval when not specified", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + " > metadata caching::should use default 5 minute refresh interval when not specified",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_use_default_5_minute_refresh_interval_when_not_specified()
     {
         var server = new GatewayTestServer(OneModel);
         var currentTime = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var provider = GatewayProvider.Create(
-            new GatewayOptions { BaseUrl = "https://api.example.com", ApiKey = "test-api-key", CurrentDate = () => currentTime },
-            server);
+            new GatewayOptions
+            {
+                BaseUrl = "https://api.example.com",
+                ApiKey = "test-api-key",
+                CurrentDate = () => currentTime,
+            },
+            server
+        );
 
         // First call should fetch metadata
         await provider.GetAvailableModelsAsync();

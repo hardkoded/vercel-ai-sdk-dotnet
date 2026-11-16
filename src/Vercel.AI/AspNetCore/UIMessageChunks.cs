@@ -12,9 +12,7 @@ public sealed class UIMessageChunkException : Exception
 {
     /// <summary>Creates an exception with <paramref name="message"/>.</summary>
     public UIMessageChunkException(string message)
-        : base(message)
-    {
-    }
+        : base(message) { }
 }
 
 /// <summary>Reads AI SDK UI message chunks, including fields added by a newer server.</summary>
@@ -72,7 +70,10 @@ public static class UIMessageChunks
             throw new UIMessageChunkException("UI message chunk must be a JSON object.");
         }
 
-        if (!value.TryGetProperty("type", out var typeElement) || typeElement.ValueKind != JsonValueKind.String)
+        if (
+            !value.TryGetProperty("type", out var typeElement)
+            || typeElement.ValueKind != JsonValueKind.String
+        )
         {
             throw new UIMessageChunkException("UI message chunk is missing a type.");
         }
@@ -136,7 +137,8 @@ public static class UIMessageChunks
 
     private static bool IsKnown(string type)
     {
-        return KnownTypes.Contains(type) || (type.StartsWith("data-", StringComparison.Ordinal) && type.Length > "data-".Length);
+        return KnownTypes.Contains(type)
+            || (type.StartsWith("data-", StringComparison.Ordinal) && type.Length > "data-".Length);
     }
 
     private static void Validate(string type, JsonElement value)
@@ -219,11 +221,19 @@ public static class UIMessageChunks
                 RequireProperty(value, "messageMetadata");
                 break;
             case "finish":
-                if (value.TryGetProperty("finishReason", out var reason) && reason.ValueKind != JsonValueKind.Null)
+                if (
+                    value.TryGetProperty("finishReason", out var reason)
+                    && reason.ValueKind != JsonValueKind.Null
+                )
                 {
-                    if (reason.ValueKind != JsonValueKind.String || !FinishReasons.Contains(reason.GetString() ?? string.Empty))
+                    if (
+                        reason.ValueKind != JsonValueKind.String
+                        || !FinishReasons.Contains(reason.GetString() ?? string.Empty)
+                    )
                     {
-                        throw new UIMessageChunkException("UI message finish chunk has an unknown finishReason.");
+                        throw new UIMessageChunkException(
+                            "UI message finish chunk has an unknown finishReason."
+                        );
                     }
                 }
 
@@ -248,7 +258,10 @@ public static class UIMessageChunks
 
     private static void RequireString(JsonElement value, string name)
     {
-        if (!value.TryGetProperty(name, out var property) || property.ValueKind != JsonValueKind.String)
+        if (
+            !value.TryGetProperty(name, out var property)
+            || property.ValueKind != JsonValueKind.String
+        )
         {
             throw new UIMessageChunkException("UI message chunk is missing " + name + ".");
         }
@@ -256,8 +269,13 @@ public static class UIMessageChunks
 
     private static void RequireBoolean(JsonElement value, string name)
     {
-        if (!value.TryGetProperty(name, out var property)
-            || (property.ValueKind != JsonValueKind.True && property.ValueKind != JsonValueKind.False))
+        if (
+            !value.TryGetProperty(name, out var property)
+            || (
+                property.ValueKind != JsonValueKind.True
+                && property.ValueKind != JsonValueKind.False
+            )
+        )
         {
             throw new UIMessageChunkException("UI message chunk is missing " + name + ".");
         }

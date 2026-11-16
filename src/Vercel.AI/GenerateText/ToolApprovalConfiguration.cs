@@ -32,9 +32,17 @@ public sealed class ToolApprovalStatus
     /// <summary>Creates a status. <paramref name="type"/> is one of the four type constants of this class.</summary>
     public ToolApprovalStatus(string type, string? reason = null)
     {
-        if (type != NotApplicableType && type != ApprovedType && type != DeniedType && type != UserApprovalType)
+        if (
+            type != NotApplicableType
+            && type != ApprovedType
+            && type != DeniedType
+            && type != UserApprovalType
+        )
         {
-            throw new ArgumentException("Unknown tool approval status '" + type + "'.", nameof(type));
+            throw new ArgumentException(
+                "Unknown tool approval status '" + type + "'.",
+                nameof(type)
+            );
         }
 
         if (type == NotApplicableType && reason != null)
@@ -92,13 +100,20 @@ public sealed class SingleToolApprovalOptions
 /// Determines the approval status of a call to one tool, from the input of the call. Returning <see langword="null"/> has the
 /// effect of <c>not-applicable</c>. Maps to <c>SingleToolApprovalFunction</c>.
 /// </summary>
-public delegate Task<ToolApprovalStatus?> SingleToolApprovalFunction(JsonElement input, SingleToolApprovalOptions options);
+public delegate Task<ToolApprovalStatus?> SingleToolApprovalFunction(
+    JsonElement input,
+    SingleToolApprovalOptions options
+);
 
 /// <summary>The options a <see cref="GenericToolApprovalFunction"/> receives. Maps to the options of <c>GenericToolApprovalFunction</c>.</summary>
 public sealed class GenericToolApprovalOptions
 {
     /// <summary>Creates the options.</summary>
-    public GenericToolApprovalOptions(GeneratedToolCall toolCall, IReadOnlyList<Tool>? tools, IReadOnlyList<ModelMessage> messages)
+    public GenericToolApprovalOptions(
+        GeneratedToolCall toolCall,
+        IReadOnlyList<Tool>? tools,
+        IReadOnlyList<ModelMessage> messages
+    )
     {
         ToolCall = toolCall ?? throw new ArgumentNullException(nameof(toolCall));
         Tools = tools;
@@ -122,7 +137,9 @@ public sealed class GenericToolApprovalOptions
 /// Determines the approval status of any tool call. Returning <see langword="null"/> has the effect of <c>not-applicable</c>.
 /// Maps to <c>GenericToolApprovalFunction</c>.
 /// </summary>
-public delegate Task<ToolApprovalStatus?> GenericToolApprovalFunction(GenericToolApprovalOptions options);
+public delegate Task<ToolApprovalStatus?> GenericToolApprovalFunction(
+    GenericToolApprovalOptions options
+);
 
 /// <summary>The approval setting of one tool: a status or a function that produces a status at runtime.</summary>
 public sealed class ToolApprovalEntry
@@ -168,9 +185,7 @@ public sealed class ToolApprovalConfiguration : IEnumerable<KeyValuePair<string,
     private readonly Dictionary<string, ToolApprovalEntry> _tools = new(StringComparer.Ordinal);
 
     /// <summary>Creates a configuration with per-tool settings. Add them with <c>Add</c> or the indexer.</summary>
-    public ToolApprovalConfiguration()
-    {
-    }
+    public ToolApprovalConfiguration() { }
 
     /// <summary>Creates a configuration with a generic function that is called for all tool calls.</summary>
     public ToolApprovalConfiguration(GenericToolApprovalFunction function)
@@ -189,13 +204,17 @@ public sealed class ToolApprovalConfiguration : IEnumerable<KeyValuePair<string,
     }
 
     /// <summary>Converts a generic function to a configuration.</summary>
-    public static implicit operator ToolApprovalConfiguration(GenericToolApprovalFunction function) => new(function);
+    public static implicit operator ToolApprovalConfiguration(
+        GenericToolApprovalFunction function
+    ) => new(function);
 
     /// <summary>Sets the status of a tool.</summary>
-    public void Add(string toolName, ToolApprovalStatus status) => this[toolName] = new ToolApprovalEntry(status);
+    public void Add(string toolName, ToolApprovalStatus status) =>
+        this[toolName] = new ToolApprovalEntry(status);
 
     /// <summary>Sets the function that produces the status of a tool.</summary>
-    public void Add(string toolName, SingleToolApprovalFunction function) => this[toolName] = new ToolApprovalEntry(function);
+    public void Add(string toolName, SingleToolApprovalFunction function) =>
+        this[toolName] = new ToolApprovalEntry(function);
 
     /// <summary>Returns the setting of a tool. It is not found for a tool that has none, whatever its name.</summary>
     public bool TryGetValue(string toolName, out ToolApprovalEntry? entry)
@@ -204,7 +223,8 @@ public sealed class ToolApprovalConfiguration : IEnumerable<KeyValuePair<string,
     }
 
     /// <inheritdoc />
-    public IEnumerator<KeyValuePair<string, ToolApprovalEntry>> GetEnumerator() => _tools.GetEnumerator();
+    public IEnumerator<KeyValuePair<string, ToolApprovalEntry>> GetEnumerator() =>
+        _tools.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

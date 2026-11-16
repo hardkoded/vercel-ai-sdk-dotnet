@@ -28,13 +28,20 @@ internal static partial class OpenAIResponsesApi
     public abstract record Annotation;
 
     /// <summary><c>url_citation</c>.</summary>
-    public sealed record UrlCitation(int StartIndex, int EndIndex, string Url, string Title) : Annotation;
+    public sealed record UrlCitation(int StartIndex, int EndIndex, string Url, string Title)
+        : Annotation;
 
     /// <summary><c>file_citation</c>.</summary>
     public sealed record FileCitation(string FileId, string Filename, int Index) : Annotation;
 
     /// <summary><c>container_file_citation</c>.</summary>
-    public sealed record ContainerFileCitation(string ContainerId, string FileId, string Filename, int StartIndex, int EndIndex) : Annotation;
+    public sealed record ContainerFileCitation(
+        string ContainerId,
+        string FileId,
+        string Filename,
+        int StartIndex,
+        int EndIndex
+    ) : Annotation;
 
     /// <summary><c>file_path</c>.</summary>
     public sealed record FilePath(string FileId, int Index) : Annotation;
@@ -43,7 +50,11 @@ internal static partial class OpenAIResponsesApi
     public sealed record TopLogprob(string Token, double Logprob);
 
     /// <summary>A token with its log probability and the top alternatives.</summary>
-    public sealed record TokenLogprob(string Token, double Logprob, IReadOnlyList<TopLogprob> TopLogprobs);
+    public sealed record TokenLogprob(
+        string Token,
+        double Logprob,
+        IReadOnlyList<TopLogprob> TopLogprobs
+    );
 
     /// <summary>A source of a web search.</summary>
     public abstract record WebSearchSource;
@@ -58,7 +69,11 @@ internal static partial class OpenAIResponsesApi
     public abstract record WebSearchAction;
 
     /// <summary><c>search</c>.</summary>
-    public sealed record WebSearchSearch(string? Query, IReadOnlyList<string>? Queries, IReadOnlyList<WebSearchSource>? Sources) : WebSearchAction;
+    public sealed record WebSearchSearch(
+        string? Query,
+        IReadOnlyList<string>? Queries,
+        IReadOnlyList<WebSearchSource>? Sources
+    ) : WebSearchAction;
 
     /// <summary><c>open_page</c>.</summary>
     public sealed record WebSearchOpenPage(string? Url) : WebSearchAction;
@@ -76,7 +91,13 @@ internal static partial class OpenAIResponsesApi
     public sealed record CodeInterpreterImage(string Url) : CodeInterpreterOutput;
 
     /// <summary>A result of a <c>file_search_call</c>. An attribute holds a string, a number, or a boolean.</summary>
-    public sealed record FileSearchResult(IReadOnlyDictionary<string, object> Attributes, string FileId, string Filename, double Score, string Text);
+    public sealed record FileSearchResult(
+        IReadOnlyDictionary<string, object> Attributes,
+        string FileId,
+        string Filename,
+        double Score,
+        string Text
+    );
 
     /// <summary>The <c>exec</c> action of a <c>local_shell_call</c>.</summary>
     public sealed record LocalShellAction(
@@ -84,7 +105,8 @@ internal static partial class OpenAIResponsesApi
         double? TimeoutMs,
         string? User,
         string? WorkingDirectory,
-        IReadOnlyDictionary<string, string>? Env);
+        IReadOnlyDictionary<string, string>? Env
+    );
 
     /// <summary>A <c>local_shell_call</c> item. The added chunk, the done chunk, and the response carry the same shape.</summary>
     public sealed record LocalShellCall(string Id, string CallId, LocalShellAction Action);
@@ -93,7 +115,11 @@ internal static partial class OpenAIResponsesApi
     public abstract record MessageContent;
 
     /// <summary><c>output_text</c>.</summary>
-    public sealed record OutputText(string Text, IReadOnlyList<TokenLogprob>? Logprobs, IReadOnlyList<Annotation> Annotations) : MessageContent;
+    public sealed record OutputText(
+        string Text,
+        IReadOnlyList<TokenLogprob>? Logprobs,
+        IReadOnlyList<Annotation> Annotations
+    ) : MessageContent;
 
     /// <summary><c>refusal</c>.</summary>
     public sealed record Refusal(string RefusalText) : MessageContent;
@@ -102,19 +128,41 @@ internal static partial class OpenAIResponsesApi
     public interface IOutputItem;
 
     /// <summary>A <c>message</c> output item.</summary>
-    public sealed record Message(string Id, MessagePhase? Phase, IReadOnlyList<MessageContent> Content) : IOutputItem;
+    public sealed record Message(
+        string Id,
+        MessagePhase? Phase,
+        IReadOnlyList<MessageContent> Content
+    ) : IOutputItem;
 
     /// <summary>A <c>web_search_call</c> output item.</summary>
-    public sealed record WebSearchCall(string Id, string Status, WebSearchAction? Action) : IOutputItem;
+    public sealed record WebSearchCall(string Id, string Status, WebSearchAction? Action)
+        : IOutputItem;
 
     /// <summary>A <c>code_interpreter_call</c> output item.</summary>
-    public sealed record CodeInterpreterCall(string Id, string? Code, string ContainerId, IReadOnlyList<CodeInterpreterOutput>? Outputs) : IOutputItem;
+    public sealed record CodeInterpreterCall(
+        string Id,
+        string? Code,
+        string ContainerId,
+        IReadOnlyList<CodeInterpreterOutput>? Outputs
+    ) : IOutputItem;
 
     /// <summary>A <c>file_search_call</c> output item.</summary>
-    public sealed record FileSearchCall(string Id, IReadOnlyList<string> Queries, IReadOnlyList<FileSearchResult>? Results) : IOutputItem;
+    public sealed record FileSearchCall(
+        string Id,
+        IReadOnlyList<string> Queries,
+        IReadOnlyList<FileSearchResult>? Results
+    ) : IOutputItem;
 
     /// <summary>A <c>function_call</c> output item.</summary>
-    public sealed record FunctionCall(string Id, string CallId, string Name, string Arguments, bool? Async, string? Namespace = null, ToolCaller? Caller = null) : IOutputItem;
+    public sealed record FunctionCall(
+        string Id,
+        string CallId,
+        string Name,
+        string Arguments,
+        bool? Async,
+        string? Namespace = null,
+        ToolCaller? Caller = null
+    ) : IOutputItem;
 
     /// <summary>A <c>local_shell_call</c> output item.</summary>
     public sealed record LocalShellCallOutput(LocalShellCall Call) : IOutputItem;
@@ -129,7 +177,8 @@ internal static partial class OpenAIResponsesApi
         string? ServiceTier = null,
         string? ReasoningContext = null,
         string? IncompleteReason = null,
-        Usage? Usage = null);
+        Usage? Usage = null
+    );
 
     /// <summary>A stream chunk (<c>openaiResponsesChunkSchema</c>).</summary>
     public abstract record Chunk;
@@ -138,7 +187,11 @@ internal static partial class OpenAIResponsesApi
     public sealed record OutputTextAnnotationAdded(Annotation Annotation) : Chunk;
 
     /// <summary><c>response.output_text.delta</c>.</summary>
-    public sealed record OutputTextDelta(string ItemId, string Delta, IReadOnlyList<TokenLogprob>? Logprobs) : Chunk;
+    public sealed record OutputTextDelta(
+        string ItemId,
+        string Delta,
+        IReadOnlyList<TokenLogprob>? Logprobs
+    ) : Chunk;
 
     /// <summary>An item of <c>response.output_item.added</c>.</summary>
     public interface IAddedItem;
@@ -153,10 +206,27 @@ internal static partial class OpenAIResponsesApi
     public sealed record DoneMessage(string Id, MessagePhase? Phase) : IDoneItem;
 
     /// <summary>A <c>function_call</c> item of an added chunk.</summary>
-    public sealed record AddedFunctionCall(string Id, string CallId, string Name, string Arguments, bool? Async, string? Namespace = null, ToolCaller? Caller = null) : IAddedItem;
+    public sealed record AddedFunctionCall(
+        string Id,
+        string CallId,
+        string Name,
+        string Arguments,
+        bool? Async,
+        string? Namespace = null,
+        ToolCaller? Caller = null
+    ) : IAddedItem;
 
     /// <summary>A <c>function_call</c> item of a done chunk.</summary>
-    public sealed record DoneFunctionCall(string Id, string CallId, string Name, string Arguments, bool? Async, string Status, string? Namespace = null, ToolCaller? Caller = null) : IDoneItem;
+    public sealed record DoneFunctionCall(
+        string Id,
+        string CallId,
+        string Name,
+        string Arguments,
+        bool? Async,
+        string Status,
+        string? Namespace = null,
+        ToolCaller? Caller = null
+    ) : IDoneItem;
 
     /// <summary>A <c>local_shell_call</c> item of an added chunk.</summary>
     public sealed record AddedLocalShellCall(LocalShellCall Call) : IAddedItem;
@@ -165,13 +235,23 @@ internal static partial class OpenAIResponsesApi
     public sealed record DoneLocalShellCall(LocalShellCall Call) : IDoneItem;
 
     /// <summary>A <c>web_search_call</c> item of a done chunk.</summary>
-    public sealed record DoneWebSearchCall(string Id, string Status, WebSearchAction? Action) : IDoneItem;
+    public sealed record DoneWebSearchCall(string Id, string Status, WebSearchAction? Action)
+        : IDoneItem;
 
     /// <summary>A <c>code_interpreter_call</c> item of a done chunk.</summary>
-    public sealed record DoneCodeInterpreterCall(string Id, string? Code, string ContainerId, IReadOnlyList<CodeInterpreterOutput>? Outputs) : IDoneItem;
+    public sealed record DoneCodeInterpreterCall(
+        string Id,
+        string? Code,
+        string ContainerId,
+        IReadOnlyList<CodeInterpreterOutput>? Outputs
+    ) : IDoneItem;
 
     /// <summary>A <c>file_search_call</c> item of a done chunk.</summary>
-    public sealed record DoneFileSearchCall(string Id, IReadOnlyList<string> Queries, IReadOnlyList<FileSearchResult>? Results) : IDoneItem;
+    public sealed record DoneFileSearchCall(
+        string Id,
+        IReadOnlyList<string> Queries,
+        IReadOnlyList<FileSearchResult>? Results
+    ) : IDoneItem;
 
     /// <summary>The <c>caller</c> of a function call.</summary>
     public abstract record ToolCaller;
@@ -198,25 +278,35 @@ internal static partial class OpenAIResponsesApi
     public abstract record ComputerAction;
 
     /// <summary><c>click</c>.</summary>
-    public sealed record ClickAction(string Button, double X, double Y, IReadOnlyList<string>? Keys) : ComputerAction;
+    public sealed record ClickAction(string Button, double X, double Y, IReadOnlyList<string>? Keys)
+        : ComputerAction;
 
     /// <summary><c>double_click</c>.</summary>
-    public sealed record DoubleClickAction(double X, double Y, IReadOnlyList<string>? Keys) : ComputerAction;
+    public sealed record DoubleClickAction(double X, double Y, IReadOnlyList<string>? Keys)
+        : ComputerAction;
 
     /// <summary><c>drag</c>.</summary>
-    public sealed record DragAction(IReadOnlyList<ComputerPoint> Path, IReadOnlyList<string>? Keys) : ComputerAction;
+    public sealed record DragAction(IReadOnlyList<ComputerPoint> Path, IReadOnlyList<string>? Keys)
+        : ComputerAction;
 
     /// <summary><c>keypress</c>.</summary>
     public sealed record KeypressAction(IReadOnlyList<string> Keys) : ComputerAction;
 
     /// <summary><c>move</c>.</summary>
-    public sealed record MoveAction(double X, double Y, IReadOnlyList<string>? Keys) : ComputerAction;
+    public sealed record MoveAction(double X, double Y, IReadOnlyList<string>? Keys)
+        : ComputerAction;
 
     /// <summary><c>screenshot</c>.</summary>
     public sealed record ScreenshotAction : ComputerAction;
 
     /// <summary><c>scroll</c>.</summary>
-    public sealed record ScrollAction(double X, double Y, double ScrollX, double ScrollY, IReadOnlyList<string>? Keys) : ComputerAction;
+    public sealed record ScrollAction(
+        double X,
+        double Y,
+        double ScrollX,
+        double ScrollY,
+        IReadOnlyList<string>? Keys
+    ) : ComputerAction;
 
     /// <summary><c>type</c>.</summary>
     public sealed record TypeAction(string Text) : ComputerAction;
@@ -240,7 +330,11 @@ internal static partial class OpenAIResponsesApi
     public sealed record UpdateFileOperation(string Path, string Diff) : ApplyPatchOperation;
 
     /// <summary>The <c>action</c> of a <c>shell_call</c>.</summary>
-    public sealed record ShellCallAction(IReadOnlyList<string> Commands, double? TimeoutMs, double? MaxOutputLength);
+    public sealed record ShellCallAction(
+        IReadOnlyList<string> Commands,
+        double? TimeoutMs,
+        double? MaxOutputLength
+    );
 
     /// <summary>The <c>outcome</c> of a shell call output entry.</summary>
     public abstract record ShellOutcome;
@@ -255,13 +349,24 @@ internal static partial class OpenAIResponsesApi
     public sealed record ShellCallOutputEntry(string Stdout, string Stderr, ShellOutcome Outcome);
 
     /// <summary>A tool of an <c>mcp_list_tools</c> item. <c>input_schema</c> and <c>annotations</c> keep their JSON.</summary>
-    public sealed record McpTool(string Name, string? Description, JsonElement? InputSchema, JsonElement? Annotations);
+    public sealed record McpTool(
+        string Name,
+        string? Description,
+        JsonElement? InputSchema,
+        JsonElement? Annotations
+    );
 
     /// <summary>A <c>program</c> item. The added chunk, the done chunk, and the response carry the same shape.</summary>
-    public sealed record Program(string Id, string CallId, string Code, string Fingerprint) : IOutputItem, IAddedItem, IDoneItem;
+    public sealed record Program(string Id, string CallId, string Code, string Fingerprint)
+        : IOutputItem,
+            IAddedItem,
+            IDoneItem;
 
     /// <summary>A <c>program_output</c> item. The added chunk, the done chunk, and the response carry the same shape.</summary>
-    public sealed record ProgramOutput(string Id, string CallId, string Result, string Status) : IOutputItem, IAddedItem, IDoneItem;
+    public sealed record ProgramOutput(string Id, string CallId, string Result, string Status)
+        : IOutputItem,
+            IAddedItem,
+            IDoneItem;
 
     /// <summary>A <c>computer_call</c> item. The added chunk, the done chunk, and the response carry the same shape.</summary>
     public sealed record ComputerCall(
@@ -270,22 +375,49 @@ internal static partial class OpenAIResponsesApi
         string Status,
         ComputerAction? Action,
         IReadOnlyList<ComputerAction>? Actions,
-        IReadOnlyList<PendingSafetyCheck>? PendingSafetyChecks) : IOutputItem, IAddedItem, IDoneItem;
+        IReadOnlyList<PendingSafetyCheck>? PendingSafetyChecks
+    ) : IOutputItem, IAddedItem, IDoneItem;
 
     /// <summary>An <c>apply_patch_call</c> item. The added chunk, the done chunk, and the response carry the same shape.</summary>
-    public sealed record ApplyPatchCall(string Id, string CallId, string Status, ApplyPatchOperation Operation) : IOutputItem, IAddedItem, IDoneItem;
+    public sealed record ApplyPatchCall(
+        string Id,
+        string CallId,
+        string Status,
+        ApplyPatchOperation Operation
+    ) : IOutputItem, IAddedItem, IDoneItem;
 
     /// <summary>A <c>shell_call</c> item. The added chunk, the done chunk, and the response carry the same shape.</summary>
-    public sealed record ShellCall(string Id, string CallId, string Status, ShellCallAction Action) : IOutputItem, IAddedItem, IDoneItem;
+    public sealed record ShellCall(string Id, string CallId, string Status, ShellCallAction Action)
+        : IOutputItem,
+            IAddedItem,
+            IDoneItem;
 
     /// <summary>A <c>shell_call_output</c> item. The added chunk, the done chunk, and the response carry the same shape.</summary>
-    public sealed record ShellCallOutput(string Id, string CallId, string Status, double? MaxOutputLength, IReadOnlyList<ShellCallOutputEntry> Output) : IOutputItem, IAddedItem, IDoneItem;
+    public sealed record ShellCallOutput(
+        string Id,
+        string CallId,
+        string Status,
+        double? MaxOutputLength,
+        IReadOnlyList<ShellCallOutputEntry> Output
+    ) : IOutputItem, IAddedItem, IDoneItem;
 
     /// <summary>A <c>tool_search_call</c> item. The added chunk, the done chunk, and the response carry the same shape.</summary>
-    public sealed record ToolSearchCall(string Id, string Execution, string? CallId, string Status, JsonElement? Arguments) : IOutputItem, IAddedItem, IDoneItem;
+    public sealed record ToolSearchCall(
+        string Id,
+        string Execution,
+        string? CallId,
+        string Status,
+        JsonElement? Arguments
+    ) : IOutputItem, IAddedItem, IDoneItem;
 
     /// <summary>A <c>tool_search_output</c> item. The added chunk, the done chunk, and the response carry the same shape.</summary>
-    public sealed record ToolSearchOutput(string Id, string Execution, string? CallId, string Status, IReadOnlyList<JsonElement> Tools) : IOutputItem, IAddedItem, IDoneItem;
+    public sealed record ToolSearchOutput(
+        string Id,
+        string Execution,
+        string? CallId,
+        string Status,
+        IReadOnlyList<JsonElement> Tools
+    ) : IOutputItem, IAddedItem, IDoneItem;
 
     /// <summary>A <c>mcp_call</c> item. The done chunk and the response carry the same shape.</summary>
     public sealed record McpCall(
@@ -296,13 +428,25 @@ internal static partial class OpenAIResponsesApi
         string ServerLabel,
         string? Output,
         ErrorValue? Error,
-        string? ApprovalRequestId) : IOutputItem, IDoneItem;
+        string? ApprovalRequestId
+    ) : IOutputItem, IDoneItem;
 
     /// <summary>A <c>mcp_list_tools</c> item. The done chunk and the response carry the same shape.</summary>
-    public sealed record McpListTools(string Id, string ServerLabel, IReadOnlyList<McpTool> Tools, ErrorValue? Error) : IOutputItem, IDoneItem;
+    public sealed record McpListTools(
+        string Id,
+        string ServerLabel,
+        IReadOnlyList<McpTool> Tools,
+        ErrorValue? Error
+    ) : IOutputItem, IDoneItem;
 
     /// <summary>A <c>mcp_approval_request</c> item. The done chunk and the response carry the same shape.</summary>
-    public sealed record McpApprovalRequest(string Id, string ServerLabel, string Name, string Arguments, string? ApprovalRequestId) : IOutputItem, IDoneItem;
+    public sealed record McpApprovalRequest(
+        string Id,
+        string ServerLabel,
+        string Name,
+        string Arguments,
+        string? ApprovalRequestId
+    ) : IOutputItem, IDoneItem;
 
     /// <summary>A <c>compaction</c> item. The done chunk and the response carry the same shape.</summary>
     public sealed record Compaction(string Id, string EncryptedContent) : IOutputItem, IDoneItem;
@@ -311,13 +455,30 @@ internal static partial class OpenAIResponsesApi
     public sealed record ImageGenerationCall(string Id, string Result) : IOutputItem, IDoneItem;
 
     /// <summary>A <c>custom_tool_call</c> item of a response or of an added chunk.</summary>
-    public sealed record CustomToolCall(string Id, string CallId, string Name, string Input, bool? Async) : IOutputItem, IAddedItem;
+    public sealed record CustomToolCall(
+        string Id,
+        string CallId,
+        string Name,
+        string Input,
+        bool? Async
+    ) : IOutputItem, IAddedItem;
 
     /// <summary>A <c>custom_tool_call</c> item of a done chunk.</summary>
-    public sealed record DoneCustomToolCall(string Id, string CallId, string Name, string Input, bool? Async, string Status) : IDoneItem;
+    public sealed record DoneCustomToolCall(
+        string Id,
+        string CallId,
+        string Name,
+        string Input,
+        bool? Async,
+        string Status
+    ) : IDoneItem;
 
     /// <summary>A <c>reasoning</c> item of a response.</summary>
-    public sealed record Reasoning(string Id, string? EncryptedContent, IReadOnlyList<string> Summary) : IOutputItem;
+    public sealed record Reasoning(
+        string Id,
+        string? EncryptedContent,
+        IReadOnlyList<string> Summary
+    ) : IOutputItem;
 
     /// <summary>A <c>reasoning</c> item of an added or a done chunk.</summary>
     public sealed record ReasoningItem(string Id, string? EncryptedContent) : IAddedItem, IDoneItem;
@@ -332,10 +493,17 @@ internal static partial class OpenAIResponsesApi
     public sealed record AddedImageGenerationCall(string Id) : IAddedItem;
 
     /// <summary>A <c>code_interpreter_call</c> item of an added chunk.</summary>
-    public sealed record AddedCodeInterpreterCall(string Id, string ContainerId, string? Code, IReadOnlyList<CodeInterpreterOutput>? Outputs, string Status) : IAddedItem;
+    public sealed record AddedCodeInterpreterCall(
+        string Id,
+        string ContainerId,
+        string? Code,
+        IReadOnlyList<CodeInterpreterOutput>? Outputs,
+        string Status
+    ) : IAddedItem;
 
     /// <summary>A <c>mcp_call</c> item of an added chunk.</summary>
-    public sealed record AddedMcpCall(string Id, string Status, string? ApprovalRequestId) : IAddedItem;
+    public sealed record AddedMcpCall(string Id, string Status, string? ApprovalRequestId)
+        : IAddedItem;
 
     /// <summary>A <c>mcp_list_tools</c> item of an added chunk.</summary>
     public sealed record AddedMcpListTools(string Id) : IAddedItem;
@@ -347,7 +515,13 @@ internal static partial class OpenAIResponsesApi
     public sealed record AddedCompaction(string Id, string? EncryptedContent) : IAddedItem;
 
     /// <summary>The token usage of a response.</summary>
-    public sealed record Usage(double InputTokens, InputTokensDetails? InputTokensDetails, double OutputTokens, OutputTokensDetails? OutputTokensDetails, double? TotalTokens);
+    public sealed record Usage(
+        double InputTokens,
+        InputTokensDetails? InputTokensDetails,
+        double OutputTokens,
+        OutputTokensDetails? OutputTokensDetails,
+        double? TotalTokens
+    );
 
     /// <summary>The <c>input_tokens_details</c> of a usage.</summary>
     public sealed record InputTokensDetails(
@@ -356,19 +530,33 @@ internal static partial class OpenAIResponsesApi
         double? Ttl30mTokens,
         double? Ttl12hTokens,
         double? OrchestrationInputTokens,
-        double? OrchestrationInputCachedTokens);
+        double? OrchestrationInputCachedTokens
+    );
 
     /// <summary>The <c>output_tokens_details</c> of a usage.</summary>
-    public sealed record OutputTokensDetails(double? ReasoningTokens, double? OrchestrationOutputTokens);
+    public sealed record OutputTokensDetails(
+        double? ReasoningTokens,
+        double? OrchestrationOutputTokens
+    );
 
     /// <summary>The <c>error</c> of a response body.</summary>
     public sealed record ResponseError(string Message, string Type, string? Param, string Code);
 
     /// <summary>The <c>prompt_cache_diagnostics</c> of a response.</summary>
-    public sealed record PromptCacheDiagnostics(string Type, string? Reason, double? CacheMissedTokens, double? ComparisonReusableTokens);
+    public sealed record PromptCacheDiagnostics(
+        string Type,
+        string? Reason,
+        double? CacheMissedTokens,
+        double? ComparisonReusableTokens
+    );
 
     /// <summary>The <c>response</c> of <c>response.created</c> and <c>response.in_progress</c>.</summary>
-    public sealed record ResponseHeader(string Id, double CreatedAt, string Model, string? ServiceTier);
+    public sealed record ResponseHeader(
+        string Id,
+        double CreatedAt,
+        string Model,
+        string? ServiceTier
+    );
 
     /// <summary>The <c>response</c> of <c>response.completed</c>, <c>response.incomplete</c> and <c>response.failed</c>.</summary>
     public sealed record FinishedResponse(
@@ -377,7 +565,8 @@ internal static partial class OpenAIResponsesApi
         Usage? Usage,
         string? ReasoningContext,
         string? ServiceTier,
-        FailedResponseError? Error);
+        FailedResponseError? Error
+    );
 
     /// <summary>The <c>error</c> of the response of a <c>response.failed</c> chunk.</summary>
     public sealed record FailedResponseError(string? Code, string Message);
@@ -404,46 +593,99 @@ internal static partial class OpenAIResponsesApi
     public sealed record OutputItemDone(double OutputIndex, IDoneItem Item) : Chunk;
 
     /// <summary><c>response.refusal.delta</c>.</summary>
-    public sealed record RefusalDelta(string ItemId, double? OutputIndex, double? ContentIndex, string Delta) : Chunk;
+    public sealed record RefusalDelta(
+        string ItemId,
+        double? OutputIndex,
+        double? ContentIndex,
+        string Delta
+    ) : Chunk;
 
     /// <summary><c>response.refusal.done</c>.</summary>
-    public sealed record RefusalDone(string ItemId, double? OutputIndex, double? ContentIndex, string Refusal) : Chunk;
+    public sealed record RefusalDone(
+        string ItemId,
+        double? OutputIndex,
+        double? ContentIndex,
+        string Refusal
+    ) : Chunk;
 
     /// <summary><c>response.function_call_arguments.delta</c>.</summary>
-    public sealed record FunctionCallArgumentsDelta(string ItemId, double OutputIndex, string Delta) : Chunk;
+    public sealed record FunctionCallArgumentsDelta(string ItemId, double OutputIndex, string Delta)
+        : Chunk;
 
     /// <summary><c>response.function_call_arguments.done</c>. Upstream omits <c>name</c>.</summary>
-    public sealed record FunctionCallArgumentsDone(string ItemId, double OutputIndex, string Arguments) : Chunk;
+    public sealed record FunctionCallArgumentsDone(
+        string ItemId,
+        double OutputIndex,
+        string Arguments
+    ) : Chunk;
 
     /// <summary><c>response.custom_tool_call_input.delta</c>.</summary>
-    public sealed record CustomToolCallInputDelta(string ItemId, double OutputIndex, string Delta) : Chunk;
+    public sealed record CustomToolCallInputDelta(string ItemId, double OutputIndex, string Delta)
+        : Chunk;
 
     /// <summary><c>response.image_generation_call.partial_image</c>.</summary>
-    public sealed record ImageGenerationCallPartialImage(string ItemId, double OutputIndex, string PartialImageB64) : Chunk;
+    public sealed record ImageGenerationCallPartialImage(
+        string ItemId,
+        double OutputIndex,
+        string PartialImageB64
+    ) : Chunk;
 
     /// <summary><c>response.code_interpreter_call_code.delta</c>.</summary>
-    public sealed record CodeInterpreterCallCodeDelta(string ItemId, double OutputIndex, string Delta) : Chunk;
+    public sealed record CodeInterpreterCallCodeDelta(
+        string ItemId,
+        double OutputIndex,
+        string Delta
+    ) : Chunk;
 
     /// <summary><c>response.code_interpreter_call_code.done</c>.</summary>
-    public sealed record CodeInterpreterCallCodeDone(string ItemId, double OutputIndex, string Code) : Chunk;
+    public sealed record CodeInterpreterCallCodeDone(string ItemId, double OutputIndex, string Code)
+        : Chunk;
 
     /// <summary><c>response.reasoning_summary_part.added</c>.</summary>
-    public sealed record ReasoningSummaryPartAdded(string ItemId, double? OutputIndex, double SummaryIndex) : Chunk;
+    public sealed record ReasoningSummaryPartAdded(
+        string ItemId,
+        double? OutputIndex,
+        double SummaryIndex
+    ) : Chunk;
 
     /// <summary><c>response.reasoning_summary_text.delta</c>.</summary>
-    public sealed record ReasoningSummaryTextDelta(string ItemId, double? OutputIndex, double SummaryIndex, string Delta) : Chunk;
+    public sealed record ReasoningSummaryTextDelta(
+        string ItemId,
+        double? OutputIndex,
+        double SummaryIndex,
+        string Delta
+    ) : Chunk;
 
     /// <summary><c>response.reasoning_summary_part.done</c>.</summary>
-    public sealed record ReasoningSummaryPartDone(string ItemId, double? OutputIndex, double SummaryIndex) : Chunk;
+    public sealed record ReasoningSummaryPartDone(
+        string ItemId,
+        double? OutputIndex,
+        double SummaryIndex
+    ) : Chunk;
 
     /// <summary><c>response.apply_patch_call_operation_diff.delta</c>.</summary>
-    public sealed record ApplyPatchCallOperationDiffDelta(string ItemId, double OutputIndex, string Delta, string? Obfuscation) : Chunk;
+    public sealed record ApplyPatchCallOperationDiffDelta(
+        string ItemId,
+        double OutputIndex,
+        string Delta,
+        string? Obfuscation
+    ) : Chunk;
 
     /// <summary><c>response.apply_patch_call_operation_diff.done</c>.</summary>
-    public sealed record ApplyPatchCallOperationDiffDone(string ItemId, double OutputIndex, string Diff) : Chunk;
+    public sealed record ApplyPatchCallOperationDiffDone(
+        string ItemId,
+        double OutputIndex,
+        string Diff
+    ) : Chunk;
 
     /// <summary><c>error</c>. The nested and the flat shape of the chunk both land here.</summary>
-    public sealed record ErrorChunk(double SequenceNumber, string? Type, string? Code, string Message, string? Param) : Chunk;
+    public sealed record ErrorChunk(
+        double SequenceNumber,
+        string? Type,
+        string? Code,
+        string Message,
+        string? Param
+    ) : Chunk;
 
     /// <summary>The <c>unknown_chunk</c> fallback of <c>openaiResponsesChunkSchema</c>: a chunk type, or an output item type, that is not modeled.</summary>
     public sealed record UnknownChunk(JsonElement Value) : Chunk;

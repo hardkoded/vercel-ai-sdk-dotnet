@@ -18,7 +18,8 @@ public sealed class OpenAILanguageModelCapabilities
         bool supportsConfigurationUpdate,
         bool supportsAsyncToolCalling,
         IReadOnlyList<string>? supportedReasoningEfforts,
-        bool supportsNonReasoningParameters)
+        bool supportsNonReasoningParameters
+    )
     {
         IsReasoningModel = isReasoningModel;
         SystemMessageMode = systemMessageMode;
@@ -60,27 +61,33 @@ public sealed class OpenAILanguageModelCapabilities
         var oSeries = GetOSeriesVersion(modelId);
         var gpt = GetGptVersion(modelId);
         var variant = gpt?.Variant;
-        var isGptChat = gpt != null
+        var isGptChat =
+            gpt != null
             && gpt.Value.Minor == null
             && variant != null
             && variant.StartsWith("chat", StringComparison.Ordinal);
         var isGptNano = variant != null && variant.StartsWith("nano", StringComparison.Ordinal);
         var isGpt6OrLater = gpt != null && gpt.Value.Major >= 6;
         var isGpt6SolOrLuna = modelId == "gpt-6-sol" || modelId == "gpt-6-luna";
-        var supportsFlex = (oSeries != null && oSeries >= 3) || (gpt != null && gpt.Value.Major >= 5 && !isGptChat);
-        var supportsPriority = modelId.StartsWith("gpt-4", StringComparison.Ordinal)
+        var supportsFlex =
+            (oSeries != null && oSeries >= 3)
+            || (gpt != null && gpt.Value.Major >= 5 && !isGptChat);
+        var supportsPriority =
+            modelId.StartsWith("gpt-4", StringComparison.Ordinal)
             || (gpt != null && gpt.Value.Major >= 5 && !isGptNano && !isGptChat)
             || (oSeries != null && oSeries >= 3);
         var isReasoning = oSeries != null || (gpt != null && gpt.Value.Major >= 5 && !isGptChat);
-        var supportsNonReasoning = isGpt6SolOrLuna
-            || (!isGpt6OrLater
+        var supportsNonReasoning =
+            isGpt6SolOrLuna
+            || (
+                !isGpt6OrLater
                 && gpt != null
-                && (gpt.Value.Major > 5 || (gpt.Value.Major == 5 && (gpt.Value.Minor ?? 0) >= 1)));
-        IReadOnlyList<string>? efforts = isGpt6SolOrLuna
-            ? new[] { "none", "low", "medium", "high", "xhigh", "max" }
-            : isGpt6OrLater
-                ? new[] { "low", "medium", "high", "xhigh", "max" }
-                : null;
+                && (gpt.Value.Major > 5 || (gpt.Value.Major == 5 && (gpt.Value.Minor ?? 0) >= 1))
+            );
+        IReadOnlyList<string>? efforts =
+            isGpt6SolOrLuna ? new[] { "none", "low", "medium", "high", "xhigh", "max" }
+            : isGpt6OrLater ? new[] { "low", "medium", "high", "xhigh", "max" }
+            : null;
         return new OpenAILanguageModelCapabilities(
             isReasoning,
             isReasoning ? "developer" : "system",
@@ -89,17 +96,28 @@ public sealed class OpenAILanguageModelCapabilities
             isGpt6OrLater,
             isGpt6OrLater,
             efforts,
-            supportsNonReasoning);
+            supportsNonReasoning
+        );
     }
 
-    private static readonly Regex OSeries = new Regex("^o([0-9]+)(?:-|\\z)", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
-    private static readonly Regex Gpt = new Regex("^gpt-([0-9]+)(?:\\.([0-9]+))?(?:-(.+))?\\z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex OSeries = new Regex(
+        "^o([0-9]+)(?:-|\\z)",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(100)
+    );
+    private static readonly Regex Gpt = new Regex(
+        "^gpt-([0-9]+)(?:\\.([0-9]+))?(?:-(.+))?\\z",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(100)
+    );
 
     // A version number too large for int is not a known model, so it is treated as no match.
     private static int? GetOSeriesVersion(string modelId)
     {
         var match = OSeries.Match(modelId);
-        return match.Success && TryParseInt(match.Groups[1].Value, out var version) ? version : null;
+        return match.Success && TryParseInt(match.Groups[1].Value, out var version)
+            ? version
+            : null;
     }
 
     private static (int Major, int? Minor, string? Variant)? GetGptVersion(string modelId)

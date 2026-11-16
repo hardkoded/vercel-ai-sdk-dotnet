@@ -33,46 +33,90 @@ public interface IAiTelemetry
 public interface IAiClient
 {
     /// <summary>Generates text and runs tools. Maps to <c>generateText</c>.</summary>
-    Task<GenerateTextResult> GenerateTextAsync(GenerateTextOptions options, CancellationToken cancellationToken = default);
+    Task<GenerateTextResult> GenerateTextAsync(
+        GenerateTextOptions options,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Generates a typed object. Maps to the deprecated <c>generateObject</c>.</summary>
-    Task<GenerateObjectResult<T>> GenerateObjectAsync<T>(GenerateObjectOptions<T> options, CancellationToken cancellationToken = default);
+    Task<GenerateObjectResult<T>> GenerateObjectAsync<T>(
+        GenerateObjectOptions<T> options,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Streams text and runs tools. Maps to <c>streamText</c>.</summary>
-    StreamTextResult StreamTextAsync(StreamTextOptions options, CancellationToken cancellationToken = default);
+    StreamTextResult StreamTextAsync(
+        StreamTextOptions options,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Embeds one value. Maps to <c>embed</c>.</summary>
     Task<float[]> EmbedAsync(EmbedOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>Embeds many values. Maps to <c>embedMany</c>.</summary>
-    Task<EmbeddingResult> EmbedManyAsync(EmbedOptions options, CancellationToken cancellationToken = default);
+    Task<EmbeddingResult> EmbedManyAsync(
+        EmbedOptions options,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Reranks documents. Maps to <c>rerank</c>.</summary>
-    Task<RerankResult> RerankAsync(RerankOptions options, CancellationToken cancellationToken = default);
+    Task<RerankResult> RerankAsync(
+        RerankOptions options,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Generates images. Maps to <c>generateImage</c>.</summary>
-    Task<ImageGenerationResult> GenerateImageAsync(GenerateImageOptions options, CancellationToken cancellationToken = default);
+    Task<ImageGenerationResult> GenerateImageAsync(
+        GenerateImageOptions options,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Generates speech. Maps to <c>generateSpeech</c>.</summary>
-    Task<SpeechResult> GenerateSpeechAsync(GenerateSpeechOptions options, CancellationToken cancellationToken = default);
+    Task<SpeechResult> GenerateSpeechAsync(
+        GenerateSpeechOptions options,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Transcribes audio. Maps to <c>transcribe</c>.</summary>
-    Task<TranscriptionResult> TranscribeAsync(TranscribeOptions options, CancellationToken cancellationToken = default);
+    Task<TranscriptionResult> TranscribeAsync(
+        TranscribeOptions options,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Translates speech to text. Maps to <c>translate</c>.</summary>
-    Task<TranscriptionResult> TranslateAsync(TranslateOptions options, CancellationToken cancellationToken = default);
+    Task<TranscriptionResult> TranslateAsync(
+        TranslateOptions options,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Generates video. Maps to <c>generateVideo</c>.</summary>
-    Task<VideoResult> GenerateVideoAsync(GenerateVideoOptions options, CancellationToken cancellationToken = default);
+    Task<VideoResult> GenerateVideoAsync(
+        GenerateVideoOptions options,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Scores a candidate against a rubric. Uses <see cref="EvaluateOptions.RubricModel"/> or a language model.</summary>
-    Task<RubricResult> EvaluateAsync(EvaluateOptions options, CancellationToken cancellationToken = default);
+    Task<RubricResult> EvaluateAsync(
+        EvaluateOptions options,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Uploads a file through <paramref name="store"/>.</summary>
-    Task<UploadedFile> UploadFileAsync(IFileStore store, string fileName, byte[] data, string mediaType, CancellationToken cancellationToken = default);
+    Task<UploadedFile> UploadFileAsync(
+        IFileStore store,
+        string fileName,
+        byte[] data,
+        string mediaType,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>Uploads a skill through <paramref name="store"/>.</summary>
-    Task<UploadedSkill> UploadSkillAsync(ISkillStore store, string name, string instructions, CancellationToken cancellationToken = default);
+    Task<UploadedSkill> UploadSkillAsync(
+        ISkillStore store,
+        string name,
+        string instructions,
+        CancellationToken cancellationToken = default
+    );
 }
 
 /// <summary>Default <see cref="IAiClient"/>. String model ids are resolved by the AI Gateway.</summary>
@@ -89,41 +133,79 @@ public sealed class AiClient : IAiClient
     }
 
     /// <inheritdoc />
-    public Task<GenerateTextResult> GenerateTextAsync(GenerateTextOptions options, CancellationToken cancellationToken = default)
+    public Task<GenerateTextResult> GenerateTextAsync(
+        GenerateTextOptions options,
+        CancellationToken cancellationToken = default
+    )
     {
         if (options is null)
         {
             throw new ArgumentNullException(nameof(options));
         }
 
-        return Generation.GenerateAsync(ResolveLanguage(options.Model, options.ModelId), options, _telemetry, cancellationToken);
+        return Generation.GenerateAsync(
+            ResolveLanguage(options.Model, options.ModelId),
+            options,
+            _telemetry,
+            cancellationToken
+        );
     }
 
     /// <inheritdoc />
-    public async Task<GenerateObjectResult<T>> GenerateObjectAsync<T>(GenerateObjectOptions<T> options, CancellationToken cancellationToken = default)
+    public async Task<GenerateObjectResult<T>> GenerateObjectAsync<T>(
+        GenerateObjectOptions<T> options,
+        CancellationToken cancellationToken = default
+    )
     {
         if (options is null)
         {
             throw new ArgumentNullException(nameof(options));
         }
 
-        LogWarnings.Log(new LogWarningsOptions(
-            new ModelWarning[] { new DeprecatedWarning("generateObject", "Use generateText with an output setting instead.") }));
+        LogWarnings.Log(
+            new LogWarningsOptions(
+                new ModelWarning[]
+                {
+                    new DeprecatedWarning(
+                        "generateObject",
+                        "Use generateText with an output setting instead."
+                    ),
+                }
+            )
+        );
 
         var model = ResolveLanguage(options.Model, options.ModelId);
         var callId = ProviderUtils.JsonValues.GenerateId("aiobj-");
         if (options.OnStart != null)
         {
             await NotifyCallbackAsync(
-                () => options.OnStart(new GenerateObjectStartEvent(callId, model.Provider, model.ModelId, options.Prompt, options.Messages), cancellationToken),
-                cancellationToken).ConfigureAwait(false);
+                    () =>
+                        options.OnStart(
+                            new GenerateObjectStartEvent(
+                                callId,
+                                model.Provider,
+                                model.ModelId,
+                                options.Prompt,
+                                options.Messages
+                            ),
+                            cancellationToken
+                        ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
 
         if (options.OnStepStart != null)
         {
             await NotifyCallbackAsync(
-                () => options.OnStepStart(new GenerateObjectStepStartEvent(callId, model.Provider, model.ModelId), cancellationToken),
-                cancellationToken).ConfigureAwait(false);
+                    () =>
+                        options.OnStepStart(
+                            new GenerateObjectStepStartEvent(callId, model.Provider, model.ModelId),
+                            cancellationToken
+                        ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
 
         var generateOptions = new GenerateTextOptions
@@ -134,7 +216,11 @@ public sealed class AiClient : IAiClient
             Instructions = options.Instructions,
             Prompt = options.Prompt,
             Messages = options.Messages,
-            Output = OutputSpec.Object(options.Schema, options.SchemaName, options.SchemaDescription),
+            Output = OutputSpec.Object(
+                options.Schema,
+                options.SchemaName,
+                options.SchemaDescription
+            ),
             MaxOutputTokens = options.MaxOutputTokens,
             Temperature = options.Temperature,
             TopP = options.TopP,
@@ -147,26 +233,41 @@ public sealed class AiClient : IAiClient
             Timeout = options.Timeout,
             Headers = options.Headers,
             ProviderOptions = options.ProviderOptions,
-            RepairOutput = options.RepairText == null
-                ? null
-                : (text, error, token) => options.RepairText(new GenerateObjectRepairContext(text, error), token),
+            RepairOutput =
+                options.RepairText == null
+                    ? null
+                    : (text, error, token) =>
+                        options.RepairText(new GenerateObjectRepairContext(text, error), token),
             GenerateObjectMode = true,
         };
         if (options.OnStepEnd != null)
         {
             generateOptions.OnStepEnd = (step, token) =>
-                NotifyCallbackAsync(() => options.OnStepEnd(new GenerateObjectStepEndEvent(callId, model.Provider, model.ModelId, step), token), token);
+                NotifyCallbackAsync(
+                    () =>
+                        options.OnStepEnd(
+                            new GenerateObjectStepEndEvent(
+                                callId,
+                                model.Provider,
+                                model.ModelId,
+                                step
+                            ),
+                            token
+                        ),
+                    token
+                );
         }
 
-        var generated = await Generation.GenerateAsync(
-            model,
-            generateOptions,
-            _telemetry,
-            cancellationToken).ConfigureAwait(false);
+        var generated = await Generation
+            .GenerateAsync(model, generateOptions, _telemetry, cancellationToken)
+            .ConfigureAwait(false);
         T? value;
         try
         {
-            value = JsonSerializer.Deserialize<T>(generated.Output!.Value.GetRawText(), options.SerializerOptions);
+            value = JsonSerializer.Deserialize<T>(
+                generated.Output!.Value.GetRawText(),
+                options.SerializerOptions
+            );
         }
         catch (Exception error) when (error is JsonException or NotSupportedException)
         {
@@ -176,7 +277,8 @@ public sealed class AiClient : IAiClient
                 generated.FinalStep.StructuredOutputText ?? generated.Text,
                 generated.Response,
                 generated.Usage,
-                generated.FinishReason);
+                generated.FinishReason
+            );
         }
 
         if (value is null)
@@ -187,44 +289,68 @@ public sealed class AiClient : IAiClient
                 generated.FinalStep.StructuredOutputText ?? generated.Text,
                 generated.Response,
                 generated.Usage,
-                generated.FinishReason);
+                generated.FinishReason
+            );
         }
 
         var result = new GenerateObjectResult<T>(value, generated);
         if (options.OnFinish != null)
         {
             await NotifyCallbackAsync(
-                () => options.OnFinish(new GenerateObjectEndEvent<T>(callId, model.Provider, model.ModelId, result), cancellationToken),
-                cancellationToken).ConfigureAwait(false);
+                    () =>
+                        options.OnFinish(
+                            new GenerateObjectEndEvent<T>(
+                                callId,
+                                model.Provider,
+                                model.ModelId,
+                                result
+                            ),
+                            cancellationToken
+                        ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
 
         return result;
     }
 
-    private static async Task NotifyCallbackAsync(Func<Task> callback, CancellationToken cancellationToken)
+    private static async Task NotifyCallbackAsync(
+        Func<Task> callback,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
             await callback().ConfigureAwait(false);
         }
-        catch (Exception) when (!cancellationToken.IsCancellationRequested)
-        {
-        }
+        catch (Exception) when (!cancellationToken.IsCancellationRequested) { }
     }
 
     /// <inheritdoc />
-    public StreamTextResult StreamTextAsync(StreamTextOptions options, CancellationToken cancellationToken = default)
+    public StreamTextResult StreamTextAsync(
+        StreamTextOptions options,
+        CancellationToken cancellationToken = default
+    )
     {
         if (options is null)
         {
             throw new ArgumentNullException(nameof(options));
         }
 
-        return Generation.Stream(ResolveLanguage(options.Model, options.ModelId), options, _telemetry, cancellationToken);
+        return Generation.Stream(
+            ResolveLanguage(options.Model, options.ModelId),
+            options,
+            _telemetry,
+            cancellationToken
+        );
     }
 
     /// <inheritdoc />
-    public async Task<float[]> EmbedAsync(EmbedOptions options, CancellationToken cancellationToken = default)
+    public async Task<float[]> EmbedAsync(
+        EmbedOptions options,
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await EmbedManyAsync(options, cancellationToken).ConfigureAwait(false);
         if (result.Embeddings.Count == 0)
@@ -236,7 +362,10 @@ public sealed class AiClient : IAiClient
     }
 
     /// <inheritdoc />
-    public Task<EmbeddingResult> EmbedManyAsync(EmbedOptions options, CancellationToken cancellationToken = default)
+    public Task<EmbeddingResult> EmbedManyAsync(
+        EmbedOptions options,
+        CancellationToken cancellationToken = default
+    )
     {
         if (options is null)
         {
@@ -245,22 +374,40 @@ public sealed class AiClient : IAiClient
 
         Operations.Embed.ValidateEmbeddingDimensions(options.Dimensions);
         var model = options.Model ?? _gateway.EmbeddingModel(Require(options.ModelId, "embedding"));
-        return model.DoEmbedAsync(options.Values, options.ProviderOptions, cancellationToken, options.Dimensions, options.Headers);
+        return model.DoEmbedAsync(
+            options.Values,
+            options.ProviderOptions,
+            cancellationToken,
+            options.Dimensions,
+            options.Headers
+        );
     }
 
     /// <inheritdoc />
-    public Task<RerankResult> RerankAsync(RerankOptions options, CancellationToken cancellationToken = default)
+    public Task<RerankResult> RerankAsync(
+        RerankOptions options,
+        CancellationToken cancellationToken = default
+    )
     {
         if (options?.Model is null)
         {
             throw new AiSdkException("Rerank requires a reranking model.");
         }
 
-        return options.Model.DoRerankAsync(options.Query, options.Documents, options.TopN, cancellationToken, options.Headers);
+        return options.Model.DoRerankAsync(
+            options.Query,
+            options.Documents,
+            options.TopN,
+            cancellationToken,
+            options.Headers
+        );
     }
 
     /// <inheritdoc />
-    public Task<ImageGenerationResult> GenerateImageAsync(GenerateImageOptions options, CancellationToken cancellationToken = default)
+    public Task<ImageGenerationResult> GenerateImageAsync(
+        GenerateImageOptions options,
+        CancellationToken cancellationToken = default
+    )
     {
         if (options is null)
         {
@@ -268,21 +415,27 @@ public sealed class AiClient : IAiClient
         }
 
         var model = options.Model ?? _gateway.ImageModel(Require(options.ModelId, "image"));
-        return model.DoGenerateAsync(new ImageCallOptions(options.Prompt)
-        {
-            Count = options.Count,
-            Size = options.Size,
-            AspectRatio = options.AspectRatio,
-            Seed = options.Seed,
-            Files = options.Files,
-            Mask = options.Mask,
-            ProviderOptions = options.ProviderOptions,
-            Headers = options.Headers,
-        }, cancellationToken);
+        return model.DoGenerateAsync(
+            new ImageCallOptions(options.Prompt)
+            {
+                Count = options.Count,
+                Size = options.Size,
+                AspectRatio = options.AspectRatio,
+                Seed = options.Seed,
+                Files = options.Files,
+                Mask = options.Mask,
+                ProviderOptions = options.ProviderOptions,
+                Headers = options.Headers,
+            },
+            cancellationToken
+        );
     }
 
     /// <inheritdoc />
-    public async Task<SpeechResult> GenerateSpeechAsync(GenerateSpeechOptions options, CancellationToken cancellationToken = default)
+    public async Task<SpeechResult> GenerateSpeechAsync(
+        GenerateSpeechOptions options,
+        CancellationToken cancellationToken = default
+    )
     {
         if (options?.Model is null)
         {
@@ -290,14 +443,21 @@ public sealed class AiClient : IAiClient
         }
 
         using var scope = _telemetry?.Begin("generateSpeech", options.Model.ModelId);
-        var result = await options.Model.DoGenerateAsync(new SpeechCallOptions(options.Text)
-        {
-            Voice = options.Voice,
-            OutputFormat = options.OutputFormat,
-            Instructions = options.Instructions,
-            Speed = options.Speed,
-            Language = options.Language,
-        }, cancellationToken).ConfigureAwait(false);
+        var result = await options
+            .Model.DoGenerateAsync(
+                new SpeechCallOptions(options.Text)
+                {
+                    Voice = options.Voice,
+                    OutputFormat = options.OutputFormat,
+                    Instructions = options.Instructions,
+                    Speed = options.Speed,
+                    Language = options.Language,
+                    ProviderOptions = options.ProviderOptions,
+                    Headers = options.Headers,
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         if (_telemetry != null && scope != null)
         {
             _telemetry.OnUsage(scope, result.Usage);
@@ -307,7 +467,10 @@ public sealed class AiClient : IAiClient
     }
 
     /// <inheritdoc />
-    public async Task<TranscriptionResult> TranscribeAsync(TranscribeOptions options, CancellationToken cancellationToken = default)
+    public async Task<TranscriptionResult> TranscribeAsync(
+        TranscribeOptions options,
+        CancellationToken cancellationToken = default
+    )
     {
         if (options?.Model is null)
         {
@@ -315,7 +478,9 @@ public sealed class AiClient : IAiClient
         }
 
         using var scope = _telemetry?.Begin("transcribe", options.Model.ModelId);
-        var result = await options.Model.DoTranscribeAsync(options.Audio, cancellationToken).ConfigureAwait(false);
+        var result = await options
+            .Model.DoTranscribeAsync(options.Audio, cancellationToken)
+            .ConfigureAwait(false);
         if (_telemetry != null && scope != null)
         {
             _telemetry.OnUsage(scope, result.Usage);
@@ -325,7 +490,10 @@ public sealed class AiClient : IAiClient
     }
 
     /// <inheritdoc />
-    public Task<TranscriptionResult> TranslateAsync(TranslateOptions options, CancellationToken cancellationToken = default)
+    public Task<TranscriptionResult> TranslateAsync(
+        TranslateOptions options,
+        CancellationToken cancellationToken = default
+    )
     {
         if (options?.Model is null)
         {
@@ -336,18 +504,27 @@ public sealed class AiClient : IAiClient
     }
 
     /// <inheritdoc />
-    public Task<VideoResult> GenerateVideoAsync(GenerateVideoOptions options, CancellationToken cancellationToken = default)
+    public Task<VideoResult> GenerateVideoAsync(
+        GenerateVideoOptions options,
+        CancellationToken cancellationToken = default
+    )
     {
         if (options?.Model is null)
         {
             throw new AiSdkException("GenerateVideo requires a video model.");
         }
 
-        return options.Model.DoGenerateAsync(new VideoCallOptions(options.Prompt) { DurationSeconds = options.DurationSeconds }, cancellationToken);
+        return options.Model.DoGenerateAsync(
+            new VideoCallOptions(options.Prompt) { DurationSeconds = options.DurationSeconds },
+            cancellationToken
+        );
     }
 
     /// <inheritdoc />
-    public async Task<RubricResult> EvaluateAsync(EvaluateOptions options, CancellationToken cancellationToken = default)
+    public async Task<RubricResult> EvaluateAsync(
+        EvaluateOptions options,
+        CancellationToken cancellationToken = default
+    )
     {
         if (options is null)
         {
@@ -356,25 +533,41 @@ public sealed class AiClient : IAiClient
 
         if (options.RubricModel != null)
         {
-            return await options.RubricModel.DoEvaluateAsync(options.Rubric, options.Candidate, cancellationToken).ConfigureAwait(false);
+            return await options
+                .RubricModel.DoEvaluateAsync(options.Rubric, options.Candidate, cancellationToken)
+                .ConfigureAwait(false);
         }
 
-        var generated = await GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = options.Model,
-            ModelId = options.ModelId,
-            System = "Score the candidate against the rubric. Reply with JSON {\"score\": number, \"reason\": string}.",
-            Prompt = "Rubric:\n" + options.Rubric + "\n\nCandidate:\n" + options.Candidate,
-            Output = OutputSpec.Object("{\"type\":\"object\",\"properties\":{\"score\":{\"type\":\"number\"},\"reason\":{\"type\":\"string\"}},\"required\":[\"score\"]}"),
-        }, cancellationToken).ConfigureAwait(false);
+        var generated = await GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = options.Model,
+                    ModelId = options.ModelId,
+                    System =
+                        "Score the candidate against the rubric. Reply with JSON {\"score\": number, \"reason\": string}.",
+                    Prompt = "Rubric:\n" + options.Rubric + "\n\nCandidate:\n" + options.Candidate,
+                    Output = OutputSpec.Object(
+                        "{\"type\":\"object\",\"properties\":{\"score\":{\"type\":\"number\"},\"reason\":{\"type\":\"string\"}},\"required\":[\"score\"]}"
+                    ),
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var score = 0d;
         string? reason = null;
-        if (generated.Output is { } output && output.TryGetProperty("score", out var scoreElement) && scoreElement.TryGetDouble(out var parsed))
+        if (
+            generated.Output is { } output
+            && output.TryGetProperty("score", out var scoreElement)
+            && scoreElement.TryGetDouble(out var parsed)
+        )
         {
             score = parsed;
         }
 
-        if (generated.Output is { } outputWithReason && outputWithReason.TryGetProperty("reason", out var reasonElement))
+        if (
+            generated.Output is { } outputWithReason
+            && outputWithReason.TryGetProperty("reason", out var reasonElement)
+        )
         {
             reason = reasonElement.GetString();
         }
@@ -383,7 +576,13 @@ public sealed class AiClient : IAiClient
     }
 
     /// <inheritdoc />
-    public Task<UploadedFile> UploadFileAsync(IFileStore store, string fileName, byte[] data, string mediaType, CancellationToken cancellationToken = default)
+    public Task<UploadedFile> UploadFileAsync(
+        IFileStore store,
+        string fileName,
+        byte[] data,
+        string mediaType,
+        CancellationToken cancellationToken = default
+    )
     {
         if (store is null)
         {
@@ -394,7 +593,12 @@ public sealed class AiClient : IAiClient
     }
 
     /// <inheritdoc />
-    public Task<UploadedSkill> UploadSkillAsync(ISkillStore store, string name, string instructions, CancellationToken cancellationToken = default)
+    public Task<UploadedSkill> UploadSkillAsync(
+        ISkillStore store,
+        string name,
+        string instructions,
+        CancellationToken cancellationToken = default
+    )
     {
         if (store is null)
         {
@@ -531,6 +735,12 @@ public sealed class GenerateSpeechOptions
 
     /// <summary>ISO 639-1 language code, or <c>auto</c>. Provider support varies.</summary>
     public string? Language { get; set; }
+
+    /// <summary>Additional provider-specific options, keyed by provider name.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
+
+    /// <summary>Headers for this call. They override the provider headers.</summary>
+    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
 }
 
 /// <summary>Transcription options.</summary>
@@ -576,7 +786,10 @@ public sealed class EvaluateOptions
     [Obsolete("Use RubricModel instead.")]
     public IEvaluationModel? EvaluationModel
     {
-        get => RubricModel is LegacyRubricModel legacy ? legacy.Inner : RubricModel as IEvaluationModel;
+        get =>
+            RubricModel is LegacyRubricModel legacy
+                ? legacy.Inner
+                : RubricModel as IEvaluationModel;
         set => RubricModel = value == null ? null : RubricModels.FromLegacy(value);
     }
 
@@ -596,28 +809,42 @@ public sealed class EvaluateOptions
 /// <summary>Static entry points. String model ids use the AI Gateway and <c>AI_GATEWAY_API_KEY</c>.</summary>
 public static class Ai
 {
-    private static readonly Lazy<AiClient> DefaultClient = new(() => new AiClient(GatewayProvider.Create()));
+    private static readonly Lazy<AiClient> DefaultClient = new(() =>
+        new AiClient(GatewayProvider.Create())
+    );
 
     /// <summary>Generates text.</summary>
-    public static Task<GenerateTextResult> GenerateTextAsync(GenerateTextOptions options, CancellationToken cancellationToken = default)
+    public static Task<GenerateTextResult> GenerateTextAsync(
+        GenerateTextOptions options,
+        CancellationToken cancellationToken = default
+    )
     {
         return DefaultClient.Value.GenerateTextAsync(options, cancellationToken);
     }
 
     /// <summary>Streams text.</summary>
-    public static StreamTextResult StreamTextAsync(StreamTextOptions options, CancellationToken cancellationToken = default)
+    public static StreamTextResult StreamTextAsync(
+        StreamTextOptions options,
+        CancellationToken cancellationToken = default
+    )
     {
         return DefaultClient.Value.StreamTextAsync(options, cancellationToken);
     }
 
     /// <summary>Embeds one value.</summary>
-    public static Task<float[]> EmbedAsync(EmbedOptions options, CancellationToken cancellationToken = default)
+    public static Task<float[]> EmbedAsync(
+        EmbedOptions options,
+        CancellationToken cancellationToken = default
+    )
     {
         return DefaultClient.Value.EmbedAsync(options, cancellationToken);
     }
 
     /// <summary>Embeds many values.</summary>
-    public static Task<EmbeddingResult> EmbedManyAsync(EmbedOptions options, CancellationToken cancellationToken = default)
+    public static Task<EmbeddingResult> EmbedManyAsync(
+        EmbedOptions options,
+        CancellationToken cancellationToken = default
+    )
     {
         return DefaultClient.Value.EmbedManyAsync(options, cancellationToken);
     }
@@ -629,7 +856,10 @@ public static class Ai
     }
 
     /// <summary>Converts UI messages from a chat UI into model messages. Maps to <c>convertToModelMessages</c>.</summary>
-    public static IReadOnlyList<ModelMessage> ConvertToModelMessages(IReadOnlyList<Ui.UIMessage> messages, Ui.ConvertToModelMessagesOptions? options = null)
+    public static IReadOnlyList<ModelMessage> ConvertToModelMessages(
+        IReadOnlyList<Ui.UIMessage> messages,
+        Ui.ConvertToModelMessagesOptions? options = null
+    )
     {
         return Ui.UIMessageConversion.ConvertToModelMessages(messages, options);
     }
@@ -638,13 +868,17 @@ public static class Ai
     /// Validates a list of UI messages. Metadata, data parts, and tool parts are only validated if the corresponding schemas are
     /// provided. Maps to <c>validateUIMessages</c>.
     /// </summary>
-    public static Task<IReadOnlyList<Ui.UIMessage>> ValidateUIMessagesAsync(Ui.ValidateUIMessagesOptions options)
+    public static Task<IReadOnlyList<Ui.UIMessage>> ValidateUIMessagesAsync(
+        Ui.ValidateUIMessagesOptions options
+    )
     {
         return Ui.UIMessageValidation.ValidateUIMessagesAsync(options);
     }
 
     /// <summary>Validates UI messages like <see cref="ValidateUIMessagesAsync"/>, but returns the error instead of throwing. Maps to <c>safeValidateUIMessages</c>.</summary>
-    public static Task<Ui.SafeValidateUIMessagesResult> SafeValidateUIMessagesAsync(Ui.ValidateUIMessagesOptions options)
+    public static Task<Ui.SafeValidateUIMessagesResult> SafeValidateUIMessagesAsync(
+        Ui.ValidateUIMessagesOptions options
+    )
     {
         return Ui.UIMessageValidation.SafeValidateUIMessagesAsync(options);
     }
@@ -703,7 +937,10 @@ public static class AiSdkServiceCollectionExtensions
     public const string HttpClientName = "Vercel.AI";
 
     /// <summary>Registers <see cref="IAiClient"/> and the Gateway HTTP client.</summary>
-    public static IServiceCollection AddAiSdk(this IServiceCollection services, Action<AiSdkOptions>? configure = null)
+    public static IServiceCollection AddAiSdk(
+        this IServiceCollection services,
+        Action<AiSdkOptions>? configure = null
+    )
     {
         if (services is null)
         {
@@ -727,7 +964,10 @@ public static class AiSdkServiceCollectionExtensions
                 gatewayOptions.BaseUrl = options.GatewayBaseUrl!;
             }
 
-            return new AiClient(new GatewayProvider(gatewayOptions, http), sp.GetService<IAiTelemetry>());
+            return new AiClient(
+                new GatewayProvider(gatewayOptions, http),
+                sp.GetService<IAiTelemetry>()
+            );
         });
         return services;
     }

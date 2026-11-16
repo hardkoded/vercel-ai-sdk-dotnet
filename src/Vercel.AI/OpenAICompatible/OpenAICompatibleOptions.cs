@@ -130,7 +130,10 @@ public class OpenAICompatibleOptions
     /// .NET-only hook. Returns the call headers to send in place of <see cref="LanguageModelCallOptions.Headers"/>.
     /// Cerebras uses it for <c>applyQueueThresholdHeader</c>, which upstream runs in its own chat model subclass.
     /// </summary>
-    internal Func<LanguageModelCallOptions, IReadOnlyDictionary<string, string?>?>? PrepareCallHeaders { get; set; }
+    internal Func<
+        LanguageModelCallOptions,
+        IReadOnlyDictionary<string, string?>?
+    >? PrepareCallHeaders { get; set; }
 
     /// <summary>Rewrites a provider error body into the exception message.</summary>
     public Func<string?, string?>? SelectErrorMessage { get; set; }
@@ -142,7 +145,13 @@ public class OpenAICompatibleOptions
     /// Rewrites the JSON body from the call options before <see cref="TransformRequestBody"/> runs. Arguments are the model id,
     /// the call options, the body, and the call warnings. Use it when a provider builds fields, such as messages, from the call itself.
     /// </summary>
-    internal Func<string, LanguageModelCallOptions, JsonObject, IList<CallWarning>, JsonObject>? TransformChatRequest { get; set; }
+    internal Func<
+        string,
+        LanguageModelCallOptions,
+        JsonObject,
+        IList<CallWarning>,
+        JsonObject
+    >? TransformChatRequest { get; set; }
 
     /// <summary>Streams <c>tool-input-start</c>, <c>tool-input-delta</c> and <c>tool-input-end</c> parts for every tool call, not only for the JSON response tool.</summary>
     internal bool StreamToolInput { get; set; }
@@ -160,7 +169,13 @@ public class OpenAICompatibleOptions
     /// Resolves <c>reasoning_effort</c> for a model. Arguments are the model id, the portable <c>Reasoning</c> level,
     /// the provider option effort, and the call warnings. Null removes the field. Null here keeps the default behavior.
     /// </summary>
-    public Func<string, string?, string?, IList<CallWarning>, string?>? ResolveReasoningEffort { get; set; }
+    public Func<
+        string,
+        string?,
+        string?,
+        IList<CallWarning>,
+        string?
+    >? ResolveReasoningEffort { get; set; }
 
     /// <summary>Converts the raw chat usage object. Null uses <see cref="OpenAICompatibleChat.ConvertUsage"/>.</summary>
     public Func<JsonElement, LanguageModelUsage>? ConvertUsage { get; set; }
@@ -201,7 +216,8 @@ public class OpenAICompatibleOptions
     public OpenAICompatibleOptions Copy()
     {
         var copy = (OpenAICompatibleOptions)MemberwiseClone();
-        copy.AdditionalApiKeyEnvironmentVariables = (string[])AdditionalApiKeyEnvironmentVariables.Clone();
+        copy.AdditionalApiKeyEnvironmentVariables = (string[])
+            AdditionalApiKeyEnvironmentVariables.Clone();
         copy.Headers = new Dictionary<string, string>(Headers);
         copy.QueryParameters = new Dictionary<string, string>(QueryParameters);
         return copy;

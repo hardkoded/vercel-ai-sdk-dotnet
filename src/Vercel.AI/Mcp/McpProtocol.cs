@@ -42,7 +42,10 @@ public static class JsonRpcMessages
         var hasId = message.TryGetProperty("id", out var id);
         if (hasMethod)
         {
-            if (method.ValueKind != JsonValueKind.String || string.IsNullOrEmpty(method.GetString()))
+            if (
+                method.ValueKind != JsonValueKind.String
+                || string.IsNullOrEmpty(method.GetString())
+            )
             {
                 throw new AiSdkException("JSON-RPC method must be a string.");
             }
@@ -79,23 +82,31 @@ public static class JsonRpcMessages
         {
             if (hasId && id.ValueKind != JsonValueKind.Null && !IsId(id))
             {
-                throw new AiSdkException("JSON-RPC error id must be a string, an integer, or null.");
+                throw new AiSdkException(
+                    "JSON-RPC error id must be a string, an integer, or null."
+                );
             }
 
-            if (error.ValueKind != JsonValueKind.Object
+            if (
+                error.ValueKind != JsonValueKind.Object
                 || !error.TryGetProperty("code", out var code)
                 || code.ValueKind != JsonValueKind.Number
                 || code.GetRawText().IndexOf('.') >= 0
                 || !error.TryGetProperty("message", out var errorMessage)
-                || errorMessage.ValueKind != JsonValueKind.String)
+                || errorMessage.ValueKind != JsonValueKind.String
+            )
             {
-                throw new AiSdkException("JSON-RPC error must include an integer code and a message.");
+                throw new AiSdkException(
+                    "JSON-RPC error must include an integer code and a message."
+                );
             }
 
             return;
         }
 
-        throw new AiSdkException("JSON-RPC message must be a request, notification, result, or error.");
+        throw new AiSdkException(
+            "JSON-RPC message must be a request, notification, result, or error."
+        );
     }
 
     private static bool IsId(JsonElement id)
@@ -173,19 +184,33 @@ public static class CallToolResults
         {
             var text = structured.GetRawText();
             var isError = ReadError(result);
-            using (var document = JsonDocument.Parse(
-                "{\"content\":[{\"type\":\"text\",\"text\":" + Quote(text) + "}],\"structuredContent\":" + text + ",\"isError\":" + (isError ? "true" : "false") + "}"))
+            using (
+                var document = JsonDocument.Parse(
+                    "{\"content\":[{\"type\":\"text\",\"text\":"
+                        + Quote(text)
+                        + "}],\"structuredContent\":"
+                        + text
+                        + ",\"isError\":"
+                        + (isError ? "true" : "false")
+                        + "}"
+                )
+            )
             {
                 return document.RootElement.Clone();
             }
         }
 
-        if (result.TryGetProperty("toolResult", out var toolResult) && toolResult.ValueKind != JsonValueKind.Undefined)
+        if (
+            result.TryGetProperty("toolResult", out var toolResult)
+            && toolResult.ValueKind != JsonValueKind.Undefined
+        )
         {
             return result.Clone();
         }
 
-        throw new AiSdkException("Call tool result requires content, structuredContent, or toolResult.");
+        throw new AiSdkException(
+            "Call tool result requires content, structuredContent, or toolResult."
+        );
     }
 
     /// <summary>Normalizes a call-tool result held as a JSON node so cycles can be rejected.</summary>
@@ -205,14 +230,19 @@ public static class CallToolResults
 
     private static bool HasContent(JsonElement result)
     {
-        return result.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array;
+        return result.TryGetProperty("content", out var content)
+            && content.ValueKind == JsonValueKind.Array;
     }
 
     private static void ValidateContent(JsonElement result)
     {
         foreach (var part in result.GetProperty("content").EnumerateArray())
         {
-            if (part.ValueKind != JsonValueKind.Object || !part.TryGetProperty("type", out var type) || type.ValueKind != JsonValueKind.String)
+            if (
+                part.ValueKind != JsonValueKind.Object
+                || !part.TryGetProperty("type", out var type)
+                || type.ValueKind != JsonValueKind.String
+            )
             {
                 throw new AiSdkException("Call tool content is malformed.");
             }
@@ -220,31 +250,45 @@ public static class CallToolResults
             var kind = type.GetString();
             if (kind == "text")
             {
-                if (!part.TryGetProperty("text", out var text) || text.ValueKind != JsonValueKind.String)
+                if (
+                    !part.TryGetProperty("text", out var text)
+                    || text.ValueKind != JsonValueKind.String
+                )
                 {
                     throw new AiSdkException("Text content requires a string text field.");
                 }
             }
             else if (kind == "image")
             {
-                if (!part.TryGetProperty("mimeType", out var mime) || mime.ValueKind != JsonValueKind.String
-                    || !part.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.String
-                    || !IsBase64(data.GetString() ?? string.Empty))
+                if (
+                    !part.TryGetProperty("mimeType", out var mime)
+                    || mime.ValueKind != JsonValueKind.String
+                    || !part.TryGetProperty("data", out var data)
+                    || data.ValueKind != JsonValueKind.String
+                    || !IsBase64(data.GetString() ?? string.Empty)
+                )
                 {
                     throw new AiSdkException("Image content requires base64 data and a mime type.");
                 }
             }
             else if (kind == "resource")
             {
-                if (!part.TryGetProperty("resource", out var resource) || resource.ValueKind != JsonValueKind.Object)
+                if (
+                    !part.TryGetProperty("resource", out var resource)
+                    || resource.ValueKind != JsonValueKind.Object
+                )
                 {
                     throw new AiSdkException("Resource content requires a resource object.");
                 }
             }
             else if (kind == "resource_link")
             {
-                if (!part.TryGetProperty("uri", out var uri) || uri.ValueKind != JsonValueKind.String
-                    || !part.TryGetProperty("name", out var name) || name.ValueKind != JsonValueKind.String)
+                if (
+                    !part.TryGetProperty("uri", out var uri)
+                    || uri.ValueKind != JsonValueKind.String
+                    || !part.TryGetProperty("name", out var name)
+                    || name.ValueKind != JsonValueKind.String
+                )
                 {
                     throw new AiSdkException("Resource link content requires a uri and a name.");
                 }
@@ -265,7 +309,11 @@ public static class CallToolResults
             throw new AiSdkException("Call tool result must be a JSON object.");
         }
 
-        using (var document = JsonDocument.Parse(raw.Substring(0, raw.Length - 1) + ",\"isError\":false}"))
+        using (
+            var document = JsonDocument.Parse(
+                raw.Substring(0, raw.Length - 1) + ",\"isError\":false}"
+            )
+        )
         {
             return document.RootElement.Clone();
         }
@@ -273,7 +321,8 @@ public static class CallToolResults
 
     private static bool ReadError(JsonElement result)
     {
-        return result.TryGetProperty("isError", out var isError) && isError.ValueKind == JsonValueKind.True;
+        return result.TryGetProperty("isError", out var isError)
+            && isError.ValueKind == JsonValueKind.True;
     }
 
     private static void EnsureAcyclic(JsonNode? node, HashSet<JsonNode> seen)
@@ -333,8 +382,16 @@ public static class CallToolResults
 /// <summary>Reads <c>x-mcp-header</c> annotations and encodes <c>Mcp-Param-*</c> headers.</summary>
 public static class McpToolHeaders
 {
-    private static readonly Regex HttpToken = new Regex("^[!#$%&'*+\\-.^_`|~0-9A-Za-z]+\\z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
-    private static readonly Regex Base64Sentinel = new Regex("^=\\?base64\\?.*\\?=\\z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex HttpToken = new Regex(
+        "^[!#$%&'*+\\-.^_`|~0-9A-Za-z]+\\z",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(100)
+    );
+    private static readonly Regex Base64Sentinel = new Regex(
+        "^=\\?base64\\?.*\\?=\\z",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(100)
+    );
 
     /// <summary>One header bound to a tool argument path.</summary>
     public sealed class Binding
@@ -413,7 +470,9 @@ public static class McpToolHeaders
             return value;
         }
 
-        return "=?base64?" + ByteEncoding.ToBase64(System.Text.Encoding.UTF8.GetBytes(value)) + "?=";
+        return "=?base64?"
+            + ByteEncoding.ToBase64(System.Text.Encoding.UTF8.GetBytes(value))
+            + "?=";
     }
 
     /// <summary>Collects statically reachable <c>x-mcp-header</c> annotations.</summary>
@@ -432,7 +491,10 @@ public static class McpToolHeaders
     }
 
     /// <summary>Builds <c>Mcp-Param-*</c> headers from tool arguments.</summary>
-    public static IReadOnlyDictionary<string, string> CreateHeaders(IReadOnlyList<Binding> bindings, JsonElement arguments)
+    public static IReadOnlyDictionary<string, string> CreateHeaders(
+        IReadOnlyList<Binding> bindings,
+        JsonElement arguments
+    )
     {
         if (bindings is null)
         {
@@ -442,24 +504,43 @@ public static class McpToolHeaders
         var headers = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var binding in bindings)
         {
-            if (!TryGet(arguments, binding.Path, out var value) || value.ValueKind == JsonValueKind.Null || value.ValueKind == JsonValueKind.Undefined)
+            if (
+                !TryGet(arguments, binding.Path, out var value)
+                || value.ValueKind == JsonValueKind.Null
+                || value.ValueKind == JsonValueKind.Undefined
+            )
             {
                 continue;
             }
 
             if (!Matches(binding.ValueType, value))
             {
-                throw new InvalidOperationException("Tool argument \"" + string.Join(".", binding.Path) + "\" does not match its x-mcp-header type");
+                throw new InvalidOperationException(
+                    "Tool argument \""
+                        + string.Join(".", binding.Path)
+                        + "\" does not match its x-mcp-header type"
+                );
             }
 
-            var text = binding.ValueType == "string" ? value.GetString() ?? string.Empty : value.ValueKind == JsonValueKind.True ? "true" : value.ValueKind == JsonValueKind.False ? "false" : value.GetRawText();
+            var text =
+                binding.ValueType == "string" ? value.GetString() ?? string.Empty
+                : value.ValueKind == JsonValueKind.True ? "true"
+                : value.ValueKind == JsonValueKind.False ? "false"
+                : value.GetRawText();
             headers["Mcp-Param-" + binding.HeaderName] = EncodeValue(text);
         }
 
         return headers;
     }
 
-    private static void Visit(JsonElement value, List<string> path, bool staticallyReachable, List<Binding> bindings, HashSet<string> names, ref string? error)
+    private static void Visit(
+        JsonElement value,
+        List<string> path,
+        bool staticallyReachable,
+        List<Binding> bindings,
+        HashSet<string> names,
+        ref string? error
+    )
     {
         if (error != null || value.ValueKind != JsonValueKind.Object)
         {
@@ -474,7 +555,8 @@ public static class McpToolHeaders
                 return;
             }
 
-            var token = headerName.ValueKind == JsonValueKind.String ? headerName.GetString() : null;
+            var token =
+                headerName.ValueKind == JsonValueKind.String ? headerName.GetString() : null;
             if (string.IsNullOrEmpty(token) || !HttpToken.IsMatch(token!))
             {
                 error = "x-mcp-header must be a non-empty HTTP token";
@@ -487,7 +569,10 @@ public static class McpToolHeaders
                 return;
             }
 
-            var valueType = value.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String ? type.GetString() : null;
+            var valueType =
+                value.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String
+                    ? type.GetString()
+                    : null;
             if (valueType != "boolean" && valueType != "integer" && valueType != "string")
             {
                 error = "x-mcp-header can only annotate boolean, integer, or string properties";
@@ -504,7 +589,10 @@ public static class McpToolHeaders
                 continue;
             }
 
-            if (property.NameEquals("properties") && property.Value.ValueKind == JsonValueKind.Object)
+            if (
+                property.NameEquals("properties")
+                && property.Value.ValueKind == JsonValueKind.Object
+            )
             {
                 foreach (var child in property.Value.EnumerateObject())
                 {
@@ -520,12 +608,19 @@ public static class McpToolHeaders
         }
     }
 
-    private static bool TryGet(JsonElement value, IReadOnlyList<string> path, out JsonElement current)
+    private static bool TryGet(
+        JsonElement value,
+        IReadOnlyList<string> path,
+        out JsonElement current
+    )
     {
         current = value;
         foreach (var segment in path)
         {
-            if (current.ValueKind != JsonValueKind.Object || !current.TryGetProperty(segment, out current))
+            if (
+                current.ValueKind != JsonValueKind.Object
+                || !current.TryGetProperty(segment, out current)
+            )
             {
                 return false;
             }
@@ -554,8 +649,11 @@ public static class McpToolHeaders
             }
 
             var text = value.GetRawText();
-            return text.IndexOf('.') < 0 && text.IndexOf('e') < 0 && text.IndexOf('E') < 0
-                && integer <= 9007199254740991L && integer >= -9007199254740991L;
+            return text.IndexOf('.') < 0
+                && text.IndexOf('e') < 0
+                && text.IndexOf('E') < 0
+                && integer <= 9007199254740991L
+                && integer >= -9007199254740991L;
         }
 
         return false;
@@ -584,7 +682,11 @@ public static class McpNdjson
     }
 
     /// <summary>Writes one newline-delimited message without blocking a thread when the pipe is full.</summary>
-    public static async Task WriteAsync(Stream? output, JsonElement message, CancellationToken cancellationToken = default)
+    public static async Task WriteAsync(
+        Stream? output,
+        JsonElement message,
+        CancellationToken cancellationToken = default
+    )
     {
         if (output is null)
         {
@@ -664,12 +766,22 @@ public static class McpAppFingerprint
 
     private static string Canonical(string html, JsonElement? csp, JsonElement? permissions)
     {
-        return "{\"csp\":" + CanonicalValue(csp) + ",\"html\":" + System.Text.Json.JsonSerializer.Serialize(html) + ",\"permissions\":" + CanonicalValue(permissions) + "}";
+        return "{\"csp\":"
+            + CanonicalValue(csp)
+            + ",\"html\":"
+            + System.Text.Json.JsonSerializer.Serialize(html)
+            + ",\"permissions\":"
+            + CanonicalValue(permissions)
+            + "}";
     }
 
     private static string CanonicalValue(JsonElement? value)
     {
-        if (value is null || value.Value.ValueKind == JsonValueKind.Null || value.Value.ValueKind == JsonValueKind.Undefined)
+        if (
+            value is null
+            || value.Value.ValueKind == JsonValueKind.Null
+            || value.Value.ValueKind == JsonValueKind.Undefined
+        )
         {
             return "null";
         }
@@ -692,7 +804,11 @@ public static class McpAppFingerprint
                 var fields = new List<string>(names.Count);
                 foreach (var name in names)
                 {
-                    fields.Add(System.Text.Json.JsonSerializer.Serialize(name) + ":" + CanonicalNode(value.GetProperty(name)));
+                    fields.Add(
+                        System.Text.Json.JsonSerializer.Serialize(name)
+                            + ":"
+                            + CanonicalNode(value.GetProperty(name))
+                    );
                 }
 
                 return "{" + string.Join(",", fields) + "}";
@@ -726,7 +842,10 @@ public static class OAuthResources
             throw new ArgumentException("Server URL must be absolute.", nameof(url));
         }
 
-        return uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.PathAndQuery, UriFormat.UriEscaped);
+        return uri.GetComponents(
+            UriComponents.SchemeAndServer | UriComponents.PathAndQuery,
+            UriFormat.UriEscaped
+        );
     }
 
     /// <summary>
@@ -735,13 +854,21 @@ public static class OAuthResources
     /// </summary>
     public static bool CheckResourceAllowed(string requestedResource, string configuredResource)
     {
-        if (!Uri.TryCreate(requestedResource, UriKind.Absolute, out var requested)
-            || !Uri.TryCreate(configuredResource, UriKind.Absolute, out var configured))
+        if (
+            !Uri.TryCreate(requestedResource, UriKind.Absolute, out var requested)
+            || !Uri.TryCreate(configuredResource, UriKind.Absolute, out var configured)
+        )
         {
             return false;
         }
 
-        if (!string.Equals(Origin(requested), Origin(configured), StringComparison.OrdinalIgnoreCase))
+        if (
+            !string.Equals(
+                Origin(requested),
+                Origin(configured),
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
         {
             return false;
         }
@@ -751,14 +878,20 @@ public static class OAuthResources
             return false;
         }
 
-        var requestedPath = requested.AbsolutePath.EndsWith("/", StringComparison.Ordinal) ? requested.AbsolutePath : requested.AbsolutePath + "/";
-        var configuredPath = configured.AbsolutePath.EndsWith("/", StringComparison.Ordinal) ? configured.AbsolutePath : configured.AbsolutePath + "/";
+        var requestedPath = requested.AbsolutePath.EndsWith("/", StringComparison.Ordinal)
+            ? requested.AbsolutePath
+            : requested.AbsolutePath + "/";
+        var configuredPath = configured.AbsolutePath.EndsWith("/", StringComparison.Ordinal)
+            ? configured.AbsolutePath
+            : configured.AbsolutePath + "/";
         return requestedPath.StartsWith(configuredPath, StringComparison.Ordinal);
     }
 
     private static string Origin(Uri uri)
     {
-        var port = uri.IsDefaultPort ? string.Empty : ":" + uri.Port.ToString(CultureInfo.InvariantCulture);
+        var port = uri.IsDefaultPort
+            ? string.Empty
+            : ":" + uri.Port.ToString(CultureInfo.InvariantCulture);
         return uri.Scheme + "://" + uri.Host + port;
     }
 }
@@ -766,14 +899,35 @@ public static class OAuthResources
 /// <summary>Environment passed to an MCP stdio child. The caller's dictionary is not modified.</summary>
 public static class StdioEnvironment
 {
-    private static readonly string[] UnixKeys = { "HOME", "LOGNAME", "PATH", "SHELL", "TERM", "USER" };
+    private static readonly string[] UnixKeys =
+    {
+        "HOME",
+        "LOGNAME",
+        "PATH",
+        "SHELL",
+        "TERM",
+        "USER",
+    };
     private static readonly string[] WindowsKeys =
     {
-        "APPDATA", "HOMEDRIVE", "HOMEPATH", "LOCALAPPDATA", "PATH", "PROCESSOR_ARCHITECTURE", "SYSTEMDRIVE", "SYSTEMROOT", "TEMP", "USERNAME", "USERPROFILE",
+        "APPDATA",
+        "HOMEDRIVE",
+        "HOMEPATH",
+        "LOCALAPPDATA",
+        "PATH",
+        "PROCESSOR_ARCHITECTURE",
+        "SYSTEMDRIVE",
+        "SYSTEMROOT",
+        "TEMP",
+        "USERNAME",
+        "USERPROFILE",
     };
 
     /// <summary>Copies <paramref name="custom"/> and fills inherited process variables that do not start with <c>()</c>.</summary>
-    public static Dictionary<string, string> GetEnvironment(IReadOnlyDictionary<string, string>? custom, bool? windows = null)
+    public static Dictionary<string, string> GetEnvironment(
+        IReadOnlyDictionary<string, string>? custom,
+        bool? windows = null
+    )
     {
         var environment = new Dictionary<string, string>(StringComparer.Ordinal);
         if (custom != null)
@@ -784,7 +938,10 @@ public static class StdioEnvironment
             }
         }
 
-        var windowsPlatform = windows ?? System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+        var windowsPlatform = windows
+            ?? System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
+                System.Runtime.InteropServices.OSPlatform.Windows
+            );
         foreach (var key in windowsPlatform ? WindowsKeys : UnixKeys)
         {
             var value = Environment.GetEnvironmentVariable(key);
@@ -800,7 +957,11 @@ public static class StdioEnvironment
     }
 
     /// <summary>Rejects command and argument line breaks on Windows.</summary>
-    public static void ValidateCommand(string command, IReadOnlyList<string>? arguments, bool windows)
+    public static void ValidateCommand(
+        string command,
+        IReadOnlyList<string>? arguments,
+        bool windows
+    )
     {
         if (!windows)
         {
@@ -809,7 +970,9 @@ public static class StdioEnvironment
 
         if (HasLineBreak(command) || HasLineBreak(arguments))
         {
-            throw new ArgumentException("Stdio MCP commands and arguments must not contain line breaks on Windows.");
+            throw new ArgumentException(
+                "Stdio MCP commands and arguments must not contain line breaks on Windows."
+            );
         }
     }
 

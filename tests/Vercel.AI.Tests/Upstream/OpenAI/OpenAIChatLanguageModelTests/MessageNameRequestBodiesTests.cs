@@ -12,12 +12,17 @@ namespace Vercel.AI.Tests.OpenAIChatLanguageModelTests;
 /// <summary>Port of <c>openai-chat-language-model.test.ts</c> &gt; <c>message name request bodies</c>.</summary>
 public sealed class MessageNameRequestBodiesTests
 {
-    private const string Prefix = "packages/openai/src/chat/openai-chat-language-model.test.ts::message name request bodies::";
+    private const string Prefix =
+        "packages/openai/src/chat/openai-chat-language-model.test.ts::message name request bodies::";
 
     [Theory]
     [InlineData("generate")]
     [InlineData("stream")]
-    [UpstreamTest(Prefix + "serializes names in %s requests", Coverage = UpstreamCoverage.Covered, Commit = "243bf221a89315cbe3d0c91161e5e61b763736d7")]
+    [UpstreamTest(
+        Prefix + "serializes names in %s requests",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "243bf221a89315cbe3d0c91161e5e61b763736d7"
+    )]
     public async Task Serializes_names_in_requests(string mode)
     {
         var capture = new OpenAICapture();
@@ -51,7 +56,8 @@ public sealed class MessageNameRequestBodiesTests
         var body = JsonNode.Parse(capture.Body)!;
         OpenAIUpstream.Equal(
             body["messages"],
-            "[{\"role\":\"user\",\"name\":\"alice\",\"content\":\"Hello\"},{\"role\":\"assistant\",\"name\":\"bot\",\"content\":\"Hi\"},{\"role\":\"user\",\"name\":\"bob\",\"content\":\"Say OK\"}]");
+            "[{\"role\":\"user\",\"name\":\"alice\",\"content\":\"Hello\"},{\"role\":\"assistant\",\"name\":\"bot\",\"content\":\"Hi\"},{\"role\":\"user\",\"name\":\"bob\",\"content\":\"Say OK\"}]"
+        );
     }
 
     private static Dictionary<string, JsonElement> Named(string name)

@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <Description>Generates a video from an image file and a text prompt.</Description>
-  </PropertyGroup>
+    <PropertyGroup>
+        <Description>Generates a video from an image file and a text prompt.</Description>
+    </PropertyGroup>
 </Project>

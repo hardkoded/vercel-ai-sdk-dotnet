@@ -36,9 +36,16 @@ public sealed class DecisionInput
     /// <summary>Creates an input from a JSON string, object, or array. Other JSON values throw <see cref="InvalidArgumentException"/>.</summary>
     public static DecisionInput FromJson(JsonElement value)
     {
-        if (value.ValueKind is not (JsonValueKind.String or JsonValueKind.Object or JsonValueKind.Array))
+        if (
+            value.ValueKind
+            is not (JsonValueKind.String or JsonValueKind.Object or JsonValueKind.Array)
+        )
         {
-            throw new InvalidArgumentException("input", value.ValueKind == JsonValueKind.Undefined ? null : value.GetRawText(), "must be a JSON-compatible string, object, or array");
+            throw new InvalidArgumentException(
+                "input",
+                value.ValueKind == JsonValueKind.Undefined ? null : value.GetRawText(),
+                "must be a JSON-compatible string, object, or array"
+            );
         }
 
         return new DecisionInput(value.Clone());
@@ -72,9 +79,7 @@ public sealed class DecisionInput
 /// <summary>Criteria of a decision question. Maps to the <c>criteria</c> member of <c>DecisionModelV4Question</c>.</summary>
 public abstract class DecisionCriteria
 {
-    private protected DecisionCriteria()
-    {
-    }
+    private protected DecisionCriteria() { }
 
     /// <summary>Number of options or levels. A boolean has none.</summary>
     public virtual int Count => 0;

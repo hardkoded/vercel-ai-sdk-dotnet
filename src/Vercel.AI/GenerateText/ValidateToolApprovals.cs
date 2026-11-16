@@ -30,9 +30,12 @@ public sealed class InvalidToolApproval
 public sealed class ValidateApprovedToolApprovalsOptions
 {
     /// <summary>Creates the options.</summary>
-    public ValidateApprovedToolApprovalsOptions(IReadOnlyList<CollectedToolApproval> approvedToolApprovals)
+    public ValidateApprovedToolApprovalsOptions(
+        IReadOnlyList<CollectedToolApproval> approvedToolApprovals
+    )
     {
-        ApprovedToolApprovals = approvedToolApprovals ?? throw new ArgumentNullException(nameof(approvedToolApprovals));
+        ApprovedToolApprovals = approvedToolApprovals
+            ?? throw new ArgumentNullException(nameof(approvedToolApprovals));
     }
 
     /// <summary>The approvals that the history reports as approved.</summary>
@@ -54,7 +57,10 @@ public sealed class ValidateApprovedToolApprovalsOptions
     public byte[]? ToolApprovalSecretBytes { get; init; }
 
     /// <summary>Refines the parsed input of a tool, keyed by tool name. Maps to <c>refineToolInput</c>.</summary>
-    public IReadOnlyDictionary<string, Func<JsonElement, CancellationToken, Task<JsonElement>>>? RefineToolInput { get; init; }
+    public IReadOnlyDictionary<
+        string,
+        Func<JsonElement, CancellationToken, Task<JsonElement>>
+    >? RefineToolInput { get; init; }
 }
 
 /// <summary>The outcome of <see cref="ToolApprovalValidation.ValidateApprovedToolApprovalsAsync"/>.</summary>
@@ -64,7 +70,8 @@ public sealed class ValidatedToolApprovals
     public ValidatedToolApprovals(
         IReadOnlyList<CollectedToolApproval> approvedToolApprovals,
         IReadOnlyList<CollectedToolApproval> deniedToolApprovals,
-        IReadOnlyList<InvalidToolApproval> invalidToolApprovals)
+        IReadOnlyList<InvalidToolApproval> invalidToolApprovals
+    )
     {
         ApprovedToolApprovals = approvedToolApprovals;
         DeniedToolApprovals = deniedToolApprovals;
@@ -89,7 +96,10 @@ public static class ToolApprovalValidation
     /// It checks the HMAC signature (when a secret is set), the input schema, and the approval policy.
     /// A missing or wrong signature throws <see cref="InvalidToolApprovalSignatureError"/>.
     /// </summary>
-    public static async Task<ValidatedToolApprovals> ValidateApprovedToolApprovalsAsync(ValidateApprovedToolApprovalsOptions options, CancellationToken cancellationToken = default)
+    public static async Task<ValidatedToolApprovals> ValidateApprovedToolApprovalsAsync(
+        ValidateApprovedToolApprovalsOptions options,
+        CancellationToken cancellationToken = default
+    )
     {
         if (options is null)
         {
@@ -112,19 +122,50 @@ public static class ToolApprovalValidation
             {
                 if (approvalRequest.Signature == null)
                 {
-                    throw new InvalidToolApprovalSignatureError(approvalRequest.ApprovalId, toolCall.ToolCallId, "missing signature");
+                    throw new InvalidToolApprovalSignatureError(
+                        approvalRequest.ApprovalId,
+                        toolCall.ToolCallId,
+                        "missing signature"
+                    );
                 }
 
-                var valid = options.ToolApprovalSecret != null
-                    ? ToolApprovalSignatures.VerifyToolApprovalSignature(options.ToolApprovalSecret, approvalRequest.Signature, approvalRequest.ApprovalId, toolCall.ToolCallId, toolCall.ToolName, toolCall.Input)
-                    : ToolApprovalSignatures.VerifyToolApprovalSignature(options.ToolApprovalSecretBytes!, approvalRequest.Signature, approvalRequest.ApprovalId, toolCall.ToolCallId, toolCall.ToolName, toolCall.Input);
+                var valid =
+                    options.ToolApprovalSecret != null
+                        ? ToolApprovalSignatures.VerifyToolApprovalSignature(
+                            options.ToolApprovalSecret,
+                            approvalRequest.Signature,
+                            approvalRequest.ApprovalId,
+                            toolCall.ToolCallId,
+                            toolCall.ToolName,
+                            toolCall.Input
+                        )
+                        : ToolApprovalSignatures.VerifyToolApprovalSignature(
+                            options.ToolApprovalSecretBytes!,
+                            approvalRequest.Signature,
+                            approvalRequest.ApprovalId,
+                            toolCall.ToolCallId,
+                            toolCall.ToolName,
+                            toolCall.Input
+                        );
                 if (!valid)
                 {
-                    throw new InvalidToolApprovalSignatureError(approvalRequest.ApprovalId, toolCall.ToolCallId, "invalid signature");
+                    throw new InvalidToolApprovalSignatureError(
+                        approvalRequest.ApprovalId,
+                        toolCall.ToolCallId,
+                        "invalid signature"
+                    );
                 }
             }
 
-            if (tool != null && (tool.Execute != null || tool.ExecuteWithOptions != null || tool.ExecuteStream != null) && tool.InputSchema.ValueKind == JsonValueKind.Object)
+            if (
+                tool != null
+                && (
+                    tool.Execute != null
+                    || tool.ExecuteWithOptions != null
+                    || tool.ExecuteStream != null
+                )
+                && tool.InputSchema.ValueKind == JsonValueKind.Object
+            )
             {
                 Exception? validationError = null;
                 try
@@ -136,21 +177,36 @@ public static class ToolApprovalValidation
                     var errors = ToolInputSchemaValidator.Validate(tool.InputSchema, value);
                     if (errors.Count > 0)
                     {
-                        validationError = new FormatException("Type validation failed: Value: " + value.GetRawText() + ".\nError message: " + string.Join("; ", errors));
+                        validationError = new FormatException(
+                            "Type validation failed: Value: "
+                                + value.GetRawText()
+                                + ".\nError message: "
+                                + string.Join("; ", errors)
+                        );
                     }
                     else
                     {
                         var revalidatedInput = value;
-                        if (options.RefineToolInput != null && options.RefineToolInput.TryGetValue(toolCall.ToolName, out var refine) && refine != null)
+                        if (
+                            options.RefineToolInput != null
+                            && options.RefineToolInput.TryGetValue(
+                                toolCall.ToolName,
+                                out var refine
+                            )
+                            && refine != null
+                        )
                         {
-                            revalidatedInput = await refine(value, cancellationToken).ConfigureAwait(false);
+                            revalidatedInput = await refine(value, cancellationToken)
+                                .ConfigureAwait(false);
                         }
 
                         // Revalidation must never change the operation that was approved,
                         // including when older or projected history omits the schema input.
                         if (!JsonDeepEqual(revalidatedInput, approvedInput))
                         {
-                            validationError = new FormatException("Approved tool input does not match the validated schema output.");
+                            validationError = new FormatException(
+                                "Approved tool input does not match the validated schema output."
+                            );
                         }
                     }
                 }
@@ -161,21 +217,51 @@ public static class ToolApprovalValidation
 
                 if (validationError != null)
                 {
-                    invalid.Add(new InvalidToolApproval(approval, new InvalidToolInputError(toolCall.ToolName, toolCall.Input.GetRawText(), validationError)));
+                    invalid.Add(
+                        new InvalidToolApproval(
+                            approval,
+                            new InvalidToolInputError(
+                                toolCall.ToolName,
+                                toolCall.Input.GetRawText(),
+                                validationError
+                            )
+                        )
+                    );
                     continue;
                 }
             }
 
-            var generatedCall = new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.Input.GetRawText()) { ProviderExecuted = toolCall.ProviderExecuted };
-            var approvalStatus = await ToolApprovalResolution.ResolveToolApprovalAsync(options.Tools, generatedCall, options.ToolApproval, options.Messages).ConfigureAwait(false);
+            var generatedCall = new GeneratedToolCall(
+                toolCall.ToolCallId,
+                toolCall.ToolName,
+                toolCall.Input.GetRawText()
+            )
+            {
+                ProviderExecuted = toolCall.ProviderExecuted,
+            };
+            var approvalStatus = await ToolApprovalResolution
+                .ResolveToolApprovalAsync(
+                    options.Tools,
+                    generatedCall,
+                    options.ToolApproval,
+                    options.Messages
+                )
+                .ConfigureAwait(false);
 
             if (approvalStatus.Type == ToolApprovalStatus.DeniedType)
             {
-                denied.Add(new CollectedToolApproval(
-                    approvalRequest,
-                    new ApprovalResponsePart(approval.ApprovalResponse.ApprovalId, false, approvalStatus.Reason ?? approval.ApprovalResponse.Reason),
-                    toolCall,
-                    approval.ExistingToolResult));
+                denied.Add(
+                    new CollectedToolApproval(
+                        approvalRequest,
+                        new ApprovalResponsePart(
+                            approval.ApprovalResponse.ApprovalId,
+                            false,
+                            approvalStatus.Reason ?? approval.ApprovalResponse.Reason
+                        ),
+                        toolCall,
+                        approval.ExistingToolResult
+                    )
+                );
             }
             else
             {
@@ -222,7 +308,10 @@ public static class ToolApprovalValidation
                 foreach (var property in left.EnumerateObject())
                 {
                     leftCount++;
-                    if (!right.TryGetProperty(property.Name, out var other) || !JsonDeepEqual(property.Value, other))
+                    if (
+                        !right.TryGetProperty(property.Name, out var other)
+                        || !JsonDeepEqual(property.Value, other)
+                    )
                     {
                         return false;
                     }
@@ -251,7 +340,8 @@ public static class ToolApprovalValidation
             case JsonValueKind.String:
                 return string.Equals(left.GetString(), right.GetString(), StringComparison.Ordinal);
             case JsonValueKind.Number:
-                return double.Parse(left.GetRawText(), CultureInfo.InvariantCulture) == double.Parse(right.GetRawText(), CultureInfo.InvariantCulture);
+                return double.Parse(left.GetRawText(), CultureInfo.InvariantCulture)
+                    == double.Parse(right.GetRawText(), CultureInfo.InvariantCulture);
             default:
                 return true;
         }

@@ -38,14 +38,17 @@ public sealed class PerplexityProvider : OpenAICompatibleProvider, Operations.ID
 
     /// <summary>Creates a provider.</summary>
     public PerplexityProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
-        : base(Prepare(options), httpClient)
-    {
-    }
+        : base(Prepare(options), httpClient) { }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static new PerplexityProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new PerplexityProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new PerplexityProvider(client, options);
     }
 
@@ -81,7 +84,10 @@ public sealed class PerplexityProvider : OpenAICompatibleProvider, Operations.ID
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
-        if (string.IsNullOrEmpty(options.ProviderName) || options.ProviderName == "openai-compatible")
+        if (
+            string.IsNullOrEmpty(options.ProviderName)
+            || options.ProviderName == "openai-compatible"
+        )
         {
             options.ProviderName = ProviderId;
         }
@@ -129,14 +135,21 @@ public sealed class PerplexityProvider : OpenAICompatibleProvider, Operations.ID
 public static class PerplexityServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddPerplexity(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddPerplexity(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(PerplexityProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new PerplexityProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(PerplexityProvider.ProviderId), options);
+            return new PerplexityProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(PerplexityProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

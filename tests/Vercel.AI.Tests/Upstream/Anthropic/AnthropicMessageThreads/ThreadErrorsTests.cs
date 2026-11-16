@@ -17,16 +17,25 @@ public sealed class ThreadErrorsTests
 
     [Theory]
     [MemberData(nameof(EachMethod))]
-    [UpstreamTest("packages/anthropic/src/anthropic-message-threads.test.ts::thread errors::preserves recovery details for %s", Coverage = UpstreamCoverage.Covered, Commit = "6b101ac0765a3cf796e94692c3e3c8a3e08ff7f4")]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-message-threads.test.ts::thread errors::preserves recovery details for %s",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "6b101ac0765a3cf796e94692c3e3c8a3e08ff7f4"
+    )]
     public async Task Preserves_recovery_details(string method)
     {
         var handler = new CaptureHandler
         {
             Status = HttpStatusCode.NotFound,
-            ResponseBody = "{\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"Thread not found\",\"details\":{\"error_code\":\"thread_not_found\"}}}",
+            ResponseBody =
+                "{\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"Thread not found\",\"details\":{\"error_code\":\"thread_not_found\"}}}",
         };
-        var model = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-key" }, handler).LanguageModel("claude-sonnet-4-6");
-        var input = BaseOptions("{\"thread\":{\"type\":\"continue\",\"previousMessageId\":\"msg_expired\"}}");
+        var model = AnthropicProvider
+            .Create(new AnthropicOptions { ApiKey = "test-key" }, handler)
+            .LanguageModel("claude-sonnet-4-6");
+        var input = BaseOptions(
+            "{\"thread\":{\"type\":\"continue\",\"previousMessageId\":\"msg_expired\"}}"
+        );
 
         var error = await Assert.ThrowsAsync<NotFoundException>(async () =>
         {
@@ -44,6 +53,9 @@ public sealed class ThreadErrorsTests
         var data = AnthropicErrorData.Parse(error.ResponseBody!);
         Assert.True(data.Success);
         Assert.Equal("thread_not_found", data.ErrorCode);
-        Assert.Equal("thread_not_found", data.Value()!["error"]!["details"]!["error_code"]!.GetValue<string>());
+        Assert.Equal(
+            "thread_not_found",
+            data.Value()!["error"]!["details"]!["error_code"]!.GetValue<string>()
+        );
     }
 }

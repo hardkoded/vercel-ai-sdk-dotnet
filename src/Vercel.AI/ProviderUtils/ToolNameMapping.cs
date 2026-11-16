@@ -31,7 +31,10 @@ public sealed class ToolNameMapping
     private readonly Dictionary<string, string> _toProvider;
     private readonly Dictionary<string, string> _toCustom;
 
-    internal ToolNameMapping(Dictionary<string, string> toProvider, Dictionary<string, string> toCustom)
+    internal ToolNameMapping(
+        Dictionary<string, string> toProvider,
+        Dictionary<string, string> toCustom
+    )
     {
         _toProvider = toProvider;
         _toCustom = toCustom;
@@ -58,7 +61,8 @@ public static class ToolNames
     /// <summary>Creates a mapping from provider-defined tools whose ids are listed in <paramref name="providerToolNames"/>.</summary>
     public static ToolNameMapping CreateToolNameMapping(
         IReadOnlyList<MappedTool>? tools,
-        IReadOnlyDictionary<string, string> providerToolNames)
+        IReadOnlyDictionary<string, string> providerToolNames
+    )
     {
         if (providerToolNames is null)
         {
@@ -71,7 +75,11 @@ public static class ToolNames
         {
             foreach (var tool in tools)
             {
-                if (tool.Type == "provider" && tool.Id != null && providerToolNames.ContainsKey(tool.Id))
+                if (
+                    tool.Type == "provider"
+                    && tool.Id != null
+                    && providerToolNames.ContainsKey(tool.Id)
+                )
                 {
                     var providerName = providerToolNames[tool.Id];
                     toProvider[tool.Name] = providerName;

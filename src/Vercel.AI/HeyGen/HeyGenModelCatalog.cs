@@ -8,16 +8,25 @@ namespace Vercel.AI.HeyGen;
 public static class HeyGenProviderOptions
 {
     /// <summary>Video options (upstream <c>heyGenProviderOptions.video</c>), keyed by option name.</summary>
-    public static readonly IReadOnlyDictionary<string, ProviderOptionDefinition> Video = new Dictionary<string, ProviderOptionDefinition>
-    {
-        ["mode"] = new("Inferred from the supplied image and references when omitted."),
-        ["resolution"] = new("Output size class. Takes precedence over the standard resolution option."),
-        ["promptEnhancement"] = new("Defaults to quality. Use disabled to preserve the original prompt."),
-        ["image"] = new("First frame, including an existing HeyGen asset. Cannot be combined with a standard image."),
-        ["referenceImages"] = new("Additional references, appended after standard inputReferences of the same kind."),
-        ["referenceVideos"] = new("referenceVideos"),
-        ["referenceAudio"] = new("referenceAudio"),
-    };
+    public static readonly IReadOnlyDictionary<string, ProviderOptionDefinition> Video =
+        new Dictionary<string, ProviderOptionDefinition>
+        {
+            ["mode"] = new("Inferred from the supplied image and references when omitted."),
+            ["resolution"] = new(
+                "Output size class. Takes precedence over the standard resolution option."
+            ),
+            ["promptEnhancement"] = new(
+                "Defaults to quality. Use disabled to preserve the original prompt."
+            ),
+            ["image"] = new(
+                "First frame, including an existing HeyGen asset. Cannot be combined with a standard image."
+            ),
+            ["referenceImages"] = new(
+                "Additional references, appended after standard inputReferences of the same kind."
+            ),
+            ["referenceVideos"] = new("referenceVideos"),
+            ["referenceAudio"] = new("referenceAudio"),
+        };
 }
 
 /// <summary>Known HeyGen model ids, the adapter limits and the capability catalog. Upstream <c>heygen-model-catalog.ts</c>.</summary>
@@ -27,10 +36,19 @@ public static class HeyGenModelCatalog
     public static readonly IReadOnlyList<string> VideoModelIds = ["heygen-video-1"];
 
     /// <summary>Known decision model ids. Other ids are passed through unchanged.</summary>
-    public static readonly IReadOnlyList<string> DecisionModelIds = ["heygen-decision-1", "heygen-decision-1-turbo"];
+    public static readonly IReadOnlyList<string> DecisionModelIds =
+    [
+        "heygen-decision-1",
+        "heygen-decision-1-turbo",
+    ];
 
     /// <summary>Question types HeyGen Decision supports. Upstream <c>heyGenDecisionModelLimits.supportedQuestionTypes</c>.</summary>
-    public static readonly IReadOnlyList<string> DecisionSupportedQuestionTypes = ["choice", "score", "boolean"];
+    public static readonly IReadOnlyList<string> DecisionSupportedQuestionTypes =
+    [
+        "choice",
+        "score",
+        "boolean",
+    ];
 
     /// <summary>Most questions per request. Upstream <c>heyGenDecisionModelLimits.maxQuestions</c>.</summary>
     public const int DecisionMaxQuestions = 400;
@@ -76,8 +94,12 @@ public static class HeyGenModelCatalog
                         ReferenceImage = ModelCapability.Supported,
                         ReferenceVideo = ModelCapability.Supported,
                     },
-                    GenerateAudio = ModelCapability.When("Audio is always generated; disabling it is unsupported."),
-                    AspectRatio = ModelCapability.When("Supported outside reference-to-video mode."),
+                    GenerateAudio = ModelCapability.When(
+                        "Audio is always generated; disabling it is unsupported."
+                    ),
+                    AspectRatio = ModelCapability.When(
+                        "Supported outside reference-to-video mode."
+                    ),
                     Resolution = ModelCapability.When("Supported outside reference-to-video mode."),
                     Duration = ModelCapability.Supported,
                     Fps = ModelCapability.When("Fixed at 24 fps."),
