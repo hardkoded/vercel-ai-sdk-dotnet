@@ -295,7 +295,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should read the duration from duration usage when the response has no duration", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "should read the duration from duration usage when the response has no duration", Coverage = UpstreamCoverage.Covered, Commit = "83d6b7da4df4bdf62f2cc17d3a8a5bb4647b1023")]
     public async Task Should_read_the_duration_from_duration_usage_when_the_response_has_no_duration()
     {
         var (_, result) = await Generate("gpt-transcribe", "{\"text\":\"Hello from the Vercel AI SDK!\",\"languages\":[{\"code\":\"en\"}],\"usage\":{\"type\":\"duration\",\"seconds\":37}}");
@@ -304,7 +304,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should prefer the response duration over duration usage", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "should prefer the response duration over duration usage", Coverage = UpstreamCoverage.Covered, Commit = "83d6b7da4df4bdf62f2cc17d3a8a5bb4647b1023")]
     public async Task Should_prefer_the_response_duration_over_duration_usage()
     {
         var (_, result) = await Generate("whisper-1", "{\"text\":\"Hello from the Vercel AI SDK!\",\"duration\":36.71,\"usage\":{\"type\":\"duration\",\"seconds\":37}}");
@@ -313,7 +313,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should not read a duration from token usage", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "should not read a duration from token usage", Coverage = UpstreamCoverage.Covered, Commit = "83d6b7da4df4bdf62f2cc17d3a8a5bb4647b1023")]
     public async Task Should_not_read_a_duration_from_token_usage()
     {
         var (_, result) = await Generate("gpt-4o-transcribe", "{\"text\":\"Hello from the Vercel AI SDK!\",\"usage\":{\"type\":\"tokens\",\"input_tokens\":14,\"output_tokens\":45}}");
