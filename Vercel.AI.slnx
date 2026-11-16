@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/examples/">
     <Project Path="examples/Agent/Agent.csproj" />
+    <Project Path="examples/Lib/Lib.csproj" />
     <Project Path="examples/AzureResponsesTools/AzureResponsesTools.csproj" />
     <Project Path="examples/DecidePerplexityBasic/DecidePerplexityBasic.csproj" />
     <Project Path="examples/DeepSeekResponses/DeepSeekResponses.csproj" />
@@ -60,5 +61,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Vercel.AI.Tests/Vercel.AI.Tests.csproj" />
+    <Project Path="tests/Vercel.AI.Examples.Tests/Vercel.AI.Examples.Tests.csproj" />
   </Folder>
 </Solution>
