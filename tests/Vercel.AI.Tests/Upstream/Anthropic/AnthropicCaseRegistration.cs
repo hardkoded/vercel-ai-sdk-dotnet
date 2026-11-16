@@ -59,8 +59,6 @@ internal static class AnthropicCaseRegistration
         AnthropicCases.Add("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::throws if the provider function is called with new", AnthropicAssertions.AwsNewKeyword);
         AnthropicCases.Add("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - auth precedence::prefers the API-key path when both apiKey and AWS SigV4 creds are present", AnthropicAssertions.AwsApiKeyBeatsSigV4);
         AnthropicCases.Add("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - streaming::forwards doStream through the SigV4 / api-key fetch wrapper and yields stream events", AnthropicAssertions.AwsStream);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch > batch result lifecycle::rejects result retrieval while the batch is pending", AnthropicAssertions.BatchResults);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch > batch result lifecycle::rejects a completed batch without output", AnthropicAssertions.BatchResults);
         AnthropicCases.Add("packages/anthropic/src/anthropic-error.test.ts::anthropicError > anthropicErrorDataSchema::should parse overloaded error", AnthropicAssertions.ErrorOverloaded);
 
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should pass thinking config; add budget tokens; clear out temperature, top_p, top_k; and return warnings", AnthropicAssertions.ThinkingBudgetRequest);

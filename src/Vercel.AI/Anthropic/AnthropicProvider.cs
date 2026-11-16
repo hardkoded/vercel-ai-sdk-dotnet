@@ -17,6 +17,9 @@ public class AnthropicOptions
     /// <summary>Settings for downloading JSON Lines batch results.</summary>
     public BatchResultDownloads? BatchResultDownloads { get; set; }
 
+    /// <summary>Creates the ids of citation and search-result sources. Maps to upstream <c>generateId</c>. Defaults to a random id.</summary>
+    public Func<string>? GenerateId { get; set; }
+
     /// <summary>API origin. The official host is normalized to <c>/v1</c>. Message calls append <c>/messages</c>.</summary>
     public string BaseUrl { get; set; } = "https://api.anthropic.com";
 
@@ -556,6 +559,7 @@ public class AnthropicLanguageModel : ILanguageModel
         var response = await _provider.Http.SendJsonStringAsync(HttpMethod.Post, _provider.RequestUri(ModelId, false), body, headers, cancellationToken).ConfigureAwait(false);
         var context = new AnthropicParseContext(prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey, Warnings(prepared))
         {
+            GenerateId = _provider.Options.GenerateId,
             MarkCodeExecutionDynamic = prepared.MarkCodeExecutionDynamic,
             PreparedTools = prepared.PreparedTools,
             ComputerToolsetName = prepared.ComputerToolsetName,

@@ -366,20 +366,6 @@ public sealed partial class AnthropicUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch > batch result lifecycle::rejects result retrieval while the batch is pending", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0079()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch > batch result lifecycle::rejects result retrieval while the batch is pending").ConfigureAwait(false);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch > batch result lifecycle::rejects a completed batch without output", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0084()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch > batch result lifecycle::rejects a completed batch without output").ConfigureAwait(false);
-    }
-
-    [Fact]
     [UpstreamTest("packages/anthropic/src/anthropic-error.test.ts::anthropicError > anthropicErrorDataSchema::should parse overloaded error", Coverage = UpstreamCoverage.Covered)]
     public async Task Case_0086()
     {
