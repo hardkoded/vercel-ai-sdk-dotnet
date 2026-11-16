@@ -4,13 +4,14 @@
 
 using System.Text.Json.Nodes;
 using Vercel.AI.Gateway;
+using Vercel.AI.Provider;
 using Vercel.AI.Tests.Upstream.Gateway.GatewayRealtimeModel;
 
 namespace Vercel.AI.Tests.Upstream.Gateway.GatewayTranscriptionModel;
 
 /// <summary>
 /// Port of <c>gateway-transcription-model.test.ts</c> &gt; <c>gateway.experimental_transcription</c>. The browser test
-/// (<c>rejects minting (getToken) in browsers</c>) is not ported: .NET has no <c>window</c> global to simulate.
+/// simulates the upstream <c>window</c> global through <c>GatewayProvider.IsBrowserEnvironment</c>.
 /// </summary>
 public sealed class GatewayExperimentalTranscriptionTests
 {
@@ -67,5 +68,17 @@ public sealed class GatewayExperimentalTranscriptionTests
 
         Assert.Equal("vcst_minted", result.Token);
         Assert.Null(result.ExpiresAt);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "rejects minting (getToken) in browsers — the credential must stay server-side", Coverage = UpstreamCoverage.Covered, Commit = "640569da18351d8a75fd20bcd8ff3d214ff0a617")]
+    public async Task Rejects_minting_getToken_in_browsers_the_credential_must_stay_server_side()
+    {
+        var gateway = GatewayProvider.Create(new GatewayOptions { ApiKey = "vck_test-token" });
+        gateway.IsBrowserEnvironment = () => true;
+
+        var exception = await Assert.ThrowsAsync<AiSdkException>(() => gateway.ExperimentalTranscriptionGetTokenAsync(Model));
+
+        Assert.Contains("must be minted server-side", exception.Message);
     }
 }

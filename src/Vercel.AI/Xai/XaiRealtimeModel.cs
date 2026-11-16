@@ -125,6 +125,15 @@ public sealed class XaiRealtimeModel : IServerWebSocketRealtimeModel
         }
     }
 
+    /// <summary>
+    /// The URL and subprotocol a client opens with a client secret: the token travels as the
+    /// <c>xai-client-secret.</c> subprotocol. Maps to <c>getWebSocketConfig</c>.
+    /// </summary>
+    public RealtimeModelV4WebSocketConfig GetWebSocketConfig(string token, string url)
+    {
+        return new RealtimeModelV4WebSocketConfig(url, ["xai-client-secret." + token]);
+    }
+
     /// <inheritdoc />
     public Task<RealtimeModelV4ServerConnection> GetServerWebSocketConfigAsync(RealtimeModelV4SessionIntent? intent, CancellationToken cancellationToken)
     {

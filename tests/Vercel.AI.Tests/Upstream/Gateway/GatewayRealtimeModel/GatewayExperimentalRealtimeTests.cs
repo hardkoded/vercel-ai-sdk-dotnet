@@ -4,15 +4,15 @@
 
 using System.Text.Json.Nodes;
 using Vercel.AI.Gateway;
+using Vercel.AI.Provider;
 using static Vercel.AI.Tests.Upstream.Gateway.GatewayRealtimeModel.GatewayRealtimeModelSupport;
 using Auth = Vercel.AI.Gateway.GatewayRealtimeAuth;
 
 namespace Vercel.AI.Tests.Upstream.Gateway.GatewayRealtimeModel;
 
 /// <summary>
-/// Port of <c>gateway-realtime-model.test.ts</c> &gt; <c>gateway.experimental_realtime</c>. The two browser tests
-/// (<c>allows building the realtime codec model in browsers</c> and <c>rejects minting (getToken) in browsers</c>) are not
-/// ported: .NET has no <c>window</c> global to simulate.
+/// Port of <c>gateway-realtime-model.test.ts</c> &gt; <c>gateway.experimental_realtime</c>. The browser tests simulate
+/// the upstream <c>window</c> global through <c>GatewayProvider.IsBrowserEnvironment</c>.
 /// </summary>
 public sealed class GatewayExperimentalRealtimeTests
 {
@@ -83,5 +83,32 @@ public sealed class GatewayExperimentalRealtimeTests
             "wss://ai-gateway.vercel.sh/v4/ai/realtime-model?ai-model-id=openai%2Fgpt-realtime");
 
         Assert.Equal("my-team", Auth.GetGatewayRealtimeTeamIdOrSlug(string.Join(", ", config.Protocols!)));
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "allows building the realtime codec model in browsers (no minting)", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    public void Allows_building_the_realtime_codec_model_in_browsers_no_minting()
+    {
+        // Building the model is just the event codec + WS-config helper, which the browser needs to drive the transport
+        // with a server-minted token. No credential is touched here, so it must not throw.
+        var gateway = GatewayProvider.Create(new GatewayOptions { ApiKey = "vck_test-token" });
+        gateway.IsBrowserEnvironment = () => true;
+
+        var model = (Vercel.AI.Gateway.GatewayRealtimeModel)gateway.RealtimeModel("openai/gpt-realtime");
+
+        Assert.Equal("v4", model.SpecificationVersion);
+        Assert.Equal("wss://x/y", model.GetWebSocketConfig("vcst_x", "wss://x/y").Url);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "rejects minting (getToken) in browsers — the credential must stay server-side", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    public async Task Rejects_minting_getToken_in_browsers_the_credential_must_stay_server_side()
+    {
+        var gateway = GatewayProvider.Create(new GatewayOptions { ApiKey = "vck_test-token" });
+        gateway.IsBrowserEnvironment = () => true;
+
+        var exception = await Assert.ThrowsAsync<AiSdkException>(() => gateway.ExperimentalRealtimeGetTokenAsync("openai/gpt-realtime"));
+
+        Assert.Contains("must be minted server-side", exception.Message);
     }
 }

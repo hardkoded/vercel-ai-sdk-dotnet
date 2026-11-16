@@ -227,6 +227,25 @@ Console.WriteLine(output?.Response?.Usage?.VariableCost?.CostUsd);
 
 `GatewayTakoSearch.OutputSchema` describes these fields, including `relevance_score`, `content.export_pricing.variable_cost_max_usd` and `usage.variable_cost`. `export_pricing.free_rows` is deprecated and optional: Tako always sends 0 and will stop sending it. `GatewayTakoSearch.ResultContentSchema` is the schema of a card or web result `content`, for reuse by other Tako tools.
 
+## Preliminary tool results
+
+A tool can stream its output. Set `Tool.ExecuteStream`, a delegate that takes the input and the `ToolExecutionOptions` of the call and returns an `IAsyncEnumerable<string>` of JSON outputs. It maps to an async-iterable `execute`. The loop calls it instead of `Execute` and `ExecuteWithOptions`.
+
+```csharp
+var cityAttractions = Tool.Function("cityAttractions", null, schema, null);
+cityAttractions.ExecuteStream = (input, options) => Attractions(input.GetProperty("city").GetString()!);
+
+static async IAsyncEnumerable<string> Attractions(string city)
+{
+    yield return JsonSerializer.Serialize(new { status = "loading", text = $"Getting attractions for {city}" });
+    yield return JsonSerializer.Serialize(new { status = "success", text = $"Attractions in {city}" });
+}
+```
+
+`StreamTextAsync` emits each streamed output as a `ToolResultPart` whose `ExecutedTool.Preliminary` is true, then one final `ToolResultPart` with the last output. In the UI message stream, a preliminary result is a `tool-output-available` chunk with `preliminary: true`. Only the final result reaches `StepResult.ToolResults`, the step content, and the model. `GenerateTextAsync` runs the tool the same way and keeps only the final result. A tool that yields nothing has the output `null`.
+
+The approval flow of `streamText` is not ported yet ([#847](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/847)), so an approved call does not stream its preliminary results.
+
 ## Custom tools
 
 A custom tool is a non-function tool that takes free-form text. OpenAI Responses supports it. Declare it with `OpenAITools.CustomTool(new OpenAICustomToolOptions { Name = ... })`. Add `GrammarSyntax` (`regex` or `lark`) and `GrammarDefinition` to constrain the input. The tool has no `Execute`. Run it yourself and send the result back in a `ToolModelMessage`.
