@@ -50,6 +50,8 @@ internal sealed class OpenAIResponsesStream
     private readonly ToolNameMapping? _toolNameMapping;
     private readonly bool _store;
     private readonly string? _webSearchToolName;
+    private readonly IReadOnlyDictionary<string, string> _approvalRequestIdToDummyToolCallIdFromPrompt;
+    private readonly Dictionary<string, string> _approvalRequestIdToDummyToolCallIdFromStream = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ActiveReasoning> _activeReasoning = new(StringComparer.Ordinal);
 
     // Compatible providers can rotate item ids between events. The output index stays the same for the life of an item.
@@ -62,8 +64,10 @@ internal sealed class OpenAIResponsesStream
         bool store = false,
         string providerOptionsName = "openai",
         string? webSearchToolName = null,
-        bool isShellProviderExecuted = false)
+        bool isShellProviderExecuted = false,
+        IReadOnlyDictionary<string, string>? approvalRequestIdToDummyToolCallIdFromPrompt = null)
     {
+        _approvalRequestIdToDummyToolCallIdFromPrompt = approvalRequestIdToDummyToolCallIdFromPrompt ?? new Dictionary<string, string>();
         _isShellProviderExecuted = isShellProviderExecuted;
         _store = store;
         _webSearchToolName = webSearchToolName;
@@ -829,7 +833,15 @@ internal sealed class OpenAIResponsesStream
         else if (itemType == "mcp_call")
         {
             var mcpToolName = OpenAIResponsesOutput.McpToolName(item);
-            var mcpToolCallId = OpenAIJson.String(item, "id") ?? string.Empty;
+            var mcpItemId = OpenAIJson.String(item, "id") ?? string.Empty;
+            var mcpApprovalRequestId = OpenAIJson.String(item, "approval_request_id");
+
+            // When MCP tools require approval, they are tracked with our own tool call ids. The approval_request_id
+            // maps back to that id so the results match.
+            var mcpToolCallId = mcpApprovalRequestId != null
+                ? _approvalRequestIdToDummyToolCallIdFromStream.TryGetValue(mcpApprovalRequestId, out var streamToolCallId) ? streamToolCallId
+                    : _approvalRequestIdToDummyToolCallIdFromPrompt.TryGetValue(mcpApprovalRequestId, out var promptToolCallId) ? promptToolCallId : mcpItemId
+                : mcpItemId;
             parts.Add(new ToolCallStreamPart(mcpToolCallId, mcpToolName, OpenAIJson.String(item, "arguments") ?? "{}")
             {
                 ProviderExecuted = true,
@@ -843,6 +855,18 @@ internal sealed class OpenAIResponsesStream
         else if (itemType == "mcp_list_tools")
         {
             // Skip listTools: it is not exposed and not sent back.
+        }
+        else if (itemType == "mcp_approval_request")
+        {
+            var dummyToolCallId = _generateId();
+            var approvalRequestId = OpenAIJson.String(item, "approval_request_id") ?? OpenAIJson.String(item, "id") ?? string.Empty;
+            _approvalRequestIdToDummyToolCallIdFromStream[approvalRequestId] = dummyToolCallId;
+            parts.Add(new ToolCallStreamPart(dummyToolCallId, OpenAIResponsesOutput.McpToolName(item), OpenAIJson.String(item, "arguments") ?? "{}")
+            {
+                ProviderExecuted = true,
+                Dynamic = true,
+            });
+            parts.Add(new ToolApprovalRequestStreamPart(approvalRequestId, dummyToolCallId));
         }
         else if (itemType == "web_search_call")
         {

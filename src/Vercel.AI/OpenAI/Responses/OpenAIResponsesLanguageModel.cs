@@ -674,6 +674,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         return new OpenAIResponsesPreparedRequest(body, warnings);
     }
 
+    /// <summary>The id generator of the model config, <c>config.generateId</c> upstream. Tests set it to get predictable ids.</summary>
+    internal Func<string>? GenerateId { get; set; }
+
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
@@ -695,14 +698,15 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             prepared.Warnings,
             response.Body,
             response.Headers,
-            null,
+            GenerateId,
             OpenAIParallelToolCall.FunctionToolNames(options.Tools),
             CreateToolNameMapping(options.Tools),
             options.JsonResponse || options.JsonSchema != null,
             _providerOptionsName,
             collectLogprobs,
             WebSearchToolName(options.Tools),
-            IsShellProviderExecuted(options.Tools));
+            IsShellProviderExecuted(options.Tools),
+            ExtractApprovalRequestIdToToolCallIdMapping(options.Prompt));
     }
 
     /// <inheritdoc />
@@ -725,13 +729,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     {
         yield return new StreamStartStreamPart(ToCallWarnings(prepared.Warnings));
         var state = new OpenAIResponsesStream(
-            null,
+            GenerateId,
             OpenAIParallelToolCall.FunctionToolNames(options.Tools),
             CreateToolNameMapping(options.Tools),
             prepared.Body["store"]?.GetValue<bool>() == true,
             _providerOptionsName,
             WebSearchToolName(options.Tools),
-            IsShellProviderExecuted(options.Tools));
+            IsShellProviderExecuted(options.Tools),
+            ExtractApprovalRequestIdToToolCallIdMapping(options.Prompt));
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             JsonDocument? chunkDocument = null;
@@ -806,6 +811,35 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             isRetryable: false,
             data: value.DeepClone());
 
+    /// <summary>
+    /// Maps MCP approval request ids to the tool call ids of the prompt. When an MCP tool needs approval, the model
+    /// tracks the pending approval with a generated tool call id. When the conversation continues after the approval
+    /// response, the approval request id maps back to that id so tool results reference the right call.
+    /// </summary>
+    internal static Dictionary<string, string> ExtractApprovalRequestIdToToolCallIdMapping(IReadOnlyList<ModelMessage> prompt)
+    {
+        var mapping = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var message in prompt)
+        {
+            if (message is not AssistantModelMessage assistant)
+            {
+                continue;
+            }
+
+            foreach (var part in assistant.Parts.OfType<AssistantToolCallPart>())
+            {
+                if (part.ProviderOptions != null
+                    && part.ProviderOptions.TryGetValue("openai", out var openai)
+                    && OpenAIJson.String(openai, "approvalRequestId") is { } approvalRequestId)
+                {
+                    mapping[approvalRequestId] = part.ToolCall.ToolCallId;
+                }
+            }
+        }
+
+        return mapping;
+    }
+
     internal static LanguageModelGenerateResult Parse(
         JsonElement root,
         IReadOnlyList<OpenAICallWarning> warnings,
@@ -818,9 +852,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         string providerOptionsName = "openai",
         bool collectLogprobs = false,
         string? webSearchToolName = null,
-        bool isShellProviderExecuted = false)
+        bool isShellProviderExecuted = false,
+        IReadOnlyDictionary<string, string>? approvalRequestIdToDummyToolCallIdFromPrompt = null)
     {
         functionToolNames ??= Array.Empty<string>();
+        approvalRequestIdToDummyToolCallIdFromPrompt ??= new Dictionary<string, string>();
         generateId ??= () => JsonValues.GenerateId("source_");
         if (root.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
         {
@@ -930,7 +966,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             else if (type == "mcp_call")
             {
                 var mcpToolName = OpenAIResponsesOutput.McpToolName(item);
-                var mcpToolCallId = OpenAIJson.String(item, "id") ?? string.Empty;
+                var mcpItemId = OpenAIJson.String(item, "id") ?? string.Empty;
+                var mcpApprovalRequestId = OpenAIJson.String(item, "approval_request_id");
+                var mcpToolCallId = mcpApprovalRequestId != null
+                    ? approvalRequestIdToDummyToolCallIdFromPrompt.TryGetValue(mcpApprovalRequestId, out var mappedToolCallId) ? mappedToolCallId : mcpItemId
+                    : mcpItemId;
                 content.Add(new GeneratedToolCall(mcpToolCallId, mcpToolName, OpenAIJson.String(item, "arguments") ?? "{}")
                 {
                     ProviderExecuted = true,
@@ -944,6 +984,17 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             else if (type == "mcp_list_tools")
             {
                 // Skip listTools: it is not exposed and not sent back.
+            }
+            else if (type == "mcp_approval_request")
+            {
+                var approvalRequestId = OpenAIJson.String(item, "approval_request_id") ?? OpenAIJson.String(item, "id") ?? string.Empty;
+                var dummyToolCallId = generateId();
+                content.Add(new GeneratedToolCall(dummyToolCallId, OpenAIResponsesOutput.McpToolName(item), OpenAIJson.String(item, "arguments") ?? "{}")
+                {
+                    ProviderExecuted = true,
+                    Dynamic = true,
+                });
+                content.Add(new GeneratedToolApprovalRequest(approvalRequestId, dummyToolCallId));
             }
             else if (type == "web_search_call")
             {
@@ -1253,6 +1304,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             : new Dictionary<string, ParallelToolResultGroup>();
         var emittedParallelToolCalls = new HashSet<string>();
         var emittedParallelToolResults = new HashSet<string>();
+        var processedApprovalIds = new HashSet<string>();
         var warnings = new List<OpenAICallWarning>();
         foreach (var message in ToolModelMessage.Flatten(prompt))
         {
@@ -1506,7 +1558,33 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     }
 
                     break;
+                case ToolApprovalResponseModelMessage approvalResponse:
+                    // The denied tool result that follows an approval response is skipped upstream (execution-denied with an
+                    // approvalId): the mcp_approval_response already carries the decision.
+                    if (!processedApprovalIds.Add(approvalResponse.ApprovalId))
+                    {
+                        break;
+                    }
+
+                    if (store && !hasConversation && !hasPreviousResponseId)
+                    {
+                        input.Add(new JsonObject { ["type"] = "item_reference", ["id"] = approvalResponse.ApprovalId });
+                    }
+
+                    input.Add(new JsonObject
+                    {
+                        ["type"] = "mcp_approval_response",
+                        ["approval_request_id"] = approvalResponse.ApprovalId,
+                        ["approve"] = approvalResponse.Approved,
+                    });
+                    break;
                 case ToolModelMessage tool:
+                    // Skip execution-denied with approvalId: already handled via the tool approval response.
+                    if (tool.OutputType == "execution-denied" && OpenAIJson.String(OpenAIJson.Child(tool.OutputProviderOptions, "openai"), "approvalId") != null)
+                    {
+                        break;
+                    }
+
                     var parallelResultMetadata = OpenAIParallelToolCall.GetParallelToolCallMetadata(ToOptions(tool.ProviderMetadata), providerOptionsName);
                     if (parallelResultMetadata != null
                         && parallelToolResultGroups.TryGetValue(parallelResultMetadata.ToolCallId, out var parallelResultGroup)
