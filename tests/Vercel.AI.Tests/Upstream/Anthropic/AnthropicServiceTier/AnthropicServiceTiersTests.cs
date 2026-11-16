@@ -13,7 +13,7 @@ public sealed class AnthropicServiceTiersTests
     [Theory]
     [InlineData("generate")]
     [InlineData("stream")]
-    [UpstreamTest("packages/anthropic/src/anthropic-service-tier.test.ts::Anthropic service tiers::sends the tier when using %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/anthropic/src/anthropic-service-tier.test.ts::Anthropic service tiers::sends the tier when using %s", Coverage = UpstreamCoverage.Covered, Commit = "8291ccf2370b04e99a1d74ea27996a1c78a21492")]
     public async Task Sends_the_tier(string mode)
     {
         var handler = Handler(mode, Message());
@@ -24,7 +24,7 @@ public sealed class AnthropicServiceTiersTests
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-service-tier.test.ts::Anthropic service tiers::warns and omits a MiniMax-only tier", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/anthropic/src/anthropic-service-tier.test.ts::Anthropic service tiers::warns and omits a MiniMax-only tier", Coverage = UpstreamCoverage.Covered, Commit = "8291ccf2370b04e99a1d74ea27996a1c78a21492")]
     public async Task Warns_and_omits_a_MiniMax_only_tier()
     {
         var handler = Handler("generate", Message());

@@ -20,7 +20,7 @@ public sealed class AnthropicServiceTierResponseMetadataTests
     [Theory]
     [InlineData("generate")]
     [InlineData("stream")]
-    [UpstreamTest("packages/anthropic/src/anthropic-service-tier.test.ts::Anthropic service-tier response metadata::reads the applied tier from usage in %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/anthropic/src/anthropic-service-tier.test.ts::Anthropic service-tier response metadata::reads the applied tier from usage in %s", Coverage = UpstreamCoverage.Covered, Commit = "8291ccf2370b04e99a1d74ea27996a1c78a21492")]
     public async Task Reads_the_applied_tier_from_usage(string mode)
     {
         var response = Message();
@@ -35,7 +35,7 @@ public sealed class AnthropicServiceTierResponseMetadataTests
     [Theory]
     [InlineData("generate")]
     [InlineData("stream")]
-    [UpstreamTest("packages/anthropic/src/anthropic-service-tier.test.ts::Anthropic service-tier response metadata::retains top-level compatible-provider metadata in %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/anthropic/src/anthropic-service-tier.test.ts::Anthropic service-tier response metadata::retains top-level compatible-provider metadata in %s", Coverage = UpstreamCoverage.Covered, Commit = "8291ccf2370b04e99a1d74ea27996a1c78a21492")]
     public async Task Retains_top_level_compatible_provider_metadata(string mode)
     {
         var response = Message();
@@ -47,7 +47,7 @@ public sealed class AnthropicServiceTierResponseMetadataTests
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-service-tier.test.ts::Anthropic service-tier response metadata::does not retain a previous message tier when the next message omits it", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/anthropic/src/anthropic-service-tier.test.ts::Anthropic service-tier response metadata::does not retain a previous message tier when the next message omits it", Coverage = UpstreamCoverage.Covered, Commit = "8291ccf2370b04e99a1d74ea27996a1c78a21492")]
     public async Task Does_not_retain_a_previous_message_tier_when_the_next_message_omits_it()
     {
         var first = Message();
@@ -67,7 +67,7 @@ public sealed class AnthropicServiceTierResponseMetadataTests
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-service-tier.test.ts::Anthropic service-tier response metadata::uses a final usage update when the service tier arrives in a delta", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/anthropic/src/anthropic-service-tier.test.ts::Anthropic service-tier response metadata::uses a final usage update when the service tier arrives in a delta", Coverage = UpstreamCoverage.Covered, Commit = "8291ccf2370b04e99a1d74ea27996a1c78a21492")]
     public async Task Uses_a_final_usage_update_when_the_service_tier_arrives_in_a_delta()
     {
         var handler = AnthropicParity.Ok(

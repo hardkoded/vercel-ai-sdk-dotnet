@@ -23,7 +23,7 @@ public sealed class MiniMaxServiceTiersTests
     [Theory]
     [InlineData("generate")]
     [InlineData("stream")]
-    [UpstreamTest("packages/minimax/src/minimax-chat-language-model.test.ts::MiniMax service tiers::sends priority admission when using %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/minimax/src/minimax-chat-language-model.test.ts::MiniMax service tiers::sends priority admission when using %s", Coverage = UpstreamCoverage.Covered, Commit = "8291ccf2370b04e99a1d74ea27996a1c78a21492")]
     public async Task Sends_priority_admission(string mode)
     {
         var server = new MiniMaxServer();
@@ -47,7 +47,7 @@ public sealed class MiniMaxServiceTiersTests
     }
 
     [Fact]
-    [UpstreamTest("packages/minimax/src/minimax-chat-language-model.test.ts::MiniMax service tiers::uses the MiniMax tier over a canonical namespace value", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/minimax/src/minimax-chat-language-model.test.ts::MiniMax service tiers::uses the MiniMax tier over a canonical namespace value", Coverage = UpstreamCoverage.Covered, Commit = "8291ccf2370b04e99a1d74ea27996a1c78a21492")]
     public async Task Uses_the_MiniMax_tier_over_a_canonical_namespace_value()
     {
         var server = new MiniMaxServer();
@@ -60,7 +60,7 @@ public sealed class MiniMaxServiceTiersTests
     }
 
     [Fact]
-    [UpstreamTest("packages/minimax/src/minimax-chat-language-model.test.ts::MiniMax service tiers::warns and omits an Anthropic-only tier", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/minimax/src/minimax-chat-language-model.test.ts::MiniMax service tiers::warns and omits an Anthropic-only tier", Coverage = UpstreamCoverage.Covered, Commit = "8291ccf2370b04e99a1d74ea27996a1c78a21492")]
     public async Task Warns_and_omits_an_Anthropic_only_tier()
     {
         var server = new MiniMaxServer();
@@ -76,7 +76,7 @@ public sealed class MiniMaxServiceTiersTests
     [Theory]
     [InlineData("null")]
     [InlineData("\"invalid\"")]
-    [UpstreamTest("packages/minimax/src/minimax-chat-language-model.test.ts::MiniMax service tiers::rejects an invalid tier %s before sending a request", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/minimax/src/minimax-chat-language-model.test.ts::MiniMax service tiers::rejects an invalid tier %s before sending a request", Coverage = UpstreamCoverage.Covered, Commit = "8291ccf2370b04e99a1d74ea27996a1c78a21492")]
     public async Task Rejects_an_invalid_tier_before_sending_a_request(string serviceTier)
     {
         var server = new MiniMaxServer();
