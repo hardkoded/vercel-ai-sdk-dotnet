@@ -25,6 +25,12 @@ public class ScaleDownExtractionModelConfig
     /// </summary>
     public Func<IReadOnlyDictionary<string, string>>? Headers { get; set; }
 
+    /// <summary>
+    /// Provider headers that need an asynchronous step, such as an async API key. Used when <see cref="Headers"/> is null.
+    /// Not serializable: <c>Serialize</c> throws <see cref="SerializationError"/>, as upstream does for an async <c>headers</c>.
+    /// </summary>
+    public Func<CancellationToken, Task<IReadOnlyDictionary<string, string>>>? HeadersAsync { get; set; }
+
     /// <summary>HTTP client. Not serialized.</summary>
     public HttpClient? HttpClient { get; set; }
 }
@@ -63,6 +69,11 @@ public sealed class ScaleDownExtractionModel : IExtractionCaller
             ["provider"] = _config.Provider,
             ["baseURL"] = _config.BaseUrl,
         };
+        if (_config.Headers is null && _config.HeadersAsync is not null)
+        {
+            throw new SerializationError("Cannot serialize asynchronous model options.");
+        }
+
         if (_config.Headers is { } headers)
         {
             config["headers"] = new Func<Dictionary<string, string>>(() => headers().ToDictionary(pair => pair.Key, pair => pair.Value));
@@ -168,6 +179,13 @@ public sealed class ScaleDownExtractionModel : IExtractionCaller
         if (_config.Headers is { } providerHeaders)
         {
             foreach (var pair in providerHeaders())
+            {
+                headers[pair.Key] = pair.Value;
+            }
+        }
+        else if (_config.HeadersAsync is { } providerHeadersAsync)
+        {
+            foreach (var pair in await providerHeadersAsync(cancellationToken).ConfigureAwait(false))
             {
                 headers[pair.Key] = pair.Value;
             }

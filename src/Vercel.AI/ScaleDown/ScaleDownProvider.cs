@@ -15,6 +15,9 @@ public sealed class ScaleDownProviderSettings
     /// <summary>API key. Defaults to the <c>SCALEDOWN_API_KEY</c> environment variable, read when a request is made.</summary>
     public string? ApiKey { get; set; }
 
+    /// <summary>Resolves the API key on every request. Takes precedence over <see cref="ApiKey"/>. Maps to an async <c>apiKey</c> function.</summary>
+    public Func<CancellationToken, Task<string>>? ApiKeyProvider { get; set; }
+
     /// <summary>API base URL. Defaults to <c>https://api.scaledown.xyz</c>.</summary>
     public string? BaseUrl { get; set; }
 
@@ -70,7 +73,8 @@ public sealed class ScaleDownProvider
         {
             Provider = DecisionProviderId,
             BaseUrl = _baseUrl,
-            Headers = Headers,
+            Headers = _options.ApiKeyProvider is null ? Headers : null,
+            HeadersAsync = _options.ApiKeyProvider is null ? null : HeadersAsync,
             HttpClient = _httpClient,
         });
     }
@@ -82,7 +86,8 @@ public sealed class ScaleDownProvider
         {
             Provider = ExtractionProviderId,
             BaseUrl = _baseUrl,
-            Headers = Headers,
+            Headers = _options.ApiKeyProvider is null ? Headers : null,
+            HeadersAsync = _options.ApiKeyProvider is null ? null : HeadersAsync,
             HttpClient = _httpClient,
         });
     }
@@ -105,11 +110,22 @@ public sealed class ScaleDownProvider
         throw new NoSuchModelError(modelId, "imageModel");
     }
 
+    private async Task<IReadOnlyDictionary<string, string>> HeadersAsync(CancellationToken cancellationToken)
+    {
+        var apiKey = await _options.ApiKeyProvider!(cancellationToken).ConfigureAwait(false);
+        return BuildHeaders(apiKey);
+    }
+
     private IReadOnlyDictionary<string, string> Headers()
+    {
+        return BuildHeaders(_options.ApiKey);
+    }
+
+    private IReadOnlyDictionary<string, string> BuildHeaders(string? apiKey)
     {
         var headers = new Dictionary<string, string>
         {
-            ["x-api-key"] = ApiKeys.Require(_options.ApiKey, ApiKeyEnvironmentVariable),
+            ["x-api-key"] = ApiKeys.Require(apiKey, ApiKeyEnvironmentVariable),
         };
         if (_options.Headers != null)
         {
