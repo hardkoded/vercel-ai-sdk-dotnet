@@ -7,6 +7,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.OpenTelemetry;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Ui;
 using Vercel.AI.Util;
 
 namespace Vercel.AI.AspNetCore;
@@ -16,6 +17,7 @@ public static partial class UIMessageStreamConverter
     /// <summary>
     /// Converts a stream of <see cref="TextStreamPart"/> parts (as emitted by <c>streamText</c>) into a stream of UI message chunks.
     /// It adds the text and reasoning start and end chunks, which the .NET stream parts do not carry, and the response message id.
+    /// It also calls <see cref="ToUIMessageChunkOptions.OnStepEnd"/> and <see cref="ToUIMessageChunkOptions.OnEnd"/>.
     /// </summary>
     /// <param name="stream">The parts to convert.</param>
     /// <param name="options">Conversion options.</param>
@@ -31,6 +33,35 @@ public static partial class UIMessageStreamConverter
         }
 
         options ??= new ToUIMessageChunkOptions();
+
+        var outcome = new UIMessageStreamOutcome(UIMessageStreamOutcomeStatus.Unknown);
+        var hasFatalFailure = false;
+
+        void SetSourceOutcome(UIMessageStreamOutcome newOutcome)
+        {
+            if (!hasFatalFailure
+                && outcome.Status != UIMessageStreamOutcomeStatus.Completed
+                && outcome.Status != UIMessageStreamOutcomeStatus.Aborted
+                && newOutcome.Status != UIMessageStreamOutcomeStatus.Unknown
+                && (outcome.Status == UIMessageStreamOutcomeStatus.Unknown || newOutcome.Status != UIMessageStreamOutcomeStatus.Failed))
+            {
+                outcome = newOutcome;
+            }
+        }
+
+        void FailOutcome(Exception error)
+        {
+            hasFatalFailure = true;
+            outcome = new UIMessageStreamOutcome(UIMessageStreamOutcomeStatus.Failed, error);
+        }
+
+        // upstream getResponseUIMessageId: a continued assistant message keeps its id
+        var responseMessageId = options.ResponseMessageId;
+        if (options.OriginalMessages is { Count: > 0 } originalMessages && originalMessages[originalMessages.Count - 1] is { Role: UIMessageRole.Assistant } lastMessage)
+        {
+            responseMessageId = lastMessage.Id;
+        }
+
         var chunkOptions = new ToUIMessageChunkOptions
         {
             SendReasoning = options.SendReasoning,
@@ -38,9 +69,54 @@ public static partial class UIMessageStreamConverter
             SendFinish = options.SendFinish,
             OnError = options.OnError,
             RedactToolErrors = options.RedactToolErrors,
-            ResponseMessageId = options.ResponseMessageId ?? JsonValues.GenerateId("msg_"),
+            ResponseMessageId = responseMessageId ?? JsonValues.GenerateId("msg_"),
         };
 
+        var chunks = TrackOutcome(ConvertToUIMessageChunks(stream, chunkOptions, SetSourceOutcome, cancellationToken), FailOutcome);
+
+        await foreach (var chunk in HandleUIMessageStreamFinish(
+            chunks,
+            chunkOptions.ResponseMessageId,
+            options.OriginalMessages,
+            options.OnStepEnd,
+            options.OnEnd,
+            error => (options.OnError ?? (_ => "An error occurred."))(error),
+            () => outcome,
+            cancellationToken).ConfigureAwait(false))
+        {
+            yield return chunk;
+        }
+    }
+
+    // A failure of the source stream or of the conversion is fatal: it overrides every outcome that the stream declared.
+    private static async IAsyncEnumerable<JsonObject> TrackOutcome(IAsyncEnumerable<JsonObject> chunks, Action<Exception> failOutcome)
+    {
+        await using var enumerator = chunks.GetAsyncEnumerator();
+        while (true)
+        {
+            try
+            {
+                if (!await enumerator.MoveNextAsync().ConfigureAwait(false))
+                {
+                    yield break;
+                }
+            }
+            catch (Exception error) when (error is not OperationCanceledException)
+            {
+                failOutcome(error);
+                throw;
+            }
+
+            yield return enumerator.Current;
+        }
+    }
+
+    private static async IAsyncEnumerable<JsonObject> ConvertToUIMessageChunks(
+        IAsyncEnumerable<TextStreamPart> stream,
+        ToUIMessageChunkOptions chunkOptions,
+        Action<UIMessageStreamOutcome> setSourceOutcome,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
         string? textId = null;
         string? reasoningId = null;
         var knownToolInvalidIds = new HashSet<string>(StringComparer.Ordinal);
@@ -59,6 +135,20 @@ public static partial class UIMessageStreamConverter
 
         await foreach (var part in stream.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
+            // the source declares the outcome of the stream
+            switch (part)
+            {
+                case FinishPart:
+                    setSourceOutcome(new UIMessageStreamOutcome(UIMessageStreamOutcomeStatus.Completed));
+                    break;
+                case AbortPart:
+                    setSourceOutcome(new UIMessageStreamOutcome(UIMessageStreamOutcomeStatus.Aborted));
+                    break;
+                case ErrorPart errorPart:
+                    setSourceOutcome(new UIMessageStreamOutcome(UIMessageStreamOutcomeStatus.Failed, errorPart.Error ?? new Exception(errorPart.Message)));
+                    break;
+            }
+
             if (part is ToolCallPart { ToolCall.Invalid: true } invalidCall)
             {
                 invalidToolCallIds.Add(invalidCall.ToolCall.ToolCallId);
