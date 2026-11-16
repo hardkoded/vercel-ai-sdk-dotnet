@@ -16,7 +16,7 @@ public sealed class GoogleRealtimeModelTests
     [InlineData("promise")]
     [InlineData("callback")]
     [InlineData("async callback")]
-    [UpstreamTest(Id + "resolves $name credentials for server connections", Coverage = UpstreamCoverage.Covered, Commit = GoogleRealtimeTestSupport.Commit)]
+    [UpstreamTest(Id + "resolves $name credentials for server connections", Coverage = UpstreamCoverage.Covered, Commit = "892af4dab7f1351fd2ced70dcaba288746d8a782")]
     public async Task Resolves_credentials_for_server_connections(string name)
     {
         IReadOnlyDictionary<string, string?> credentials = new Dictionary<string, string?> { ["authorization"] = "Bearer test-key", ["omitted"] = null };
@@ -42,7 +42,7 @@ public sealed class GoogleRealtimeModelTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "rejects unsupported intents during serialization as well as connection setup", Coverage = UpstreamCoverage.Covered, Commit = GoogleRealtimeTestSupport.Commit)]
+    [UpstreamTest(Id + "rejects unsupported intents during serialization as well as connection setup", Coverage = UpstreamCoverage.Covered, Commit = "892af4dab7f1351fd2ced70dcaba288746d8a782")]
     public void Rejects_unsupported_intents_during_serialization_as_well_as_connection_setup()
     {
         var target = GoogleRealtimeTestSupport.CreateModel("gemini-3.8-live", GoogleRealtimeTestSupport.ApiKeyHeaders());
@@ -55,7 +55,7 @@ public sealed class GoogleRealtimeModelTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "isolates usage and turn state between server connections", Coverage = UpstreamCoverage.Covered, Commit = GoogleRealtimeTestSupport.Commit)]
+    [UpstreamTest(Id + "isolates usage and turn state between server connections", Coverage = UpstreamCoverage.Covered, Commit = "892af4dab7f1351fd2ced70dcaba288746d8a782")]
     public void Isolates_usage_and_turn_state_between_server_connections()
     {
         var model = GoogleRealtimeTestSupport.CreateModel("gemini-3.8-live", GoogleRealtimeTestSupport.ApiKeyHeaders());

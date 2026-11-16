@@ -26,7 +26,7 @@ Vercel AI Gateway provider. Language, embedding, image, and video calls use the 
 
 **Implements:** [IBatchProvider](/api/Vercel.AI.Operations/IBatchProvider/), [IDecisionProvider](/api/Vercel.AI.Operations/IDecisionProvider/), [IEvaluationProvider](/api/Vercel.AI.Operations/IEvaluationProvider/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L47)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a Gateway provider.
 | `options` | [GatewayOptions](/api/Vercel.AI.Gateway/GatewayOptions/) |  |
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L57)
 
 ## Fields
 
@@ -68,7 +68,7 @@ Environment variable for the Gateway key.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L54)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_ProviderId"></a>
 
@@ -84,7 +84,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L51)
 
 ## Properties
 
@@ -103,7 +103,7 @@ HTTP helper.
 
 **Value:** [ProviderHttp](/api/Vercel.AI.ProviderUtils/ProviderHttp/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L74)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_Options_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_Options"></a>
@@ -120,7 +120,7 @@ Options.
 
 **Value:** [GatewayOptions](/api/Vercel.AI.Gateway/GatewayOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L65)
 
 ## Methods
 
@@ -146,7 +146,7 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [GatewayProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L77)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_DecisionModel_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_DecisionModel_System_String_"></a>
@@ -169,7 +169,7 @@ Decision model routed through `/decision-model`.
 
 **Returns:** [GatewayDecisionModel](/api/Vercel.AI.Gateway/GatewayDecisionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L102)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L126)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_EmbeddingModel_System_String_"></a>
@@ -192,7 +192,7 @@ Returns an embedding model.
 
 **Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L84)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L90)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_EvaluationModel_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_EvaluationModel_System_String_"></a>
@@ -220,7 +220,7 @@ Deprecated alias of [DecisionModel(string)](#Vercel_AI_Gateway_GatewayProvider_D
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L114)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L138)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_ExperimentalBatch_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_ExperimentalBatch"></a>
@@ -237,7 +237,33 @@ Gateway batch API. Downloads batch results.
 
 **Returns:** [IBatchApi](/api/Vercel.AI.Operations/IBatchApi/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L68)
+
+<a id="Vercel_AI_Gateway_GatewayProvider_ExperimentalRealtimeGetTokenAsync_"></a>
+<a id="Vercel_AI_Gateway_GatewayProvider_ExperimentalRealtimeGetTokenAsync_System_String_System_Nullable_System_Int32__System_Threading_CancellationToken_"></a>
+
+### ExperimentalRealtimeGetTokenAsync(string, int?, CancellationToken)
+
+
+```csharp
+public Task<GatewayRealtimeClientSecret> ExperimentalRealtimeGetTokenAsync(string model, int? expiresAfterSeconds = null, CancellationToken cancellationToken = default)
+```
+
+
+Mints a client secret for a realtime model and returns it with the WebSocket URL. Maps to
+`experimental_realtime.getToken`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `model` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `expiresAfterSeconds` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;GatewayRealtimeClientSecret&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L120)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_GetGenerationInfoAsync_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_GetGenerationInfoAsync_Vercel_AI_Gateway_GatewayGenerationInfoParams_System_Threading_CancellationToken_"></a>
@@ -261,7 +287,7 @@ Gets the info of one generation, including its cost breakdown.
 
 **Returns:** [Task&lt;GatewayGenerationInfo&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L211)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L235)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_ImageModel_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_ImageModel_System_String_"></a>
@@ -284,7 +310,7 @@ Returns an image model.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L90)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L96)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_LanguageModel_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_LanguageModel_System_String_"></a>
@@ -307,7 +333,31 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L78)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L84)
+
+<a id="Vercel_AI_Gateway_GatewayProvider_RealtimeModel_"></a>
+<a id="Vercel_AI_Gateway_GatewayProvider_RealtimeModel_System_String_"></a>
+
+### RealtimeModel(string)
+
+
+```csharp
+public override IRealtimeModel RealtimeModel(string modelId)
+```
+
+
+Returns a realtime model. Maps to `experimental_realtime(modelId)`. Building the model touches no credential;
+only minting a client secret and server connections resolve the Gateway credential.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [IRealtimeModel](/api/Vercel.AI.Provider/IRealtimeModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L111)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_VideoModel_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_VideoModel_System_String_"></a>
@@ -330,4 +380,4 @@ Returns a video model.
 
 **Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L96)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L102)

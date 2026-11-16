@@ -12,7 +12,7 @@ public sealed class GetServerWebSocketConfigTests
     private const string Id = "packages/google/src/realtime/google-realtime-model.test.ts::GoogleRealtimeModel > getServerWebSocketConfig::";
 
     [Fact]
-    [UpstreamTest(Id + "connects to the unconstrained Bidi endpoint with the API key header", Coverage = UpstreamCoverage.Covered, Commit = GoogleRealtimeTestSupport.Commit)]
+    [UpstreamTest(Id + "connects to the unconstrained Bidi endpoint with the API key header", Coverage = UpstreamCoverage.Covered, Commit = "892af4dab7f1351fd2ced70dcaba288746d8a782")]
     public async Task Connects_to_the_unconstrained_Bidi_endpoint_with_the_API_key_header()
     {
         var model = GoogleRealtimeTestSupport.CreateModel("gemini-2.0-flash-live-001", GoogleRealtimeTestSupport.ApiKeyHeaders(("x-undefined", null)));
@@ -27,7 +27,7 @@ public sealed class GetServerWebSocketConfigTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "rejects unsupported endpoint intents", Coverage = UpstreamCoverage.Covered, Commit = GoogleRealtimeTestSupport.Commit)]
+    [UpstreamTest(Id + "rejects unsupported endpoint intents", Coverage = UpstreamCoverage.Covered, Commit = "892af4dab7f1351fd2ced70dcaba288746d8a782")]
     public void Rejects_unsupported_endpoint_intents()
     {
         var model = GoogleRealtimeTestSupport.CreateModel("gemini-2.0-flash-live-001", GoogleRealtimeTestSupport.ApiKeyHeaders());

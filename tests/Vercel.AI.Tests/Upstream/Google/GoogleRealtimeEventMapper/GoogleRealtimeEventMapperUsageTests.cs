@@ -29,7 +29,7 @@ public sealed class GoogleRealtimeEventMapperUsageTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "includes reported thinking, tool-use and cache counts without changing modality subsets", Coverage = UpstreamCoverage.Covered, Commit = GoogleRealtimeTestSupport.Commit)]
+    [UpstreamTest(Id + "includes reported thinking, tool-use and cache counts without changing modality subsets", Coverage = UpstreamCoverage.Covered, Commit = "892af4dab7f1351fd2ced70dcaba288746d8a782")]
     public void Includes_reported_thinking_tool_use_and_cache_counts_without_changing_modality_subsets()
     {
         var mapper = new Mapper();
@@ -45,7 +45,7 @@ public sealed class GoogleRealtimeEventMapperUsageTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "does not invent gross totals from partial thinking or tool-use counts", Coverage = UpstreamCoverage.Covered, Commit = GoogleRealtimeTestSupport.Commit)]
+    [UpstreamTest(Id + "does not invent gross totals from partial thinking or tool-use counts", Coverage = UpstreamCoverage.Covered, Commit = "892af4dab7f1351fd2ced70dcaba288746d8a782")]
     public void Does_not_invent_gross_totals_from_partial_thinking_or_tool_use_counts()
     {
         var mapper = new Mapper();
@@ -58,7 +58,7 @@ public sealed class GoogleRealtimeEventMapperUsageTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "preserves totals and known zeros without inventing missing modality counts", Coverage = UpstreamCoverage.Covered, Commit = GoogleRealtimeTestSupport.Commit)]
+    [UpstreamTest(Id + "preserves totals and known zeros without inventing missing modality counts", Coverage = UpstreamCoverage.Covered, Commit = "892af4dab7f1351fd2ced70dcaba288746d8a782")]
     public void Preserves_totals_and_known_zeros_without_inventing_missing_modality_counts()
     {
         var mapper = new Mapper();
@@ -74,7 +74,7 @@ public sealed class GoogleRealtimeEventMapperUsageTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "attaches per-modality usage to response-done on turnComplete", Coverage = UpstreamCoverage.Covered, Commit = GoogleRealtimeTestSupport.Commit)]
+    [UpstreamTest(Id + "attaches per-modality usage to response-done on turnComplete", Coverage = UpstreamCoverage.Covered, Commit = "892af4dab7f1351fd2ced70dcaba288746d8a782")]
     public void Attaches_per_modality_usage_to_response_done_on_turnComplete()
     {
         var mapper = new Mapper();
@@ -90,7 +90,7 @@ public sealed class GoogleRealtimeEventMapperUsageTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "preserves aggregate counts without inventing modality details", Coverage = UpstreamCoverage.Covered, Commit = GoogleRealtimeTestSupport.Commit)]
+    [UpstreamTest(Id + "preserves aggregate counts without inventing modality details", Coverage = UpstreamCoverage.Covered, Commit = "892af4dab7f1351fd2ced70dcaba288746d8a782")]
     public void Preserves_aggregate_counts_without_inventing_modality_details()
     {
         var mapper = new Mapper();
@@ -102,7 +102,7 @@ public sealed class GoogleRealtimeEventMapperUsageTests
 
     [Theory]
     [MemberData(nameof(NonTerminalFrames))]
-    [UpstreamTest(Id + "retains usage alongside non-terminal messages: %j", Coverage = UpstreamCoverage.Covered, Commit = GoogleRealtimeTestSupport.Commit)]
+    [UpstreamTest(Id + "retains usage alongside non-terminal messages: %j", Coverage = UpstreamCoverage.Covered, Commit = "892af4dab7f1351fd2ced70dcaba288746d8a782")]
     public void Retains_usage_alongside_non_terminal_messages(string frame)
     {
         var mapper = new Mapper();
@@ -122,7 +122,7 @@ public sealed class GoogleRealtimeEventMapperUsageTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "keeps unassociated usage snapshots separate from completion and later turns", Coverage = UpstreamCoverage.Covered, Commit = GoogleRealtimeTestSupport.Commit)]
+    [UpstreamTest(Id + "keeps unassociated usage snapshots separate from completion and later turns", Coverage = UpstreamCoverage.Covered, Commit = "892af4dab7f1351fd2ced70dcaba288746d8a782")]
     public void Keeps_unassociated_usage_snapshots_separate_from_completion_and_later_turns()
     {
         var mapper = new Mapper();
@@ -160,7 +160,7 @@ public sealed class GoogleRealtimeEventMapperUsageTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "omits usage when no usageMetadata is present", Coverage = UpstreamCoverage.Covered, Commit = GoogleRealtimeTestSupport.Commit)]
+    [UpstreamTest(Id + "omits usage when no usageMetadata is present", Coverage = UpstreamCoverage.Covered, Commit = "892af4dab7f1351fd2ced70dcaba288746d8a782")]
     public void Omits_usage_when_no_usageMetadata_is_present()
     {
         var mapper = new Mapper();
