@@ -151,6 +151,37 @@ public sealed class OpenAIShellLocalSkill
     public string Path { get; set; } = "";
 }
 
+/// <summary>A skill of a <c>containerAuto</c> shell environment: <see cref="OpenAIShellSkillReference"/> or <see cref="OpenAIShellInlineSkill"/>.</summary>
+public abstract class OpenAIShellContainerSkill
+{
+    internal OpenAIShellContainerSkill()
+    {
+    }
+}
+
+/// <summary>A <c>skillReference</c> skill of a <c>containerAuto</c> shell environment.</summary>
+public sealed class OpenAIShellSkillReference : OpenAIShellContainerSkill
+{
+    /// <summary>Provider reference of the skill, keyed by provider name. The <c>openai</c> entry is the skill id.</summary>
+    public IReadOnlyDictionary<string, string> ProviderReference { get; set; } = new Dictionary<string, string>();
+
+    /// <summary>Skill version. Defaults to <c>latest</c>.</summary>
+    public string? Version { get; set; }
+}
+
+/// <summary>An <c>inline</c> skill of a <c>containerAuto</c> shell environment: a base64 encoded zip archive.</summary>
+public sealed class OpenAIShellInlineSkill : OpenAIShellContainerSkill
+{
+    /// <summary>Skill name.</summary>
+    public string Name { get; set; } = "";
+
+    /// <summary>Skill description.</summary>
+    public string Description { get; set; } = "";
+
+    /// <summary>Base64 encoded content of the <c>application/zip</c> archive that holds the skill.</summary>
+    public string Data { get; set; } = "";
+}
+
 /// <summary>A domain secret of an allowlist network policy.</summary>
 public sealed class OpenAIShellDomainSecret
 {
@@ -192,6 +223,9 @@ public sealed class OpenAIShellEnvironment
 
     /// <summary>Skills of a <c>local</c> environment.</summary>
     public IReadOnlyList<OpenAIShellLocalSkill>? Skills { get; set; }
+
+    /// <summary>Skills of a <c>containerAuto</c> environment: skill references and inline (base64 zip) skills.</summary>
+    public IReadOnlyList<OpenAIShellContainerSkill>? ContainerSkills { get; set; }
 }
 
 /// <summary>Options of <see cref="OpenAITools.Shell"/>.</summary>
@@ -552,6 +586,17 @@ public static class OpenAITools
                 mapped["skills"] = skills;
             }
 
+            if (environment.ContainerSkills != null)
+            {
+                var containerSkills = new JsonArray();
+                foreach (var skill in environment.ContainerSkills)
+                {
+                    containerSkills.Add(MapContainerSkill(skill));
+                }
+
+                mapped["skills"] = containerSkills;
+            }
+
             args["environment"] = mapped;
         }
 
@@ -621,6 +666,33 @@ public static class OpenAITools
     /// <summary>The programmatic tool calling tool (<c>openai.programmatic_tool_calling</c>).</summary>
     public static LanguageModelTool ProgrammaticToolCalling() =>
         Create("openai.programmatic_tool_calling", "programmatic_tool_calling", new JsonObject());
+
+    private static JsonObject MapContainerSkill(OpenAIShellContainerSkill skill)
+    {
+        switch (skill)
+        {
+            case OpenAIShellSkillReference reference:
+                var providerReference = new JsonObject();
+                foreach (var entry in reference.ProviderReference)
+                {
+                    providerReference[entry.Key] = entry.Value;
+                }
+
+                var mappedReference = new JsonObject { ["type"] = "skillReference", ["providerReference"] = providerReference };
+                Set(mappedReference, "version", reference.Version);
+                return mappedReference;
+            case OpenAIShellInlineSkill inline:
+                return new JsonObject
+                {
+                    ["type"] = "inline",
+                    ["name"] = inline.Name,
+                    ["description"] = inline.Description,
+                    ["source"] = new JsonObject { ["type"] = "base64", ["mediaType"] = "application/zip", ["data"] = inline.Data },
+                };
+            default:
+                throw new ArgumentException("Unsupported shell container skill.", nameof(skill));
+        }
+    }
 
     private static JsonObject FilterToJson(OpenAIFileSearchFilter filter)
     {

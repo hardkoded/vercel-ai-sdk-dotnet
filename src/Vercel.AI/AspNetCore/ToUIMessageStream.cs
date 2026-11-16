@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenTelemetry;
 using Vercel.AI.Provider;
@@ -83,6 +84,7 @@ public static partial class UIMessageStreamConverter
             SendReasoning = options.SendReasoning,
             SendSources = options.SendSources,
             MessageMetadata = options.MessageMetadata,
+            MessageMetadataSelector = options.MessageMetadataSelector,
             SendStart = options.SendStart,
             SendFinish = options.SendFinish,
             OnError = options.OnError,
@@ -191,7 +193,9 @@ public static partial class UIMessageStreamConverter
                 mismatchedToolCallIdInCurrentStep = null;
             }
 
-            var chunk = ToUIMessageChunk(part, chunkOptions);
+            var messageMetadata = chunkOptions.MessageMetadataSelector is { } selector ? selector(part) : chunkOptions.MessageMetadata;
+            var hasMessageMetadata = chunkOptions.MessageMetadataSelector != null && messageMetadata is { ValueKind: not (JsonValueKind.Null or JsonValueKind.Undefined) };
+            var chunk = ToUIMessageChunkWithMetadata(part, chunkOptions, messageMetadata);
 
             if (part is ReasoningStartPart && chunk != null && mismatchedToolCallIdInEarlierStep != null && !hasWarnedAboutToolErrorMismatch)
             {
@@ -219,7 +223,23 @@ public static partial class UIMessageStreamConverter
                 chunk.Remove("dynamic");
             }
 
-            if (chunk != null)
+            if (chunk != null && part is not StepFinishPart)
+            {
+                yield return chunk;
+            }
+
+            // start and finish chunks already include the metadata; any other part gets a separate message-metadata chunk
+            if (hasMessageMetadata && part is not (StartPart or FinishPart))
+            {
+                yield return new JsonObject
+                {
+                    ["type"] = "message-metadata",
+                    ["messageMetadata"] = JsonNode.Parse(messageMetadata!.Value.GetRawText()),
+                };
+            }
+
+            // step metadata is applied before the boundary triggers a UI snapshot
+            if (chunk != null && part is StepFinishPart)
             {
                 yield return chunk;
             }

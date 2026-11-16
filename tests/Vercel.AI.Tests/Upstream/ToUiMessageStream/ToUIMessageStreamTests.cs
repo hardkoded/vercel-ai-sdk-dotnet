@@ -185,6 +185,112 @@ public sealed class ToUIMessageStreamTests
         Assert.Same(conversionError, onEnd.Outcome.Error);
     }
 
+    [Fact]
+    [UpstreamTest(Prefix + "includes finish-step metadata in the snapshot before forwarding the boundary", Coverage = UpstreamCoverage.Covered)]
+    public async Task Includes_finish_step_metadata_in_the_snapshot_before_forwarding_the_boundary()
+    {
+        var onStepEndEvents = new List<UIMessageStreamOnStepEndEvent>();
+        var onEndEvents = new List<UIMessageStreamOnEndEvent>();
+
+        var chunks = await Convert(
+            [new StartPart(), new StartStepPart(), TestStep, new FinishPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2))],
+            new ToUIMessageChunkOptions
+            {
+                GenerateMessageId = () => "assistant-1",
+                MessageMetadataSelector = part => part is StepFinishPart finishStep
+                    ? JsonSerializer.SerializeToElement(new { totalTokens = finishStep.Step.Usage.TotalTokens })
+                    : null,
+                OnStepEnd = onStepEndEvent =>
+                {
+                    onStepEndEvents.Add(onStepEndEvent);
+                    return Task.CompletedTask;
+                },
+                OnEnd = onEndEvent =>
+                {
+                    onEndEvents.Add(onEndEvent);
+                    return Task.CompletedTask;
+                },
+            });
+
+        Assert.True(
+            JsonNode.DeepEquals(
+                JsonNode.Parse("""
+                    [
+                      {"type":"start","messageId":"assistant-1"},
+                      {"type":"start-step"},
+                      {"type":"message-metadata","messageMetadata":{"totalTokens":2}},
+                      {"type":"finish-step"},
+                      {"type":"finish","finishReason":"stop"}
+                    ]
+                    """),
+                chunks),
+            chunks.ToJsonString());
+        var onStepEnd = Assert.Single(onStepEndEvents);
+        Assert.Equal(2, onStepEnd.ResponseMessage.Metadata!.Value.GetProperty("totalTokens").GetInt32());
+        var onEnd = Assert.Single(onEndEvents);
+        Assert.Equal(onStepEnd.ResponseMessage.Metadata!.Value.GetRawText(), onEnd.ResponseMessage.Metadata!.Value.GetRawText());
+        Assert.Equal(onStepEnd.ResponseMessage.Parts.Count, onEnd.ResponseMessage.Parts.Count);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "emits separate metadata chunks for non-lifecycle parts", Coverage = UpstreamCoverage.Covered)]
+    public async Task Emits_separate_metadata_chunks_for_non_lifecycle_parts()
+    {
+        var chunks = await Convert(
+            [new StartPart(), new TextDeltaPart("t1", "Hello"), new FinishPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2))],
+            new ToUIMessageChunkOptions
+            {
+                // the port always sends a message id with the start chunk (upstream omits it without generateMessageId)
+                GenerateMessageId = () => "assistant-1",
+                MessageMetadataSelector = part => JsonSerializer.SerializeToElement(new { partType = part.Type }),
+            });
+
+        Assert.True(
+            JsonNode.DeepEquals(
+                JsonNode.Parse("""
+                    [
+                      {"type":"start","messageMetadata":{"partType":"start"},"messageId":"assistant-1"},
+                      {"type":"text-delta","id":"t1","delta":"Hello"},
+                      {"type":"message-metadata","messageMetadata":{"partType":"text-delta"}},
+                      {"type":"finish","finishReason":"stop","messageMetadata":{"partType":"finish"}}
+                    ]
+                    """),
+                chunks),
+            chunks.ToJsonString());
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "reports message metadata failures as failed exactly once", Coverage = UpstreamCoverage.Covered)]
+    public async Task Reports_message_metadata_failures_as_failed_exactly_once()
+    {
+        var metadataError = new JsError("message metadata failed");
+        var onEndEvents = new List<UIMessageStreamOnEndEvent>();
+
+        var stream = UIMessageStreamConverter.ToUIMessageStream(
+            ToAsync([new FinishPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2))]),
+            new ToUIMessageChunkOptions
+            {
+                MessageMetadataSelector = _ => throw metadataError,
+                OnEnd = onEndEvent =>
+                {
+                    onEndEvents.Add(onEndEvent);
+                    return Task.CompletedTask;
+                },
+            });
+
+        var thrown = await Assert.ThrowsAsync<JsError>(async () =>
+        {
+            await foreach (var unused in stream)
+            {
+            }
+        });
+        Assert.Same(metadataError, thrown);
+
+        var onEnd = Assert.Single(onEndEvents);
+        Assert.Equal(UIMessageStreamOutcomeStatus.Failed, onEnd.Outcome.Status);
+        Assert.Same(metadataError, onEnd.Outcome.Error);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -384,7 +490,7 @@ public sealed class ToUIMessageStreamTests
     }
 
     private static readonly TextStreamPart TestStep = new StepFinishPart(
-        new StepResult("", null, [], [], FinishReason.Stop, new LanguageModelUsage(0, 0, 0), []),
+        new StepResult("", null, [], [], FinishReason.Stop, new LanguageModelUsage(1, 1, 2), []),
         new LanguageModelResponseMetadata("id-0", DateTimeOffset.FromUnixTimeMilliseconds(0), "mock-model-id"));
 
     internal static async Task<JsonArray> Convert(IReadOnlyList<TextStreamPart> parts, ToUIMessageChunkOptions? options = null)

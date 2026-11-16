@@ -391,6 +391,11 @@ internal static class Generation
         TaskCompletionSource<JsonElement?> outputSource)
     {
         var steps = new List<StepResult>();
+        if (options.OnAbort is { } onAbort)
+        {
+            // An abort that follows the consumer's cancellation still reaches onAbort, like upstream's same-tick cancel-then-abort.
+            abort.OnLateAbort = error => onAbort(new StreamAbortContext(steps.ToArray(), error), CancellationToken.None);
+        }
         var cancellationToken = abort.Token;
         try
         {
@@ -909,7 +914,7 @@ internal static class Generation
         {
             timeouts?.Dispose();
             abort.Registration.Dispose();
-            abort.SignalCleanup?.Invoke();
+            abort.CleanupSignal();
             abort.Dispose();
         }
     }
@@ -2421,6 +2426,7 @@ internal static class Generation
 internal sealed class StreamAbort
 {
     private static readonly object Done = new();
+    private static readonly TimeSpan StopAbortGrace = TimeSpan.FromSeconds(1);
     private readonly CancellationTokenSource _cancellation = new();
     private readonly TaskCompletionSource<bool> _signal = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private object? _outcome;
@@ -2434,14 +2440,48 @@ internal sealed class StreamAbort
 
     public Action? SignalCleanup { get; set; }
 
+    // Reports an abort that arrives after the consumer stopped reading.
+    public Func<Exception, Task>? OnLateAbort
+    {
+        get => Volatile.Read(ref _lateAbort);
+        set => Volatile.Write(ref _lateAbort, value);
+    }
+
+    private Func<Exception, Task>? _lateAbort;
+
     // The steering messages that are still waiting cannot be delivered once the stream is aborted or stopped.
     public SteeringRun? SteeringRun { get; set; }
 
     public Exception? Error => _outcome as Exception;
 
-    public bool Stopped { get; private set; }
+    public bool Stopped
+    {
+        get => Volatile.Read(ref _stopped);
+        private set => Volatile.Write(ref _stopped, value);
+    }
+
+    private bool _stopped;
 
     public void Dispose() => _cancellation.Dispose();
+
+    // After the consumer stopped, an abort that follows right away must still reach onAbort. Upstream's cancel reaches the run asynchronously,
+    // so an abort in the same tick wins. The signal handler therefore stays registered for a short grace period.
+    public void CleanupSignal()
+    {
+        var cleanup = SignalCleanup;
+        if (cleanup is null)
+        {
+            return;
+        }
+
+        if (Stopped && OnLateAbort is not null)
+        {
+            _ = Task.Delay(StopAbortGrace).ContinueWith(_ => cleanup(), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+            return;
+        }
+
+        cleanup();
+    }
 
     // The consumer stopped reading. Cancels the provider call and the tool loop, like upstream cancelling the source reader.
     public void Stop()
@@ -2487,6 +2527,7 @@ internal sealed class StreamAbort
     {
         if (Interlocked.CompareExchange(ref _outcome, error, null) != null)
         {
+            ReportLateAbort(error);
             return;
         }
 
@@ -2507,6 +2548,29 @@ internal sealed class StreamAbort
             SteeringRun?.End(SteeringNotDeliveredReason.Aborted);
             Volatile.Read(ref _disposal)?.Abandon();
             _signal.TrySetResult(true);
+        }
+    }
+
+    private void ReportLateAbort(Exception error)
+    {
+        if (!Stopped)
+        {
+            return;
+        }
+
+        var late = Interlocked.Exchange(ref _lateAbort, null);
+        if (late is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _ = late(error).ContinueWith(static task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        }
+        catch (Exception)
+        {
+            // The callback threw before it returned a task. The consumer is gone, so nobody can observe the failure.
         }
     }
 
@@ -2635,6 +2699,8 @@ internal sealed class PartBuffer
         {
             while (true)
             {
+                // A reader that stopped does not receive another part, even when one arrived at the same time.
+                cancellationToken.ThrowIfCancellationRequested();
                 TextStreamPart? part = null;
                 var ready = false;
                 Exception? error = null;

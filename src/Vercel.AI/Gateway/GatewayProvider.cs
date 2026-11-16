@@ -313,24 +313,19 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
     /// <summary>Gets the credit balance of the account (upstream <c>getCredits</c>).</summary>
     public Task<GatewayCreditsResponse> GetCreditsAsync(CancellationToken cancellationToken = default)
     {
-        return new GatewayFetchMetadata(CreateConfig()).GetCreditsAsync(cancellationToken);
+        return WithGatewayErrorAsync(config => new GatewayFetchMetadata(config).GetCreditsAsync(cancellationToken));
     }
 
     /// <summary>Gets the spend report of the account (upstream <c>getSpendReport</c>).</summary>
     public Task<GatewaySpendReportResponse> GetSpendReportAsync(GatewaySpendReportParams parameters, CancellationToken cancellationToken = default)
     {
-        return new GatewaySpendReport(CreateConfig()).GetSpendReportAsync(parameters, cancellationToken);
+        return WithGatewayErrorAsync(config => new GatewaySpendReport(config).GetSpendReportAsync(parameters, cancellationToken));
     }
 
     /// <summary>Gets the info of one generation, including its cost breakdown.</summary>
     public Task<GatewayGenerationInfo> GetGenerationInfoAsync(GatewayGenerationInfoParams parameters, CancellationToken cancellationToken = default)
     {
-        return new GatewayGenerationInfoFetcher(new GatewayConfig
-        {
-            BaseUrl = Options.BaseUrl,
-            Headers = () => BatchHeaders(null),
-            Http = Http,
-        }).GetGenerationInfoAsync(parameters, cancellationToken);
+        return WithGatewayErrorAsync(config => new GatewayGenerationInfoFetcher(config).GetGenerationInfoAsync(parameters, cancellationToken));
     }
 
     /// <summary>Resolves the Gateway credential: an explicit key, <c>AI_GATEWAY_API_KEY</c>, then the Vercel OIDC token.</summary>
@@ -499,12 +494,34 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
         return await task.ConfigureAwait(false);
     }
 
-    private GatewayConfig CreateConfig()
+    /// <summary>
+    /// Runs a fetcher with a config whose headers are the auth headers (<c>getHeaders</c>), then maps a failure to a
+    /// Gateway error using the auth method of the resolved headers, as upstream does.
+    /// </summary>
+    private async Task<T> WithGatewayErrorAsync<T>(Func<GatewayConfig, Task<T>> run)
+    {
+        IReadOnlyDictionary<string, string?>? resolvedHeaders = null;
+        try
+        {
+            return await run(CreateConfig(headers => resolvedHeaders = headers)).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            throw GatewayErrors.AsGatewayError(exception, GatewayErrors.ParseAuthMethod(resolvedHeaders ?? new Dictionary<string, string?>()));
+        }
+    }
+
+    private GatewayConfig CreateConfig(Action<IReadOnlyDictionary<string, string?>>? onResolved = null)
     {
         return new GatewayConfig
         {
             BaseUrl = Options.BaseUrl,
-            Headers = () => BatchHeaders(null),
+            HeadersAsync = async cancellationToken =>
+            {
+                var headers = await GetHeadersAsync(cancellationToken).ConfigureAwait(false);
+                onResolved?.Invoke(headers);
+                return headers;
+            },
             Http = Http,
         };
     }
@@ -512,7 +529,7 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
     private async Task<GatewayFetchMetadataResponse> FetchMetadataAsync()
     {
         // The fetch is shared by every caller, so a caller's token does not cancel it.
-        var metadata = await new GatewayFetchMetadata(CreateConfig()).GetAvailableModelsAsync().ConfigureAwait(false);
+        var metadata = await WithGatewayErrorAsync(config => new GatewayFetchMetadata(config).GetAvailableModelsAsync()).ConfigureAwait(false);
         lock (_metadataLock)
         {
             _metadataCache = metadata;

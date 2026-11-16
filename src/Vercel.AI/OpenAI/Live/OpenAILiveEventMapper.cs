@@ -33,7 +33,8 @@ internal static class OpenAILiveEventMapper
     /// <summary>Returns a parser for server events. Maps to <c>createOpenAILiveServerEventParser</c>.</summary>
     public static Func<JsonElement, IReadOnlyList<RealtimeModelV4ServerEvent>> CreateOpenAILiveServerEventParser()
     {
-        return ParseOpenAILiveServerEvent;
+        // A fresh, stateless parser per call, like upstream's closure; a static method group would be one cached delegate.
+        return new LiveServerEventParser().Parse;
     }
 
     /// <summary>Parses a raw Live server event. Maps to <c>parseOpenAILiveServerEvent</c>.</summary>
@@ -93,6 +94,14 @@ internal static class OpenAILiveEventMapper
                 });
             default:
                 throw Unsupported("OpenAI Live command: " + @event.Type + "; use continuous audio and context-append instead of voice-turn commands");
+        }
+    }
+
+    private sealed class LiveServerEventParser
+    {
+        public IReadOnlyList<RealtimeModelV4ServerEvent> Parse(JsonElement raw)
+        {
+            return ParseOpenAILiveServerEvent(raw);
         }
     }
 

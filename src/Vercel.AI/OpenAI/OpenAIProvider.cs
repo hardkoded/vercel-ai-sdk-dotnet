@@ -251,6 +251,20 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider, Operations.IBatch
     }
 
     /// <summary>
+    /// Mints a short-lived client secret for a Realtime model. A Live model is rejected with
+    /// <see cref="Vercel.AI.Operations.UnsupportedFunctionalityException"/>. Maps to <c>experimental_realtime.getToken</c>.
+    /// </summary>
+    public Task<OpenAIRealtimeClientSecret> ExperimentalRealtimeGetTokenAsync(
+        string model,
+        OpenAIRealtimeOptions? options = null,
+        RealtimeModelV4SessionConfig? sessionConfig = null,
+        int? expiresAfterSeconds = null,
+        CancellationToken cancellationToken = default)
+    {
+        return OpenAIRealtimeFactory.GetTokenAsync(this, model, options, sessionConfig, expiresAfterSeconds, cancellationToken);
+    }
+
+    /// <summary>
     /// Builds request headers. Custom provider headers override the API key, organization, and project.
     /// The user-agent suffix is appended after that, and per-call headers override the result.
     /// </summary>
