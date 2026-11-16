@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Shows the warnings for aspectRatio and resolution, which extension mode ignores.</Description>
+  </PropertyGroup>
+</Project>

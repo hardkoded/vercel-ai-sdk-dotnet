@@ -30,6 +30,10 @@ xAI provider.
 | [XaiResponsesLanguageModel](/api/Vercel.AI.Xai/XaiResponsesLanguageModel/) | xAI Responses API language model. Generate and stream requests post to /responses. Pass xAI provider-defined tools with JsonElement) and the ids xai.websearch, xai.xsearch, xai.codeexecution, xai.viewimage, xai.viewxvideo, xai.imagegeneration, xai.filesearch, and xai.mcp. |
 | [XaiServiceCollectionExtensions](/api/Vercel.AI.Xai/XaiServiceCollectionExtensions/) | Registers XaiProvider. |
 | [XaiTools](/api/Vercel.AI.Xai/XaiTools/) | Factories for the xAI provider-defined tools. Each returns a Tool that xAI runs. Maps to xai.tools. The name is the name the model and the results use. It defaults to the tool's wire name. |
+| [XaiVideoKeyframe](/api/Vercel.AI.Xai/XaiVideoKeyframe/) | A mid-video image anchor. Upstream XaiVideoKeyframe. |
+| [XaiVideoModel](/api/Vercel.AI.Xai/XaiVideoModel/) | xAI video model. CancellationToken) creates a request and CancellationToken) reads it. It supports generation, editing, extension, and reference-to-video, and can deliver the video to a signed upload URL. The operation is a JSON object with the requestId and, for upload delivery, hasUploadUrl. |
+| [XaiVideoModelOptions](/api/Vercel.AI.Xai/XaiVideoModelOptions/) | Provider options for xAI video generation, read from providerOptions.xai. Upstream XaiVideoModelOptions and XaiParsedVideoModelOptions. |
+| [XaiVideoStorageOptions](/api/Vercel.AI.Xai/XaiVideoStorageOptions/) | Store the generated video in the xAI Files API. Upstream XaiVideoStorageOptions. |
 | [XaiWebSearchOptions](/api/Vercel.AI.Xai/XaiWebSearchOptions/) | Arguments of String). Maps to webSearchArgsSchema. |
 | [XaiXSearchOptions](/api/Vercel.AI.Xai/XaiXSearchOptions/) | Arguments of String). Maps to xSearchArgsSchema. |
 
