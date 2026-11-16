@@ -9,6 +9,7 @@ using Vercel.AI.AspNetCore;
 using Vercel.AI.Gateway;
 using Vercel.AI.Provider;
 using Vercel.AI.Testing;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests.Upstream.GenerateText.StreamText;
 
@@ -69,6 +70,20 @@ public sealed class ToolExecutionErrorsTests
         var text = Encoding.UTF8.GetString(body.ToArray());
         Assert.Contains("\"errorText\":\"An error occurred.\"", text, StringComparison.Ordinal);
         Assert.DoesNotContain("test error", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [UpstreamTest(RedactPrefix + "should redact the tool error in pipeUIMessageStreamToResponse", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
+    public async Task Should_redact_the_tool_error_in_pipeUIMessageStreamToResponse()
+    {
+        var mockResponse = new ServerResponse();
+
+        await Run().PipeUIMessageStreamToResponseAsync(mockResponse, redactToolErrors: true);
+        await mockResponse.WaitForEndAsync();
+
+        var body = string.Join(string.Empty, mockResponse.GetDecodedChunks());
+        Assert.Contains("\"errorText\":\"An error occurred.\"", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("test error", body, StringComparison.Ordinal);
     }
 
     private static StreamTextResult Run()
