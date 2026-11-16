@@ -45,15 +45,10 @@ public sealed class ToolMessagesTests
     [InlineData(null, "Tool call execution denied.")]
     [InlineData("User declined.", "User declined.")]
     [InlineData("", "")]
-    [UpstreamTest(Prefix + "should convert execution-denied output with reason $reason", Coverage = UpstreamCoverage.Partial, Commit = Commit,
-        Note = "A tool message cannot tell an empty reason from a missing one, so the empty reason row expects the default text.")]
+    [UpstreamTest(Prefix + "should convert execution-denied output with reason $reason", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public void Should_convert_execution_denied_output_with_reason(string? reason, string expected)
     {
         var warnings = new List<CallWarning>();
-        if (reason == string.Empty)
-        {
-            expected = "Tool call execution denied.";
-        }
 
         var input = Convert(warnings, new ToolModelMessage("call_1", "weather", reason, false, "execution-denied"));
 
@@ -93,21 +88,22 @@ public sealed class ToolMessagesTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should warn and skip unsupported tool result content parts", Coverage = UpstreamCoverage.Partial, Commit = Commit,
-        Note = "The .NET tool content takes only text and file parts, so the custom part and the text-data image part are not ported.")]
+    [UpstreamTest(Prefix + "should warn and skip unsupported tool result content parts", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public void Should_warn_and_skip_unsupported_tool_result_content_parts()
     {
         var warnings = new List<CallWarning>();
         var content = new UserContentPart[]
         {
             ImageUrl("application/pdf", "https://example.com/document.pdf"),
+            FileContentPart.FromText("image/png", "not image bytes"),
+            new CustomContentPart { ProviderOptions = Opts(("other", """{"value":"custom"}""")) },
             new TextContentPart("Supported content."),
         };
 
         var input = Convert(warnings, new ToolModelMessage("call_1", "read", content));
 
         JsonAssert.Equal(input, """[{"call_id":"call_1","output":[{"text":"Supported content.","type":"input_text"}],"type":"function_call_output"}]""");
-        Assert.Equal(new[] { "tool result content part type: file" }, warnings.Select(warning => warning.Feature));
+        Assert.Equal(new[] { "tool result content part type: file", "tool result content part type: file", "tool result content part type: custom" }, warnings.Select(warning => warning.Feature));
         Assert.All(warnings, warning => Assert.Equal("unsupported", warning.Type));
     }
 

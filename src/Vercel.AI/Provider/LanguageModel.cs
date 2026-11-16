@@ -792,6 +792,22 @@ public sealed class FileContentPart : UserContentPart
     public string? FileName { get; }
 }
 
+/// <summary>
+/// A custom content part inside a tool result, used to carry provider-specific content.
+/// Maps to <c>{ type: 'custom', providerOptions }</c> in the tool result content of <c>LanguageModelV4Prompt</c>.
+/// </summary>
+public sealed class CustomContentPart : UserContentPart
+{
+    /// <summary>Creates a custom part.</summary>
+    public CustomContentPart()
+        : base("custom")
+    {
+    }
+
+    /// <summary>Provider-specific options for this part.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
+}
+
 /// <summary>A user message.</summary>
 public sealed class UserModelMessage : ModelMessage
 {
@@ -1318,12 +1334,13 @@ public sealed class ToolModelMessage : ModelMessage
 
         OutputType = outputType ?? (isError ? (IsJson(outputJson) ? "error-json" : "error-text") : (IsJson(outputJson) ? "json" : "text"));
         OutputJson = outputJson ?? (OutputType == "execution-denied" ? string.Empty : "null");
+        ExecutionDeniedReason = OutputType == "execution-denied" ? outputJson : null;
         IsError = OutputType != "text" && OutputType != "json";
         ProviderMetadata = providerMetadata;
     }
 
     /// <summary>
-    /// Creates a tool result whose output is a list of text and file parts, as upstream <c>output: { type: 'content' }</c>.
+    /// Creates a tool result whose output is a list of text, file, and custom parts, as upstream <c>output: { type: 'content' }</c>.
     /// <see cref="OutputType"/> is <c>json</c> and <see cref="OutputJson"/> is the JSON text of the parts, so a provider that
     /// does not read <see cref="OutputContent"/> sends the stringified parts, as upstream does by default.
     /// </summary>
@@ -1361,6 +1378,7 @@ public sealed class ToolModelMessage : ModelMessage
         ToolName = first.ToolName;
         OutputType = first.OutputType;
         OutputJson = first.OutputJson;
+        ExecutionDeniedReason = first.ExecutionDeniedReason;
         OutputContent = first.OutputContent;
         IsError = first.IsError;
         ProviderMetadata = first.ProviderMetadata;
@@ -1417,7 +1435,10 @@ public sealed class ToolModelMessage : ModelMessage
     /// <summary>JSON result. For <c>text</c> and <c>error-text</c> it is the text itself. For <c>execution-denied</c> it is the reason, or empty for none.</summary>
     public string OutputJson { get; }
 
-    /// <summary>Text and file parts of a multi-part output, or null for a single value. <see cref="OutputJson"/> holds the same parts as JSON text.</summary>
+    /// <summary>The <c>reason</c> of an <c>execution-denied</c> output. Null when the output has no reason, which differs from an empty reason.</summary>
+    public string? ExecutionDeniedReason { get; }
+
+    /// <summary>Text, file, and custom parts of a multi-part output, or null for a single value. <see cref="OutputJson"/> holds the same parts as JSON text.</summary>
     public IReadOnlyList<UserContentPart>? OutputContent { get; }
 
     /// <summary>Whether the tool failed.</summary>
@@ -1454,7 +1475,9 @@ public sealed class ToolModelMessage : ModelMessage
             if (part is FileContentPart file)
             {
                 var options = file.ProviderOptions == null ? null : file.ProviderOptions.ToDictionary(pair => pair.Key, pair => pair.Value.Clone());
-                copy[i] = file.ProviderReference != null
+                copy[i] = file.Text != null
+                    ? FileContentPart.FromText(file.MediaType, file.Text, file.FileName, options)
+                    : file.ProviderReference != null
                     ? FileContentPart.FromProviderReference(file.MediaType, file.ProviderReference.ToDictionary(pair => pair.Key, pair => pair.Value), file.FileName, options)
                     : new FileContentPart(file.MediaType, file.Url, (byte[]?)file.Data?.Clone(), file.FileName) { ProviderOptions = options };
             }
@@ -1462,9 +1485,13 @@ public sealed class ToolModelMessage : ModelMessage
             {
                 copy[i] = part;
             }
+            else if (part is CustomContentPart custom)
+            {
+                copy[i] = new CustomContentPart { ProviderOptions = custom.ProviderOptions?.ToDictionary(pair => pair.Key, pair => pair.Value.Clone()) };
+            }
             else
             {
-                throw new ArgumentException("Tool content parts must be text or file parts.", nameof(content));
+                throw new ArgumentException("Tool content parts must be text, file, or custom parts.", nameof(content));
             }
         }
 
@@ -1509,9 +1536,14 @@ public sealed class ToolModelMessage : ModelMessage
                     data["type"] = "url";
                     data["url"] = file.Url;
                 }
+                else if (file.Text != null)
+                {
+                    data["type"] = "text";
+                    data["text"] = file.Text;
+                }
                 else
                 {
-                    throw new ArgumentException("A file part needs a URL, data, or a provider reference.", nameof(content));
+                    throw new ArgumentException("A file part needs a URL, data, text, or a provider reference.", nameof(content));
                 }
 
                 var json = new JsonObject { ["type"] = "file", ["data"] = data, ["mediaType"] = file.MediaType };
@@ -1522,9 +1554,25 @@ public sealed class ToolModelMessage : ModelMessage
 
                 array.Add(json);
             }
+            else if (part is CustomContentPart custom)
+            {
+                var json = new JsonObject { ["type"] = "custom" };
+                if (custom.ProviderOptions != null)
+                {
+                    var options = new JsonObject();
+                    foreach (var pair in custom.ProviderOptions)
+                    {
+                        options[pair.Key] = JsonNode.Parse(pair.Value.GetRawText());
+                    }
+
+                    json["providerOptions"] = options;
+                }
+
+                array.Add(json);
+            }
             else
             {
-                throw new ArgumentException("Tool content parts must be text or file parts.", nameof(content));
+                throw new ArgumentException("Tool content parts must be text, file, or custom parts.", nameof(content));
             }
         }
 

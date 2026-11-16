@@ -66,8 +66,8 @@ public sealed class UserMessagesTests
     [Theory]
     [InlineData("base64")]
     [InlineData("Uint8Array")]
-    [UpstreamTest(Prefix + "should convert an inline image from $name", Coverage = UpstreamCoverage.Partial, Commit = Commit,
-        Note = "The .NET file part holds bytes only, so the base64 and Uint8Array rows send the same bytes.")]
+    [UpstreamTest(Prefix + "should convert an inline image from $name", Coverage = UpstreamCoverage.Covered, Commit = Commit,
+        Note = "Upstream's data is string | Uint8Array. The .NET file part has one byte[] type, so the base64 row decodes the string first. Both rows check the same output.")]
     public void Should_convert_an_inline_image_from_name(string name)
     {
         var data = name == "base64" ? System.Convert.FromBase64String("AQID") : new byte[] { 1, 2, 3 };
@@ -237,15 +237,14 @@ public sealed class UserMessagesTests
     [InlineData("audio/wav", "data")]
     [InlineData("text/plain", "text")]
     [InlineData("image/png", "text")]
-    [UpstreamTest(Prefix + "should warn and skip unsupported $mediaType $data.type file parts", Coverage = UpstreamCoverage.Partial, Commit = Commit,
-        Note = "The .NET file part has no text data type. The text rows use a file part without data, which the port also skips with the same warning.")]
+    [UpstreamTest(Prefix + "should warn and skip unsupported $mediaType $data.type file parts", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public void Should_warn_and_skip_unsupported_mediaType_data_type_file_parts(string mediaType, string dataType)
     {
         var file = dataType switch
         {
             "url" => ImageUrl(mediaType, "https://example.com/document.pdf"),
             "data" => ImageData(mediaType, Bytes123),
-            _ => new FileContentPart(mediaType, null, null, null),
+            _ => FileContentPart.FromText(mediaType, dataType == "text" && mediaType == "image/png" ? "not image bytes" : "document"),
         };
         var warnings = new List<CallWarning>();
 

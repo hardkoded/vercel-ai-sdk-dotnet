@@ -479,6 +479,11 @@ public static class GoogleMessages
 
     private static GoogleToolContentPart ToContentPart(UserContentPart part)
     {
+        if (part is FileContentPart { Text: not null } textFile)
+        {
+            return new GoogleToolContentPart("text") { Text = textFile.Text };
+        }
+
         if (part is FileContentPart file)
         {
             return new GoogleToolContentPart("file")
@@ -581,7 +586,7 @@ public static class GoogleMessages
                 if (tool.OutputContent != null)
                 {
                     result.OutputKind = "content";
-                    result.Content = tool.OutputContent.Select(ToContentPart).ToList();
+                    result.Content = tool.OutputContent.Where(part => part is not CustomContentPart).Select(ToContentPart).ToList();
                 }
 
                 if (tool.ProviderMetadata is { } metadata)

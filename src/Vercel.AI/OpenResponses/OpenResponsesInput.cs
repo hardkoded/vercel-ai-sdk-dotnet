@@ -419,7 +419,11 @@ internal static class OpenResponsesInput
                     break;
                 case FileContentPart file:
                     var isImage = MediaTypes.GetTopLevelMediaType(file.MediaType) == "image";
-                    if (file.ProviderReference != null)
+                    if (file.Text != null)
+                    {
+                        warnings.Add(new CallWarning("other", "unsupported tool content part type: file with data type: text"));
+                    }
+                    else if (file.ProviderReference != null)
                     {
                         warnings.Add(new CallWarning("other", "unsupported tool content part type: file with data type: reference"));
                     }
@@ -436,6 +440,9 @@ internal static class OpenResponsesInput
                             : new JsonObject { ["type"] = "input_file", ["filename"] = file.FileName ?? "data", ["file_data"] = DataUrl(file) });
                     }
 
+                    break;
+                case CustomContentPart:
+                    warnings.Add(new CallWarning("other", "unsupported tool content part type: custom"));
                     break;
             }
         }
