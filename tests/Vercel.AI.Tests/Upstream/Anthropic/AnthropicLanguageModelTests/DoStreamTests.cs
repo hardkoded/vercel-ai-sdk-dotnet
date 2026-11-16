@@ -405,7 +405,7 @@ public sealed class DoStreamTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    [UpstreamTest(Prefix + "preserves startup error handling after pings (raw: %s)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "preserves startup error handling after pings (raw: %s)", Coverage = UpstreamCoverage.Covered, Commit = "97540149254736e8d566d432ccb7abf7b1cebbb3")]
     public async Task Preserves_startup_error_handling_after_pings(bool includeRawChunks)
     {
         var handler = new SseStreamHandler(new[]
