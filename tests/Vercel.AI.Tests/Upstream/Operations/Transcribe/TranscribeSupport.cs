@@ -71,6 +71,8 @@ internal static class TranscribeSupport
 
         public double? Duration { get; set; }
 
+        public JsonElement? Usage { get; set; }
+
         public IReadOnlyList<OperationWarning>? Warnings { get; set; }
 
         public JsonElement? Metadata { get; set; }
@@ -108,7 +110,7 @@ internal static class TranscribeSupport
                 return Generate(call);
             }
 
-            return Task.FromResult(new TranscriptionModelResult(Text, Segments, Language, Duration, Warnings, Metadata, Response, Words));
+            return Task.FromResult(new TranscriptionModelResult(Text, Segments, Language, Duration, Warnings, Metadata, Response, Words, Usage));
         }
 
         public async Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
