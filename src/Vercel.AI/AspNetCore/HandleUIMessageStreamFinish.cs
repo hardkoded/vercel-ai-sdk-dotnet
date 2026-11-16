@@ -22,9 +22,15 @@ public static partial class UIMessageStreamConverter
         Func<UIMessageStreamOnEndEvent, Task>? onEnd,
         Action<Exception> onError,
         Func<UIMessageStreamOutcome>? getOutcome,
+        Func<UIMessageStreamOnStepEndEvent, Task>? onStepFinish = null,
+        Func<UIMessageStreamOnEndEvent, Task>? onFinish = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         originalMessages ??= [];
+
+        // onStepFinish and onFinish are the deprecated aliases of onStepEnd and onEnd
+        onStepEnd ??= onStepFinish;
+        onEnd ??= onFinish;
 
         // last message is only relevant for assistant messages
         UIMessage? lastMessage = originalMessages.Count > 0 ? originalMessages[originalMessages.Count - 1] : null;

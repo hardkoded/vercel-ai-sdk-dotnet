@@ -28,7 +28,7 @@ internal static class OpenAIJson
             case "error-json":
                 return new JsonObject { ["error"] = JsonNode.Parse(output ?? "null") }.ToJsonString(ToolOutputOptions);
             case "execution-denied":
-                return string.IsNullOrEmpty(output) ? "Tool call execution denied." : output!;
+                return output ?? "Tool call execution denied.";
             default:
                 return output ?? string.Empty;
         }

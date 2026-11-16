@@ -37,6 +37,12 @@ public sealed class GatewayOptions
 
     /// <summary>Custom headers merged into the auth headers of realtime requests.</summary>
     public IReadOnlyDictionary<string, string>? Headers { get; set; }
+
+    /// <summary>How frequently to refresh the metadata cache of <see cref="GatewayProvider.GetAvailableModelsAsync"/>, in milliseconds. Defaults to five minutes.</summary>
+    public int? MetadataCacheRefreshMillis { get; set; }
+
+    /// <summary>Maps to <c>_internal.currentDate</c>. For testing purposes only.</summary>
+    internal Func<DateTimeOffset>? CurrentDate { get; set; }
 }
 
 /// <summary>
@@ -52,6 +58,11 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
 
     /// <summary>Environment variable for the Gateway key.</summary>
     public const string ApiKeyEnvironmentVariable = "AI_GATEWAY_API_KEY";
+
+    private readonly object _metadataLock = new();
+    private Task<GatewayFetchMetadataResponse>? _pendingMetadata;
+    private GatewayFetchMetadataResponse? _metadataCache;
+    private long _lastFetchTime;
 
     /// <summary>Creates a Gateway provider.</summary>
     public GatewayProvider(GatewayOptions? options, HttpClient httpClient)
@@ -237,6 +248,58 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
         return headers;
     }
 
+    /// <summary>
+    /// Gets the models the Gateway offers (upstream <c>getAvailableModels</c>). The result is cached for
+    /// <see cref="GatewayOptions.MetadataCacheRefreshMillis"/>. A failed fetch is not cached.
+    /// </summary>
+    public Task<GatewayFetchMetadataResponse> GetAvailableModelsAsync(CancellationToken cancellationToken = default)
+    {
+        Task<GatewayFetchMetadataResponse> result;
+        lock (_metadataLock)
+        {
+            var now = (Options.CurrentDate?.Invoke() ?? DateTimeOffset.UtcNow).ToUnixTimeMilliseconds();
+            var refreshMillis = Options.MetadataCacheRefreshMillis ?? 1000 * 60 * 5;
+            if (_pendingMetadata == null || now - _lastFetchTime > refreshMillis)
+            {
+                _lastFetchTime = now;
+                var fetch = FetchMetadataAsync();
+                _pendingMetadata = fetch;
+
+                // Do not keep a failed fetch: the next call fetches again. This also observes the fault.
+                _ = fetch.ContinueWith(
+                    failed =>
+                    {
+                        lock (_metadataLock)
+                        {
+                            if (ReferenceEquals(_pendingMetadata, failed))
+                            {
+                                _pendingMetadata = null;
+                            }
+                        }
+                    },
+                    CancellationToken.None,
+                    TaskContinuationOptions.OnlyOnFaulted,
+                    TaskScheduler.Default);
+            }
+
+            result = _metadataCache != null ? Task.FromResult(_metadataCache) : _pendingMetadata;
+        }
+
+        return WaitAsync(result, cancellationToken);
+    }
+
+    /// <summary>Gets the credit balance of the account (upstream <c>getCredits</c>).</summary>
+    public Task<GatewayCreditsResponse> GetCreditsAsync(CancellationToken cancellationToken = default)
+    {
+        return new GatewayFetchMetadata(CreateConfig()).GetCreditsAsync(cancellationToken);
+    }
+
+    /// <summary>Gets the spend report of the account (upstream <c>getSpendReport</c>).</summary>
+    public Task<GatewaySpendReportResponse> GetSpendReportAsync(GatewaySpendReportParams parameters, CancellationToken cancellationToken = default)
+    {
+        return new GatewaySpendReport(CreateConfig()).GetSpendReportAsync(parameters, cancellationToken);
+    }
+
     /// <summary>Gets the info of one generation, including its cost breakdown.</summary>
     public Task<GatewayGenerationInfo> GetGenerationInfoAsync(GatewayGenerationInfoParams parameters, CancellationToken cancellationToken = default)
     {
@@ -356,6 +419,47 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
         {
             throw GatewayErrors.AsGatewayError(exception, GatewayErrors.ParseAuthMethod(headers));
         }
+    }
+
+    private static async Task<T> WaitAsync<T>(Task<T> task, CancellationToken cancellationToken)
+    {
+        if (!cancellationToken.CanBeCanceled || task.IsCompleted)
+        {
+            return await task.ConfigureAwait(false);
+        }
+
+        var cancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using (cancellationToken.Register(() => cancelled.TrySetResult(true)))
+        {
+            if (await Task.WhenAny(task, cancelled.Task).ConfigureAwait(false) != task)
+            {
+                throw new OperationCanceledException(cancellationToken);
+            }
+        }
+
+        return await task.ConfigureAwait(false);
+    }
+
+    private GatewayConfig CreateConfig()
+    {
+        return new GatewayConfig
+        {
+            BaseUrl = Options.BaseUrl,
+            Headers = () => BatchHeaders(null),
+            Http = Http,
+        };
+    }
+
+    private async Task<GatewayFetchMetadataResponse> FetchMetadataAsync()
+    {
+        // The fetch is shared by every caller, so a caller's token does not cancel it.
+        var metadata = await new GatewayFetchMetadata(CreateConfig()).GetAvailableModelsAsync().ConfigureAwait(false);
+        lock (_metadataLock)
+        {
+            _metadataCache = metadata;
+        }
+
+        return metadata;
     }
 
     internal static Exception MapFailure(Exception exception)

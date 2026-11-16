@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Calls Azure OpenAI Responses with the custom tool and the hosted container shell tool.</Description>
+  </PropertyGroup>
+</Project>
