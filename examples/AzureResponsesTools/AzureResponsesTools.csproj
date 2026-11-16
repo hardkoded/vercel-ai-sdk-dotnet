@@ -2,4 +2,7 @@
   <PropertyGroup>
     <Description>Calls Azure OpenAI Responses with the custom tool and the hosted container shell tool.</Description>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="data\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
