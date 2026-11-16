@@ -127,6 +127,10 @@ internal static class OpenAIResponsesSupport
                     node["result"] = JsonNode.Parse(result.ResultJson);
                     SetMetadata(node, result.ProviderMetadata);
                     break;
+                case GeneratedToolApprovalRequest approvalRequest:
+                    node["approvalId"] = approvalRequest.ApprovalId;
+                    node["toolCallId"] = approvalRequest.ToolCallId;
+                    break;
                 default:
                     throw new InvalidOperationException("Unexpected content " + part.Type);
             }
@@ -209,6 +213,10 @@ internal static class OpenAIResponsesSupport
                 node["toolName"] = toolResult.ToolName;
                 node["result"] = JsonNode.Parse(toolResult.Result.GetRawText());
                 SetMetadata(node, toolResult.ProviderMetadata);
+                break;
+            case ToolApprovalRequestStreamPart approvalRequest:
+                node["approvalId"] = approvalRequest.ApprovalId;
+                node["toolCallId"] = approvalRequest.ToolCallId;
                 break;
             case FinishStreamPart finish:
                 var finishReason = new JsonObject { ["unified"] = KebabCase(finish.FinishReason.ToString()) };
