@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Anthropic;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 using Vercel.AI.Tests.Upstream;
 
 namespace Vercel.AI.Tests.AnthropicLanguageModelTests;
@@ -399,6 +400,51 @@ public sealed class DoStreamTests
             {"model":"claude-3-haiku-20240307","max_tokens":4096,"messages":[{"role":"user","content":[{"type":"text","text":"Hello"}]}],"stream":true}
             """);
         Assert.True(JsonNode.DeepEquals(expected, JsonNode.Parse(result.Request!.Body!.Value.GetRawText())));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [UpstreamTest(Prefix + "preserves startup error handling after pings (raw: %s)", Coverage = UpstreamCoverage.Covered, Commit = "97540149254736e8d566d432ccb7abf7b1cebbb3")]
+    public async Task Preserves_startup_error_handling_after_pings(bool includeRawChunks)
+    {
+        var handler = new SseStreamHandler(new[]
+        {
+            "data: {\"type\":\"ping\"}\n\n",
+            "data: {\"type\":\"ping\"}\n\n",
+            "data: {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}}\n\n",
+        });
+        var provider = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-api-key" }, handler);
+        var options = AnthropicParity.WithProvider("{\"includePings\":true}");
+        options.IncludeRawChunks = includeRawChunks;
+
+        var exception = await Assert.ThrowsAsync<InternalServerException>(() => provider.LanguageModel("claude-3-haiku-20240307").DoStreamAsync(options, CancellationToken.None));
+
+        Assert.Equal("Overloaded", exception.Message);
+        Assert.True(ProviderHttp.IsRetryable(exception.StatusCode));
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should throw an api error when the first stream chunk is an overloaded error", Coverage = UpstreamCoverage.Partial, Note = "The exception does not carry the request URL or the request body values.")]
+    public async Task Should_throw_an_api_error_when_the_first_stream_chunk_is_an_overloaded_error()
+    {
+        var handler = new SseStreamHandler(new[]
+        {
+            "event: error\n",
+            "data: {\"type\":\"error\",\"error\":{\"details\":null,\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}}\n",
+            "\n",
+        });
+        var provider = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-api-key" }, handler);
+
+        var exception = await Assert.ThrowsAsync<InternalServerException>(() => provider.LanguageModel("claude-3-haiku-20240307").DoStreamAsync(AnthropicParity.Hello(), CancellationToken.None));
+
+        Assert.Equal("Overloaded", exception.Message);
+        Assert.Equal(529, exception.StatusCode);
+        Assert.True(ProviderHttp.IsRetryable(exception.StatusCode));
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse("{\"details\":null,\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}"), JsonNode.Parse(exception.ResponseBody!)));
+        Assert.Equal("no-cache", exception.ResponseHeaders!["cache-control"]);
+        Assert.Equal("keep-alive", exception.ResponseHeaders["connection"]);
+        Assert.Equal("text/event-stream", exception.ResponseHeaders["content-type"]);
     }
 
     private static async Task<Vercel.AI.Provider.LanguageModelStreamResult> Stream(SseStreamHandler handler)
