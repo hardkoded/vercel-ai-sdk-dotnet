@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using Vercel.AI.Prompt;
 using Vercel.AI.Ui;
 using static Vercel.AI.Tests.ConvertToModelMessages.ConvertToModelMessagesSupport;
 
@@ -133,5 +135,132 @@ public sealed class AssistantMessageTests : WarningsOff
             ]
             """,
             result);
+    }
+
+    [UpstreamTest(Suite + "should preserve an Anthropic compaction signature through UI message persistence", Coverage = UpstreamCoverage.Covered)]
+    [Fact]
+    public async Task Should_preserve_an_Anthropic_compaction_signature_through_UI_message_persistence()
+    {
+        var recordedMessage = await RecordAssistantMessageJsonFromChunks(
+            """
+            [
+              { "type": "start", "messageId": "msg-123" },
+              { "type": "start-step" },
+              {
+                "type": "text-start",
+                "id": "compaction",
+                "providerMetadata": { "anthropic": { "type": "compaction", "signature": "compaction-signature" } }
+              },
+              { "type": "text-delta", "id": "compaction", "delta": "Summary of the conversation." },
+              { "type": "text-end", "id": "compaction" },
+              { "type": "finish-step" },
+              { "type": "finish" }
+            ]
+            """);
+
+        var expectedPart = JsonNode.Parse(
+            """
+            {
+              "type": "text",
+              "text": "Summary of the conversation.",
+              "state": "done",
+              "providerMetadata": { "anthropic": { "type": "compaction", "signature": "compaction-signature" } }
+            }
+            """)!;
+        Assert.Contains(((JsonArray)recordedMessage["parts"]!), part => JsonNode.DeepEquals(part, expectedPart));
+
+        var result = Convert(new[] { UIMessageJson.FromJson(recordedMessage) });
+
+        Assert.Contains(Render(result).AsArray(), message => JsonNode.DeepEquals(
+            message,
+            JsonNode.Parse(
+                """
+                {
+                  "role": "assistant",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Summary of the conversation.",
+                      "providerOptions": { "anthropic": { "type": "compaction", "signature": "compaction-signature" } }
+                    }
+                  ]
+                }
+                """)));
+    }
+
+    [UpstreamTest(Suite + "should omit persisted output when a static tool is no longer available", Coverage = UpstreamCoverage.Covered)]
+    [Fact]
+    public async Task Should_omit_persisted_output_when_a_static_tool_is_no_longer_available()
+    {
+        var historicalTool = new Tool(
+            "search",
+            null,
+            Json("""{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}"""),
+            null)
+        {
+            OutputSchema = Json("""{"type":"object","properties":{"summary":{"type":"string"},"privateMetadata":{"type":"string"}},"required":["summary","privateMetadata"]}"""),
+            ToModelOutput = call => new TextToolModelOutput(JsonDocument.Parse((string)call.Output!).RootElement.GetProperty("summary").GetString()!),
+        };
+        var tools = new Dictionary<string, Tool> { ["search"] = historicalTool };
+
+        var history = new[]
+        {
+            new UIMessage(
+                UIMessageRole.Assistant,
+                new UIMessagePart[]
+                {
+                    new ToolUIPart("search", "call-1", ToolUIPartState.OutputAvailable)
+                    {
+                        Input = Json("""{"query":"weather"}"""),
+                        Output = Json("""{"summary":"sunny","privateMetadata":"must-not-reach-the-model"}"""),
+                    },
+                })
+            { Id = "assistant-1" },
+        };
+
+        var before = Convert(
+            await Ai.ValidateUIMessagesAsync(new ValidateUIMessagesOptions { Messages = history, Tools = tools }),
+            new ConvertToModelMessagesOptions { Tools = tools });
+
+        var validatedWithoutTool = await Ai.ValidateUIMessagesAsync(
+            new ValidateUIMessagesOptions { Messages = history, Tools = new Dictionary<string, Tool>() });
+
+        var unavailablePart = Assert.IsType<ToolUIPart>(validatedWithoutTool[0].Parts[0]);
+        Assert.True(unavailablePart.IsDynamic);
+        Assert.False(unavailablePart.Dynamic);
+
+        foreach (var messages in new[] { Reload(validatedWithoutTool), Reload(validatedWithoutTool) })
+        {
+            var revalidatedMessages = await Ai.ValidateUIMessagesAsync(
+                new ValidateUIMessagesOptions { Messages = messages, Tools = new Dictionary<string, Tool>() });
+
+            AssertEqual(
+                """
+                [
+                  {
+                    "role": "assistant",
+                    "content": [
+                      { "type": "tool-call", "toolCallId": "call-1", "toolName": "search", "input": { "query": "weather" } }
+                    ]
+                  },
+                  {
+                    "role": "tool",
+                    "content": [
+                      {
+                        "type": "tool-result",
+                        "toolCallId": "call-1",
+                        "toolName": "search",
+                        "output": { "type": "text", "value": "Tool output omitted because the tool is no longer available." }
+                      }
+                    ]
+                  }
+                ]
+                """,
+                Convert(revalidatedMessages, new ConvertToModelMessagesOptions { Tools = new Dictionary<string, Tool>() }));
+
+            Assert.True(JsonNode.DeepEquals(
+                Render(before),
+                Render(Convert(revalidatedMessages, new ConvertToModelMessagesOptions { Tools = tools }))));
+        }
     }
 }

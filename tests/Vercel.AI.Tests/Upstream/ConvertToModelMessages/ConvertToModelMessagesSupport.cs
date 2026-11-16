@@ -111,6 +111,28 @@ internal static class ConvertToModelMessagesSupport
         return array;
     }
 
+    /// <summary>Maps to <c>recordAssistantMessageFromChunks</c>. Returns the message state of the stream as JSON.</summary>
+    internal static async Task<JsonObject> RecordAssistantMessageJsonFromChunks(string chunksJson)
+    {
+        var harness = new Vercel.AI.Tests.Upstream.ProcessUiMessageStream.ProcessUIMessageStreamHarness();
+        harness.CreateState("msg-123", null);
+        await harness.ProcessAsync(chunksJson);
+        return (JsonObject)harness.Message.DeepClone();
+    }
+
+    /// <summary>Maps to <c>recordAssistantMessageFromChunks</c>.</summary>
+    internal static async Task<UIMessage> RecordAssistantMessageFromChunks(string chunksJson)
+    {
+        return UIMessageJson.FromJson(await RecordAssistantMessageJsonFromChunks(chunksJson));
+    }
+
+    /// <summary>Maps to <c>JSON.parse(JSON.stringify(messages))</c> and <c>structuredClone</c>.</summary>
+    internal static IReadOnlyList<UIMessage> Reload(IReadOnlyList<UIMessage> messages)
+    {
+        var array = new JsonArray(messages.Select(message => (JsonNode)UIMessageJson.ToJson(message)).ToArray());
+        return ((JsonArray)JsonNode.Parse(array.ToJsonString())!).Select(node => UIMessageJson.FromJson((JsonObject)node!)).ToList();
+    }
+
     internal static void AssertEqual(JsonNode expected, IReadOnlyList<ModelMessage> actual)
     {
         var rendered = Render(actual);

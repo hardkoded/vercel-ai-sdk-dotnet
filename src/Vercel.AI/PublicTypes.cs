@@ -41,6 +41,9 @@ public sealed class Tool
     /// <summary>JSON Schema for the arguments. Undefined for a provider-defined tool declared without one.</summary>
     public JsonElement InputSchema { get; }
 
+    /// <summary>JSON Schema for the output. <c>ValidateUIMessages</c> validates the output of a finished call with it. Maps to <c>outputSchema</c>.</summary>
+    public JsonElement? OutputSchema { get; set; }
+
     /// <summary>Executes the tool and returns a JSON string. Null means the call is not executed locally, unless <see cref="ExecuteWithOptions"/> is set.</summary>
     public Func<JsonElement, CancellationToken, Task<string>>? Execute { get; }
 

@@ -176,6 +176,10 @@ internal static class UIMessageJson
                 if (tool.IsDynamic)
                 {
                     json["toolName"] = tool.ToolName;
+                    if (tool.Dynamic is { } dynamic)
+                    {
+                        json["dynamic"] = dynamic;
+                    }
                 }
 
                 Set(json, "title", tool.Title);
@@ -322,6 +326,7 @@ internal static class UIMessageJson
         return new ToolUIPart(toolName, (string?)json["toolCallId"] ?? string.Empty, state, isDynamic)
         {
             Title = (string?)json["title"],
+            Dynamic = isDynamic && json["dynamic"] is JsonValue dyn && dyn.TryGetValue<bool>(out var dynamicValue) ? dynamicValue : null,
             ToolMetadata = GetMetadata(json["toolMetadata"]),
             InputEncoding = (string?)json["inputEncoding"] switch
             {

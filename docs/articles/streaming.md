@@ -118,6 +118,17 @@ Redacting tool errors changes the message history. The tool result that `Convert
 
 `OnStepEnd` runs when a step ends and `OnEnd` runs once when the stream ends. Both receive the updated `Messages`, `IsContinuation`, and the `ResponseMessage`. When the last of `OriginalMessages` is an assistant message, the response continues it and reuses its id. `OnEnd` also receives `IsAborted`, `FinishReason`, and an `Outcome`: `Completed`, `Failed` (with the `Error`), `Aborted`, or `Unknown`. A failure of the source stream or of the conversion, such as an `OnError` that throws, always reports `Failed`, and it reports it once. A consumer that stops reading before the stream declares an outcome keeps `Unknown` and sets `IsCancelled`.
 
+## Validating UI messages
+
+`Ai.ValidateUIMessagesAsync(new ValidateUIMessagesOptions { Messages = messages })` checks the UI messages that you load from storage or receive from a client before you convert them with `ConvertToModelMessages`. `Ai.SafeValidateUIMessagesAsync` returns a `SafeValidateUIMessagesResult` (`Success`, `Data`, or `Error`) instead of throwing. A null `Messages` throws `InvalidArgumentException`, and an empty list throws `TypeValidationException`. Because `UIMessage` is typed, the structure of a message is already checked; the options validate the values:
+
+- `MetadataSchema`: a JSON Schema for `UIMessage.Metadata`.
+- `DataSchemas`: JSON Schemas of the data parts, by data name. A data part without a schema is an error.
+- `Tools`: the tools of the tool parts, by name. The input of each tool part is validated with `Tool.InputSchema`, and the output of a finished call with `Tool.OutputSchema`. A tool part with no tool is an error, unless its call has finished. Then the part becomes a `dynamic-tool` part whose `Dynamic` is `false`, and `ConvertToModelMessages` replaces its output with `Tool output omitted because the tool is no longer available.`. A failed call, or a finished call with an empty input, that does not match the input schema is converted the same way.
+- `ExperimentalRefineToolInput`: rebuilds the input of a tool call from `ToolUIApproval.InputSchemaInput`, by tool name, when the input schema changes the value. The validated input is compared with the input of the part, and a mismatch is an error.
+
+The validated messages are new objects. The messages that you pass in are not changed.
+
 ## Reading UI message streams
 
 `UIMessageStreamConverter.ReadUIMessageStream(new ReadUIMessageStreamOptions(chunks))` turns a stream of UI message chunks into an `IAsyncEnumerable<UIMessage>`. Each element is another state of the same message while it is being built. Set `Message` to continue the last assistant message when you resume a conversation. A chunk that starts a different message id replaces it. `OnError` receives errors, including `error` chunks, and `TerminateOnError` ends the enumeration with the error instead. Stopping the enumeration early disposes the chunk stream. The typed `UIMessage` keeps the fields that the chunks carry: `TextUIPart.Citations`, `ToolUIPart.InputEncoding` (while the call is `InputStreaming`, an input with `Text` encoding stays a raw string), `ToolUIPart.ToolMetadata`, and `SteeringMessageUIPart` (`steering-message`).
