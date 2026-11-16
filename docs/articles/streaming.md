@@ -110,7 +110,22 @@ Redacting tool errors changes the message history. The tool result that `Convert
 
 ### Converting stream parts to UI message chunks
 
-`UIMessageStreamConverter.ToUIMessageChunk(part, options)` converts one `TextStreamPart` into a UI message chunk (a `JsonObject`), or returns `null` for a part that produces no chunk. `UIMessageStreamConverter.ToUIMessageStream(parts, options)` converts a whole stream of parts, adds the response message id, and logs the tool error text mismatch warning. `ToUIMessageStreamResult` uses it. Both take a `ToUIMessageChunkOptions` with `SendReasoning` (default `true`), `SendStart`, `SendFinish`, `OnError`, `RedactToolErrors`, and `ResponseMessageId`. Use them to convert parts that you built or changed yourself.
+`UIMessageStreamConverter.ToUIMessageChunk(part, options)` converts one `TextStreamPart` into a UI message chunk (a `JsonObject`), or returns `null` for a part that produces no chunk. `UIMessageStreamConverter.ToUIMessageStream(parts, options)` converts a whole stream of parts, adds the response message id, and logs the tool error text mismatch warning. `ToUIMessageStreamResult` uses it. Both take a `ToUIMessageChunkOptions` with `SendReasoning` (default `true`), `SendStart`, `SendFinish`, `OnError`, `RedactToolErrors`, `ResponseMessageId`, `OriginalMessages`, `OnStepEnd`, and `OnEnd`. `ToUIMessageChunk` ignores the last three. Use them to convert parts that you built or changed yourself.
+
+`OnStepEnd` runs when a step ends and `OnEnd` runs once when the stream ends. Both receive the updated `Messages`, `IsContinuation`, and the `ResponseMessage`. When the last of `OriginalMessages` is an assistant message, the response continues it and reuses its id. `OnEnd` also receives `IsAborted`, `FinishReason`, and an `Outcome`: `Completed`, `Failed` (with the `Error`), `Aborted`, or `Unknown`. A failure of the source stream or of the conversion, such as an `OnError` that throws, always reports `Failed`, and it reports it once. A consumer that stops reading before the stream declares an outcome keeps `Unknown` and sets `IsCancelled`.
+
+## Reading UI message streams
+
+`UIMessageStreamConverter.ReadUIMessageStream(new ReadUIMessageStreamOptions(chunks))` turns a stream of UI message chunks into an `IAsyncEnumerable<UIMessage>`. Each element is another state of the same message while it is being built. Set `Message` to continue the last assistant message when you resume a conversation. A chunk that starts a different message id replaces it. `OnError` receives errors, including `error` chunks, and `TerminateOnError` ends the enumeration with the error instead. Stopping the enumeration early disposes the chunk stream.
+
+```csharp
+var chunks = UIMessageStreamConverter.ToUIMessageStream(result.Stream());
+
+await foreach (var message in UIMessageStreamConverter.ReadUIMessageStream(new ReadUIMessageStreamOptions(chunks)))
+{
+    Console.WriteLine(message.Parts.Count);
+}
+```
 
 `ToolInputStartPart.InputEncoding` (from `ToolInputStartStreamPart.InputEncoding`) is `ToolInputEncoding.Json` or `ToolInputEncoding.Text`. It says how to read the `tool-input-delta` parts that follow. When it is `null` or `Json`, the deltas concatenate to partial JSON. With `Text`, they concatenate to the raw string input, such as code or HTML from a custom tool. The final tool call input stays JSON-encoded either way. `UIMessageStream` writes it as the `inputEncoding` field (`"json"` or `"text"`) of the `tool-input-start` chunk and leaves the field out when it is `null`.
 

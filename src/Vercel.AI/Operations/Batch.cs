@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Text.Json;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.Operations;
 
@@ -269,6 +270,24 @@ public sealed class BatchContentPart
 
     /// <summary>File URL before download.</summary>
     public string? FileUrl { get; set; }
+
+    /// <summary>Citations of a text part.</summary>
+    public IReadOnlyList<Citation>? Citations { get; set; }
+
+    /// <summary>Source id of a <c>source</c> part.</summary>
+    public string? SourceId { get; set; }
+
+    /// <summary><c>url</c> or <c>document</c> for a <c>source</c> part.</summary>
+    public string? SourceType { get; set; }
+
+    /// <summary>URL of a <c>url</c> source.</summary>
+    public string? Url { get; set; }
+
+    /// <summary>Title of a <c>source</c> part.</summary>
+    public string? Title { get; set; }
+
+    /// <summary>Kind of a <c>custom</c> part, such as <c>anthropic.fallback</c>.</summary>
+    public string? Kind { get; set; }
 }
 
 /// <summary>A provider text generation inside a batch item.</summary>

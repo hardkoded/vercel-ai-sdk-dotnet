@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenTelemetry;
 using Vercel.AI.Provider;
+using Vercel.AI.Ui;
 using Vercel.AI.Util;
 
 namespace Vercel.AI.AspNetCore;
@@ -37,6 +38,20 @@ public sealed class ToUIMessageChunkOptions
 
     /// <summary>Id of the response message sent with the <c>start</c> chunk. Maps to <c>responseMessageId</c>.</summary>
     public string? ResponseMessageId { get; init; }
+
+    /// <summary>
+    /// The messages of the conversation. When the last one is an assistant message, the response continues it and reuses its id.
+    /// Maps to <c>originalMessages</c>.
+    /// </summary>
+    public IReadOnlyList<UIMessage>? OriginalMessages { get; init; }
+
+    /// <summary>Called when each step ends during multi-step agent runs. Maps to <c>onStepEnd</c>.</summary>
+    public Func<UIMessageStreamOnStepEndEvent, Task>? OnStepEnd { get; init; }
+
+    /// <summary>
+    /// Called when the stream ends, whether it completed, failed, was aborted, or the consumer cancelled it. Maps to <c>onEnd</c>.
+    /// </summary>
+    public Func<UIMessageStreamOnEndEvent, Task>? OnEnd { get; init; }
 }
 
 /// <summary>Converts <c>streamText</c> parts into AI SDK UI message chunks.</summary>
