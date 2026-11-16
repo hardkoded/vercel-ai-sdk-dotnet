@@ -2,8 +2,13 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.Cerebras;
 
@@ -30,6 +35,56 @@ public sealed class CerebrasProvider : OpenAICompatibleProvider
     {
         var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
         return new CerebrasProvider(client, options);
+    }
+
+    // Upstream sends provider options to Cerebras without validating them, so an explicit null reasoningEffort reaches the body.
+    private static JsonObject PassThroughNullReasoningEffort(string modelId, LanguageModelCallOptions options, JsonObject body, IList<CallWarning> warnings)
+    {
+        if (!body.ContainsKey("reasoning_effort")
+            && options.ProviderOptions is not null
+            && options.ProviderOptions.TryGetValue(ProviderId, out var cerebras)
+            && cerebras.ValueKind == JsonValueKind.Object
+            && cerebras.TryGetProperty("reasoningEffort", out var effort)
+            && effort.ValueKind == JsonValueKind.Null)
+        {
+            body["reasoning_effort"] = null;
+        }
+
+        return body;
+    }
+
+    // Upstream runs applyQueueThresholdHeader in CerebrasChatLanguageModel. The valid range is 50 to 20000 milliseconds.
+    private static IReadOnlyDictionary<string, string?>? ApplyQueueThresholdHeader(LanguageModelCallOptions options)
+    {
+        if (options.ProviderOptions is null
+            || !options.ProviderOptions.TryGetValue(ProviderId, out var cerebras)
+            || cerebras.ValueKind != JsonValueKind.Object
+            || !cerebras.TryGetProperty("queueThreshold", out var threshold)
+            || threshold.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return options.Headers;
+        }
+
+        if (threshold.ValueKind != JsonValueKind.Number
+            || !threshold.TryGetDouble(out var value)
+            || Math.Floor(value) != value
+            || value < 50
+            || value > 20000)
+        {
+            throw new InvalidArgumentException("providerOptions", threshold.ToString(), "queueThreshold must be an integer between 50 and 20000.");
+        }
+
+        var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        if (options.Headers is not null)
+        {
+            foreach (var pair in options.Headers)
+            {
+                headers[pair.Key] = pair.Value;
+            }
+        }
+
+        headers["queue_threshold"] = ((long)value).ToString(CultureInfo.InvariantCulture);
+        return headers;
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
@@ -60,6 +115,9 @@ public sealed class CerebrasProvider : OpenAICompatibleProvider
         options.SupportsStructuredOutputs = true;
         options.JsonTextOverridesToolCalls = true;
         options.TransformRequestBody = OpenAICompatibleTransforms.Cerebras;
+        options.MetadataExtractor = CerebrasMetadataExtractor.Instance;
+        options.PrepareCallHeaders = ApplyQueueThresholdHeader;
+        options.TransformChatRequest = PassThroughNullReasoningEffort;
         options.SelectErrorMessage = OpenAICompatibleTransforms.CerebrasError;
         return options;
     }

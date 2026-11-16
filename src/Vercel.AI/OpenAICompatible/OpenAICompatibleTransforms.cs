@@ -56,6 +56,7 @@ public static class OpenAICompatibleTransforms
         Rename(body, "topLogprobs", "top_logprobs");
         Rename(body, "logitBias", "logit_bias");
         Rename(body, "serviceTier", "service_tier");
+        body.Remove("queueThreshold");
         Rename(body, "reasoningFormat", "reasoning_format");
         Rename(body, "promptCacheKey", "prompt_cache_key");
         if (body["messages"] is JsonArray messages)

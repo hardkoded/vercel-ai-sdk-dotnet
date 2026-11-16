@@ -123,6 +123,15 @@ public class OpenAICompatibleOptions
     /// <summary>User-agent suffix. Empty uses <see cref="OpenAICompatibleInfo.UserAgent"/>.</summary>
     public string? UserAgent { get; set; }
 
+    /// <summary>Extracts provider-specific metadata from the response body and stream chunks. Maps to the <c>metadataExtractor</c> setting.</summary>
+    public OpenAICompatibleMetadataExtractor? MetadataExtractor { get; set; }
+
+    /// <summary>
+    /// .NET-only hook. Returns the call headers to send in place of <see cref="LanguageModelCallOptions.Headers"/>.
+    /// Cerebras uses it for <c>applyQueueThresholdHeader</c>, which upstream runs in its own chat model subclass.
+    /// </summary>
+    internal Func<LanguageModelCallOptions, IReadOnlyDictionary<string, string?>?>? PrepareCallHeaders { get; set; }
+
     /// <summary>Rewrites a provider error body into the exception message.</summary>
     public Func<string?, string?>? SelectErrorMessage { get; set; }
 
