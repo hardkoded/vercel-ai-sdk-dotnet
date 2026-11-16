@@ -582,7 +582,90 @@ public class AnthropicLanguageModel : ILanguageModel
         var body = prepared.Body.ToJsonString();
         var headers = await CreateHeadersAsync(prepared, options, body, cancellationToken).ConfigureAwait(false);
         var sse = await _provider.Http.OpenSseResponseAsync(_provider.RequestUri(ModelId, true), body, headers, cancellationToken).ConfigureAwait(false);
-        return sse.ToStreamResult(StreamAsync(options, prepared, sse.Events, cancellationToken), body);
+        try
+        {
+            // The first chunk needs to be pulled immediately to check if it is an error.
+            var events = await ThrowIfFirstChunkIsErrorAsync(sse, cancellationToken).ConfigureAwait(false);
+            return sse.ToStreamResult(StreamAsync(options, prepared, events, cancellationToken), body);
+        }
+        catch
+        {
+            sse.Resource.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// The Anthropic API returns 200 responses when there are overloaded errors.
+    /// Reads the first provider event, skipping leading pings, and throws an API error when it is an error event.
+    /// Returns the events with the ones read so far put back in front.
+    /// </summary>
+    private static async Task<IAsyncEnumerable<string>> ThrowIfFirstChunkIsErrorAsync(
+        ProviderSseResponse sse,
+        CancellationToken cancellationToken)
+    {
+        var read = new List<string>();
+        var enumerator = sse.Events.GetAsyncEnumerator(cancellationToken);
+        try
+        {
+            while (await enumerator.MoveNextAsync().ConfigureAwait(false))
+            {
+                var data = enumerator.Current;
+                read.Add(data);
+                JsonObject? node;
+                try
+                {
+                    node = JsonNode.Parse(data) as JsonObject;
+                }
+                catch (JsonException)
+                {
+                    break;
+                }
+
+                var type = node?["type"] is JsonValue typeValue && typeValue.TryGetValue<string>(out var text) ? text : null;
+                if (type == "ping")
+                {
+                    continue;
+                }
+
+                if (type == "error" && node!["error"] is JsonObject error)
+                {
+                    var errorType = error["type"] is JsonValue kind && kind.TryGetValue<string>(out var kindText) ? kindText : null;
+                    var message = error["message"] is JsonValue messageValue && messageValue.TryGetValue<string>(out var messageText) ? messageText : "Unknown provider error.";
+                    var statusCode = AnthropicStreamError.StatusCode(errorType) ?? 500;
+                    throw ProviderHttp.MapStatusWithHeaders(statusCode, message, error.ToJsonString(), sse.Headers);
+                }
+
+                break;
+            }
+        }
+        catch
+        {
+            await enumerator.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
+
+        return Replay(read, enumerator);
+    }
+
+    private static async IAsyncEnumerable<string> Replay(List<string> read, IAsyncEnumerator<string> source)
+    {
+        try
+        {
+            foreach (var data in read)
+            {
+                yield return data;
+            }
+
+            while (await source.MoveNextAsync().ConfigureAwait(false))
+            {
+                yield return source.Current;
+            }
+        }
+        finally
+        {
+            await source.DisposeAsync().ConfigureAwait(false);
+        }
     }
 
     private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
