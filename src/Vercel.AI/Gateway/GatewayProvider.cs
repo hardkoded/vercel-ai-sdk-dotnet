@@ -34,8 +34,8 @@ public sealed class GatewayOptions
 }
 
 /// <summary>
-/// Vercel AI Gateway provider. Language, embedding, and image calls use the Gateway V4 routes
-/// (<c>/language-model</c>, <c>/embedding-model</c>, <c>/image-model</c>).
+/// Vercel AI Gateway provider. Language, embedding, image, and video calls use the Gateway V4 routes
+/// (<c>/language-model</c>, <c>/embedding-model</c>, <c>/image-model</c>, <c>/video-model</c>).
 /// </summary>
 #pragma warning disable CS0618
 public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, Operations.IDecisionProvider, Operations.IEvaluationProvider
@@ -90,6 +90,12 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
     public override IImageModel ImageModel(string modelId)
     {
         return new GatewayImageModel(this, modelId);
+    }
+
+    /// <inheritdoc />
+    public override IVideoModel VideoModel(string modelId)
+    {
+        return new GatewayVideoModel(this, modelId);
     }
 
     /// <summary>Decision model routed through <c>/decision-model</c>.</summary>
