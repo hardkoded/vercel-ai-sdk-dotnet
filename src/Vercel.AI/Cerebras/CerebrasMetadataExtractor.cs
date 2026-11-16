@@ -29,17 +29,21 @@ public sealed class CerebrasMetadataExtractor : OpenAICompatibleMetadataExtracto
     private static string? GetServiceTier(JsonElement value)
     {
         // The response tier may be absent or null when service-tier handling is not applied.
-        return value.ValueKind == JsonValueKind.Object
+        return
+            value.ValueKind == JsonValueKind.Object
             && value.TryGetProperty("service_tier", out var tier)
             && tier.ValueKind == JsonValueKind.String
-                ? tier.GetString()
-                : null;
+            ? tier.GetString()
+            : null;
     }
 
     private static JsonObject? Build(string? serviceTier)
     {
         return serviceTier != null
-            ? new JsonObject { [CerebrasProvider.ProviderId] = new JsonObject { ["serviceTier"] = serviceTier } }
+            ? new JsonObject
+            {
+                [CerebrasProvider.ProviderId] = new JsonObject { ["serviceTier"] = serviceTier },
+            }
             : null;
     }
 

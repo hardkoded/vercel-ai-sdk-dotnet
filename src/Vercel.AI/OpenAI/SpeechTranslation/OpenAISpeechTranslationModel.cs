@@ -27,7 +27,10 @@ public sealed class OpenAISpeechTranslationModel : ISpeechTranslationModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public Task<TranscriptionResult> DoTranslateAsync(AudioInput audio, CancellationToken cancellationToken)
+    public Task<TranscriptionResult> DoTranslateAsync(
+        AudioInput audio,
+        CancellationToken cancellationToken
+    )
     {
         return _inner.DoTranscribeAsync(audio, cancellationToken);
     }

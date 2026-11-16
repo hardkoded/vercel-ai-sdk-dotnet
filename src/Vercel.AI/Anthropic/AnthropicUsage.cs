@@ -20,10 +20,23 @@ public static class AnthropicUsage
         var cacheWrite = NumberOrZero(usage, "cache_creation_input_tokens");
         var cacheRead = NumberOrZero(usage, "cache_read_input_tokens");
         var reasoning = ThinkingTokens(usage);
-        var input = usage.TryGetProperty("input_tokens", out var inputValue) && inputValue.TryGetInt32(out var inputTokens) ? inputTokens : 0;
-        var output = usage.TryGetProperty("output_tokens", out var outputValue) && outputValue.TryGetInt32(out var outputTokens) ? outputTokens : 0;
+        var input =
+            usage.TryGetProperty("input_tokens", out var inputValue)
+            && inputValue.TryGetInt32(out var inputTokens)
+                ? inputTokens
+                : 0;
+        var output =
+            usage.TryGetProperty("output_tokens", out var outputValue)
+            && outputValue.TryGetInt32(out var outputTokens)
+                ? outputTokens
+                : 0;
 
-        if (usage.TryGetProperty("iterations", out var iterations) && iterations.ValueKind == JsonValueKind.Array && iterations.GetArrayLength() > 0 && !ServedByFallback(iterations))
+        if (
+            usage.TryGetProperty("iterations", out var iterations)
+            && iterations.ValueKind == JsonValueKind.Array
+            && iterations.GetArrayLength() > 0
+            && !ServedByFallback(iterations)
+        )
         {
             var summedInput = 0;
             var summedOutput = 0;
@@ -49,7 +62,11 @@ public static class AnthropicUsage
         }
 
         JsonElement raw;
-        if (rawUsage is { } provided && provided.ValueKind != JsonValueKind.Undefined && provided.ValueKind != JsonValueKind.Null)
+        if (
+            rawUsage is { } provided
+            && provided.ValueKind != JsonValueKind.Undefined
+            && provided.ValueKind != JsonValueKind.Null
+        )
         {
             raw = provided.Clone();
         }
@@ -58,7 +75,17 @@ public static class AnthropicUsage
             raw = usage.Clone();
         }
 
-        return new LanguageModelUsage(input + cacheWrite + cacheRead, output, null, cacheRead, cacheWrite, reasoning, raw, input, output - reasoning);
+        return new LanguageModelUsage(
+            input + cacheWrite + cacheRead,
+            output,
+            null,
+            cacheRead,
+            cacheWrite,
+            reasoning,
+            raw,
+            input,
+            output - reasoning
+        );
     }
 
     private static bool ServedByFallback(JsonElement iterations)
@@ -86,12 +113,18 @@ public static class AnthropicUsage
 
     private static int? ThinkingTokens(JsonElement usage)
     {
-        if (!usage.TryGetProperty("output_tokens_details", out var details) || details.ValueKind != JsonValueKind.Object)
+        if (
+            !usage.TryGetProperty("output_tokens_details", out var details)
+            || details.ValueKind != JsonValueKind.Object
+        )
         {
             return null;
         }
 
-        if (!details.TryGetProperty("thinking_tokens", out var thinking) || thinking.ValueKind == JsonValueKind.Null)
+        if (
+            !details.TryGetProperty("thinking_tokens", out var thinking)
+            || thinking.ValueKind == JsonValueKind.Null
+        )
         {
             return null;
         }

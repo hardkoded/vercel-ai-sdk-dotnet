@@ -39,7 +39,12 @@ public sealed class OpenAITranscriptionCall
 /// <summary>Response metadata recorded for a transcription.</summary>
 public sealed class OpenAITranscriptionResponse
 {
-    internal OpenAITranscriptionResponse(DateTimeOffset timestamp, string modelId, IReadOnlyDictionary<string, string> headers, string body)
+    internal OpenAITranscriptionResponse(
+        DateTimeOffset timestamp,
+        string modelId,
+        IReadOnlyDictionary<string, string> headers,
+        string body
+    )
     {
         Timestamp = timestamp;
         ModelId = modelId;
@@ -72,7 +77,8 @@ public sealed class OpenAITranscriptionResult
         IReadOnlyList<OpenAICallWarning> warnings,
         OpenAITranscriptionResponse response,
         IReadOnlyList<TranscriptSegment>? words = null,
-        JsonElement? usage = null)
+        JsonElement? usage = null
+    )
     {
         Usage = usage;
         Text = text;
@@ -178,24 +184,38 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         ["welsh"] = "cy",
     };
 
-    private static readonly Regex BearerToken = new Regex(@"^bearer\s+(.+)\z", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline, TimeSpan.FromSeconds(1));
+    private static readonly Regex BearerToken = new Regex(
+        @"^bearer\s+(.+)\z",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline,
+        TimeSpan.FromSeconds(1)
+    );
 
     private readonly ProviderHttp _http;
     private readonly string _providerName;
     private readonly Func<Uri> _url;
     private readonly Func<Uri> _realtimeUrl;
-    private readonly Func<IReadOnlyDictionary<string, string?>?, Dictionary<string, string?>> _headers;
+    private readonly Func<
+        IReadOnlyDictionary<string, string?>?,
+        Dictionary<string, string?>
+    > _headers;
     private readonly WebSocketFactory? _webSocket;
     private readonly Func<DateTimeOffset>? _clock;
 
     /// <summary>Creates a transcription model. <paramref name="clock"/> sets the response timestamp and defaults to UTC now.</summary>
-    public OpenAITranscriptionModel(OpenAIProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
-        : this(provider, modelId, "audio/transcriptions", clock)
-    {
-    }
+    public OpenAITranscriptionModel(
+        OpenAIProvider provider,
+        string modelId,
+        Func<DateTimeOffset>? clock = null
+    )
+        : this(provider, modelId, "audio/transcriptions", clock) { }
 
     /// <summary>Creates a transcription or translation model for <paramref name="path"/>.</summary>
-    public OpenAITranscriptionModel(OpenAIProvider provider, string modelId, string path, Func<DateTimeOffset>? clock = null)
+    public OpenAITranscriptionModel(
+        OpenAIProvider provider,
+        string modelId,
+        string path,
+        Func<DateTimeOffset>? clock = null
+    )
     {
         if (provider == null)
         {
@@ -206,7 +226,8 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         _http = provider.Http;
         _providerName = provider.Name;
         _url = () => ApiKeys.Combine(provider.Options.BaseUrl, path);
-        _realtimeUrl = () => ApiKeys.Combine(provider.Options.BaseUrl, "realtime?intent=transcription");
+        _realtimeUrl = () =>
+            ApiKeys.Combine(provider.Options.BaseUrl, "realtime?intent=transcription");
         _headers = provider.CreateOpenAIHeaders;
         _webSocket = provider.WebSocket;
         _clock = clock;
@@ -216,7 +237,12 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
     /// Creates an Azure OpenAI transcription model for a deployment. Requests go to the deployment's
     /// <c>audio/transcriptions</c> route and the provider id is <c>azure.transcription</c>. <paramref name="webSocket"/> is the WebSocket for realtime streaming. It defaults to <c>ClientWebSocket</c>.
     /// </summary>
-    public OpenAITranscriptionModel(Azure.AzureOpenAIProvider provider, string deploymentId, Func<DateTimeOffset>? clock = null, WebSocketFactory? webSocket = null)
+    public OpenAITranscriptionModel(
+        Azure.AzureOpenAIProvider provider,
+        string deploymentId,
+        Func<DateTimeOffset>? clock = null,
+        WebSocketFactory? webSocket = null
+    )
     {
         if (provider == null)
         {
@@ -232,7 +258,11 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
             // The deployment route keeps `api-version`; `intent` goes first, as in the upstream URL builder.
             var azure = provider.AzureUri("realtime", deploymentId);
             var query = azure.Query.TrimStart('?');
-            return new UriBuilder(azure) { Query = query.Length == 0 ? "intent=transcription" : "intent=transcription&" + query }.Uri;
+            return new UriBuilder(azure)
+            {
+                Query =
+                    query.Length == 0 ? "intent=transcription" : "intent=transcription&" + query,
+            }.Uri;
         };
         _headers = provider.CreateHeaders;
         _webSocket = webSocket;
@@ -251,7 +281,8 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         Func<Uri> realtimeUrl,
         Func<Dictionary<string, string?>> headers,
         WebSocketFactory? webSocket = null,
-        Func<DateTimeOffset>? clock = null)
+        Func<DateTimeOffset>? clock = null
+    )
     {
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
         _providerName = provider;
@@ -260,7 +291,10 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         _realtimeUrl = realtimeUrl;
         _headers = callHeaders =>
         {
-            var combined = new Dictionary<string, string?>(headers(), StringComparer.OrdinalIgnoreCase);
+            var combined = new Dictionary<string, string?>(
+                headers(),
+                StringComparer.OrdinalIgnoreCase
+            );
             if (callHeaders != null)
             {
                 foreach (var pair in callHeaders)
@@ -276,7 +310,10 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
     }
 
     /// <inheritdoc />
-    public string Provider => _providerName.EndsWith(".transcription", StringComparison.Ordinal) ? _providerName : _providerName + ".transcription";
+    public string Provider =>
+        _providerName.EndsWith(".transcription", StringComparison.Ordinal)
+            ? _providerName
+            : _providerName + ".transcription";
 
     /// <inheritdoc />
     public string ModelId { get; }
@@ -288,45 +325,71 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
     public bool CanStream => true;
 
     /// <inheritdoc />
-    public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+    public async Task<TranscriptionResult> DoTranscribeAsync(
+        AudioInput audio,
+        CancellationToken cancellationToken
+    )
     {
-        var result = await TranscribeAsync(new OpenAITranscriptionCall(audio), cancellationToken).ConfigureAwait(false);
+        var result = await TranscribeAsync(new OpenAITranscriptionCall(audio), cancellationToken)
+            .ConfigureAwait(false);
         return new TranscriptionResult(result.Text);
     }
 
     /// <summary>Transcribes audio and returns segments, language, duration, and response metadata.</summary>
-    public async Task<OpenAITranscriptionResult> TranscribeAsync(OpenAITranscriptionCall call, CancellationToken cancellationToken)
+    public async Task<OpenAITranscriptionResult> TranscribeAsync(
+        OpenAITranscriptionCall call,
+        CancellationToken cancellationToken
+    )
     {
-        if (OpenAIModelCatalog.GetOpenAITranscriptionModelEntry(ModelId).Capabilities.Transcription == false)
+        if (
+            OpenAIModelCatalog.GetOpenAITranscriptionModelEntry(ModelId).Capabilities.Transcription
+            == false
+        )
         {
             throw new UnsupportedFunctionalityException(
                 "non-streaming transcription with " + ModelId,
-                "'non-streaming transcription with " + ModelId + "' functionality not supported.");
+                "'non-streaming transcription with " + ModelId + "' functionality not supported."
+            );
         }
 
         var timestamp = OpenAIClock.Now(_clock);
         var warnings = new List<OpenAICallWarning>();
-        var response = await _http.SendBinaryAsync(
-            HttpMethod.Post,
-            _url(),
-            Build(call, warnings),
-            _headers(call.Headers),
-            cancellationToken).ConfigureAwait(false);
+        var response = await _http
+            .SendBinaryAsync(
+                HttpMethod.Post,
+                _url(),
+                Build(call, warnings),
+                _headers(call.Headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var body = Encoding.UTF8.GetString(response.Body);
         using var document = OpenAIJson.ParseResponse(body);
         var root = document.RootElement;
         var segments = new List<TranscriptSegment>();
         var speakers = new JsonArray();
         var wordTimings = new List<TranscriptSegment>();
-        if (root.TryGetProperty("words", out var wordItems) && wordItems.ValueKind == JsonValueKind.Array)
+        if (
+            root.TryGetProperty("words", out var wordItems)
+            && wordItems.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var word in wordItems.EnumerateArray())
             {
-                wordTimings.Add(new TranscriptSegment(OpenAIJson.String(word, "word") ?? string.Empty, word.GetProperty("start").GetDouble(), word.GetProperty("end").GetDouble()));
+                wordTimings.Add(
+                    new TranscriptSegment(
+                        OpenAIJson.String(word, "word") ?? string.Empty,
+                        word.GetProperty("start").GetDouble(),
+                        word.GetProperty("end").GetDouble()
+                    )
+                );
             }
         }
 
-        if (root.TryGetProperty("segments", out var segmentItems) && segmentItems.ValueKind == JsonValueKind.Array)
+        if (
+            root.TryGetProperty("segments", out var segmentItems)
+            && segmentItems.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var segment in segmentItems.EnumerateArray())
             {
@@ -336,7 +399,15 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
                 segments.Add(new TranscriptSegment(text, start, end));
                 if (segment.TryGetProperty("speaker", out var speaker))
                 {
-                    speakers.Add(new JsonObject { ["text"] = text, ["startSecond"] = start, ["endSecond"] = end, ["speaker"] = JsonNode.Parse(speaker.GetRawText()) });
+                    speakers.Add(
+                        new JsonObject
+                        {
+                            ["text"] = text,
+                            ["startSecond"] = start,
+                            ["endSecond"] = end,
+                            ["speaker"] = JsonNode.Parse(speaker.GetRawText()),
+                        }
+                    );
                 }
             }
         }
@@ -345,12 +416,17 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
             segments.AddRange(wordTimings);
         }
 
-        JsonElement? usage = root.TryGetProperty("usage", out var usageElement) && usageElement.ValueKind == JsonValueKind.Object ? usageElement : null;
+        JsonElement? usage =
+            root.TryGetProperty("usage", out var usageElement)
+            && usageElement.ValueKind == JsonValueKind.Object
+                ? usageElement
+                : null;
         var languages = DetectedLanguages(root);
         var languageName = OpenAIJson.String(root, "language");
-        var language = IsLanguageCode(languageName)
-            ? languageName
-            : languageName != null && LanguageCodes.TryGetValue(languageName, out var code) ? code : null;
+        var language =
+            IsLanguageCode(languageName) ? languageName
+            : languageName != null && LanguageCodes.TryGetValue(languageName, out var code) ? code
+            : null;
         if (language == null && languages?.Count == 1)
         {
             var detected = languages[0]!["code"]!.GetValue<string>();
@@ -366,23 +442,28 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
             warnings,
             new OpenAITranscriptionResponse(timestamp, ModelId, response.Headers, body),
             wordTimings.Count > 0 ? wordTimings : null,
-            usage?.Clone());
+            usage?.Clone()
+        );
     }
 
     // Duration-billed json responses report the duration only in `usage`.
     private static double? DurationInSeconds(JsonElement root, JsonElement? usage)
     {
-        if (root.TryGetProperty("duration", out var duration) && duration.ValueKind == JsonValueKind.Number)
+        if (
+            root.TryGetProperty("duration", out var duration)
+            && duration.ValueKind == JsonValueKind.Number
+        )
         {
             return duration.GetDouble();
         }
 
-        return usage is { ValueKind: JsonValueKind.Object } u
+        return
+            usage is { ValueKind: JsonValueKind.Object } u
             && OpenAIJson.String(u, "type") == "duration"
             && u.TryGetProperty("seconds", out var seconds)
             && seconds.ValueKind == JsonValueKind.Number
-                ? seconds.GetDouble()
-                : null;
+            ? seconds.GetDouble()
+            : null;
     }
 
     /// <summary>Builds the multipart body so tests can inspect field names.</summary>
@@ -392,10 +473,15 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
     }
 
     /// <summary>Builds the multipart body and collects the warnings for the request. Maps to <c>getArgs</c>.</summary>
-    internal MultipartFormDataContent Build(OpenAITranscriptionCall call, List<OpenAICallWarning> warnings)
+    internal MultipartFormDataContent Build(
+        OpenAITranscriptionCall call,
+        List<OpenAICallWarning> warnings
+    )
     {
         var content = new MultipartFormDataContent();
-        var mediaType = string.IsNullOrEmpty(call.Audio.MediaType) ? "audio/mpeg" : call.Audio.MediaType;
+        var mediaType = string.IsNullOrEmpty(call.Audio.MediaType)
+            ? "audio/mpeg"
+            : call.Audio.MediaType;
         var file = new ByteArrayContent(call.Audio.Data);
         file.Headers.ContentType = new MediaTypeHeaderValue(mediaType);
         content.Add(file, "file", "audio." + OpenAIJson.Extension(mediaType));
@@ -420,18 +506,38 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         {
             if (providerGranularities != null && !providerGranularities.Contains(granularity))
             {
-                warnings.Add(new OpenAICallWarning("unsupported", "timestampGranularities", "The \"" + granularity + "\" timestamp granularity is excluded by providerOptions.openai.timestampGranularities."));
+                warnings.Add(
+                    new OpenAICallWarning(
+                        "unsupported",
+                        "timestampGranularities",
+                        "The \""
+                            + granularity
+                            + "\" timestamp granularity is excluded by providerOptions.openai.timestampGranularities."
+                    )
+                );
             }
         }
 
         foreach (var granularity in granularities ?? Array.Empty<string>())
         {
-            if (responseFormat != "verbose_json" && !(responseFormat == "diarized_json" && granularity == "segment"))
+            if (
+                responseFormat != "verbose_json"
+                && !(responseFormat == "diarized_json" && granularity == "segment")
+            )
             {
-                warnings.Add(new OpenAICallWarning(
-                    "unsupported",
-                    providerGranularities != null ? "providerOptions.openai.timestampGranularities" : "timestampGranularities",
-                    "OpenAI transcription with the " + (responseFormat ?? "default JSON") + " response format does not support " + granularity + " timestamps."));
+                warnings.Add(
+                    new OpenAICallWarning(
+                        "unsupported",
+                        providerGranularities != null
+                            ? "providerOptions.openai.timestampGranularities"
+                            : "timestampGranularities",
+                        "OpenAI transcription with the "
+                            + (responseFormat ?? "default JSON")
+                            + " response format does not support "
+                            + granularity
+                            + " timestamps."
+                    )
+                );
             }
         }
 
@@ -443,7 +549,10 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
             AddAll(content, "keywords[]", OpenAIJson.Child(openai, "keywords"));
             Add(content, "prompt", OpenAIJson.String(openai, "prompt"));
             var temperature = OpenAIJson.Double(openai, "temperature") ?? 0d;
-            content.Add(new StringContent(temperature.ToString(CultureInfo.InvariantCulture)), "temperature");
+            content.Add(
+                new StringContent(temperature.ToString(CultureInfo.InvariantCulture)),
+                "temperature"
+            );
         }
 
         if (responseFormat == "verbose_json")
@@ -463,35 +572,61 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
     }
 
     /// <inheritdoc />
-    public async Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
+    public async Task<TranscriptionModelResult> DoGenerateAsync(
+        TranscriptionModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var result = await TranscribeAsync(
-            new OpenAITranscriptionCall(new AudioInput(call.Audio, call.MediaType, null))
-            {
-                ProviderOptions = call.ProviderOptions,
-                TimestampGranularities = call.TimestampGranularities,
-                Headers = call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
-            },
-            cancellationToken).ConfigureAwait(false);
+                new OpenAITranscriptionCall(new AudioInput(call.Audio, call.MediaType, null))
+                {
+                    ProviderOptions = call.ProviderOptions,
+                    TimestampGranularities = call.TimestampGranularities,
+                    Headers = call.Headers.ToDictionary(
+                        pair => pair.Key,
+                        pair => (string?)pair.Value
+                    ),
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return new TranscriptionModelResult(
             result.Text,
             result.Segments,
             result.Language,
             result.DurationInSeconds,
-            result.Warnings.Select(warning => new OperationWarning(warning.Type, warning.Message, warning.Feature, warning.Details)).ToList(),
+            result
+                .Warnings.Select(warning => new OperationWarning(
+                    warning.Type,
+                    warning.Message,
+                    warning.Feature,
+                    warning.Details
+                ))
+                .ToList(),
             result.ProviderMetadata,
-            new ProviderResponse(result.Response.Headers, OpenAIJson.Parse(result.Response.Body), timestamp: result.Response.Timestamp.UtcDateTime, modelId: result.Response.ModelId),
+            new ProviderResponse(
+                result.Response.Headers,
+                OpenAIJson.Parse(result.Response.Body),
+                timestamp: result.Response.Timestamp.UtcDateTime,
+                modelId: result.Response.ModelId
+            ),
             result.Words,
-            result.Usage);
+            result.Usage
+        );
     }
 
     /// <summary>Starts a realtime streaming transcription over the OpenAI Realtime WebSocket. Maps to <c>doStream</c>.</summary>
-    public Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+    public Task<TranscriptionStreamStart?> DoStreamAsync(
+        TranscriptionStreamCall call,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
-            return Task.FromResult<TranscriptionStreamStart?>(DoStream(call ?? throw new ArgumentNullException(nameof(call))));
+            return Task.FromResult<TranscriptionStreamStart?>(
+                DoStream(call ?? throw new ArgumentNullException(nameof(call)))
+            );
         }
         catch (Exception error)
         {
@@ -499,7 +634,14 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         }
     }
 
-    private static JsonObject BuildRealtimeSession(string modelId, OpenAITranscriptionModelEntry entry, AudioFormat format, string? language, string? delay, JsonElement? include)
+    private static JsonObject BuildRealtimeSession(
+        string modelId,
+        OpenAITranscriptionModelEntry entry,
+        AudioFormat format,
+        string? language,
+        string? delay,
+        JsonElement? include
+    )
     {
         var audioFormat = new JsonObject { ["type"] = format.Type };
         if (format.Rate != null)
@@ -548,12 +690,18 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
 
     // The bearer token rides the `openai-insecure-api-key` subprotocol (a native WebSocket cannot send headers) and the
     // Authorization header is stripped: OpenAI rejects handshakes that send both auth channels.
-    private static (string[] Protocols, Dictionary<string, string?> Headers) GetOpenAIRealtimeConnection(IReadOnlyDictionary<string, string?> headers)
+    private static (
+        string[] Protocols,
+        Dictionary<string, string?> Headers
+    ) GetOpenAIRealtimeConnection(IReadOnlyDictionary<string, string?> headers)
     {
         string? authorization = null;
         foreach (var pair in headers)
         {
-            if (string.Equals(pair.Key, "authorization", StringComparison.OrdinalIgnoreCase) && pair.Value != null)
+            if (
+                string.Equals(pair.Key, "authorization", StringComparison.OrdinalIgnoreCase)
+                && pair.Value != null
+            )
             {
                 authorization = pair.Value;
             }
@@ -569,13 +717,28 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
 
         if (token == null)
         {
-            return (new[] { "realtime" }, headers.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase));
+            return (
+                new[] { "realtime" },
+                headers.ToDictionary(
+                    pair => pair.Key,
+                    pair => pair.Value,
+                    StringComparer.OrdinalIgnoreCase
+                )
+            );
         }
 
         return (
             new[] { "realtime", "openai-insecure-api-key." + token },
-            headers.Where(pair => !string.Equals(pair.Key, "authorization", StringComparison.OrdinalIgnoreCase))
-                .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase));
+            headers
+                .Where(pair =>
+                    !string.Equals(pair.Key, "authorization", StringComparison.OrdinalIgnoreCase)
+                )
+                .ToDictionary(
+                    pair => pair.Key,
+                    pair => pair.Value,
+                    StringComparer.OrdinalIgnoreCase
+                )
+        );
     }
 
     private TranscriptionStreamStart DoStream(TranscriptionStreamCall call)
@@ -585,28 +748,52 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         {
             throw new UnsupportedFunctionalityException(
                 "streaming transcription with " + ModelId,
-                "'streaming transcription with " + ModelId + "' functionality not supported.");
+                "'streaming transcription with " + ModelId + "' functionality not supported."
+            );
         }
 
         var timestamp = OpenAIClock.Now(_clock).UtcDateTime;
         var openai = OpenAIJson.Child(call.ProviderOptions, "openai");
         if (openai is { } provided)
         {
-            var error = ProviderOptionShape.Validate(provided, OpenAITranscriptionModelOptions.OpenAITranscriptionModelOptionsShape(), false);
+            var error = ProviderOptionShape.Validate(
+                provided,
+                OpenAITranscriptionModelOptions.OpenAITranscriptionModelOptionsShape(),
+                false
+            );
             if (error != null)
             {
-                throw new InvalidArgumentException("providerOptions", provided.GetRawText(), "invalid openai provider options: " + error);
+                throw new InvalidArgumentException(
+                    "providerOptions",
+                    provided.GetRawText(),
+                    "invalid openai provider options: " + error
+                );
             }
         }
 
         var warnings = new List<OperationWarning>();
 
         // Options that only apply to the REST transcription endpoint.
-        foreach (var option in new[] { "include", "languages", "keywords", "prompt", "temperature", "timestampGranularities" })
+        foreach (
+            var option in new[]
+            {
+                "include",
+                "languages",
+                "keywords",
+                "prompt",
+                "temperature",
+                "timestampGranularities",
+            }
+        )
         {
             if (OpenAIJson.Child(openai, option) != null)
             {
-                warnings.Add(OperationWarning.Unsupported("providerOptions.openai." + option, "OpenAI streaming transcription does not support " + option + "."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "providerOptions.openai." + option,
+                        "OpenAI streaming transcription does not support " + option + "."
+                    )
+                );
             }
         }
 
@@ -616,30 +803,55 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         var delay = OpenAIJson.String(streaming, "delay");
         if (!supportsDelay && delay != null)
         {
-            warnings.Add(OperationWarning.Unsupported("providerOptions.openai.streaming.delay", "OpenAI streaming transcription with " + ModelId + " does not support delay."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "providerOptions.openai.streaming.delay",
+                    "OpenAI streaming transcription with " + ModelId + " does not support delay."
+                )
+            );
         }
 
-        var headers = _headers(call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value));
+        var headers = _headers(
+            call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)
+        );
         var language = OpenAIJson.String(openai, "language");
-        var sessionUpdate = BuildRealtimeSession(ModelId, entry, call.InputAudioFormat, language, supportsDelay ? delay : null, OpenAIJson.Child(streaming, "include"));
+        var sessionUpdate = BuildRealtimeSession(
+            ModelId,
+            entry,
+            call.InputAudioFormat,
+            language,
+            supportsDelay ? delay : null,
+            OpenAIJson.Child(streaming, "include")
+        );
         var connection = GetOpenAIRealtimeConnection(headers);
         var session = new RealtimeTranscriptionSession(call, sessionUpdate, language, warnings);
-        session.Start(WebSocketUtils.ToWebSocketUrl(_realtimeUrl()), connection.Protocols, connection.Headers, _webSocket);
+        session.Start(
+            WebSocketUtils.ToWebSocketUrl(_realtimeUrl()),
+            connection.Protocols,
+            connection.Headers,
+            _webSocket
+        );
         return new TranscriptionStreamStart(
             new ModelPartStream(session.Queue, session.Cancel),
             new ProviderResponse(timestamp: timestamp, modelId: ModelId),
-            new ProviderRequest(sessionUpdate.ToJsonString()));
+            new ProviderRequest(sessionUpdate.ToJsonString())
+        );
     }
 
     // Two lowercase ASCII letters, as in /^[a-z]{2}$/ upstream.
     private static bool IsLanguageCode(string? language)
     {
-        return language is { Length: 2 } && language[0] is >= 'a' and <= 'z' && language[1] is >= 'a' and <= 'z';
+        return language is { Length: 2 }
+            && language[0] is >= 'a' and <= 'z'
+            && language[1] is >= 'a' and <= 'z';
     }
 
     private static JsonArray? DetectedLanguages(JsonElement root)
     {
-        if (!root.TryGetProperty("languages", out var items) || items.ValueKind != JsonValueKind.Array)
+        if (
+            !root.TryGetProperty("languages", out var items)
+            || items.ValueKind != JsonValueKind.Array
+        )
         {
             return null;
         }
@@ -647,7 +859,15 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         var languages = new JsonArray();
         foreach (var item in items.EnumerateArray())
         {
-            languages.Add(new JsonObject { ["code"] = OpenAIJson.String(item, "code") ?? throw new AiSdkException("Invalid transcription response: language code is missing.") });
+            languages.Add(
+                new JsonObject
+                {
+                    ["code"] = OpenAIJson.String(item, "code")
+                        ?? throw new AiSdkException(
+                            "Invalid transcription response: language code is missing."
+                        ),
+                }
+            );
         }
 
         return languages;
@@ -714,22 +934,34 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         }
 
         var json = new System.Text.Json.Nodes.JsonObject();
-        if (chunking.Value.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String)
+        if (
+            chunking.Value.TryGetProperty("type", out var type)
+            && type.ValueKind == JsonValueKind.String
+        )
         {
             json["type"] = type.GetString();
         }
 
-        if (chunking.Value.TryGetProperty("threshold", out var threshold) && threshold.ValueKind == JsonValueKind.Number)
+        if (
+            chunking.Value.TryGetProperty("threshold", out var threshold)
+            && threshold.ValueKind == JsonValueKind.Number
+        )
         {
             json["threshold"] = threshold.GetDouble();
         }
 
-        if (chunking.Value.TryGetProperty("prefixPaddingMs", out var prefix) && prefix.TryGetInt32(out var prefixMs))
+        if (
+            chunking.Value.TryGetProperty("prefixPaddingMs", out var prefix)
+            && prefix.TryGetInt32(out var prefixMs)
+        )
         {
             json["prefix_padding_ms"] = prefixMs;
         }
 
-        if (chunking.Value.TryGetProperty("silenceDurationMs", out var silence) && silence.TryGetInt32(out var silenceMs))
+        if (
+            chunking.Value.TryGetProperty("silenceDurationMs", out var silence)
+            && silence.TryGetInt32(out var silenceMs)
+        )
         {
             json["silence_duration_ms"] = silenceMs;
         }
@@ -769,7 +1001,12 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         private AudioChunkReader? _reader;
         private bool _finished;
 
-        public RealtimeTranscriptionSession(TranscriptionStreamCall call, JsonObject sessionUpdate, string? language, IReadOnlyList<OperationWarning> warnings)
+        public RealtimeTranscriptionSession(
+            TranscriptionStreamCall call,
+            JsonObject sessionUpdate,
+            string? language,
+            IReadOnlyList<OperationWarning> warnings
+        )
         {
             _call = call;
             _sessionUpdate = sessionUpdate;
@@ -779,32 +1016,40 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
 
         public PartQueue<ModelStreamPart> Queue { get; } = new PartQueue<ModelStreamPart>();
 
-        public void Start(Uri url, IReadOnlyList<string> protocols, IReadOnlyDictionary<string, string?> headers, WebSocketFactory? webSocket)
+        public void Start(
+            Uri url,
+            IReadOnlyList<string> protocols,
+            IReadOnlyDictionary<string, string?> headers,
+            WebSocketFactory? webSocket
+        )
         {
-            var connection = ConnectToWebSocket.Connect(new ConnectToWebSocketOptions
-            {
-                Url = url,
-                Protocols = protocols,
-                Headers = headers,
-                WebSocket = webSocket,
-                AbortSignal = _call.CancellationToken,
-                AbortReason = _call.AbortReason,
-                OnAbort = FinishWithError,
-                OnProcessingError = FinishWithError,
-                OnOpen = OnOpen,
-                OnMessageText = OnMessageTextAsync,
-                OnSocketError = () => FinishWithError(new AiSdkException("OpenAI realtime transcription error")),
-                OnClose = (_, _) =>
+            var connection = ConnectToWebSocket.Connect(
+                new ConnectToWebSocketOptions
                 {
-                    if (!TryFinish())
+                    Url = url,
+                    Protocols = protocols,
+                    Headers = headers,
+                    WebSocket = webSocket,
+                    AbortSignal = _call.CancellationToken,
+                    AbortReason = _call.AbortReason,
+                    OnAbort = FinishWithError,
+                    OnProcessingError = FinishWithError,
+                    OnOpen = OnOpen,
+                    OnMessageText = OnMessageTextAsync,
+                    OnSocketError = () =>
+                        FinishWithError(new AiSdkException("OpenAI realtime transcription error")),
+                    OnClose = (_, _) =>
                     {
-                        return;
-                    }
+                        if (!TryFinish())
+                        {
+                            return;
+                        }
 
-                    Cleanup(null);
-                    Queue.Complete(null);
-                },
-            });
+                        Cleanup(null);
+                        Queue.Complete(null);
+                    },
+                }
+            );
             bool finished;
             lock (_gate)
             {
@@ -905,10 +1150,25 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
 
             if (id != null)
             {
-                Queue.Enqueue(new ModelStreamPart { Type = "transcript-final", Id = id, Text = text });
+                Queue.Enqueue(
+                    new ModelStreamPart
+                    {
+                        Type = "transcript-final",
+                        Id = id,
+                        Text = text,
+                    }
+                );
             }
 
-            Queue.Enqueue(new ModelStreamPart { Type = "finish", Text = text, Segments = Array.Empty<TranscriptSegment>(), Language = _language });
+            Queue.Enqueue(
+                new ModelStreamPart
+                {
+                    Type = "finish",
+                    Text = text,
+                    Segments = Array.Empty<TranscriptSegment>(),
+                    Language = _language,
+                }
+            );
             Queue.Complete(null);
             Cleanup(1000);
         }
@@ -917,7 +1177,11 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         {
             Queue.Enqueue(new ModelStreamPart { Type = "stream-start", Warnings = _warnings });
             socket.Send(_sessionUpdate.ToJsonString());
-            _ = SendAudioAsync(socket).ContinueWith(task => FinishWithError(task.Exception!.GetBaseException()), TaskContinuationOptions.OnlyOnFaulted);
+            _ = SendAudioAsync(socket)
+                .ContinueWith(
+                    task => FinishWithError(task.Exception!.GetBaseException()),
+                    TaskContinuationOptions.OnlyOnFaulted
+                );
         }
 
         private async Task SendAudioAsync(IWebSocketLike socket)
@@ -932,16 +1196,29 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
             {
                 while (true)
                 {
-                    var bytes = await reader.ReadAsync(_call.CancellationToken).ConfigureAwait(false);
+                    var bytes = await reader
+                        .ReadAsync(_call.CancellationToken)
+                        .ConfigureAwait(false);
                     if (bytes == null || IsFinished)
                     {
                         break;
                     }
 
-                    socket.Send(new JsonObject { ["type"] = "input_audio_buffer.append", ["audio"] = Convert.ToBase64String(bytes) }.ToJsonString());
+                    socket.Send(
+                        new JsonObject
+                        {
+                            ["type"] = "input_audio_buffer.append",
+                            ["audio"] = Convert.ToBase64String(bytes),
+                        }.ToJsonString()
+                    );
 
                     // Backpressure: pause reads while the socket buffer is full.
-                    await WebSocketUtils.WaitForWebSocketBufferDrainAsync(socket, cancellationToken: _call.CancellationToken).ConfigureAwait(false);
+                    await WebSocketUtils
+                        .WaitForWebSocketBufferDrainAsync(
+                            socket,
+                            cancellationToken: _call.CancellationToken
+                        )
+                        .ConfigureAwait(false);
                 }
             }
             finally
@@ -957,7 +1234,9 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
 
             if (!IsFinished)
             {
-                socket.Send(new JsonObject { ["type"] = "input_audio_buffer.commit" }.ToJsonString());
+                socket.Send(
+                    new JsonObject { ["type"] = "input_audio_buffer.commit" }.ToJsonString()
+                );
             }
         }
 
@@ -987,15 +1266,30 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
             switch (OpenAIJson.String(root, "type"))
             {
                 case "conversation.item.input_audio_transcription.delta":
-                    Queue.Enqueue(new ModelStreamPart { Type = "transcript-delta", Id = OpenAIJson.String(root, "item_id"), Delta = OpenAIJson.String(root, "delta") ?? string.Empty });
+                    Queue.Enqueue(
+                        new ModelStreamPart
+                        {
+                            Type = "transcript-delta",
+                            Id = OpenAIJson.String(root, "item_id"),
+                            Delta = OpenAIJson.String(root, "delta") ?? string.Empty,
+                        }
+                    );
                     break;
 
                 case "conversation.item.input_audio_transcription.completed":
-                    Finish(OpenAIJson.String(root, "transcript") ?? string.Empty, OpenAIJson.String(root, "item_id"));
+                    Finish(
+                        OpenAIJson.String(root, "transcript") ?? string.Empty,
+                        OpenAIJson.String(root, "item_id")
+                    );
                     break;
 
                 case "error":
-                    FinishWithError(new AiSdkException(OpenAIJson.String(OpenAIJson.Child(root, "error"), "message") ?? "OpenAI realtime error"));
+                    FinishWithError(
+                        new AiSdkException(
+                            OpenAIJson.String(OpenAIJson.Child(root, "error"), "message")
+                                ?? "OpenAI realtime error"
+                        )
+                    );
                     break;
             }
 

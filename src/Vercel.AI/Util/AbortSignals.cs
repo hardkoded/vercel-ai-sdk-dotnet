@@ -9,9 +9,7 @@ public sealed class TimeoutError : Exception
 {
     /// <summary>Creates a timeout error.</summary>
     public TimeoutError(string message)
-        : base(message)
-    {
-    }
+        : base(message) { }
 
     /// <summary>Always <c>TimeoutError</c>.</summary>
     public string ErrorName
@@ -124,12 +122,31 @@ public sealed class AbortSignal
         var reason = new TimeoutError("The operation was aborted due to timeout");
         if (schedule != null)
         {
-            schedule(delegate { signal.Abort(reason); }, timeoutMs);
+            schedule(
+                delegate
+                {
+                    signal.Abort(reason);
+                },
+                timeoutMs
+            );
             return signal;
         }
 
-        var timer = new Timer(delegate { signal.Abort(reason); }, null, timeoutMs, System.Threading.Timeout.Infinite);
-        signal.AddAbortHandler(delegate { timer.Dispose(); });
+        var timer = new Timer(
+            delegate
+            {
+                signal.Abort(reason);
+            },
+            null,
+            timeoutMs,
+            System.Threading.Timeout.Infinite
+        );
+        signal.AddAbortHandler(
+            delegate
+            {
+                timer.Dispose();
+            }
+        );
         return signal;
     }
 }
@@ -183,7 +200,14 @@ public static class MergeAbortSignals
 
                 if (signal is int || signal is long || signal is short)
                 {
-                    valid.Add(AbortSignal.Timeout(Convert.ToInt32(signal, System.Globalization.CultureInfo.InvariantCulture)));
+                    valid.Add(
+                        AbortSignal.Timeout(
+                            Convert.ToInt32(
+                                signal,
+                                System.Globalization.CultureInfo.InvariantCulture
+                            )
+                        )
+                    );
                 }
             }
         }
@@ -247,7 +271,12 @@ public static class SetAbortTimeout
     /// <see cref="TimeoutError"/> whose message includes <paramref name="label"/>.
     /// Returns <c>null</c> when the controller or timeout is missing. Disposing the result cancels the abort.
     /// </summary>
-    public static IDisposable? Schedule(AbortController? abortController, string? label, int? timeoutMs, Action<Action, int>? schedule = null)
+    public static IDisposable? Schedule(
+        AbortController? abortController,
+        string? label,
+        int? timeoutMs,
+        Action<Action, int>? schedule = null
+    )
     {
         if (abortController == null || timeoutMs == null)
         {
@@ -262,7 +291,10 @@ public static class SetAbortTimeout
         {
             if (!cancelled)
             {
-                AbortQuietly(controller, new TimeoutError(timeoutLabel + " timeout of " + milliseconds + "ms exceeded"));
+                AbortQuietly(
+                    controller,
+                    new TimeoutError(timeoutLabel + " timeout of " + milliseconds + "ms exceeded")
+                );
             }
         };
 
@@ -272,15 +304,30 @@ public static class SetAbortTimeout
         }
         else
         {
-            var timer = new Timer(delegate { fire(); }, null, milliseconds, System.Threading.Timeout.Infinite);
-            return new CancelTimeout(delegate
-            {
-                cancelled = true;
-                timer.Dispose();
-            });
+            var timer = new Timer(
+                delegate
+                {
+                    fire();
+                },
+                null,
+                milliseconds,
+                System.Threading.Timeout.Infinite
+            );
+            return new CancelTimeout(
+                delegate
+                {
+                    cancelled = true;
+                    timer.Dispose();
+                }
+            );
         }
 
-        return new CancelTimeout(delegate { cancelled = true; });
+        return new CancelTimeout(
+            delegate
+            {
+                cancelled = true;
+            }
+        );
     }
 
     // A timer thread has no caller to report to, and an exception from an abort handler would crash the process.

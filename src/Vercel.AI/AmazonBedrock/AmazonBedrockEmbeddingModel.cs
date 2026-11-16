@@ -20,12 +20,14 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
 
     /// <summary>Creates an embedding model.</summary>
     public AmazonBedrockEmbeddingModel(AmazonBedrockProvider provider, string modelId)
-        : this(provider, modelId, null)
-    {
-    }
+        : this(provider, modelId, null) { }
 
     /// <summary>Creates an embedding model with <paramref name="settings"/>.</summary>
-    public AmazonBedrockEmbeddingModel(AmazonBedrockProvider provider, string modelId, AmazonBedrockEmbeddingModelSettings? settings)
+    public AmazonBedrockEmbeddingModel(
+        AmazonBedrockProvider provider,
+        string modelId,
+        AmazonBedrockEmbeddingModelSettings? settings
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -50,16 +52,39 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
     /// <summary>Maximum values per call. Cohere models take 96. Titan and Nova take one.</summary>
     public int MaxEmbeddingsPerCall => Family == "cohere" ? 96 : 1;
 
-    private string Family => _modelFamily ?? (IsNova(ModelId) ? "nova" : ModelId.Contains("cohere.embed-", StringComparison.Ordinal) ? "cohere" : "titan");
+    private string Family =>
+        _modelFamily
+        ?? (
+            IsNova(ModelId) ? "nova"
+            : ModelId.Contains("cohere.embed-", StringComparison.Ordinal) ? "cohere"
+            : "titan"
+        );
 
     /// <inheritdoc />
-    public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null, IReadOnlyDictionary<string, string?>? headers = null)
+    public Task<EmbeddingResult> DoEmbedAsync(
+        IReadOnlyList<string> values,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        CancellationToken cancellationToken,
+        int? dimensions = null,
+        IReadOnlyDictionary<string, string?>? headers = null
+    )
     {
-        return DoEmbedAsync(new EmbeddingCallOptions(values ?? Array.Empty<string>()) { ProviderOptions = providerOptions, Dimensions = dimensions, Headers = headers }, cancellationToken);
+        return DoEmbedAsync(
+            new EmbeddingCallOptions(values ?? Array.Empty<string>())
+            {
+                ProviderOptions = providerOptions,
+                Dimensions = dimensions,
+                Headers = headers,
+            },
+            cancellationToken
+        );
     }
 
     /// <summary>Embeds each value. Values, provider options, headers, and dimensions travel in <paramref name="call"/>, so concurrent calls do not share state.</summary>
-    public async Task<EmbeddingResult> DoEmbedAsync(EmbeddingCallOptions call, CancellationToken cancellationToken)
+    public async Task<EmbeddingResult> DoEmbedAsync(
+        EmbeddingCallOptions call,
+        CancellationToken cancellationToken
+    )
     {
         if (call == null)
         {
@@ -71,7 +96,11 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
         var dimensions = call.Dimensions;
         if (values.Count > MaxEmbeddingsPerCall)
         {
-            throw new AiSdkException("Too many embedding values for one call. The limit is " + MaxEmbeddingsPerCall.ToString(CultureInfo.InvariantCulture) + ".");
+            throw new AiSdkException(
+                "Too many embedding values for one call. The limit is "
+                    + MaxEmbeddingsPerCall.ToString(CultureInfo.InvariantCulture)
+                    + "."
+            );
         }
 
         var options = Bag(providerOptions);
@@ -84,7 +113,9 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
                 body["singleEmbeddingParams"] = new JsonObject
                 {
                     ["embeddingPurpose"] = String(options, "embeddingPurpose") ?? "GENERIC_INDEX",
-                    ["embeddingDimension"] = Int(options, "embeddingDimension") ?? dimensions ?? 1024,
+                    ["embeddingDimension"] = Int(options, "embeddingDimension")
+                        ?? dimensions
+                        ?? 1024,
                     ["text"] = new JsonObject
                     {
                         ["truncationMode"] = String(options, "truncate") ?? "END",
@@ -107,7 +138,11 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
             default:
                 body["inputText"] = first;
                 Set(body, "dimensions", Int(options, "dimensions") ?? dimensions);
-                if (options is { } titan && titan.TryGetProperty("normalize", out var normalize) && normalize.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                if (
+                    options is { } titan
+                    && titan.TryGetProperty("normalize", out var normalize)
+                    && normalize.ValueKind is JsonValueKind.True or JsonValueKind.False
+                )
                 {
                     body["normalize"] = normalize.GetBoolean();
                 }
@@ -116,24 +151,53 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
         }
 
         var json = body.ToJsonString();
-        var uri = new Uri(AmazonBedrockEndpoints.Resolve(_provider.Options.BaseUrl, _provider.Options.Region, "bedrock-runtime") + "/model/" + Uri.EscapeDataString(ModelId) + "/invoke");
+        var uri = new Uri(
+            AmazonBedrockEndpoints.Resolve(
+                _provider.Options.BaseUrl,
+                _provider.Options.Region,
+                "bedrock-runtime"
+            )
+                + "/model/"
+                + Uri.EscapeDataString(ModelId)
+                + "/invoke"
+        );
         using var request = new HttpRequestMessage(HttpMethod.Post, uri)
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };
-        await _provider.AddHeadersAsync(request, call.Headers, cancellationToken).ConfigureAwait(false);
+        await _provider
+            .AddHeadersAsync(request, call.Headers, cancellationToken)
+            .ConfigureAwait(false);
         var payload = Encoding.UTF8.GetBytes(json);
-        var accessKey = _provider.Options.AccessKeyId ?? Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
-        var secret = _provider.Options.SecretAccessKey ?? Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
+        var accessKey = _provider.Options.AccessKeyId
+            ?? Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
+        var secret = _provider.Options.SecretAccessKey
+            ?? Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
         if (string.IsNullOrEmpty(accessKey) || string.IsNullOrEmpty(secret))
         {
-            throw new AiSdkException("AWS credentials are required. Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.");
+            throw new AiSdkException(
+                "AWS credentials are required. Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY."
+            );
         }
 
-        var token = _provider.Options.SessionToken ?? Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN");
-        AwsSigV4.Sign(request, payload, _provider.Options.Region, "bedrock", accessKey!, secret!, token, _provider.Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow);
-        using var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var text = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
+        var token = _provider.Options.SessionToken
+            ?? Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN");
+        AwsSigV4.Sign(
+            request,
+            payload,
+            _provider.Options.Region,
+            "bedrock",
+            accessKey!,
+            secret!,
+            token,
+            _provider.Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow
+        );
+        using var response = await _provider
+            .HttpClient.SendAsync(request, cancellationToken)
+            .ConfigureAwait(false);
+        var text = await CancellableReads
+            .ReadAsStringAsync(response.Content, cancellationToken)
+            .ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             throw AmazonBedrockErrors.Create((int)response.StatusCode, text);
@@ -146,17 +210,28 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
         if (root.TryGetProperty("embedding", out var titanVector))
         {
             vectors.Add(Vector(titanVector));
-            tokens = root.TryGetProperty("inputTextTokenCount", out var count) && count.TryGetInt32(out var titanTokens) ? titanTokens : null;
+            tokens =
+                root.TryGetProperty("inputTextTokenCount", out var count)
+                && count.TryGetInt32(out var titanTokens)
+                    ? titanTokens
+                    : null;
         }
         else if (root.TryGetProperty("embeddings", out var embeddings))
         {
             if (embeddings.ValueKind == JsonValueKind.Array)
             {
                 var firstEntry = embeddings.GetArrayLength() > 0 ? embeddings[0] : default;
-                if (firstEntry.ValueKind == JsonValueKind.Object && firstEntry.TryGetProperty("embeddingType", out _))
+                if (
+                    firstEntry.ValueKind == JsonValueKind.Object
+                    && firstEntry.TryGetProperty("embeddingType", out _)
+                )
                 {
                     vectors.Add(Vector(firstEntry.GetProperty("embedding")));
-                    tokens = root.TryGetProperty("inputTokenCount", out var novaCount) && novaCount.TryGetInt32(out var novaTokens) ? novaTokens : 0;
+                    tokens =
+                        root.TryGetProperty("inputTokenCount", out var novaCount)
+                        && novaCount.TryGetInt32(out var novaTokens)
+                            ? novaTokens
+                            : 0;
                 }
                 else
                 {
@@ -175,8 +250,16 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
             }
         }
 
-        if (tokens == null && response.Headers.TryGetValues("x-amzn-bedrock-input-token-count", out var header)
-            && int.TryParse(header.FirstOrDefault(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var headerTokens))
+        if (
+            tokens == null
+            && response.Headers.TryGetValues("x-amzn-bedrock-input-token-count", out var header)
+            && int.TryParse(
+                header.FirstOrDefault(),
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out var headerTokens
+            )
+        )
         {
             tokens = headerTokens;
         }
@@ -186,7 +269,8 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
 
     private static bool IsNova(string modelId)
     {
-        return modelId.Contains("amazon.nova-", StringComparison.Ordinal) && modelId.Contains("embed", StringComparison.Ordinal);
+        return modelId.Contains("amazon.nova-", StringComparison.Ordinal)
+            && modelId.Contains("embed", StringComparison.Ordinal);
     }
 
     private static JsonElement? Bag(IReadOnlyDictionary<string, JsonElement>? providerOptions)
@@ -198,7 +282,10 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
 
         foreach (var key in new[] { "amazonBedrock", "bedrock" })
         {
-            if (providerOptions.TryGetValue(key, out var bag) && bag.ValueKind == JsonValueKind.Object)
+            if (
+                providerOptions.TryGetValue(key, out var bag)
+                && bag.ValueKind == JsonValueKind.Object
+            )
             {
                 return bag;
             }
@@ -209,12 +296,23 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
 
     private static string? String(JsonElement? bag, string name)
     {
-        return bag is { } element && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        return
+            bag is { } element
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
     }
 
     private static int? Int(JsonElement? bag, string name)
     {
-        return bag is { } element && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number) ? number : null;
+        return
+            bag is { } element
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Number
+            && value.TryGetInt32(out var number)
+            ? number
+            : null;
     }
 
     private static void Set(JsonObject body, string name, string? value)

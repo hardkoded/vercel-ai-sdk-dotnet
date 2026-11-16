@@ -31,16 +31,19 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
 
     /// <summary>Creates a language model.</summary>
     public OpenAICompatibleLanguageModel(OpenAICompatibleProvider provider, string modelId)
-        : this(provider, modelId, null)
-    {
-    }
+        : this(provider, modelId, null) { }
 
     /// <summary>Creates a language model with an explicit provider id such as <c>anthropic.beta</c>.</summary>
-    public OpenAICompatibleLanguageModel(OpenAICompatibleProvider provider, string modelId, string? providerId)
+    public OpenAICompatibleLanguageModel(
+        OpenAICompatibleProvider provider,
+        string modelId,
+        string? providerId
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
-        _providerId = providerId ?? OpenAICompatibleChat.Qualify(provider.Options.ProviderName, "chat");
+        _providerId = providerId
+            ?? OpenAICompatibleChat.Qualify(provider.Options.ProviderName, "chat");
         SupportsStructuredOutputs = provider.Options.SupportsStructuredOutputs;
     }
 
@@ -48,7 +51,8 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<string, string> SupportedUrls => _provider.Options.SupportedUrls ?? UrlSupport.None;
+    public IReadOnlyDictionary<string, string> SupportedUrls =>
+        _provider.Options.SupportedUrls ?? UrlSupport.None;
 
     /// <inheritdoc />
     public string Provider => _providerId;
@@ -84,13 +88,21 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
     /// <param name="body">The unvalidated response body.</param>
     /// <param name="providerOptions">The request's provider options, so the provider metadata key matches <see cref="DoGenerateAsync"/>. Null uses the provider name.</param>
     /// <remarks>Maps to <c>convertResponse</c>.</remarks>
-    public LanguageModelGenerateResult ConvertResponse(JsonElement body, IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+    public LanguageModelGenerateResult ConvertResponse(
+        JsonElement body,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null
+    )
     {
-        if (body.ValueKind != JsonValueKind.Object
+        if (
+            body.ValueKind != JsonValueKind.Object
             || !body.TryGetProperty("choices", out var choices)
-            || choices.ValueKind != JsonValueKind.Array)
+            || choices.ValueKind != JsonValueKind.Array
+        )
         {
-            throw new TypeValidationException("Type validation failed: the response body is not a valid chat completion.", body);
+            throw new TypeValidationException(
+                "Type validation failed: the response body is not a valid chat completion.",
+                body
+            );
         }
 
         return ConvertGenerateResponse(
@@ -100,16 +112,24 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
             false,
             Array.Empty<CallWarning>(),
             null,
-            null);
+            null
+        );
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         options = options ?? new LanguageModelCallOptions();
         var prepared = Prepare(options, stream: false);
-        var response = await _provider.PostJsonAsync(RequestUri(), prepared.Json, prepared.Headers, cancellationToken).ConfigureAwait(false);
-        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
+        var response = await _provider
+            .PostJsonAsync(RequestUri(), prepared.Json, prepared.Headers, cancellationToken)
+            .ConfigureAwait(false);
+        using var document = JsonDocument.Parse(
+            string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+        );
         return ConvertGenerateResponse(
             document.RootElement,
             prepared.MetadataKey,
@@ -117,7 +137,8 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
             prepared.JsonTextOverridesToolCalls,
             prepared.Warnings,
             response.Body,
-            response.Headers);
+            response.Headers
+        );
     }
 
     private LanguageModelGenerateResult ConvertGenerateResponse(
@@ -127,17 +148,31 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         bool jsonTextOverridesToolCalls,
         IReadOnlyList<CallWarning> warnings,
         string? rawResponse,
-        IReadOnlyDictionary<string, string>? responseHeaders)
+        IReadOnlyDictionary<string, string>? responseHeaders
+    )
     {
-        if (!root.TryGetProperty("choices", out var choices) || choices.ValueKind != JsonValueKind.Array || choices.GetArrayLength() == 0)
+        if (
+            !root.TryGetProperty("choices", out var choices)
+            || choices.ValueKind != JsonValueKind.Array
+            || choices.GetArrayLength() == 0
+        )
         {
-            throw new InvalidResponseDataException(root.Clone(), "Response did not contain any choices.");
+            throw new InvalidResponseDataException(
+                root.Clone(),
+                "Response did not contain any choices."
+            );
         }
 
         var choice = choices[0];
-        if (!choice.TryGetProperty("message", out var message) || message.ValueKind != JsonValueKind.Object)
+        if (
+            !choice.TryGetProperty("message", out var message)
+            || message.ValueKind != JsonValueKind.Object
+        )
         {
-            throw new InvalidResponseDataException(root.Clone(), "Response did not contain any choices.");
+            throw new InvalidResponseDataException(
+                root.Clone(),
+                "Response did not contain any choices."
+            );
         }
 
         var content = new List<GeneratedContent>();
@@ -157,31 +192,47 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                     continue;
                 }
 
-                content.Add(part.Reasoning ? (GeneratedContent)new GeneratedReasoning(part.Text) : new GeneratedText(part.Text));
+                content.Add(
+                    part.Reasoning
+                        ? (GeneratedContent)new GeneratedReasoning(part.Text)
+                        : new GeneratedText(part.Text)
+                );
             }
         }
 
-        if (message.TryGetProperty("tool_calls", out var toolCalls) && toolCalls.ValueKind == JsonValueKind.Array)
+        if (
+            message.TryGetProperty("tool_calls", out var toolCalls)
+            && toolCalls.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var call in toolCalls.EnumerateArray())
             {
-                if (call.ValueKind != JsonValueKind.Object || !call.TryGetProperty("function", out var function))
+                if (
+                    call.ValueKind != JsonValueKind.Object
+                    || !call.TryGetProperty("function", out var function)
+                )
                 {
                     continue;
                 }
 
-                var id = call.TryGetProperty("id", out var idElement) && idElement.ValueKind == JsonValueKind.String
-                    ? idElement.GetString()
-                    : null;
+                var id =
+                    call.TryGetProperty("id", out var idElement)
+                    && idElement.ValueKind == JsonValueKind.String
+                        ? idElement.GetString()
+                        : null;
                 if (string.IsNullOrEmpty(id))
                 {
                     id = JsonValues.GenerateId("call_");
                 }
 
-                var toolName = function.TryGetProperty("name", out var name) ? name.GetString() ?? string.Empty : string.Empty;
-                var toolArguments = function.TryGetProperty("arguments", out var arguments) && arguments.ValueKind == JsonValueKind.String
-                    ? arguments.GetString() ?? "{}"
-                    : "{}";
+                var toolName = function.TryGetProperty("name", out var name)
+                    ? name.GetString() ?? string.Empty
+                    : string.Empty;
+                var toolArguments =
+                    function.TryGetProperty("arguments", out var arguments)
+                    && arguments.ValueKind == JsonValueKind.String
+                        ? arguments.GetString() ?? "{}"
+                        : "{}";
                 if (toolName == jsonResponseToolName)
                 {
                     content.Add(new GeneratedText(toolArguments));
@@ -196,24 +247,37 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
             }
         }
 
-        var raw = choice.TryGetProperty("finish_reason", out var finish) && finish.ValueKind == JsonValueKind.String
-            ? finish.GetString()
-            : null;
+        var raw =
+            choice.TryGetProperty("finish_reason", out var finish)
+            && finish.ValueKind == JsonValueKind.String
+                ? finish.GetString()
+                : null;
         var usage = root.TryGetProperty("usage", out var usageElement)
             ? OpenAICompatibleChat.ConvertUsage(usageElement)
             : OpenAICompatibleUsage.Missing;
         var extracted = _provider.Options.MetadataExtractor?.ExtractMetadata(root);
-        var metadataElement = OpenAICompatibleChat.ProviderMetadata(metadataKey, extracted, usage.AcceptedPredictionTokens, usage.RejectedPredictionTokens);
+        var metadataElement = OpenAICompatibleChat.ProviderMetadata(
+            metadataKey,
+            extracted,
+            usage.AcceptedPredictionTokens,
+            usage.RejectedPredictionTokens
+        );
         var finishReason = MapFinish(raw);
-        if (jsonResponseToolName != null
+        if (
+            jsonResponseToolName != null
             && raw == "tool_calls"
             && content.Any(part => part is GeneratedText)
-            && !content.Any(part => part is GeneratedToolCall))
+            && !content.Any(part => part is GeneratedToolCall)
+        )
         {
             finishReason = FinishReason.Stop;
         }
 
-        if (jsonTextOverridesToolCalls && raw == "tool_calls" && content.Any(part => part is GeneratedText { Text.Length: > 0 }))
+        if (
+            jsonTextOverridesToolCalls
+            && raw == "tool_calls"
+            && content.Any(part => part is GeneratedText { Text.Length: > 0 })
+        )
         {
             // The model can repeat a tool call after valid JSON text. The text is the final answer.
             content.RemoveAll(part => part is GeneratedToolCall);
@@ -231,30 +295,39 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
             rawResponse,
             ResponseString(root, "model"),
             ResponseTimestamp(root),
-            responseHeaders);
+            responseHeaders
+        );
     }
 
     /// <inheritdoc />
     public async Task<LanguageModelStreamResult> DoStreamAsync(
         LanguageModelCallOptions options,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         options = options ?? new LanguageModelCallOptions();
         var prepared = Prepare(options, stream: true);
-        var sse = await _provider.PostSseAsync(RequestUri(), prepared.Json, prepared.Headers, cancellationToken).ConfigureAwait(false);
+        var sse = await _provider
+            .PostSseAsync(RequestUri(), prepared.Json, prepared.Headers, cancellationToken)
+            .ConfigureAwait(false);
         try
         {
             var stream = StreamAsync(options, prepared, sse, cancellationToken);
             if (prepared.JsonResponseToolName != null)
             {
-                stream = JsonResponseTools.ConvertJsonResponseToolStream(stream, prepared.JsonResponseToolName, cancellationToken);
+                stream = JsonResponseTools.ConvertJsonResponseToolStream(
+                    stream,
+                    prepared.JsonResponseToolName,
+                    cancellationToken
+                );
             }
 
             return new LanguageModelStreamResult(
                 new ReleasingAsyncEnumerable<LanguageModelStreamPart>(stream, sse),
                 LanguageModelStreamRequest.FromJson(prepared.Json),
                 new LanguageModelStreamResponse(sse.Headers),
-                sse);
+                sse
+            );
         }
         catch
         {
@@ -267,7 +340,8 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         LanguageModelCallOptions options,
         PreparedRequest prepared,
         OpenAICompatibleSseResponse sse,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         using var disposable = sse;
         yield return new StreamStartStreamPart(prepared.Warnings);
@@ -349,18 +423,24 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                 if (!string.IsNullOrEmpty(id) || !string.IsNullOrEmpty(model) || created != null)
                 {
                     metadataSent = true;
-                    DateTimeOffset? timestamp = created == null ? null : DateTimeOffset.FromUnixTimeSeconds(created.Value);
+                    DateTimeOffset? timestamp =
+                        created == null ? null : DateTimeOffset.FromUnixTimeSeconds(created.Value);
                     yield return new ResponseMetadataStreamPart(id, model, timestamp);
                 }
             }
 
-            if ((root["usage"] ?? (root["x_groq"] as JsonObject)?["usage"]) is JsonObject usageObject)
+            if (
+                (root["usage"] ?? (root["x_groq"] as JsonObject)?["usage"])
+                is JsonObject usageObject
+            )
             {
                 using var usageDocument = JsonDocument.Parse(usageObject.ToJsonString());
                 usageElement = usageDocument.RootElement.Clone();
             }
 
-            var choice = root["choices"] is JsonArray { Count: > 0 } choices ? choices[0] as JsonObject : null;
+            var choice = root["choices"] is JsonArray { Count: > 0 } choices
+                ? choices[0] as JsonObject
+                : null;
             if (choice == null)
             {
                 continue;
@@ -381,7 +461,15 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
             var reasoning = PreferredString(delta, "reasoning_content", "reasoning");
             if (!string.IsNullOrEmpty(reasoning))
             {
-                foreach (var part in OpenReasoning(textBlockId, reasoningBlockId, ref textOpen, ref reasoningId, reasoning!))
+                foreach (
+                    var part in OpenReasoning(
+                        textBlockId,
+                        reasoningBlockId,
+                        ref textOpen,
+                        ref reasoningId,
+                        reasoning!
+                    )
+                )
                 {
                     yield return part;
                 }
@@ -399,7 +487,15 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                 {
                     if (fragment.Reasoning)
                     {
-                        foreach (var part in OpenReasoning(textBlockId, reasoningBlockId, ref textOpen, ref reasoningId, fragment.Text))
+                        foreach (
+                            var part in OpenReasoning(
+                                textBlockId,
+                                reasoningBlockId,
+                                ref textOpen,
+                                ref reasoningId,
+                                fragment.Text
+                            )
+                        )
                         {
                             yield return part;
                         }
@@ -407,7 +503,15 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                     else
                     {
                         sawText |= fragment.Text.Length > 0;
-                        foreach (var part in OpenText(textBlockId, reasoningBlockId, ref textOpen, ref reasoningId, fragment.Text))
+                        foreach (
+                            var part in OpenText(
+                                textBlockId,
+                                reasoningBlockId,
+                                ref textOpen,
+                                ref reasoningId,
+                                fragment.Text
+                            )
+                        )
                         {
                             yield return part;
                         }
@@ -433,8 +537,20 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                 {
                     if (item is JsonObject tool)
                     {
-                        var input = HandleToolDelta(tool, toolCalls, pending, forwarded, signatures);
-                        foreach (var part in ToolInput(input, prepared.JsonResponseToolName, streamToolInput))
+                        var input = HandleToolDelta(
+                            tool,
+                            toolCalls,
+                            pending,
+                            forwarded,
+                            signatures
+                        );
+                        foreach (
+                            var part in ToolInput(
+                                input,
+                                prepared.JsonResponseToolName,
+                                streamToolInput
+                            )
+                        )
                         {
                             yield return part;
                         }
@@ -455,7 +571,14 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
 
         foreach (var pair in pending)
         {
-            var input = toolCalls.ProcessDelta(new StreamingToolCallDelta(pair.Key, pair.Value.Id, null, pair.Value.Arguments.ToString()));
+            var input = toolCalls.ProcessDelta(
+                new StreamingToolCallDelta(
+                    pair.Key,
+                    pair.Value.Id,
+                    null,
+                    pair.Value.Arguments.ToString()
+                )
+            );
             foreach (var part in ToolInput(input, prepared.JsonResponseToolName, streamToolInput))
             {
                 yield return part;
@@ -487,7 +610,8 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                     call.ToolCallId,
                     call.ToolName,
                     call.ArgumentsJson,
-                    OpenAICompatibleChat.ThoughtSignatureMetadata(prepared.MetadataKey, signature));
+                    OpenAICompatibleChat.ThoughtSignatureMetadata(prepared.MetadataKey, signature)
+                );
             }
             else
             {
@@ -503,9 +627,10 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         }
 
         var converted = OpenAICompatibleChat.ConvertUsage(usageElement);
-        var finishReason = interrupted
-            ? FinishReason.Interrupted
-            : !sawFinish || (failed && finishRaw == null) ? FinishReason.Error : MapFinish(finishRaw);
+        var finishReason =
+            interrupted ? FinishReason.Interrupted
+            : !sawFinish || (failed && finishRaw == null) ? FinishReason.Error
+            : MapFinish(finishRaw);
         if (dropToolCalls && finishRaw == "tool_calls")
         {
             finishReason = FinishReason.Stop;
@@ -515,7 +640,13 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
             finishReason,
             ModelUsage(usageElement, converted),
             sawFinish ? finishRaw : null,
-            OpenAICompatibleChat.ProviderMetadata(prepared.MetadataKey, metadataExtractor?.BuildMetadata(), converted.AcceptedPredictionTokens, converted.RejectedPredictionTokens));
+            OpenAICompatibleChat.ProviderMetadata(
+                prepared.MetadataKey,
+                metadataExtractor?.BuildMetadata(),
+                converted.AcceptedPredictionTokens,
+                converted.RejectedPredictionTokens
+            )
+        );
     }
 
     private PreparedRequest Prepare(LanguageModelCallOptions options, bool stream)
@@ -524,17 +655,26 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         var rawName = ProviderOptionsName;
         if (OpenAICompatibleChat.HasOptions(options.ProviderOptions, "openai-compatible"))
         {
-            warnings.Add(new CallWarning(
-                "deprecated",
-                "providerOptions key 'openai-compatible'. Use 'openaiCompatible' instead."));
+            warnings.Add(
+                new CallWarning(
+                    "deprecated",
+                    "providerOptions key 'openai-compatible'. Use 'openaiCompatible' instead."
+                )
+            );
         }
 
         var camel = OpenAICompatibleChat.ToCamelCase(rawName);
-        if (!string.Equals(camel, rawName, StringComparison.Ordinal) && OpenAICompatibleChat.HasOptions(options.ProviderOptions, rawName))
+        if (
+            !string.Equals(camel, rawName, StringComparison.Ordinal)
+            && OpenAICompatibleChat.HasOptions(options.ProviderOptions, rawName)
+        )
         {
-            warnings.Add(new CallWarning(
-                "deprecated",
-                "providerOptions key '" + rawName + "'. Use '" + camel + "' instead."));
+            warnings.Add(
+                new CallWarning(
+                    "deprecated",
+                    "providerOptions key '" + rawName + "'. Use '" + camel + "' instead."
+                )
+            );
         }
 
         var settings = new ChatSettings();
@@ -551,16 +691,15 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
             warnings.Add(new CallWarning("unsupported", "topK", null));
         }
 
-        var body = new JsonObject
-        {
-            ["model"] = ModelId,
-        };
+        var body = new JsonObject { ["model"] = ModelId };
         if (!string.IsNullOrEmpty(settings.User))
         {
             body["user"] = settings.User;
         }
 
-        var responseTool = _provider.Options.UsesJsonResponseToolWithTools ? JsonResponseToolFor(options) : null;
+        var responseTool = _provider.Options.UsesJsonResponseToolWithTools
+            ? JsonResponseToolFor(options)
+            : null;
         AddSampling(body, options);
         if (responseTool == null)
         {
@@ -592,12 +731,20 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         string? reasoningEffort;
         if (_provider.Options.ResolveReasoningEffort != null)
         {
-            reasoningEffort = _provider.Options.ResolveReasoningEffort(ModelId, options.Reasoning, settings.ReasoningEffort, warnings);
+            reasoningEffort = _provider.Options.ResolveReasoningEffort(
+                ModelId,
+                options.Reasoning,
+                settings.ReasoningEffort,
+                warnings
+            );
         }
         else
         {
             reasoningEffort = settings.ReasoningEffort;
-            if (reasoningEffort == null && OpenAICompatibleChat.IsCustomReasoning(options.Reasoning))
+            if (
+                reasoningEffort == null
+                && OpenAICompatibleChat.IsCustomReasoning(options.Reasoning)
+            )
             {
                 reasoningEffort = options.Reasoning;
             }
@@ -613,18 +760,36 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
             body["verbosity"] = settings.TextVerbosity;
         }
 
-        var metadataKey = OpenAICompatibleChat.ResolveProviderOptionsKey(rawName, options.ProviderOptions);
-        body["messages"] = OpenAICompatibleChat.ConvertMessages(options.Prompt, metadataKey, rawName, _provider.Options.SupportsMultiPartToolContent);
+        var metadataKey = OpenAICompatibleChat.ResolveProviderOptionsKey(
+            rawName,
+            options.ProviderOptions
+        );
+        body["messages"] = OpenAICompatibleChat.ConvertMessages(
+            options.Prompt,
+            metadataKey,
+            rawName,
+            _provider.Options.SupportsMultiPartToolContent
+        );
         if (responseTool == null)
         {
             if (!_provider.Options.PreparesOwnTools)
             {
-                AddTools(body, options.Tools, options.ToolChoice, _provider.Options.NormalizeRequestSchema);
+                AddTools(
+                    body,
+                    options.Tools,
+                    options.ToolChoice,
+                    _provider.Options.NormalizeRequestSchema
+                );
             }
         }
         else
         {
-            AddTools(body, options.Tools!.Concat(new[] { responseTool }).ToList(), JsonResponseTools.ChoiceFor(options.ToolChoice, responseTool.Name), _provider.Options.NormalizeRequestSchema);
+            AddTools(
+                body,
+                options.Tools!.Concat(new[] { responseTool }).ToList(),
+                JsonResponseTools.ChoiceFor(options.ToolChoice, responseTool.Name),
+                _provider.Options.NormalizeRequestSchema
+            );
             body["parallel_tool_calls"] = false;
         }
 
@@ -649,28 +814,42 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
 
         return new PreparedRequest(
             body,
-            _provider.CreateHeaders(_provider.Options.PrepareCallHeaders?.Invoke(options) ?? options.Headers),
+            _provider.CreateHeaders(
+                _provider.Options.PrepareCallHeaders?.Invoke(options) ?? options.Headers
+            ),
             warnings,
             metadataKey,
             jsonResponse && _provider.Options.JsonTextOverridesToolCalls,
-            responseTool?.Name);
+            responseTool?.Name
+        );
     }
 
     // Groq rejects JSON response formatting together with function tools.
     private static LanguageModelTool? JsonResponseToolFor(LanguageModelCallOptions options)
     {
-        return options.JsonSchema is { } schema
+        return
+            options.JsonSchema is { } schema
             && schema.ValueKind != JsonValueKind.Undefined
             && schema.ValueKind != JsonValueKind.Null
             && options.Tools is { Count: > 0 } tools
-                ? JsonResponseTools.CreateTool(tools, schema, options.JsonSchemaDescription)
-                : null;
+            ? JsonResponseTools.CreateTool(tools, schema, options.JsonSchemaDescription)
+            : null;
     }
 
-    private void AddResponseFormat(JsonObject body, LanguageModelCallOptions options, ChatSettings settings, List<CallWarning> warnings)
+    private void AddResponseFormat(
+        JsonObject body,
+        LanguageModelCallOptions options,
+        ChatSettings settings,
+        List<CallWarning> warnings
+    )
     {
-        var wantsJson = options.JsonResponse || string.Equals(settings.ResponseFormat, "json", StringComparison.OrdinalIgnoreCase);
-        var hasSchema = options.JsonSchema is { } schema && schema.ValueKind != JsonValueKind.Undefined && schema.ValueKind != JsonValueKind.Null;
+        var wantsJson =
+            options.JsonResponse
+            || string.Equals(settings.ResponseFormat, "json", StringComparison.OrdinalIgnoreCase);
+        var hasSchema =
+            options.JsonSchema is { } schema
+            && schema.ValueKind != JsonValueKind.Undefined
+            && schema.ValueKind != JsonValueKind.Null;
         if (!wantsJson && !hasSchema)
         {
             return;
@@ -680,10 +859,14 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         if (hasSchema && structured)
         {
             var strict = settings.StrictJsonSchema ?? true;
-            var normalizeResponseSchema = _provider.Options.NormalizeResponseSchema ?? _provider.Options.NormalizeRequestSchema;
+            var normalizeResponseSchema = _provider.Options.NormalizeResponseSchema
+                ?? _provider.Options.NormalizeRequestSchema;
             var schemaObject = new JsonObject
             {
-                ["schema"] = NormalizeSchema(JsonNode.Parse(options.JsonSchema!.Value.GetRawText()), normalizeResponseSchema),
+                ["schema"] = NormalizeSchema(
+                    JsonNode.Parse(options.JsonSchema!.Value.GetRawText()),
+                    normalizeResponseSchema
+                ),
                 ["strict"] = strict,
                 ["name"] = options.JsonSchemaName ?? "response",
             };
@@ -702,21 +885,32 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
 
         if (hasSchema)
         {
-            warnings.Add(new CallWarning(
-                "unsupported",
-                "responseFormat",
-                "JSON response format schema is only supported with structuredOutputs"));
+            warnings.Add(
+                new CallWarning(
+                    "unsupported",
+                    "responseFormat",
+                    "JSON response format schema is only supported with structuredOutputs"
+                )
+            );
         }
 
         body["response_format"] = new JsonObject { ["type"] = "json_object" };
     }
 
-    private static JsonNode? NormalizeSchema(JsonNode? schema, Func<JsonNode?, JsonNode?>? normalizeSchema)
+    private static JsonNode? NormalizeSchema(
+        JsonNode? schema,
+        Func<JsonNode?, JsonNode?>? normalizeSchema
+    )
     {
         return normalizeSchema == null ? schema : normalizeSchema(schema);
     }
 
-    private static void AddTools(JsonObject body, IReadOnlyList<LanguageModelTool>? callTools, ToolChoice? toolChoice, Func<JsonNode?, JsonNode?>? normalizeSchema)
+    private static void AddTools(
+        JsonObject body,
+        IReadOnlyList<LanguageModelTool>? callTools,
+        ToolChoice? toolChoice,
+        Func<JsonNode?, JsonNode?>? normalizeSchema
+    )
     {
         if (callTools == null || callTools.Count == 0)
         {
@@ -729,7 +923,10 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
             var function = new JsonObject
             {
                 ["name"] = tool.Name,
-                ["parameters"] = NormalizeSchema(JsonNode.Parse(tool.InputSchema.GetRawText()), normalizeSchema),
+                ["parameters"] = NormalizeSchema(
+                    JsonNode.Parse(tool.InputSchema.GetRawText()),
+                    normalizeSchema
+                ),
             };
             if (tool.Description != null)
             {
@@ -741,11 +938,7 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                 function["strict"] = strict;
             }
 
-            tools.Add(new JsonObject
-            {
-                ["type"] = "function",
-                ["function"] = function,
-            });
+            tools.Add(new JsonObject { ["type"] = "function", ["function"] = function });
         }
 
         body["tools"] = tools;
@@ -783,7 +976,11 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         }
     }
 
-    private static void ApplyOptions(ChatSettings settings, IReadOnlyDictionary<string, JsonElement>? providerOptions, string key)
+    private static void ApplyOptions(
+        ChatSettings settings,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        string key
+    )
     {
         if (!OpenAICompatibleChat.HasOptions(providerOptions, key))
         {
@@ -822,7 +1019,10 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
 
                     break;
                 case "strictJsonSchema":
-                    if (property.Value.ValueKind == JsonValueKind.True || property.Value.ValueKind == JsonValueKind.False)
+                    if (
+                        property.Value.ValueKind == JsonValueKind.True
+                        || property.Value.ValueKind == JsonValueKind.False
+                    )
                     {
                         settings.StrictJsonSchema = property.Value.GetBoolean();
                     }
@@ -843,7 +1043,10 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
 
                     break;
                 case "structuredOutputs":
-                    if (property.Value.ValueKind == JsonValueKind.True || property.Value.ValueKind == JsonValueKind.False)
+                    if (
+                        property.Value.ValueKind == JsonValueKind.True
+                        || property.Value.ValueKind == JsonValueKind.False
+                    )
                     {
                         settings.StructuredOutputs = property.Value.GetBoolean();
                     }
@@ -852,7 +1055,9 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                 default:
                     if (Array.IndexOf(KnownProviderOptionNames, property.Name) < 0)
                     {
-                        settings.Extras[property.Name] = JsonNode.Parse(property.Value.GetRawText());
+                        settings.Extras[property.Name] = JsonNode.Parse(
+                            property.Value.GetRawText()
+                        );
                     }
 
                     break;
@@ -892,7 +1097,9 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
     private LanguageModelUsage ModelUsage(JsonElement? usage, OpenAICompatibleUsage converted)
     {
         var convert = _provider.Options.ConvertUsage;
-        return convert != null && usage is { ValueKind: JsonValueKind.Object } element ? convert(element) : converted.Usage;
+        return convert != null && usage is { ValueKind: JsonValueKind.Object } element
+            ? convert(element)
+            : converted.Usage;
     }
 
     private FinishReason MapFinish(string? raw)
@@ -901,7 +1108,13 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         return mapped ?? FinishReasons.Parse(raw);
     }
 
-    private static List<LanguageModelStreamPart> OpenReasoning(string textBlockId, Func<string> reasoningBlockId, ref bool textOpen, ref string? reasoningId, string delta)
+    private static List<LanguageModelStreamPart> OpenReasoning(
+        string textBlockId,
+        Func<string> reasoningBlockId,
+        ref bool textOpen,
+        ref string? reasoningId,
+        string delta
+    )
     {
         var parts = new List<LanguageModelStreamPart>();
         if (textOpen)
@@ -920,7 +1133,13 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         return parts;
     }
 
-    private static List<LanguageModelStreamPart> OpenText(string textBlockId, Func<string> reasoningBlockId, ref bool textOpen, ref string? reasoningId, string delta)
+    private static List<LanguageModelStreamPart> OpenText(
+        string textBlockId,
+        Func<string> reasoningBlockId,
+        ref bool textOpen,
+        ref string? reasoningId,
+        string delta
+    )
     {
         var parts = new List<LanguageModelStreamPart>();
         if (reasoningId != null)
@@ -941,7 +1160,11 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
 
     // The response-tool converter turns these input parts into text deltas while the call streams.
     // Providers that stream every tool input, such as Alibaba, get them for all calls.
-    private static IEnumerable<LanguageModelStreamPart> ToolInput(StreamingToolCallInput? input, string? responseToolName, bool streamToolInput)
+    private static IEnumerable<LanguageModelStreamPart> ToolInput(
+        StreamingToolCallInput? input,
+        string? responseToolName,
+        bool streamToolInput
+    )
     {
         if (input == null || (!streamToolInput && input.Name != responseToolName))
         {
@@ -964,7 +1187,8 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         StreamingToolCallTracker tracker,
         Dictionary<int, PendingTool> pending,
         HashSet<int> forwarded,
-        Dictionary<string, string> signatures)
+        Dictionary<string, string> signatures
+    )
     {
         var delta = ReadToolDelta(tool);
         var signature = ReadWireSignature(tool);
@@ -1003,14 +1227,20 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
             return null;
         }
 
-        var input = tracker.ProcessDelta(new StreamingToolCallDelta(index, item.Id, delta.Name, item.Arguments.ToString()));
+        var input = tracker.ProcessDelta(
+            new StreamingToolCallDelta(index, item.Id, delta.Name, item.Arguments.ToString())
+        );
         Remember(signatures, item.Id, item.Signature);
         pending.Remove(index);
         forwarded.Add(index);
         return input;
     }
 
-    private static void Remember(Dictionary<string, string> signatures, string? id, string? signature)
+    private static void Remember(
+        Dictionary<string, string> signatures,
+        string? id,
+        string? signature
+    )
     {
         if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(signature))
         {
@@ -1020,8 +1250,7 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
 
     private static string? ReadWireSignature(JsonObject tool)
     {
-        if (tool["extra_content"] is JsonObject extra
-            && extra["google"] is JsonObject google)
+        if (tool["extra_content"] is JsonObject extra && extra["google"] is JsonObject google)
         {
             return AsString(google["thought_signature"]);
         }
@@ -1031,12 +1260,14 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
 
     private static string? ReadWireSignature(JsonElement call)
     {
-        if (call.TryGetProperty("extra_content", out var extra)
+        if (
+            call.TryGetProperty("extra_content", out var extra)
             && extra.ValueKind == JsonValueKind.Object
             && extra.TryGetProperty("google", out var google)
             && google.ValueKind == JsonValueKind.Object
             && google.TryGetProperty("thought_signature", out var signature)
-            && signature.ValueKind == JsonValueKind.String)
+            && signature.ValueKind == JsonValueKind.String
+        )
         {
             return signature.GetString();
         }
@@ -1056,14 +1287,21 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
 
     private static string? PreferredString(JsonElement obj, string preferred, string fallback)
     {
-        if (obj.TryGetProperty(preferred, out var preferredValue)
+        if (
+            obj.TryGetProperty(preferred, out var preferredValue)
             && preferredValue.ValueKind != JsonValueKind.Null
-            && preferredValue.ValueKind != JsonValueKind.Undefined)
+            && preferredValue.ValueKind != JsonValueKind.Undefined
+        )
         {
-            return preferredValue.ValueKind == JsonValueKind.String ? preferredValue.GetString() : null;
+            return preferredValue.ValueKind == JsonValueKind.String
+                ? preferredValue.GetString()
+                : null;
         }
 
-        if (obj.TryGetProperty(fallback, out var fallbackValue) && fallbackValue.ValueKind == JsonValueKind.String)
+        if (
+            obj.TryGetProperty(fallback, out var fallbackValue)
+            && fallbackValue.ValueKind == JsonValueKind.String
+        )
         {
             return fallbackValue.GetString();
         }
@@ -1078,7 +1316,11 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
 
     private static string ErrorText(JsonNode? error)
     {
-        if (error is JsonValue value && value.TryGetValue<string>(out var text) && !string.IsNullOrEmpty(text))
+        if (
+            error is JsonValue value
+            && value.TryGetValue<string>(out var text)
+            && !string.IsNullOrEmpty(text)
+        )
         {
             return text!;
         }
@@ -1108,7 +1350,12 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
 
     private static DateTimeOffset? ResponseTimestamp(JsonElement root)
     {
-        if (!root.TryGetProperty("created", out var created) || created.ValueKind != JsonValueKind.Number || !created.TryGetInt64(out var seconds) || seconds == 0)
+        if (
+            !root.TryGetProperty("created", out var created)
+            || created.ValueKind != JsonValueKind.Number
+            || !created.TryGetInt64(out var seconds)
+            || seconds == 0
+        )
         {
             return null;
         }
@@ -1139,7 +1386,10 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
     private static StreamingToolCallDelta ReadToolDelta(JsonObject tool)
     {
         int? index = null;
-        if (tool["index"] is JsonValue indexValue && indexValue.TryGetValue<int>(out var parsedIndex))
+        if (
+            tool["index"] is JsonValue indexValue
+            && indexValue.TryGetValue<int>(out var parsedIndex)
+        )
         {
             index = parsedIndex;
         }
@@ -1149,7 +1399,10 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         if (tool["function"] is JsonObject function)
         {
             name = AsString(function["name"]);
-            if (function["arguments"] is JsonValue argumentValue && argumentValue.TryGetValue<string>(out var argumentText))
+            if (
+                function["arguments"] is JsonValue argumentValue
+                && argumentValue.TryGetValue<string>(out var argumentText)
+            )
             {
                 arguments = argumentText;
             }
@@ -1188,7 +1441,14 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
 
     private sealed class PreparedRequest
     {
-        public PreparedRequest(JsonObject body, Dictionary<string, string?> headers, List<CallWarning> warnings, string metadataKey, bool jsonTextOverridesToolCalls, string? jsonResponseToolName)
+        public PreparedRequest(
+            JsonObject body,
+            Dictionary<string, string?> headers,
+            List<CallWarning> warnings,
+            string metadataKey,
+            bool jsonTextOverridesToolCalls,
+            string? jsonResponseToolName
+        )
         {
             JsonResponseToolName = jsonResponseToolName;
             Body = body;

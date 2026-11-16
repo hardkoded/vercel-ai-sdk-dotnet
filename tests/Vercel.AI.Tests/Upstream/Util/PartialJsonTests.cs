@@ -9,7 +9,10 @@ namespace Vercel.AI.Tests;
 
 public sealed class PartialJsonTests
 {
-    [UpstreamTest("packages/ai/src/util/parse-partial-json.test.ts::parsePartialJson::should handle nullish input", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/parse-partial-json.test.ts::parsePartialJson::should handle nullish input",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public async Task Handles_nullish_input()
     {
@@ -18,7 +21,10 @@ public sealed class PartialJsonTests
         Assert.Equal(PartialJson.UndefinedInput, result.State);
     }
 
-    [UpstreamTest("packages/ai/src/util/parse-partial-json.test.ts::parsePartialJson::should parse valid JSON", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/parse-partial-json.test.ts::parsePartialJson::should parse valid JSON",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public async Task Parses_valid_json()
     {
@@ -28,7 +34,10 @@ public sealed class PartialJsonTests
         Assert.Equal("value", result.Value!["key"]!.GetValue<string>());
     }
 
-    [UpstreamTest("packages/ai/src/util/parse-partial-json.test.ts::parsePartialJson::should repair and parse partial JSON", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/parse-partial-json.test.ts::parsePartialJson::should repair and parse partial JSON",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public async Task Repairs_partial_json()
     {
@@ -38,7 +47,10 @@ public sealed class PartialJsonTests
         Assert.Equal("value", result.Value!["key"]!.GetValue<string>());
     }
 
-    [UpstreamTest("packages/ai/src/util/parse-partial-json.test.ts::parsePartialJson::should handle invalid JSON that cannot be repaired", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/parse-partial-json.test.ts::parsePartialJson::should handle invalid JSON that cannot be repaired",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public async Task Fails_when_text_cannot_be_repaired()
     {

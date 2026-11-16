@@ -14,20 +14,35 @@ namespace Vercel.AI.Tests.Upstream.Azure.AzureTranscriptionModel;
 [Collection("MockWebSocket")]
 public sealed class StreamingAndSerializationTests
 {
-    private const string Prefix = "packages/azure/src/azure-transcription-model.test.ts::streaming and serialization::";
+    private const string Prefix =
+        "packages/azure/src/azure-transcription-model.test.ts::streaming and serialization::";
 
     [Fact]
-    [UpstreamTest(Prefix + "delegates OpenAI streaming without changing call options", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "delegates OpenAI streaming without changing call options",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Delegates_OpenAI_streaming_without_changing_call_options()
     {
         var harness = Setup();
-        var result = new TranscriptionStreamStart(new ModelPartStream(Array.Empty<ModelStreamPart>()));
+        var result = new TranscriptionStreamStart(
+            new ModelPartStream(Array.Empty<ModelStreamPart>())
+        );
         var spy = new DoStreamSpy(result);
         var model = harness.Provider.Transcription("mai-transcribe-2");
         model.OpenAIStreamModel = spy;
         var audio = new AudioChunkStream();
-        var providerOptions = JsonSerializer.Deserialize<JsonElement>("{\"azure\":{\"api\":\"openai\"},\"openai\":{\"language\":\"en\"}}");
-        var call = new TranscriptionStreamCall(audio, new AudioFormat("audio/pcm", 24000), providerOptions, new Dictionary<string, string?>(), null, CancellationToken.None);
+        var providerOptions = JsonSerializer.Deserialize<JsonElement>(
+            "{\"azure\":{\"api\":\"openai\"},\"openai\":{\"language\":\"en\"}}"
+        );
+        var call = new TranscriptionStreamCall(
+            audio,
+            new AudioFormat("audio/pcm", 24000),
+            providerOptions,
+            new Dictionary<string, string?>(),
+            null,
+            CancellationToken.None
+        );
 
         Assert.Same(result, await model.DoStreamAsync(call, CancellationToken.None));
 
@@ -53,9 +68,15 @@ public sealed class StreamingAndSerializationTests
 
         public bool CanStream => true;
 
-        public Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<TranscriptionModelResult> DoGenerateAsync(
+            TranscriptionModelCall call,
+            CancellationToken cancellationToken
+        ) => throw new NotSupportedException();
 
-        public Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+        public Task<TranscriptionStreamStart?> DoStreamAsync(
+            TranscriptionStreamCall call,
+            CancellationToken cancellationToken
+        )
         {
             Calls.Add(call);
             return Task.FromResult<TranscriptionStreamStart?>(result);
@@ -63,7 +84,11 @@ public sealed class StreamingAndSerializationTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects Speech streaming before sending audio", Coverage = UpstreamCoverage.Covered, Commit = "6400cf8b881c1167e97d09be7f1bc74c97781d9d")]
+    [UpstreamTest(
+        Prefix + "rejects Speech streaming before sending audio",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "6400cf8b881c1167e97d09be7f1bc74c97781d9d"
+    )]
     public async Task Rejects_Speech_streaming_before_sending_audio()
     {
         var harness = Setup();
@@ -73,15 +98,22 @@ public sealed class StreamingAndSerializationTests
             JsonSerializer.Deserialize<JsonElement>("{}"),
             new Dictionary<string, string?>(),
             null,
-            CancellationToken.None);
+            CancellationToken.None
+        );
 
-        await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => harness.Transcription("mai-transcribe-2").DoStreamAsync(call, CancellationToken.None));
+        await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() =>
+            harness.Transcription("mai-transcribe-2").DoStreamAsync(call, CancellationToken.None)
+        );
 
         Assert.Empty(harness.Handler.Requests);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "restores request-time routing after a workflow serialization round trip", Coverage = UpstreamCoverage.Covered, Commit = "6400cf8b881c1167e97d09be7f1bc74c97781d9d")]
+    [UpstreamTest(
+        Prefix + "restores request-time routing after a workflow serialization round trip",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "6400cf8b881c1167e97d09be7f1bc74c97781d9d"
+    )]
     public async Task Restores_request_time_routing_after_a_workflow_serialization_round_trip()
     {
         var harness = Setup(options =>
@@ -96,8 +128,14 @@ public sealed class StreamingAndSerializationTests
         Assert.False(serialized.Config.ContainsKey("fetch"));
         var restored = AzureModel.Deserialize(serialized, "test-key", harness.Handler);
         await restored.DoGenerateAsync(Call(), CancellationToken.None);
-        Assert.Equal("https://speech.example/speechtotext/transcriptions:transcribe?api-version=2025-10-15", harness.Request.Url);
-        await restored.DoGenerateAsync(Call("{\"azure\":{\"api\":\"openai\"}}"), CancellationToken.None);
+        Assert.Equal(
+            "https://speech.example/speechtotext/transcriptions:transcribe?api-version=2025-10-15",
+            harness.Request.Url
+        );
+        await restored.DoGenerateAsync(
+            Call("{\"azure\":{\"api\":\"openai\"}}"),
+            CancellationToken.None
+        );
         Assert.Equal("https://proxy.example/audio/transcriptions", harness.Request.Url);
     }
 }

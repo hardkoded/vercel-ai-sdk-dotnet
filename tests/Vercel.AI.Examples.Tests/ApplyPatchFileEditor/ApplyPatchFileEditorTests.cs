@@ -39,14 +39,21 @@ public sealed class ApplyPatchFileEditorTests : IAsyncLifetime
 
         Assert.Equal(
             ApplyPatchStatus.Completed,
-            (await execute(new("create", new CreateFileOperation(filePath, "+first\n")))).Status);
+            (await execute(new("create", new CreateFileOperation(filePath, "+first\n")))).Status
+        );
         Assert.Equal(
             ApplyPatchStatus.Completed,
-            (await execute(new("update", new UpdateFileOperation(filePath, "@@\n-first\n+second\n")))).Status);
+            (
+                await execute(
+                    new("update", new UpdateFileOperation(filePath, "@@\n-first\n+second\n"))
+                )
+            ).Status
+        );
         Assert.Equal("second", File.ReadAllText(Path.Combine(_workspace, filePath)));
         Assert.Equal(
             ApplyPatchStatus.Completed,
-            (await execute(new("delete", new DeleteFileOperation(filePath)))).Status);
+            (await execute(new("delete", new DeleteFileOperation(filePath)))).Status
+        );
         Assert.False(File.Exists(Path.Combine(_workspace, filePath)));
     }
 
@@ -54,7 +61,8 @@ public sealed class ApplyPatchFileEditorTests : IAsyncLifetime
     public async Task AllowsOrdinaryWorkspaceFilenamesBeginningWithTwoDots()
     {
         var result = await Editor.CreateApplyPatchExecutor(_workspace)(
-            new("create", new CreateFileOperation("..notes.md", "+notes\n")));
+            new("create", new CreateFileOperation("..notes.md", "+notes\n"))
+        );
 
         Assert.Equal(ApplyPatchStatus.Completed, result.Status);
         Assert.Equal("notes", File.ReadAllText(Path.Combine(_workspace, "..notes.md")));
@@ -74,8 +82,7 @@ public sealed class ApplyPatchFileEditorTests : IAsyncLifetime
             _ => new DeleteFileOperation(target),
         };
 
-        var result = await Editor.CreateApplyPatchExecutor(_workspace)(
-            new("outside", operation));
+        var result = await Editor.CreateApplyPatchExecutor(_workspace)(new("outside", operation));
 
         Assert.Equal(ApplyPatchStatus.Failed, result.Status);
         Assert.Equal("sentinel\n", File.ReadAllText(Path.Combine(_sibling, "sentinel.md")));
@@ -85,7 +92,8 @@ public sealed class ApplyPatchFileEditorTests : IAsyncLifetime
     public async Task RejectsAbsolutePathsOutsideTheWorkspace()
     {
         var result = await Editor.CreateApplyPatchExecutor(_workspace)(
-            new("outside", new DeleteFileOperation(Path.Combine(_sibling, "sentinel.md"))));
+            new("outside", new DeleteFileOperation(Path.Combine(_sibling, "sentinel.md")))
+        );
 
         Assert.Equal(ApplyPatchStatus.Failed, result.Status);
         Assert.Equal("sentinel\n", File.ReadAllText(Path.Combine(_sibling, "sentinel.md")));
@@ -97,7 +105,8 @@ public sealed class ApplyPatchFileEditorTests : IAsyncLifetime
         Directory.CreateSymbolicLink(Path.Combine(_workspace, "linked"), _sibling);
 
         var result = await Editor.CreateApplyPatchExecutor(_workspace)(
-            new("symlink", new DeleteFileOperation("linked/sentinel.md")));
+            new("symlink", new DeleteFileOperation("linked/sentinel.md"))
+        );
 
         Assert.Equal(ApplyPatchStatus.Failed, result.Status);
         Assert.Equal("sentinel\n", File.ReadAllText(Path.Combine(_sibling, "sentinel.md")));

@@ -10,10 +10,15 @@ namespace Vercel.AI.Tests.Upstream.Providers.NormalizeJsonSchemaForMfjs;
 public sealed class IdentityNoNormalizationNeededTests
 {
     [Fact]
-    [UpstreamTest(TestFile + "::identity (no normalization needed)::passes a plain object schema through unchanged", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        TestFile
+            + "::identity (no normalization needed)::passes a plain object schema through unchanged",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Passes_a_plain_object_schema_through_unchanged()
     {
-        var schema = Json("""
+        var schema = Json(
+            """
             {
               "type": "object",
               "properties": {
@@ -23,16 +28,22 @@ public sealed class IdentityNoNormalizationNeededTests
               "required": ["city"],
               "additionalProperties": false
             }
-            """);
+            """
+        );
 
         AssertEqual(schema, Normalize(schema));
     }
 
     [Fact]
-    [UpstreamTest(TestFile + "::identity (no normalization needed)::preserves keywords Moonshot accepts verbatim", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        TestFile
+            + "::identity (no normalization needed)::preserves keywords Moonshot accepts verbatim",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Preserves_keywords_Moonshot_accepts_verbatim()
     {
-        var schema = Json("""
+        var schema = Json(
+            """
             {
               "$schema": "http://json-schema.org/draft-07/schema#",
               "type": "object",
@@ -45,16 +56,22 @@ public sealed class IdentityNoNormalizationNeededTests
               "$defs": { "thing": { "type": "number" } },
               "not": { "type": "string" }
             }
-            """);
+            """
+        );
 
         AssertEqual(schema, Normalize(schema));
     }
 
     [Fact]
-    [UpstreamTest(TestFile + "::identity (no normalization needed)::passes anyOf without a sibling type through unchanged", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        TestFile
+            + "::identity (no normalization needed)::passes anyOf without a sibling type through unchanged",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Passes_anyOf_without_a_sibling_type_through_unchanged()
     {
-        var schema = Json("""
+        var schema = Json(
+            """
             {
               "type": "object",
               "properties": {
@@ -64,16 +81,22 @@ public sealed class IdentityNoNormalizationNeededTests
               },
               "required": ["location"]
             }
-            """);
+            """
+        );
 
         AssertEqual(schema, Normalize(schema));
     }
 
     [Fact]
-    [UpstreamTest(TestFile + "::identity (no normalization needed)::leaves oneOf next to type alone (accepted by MFJS)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        TestFile
+            + "::identity (no normalization needed)::leaves oneOf next to type alone (accepted by MFJS)",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Leaves_oneOf_next_to_type_alone_accepted_by_MFJS()
     {
-        var schema = Json("""
+        var schema = Json(
+            """
             {
               "type": "object",
               "oneOf": [
@@ -81,16 +104,21 @@ public sealed class IdentityNoNormalizationNeededTests
                 { "properties": { "lat": { "type": "number" } }, "required": ["lat"] }
               ]
             }
-            """);
+            """
+        );
 
         AssertEqual(schema, Normalize(schema));
     }
 
     [Fact]
-    [UpstreamTest(TestFile + "::identity (no normalization needed)::leaves single-schema items alone", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        TestFile + "::identity (no normalization needed)::leaves single-schema items alone",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Leaves_single_schema_items_alone()
     {
-        var schema = Json("""
+        var schema = Json(
+            """
             {
               "type": "object",
               "properties": {
@@ -102,7 +130,8 @@ public sealed class IdentityNoNormalizationNeededTests
                 }
               }
             }
-            """);
+            """
+        );
 
         AssertEqual(schema, Normalize(schema));
     }

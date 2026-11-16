@@ -14,12 +14,21 @@ public sealed class PrepareResponsesToolsMultipleToolsTests
     private const string Prefix = TestFile + " > multiple tools::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should handle multiple tools including provider-defined and functions", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should handle multiple tools including provider-defined and functions",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_handle_multiple_tools_including_provider_defined_and_functions()
     {
         var result = XaiResponsesTools.Prepare(
-            new[] { Function("calculator", "calculate numbers"), ProviderTool("xai.web_search", "web_search"), ProviderTool("xai.x_search", "x_search") },
-            null);
+            new[]
+            {
+                Function("calculator", "calculate numbers"),
+                ProviderTool("xai.web_search", "web_search"),
+                ProviderTool("xai.x_search", "x_search"),
+            },
+            null
+        );
 
         Assert.Equal(new[] { "function", "web_search", "x_search" }, Types(result));
     }

@@ -16,13 +16,20 @@ public sealed class ResolveProviderOptionsTests
     [Theory]
     [InlineData(ProviderOptionsResolution.First)]
     [InlineData(ProviderOptionsResolution.Merge)]
-    [UpstreamTest("packages/provider-utils/src/resolve-provider-options.test.ts::resolveProviderOptions::returns undefined options when no namespace is present (%s)", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
-    public void Returns_undefined_options_when_no_namespace_is_present(ProviderOptionsResolution resolution)
+    [UpstreamTest(
+        "packages/provider-utils/src/resolve-provider-options.test.ts::resolveProviderOptions::returns undefined options when no namespace is present (%s)",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
+    public void Returns_undefined_options_when_no_namespace_is_present(
+        ProviderOptionsResolution resolution
+    )
     {
         var result = Resolve(
             ProviderOptions(("other", "{\"a\":\"other\"}")),
             new[] { "first", "second" },
-            resolution);
+            resolution
+        );
 
         Assert.Null(result.Options);
         Assert.Empty(result.Namespaces);
@@ -31,12 +38,21 @@ public sealed class ResolveProviderOptionsTests
     [Theory]
     [InlineData(ProviderOptionsResolution.First)]
     [InlineData(ProviderOptionsResolution.Merge)]
-    [UpstreamTest("packages/provider-utils/src/resolve-provider-options.test.ts::resolveProviderOptions::throws for invalid options in a present namespace (%s)", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
-    public void Throws_for_invalid_options_in_a_present_namespace(ProviderOptionsResolution resolution)
+    [UpstreamTest(
+        "packages/provider-utils/src/resolve-provider-options.test.ts::resolveProviderOptions::throws for invalid options in a present namespace (%s)",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
+    public void Throws_for_invalid_options_in_a_present_namespace(
+        ProviderOptionsResolution resolution
+    )
     {
-        Assert.Throws<InvalidArgumentError>(() => Resolve(
-            ProviderOptions(("second", "{\"b\":\"invalid\"}")),
-            new[] { "first", "second" },
-            resolution));
+        Assert.Throws<InvalidArgumentError>(() =>
+            Resolve(
+                ProviderOptions(("second", "{\"b\":\"invalid\"}")),
+                new[] { "first", "second" },
+                resolution
+            )
+        );
     }
 }

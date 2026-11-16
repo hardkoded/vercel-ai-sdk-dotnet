@@ -15,7 +15,12 @@ public sealed class StreamTextChunkTimeoutTests
     [Theory]
     [InlineData("raw")]
     [InlineData("ping")]
-    [UpstreamTest("packages/ai/src/generate-text/stream-text-timeout.test.ts::streamText chunk timeout::should not reset chunkMs for non-output %s chunks", Coverage = UpstreamCoverage.Covered, Note = "Real timers with a longer chunkMs, because the test cannot advance fake time.", Commit = "97540149254736e8d566d432ccb7abf7b1cebbb3")]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/stream-text-timeout.test.ts::streamText chunk timeout::should not reset chunkMs for non-output %s chunks",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Real timers with a longer chunkMs, because the test cannot advance fake time.",
+        Commit = "97540149254736e8d566d432ccb7abf7b1cebbb3"
+    )]
     public async Task Should_not_reset_chunkMs_for_non_output_chunks(string heartbeatType)
     {
         var clock = Stopwatch.StartNew();
@@ -38,27 +43,38 @@ public sealed class StreamTextChunkTimeoutTests
                     await Task.Delay(150);
                     yield return new ResponseMetadataStreamPart("response-1", null, null);
                     await Task.Delay(150);
-                    yield return heartbeatType == "ping" ? new PingStreamPart() : new RawStreamPart("\": ping\"");
+                    yield return heartbeatType == "ping"
+                        ? new PingStreamPart()
+                        : new RawStreamPart("\": ping\"");
                     await Task.Delay(TimeSpan.FromSeconds(30));
                 }
             },
         };
 
-        var result = Client().StreamTextAsync(new StreamTextOptions
-        {
-            Model = model,
-            Prompt = "test-input",
-            Timeout = new TimeoutConfiguration { ChunkMs = 500 },
-            OnError = (_, _) => Task.CompletedTask,
-        });
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = model,
+                    Prompt = "test-input",
+                    Timeout = new TimeoutConfiguration { ChunkMs = 500 },
+                    OnError = (_, _) => Task.CompletedTask,
+                }
+            );
 
         await Consume(result).WaitAsync(SettleTimeout);
 
         var signal = Assert.Single(model.Calls).AbortSignal!;
         Assert.True(signal.Aborted);
-        Assert.Equal("TimeoutError", Assert.IsType<Vercel.AI.Util.TimeoutError>(signal.Reason).ErrorName);
+        Assert.Equal(
+            "TimeoutError",
+            Assert.IsType<Vercel.AI.Util.TimeoutError>(signal.Reason).ErrorName
+        );
 
         // The timeout ran from the text delta. A reset by the two later chunks would add at least 300 ms.
-        Assert.True(abortedAt - deltaSentAt < 650, "The chunk timeout fired " + (abortedAt - deltaSentAt) + " ms after the text delta.");
+        Assert.True(
+            abortedAt - deltaSentAt < 650,
+            "The chunk timeout fired " + (abortedAt - deltaSentAt) + " ms after the text delta."
+        );
     }
 }

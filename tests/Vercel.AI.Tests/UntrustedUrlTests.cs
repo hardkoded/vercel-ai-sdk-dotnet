@@ -25,14 +25,24 @@ public sealed class UntrustedUrlTests
 {
     private const string Origin = "https://api.example.com";
 
-    private static readonly Dictionary<string, string?> Credentials = new() { ["x-api-key"] = "secret" };
+    private static readonly Dictionary<string, string?> Credentials = new()
+    {
+        ["x-api-key"] = "secret",
+    };
 
     [Fact]
     public async Task A_response_url_on_the_trusted_origin_gets_the_credentials()
     {
         var handler = new ParityHandler(_ => ParityHandler.Bytes(new byte[] { 1, 2 }, "image/png"));
         using var client = new HttpClient(handler);
-        var result = await ProviderExchange.GetResponseUrlAsync(client, Origin + "/out.png", Origin, DownloadUrls.ValidateDownloadUrl, Credentials, CancellationToken.None);
+        var result = await ProviderExchange.GetResponseUrlAsync(
+            client,
+            Origin + "/out.png",
+            Origin,
+            DownloadUrls.ValidateDownloadUrl,
+            Credentials,
+            CancellationToken.None
+        );
         Assert.Equal(new byte[] { 1, 2 }, result.Bytes);
         Assert.Equal("secret", handler.Calls[0].Header("x-api-key"));
     }
@@ -42,7 +52,14 @@ public sealed class UntrustedUrlTests
     {
         var handler = new ParityHandler(_ => ParityHandler.Bytes(new byte[] { 1 }, "image/png"));
         using var client = new HttpClient(handler);
-        await ProviderExchange.GetResponseUrlAsync(client, "https://cdn.example.com/out.png", Origin, DownloadUrls.ValidateDownloadUrl, Credentials, CancellationToken.None);
+        await ProviderExchange.GetResponseUrlAsync(
+            client,
+            "https://cdn.example.com/out.png",
+            Origin,
+            DownloadUrls.ValidateDownloadUrl,
+            Credentials,
+            CancellationToken.None
+        );
         Assert.Null(handler.Calls[0].Header("x-api-key"));
     }
 
@@ -54,7 +71,16 @@ public sealed class UntrustedUrlTests
     {
         var handler = new ParityHandler();
         using var client = new HttpClient(handler);
-        await Assert.ThrowsAsync<DownloadException>(() => ProviderExchange.GetResponseUrlAsync(client, url, Origin, DownloadUrls.ValidateDownloadUrl, Credentials, CancellationToken.None));
+        await Assert.ThrowsAsync<DownloadException>(() =>
+            ProviderExchange.GetResponseUrlAsync(
+                client,
+                url,
+                Origin,
+                DownloadUrls.ValidateDownloadUrl,
+                Credentials,
+                CancellationToken.None
+            )
+        );
         Assert.Empty(handler.Calls);
     }
 
@@ -64,11 +90,23 @@ public sealed class UntrustedUrlTests
         var handler = new ParityHandler(call =>
         {
             var response = ParityHandler.Bytes(new byte[] { 1 }, "image/png");
-            response.RequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://169.254.169.254/latest/meta-data/");
+            response.RequestMessage = new HttpRequestMessage(
+                HttpMethod.Get,
+                "http://169.254.169.254/latest/meta-data/"
+            );
             return response;
         });
         using var client = new HttpClient(handler);
-        await Assert.ThrowsAsync<DownloadError>(() => ProviderExchange.GetResponseUrlAsync(client, "https://cdn.example.com/out.png", null, Download.ValidateDownloadUrl, null, CancellationToken.None));
+        await Assert.ThrowsAsync<DownloadError>(() =>
+            ProviderExchange.GetResponseUrlAsync(
+                client,
+                "https://cdn.example.com/out.png",
+                null,
+                Download.ValidateDownloadUrl,
+                null,
+                CancellationToken.None
+            )
+        );
     }
 
     private static HttpResponseMessage Redirect(string location)
@@ -83,16 +121,36 @@ public sealed class UntrustedUrlTests
     {
         var handler = new ParityHandler(_ => Redirect("http://169.254.169.254/latest/meta-data/"));
         using var client = new HttpClient(handler);
-        await Assert.ThrowsAsync<DownloadException>(() => ProviderExchange.GetResponseUrlAsync(client, "https://cdn.example.com/out.png", Origin, DownloadUrls.ValidateDownloadUrl, Credentials, CancellationToken.None));
+        await Assert.ThrowsAsync<DownloadException>(() =>
+            ProviderExchange.GetResponseUrlAsync(
+                client,
+                "https://cdn.example.com/out.png",
+                Origin,
+                DownloadUrls.ValidateDownloadUrl,
+                Credentials,
+                CancellationToken.None
+            )
+        );
         Assert.Single(handler.Calls);
     }
 
     [Fact]
     public async Task A_redirect_off_the_trusted_origin_is_followed_without_the_credentials()
     {
-        var handler = new ParityHandler(call => call.Uri.Host == "api.example.com" ? Redirect("https://cdn.example.com/out.png") : ParityHandler.Bytes(new byte[] { 7 }, "image/png"));
+        var handler = new ParityHandler(call =>
+            call.Uri.Host == "api.example.com"
+                ? Redirect("https://cdn.example.com/out.png")
+                : ParityHandler.Bytes(new byte[] { 7 }, "image/png")
+        );
         using var client = new HttpClient(handler);
-        var result = await ProviderExchange.GetResponseUrlAsync(client, Origin + "/out.png", Origin, DownloadUrls.ValidateDownloadUrl, Credentials, CancellationToken.None);
+        var result = await ProviderExchange.GetResponseUrlAsync(
+            client,
+            Origin + "/out.png",
+            Origin,
+            DownloadUrls.ValidateDownloadUrl,
+            Credentials,
+            CancellationToken.None
+        );
         Assert.Equal(new byte[] { 7 }, result.Bytes);
         Assert.Equal("secret", handler.Calls[0].Header("x-api-key"));
         Assert.Null(handler.Calls[1].Header("x-api-key"));
@@ -103,42 +161,104 @@ public sealed class UntrustedUrlTests
     {
         var handler = new ParityHandler(_ => Redirect("https://cdn.example.com/loop"));
         using var client = new HttpClient(handler);
-        await Assert.ThrowsAsync<DownloadError>(() => ProviderExchange.GetResponseUrlAsync(client, "https://cdn.example.com/loop", null, DownloadUrls.ValidateDownloadUrl, null, CancellationToken.None));
+        await Assert.ThrowsAsync<DownloadError>(() =>
+            ProviderExchange.GetResponseUrlAsync(
+                client,
+                "https://cdn.example.com/loop",
+                null,
+                DownloadUrls.ValidateDownloadUrl,
+                null,
+                CancellationToken.None
+            )
+        );
         Assert.Equal(11, handler.Calls.Count);
     }
 
     [Fact]
     public async Task A_body_that_declares_more_than_the_size_limit_is_rejected_without_reading_it()
     {
-        var handler = new ParityHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new DeclaredLengthContent(Download.DefaultMaxBytes + 1) });
+        var handler = new ParityHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new DeclaredLengthContent(Download.DefaultMaxBytes + 1),
+        });
         using var client = new HttpClient(handler);
-        var error = await Assert.ThrowsAsync<DownloadError>(() => ProviderExchange.GetResponseUrlAsync(client, "https://cdn.example.com/huge.bin", null, DownloadUrls.ValidateDownloadUrl, null, CancellationToken.None));
+        var error = await Assert.ThrowsAsync<DownloadError>(() =>
+            ProviderExchange.GetResponseUrlAsync(
+                client,
+                "https://cdn.example.com/huge.bin",
+                null,
+                DownloadUrls.ValidateDownloadUrl,
+                null,
+                CancellationToken.None
+            )
+        );
         Assert.Contains("exceeded maximum size", error.Message);
     }
 
     [Fact]
     public async Task A_failed_status_maps_to_a_provider_error()
     {
-        var handler = new ParityHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound) { Content = new StringContent("{\"error\":{\"message\":\"missing\"}}") });
+        var handler = new ParityHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)
+        {
+            Content = new StringContent("{\"error\":{\"message\":\"missing\"}}"),
+        });
         using var client = new HttpClient(handler);
-        await Assert.ThrowsAsync<NotFoundException>(() => ProviderExchange.GetResponseUrlAsync(client, Origin + "/gone", Origin, DownloadUrls.ValidateDownloadUrl, null, CancellationToken.None));
+        await Assert.ThrowsAsync<NotFoundException>(() =>
+            ProviderExchange.GetResponseUrlAsync(
+                client,
+                Origin + "/gone",
+                Origin,
+                DownloadUrls.ValidateDownloadUrl,
+                null,
+                CancellationToken.None
+            )
+        );
     }
 
     [Fact]
     public async Task Fal_does_not_download_a_generated_file_from_a_private_ipv6_address()
     {
-        var handler = new ParityHandler(_ => ParityHandler.Json("{\"images\":[{\"url\":\"http://[::1]:8080/image.png\"}]}"));
-        var model = new FalImageModel(FalProvider.Create(new OpenAICompatibleOptions { ApiKey = "key", BaseUrl = Origin }, handler), "fal-ai/flux/dev");
-        await Assert.ThrowsAsync<DownloadException>(() => model.DoGenerateAsync(new ImageModelCall("a cat", null, null, 1, null, null, null, JsonSerializer.SerializeToElement(new Dictionary<string, string>()), new Dictionary<string, string>(), CancellationToken.None), CancellationToken.None));
+        var handler = new ParityHandler(_ =>
+            ParityHandler.Json("{\"images\":[{\"url\":\"http://[::1]:8080/image.png\"}]}")
+        );
+        var model = new FalImageModel(
+            FalProvider.Create(
+                new OpenAICompatibleOptions { ApiKey = "key", BaseUrl = Origin },
+                handler
+            ),
+            "fal-ai/flux/dev"
+        );
+        await Assert.ThrowsAsync<DownloadException>(() =>
+            model.DoGenerateAsync(
+                new ImageModelCall(
+                    "a cat",
+                    null,
+                    null,
+                    1,
+                    null,
+                    null,
+                    null,
+                    JsonSerializer.SerializeToElement(new Dictionary<string, string>()),
+                    new Dictionary<string, string>(),
+                    CancellationToken.None
+                ),
+                CancellationToken.None
+            )
+        );
         Assert.Single(handler.Calls);
     }
 
     [Fact]
     public async Task Data_urls_obey_the_size_limit()
     {
-        var error = await Assert.ThrowsAsync<DownloadError>(() => Download.GetAsync(new Uri("data:text/plain;base64,AAAAAAAA"), 3));
+        var error = await Assert.ThrowsAsync<DownloadError>(() =>
+            Download.GetAsync(new Uri("data:text/plain;base64,AAAAAAAA"), 3)
+        );
         Assert.Contains("exceeded maximum size of 3 bytes", error.Message);
-        Assert.Equal(6, (await Download.GetAsync(new Uri("data:text/plain;base64,AAAAAAAA"), 6)).Data.Length);
+        Assert.Equal(
+            6,
+            (await Download.GetAsync(new Uri("data:text/plain;base64,AAAAAAAA"), 6)).Data.Length
+        );
     }
 
     [Fact]
@@ -156,7 +276,9 @@ public sealed class UntrustedUrlTests
     [Fact]
     public async Task An_anthropic_results_url_on_the_provider_origin_gets_the_api_key()
     {
-        var handler = BatchHandler("https://api.anthropic.com/v1/messages/batches/msgbatch_1/results");
+        var handler = BatchHandler(
+            "https://api.anthropic.com/v1/messages/batches/msgbatch_1/results"
+        );
         await Results(handler);
         Assert.Equal("test-api-key", handler.Calls[1].Header("x-api-key"));
     }
@@ -175,7 +297,9 @@ public sealed class UntrustedUrlTests
     [InlineData("http://[::1]:8080/results")]
     [InlineData("http://169.254.169.254/results")]
     [InlineData("file:///etc/passwd")]
-    public async Task An_anthropic_results_url_that_is_not_safe_is_rejected_before_any_request(string resultsUrl)
+    public async Task An_anthropic_results_url_that_is_not_safe_is_rejected_before_any_request(
+        string resultsUrl
+    )
     {
         var handler = BatchHandler(resultsUrl);
         await Assert.ThrowsAsync<DownloadException>(() => Results(handler));
@@ -185,12 +309,29 @@ public sealed class UntrustedUrlTests
     [Fact]
     public async Task The_fal_transcription_request_id_is_escaped_in_the_poll_url()
     {
-        var handler = new ParityHandler(call => call.Method == HttpMethod.Post
-            ? ParityHandler.Json("{\"request_id\":\"a/b?c\"}")
-            : ParityHandler.Json("{\"text\":\"hi\",\"chunks\":[]}"));
-        var model = (FalTranscriptionModel)FalProvider.Create(new OpenAICompatibleOptions { ApiKey = "key" }, handler).TranscriptionModel("wizper");
-        await model.DoGenerateAsync(new TranscriptionModelCall(new byte[] { 1 }, "audio/wav", JsonSerializer.SerializeToElement(new Dictionary<string, string>()), new Dictionary<string, string>(), CancellationToken.None), CancellationToken.None);
-        Assert.Equal("https://queue.fal.run/fal-ai/wizper/requests/a%2Fb%3Fc", handler.Calls[1].Uri.AbsoluteUri);
+        var handler = new ParityHandler(call =>
+            call.Method == HttpMethod.Post
+                ? ParityHandler.Json("{\"request_id\":\"a/b?c\"}")
+                : ParityHandler.Json("{\"text\":\"hi\",\"chunks\":[]}")
+        );
+        var model = (FalTranscriptionModel)
+            FalProvider
+                .Create(new OpenAICompatibleOptions { ApiKey = "key" }, handler)
+                .TranscriptionModel("wizper");
+        await model.DoGenerateAsync(
+            new TranscriptionModelCall(
+                new byte[] { 1 },
+                "audio/wav",
+                JsonSerializer.SerializeToElement(new Dictionary<string, string>()),
+                new Dictionary<string, string>(),
+                CancellationToken.None
+            ),
+            CancellationToken.None
+        );
+        Assert.Equal(
+            "https://queue.fal.run/fal-ai/wizper/requests/a%2Fb%3Fc",
+            handler.Calls[1].Uri.AbsoluteUri
+        );
     }
 
     [Fact]
@@ -207,9 +348,21 @@ public sealed class UntrustedUrlTests
                 ? ParityHandler.Json("{\"id\":\"a/b?c\",\"status\":\"queued\"}")
                 : ParityHandler.Json("{\"id\":\"a/b?c\",\"status\":\"completed\",\"text\":\"hi\"}");
         });
-        var provider = AssemblyAIProvider.Create(new AssemblyAIOptions { ApiKey = "key", PollDelay = _ => Task.CompletedTask }, handler);
-        await provider.Transcription("best").TranscribeAsync(new AudioInput(new byte[] { 1 }, "audio/wav", "a.wav"), null, CancellationToken.None);
-        Assert.Equal("https://api.assemblyai.com/v2/transcript/a%2Fb%3Fc", handler.Calls[2].Uri.AbsoluteUri);
+        var provider = AssemblyAIProvider.Create(
+            new AssemblyAIOptions { ApiKey = "key", PollDelay = _ => Task.CompletedTask },
+            handler
+        );
+        await provider
+            .Transcription("best")
+            .TranscribeAsync(
+                new AudioInput(new byte[] { 1 }, "audio/wav", "a.wav"),
+                null,
+                CancellationToken.None
+            );
+        Assert.Equal(
+            "https://api.assemblyai.com/v2/transcript/a%2Fb%3Fc",
+            handler.Calls[2].Uri.AbsoluteUri
+        );
     }
 
     [Fact]
@@ -222,28 +375,71 @@ public sealed class UntrustedUrlTests
                 return ParityHandler.Json("{\"monologues\":[]}");
             }
 
-            return ParityHandler.Json(call.Method == HttpMethod.Get
-                ? "{\"id\":\"a/b?c\",\"status\":\"transcribed\"}"
-                : "{\"id\":\"a/b?c\",\"status\":\"in_progress\"}");
+            return ParityHandler.Json(
+                call.Method == HttpMethod.Get
+                    ? "{\"id\":\"a/b?c\",\"status\":\"transcribed\"}"
+                    : "{\"id\":\"a/b?c\",\"status\":\"in_progress\"}"
+            );
         });
-        var provider = RevAIProvider.Create(new RevAIOptions { ApiKey = "key", PollDelay = _ => Task.CompletedTask }, handler);
-        await ((RevAIProvider.RevAITranscriptionModel)provider.TranscriptionModel("machine")).TranscribeAsync(new AudioInput(new byte[] { 1 }, "audio/wav", "a.wav"), null, CancellationToken.None);
-        Assert.Contains(handler.Calls, call => call.Uri.AbsoluteUri.EndsWith("/speechtotext/v1/jobs/a%2Fb%3Fc", StringComparison.Ordinal));
-        Assert.Contains(handler.Calls, call => call.Uri.AbsoluteUri.EndsWith("/speechtotext/v1/jobs/a%2Fb%3Fc/transcript", StringComparison.Ordinal));
+        var provider = RevAIProvider.Create(
+            new RevAIOptions { ApiKey = "key", PollDelay = _ => Task.CompletedTask },
+            handler
+        );
+        await (
+            (RevAIProvider.RevAITranscriptionModel)provider.TranscriptionModel("machine")
+        ).TranscribeAsync(
+            new AudioInput(new byte[] { 1 }, "audio/wav", "a.wav"),
+            null,
+            CancellationToken.None
+        );
+        Assert.Contains(handler.Calls, call =>
+            call.Uri.AbsoluteUri.EndsWith(
+                "/speechtotext/v1/jobs/a%2Fb%3Fc",
+                StringComparison.Ordinal
+            )
+        );
+        Assert.Contains(handler.Calls, call =>
+            call.Uri.AbsoluteUri.EndsWith(
+                "/speechtotext/v1/jobs/a%2Fb%3Fc/transcript",
+                StringComparison.Ordinal
+            )
+        );
     }
 
     private static ParityHandler BatchHandler(string resultsUrl)
     {
         const string line = "{\"custom_id\":\"france\",\"result\":{\"type\":\"canceled\"}}\n";
-        return new ParityHandler(call => call.Uri.AbsolutePath.EndsWith("/msgbatch_1", StringComparison.Ordinal)
-            ? ParityHandler.Json("{\"id\":\"msgbatch_1\",\"type\":\"message_batch\",\"processing_status\":\"ended\",\"request_counts\":{\"processing\":0,\"succeeded\":0,\"errored\":0,\"canceled\":1,\"expired\":0},\"created_at\":\"2026-01-01T00:00:00Z\",\"expires_at\":\"2026-01-02T00:00:00Z\",\"ended_at\":\"2026-01-01T01:00:00Z\",\"archived_at\":null,\"cancel_initiated_at\":null,\"results_url\":\"" + resultsUrl + "\"}")
-            : ParityHandler.Bytes(System.Text.Encoding.UTF8.GetBytes(line), "application/x-jsonl"));
+        return new ParityHandler(call =>
+            call.Uri.AbsolutePath.EndsWith("/msgbatch_1", StringComparison.Ordinal)
+                ? ParityHandler.Json(
+                    "{\"id\":\"msgbatch_1\",\"type\":\"message_batch\",\"processing_status\":\"ended\",\"request_counts\":{\"processing\":0,\"succeeded\":0,\"errored\":0,\"canceled\":1,\"expired\":0},\"created_at\":\"2026-01-01T00:00:00Z\",\"expires_at\":\"2026-01-02T00:00:00Z\",\"ended_at\":\"2026-01-01T01:00:00Z\",\"archived_at\":null,\"cancel_initiated_at\":null,\"results_url\":\""
+                        + resultsUrl
+                        + "\"}"
+                )
+                : ParityHandler.Bytes(
+                    System.Text.Encoding.UTF8.GetBytes(line),
+                    "application/x-jsonl"
+                )
+        );
     }
 
     private static async Task Results(ParityHandler handler)
     {
-        var provider = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-api-key" }, handler);
-        var stream = await provider.ExperimentalBatch()!.DoGetResultsAsync(new BatchOperationCall("msgbatch_1", null, new Dictionary<string, string>(), CancellationToken.None), CancellationToken.None);
+        var provider = AnthropicProvider.Create(
+            new AnthropicOptions { ApiKey = "test-api-key" },
+            handler
+        );
+        var stream = await provider
+            .ExperimentalBatch()!
+            .DoGetResultsAsync(
+                new BatchOperationCall(
+                    "msgbatch_1",
+                    null,
+                    new Dictionary<string, string>(),
+                    CancellationToken.None
+                ),
+                CancellationToken.None
+            );
         await stream.ToListAsync();
     }
 

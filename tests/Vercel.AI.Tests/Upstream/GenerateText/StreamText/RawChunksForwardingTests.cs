@@ -15,42 +15,61 @@ namespace Vercel.AI.Tests.Upstream.GenerateText.StreamText;
 /// </summary>
 public sealed class RawChunksForwardingTests
 {
-    private const string Prefix = "packages/ai/src/generate-text/stream-text.test.ts::streamText > raw chunks forwarding::";
+    private const string Prefix =
+        "packages/ai/src/generate-text/stream-text.test.ts::streamText > raw chunks forwarding::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should forward raw chunks when include.rawChunks is enabled", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should forward raw chunks when include.rawChunks is enabled",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_forward_raw_chunks_when_include_rawChunks_is_enabled()
     {
-        var result = Client().StreamTextAsync(new StreamTextOptions
-        {
-            Model = ModelWithRawChunks("should appear"),
-            Prompt = "test prompt",
-            Include = new StreamTextInclude { RawChunks = true },
-        });
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = ModelWithRawChunks("should appear"),
+                    Prompt = "test prompt",
+                    Include = new StreamTextInclude { RawChunks = true },
+                }
+            );
 
         var raw = (await ReadAsync(result)).OfType<RawPart>().ToList();
 
         var chunk = Assert.Single(raw);
         Assert.Equal("raw", chunk.Type);
-        Assert.Equal("{\"type\":\"raw-data\",\"content\":\"should appear\"}", chunk.RawValue.GetRawText());
+        Assert.Equal(
+            "{\"type\":\"raw-data\",\"content\":\"should appear\"}",
+            chunk.RawValue.GetRawText()
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should not forward raw chunks when includeRawChunks is disabled", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should not forward raw chunks when includeRawChunks is disabled",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_not_forward_raw_chunks_when_includeRawChunks_is_disabled()
     {
-        var result = Client().StreamTextAsync(new StreamTextOptions
-        {
-            Model = ModelWithRawChunks("should not appear"),
-            Prompt = "test prompt",
-            Include = new StreamTextInclude { RawChunks = false },
-        });
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = ModelWithRawChunks("should not appear"),
+                    Prompt = "test prompt",
+                    Include = new StreamTextInclude { RawChunks = false },
+                }
+            );
 
         Assert.Empty((await ReadAsync(result)).OfType<RawPart>());
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should pass through the include.rawChunks flag correctly to the model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should pass through the include.rawChunks flag correctly to the model",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_pass_through_the_include_rawChunks_flag_correctly_to_the_model()
     {
         var model = new TestLanguageModel
@@ -62,12 +81,17 @@ public sealed class RawChunksForwardingTests
             },
         };
 
-        await ReadAsync(Client().StreamTextAsync(new StreamTextOptions
-        {
-            Model = model,
-            Prompt = "test prompt",
-            Include = new StreamTextInclude { RawChunks = true },
-        }));
+        await ReadAsync(
+            Client()
+                .StreamTextAsync(
+                    new StreamTextOptions
+                    {
+                        Model = model,
+                        Prompt = "test prompt",
+                        Include = new StreamTextInclude { RawChunks = true },
+                    }
+                )
+        );
 
         Assert.True(model.Calls[0].IncludeRawChunks);
     }
@@ -80,7 +104,11 @@ public sealed class RawChunksForwardingTests
             {
                 new StreamStartStreamPart(null),
                 new RawStreamPart(JsonSerializer.Serialize(new { type = "raw-data", content })),
-                new ResponseMetadataStreamPart("test-id", "test-model", DateTimeOffset.FromUnixTimeMilliseconds(0)),
+                new ResponseMetadataStreamPart(
+                    "test-id",
+                    "test-model",
+                    DateTimeOffset.FromUnixTimeMilliseconds(0)
+                ),
                 new TextStartStreamPart("1"),
                 new TextDeltaStreamPart("1", "Hello, world!"),
                 new TextEndStreamPart("1"),

@@ -12,21 +12,40 @@ namespace Vercel.AI.Tests.Upstream.GenerateText.ValidateToolApprovals;
 /// <summary>Port of <c>validate-tool-approvals.test.ts</c> &gt; <c>validateApprovedToolApprovals</c>.</summary>
 public sealed class ValidateApprovedToolApprovalsTests
 {
-    private const string Id = "packages/ai/src/generate-text/validate-tool-approvals.test.ts::validateApprovedToolApprovals::";
+    private const string Id =
+        "packages/ai/src/generate-text/validate-tool-approvals.test.ts::validateApprovedToolApprovals::";
 
     [Fact]
-    [UpstreamTest(Id + "should reject signed approvals changed by an in-place schema validator", Commit = "3c09e0011c718c33f9287c5487c1f95190aeb772", Coverage = UpstreamCoverage.Partial, Note = "A tool input schema is plain JSON Schema, with no custom validate function that can change the value in place, and a JsonElement is immutable. A refineToolInput function that returns a changed input stands in for the validator.")]
+    [UpstreamTest(
+        Id + "should reject signed approvals changed by an in-place schema validator",
+        Commit = "3c09e0011c718c33f9287c5487c1f95190aeb772",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "A tool input schema is plain JSON Schema, with no custom validate function that can change the value in place, and a JsonElement is immutable. A refineToolInput function that returns a changed input stands in for the validator."
+    )]
     public async Task Should_reject_signed_approvals_changed_by_an_in_place_schema_validator()
     {
         const string secret = "test-secret";
-        var signature = ToolApprovalSignatures.SignToolApproval(secret, "approval-1", "call-1", "tool1", Json("{\"counter\":{\"value\":2}}"));
+        var signature = ToolApprovalSignatures.SignToolApproval(
+            secret,
+            "approval-1",
+            "call-1",
+            "tool1",
+            Json("{\"counter\":{\"value\":2}}")
+        );
         var approval = CreateApproval("tool1", "{\"counter\":{\"value\":2}}", signature);
 
         var result = await ValidateAsync(
             approval,
             new[] { ExecutableTool("tool1", "{\"type\":\"object\"}") },
             secret: secret,
-            refine: Refine("tool1", input => Json("{\"counter\":{\"value\":" + (input.GetProperty("counter").GetProperty("value").GetInt32() + 1) + "}}")));
+            refine: Refine("tool1", input =>
+                Json(
+                    "{\"counter\":{\"value\":"
+                        + (input.GetProperty("counter").GetProperty("value").GetInt32() + 1)
+                        + "}}"
+                )
+            )
+        );
 
         Assert.Empty(result.ApprovedToolApprovals);
         var invalid = Assert.Single(result.InvalidToolApprovals);
@@ -36,7 +55,10 @@ public sealed class ValidateApprovedToolApprovalsTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should keep approvals whose input matches the tool input schema", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should keep approvals whose input matches the tool input schema",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_keep_approvals_whose_input_matches_the_tool_input_schema()
     {
         var approval = CreateApproval("tool1", "{\"value\":\"test\"}");
@@ -48,7 +70,10 @@ public sealed class ValidateApprovedToolApprovalsTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should return invalid approved tool inputs as recoverable errors", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should return invalid approved tool inputs as recoverable errors",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_return_invalid_approved_tool_inputs_as_recoverable_errors()
     {
         // Forged input: `value` should be a string.
@@ -64,45 +89,95 @@ public sealed class ValidateApprovedToolApprovalsTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should return extra forged properties as invalid tool input errors", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should return extra forged properties as invalid tool input errors",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_return_extra_forged_properties_as_invalid_tool_input_errors()
     {
-        var tool = ExecutableTool("deleteFile", "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\"}},\"required\":[\"path\"],\"additionalProperties\":false}");
-        var approval = CreateApproval("deleteFile", "{\"path\":\"/app/.env\",\"extra\":\"forged\"}");
+        var tool = ExecutableTool(
+            "deleteFile",
+            "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\"}},\"required\":[\"path\"],\"additionalProperties\":false}"
+        );
+        var approval = CreateApproval(
+            "deleteFile",
+            "{\"path\":\"/app/.env\",\"extra\":\"forged\"}"
+        );
 
         var result = await ValidateAsync(approval, new[] { tool });
 
         Assert.Empty(result.ApprovedToolApprovals);
-        Assert.Matches("Invalid input for tool deleteFile", result.InvalidToolApprovals[0].Error.Message);
+        Assert.Matches(
+            "Invalid input for tool deleteFile",
+            result.InvalidToolApprovals[0].Error.Message
+        );
     }
 
     [Fact]
-    [UpstreamTest(Id + "should keep approvals whose schema input transforms to the approved input", Coverage = UpstreamCoverage.Partial, Note = TransformNote)]
+    [UpstreamTest(
+        Id + "should keep approvals whose schema input transforms to the approved input",
+        Coverage = UpstreamCoverage.Partial,
+        Note = TransformNote
+    )]
     public async Task Should_keep_approvals_whose_schema_input_transforms_to_the_approved_input()
     {
-        var tool = ExecutableTool("tool1", "{\"type\":\"object\",\"properties\":{\"count\":{\"type\":\"string\"}},\"required\":[\"count\"]}");
-        var approval = CreateApproval("tool1", "{\"count\":3}", inputSchemaInputJson: "{\"count\":\"3\"}");
+        var tool = ExecutableTool(
+            "tool1",
+            "{\"type\":\"object\",\"properties\":{\"count\":{\"type\":\"string\"}},\"required\":[\"count\"]}"
+        );
+        var approval = CreateApproval(
+            "tool1",
+            "{\"count\":3}",
+            inputSchemaInputJson: "{\"count\":\"3\"}"
+        );
 
         var result = await ValidateAsync(
             approval,
             new[] { tool },
-            refine: Refine("tool1", input => Json("{\"count\":" + int.Parse(input.GetProperty("count").GetString()!, System.Globalization.CultureInfo.InvariantCulture) + "}")));
+            refine: Refine("tool1", input =>
+                Json(
+                    "{\"count\":"
+                        + int.Parse(
+                            input.GetProperty("count").GetString()!,
+                            System.Globalization.CultureInfo.InvariantCulture
+                        )
+                        + "}"
+                )
+            )
+        );
 
         Assert.Single(result.ApprovedToolApprovals);
         Assert.Empty(result.InvalidToolApprovals);
     }
 
     [Fact]
-    [UpstreamTest(Id + "should reject approvals when missing schema input would change the approved input", Coverage = UpstreamCoverage.Partial, Note = TransformNote)]
+    [UpstreamTest(
+        Id + "should reject approvals when missing schema input would change the approved input",
+        Coverage = UpstreamCoverage.Partial,
+        Note = TransformNote
+    )]
     public async Task Should_reject_approvals_when_missing_schema_input_would_change_the_approved_input()
     {
-        var tool = ExecutableTool("tool1", "{\"type\":\"object\",\"properties\":{\"raw\":{\"type\":\"string\"}},\"required\":[\"raw\"]}");
+        var tool = ExecutableTool(
+            "tool1",
+            "{\"type\":\"object\",\"properties\":{\"raw\":{\"type\":\"string\"}},\"required\":[\"raw\"]}"
+        );
         var approval = CreateApproval("tool1", "{\"raw\":\"999\"}");
 
         var result = await ValidateAsync(
             approval,
             new[] { tool },
-            refine: Refine("tool1", input => Json("{\"safe\":" + int.Parse(input.GetProperty("raw").GetString()!, System.Globalization.CultureInfo.InvariantCulture) + "}")));
+            refine: Refine("tool1", input =>
+                Json(
+                    "{\"safe\":"
+                        + int.Parse(
+                            input.GetProperty("raw").GetString()!,
+                            System.Globalization.CultureInfo.InvariantCulture
+                        )
+                        + "}"
+                )
+            )
+        );
 
         Assert.Empty(result.ApprovedToolApprovals);
         var invalid = Assert.Single(result.InvalidToolApprovals);
@@ -113,47 +188,103 @@ public sealed class ValidateApprovedToolApprovalsTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should keep approvals whose schema input reshapes to the approved input", Coverage = UpstreamCoverage.Partial, Note = TransformNote)]
+    [UpstreamTest(
+        Id + "should keep approvals whose schema input reshapes to the approved input",
+        Coverage = UpstreamCoverage.Partial,
+        Note = TransformNote
+    )]
     public async Task Should_keep_approvals_whose_schema_input_reshapes_to_the_approved_input()
     {
-        var tool = ExecutableTool("tool1", "{\"type\":\"object\",\"properties\":{\"raw\":{\"type\":\"string\"}},\"required\":[\"raw\"]}");
-        var approval = CreateApproval("tool1", "{\"count\":3}", inputSchemaInputJson: "{\"raw\":\"3\"}");
+        var tool = ExecutableTool(
+            "tool1",
+            "{\"type\":\"object\",\"properties\":{\"raw\":{\"type\":\"string\"}},\"required\":[\"raw\"]}"
+        );
+        var approval = CreateApproval(
+            "tool1",
+            "{\"count\":3}",
+            inputSchemaInputJson: "{\"raw\":\"3\"}"
+        );
 
         var result = await ValidateAsync(
             approval,
             new[] { tool },
-            refine: Refine("tool1", input => Json("{\"count\":" + int.Parse(input.GetProperty("raw").GetString()!, System.Globalization.CultureInfo.InvariantCulture) + "}")));
+            refine: Refine("tool1", input =>
+                Json(
+                    "{\"count\":"
+                        + int.Parse(
+                            input.GetProperty("raw").GetString()!,
+                            System.Globalization.CultureInfo.InvariantCulture
+                        )
+                        + "}"
+                )
+            )
+        );
 
         Assert.Single(result.ApprovedToolApprovals);
         Assert.Empty(result.InvalidToolApprovals);
     }
 
     [Fact]
-    [UpstreamTest(Id + "should reapply input refinement before comparing the approved input", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should reapply input refinement before comparing the approved input",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_reapply_input_refinement_before_comparing_the_approved_input()
     {
-        var approval = CreateApproval("tool1", "{\"value\":\"trimmed\"}", inputSchemaInputJson: "{\"value\":\" trimmed \"}");
+        var approval = CreateApproval(
+            "tool1",
+            "{\"value\":\"trimmed\"}",
+            inputSchemaInputJson: "{\"value\":\" trimmed \"}"
+        );
 
         var result = await ValidateAsync(
             approval,
             new[] { ExecutableTool() },
-            refine: Refine("tool1", input => Json("{\"value\":" + JsonSerializer.Serialize(input.GetProperty("value").GetString()!.Trim()) + "}")));
+            refine: Refine("tool1", input =>
+                Json(
+                    "{\"value\":"
+                        + JsonSerializer.Serialize(input.GetProperty("value").GetString()!.Trim())
+                        + "}"
+                )
+            )
+        );
 
         Assert.Single(result.ApprovedToolApprovals);
         Assert.Empty(result.InvalidToolApprovals);
     }
 
     [Fact]
-    [UpstreamTest(Id + "should reject approvals whose transformed schema output was changed", Coverage = UpstreamCoverage.Partial, Note = TransformNote)]
+    [UpstreamTest(
+        Id + "should reject approvals whose transformed schema output was changed",
+        Coverage = UpstreamCoverage.Partial,
+        Note = TransformNote
+    )]
     public async Task Should_reject_approvals_whose_transformed_schema_output_was_changed()
     {
-        var tool = ExecutableTool("tool1", "{\"type\":\"object\",\"properties\":{\"count\":{\"type\":\"string\"}},\"required\":[\"count\"]}");
-        var approval = CreateApproval("tool1", "{\"count\":4}", inputSchemaInputJson: "{\"count\":\"3\"}");
+        var tool = ExecutableTool(
+            "tool1",
+            "{\"type\":\"object\",\"properties\":{\"count\":{\"type\":\"string\"}},\"required\":[\"count\"]}"
+        );
+        var approval = CreateApproval(
+            "tool1",
+            "{\"count\":4}",
+            inputSchemaInputJson: "{\"count\":\"3\"}"
+        );
 
         var result = await ValidateAsync(
             approval,
             new[] { tool },
-            refine: Refine("tool1", input => Json("{\"count\":" + int.Parse(input.GetProperty("count").GetString()!, System.Globalization.CultureInfo.InvariantCulture) + "}")));
+            refine: Refine("tool1", input =>
+                Json(
+                    "{\"count\":"
+                        + int.Parse(
+                            input.GetProperty("count").GetString()!,
+                            System.Globalization.CultureInfo.InvariantCulture
+                        )
+                        + "}"
+                )
+            )
+        );
 
         Assert.Empty(result.ApprovedToolApprovals);
         var invalid = Assert.Single(result.InvalidToolApprovals);
@@ -163,13 +294,20 @@ public sealed class ValidateApprovedToolApprovalsTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should move approvals to denied when the approval policy denies them", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should move approvals to denied when the approval policy denies them",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_move_approvals_to_denied_when_the_approval_policy_denies_them()
     {
         var approval = CreateApproval("tool1", "{\"value\":\"test\"}");
 
         // server-side policy denies the call regardless of the client's response
-        var result = await ValidateAsync(approval, new[] { ExecutableTool() }, new ToolApprovalConfiguration { { "tool1", "denied" } });
+        var result = await ValidateAsync(
+            approval,
+            new[] { ExecutableTool() },
+            new ToolApprovalConfiguration { { "tool1", "denied" } }
+        );
 
         Assert.Empty(result.ApprovedToolApprovals);
         var denied = Assert.Single(result.DeniedToolApprovals);
@@ -177,7 +315,10 @@ public sealed class ValidateApprovedToolApprovalsTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should carry the policy reason into the denial response", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should carry the policy reason into the denial response",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_carry_the_policy_reason_into_the_denial_response()
     {
         var approval = CreateApproval("tool1", "{\"value\":\"test\"}");
@@ -185,7 +326,11 @@ public sealed class ValidateApprovedToolApprovalsTests
         var result = await ValidateAsync(
             approval,
             new[] { ExecutableTool() },
-            new ToolApprovalConfiguration { { "tool1", new ToolApprovalStatus("denied", "policy changed") } });
+            new ToolApprovalConfiguration
+            {
+                { "tool1", new ToolApprovalStatus("denied", "policy changed") },
+            }
+        );
 
         var denied = Assert.Single(result.DeniedToolApprovals);
         Assert.Equal("policy changed", denied.ApprovalResponse.Reason);
@@ -193,7 +338,10 @@ public sealed class ValidateApprovedToolApprovalsTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should re-run a function-based approval policy on the approved input", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should re-run a function-based approval policy on the approved input",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_re_run_a_function_based_approval_policy_on_the_approved_input()
     {
         var calls = new List<(JsonElement Input, SingleToolApprovalOptions Options)>();
@@ -213,7 +361,8 @@ public sealed class ValidateApprovedToolApprovalsTests
                         return Task.FromResult<ToolApprovalStatus?>("denied");
                     }
                 },
-            });
+            }
+        );
 
         var call = Assert.Single(calls);
         Assert.Equal("{\"value\":\"test\"}", call.Input.GetRawText());
@@ -223,7 +372,10 @@ public sealed class ValidateApprovedToolApprovalsTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should pass through approvals for tools without an execute function (not validated)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should pass through approvals for tools without an execute function (not validated)",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_pass_through_approvals_for_tools_without_an_execute_function_not_validated()
     {
         // no execute -> client-side tool, not run on the server
@@ -236,7 +388,10 @@ public sealed class ValidateApprovedToolApprovalsTests
         Assert.Empty(result.DeniedToolApprovals);
     }
 
-    internal static IReadOnlyDictionary<string, Func<JsonElement, CancellationToken, Task<JsonElement>>> Refine(string toolName, Func<JsonElement, JsonElement> refine) =>
+    internal static IReadOnlyDictionary<
+        string,
+        Func<JsonElement, CancellationToken, Task<JsonElement>>
+    > Refine(string toolName, Func<JsonElement, JsonElement> refine) =>
         new Dictionary<string, Func<JsonElement, CancellationToken, Task<JsonElement>>>
         {
             [toolName] = (input, _) => Task.FromResult(refine(input)),

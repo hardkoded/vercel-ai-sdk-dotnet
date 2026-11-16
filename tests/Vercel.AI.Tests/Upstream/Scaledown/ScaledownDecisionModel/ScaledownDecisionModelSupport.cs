@@ -20,7 +20,8 @@ internal sealed class ScaleDownServerCall
 
     public string Body { get; init; } = string.Empty;
 
-    public Dictionary<string, string> Headers { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string> Headers { get; init; } =
+        new(StringComparer.OrdinalIgnoreCase);
 
     public JsonNode? Json => JsonNode.Parse(Body);
 }
@@ -40,14 +41,20 @@ internal sealed class ScaleDownServer : HttpMessageHandler
     /// <summary>When set, the handler waits on this task, honoring the token, before it answers.</summary>
     public Task? Hold { get; set; }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         cancellationToken.ThrowIfCancellationRequested();
         Signals.Add(cancellationToken);
         var call = new ScaleDownServerCall
         {
             Url = request.RequestUri!.AbsoluteUri,
-            Body = request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false),
+            Body =
+                request.Content == null
+                    ? string.Empty
+                    : await request.Content.ReadAsStringAsync().ConfigureAwait(false),
         };
         foreach (var header in request.Headers)
         {
@@ -60,7 +67,10 @@ internal sealed class ScaleDownServer : HttpMessageHandler
             await Hold.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        return new HttpResponseMessage(Status) { Content = new StringContent(ResponseBody, Encoding.UTF8, "application/json") };
+        return new HttpResponseMessage(Status)
+        {
+            Content = new StringContent(ResponseBody, Encoding.UTF8, "application/json"),
+        };
     }
 }
 
@@ -74,9 +84,15 @@ internal static class ScaledownDecisionModelSupport
         {"model":"classify-1","answers":{"category":{"type":"choice","choice":"bug","probabilities":{"bug":0.93,"feedback":0.07},"confidence":0.93},"workaround":{"type":"noul","noul":0.79},"severity":{"type":"score","score":1.43,"probabilities":{"0":0,"1":0.57,"2":0.43},"confidence":0.57,"legend":{"0":"Cosmetic","1":"Degraded","2":"Blocking"}}},"usage":{"input_tokens":103,"output_tokens":3,"cost":0.0000044}}
         """;
 
-    internal static readonly IReadOnlyList<DecisionModelStatePart> DefaultState = [new DecisionModelTextPart("The export crashes in Safari.")];
+    internal static readonly IReadOnlyList<DecisionModelStatePart> DefaultState =
+    [
+        new DecisionModelTextPart("The export crashes in Safari."),
+    ];
 
-    internal static ScaleDownProvider CreateProvider(ScaleDownServer server, string? apiKey = "test-key")
+    internal static ScaleDownProvider CreateProvider(
+        ScaleDownServer server,
+        string? apiKey = "test-key"
+    )
     {
         return ScaleDownProvider.Create(new ScaleDownProviderSettings { ApiKey = apiKey }, server);
     }
@@ -86,9 +102,21 @@ internal static class ScaledownDecisionModelSupport
     {
         return new Dictionary<string, DecisionQuestion>
         {
-            ["category"] = Q("choice", null, new Dictionary<string, object?> { ["bug"] = "Broken functionality", ["feedback"] = null }),
+            ["category"] = Q(
+                "choice",
+                null,
+                new Dictionary<string, object?>
+                {
+                    ["bug"] = "Broken functionality",
+                    ["feedback"] = null,
+                }
+            ),
             ["workaround"] = Q("boolean", "Is there a workaround?"),
-            ["severity"] = Q("score", null, new List<object?> { "Cosmetic", "Degraded", "Blocking" }),
+            ["severity"] = Q(
+                "score",
+                null,
+                new List<object?> { "Cosmetic", "Degraded", "Blocking" }
+            ),
         };
     }
 
@@ -99,7 +127,8 @@ internal static class ScaledownDecisionModelSupport
         IReadOnlyDictionary<string, string>? headers = null,
         double? maxOutputTokens = null,
         string? reasoning = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         using var document = JsonDocument.Parse(providerOptions);
         return new DecisionModelCall(
@@ -109,7 +138,8 @@ internal static class ScaledownDecisionModelSupport
             headers ?? new Dictionary<string, string>(),
             cancellationToken,
             maxOutputTokens,
-            reasoning);
+            reasoning
+        );
     }
 
     internal static DecisionModelJsonPart JsonPart(string json)
@@ -118,8 +148,15 @@ internal static class ScaledownDecisionModelSupport
         return new DecisionModelJsonPart(document.RootElement);
     }
 
-    internal static DecisionModelFilePart FilePart(string mediaType, byte[]? bytes = null, string? base64 = null)
+    internal static DecisionModelFilePart FilePart(
+        string mediaType,
+        byte[]? bytes = null,
+        string? base64 = null
+    )
     {
-        return new DecisionModelFilePart(mediaType, new LanguageModelFilePart("data", mediaType) { Bytes = bytes, Base64 = base64 });
+        return new DecisionModelFilePart(
+            mediaType,
+            new LanguageModelFilePart("data", mediaType) { Bytes = bytes, Base64 = base64 }
+        );
     }
 }

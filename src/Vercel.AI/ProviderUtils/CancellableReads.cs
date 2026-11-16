@@ -12,7 +12,10 @@ namespace Vercel.AI.ProviderUtils;
 /// </summary>
 internal static class CancellableReads
 {
-    internal static Task<string?> ReadLineAsync(StreamReader reader, CancellationToken cancellationToken)
+    internal static Task<string?> ReadLineAsync(
+        StreamReader reader,
+        CancellationToken cancellationToken
+    )
     {
 #if NET
         return reader.ReadLineAsync(cancellationToken).AsTask();
@@ -21,7 +24,11 @@ internal static class CancellableReads
 #endif
     }
 
-    internal static Task<int> ReadAsync(StreamReader reader, char[] buffer, CancellationToken cancellationToken)
+    internal static Task<int> ReadAsync(
+        StreamReader reader,
+        char[] buffer,
+        CancellationToken cancellationToken
+    )
     {
 #if NET
         return reader.ReadAsync(buffer.AsMemory(), cancellationToken).AsTask();
@@ -30,33 +37,47 @@ internal static class CancellableReads
 #endif
     }
 
-    internal static async Task<string> ReadAsStringAsync(HttpContent content, CancellationToken cancellationToken)
+    internal static async Task<string> ReadAsStringAsync(
+        HttpContent content,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
 #if NET
             return await content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
 #else
-            return await WaitAsync(content.ReadAsStringAsync(), cancellationToken).ConfigureAwait(false);
+            return await WaitAsync(content.ReadAsStringAsync(), cancellationToken)
+                .ConfigureAwait(false);
 #endif
         }
-        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested && exception is not ApiUserAbortException)
+        catch (OperationCanceledException exception)
+            when (cancellationToken.IsCancellationRequested
+                && exception is not ApiUserAbortException
+            )
         {
             throw new ApiUserAbortException(exception, cancellationToken);
         }
     }
 
-    internal static async Task<byte[]> ReadAsByteArrayAsync(HttpContent content, CancellationToken cancellationToken)
+    internal static async Task<byte[]> ReadAsByteArrayAsync(
+        HttpContent content,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
 #if NET
             return await content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
 #else
-            return await WaitAsync(content.ReadAsByteArrayAsync(), cancellationToken).ConfigureAwait(false);
+            return await WaitAsync(content.ReadAsByteArrayAsync(), cancellationToken)
+                .ConfigureAwait(false);
 #endif
         }
-        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested && exception is not ApiUserAbortException)
+        catch (OperationCanceledException exception)
+            when (cancellationToken.IsCancellationRequested
+                && exception is not ApiUserAbortException
+            )
         {
             throw new ApiUserAbortException(exception, cancellationToken);
         }
@@ -70,13 +91,18 @@ internal static class CancellableReads
             return await task.ConfigureAwait(false);
         }
 
-        var cancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cancelled = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         using (cancellationToken.Register(() => cancelled.TrySetResult(true)))
         {
             if (task != await Task.WhenAny(task, cancelled.Task).ConfigureAwait(false))
             {
                 // Observe the abandoned read so a later fault is not unobserved.
-                _ = task.ContinueWith(static t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
+                _ = task.ContinueWith(
+                    static t => _ = t.Exception,
+                    TaskContinuationOptions.OnlyOnFaulted
+                );
                 throw new OperationCanceledException(cancellationToken);
             }
         }

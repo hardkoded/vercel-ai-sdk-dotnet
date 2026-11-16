@@ -48,7 +48,10 @@ public sealed class GoogleMessageOptions
     public bool? SupportsFunctionResponseParts { get; set; }
 
     /// <summary>File URLs that a function response may reference directly, keyed by media type. Maps to <c>supportedFunctionResponseUrls</c>.</summary>
-    public IReadOnlyDictionary<string, IReadOnlyList<System.Text.RegularExpressions.Regex>>? SupportedFunctionResponseUrls { get; set; }
+    public IReadOnlyDictionary<
+        string,
+        IReadOnlyList<System.Text.RegularExpressions.Regex>
+    >? SupportedFunctionResponseUrls { get; set; }
 
     /// <summary>When false, function call and response ids are omitted. Vertex omits them.</summary>
     public bool IncludeFunctionCallIds { get; set; } = true;
@@ -78,9 +81,7 @@ public sealed class GooglePrompt
 }
 
 /// <summary>One rich prompt turn used by the message converter.</summary>
-public abstract class GoogleTurn
-{
-}
+public abstract class GoogleTurn { }
 
 /// <summary>A system turn.</summary>
 public sealed class GoogleSystemTurn : GoogleTurn
@@ -109,9 +110,7 @@ public sealed class GoogleUserTurn : GoogleTurn
 }
 
 /// <summary>A user content part.</summary>
-public abstract class GoogleUserPart
-{
-}
+public abstract class GoogleUserPart { }
 
 /// <summary>User text.</summary>
 public sealed class GoogleTextUserPart : GoogleUserPart
@@ -342,22 +341,32 @@ public static class GoogleMessages
     public const string SkipThoughtSignatureValidator = "skip_thought_signature_validator";
 
     /// <summary>Google Cloud Storage URLs that Gemini 3 function responses reference directly. Maps to <c>googleCloudStorageFunctionResponseUrls</c>.</summary>
-    internal static readonly IReadOnlyDictionary<string, IReadOnlyList<System.Text.RegularExpressions.Regex>> GoogleCloudStorageFunctionResponseUrls = BuildGcsUrls();
+    internal static readonly IReadOnlyDictionary<
+        string,
+        IReadOnlyList<System.Text.RegularExpressions.Regex>
+    > GoogleCloudStorageFunctionResponseUrls = BuildGcsUrls();
 
     /// <summary>Converts shared prompt messages.</summary>
-    public static GooglePrompt Convert(IReadOnlyList<ModelMessage> prompt, GoogleMessageOptions? options = null)
+    public static GooglePrompt Convert(
+        IReadOnlyList<ModelMessage> prompt,
+        GoogleMessageOptions? options = null
+    )
     {
         return Convert(FromModelMessages(prompt), options);
     }
 
     /// <summary>Converts rich turns.</summary>
-    public static GooglePrompt Convert(IReadOnlyList<GoogleTurn> turns, GoogleMessageOptions? options = null)
+    public static GooglePrompt Convert(
+        IReadOnlyList<GoogleTurn> turns,
+        GoogleMessageOptions? options = null
+    )
     {
         options ??= new GoogleMessageOptions();
         var capabilities = GoogleModelCapability.Get(options.ModelId);
         var isGemma = options.IsGemmaModel ?? GoogleModelCapability.IsGemma(options.ModelId);
         var isGemini3 = options.IsGemini3Model ?? capabilities.UsesGemini3Features;
-        var supportsParts = options.SupportsFunctionResponseParts ?? capabilities.UsesGemini3Features;
+        var supportsParts = options.SupportsFunctionResponseParts
+            ?? capabilities.UsesGemini3Features;
         var names = options.ProviderOptionNames ?? new[] { "google" };
         var vertexLike = !Contains(names, "google");
         var systemParts = new JsonArray();
@@ -372,7 +381,9 @@ public static class GoogleMessages
             {
                 if (!systemAllowed)
                 {
-                    throw new InvalidOperationException("system messages are only supported at the beginning of the conversation");
+                    throw new InvalidOperationException(
+                        "system messages are only supported at the beginning of the conversation"
+                    );
                 }
 
                 systemParts.Add(new JsonObject { ["text"] = system.Text });
@@ -403,7 +414,16 @@ public static class GoogleMessages
                 var parts = new JsonArray();
                 foreach (var part in assistant.Parts)
                 {
-                    var node = AssistantPart(part, names, vertexLike, isGemini3, options.IncludeFunctionCallIds, ref signed, missing, ref sentinel);
+                    var node = AssistantPart(
+                        part,
+                        names,
+                        vertexLike,
+                        isGemini3,
+                        options.IncludeFunctionCallIds,
+                        ref signed,
+                        missing,
+                        ref sentinel
+                    );
                     if (node != null)
                     {
                         parts.Add(node);
@@ -417,14 +437,29 @@ public static class GoogleMessages
                 var parts = new JsonArray();
                 foreach (var result in tool.Results)
                 {
-                    AppendToolResult(contents, parts, result, names, supportsParts, options.IncludeFunctionCallIds, options.SupportedFunctionResponseUrls);
+                    AppendToolResult(
+                        contents,
+                        parts,
+                        result,
+                        names,
+                        supportsParts,
+                        options.IncludeFunctionCallIds,
+                        options.SupportedFunctionResponseUrls
+                    );
                 }
 
                 contents.Add(new JsonObject { ["role"] = "user", ["parts"] = parts });
             }
         }
 
-        if (isGemma && systemParts.Count > 0 && contents.Count > 0 && contents[0] is JsonObject first && (string?)first["role"] == "user" && first["parts"] is JsonArray firstParts)
+        if (
+            isGemma
+            && systemParts.Count > 0
+            && contents.Count > 0
+            && contents[0] is JsonObject first
+            && (string?)first["role"] == "user"
+            && first["parts"] is JsonArray firstParts
+        )
         {
             var text = new StringBuilder();
             for (var i = 0; i < systemParts.Count; i++)
@@ -463,9 +498,16 @@ public static class GoogleMessages
                 listed.Append('`').Append(unique[i]).Append('`');
             }
 
-            options.Warnings.Add(new GoogleWarning(
-                "other",
-                "Replayed " + missing.Count + " `functionCall` part(s) for a Gemini 3 model without a `thoughtSignature` (tools: " + listed + "). Injected the documented `skip_thought_signature_validator` sentinel."));
+            options.Warnings.Add(
+                new GoogleWarning(
+                    "other",
+                    "Replayed "
+                        + missing.Count
+                        + " `functionCall` part(s) for a Gemini 3 model without a `thoughtSignature` (tools: "
+                        + listed
+                        + "). Injected the documented `skip_thought_signature_validator` sentinel."
+                )
+            );
         }
 
         JsonObject? instruction = null;
@@ -489,7 +531,10 @@ public static class GoogleMessages
             return new GoogleToolContentPart("file")
             {
                 MediaType = file.MediaType,
-                DataKind = file.ProviderReference != null ? "reference" : file.Data != null ? "data" : "url",
+                DataKind =
+                    file.ProviderReference != null ? "reference"
+                    : file.Data != null ? "data"
+                    : "url",
                 Data = file.Data,
                 Url = file.Url,
             };
@@ -498,11 +543,29 @@ public static class GoogleMessages
         return new GoogleToolContentPart("text") { Text = ((TextContentPart)part).Text };
     }
 
-    private static IReadOnlyDictionary<string, IReadOnlyList<System.Text.RegularExpressions.Regex>> BuildGcsUrls()
+    private static IReadOnlyDictionary<
+        string,
+        IReadOnlyList<System.Text.RegularExpressions.Regex>
+    > BuildGcsUrls()
     {
-        var gcs = new System.Text.RegularExpressions.Regex(@"^gs://.*\z", System.Text.RegularExpressions.RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
-        var result = new Dictionary<string, IReadOnlyList<System.Text.RegularExpressions.Regex>>(StringComparer.Ordinal);
-        foreach (var type in new[] { "image/png", "image/jpeg", "image/webp", "application/pdf", "text/plain" })
+        var gcs = new System.Text.RegularExpressions.Regex(
+            @"^gs://.*\z",
+            System.Text.RegularExpressions.RegexOptions.CultureInvariant,
+            TimeSpan.FromMilliseconds(100)
+        );
+        var result = new Dictionary<string, IReadOnlyList<System.Text.RegularExpressions.Regex>>(
+            StringComparer.Ordinal
+        );
+        foreach (
+            var type in new[]
+            {
+                "image/png",
+                "image/jpeg",
+                "image/webp",
+                "application/pdf",
+                "text/plain",
+            }
+        )
         {
             result[type] = new[] { gcs };
         }
@@ -535,14 +598,19 @@ public static class GoogleMessages
                     }
                     else if (part is FileContentPart file)
                     {
-                        var kind = file.ProviderReference != null ? "reference" : file.Data != null ? "data" : "url";
-                        parts.Add(new GoogleFileUserPart(file.MediaType, kind)
-                        {
-                            Data = file.Data,
-                            Url = file.Url,
-                            Reference = file.ProviderReference,
-                            ProviderOptions = file.ProviderOptions,
-                        });
+                        var kind =
+                            file.ProviderReference != null ? "reference"
+                            : file.Data != null ? "data"
+                            : "url";
+                        parts.Add(
+                            new GoogleFileUserPart(file.MediaType, kind)
+                            {
+                                Data = file.Data,
+                                Url = file.Url,
+                                Reference = file.ProviderReference,
+                                ProviderOptions = file.ProviderOptions,
+                            }
+                        );
                     }
                 }
 
@@ -563,10 +631,16 @@ public static class GoogleMessages
 
                 foreach (var call in assistant.ToolCalls)
                 {
-                    var tool = new GoogleToolCallAssistantPart(call.ToolName, call.ArgumentsJson) { ToolCallId = call.ToolCallId };
+                    var tool = new GoogleToolCallAssistantPart(call.ToolName, call.ArgumentsJson)
+                    {
+                        ToolCallId = call.ToolCallId,
+                    };
                     if (call.ProviderMetadata is { } metadata)
                     {
-                        tool.ProviderOptions = new Dictionary<string, JsonElement> { ["google"] = metadata };
+                        tool.ProviderOptions = new Dictionary<string, JsonElement>
+                        {
+                            ["google"] = metadata,
+                        };
                     }
 
                     parts.Add(tool);
@@ -581,17 +655,24 @@ public static class GoogleMessages
                     ToolCallId = tool.ToolCallId,
                     OutputKind = tool.OutputType,
                     Output = tool.OutputJson,
-                    DenialReason = tool.OutputType == "execution-denied" ? tool.ExecutionDeniedReason : null,
+                    DenialReason =
+                        tool.OutputType == "execution-denied" ? tool.ExecutionDeniedReason : null,
                 };
                 if (tool.OutputContent != null)
                 {
                     result.OutputKind = "content";
-                    result.Content = tool.OutputContent.Where(part => part is not CustomContentPart).Select(ToContentPart).ToList();
+                    result.Content = tool
+                        .OutputContent.Where(part => part is not CustomContentPart)
+                        .Select(ToContentPart)
+                        .ToList();
                 }
 
                 if (tool.ProviderMetadata is { } metadata)
                 {
-                    result.ProviderOptions = new Dictionary<string, JsonElement> { ["google"] = metadata };
+                    result.ProviderOptions = new Dictionary<string, JsonElement>
+                    {
+                        ["google"] = metadata,
+                    };
                 }
 
                 turns.Add(new GoogleToolTurn(new[] { result }));
@@ -601,7 +682,11 @@ public static class GoogleMessages
         return turns;
     }
 
-    private static JsonObject UserFile(GoogleFileUserPart file, IReadOnlyList<string> names, bool vertexLike)
+    private static JsonObject UserFile(
+        GoogleFileUserPart file,
+        IReadOnlyList<string> names,
+        bool vertexLike
+    )
     {
         var videoMetadata = VideoMetadata(ReadOptions(file.ProviderOptions, names, vertexLike));
         JsonObject result;
@@ -609,14 +694,21 @@ public static class GoogleMessages
         {
             case "url":
                 var uri = file.Url ?? string.Empty;
-                if (uri.StartsWith("gs:", StringComparison.Ordinal) && !string.IsNullOrEmpty(file.OriginalUrl))
+                if (
+                    uri.StartsWith("gs:", StringComparison.Ordinal)
+                    && !string.IsNullOrEmpty(file.OriginalUrl)
+                )
                 {
                     uri = file.OriginalUrl!;
                 }
 
                 result = new JsonObject
                 {
-                    ["fileData"] = new JsonObject { ["mimeType"] = MediaTypes.ResolveFullMediaType(file.MediaType, null), ["fileUri"] = uri },
+                    ["fileData"] = new JsonObject
+                    {
+                        ["mimeType"] = MediaTypes.ResolveFullMediaType(file.MediaType, null),
+                        ["fileUri"] = uri,
+                    },
                 };
                 break;
             case "reference":
@@ -635,12 +727,19 @@ public static class GoogleMessages
                 };
                 break;
             case "text":
-                result = Inline(FullOrPlain(file.MediaType), Encoding.UTF8.GetBytes(file.Text ?? string.Empty));
+                result = Inline(
+                    FullOrPlain(file.MediaType),
+                    Encoding.UTF8.GetBytes(file.Text ?? string.Empty)
+                );
                 break;
             default:
-                result = file.Base64 != null
-                    ? Inline(ResolveMediaType(file.MediaType, file.Base64), file.Base64)
-                    : Inline(ResolveMediaType(file.MediaType, file.Data), file.Data ?? Array.Empty<byte>());
+                result =
+                    file.Base64 != null
+                        ? Inline(ResolveMediaType(file.MediaType, file.Base64), file.Base64)
+                        : Inline(
+                            ResolveMediaType(file.MediaType, file.Data),
+                            file.Data ?? Array.Empty<byte>()
+                        );
                 break;
         }
 
@@ -660,7 +759,8 @@ public static class GoogleMessages
         bool includeIds,
         ref bool signedFunction,
         List<string> missing,
-        ref bool sentinel)
+        ref bool sentinel
+    )
     {
         var options = ReadOptions(part.ProviderOptions, names, vertexLike);
         var signature = Signature(options);
@@ -692,9 +792,11 @@ public static class GoogleMessages
         {
             if (file.Kind == "url")
             {
-                throw new InvalidOperationException(file.Reasoning
-                    ? "File data URLs in assistant messages are not supported"
-                    : "File data URLs in assistant messages are not supported");
+                throw new InvalidOperationException(
+                    file.Reasoning
+                        ? "File data URLs in assistant messages are not supported"
+                        : "File data URLs in assistant messages are not supported"
+                );
             }
 
             if (file.Kind == "reference")
@@ -706,7 +808,11 @@ public static class GoogleMessages
 
                 var node = new JsonObject
                 {
-                    ["fileData"] = new JsonObject { ["mimeType"] = file.MediaType, ["fileUri"] = ResolveReference(file.Reference) },
+                    ["fileData"] = new JsonObject
+                    {
+                        ["mimeType"] = file.MediaType,
+                        ["fileUri"] = ResolveReference(file.Reference),
+                    },
                 };
                 if (Thought(options) || file.Reasoning)
                 {
@@ -774,7 +880,11 @@ public static class GoogleMessages
             }
             else
             {
-                var function = new JsonObject { ["name"] = call.ToolName, ["args"] = ParseArgs(call.ArgumentsJson) };
+                var function = new JsonObject
+                {
+                    ["name"] = call.ToolName,
+                    ["args"] = ParseArgs(call.ArgumentsJson),
+                };
                 if (includeIds && !string.IsNullOrEmpty(call.ToolCallId))
                 {
                     function["id"] = call.ToolCallId;
@@ -790,12 +900,30 @@ public static class GoogleMessages
         return null;
     }
 
-    private static void AppendToolResult(JsonArray contents, JsonArray parts, GoogleToolResultPart result, IReadOnlyList<string> names, bool supportsParts, bool includeIds, IReadOnlyDictionary<string, IReadOnlyList<System.Text.RegularExpressions.Regex>>? supportedUrls)
+    private static void AppendToolResult(
+        JsonArray contents,
+        JsonArray parts,
+        GoogleToolResultPart result,
+        IReadOnlyList<string> names,
+        bool supportsParts,
+        bool includeIds,
+        IReadOnlyDictionary<
+            string,
+            IReadOnlyList<System.Text.RegularExpressions.Regex>
+        >? supportedUrls
+    )
     {
         var options = ReadOptions(result.ProviderOptions, names, !Contains(names, "google"));
         var serverId = GoogleJson.String(options, "serverToolCallId");
         var serverType = GoogleJson.String(options, "serverToolType");
-        if (serverId != null && serverType != null && contents.Count > 0 && contents[contents.Count - 1] is JsonObject last && (string?)last["role"] == "model" && last["parts"] is JsonArray modelParts)
+        if (
+            serverId != null
+            && serverType != null
+            && contents.Count > 0
+            && contents[contents.Count - 1] is JsonObject last
+            && (string?)last["role"] == "model"
+            && last["parts"] is JsonArray modelParts
+        )
         {
             var response = new JsonObject
             {
@@ -854,7 +982,14 @@ public static class GoogleMessages
         parts.Add(new JsonObject { ["functionResponse"] = function });
     }
 
-    private static JsonObject ModernFunctionResponse(GoogleToolResultPart result, bool includeIds, IReadOnlyDictionary<string, IReadOnlyList<System.Text.RegularExpressions.Regex>>? supportedUrls)
+    private static JsonObject ModernFunctionResponse(
+        GoogleToolResultPart result,
+        bool includeIds,
+        IReadOnlyDictionary<
+            string,
+            IReadOnlyList<System.Text.RegularExpressions.Regex>
+        >? supportedUrls
+    )
     {
         var texts = new List<string>();
         var files = new JsonArray();
@@ -866,26 +1001,59 @@ public static class GoogleMessages
             }
             else if (part.DataKind == "data")
             {
-                files.Add(new JsonObject
-                {
-                    ["inlineData"] = new JsonObject
+                files.Add(
+                    new JsonObject
                     {
-                        ["mimeType"] = ResolveMediaType(part.MediaType ?? "application/octet-stream", part.Data),
-                        ["data"] = System.Convert.ToBase64String(part.Data ?? Array.Empty<byte>()),
-                    },
-                });
+                        ["inlineData"] = new JsonObject
+                        {
+                            ["mimeType"] = ResolveMediaType(
+                                part.MediaType ?? "application/octet-stream",
+                                part.Data
+                            ),
+                            ["data"] = System.Convert.ToBase64String(
+                                part.Data ?? Array.Empty<byte>()
+                            ),
+                        },
+                    }
+                );
             }
             else if (part.DataKind == "url" && TryDataUrl(part.Url, out var media, out var data))
             {
-                files.Add(new JsonObject { ["inlineData"] = new JsonObject { ["mimeType"] = media, ["data"] = data } });
+                files.Add(
+                    new JsonObject
+                    {
+                        ["inlineData"] = new JsonObject { ["mimeType"] = media, ["data"] = data },
+                    }
+                );
             }
-            else if (part.DataKind == "url" && supportedUrls != null && part.Url != null && !string.IsNullOrEmpty(part.MediaType) && MediaTypes.IsFullMediaType(part.MediaType!) && UrlSupport.IsUrlSupported(part.MediaType!, part.Url, supportedUrls))
+            else if (
+                part.DataKind == "url"
+                && supportedUrls != null
+                && part.Url != null
+                && !string.IsNullOrEmpty(part.MediaType)
+                && MediaTypes.IsFullMediaType(part.MediaType!)
+                && UrlSupport.IsUrlSupported(part.MediaType!, part.Url, supportedUrls)
+            )
             {
-                files.Add(new JsonObject { ["fileData"] = new JsonObject { ["mimeType"] = part.MediaType, ["fileUri"] = part.Url } });
+                files.Add(
+                    new JsonObject
+                    {
+                        ["fileData"] = new JsonObject
+                        {
+                            ["mimeType"] = part.MediaType,
+                            ["fileUri"] = part.Url,
+                        },
+                    }
+                );
             }
             else
             {
-                texts.Add(JsonSerializer.Serialize(new { type = part.Type, url = part.Url }, GoogleJson.Options));
+                texts.Add(
+                    JsonSerializer.Serialize(
+                        new { type = part.Type, url = part.Url },
+                        GoogleJson.Options
+                    )
+                );
             }
         }
 
@@ -895,7 +1063,8 @@ public static class GoogleMessages
             ["response"] = new JsonObject
             {
                 ["name"] = result.ToolName,
-                ["content"] = texts.Count > 0 ? string.Join("\n", texts) : "Tool executed successfully.",
+                ["content"] =
+                    texts.Count > 0 ? string.Join("\n", texts) : "Tool executed successfully.",
             },
         };
         if (includeIds && !string.IsNullOrEmpty(result.ToolCallId))
@@ -911,7 +1080,11 @@ public static class GoogleMessages
         return new JsonObject { ["functionResponse"] = function };
     }
 
-    private static void LegacyFunctionResponse(JsonArray parts, GoogleToolResultPart result, bool includeIds)
+    private static void LegacyFunctionResponse(
+        JsonArray parts,
+        GoogleToolResultPart result,
+        bool includeIds
+    )
     {
         foreach (var part in result.Content!)
         {
@@ -920,7 +1093,11 @@ public static class GoogleMessages
                 var function = new JsonObject
                 {
                     ["name"] = result.ToolName,
-                    ["response"] = new JsonObject { ["name"] = result.ToolName, ["content"] = part.Text ?? string.Empty },
+                    ["response"] = new JsonObject
+                    {
+                        ["name"] = result.ToolName,
+                        ["content"] = part.Text ?? string.Empty,
+                    },
                 };
                 if (includeIds && !string.IsNullOrEmpty(result.ToolCallId))
                 {
@@ -931,14 +1108,33 @@ public static class GoogleMessages
             }
             else if (part.DataKind == "data")
             {
-                var media = ResolveMediaType(part.MediaType ?? "application/octet-stream", part.Data);
+                var media = ResolveMediaType(
+                    part.MediaType ?? "application/octet-stream",
+                    part.Data
+                );
                 var top = media.StartsWith("image/", StringComparison.Ordinal) ? "image" : "file";
                 parts.Add(Inline(media, part.Data ?? Array.Empty<byte>()));
-                parts.Add(new JsonObject { ["text"] = "Tool executed successfully and returned this " + top + " as a response" });
+                parts.Add(
+                    new JsonObject
+                    {
+                        ["text"] =
+                            "Tool executed successfully and returned this "
+                            + top
+                            + " as a response",
+                    }
+                );
             }
             else
             {
-                parts.Add(new JsonObject { ["text"] = JsonSerializer.Serialize(new { type = part.Type, url = part.Url }, GoogleJson.Options) });
+                parts.Add(
+                    new JsonObject
+                    {
+                        ["text"] = JsonSerializer.Serialize(
+                            new { type = part.Type, url = part.Url },
+                            GoogleJson.Options
+                        ),
+                    }
+                );
             }
         }
     }
@@ -947,7 +1143,9 @@ public static class GoogleMessages
     // That conflicts with JSON Schema $ref, so a result that holds one is sent as a JSON string.
     private static JsonNode SerializeFunctionResponseContent(JsonNode value)
     {
-        return ContainsSchemaReference(value) ? JsonValue.Create(value.ToJsonString(GoogleJson.Options))! : value;
+        return ContainsSchemaReference(value)
+            ? JsonValue.Create(value.ToJsonString(GoogleJson.Options))!
+            : value;
     }
 
     private static bool ContainsSchemaReference(JsonNode? value)
@@ -1000,7 +1198,8 @@ public static class GoogleMessages
     {
         try
         {
-            return JsonNode.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json) ?? new JsonObject();
+            return JsonNode.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json)
+                ?? new JsonObject();
         }
         catch (JsonException)
         {
@@ -1012,7 +1211,11 @@ public static class GoogleMessages
     {
         return new JsonObject
         {
-            ["inlineData"] = new JsonObject { ["mimeType"] = mediaType, ["data"] = System.Convert.ToBase64String(data) },
+            ["inlineData"] = new JsonObject
+            {
+                ["mimeType"] = mediaType,
+                ["data"] = System.Convert.ToBase64String(data),
+            },
         };
     }
 
@@ -1038,15 +1241,20 @@ public static class GoogleMessages
 
         if (string.Equals(mediaType, "image", StringComparison.OrdinalIgnoreCase))
         {
-            return Detect(data) ?? throw new InvalidOperationException("image media type requires inline bytes");
+            return Detect(data)
+                ?? throw new InvalidOperationException("image media type requires inline bytes");
         }
 
-        return string.IsNullOrEmpty(mediaType) ? "application/octet-stream" : mediaType + "/octet-stream";
+        return string.IsNullOrEmpty(mediaType)
+            ? "application/octet-stream"
+            : mediaType + "/octet-stream";
     }
 
     private static string ResolveMediaType(string mediaType, string base64)
     {
-        return MediaTypes.ResolveFullMediaType(new LanguageModelFilePart("data", mediaType) { Base64 = base64 });
+        return MediaTypes.ResolveFullMediaType(
+            new LanguageModelFilePart("data", mediaType) { Base64 = base64 }
+        );
     }
 
     private static string FullOrPlain(string? mediaType)
@@ -1081,7 +1289,10 @@ public static class GoogleMessages
 
     private static string ResolveReference(IReadOnlyDictionary<string, string>? reference)
     {
-        return ProviderReferences.ResolveProviderReference(reference ?? new Dictionary<string, string>(), "google");
+        return ProviderReferences.ResolveProviderReference(
+            reference ?? new Dictionary<string, string>(),
+            "google"
+        );
     }
 
     private static bool TryDataUrl(string? url, out string media, out string data)
@@ -1105,7 +1316,11 @@ public static class GoogleMessages
         return media.Length > 0 && data.Length > 0;
     }
 
-    private static JsonElement ReadOptions(IReadOnlyDictionary<string, JsonElement>? options, IReadOnlyList<string> names, bool vertexLike)
+    private static JsonElement ReadOptions(
+        IReadOnlyDictionary<string, JsonElement>? options,
+        IReadOnlyList<string> names,
+        bool vertexLike
+    )
     {
         if (options != null)
         {
@@ -1120,23 +1335,29 @@ public static class GoogleMessages
                 }
             }
 
-            if (vertexLike
+            if (
+                vertexLike
                 && options.TryGetValue("google", out var google)
-                && google.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined)
+                && google.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined
+            )
             {
                 return google;
             }
 
             if (!vertexLike)
             {
-                if (options.TryGetValue("googleVertex", out var vertex)
-                    && vertex.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined)
+                if (
+                    options.TryGetValue("googleVertex", out var vertex)
+                    && vertex.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined
+                )
                 {
                     return vertex;
                 }
 
-                if (options.TryGetValue("vertex", out var legacy)
-                    && legacy.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined)
+                if (
+                    options.TryGetValue("vertex", out var legacy)
+                    && legacy.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined
+                )
                 {
                     return legacy;
                 }
@@ -1148,9 +1369,11 @@ public static class GoogleMessages
 
     private static JsonObject? VideoMetadata(JsonElement options)
     {
-        if (options.ValueKind != JsonValueKind.Object
+        if (
+            options.ValueKind != JsonValueKind.Object
             || !options.TryGetProperty("videoMetadata", out var metadata)
-            || metadata.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+            || metadata.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined
+        )
         {
             return null;
         }
@@ -1202,12 +1425,15 @@ public static class GoogleMessages
         return new InvalidArgumentException(
             "providerOptions",
             metadata.GetRawText(),
-            "videoMetadata must contain optional string startOffset and endOffset values and an fps number in the range (0, 24].");
+            "videoMetadata must contain optional string startOffset and endOffset values and an fps number in the range (0, 24]."
+        );
     }
 
     private static string? Signature(JsonElement options)
     {
-        return options.ValueKind == JsonValueKind.Object ? GoogleJson.String(options, "thoughtSignature") : null;
+        return options.ValueKind == JsonValueKind.Object
+            ? GoogleJson.String(options, "thoughtSignature")
+            : null;
     }
 
     private static bool Thought(JsonElement options)

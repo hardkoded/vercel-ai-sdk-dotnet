@@ -14,7 +14,8 @@ internal static class JsonAssert
         var expectedNode = JsonNode.Parse(expected);
         Assert.True(
             JsonNode.DeepEquals(actual, expectedNode),
-            (actual == null ? "null" : actual.ToJsonString()) + " != " + expected);
+            (actual == null ? "null" : actual.ToJsonString()) + " != " + expected
+        );
     }
 
     public static void Equal(JsonElement actual, string expected)
@@ -22,7 +23,8 @@ internal static class JsonAssert
         using var document = JsonDocument.Parse(expected);
         Assert.True(
             JsonElement.DeepEquals(actual, document.RootElement),
-            actual.GetRawText() + " != " + expected);
+            actual.GetRawText() + " != " + expected
+        );
     }
 
     public static JsonObject ParseObject(string json)

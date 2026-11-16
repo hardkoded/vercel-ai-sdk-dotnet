@@ -19,7 +19,12 @@ public sealed class BlackForestLabsProvider : OpenAICompatibleProvider
     public const string DefaultBaseUrl = "https://api.bfl.ai/v1";
 
     /// <summary>Creates a provider. The poll settings apply to every image and video model it creates.</summary>
-    public BlackForestLabsProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null, int? pollIntervalMillis = null, int? pollTimeoutMillis = null)
+    public BlackForestLabsProvider(
+        HttpClient httpClient,
+        OpenAICompatibleOptions? options = null,
+        int? pollIntervalMillis = null,
+        int? pollTimeoutMillis = null
+    )
         : base(Prepare(options), httpClient)
     {
         HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
@@ -58,10 +63,17 @@ public sealed class BlackForestLabsProvider : OpenAICompatibleProvider
     /// </param>
     /// <param name="pollIntervalMillis">Poll interval in milliseconds between status checks.</param>
     /// <param name="pollTimeoutMillis">Overall polling timeout in milliseconds.</param>
-    public static BlackForestLabsProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null, int? pollIntervalMillis = null, int? pollTimeoutMillis = null)
+    public static BlackForestLabsProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null,
+        int? pollIntervalMillis = null,
+        int? pollTimeoutMillis = null
+    )
     {
         // Redirects are followed by hand so a status poll cannot send the API key to another host.
-        var client = handler is null ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false })
+            : new HttpClient(handler, disposeHandler: false);
         if (handler is not null)
         {
             DisableAutoRedirect(handler);
@@ -112,7 +124,11 @@ public sealed class BlackForestLabsProvider : OpenAICompatibleProvider
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = (string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl).TrimEnd('/');
+        options.BaseUrl = (
+            string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
+                ? DefaultBaseUrl
+                : options.BaseUrl
+        ).TrimEnd('/');
         options.ApiKeyEnvironmentVariable = "BFL_API_KEY";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
@@ -123,13 +139,15 @@ public sealed class BlackForestLabsProvider : OpenAICompatibleProvider
     }
 
     /// <inheritdoc />
-    public override IImageModel ImageModel(string modelId) => new BlackForestLabsImageModel(this, modelId);
+    public override IImageModel ImageModel(string modelId) =>
+        new BlackForestLabsImageModel(this, modelId);
 
     /// <summary>Creates an image model. Same as <see cref="ImageModel"/>.</summary>
     public IImageModel Image(string modelId) => ImageModel(modelId);
 
     /// <inheritdoc />
-    public override IVideoModel VideoModel(string modelId) => new BlackForestLabsVideoModel(this, modelId);
+    public override IVideoModel VideoModel(string modelId) =>
+        new BlackForestLabsVideoModel(this, modelId);
 
     /// <summary>Creates a video model. Same as <see cref="VideoModel"/>.</summary>
     public IVideoModel Video(string modelId) => VideoModel(modelId);
@@ -139,14 +157,25 @@ public sealed class BlackForestLabsProvider : OpenAICompatibleProvider
 public static class BlackForestLabsServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddBlackForestLabs(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddBlackForestLabs(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
-        services.AddHttpClient(BlackForestLabsProvider.ProviderId).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+        services
+            .AddHttpClient(BlackForestLabsProvider.ProviderId)
+            .ConfigurePrimaryHttpMessageHandler(() =>
+                new HttpClientHandler { AllowAutoRedirect = false }
+            );
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new BlackForestLabsProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(BlackForestLabsProvider.ProviderId), options);
+            return new BlackForestLabsProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(BlackForestLabsProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

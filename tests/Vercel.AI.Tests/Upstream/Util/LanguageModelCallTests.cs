@@ -8,7 +8,10 @@ namespace Vercel.AI.Tests;
 
 public sealed class LanguageModelCallTests
 {
-    [UpstreamTest("packages/ai/internal/index.test.ts::prepareCallSettings (deprecated alias)::should behave identically to prepareLanguageModelCallOptions", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/internal/index.test.ts::prepareCallSettings (deprecated alias)::should behave identically to prepareLanguageModelCallOptions",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Prepare_call_settings_matches_the_current_helper()
     {
@@ -25,20 +28,34 @@ public sealed class LanguageModelCallTests
         Assert.NotSame(input, alias);
     }
 
-    [UpstreamTest("packages/ai/internal/index.test.ts::prepareCallSettings (deprecated alias)::should throw the same errors as prepareLanguageModelCallOptions", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/internal/index.test.ts::prepareCallSettings (deprecated alias)::should throw the same errors as prepareLanguageModelCallOptions",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Prepare_call_settings_rejects_a_fractional_token_limit()
     {
-        var error = Assert.Throws<InvalidArgumentError>(delegate
-        {
-            LanguageModelCallPreparation.PrepareCallSettings(new LanguageModelCallOptionsInput { MaxOutputTokens = 10.5 });
-        });
+        var error = Assert.Throws<InvalidArgumentError>(
+            delegate
+            {
+                LanguageModelCallPreparation.PrepareCallSettings(
+                    new LanguageModelCallOptionsInput { MaxOutputTokens = 10.5 }
+                );
+            }
+        );
         Assert.Equal("maxOutputTokens", error.Parameter);
         Assert.Equal(10.5d, Assert.IsType<double>(error.Value!));
-        Assert.Equal("Invalid argument for parameter maxOutputTokens: maxOutputTokens must be an integer", error.Message);
-        Assert.Throws<InvalidArgumentError>(delegate
-        {
-            LanguageModelCallPreparation.PrepareLanguageModelCallOptions(new LanguageModelCallOptionsInput { MaxOutputTokens = 10.5 });
-        });
+        Assert.Equal(
+            "Invalid argument for parameter maxOutputTokens: maxOutputTokens must be an integer",
+            error.Message
+        );
+        Assert.Throws<InvalidArgumentError>(
+            delegate
+            {
+                LanguageModelCallPreparation.PrepareLanguageModelCallOptions(
+                    new LanguageModelCallOptionsInput { MaxOutputTokens = 10.5 }
+                );
+            }
+        );
     }
 }

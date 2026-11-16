@@ -24,13 +24,19 @@ internal sealed class ProcessUIMessageStreamHarness
     {
         State = UIMessageStreamProcessing.CreateStreamingUIMessageState(
             lastMessage == null ? null : (JsonObject)JsonNode.Parse(lastMessage)!,
-            messageId);
+            messageId
+        );
     }
 
     /// <summary>Maps to <c>runUpdateMessageJob</c> in the test.</summary>
     public async Task RunUpdateMessageJob(Func<UpdateMessageJobContext, Task> job)
     {
-        await job(new UpdateMessageJobContext(State, _ => WriteCalls.Add(new JsonObject { ["message"] = State.Message.DeepClone() }))).ConfigureAwait(false);
+        await job(
+                new UpdateMessageJobContext(State, _ =>
+                    WriteCalls.Add(new JsonObject { ["message"] = State.Message.DeepClone() })
+                )
+            )
+            .ConfigureAwait(false);
     }
 
     /// <summary>Maps to <c>createUIMessageStream</c>.</summary>
@@ -44,15 +50,17 @@ internal sealed class ProcessUIMessageStreamHarness
     }
 
     /// <summary>The options of <c>processUIMessageStream</c> with the test's <c>runUpdateMessageJob</c> and an <c>onError</c> that throws.</summary>
-    public ProcessUIMessageStreamOptions Options(Action<Exception>? onError = null)
-        => new(RunUpdateMessageJob, onError ?? (error => throw error));
+    public ProcessUIMessageStreamOptions Options(Action<Exception>? onError = null) =>
+        new(RunUpdateMessageJob, onError ?? (error => throw error));
 
     /// <summary>Maps to <c>consumeStream({ stream: processUIMessageStream({ ... }) })</c>.</summary>
     public async Task ProcessAsync(string chunksJson, ProcessUIMessageStreamOptions? options = null)
     {
-        await foreach (var unused in UIMessageStreamProcessing.ProcessUIMessageStream(CreateUIMessageStream(chunksJson), options ?? Options()).ConfigureAwait(false))
-        {
-        }
+        await foreach (
+            var unused in UIMessageStreamProcessing
+                .ProcessUIMessageStream(CreateUIMessageStream(chunksJson), options ?? Options())
+                .ConfigureAwait(false)
+        ) { }
     }
 
     /// <summary>Maps to <c>toMatchInlineSnapshot</c> and <c>toEqual</c> on a JSON value. Object key order does not matter.</summary>
@@ -61,7 +69,15 @@ internal sealed class ProcessUIMessageStreamHarness
         var expected = JsonNode.Parse(expectedJson);
         Assert.True(
             JsonEquals(expected, actual),
-            "Expected:\n" + expected?.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }) + "\nActual:\n" + actual?.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+            "Expected:\n"
+                + expected?.ToJsonString(
+                    new System.Text.Json.JsonSerializerOptions { WriteIndented = true }
+                )
+                + "\nActual:\n"
+                + actual?.ToJsonString(
+                    new System.Text.Json.JsonSerializerOptions { WriteIndented = true }
+                )
+        );
     }
 
     // The port stores a field that upstream leaves undefined as a JSON null.
@@ -72,15 +88,21 @@ internal sealed class ProcessUIMessageStreamHarness
             case JsonObject expectedObject when actual is JsonObject actualObject:
                 foreach (var pair in expectedObject)
                 {
-                    if (!actualObject.TryGetPropertyValue(pair.Key, out var actualValue) || !JsonEquals(pair.Value, actualValue))
+                    if (
+                        !actualObject.TryGetPropertyValue(pair.Key, out var actualValue)
+                        || !JsonEquals(pair.Value, actualValue)
+                    )
                     {
                         return false;
                     }
                 }
 
-                return actualObject.All(pair => expectedObject.ContainsKey(pair.Key) || pair.Value is null);
+                return actualObject.All(pair =>
+                    expectedObject.ContainsKey(pair.Key) || pair.Value is null
+                );
             case JsonArray expectedArray when actual is JsonArray actualArray:
-                return expectedArray.Count == actualArray.Count && expectedArray.Zip(actualArray, JsonEquals).All(equal => equal);
+                return expectedArray.Count == actualArray.Count
+                    && expectedArray.Zip(actualArray, JsonEquals).All(equal => equal);
             default:
                 return JsonNode.DeepEquals(expected, actual);
         }
@@ -93,35 +115,64 @@ internal sealed class ProcessUIMessageStreamHarness
     public JsonArray Parts => (JsonArray)State.Message["parts"]!;
 
     /// <summary>Maps to <c>state.activeTextParts</c>.</summary>
-    public JsonObject ActiveTextParts => new(State.ActiveTextParts.Select(pair => new KeyValuePair<string, JsonNode?>(pair.Key, pair.Value.DeepClone())));
+    public JsonObject ActiveTextParts =>
+        new(
+            State.ActiveTextParts.Select(pair => new KeyValuePair<string, JsonNode?>(
+                pair.Key,
+                pair.Value.DeepClone()
+            ))
+        );
 
     /// <summary>Maps to <c>state.activeReasoningParts</c>.</summary>
-    public JsonObject ActiveReasoningParts => new(State.ActiveReasoningParts.Select(pair => new KeyValuePair<string, JsonNode?>(pair.Key, pair.Value.DeepClone())));
+    public JsonObject ActiveReasoningParts =>
+        new(
+            State.ActiveReasoningParts.Select(pair => new KeyValuePair<string, JsonNode?>(
+                pair.Key,
+                pair.Value.DeepClone()
+            ))
+        );
 
     /// <summary>Maps to <c>writeCalls.map(call =&gt; call.message.parts[index])</c>.</summary>
-    public JsonArray WriteCallParts(int index)
-        => new(WriteCalls.Select(call => ((JsonArray)call!["message"]!["parts"]!)[index]?.DeepClone()).ToArray());
+    public JsonArray WriteCallParts(int index) =>
+        new(
+            WriteCalls
+                .Select(call => ((JsonArray)call!["message"]!["parts"]!)[index]?.DeepClone())
+                .ToArray()
+        );
 
     /// <summary>
     /// Maps to <c>writeCalls.map(call =&gt; call.message.parts.find(isToolUIPart)?.approval).filter(approval =&gt; approval != null)</c>.
     /// </summary>
-    public JsonArray WriteCallApprovals()
-        => new(WriteCalls
-            .Select(call => ((JsonArray)call!["message"]!["parts"]!).FirstOrDefault(part => UIMessageJson.IsToolPart((JsonObject)part!)) is JsonObject tool ? tool["approval"]?.DeepClone() : null)
-            .Where(approval => approval != null)
-            .ToArray());
+    public JsonArray WriteCallApprovals() =>
+        new(
+            WriteCalls
+                .Select(call =>
+                    ((JsonArray)call!["message"]!["parts"]!).FirstOrDefault(part =>
+                        UIMessageJson.IsToolPart((JsonObject)part!)
+                    )
+                        is JsonObject tool
+                        ? tool["approval"]?.DeepClone()
+                        : null
+                )
+                .Where(approval => approval != null)
+                .ToArray()
+        );
 
     /// <summary>Maps to <c>parts.find(part =&gt; ...)</c>.</summary>
-    public static JsonObject? Find(JsonArray parts, Func<JsonObject, bool> predicate)
-        => parts.OfType<JsonObject>().FirstOrDefault(predicate);
+    public static JsonObject? Find(JsonArray parts, Func<JsonObject, bool> predicate) =>
+        parts.OfType<JsonObject>().FirstOrDefault(predicate);
 
     /// <summary>Maps to <c>state.message.parts.find(part =&gt; part.toolCallId === toolCallId)</c>.</summary>
-    public JsonObject? FindToolPart(string toolCallId)
-        => Find(Parts, part => (string?)part["toolCallId"] == toolCallId);
+    public JsonObject? FindToolPart(string toolCallId) =>
+        Find(Parts, part => (string?)part["toolCallId"] == toolCallId);
 
     /// <summary>Maps to the first <c>writeCalls</c> entry whose message has a part that matches <paramref name="predicate"/>.</summary>
-    public JsonObject? FindWriteCall(Func<JsonObject, bool> predicate)
-        => WriteCalls.OfType<JsonObject>().FirstOrDefault(call => ((JsonArray)call["message"]!["parts"]!).OfType<JsonObject>().Any(predicate));
+    public JsonObject? FindWriteCall(Func<JsonObject, bool> predicate) =>
+        WriteCalls
+            .OfType<JsonObject>()
+            .FirstOrDefault(call =>
+                ((JsonArray)call["message"]!["parts"]!).OfType<JsonObject>().Any(predicate)
+            );
 
     /// <summary>Copies the listed fields that are present. Maps to an object literal that picks fields of a part.</summary>
     public static JsonObject PickKeys(JsonObject source, params string[] keys)

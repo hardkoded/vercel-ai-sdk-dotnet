@@ -21,15 +21,22 @@ internal static class MiniMaxChatOptionsCall
 
             foreach (var row in rows)
             {
-                yield return new object?[] { mode }.Concat(row).ToArray();
+                yield return new object?[] { mode }
+                    .Concat(row)
+                    .ToArray();
             }
         }
     }
 
-    public static async Task<(JsonNode Body, IReadOnlyList<CallWarning> Warnings, MiniMaxServer Server)> Call(
+    public static async Task<(
+        JsonNode Body,
+        IReadOnlyList<CallWarning> Warnings,
+        MiniMaxServer Server
+    )> Call(
         string mode,
         LanguageModelCallOptions? options = null,
-        string modelId = "minimax-m3.1-flash")
+        string modelId = "minimax-m3.1-flash"
+    )
     {
         var server = new MiniMaxServer();
         var model = MiniMaxParity.Provider(server).Chat(modelId);
@@ -43,7 +50,9 @@ internal static class MiniMaxChatOptionsCall
         IReadOnlyList<CallWarning> warnings;
         if (mode == "generate")
         {
-            server.SetJson("{\"type\":\"message\",\"content\":[{\"type\":\"text\",\"text\":\"Hello!\"}],\"stop_reason\":\"end_turn\",\"usage\":{\"input_tokens\":10,\"output_tokens\":3}}");
+            server.SetJson(
+                "{\"type\":\"message\",\"content\":[{\"type\":\"text\",\"text\":\"Hello!\"}],\"stop_reason\":\"end_turn\",\"usage\":{\"input_tokens\":10,\"output_tokens\":3}}"
+            );
             warnings = (await model.DoGenerateAsync(options, CancellationToken.None)).Warnings;
         }
         else
@@ -51,8 +60,11 @@ internal static class MiniMaxChatOptionsCall
             server.SetStream(
                 "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_sampling\",\"model\":\"minimax-m3.1-flash\",\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\n\n",
                 "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":0}}\n\n",
-                "data: {\"type\":\"message_stop\"}\n\n");
-            var parts = await MiniMaxParity.Collect(await model.DoStreamAsync(options, CancellationToken.None));
+                "data: {\"type\":\"message_stop\"}\n\n"
+            );
+            var parts = await MiniMaxParity.Collect(
+                await model.DoStreamAsync(options, CancellationToken.None)
+            );
             Assert.DoesNotContain(parts, part => part is ErrorStreamPart);
             warnings = Assert.Single(parts.OfType<StreamStartStreamPart>()).Warnings;
         }
@@ -73,6 +85,10 @@ internal static class MiniMaxChatOptionsCall
 
     public static TextContentPart Text(string text, string? providerOptions = null)
     {
-        return new TextContentPart(text) { ProviderOptions = providerOptions == null ? null : MiniMaxParity.Options(providerOptions) };
+        return new TextContentPart(text)
+        {
+            ProviderOptions =
+                providerOptions == null ? null : MiniMaxParity.Options(providerOptions),
+        };
     }
 }

@@ -12,23 +12,37 @@ namespace Vercel.AI.Tests.Upstream.GenerateText.GenerateText;
 /// <summary>Port of <c>generate-text.test.ts</c> &gt; <c>generateText &gt; tool execution approval</c>.</summary>
 public sealed class ToolExecutionApprovalTests
 {
-    private const string Id = "packages/ai/src/generate-text/generate-text.test.ts::generateText > tool execution approval::";
+    private const string Id =
+        "packages/ai/src/generate-text/generate-text.test.ts::generateText > tool execution approval::";
 
     [Fact]
-    [UpstreamTest(Id + "should surface the reason for user approval requests", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should surface the reason for user approval requests",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_surface_the_reason_for_user_approval_requests()
     {
-        var result = await Client().GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = new TestLanguageModel { OnGenerate = _ => ToolCalls("tool1", ("call-1", "{ \"value\": \"value\" }")) },
-            Tools = new[] { ValueTool(null) },
-            ToolApproval = new ToolApprovalConfiguration
-            {
-                { "tool1", new ToolApprovalStatus("user-approval", "requires operator review") },
-            },
-            Prompt = "test-input",
-            GenerateId = MockId("id"),
-        });
+        var result = await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = new TestLanguageModel
+                    {
+                        OnGenerate = _ =>
+                            ToolCalls("tool1", ("call-1", "{ \"value\": \"value\" }")),
+                    },
+                    Tools = new[] { ValueTool(null) },
+                    ToolApproval = new ToolApprovalConfiguration
+                    {
+                        {
+                            "tool1",
+                            new ToolApprovalStatus("user-approval", "requires operator review")
+                        },
+                    },
+                    Prompt = "test-input",
+                    GenerateId = MockId("id"),
+                }
+            );
 
         var request = Assert.Single(result.Content.OfType<GeneratedToolApprovalRequest>());
         Assert.Equal("tool-approval-request", request.Type);
@@ -42,27 +56,51 @@ public sealed class ToolExecutionApprovalTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should not duplicate an existing execution-denied result", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should not duplicate an existing execution-denied result",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_not_duplicate_an_existing_execution_denied_result()
     {
         var model = new TestLanguageModel { OnGenerate = _ => Text("Hello, world!") };
 
-        var result = await Client().GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            Tools = new[] { ValueTool((_, _) => Task.FromResult("result")) },
-            ToolApproval = new ToolApprovalConfiguration { { "tool1", "user-approval" } },
-            StopWhen = StopWhen.IsStepCount(3),
-            GenerateId = MockId("id"),
-            Messages = History(
-                "tool1",
-                new[] { ("call-1", "{\"value\":\"value\"}", "id-1") },
-                new ToolApprovalResponseModelMessage("id-1", false, "User denied the request"),
-                new ToolModelMessage("call-1", "tool1", "User denied the request", false, "execution-denied")),
-        });
+        var result = await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = model,
+                    Tools = new[] { ValueTool((_, _) => Task.FromResult("result")) },
+                    ToolApproval = new ToolApprovalConfiguration { { "tool1", "user-approval" } },
+                    StopWhen = StopWhen.IsStepCount(3),
+                    GenerateId = MockId("id"),
+                    Messages = History(
+                        "tool1",
+                        new[] { ("call-1", "{\"value\":\"value\"}", "id-1") },
+                        new ToolApprovalResponseModelMessage(
+                            "id-1",
+                            false,
+                            "User denied the request"
+                        ),
+                        new ToolModelMessage(
+                            "call-1",
+                            "tool1",
+                            "User denied the request",
+                            false,
+                            "execution-denied"
+                        )
+                    ),
+                }
+            );
 
-        var promptOccurrences = model.Calls.SelectMany(call => call.Prompt).OfType<ToolModelMessage>().SelectMany(message => message.Results).Count(part => part.OutputType == "execution-denied");
-        var responseOccurrences = result.ResponseMessages.OfType<ToolModelMessage>().SelectMany(message => message.Results).Count(part => part.OutputType == "execution-denied");
+        var promptOccurrences = model
+            .Calls.SelectMany(call => call.Prompt)
+            .OfType<ToolModelMessage>()
+            .SelectMany(message => message.Results)
+            .Count(part => part.OutputType == "execution-denied");
+        var responseOccurrences = result
+            .ResponseMessages.OfType<ToolModelMessage>()
+            .SelectMany(message => message.Results)
+            .Count(part => part.OutputType == "execution-denied");
 
         Assert.Equal(1, promptOccurrences);
         Assert.Equal(0, responseOccurrences);

@@ -10,7 +10,8 @@ namespace Vercel.AI.Tests.Upstream.GenerateText;
 /// <summary>Port of <c>generate-text.test.ts</c> &gt; <c>generateText &gt; dynamic tools</c>.</summary>
 public sealed class DynamicToolsTests
 {
-    private const string Prefix = "packages/ai/src/generate-text/generate-text.test.ts::generateText > dynamic tools::";
+    private const string Prefix =
+        "packages/ai/src/generate-text/generate-text.test.ts::generateText > dynamic tools::";
 
     [Fact]
     [UpstreamTest(Prefix + "should execute dynamic tools", Coverage = UpstreamCoverage.Covered)]
@@ -22,25 +23,36 @@ public sealed class DynamicToolsTests
             OnGenerate = _ => ToolCallResponse("{ \"value\": \"test\" }", "dynamicTool"),
         };
 
-        var result = await Client().GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            Tools = new[]
-            {
-                Tool.DynamicTool("dynamicTool", null, "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}", (_, _) =>
+        var result = await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
                 {
-                    toolExecuted = true;
-                    return Task.FromResult("{\"value\":\"test-result\"}");
-                }),
-            },
-            Prompt = "test-input",
-        });
+                    Model = model,
+                    Tools = new[]
+                    {
+                        Tool.DynamicTool(
+                            "dynamicTool",
+                            null,
+                            "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}",
+                            (_, _) =>
+                            {
+                                toolExecuted = true;
+                                return Task.FromResult("{\"value\":\"test-result\"}");
+                            }
+                        ),
+                    },
+                    Prompt = "test-input",
+                }
+            );
 
         // tool should be executed by client
         Assert.True(toolExecuted);
 
         // tool call should be included in content
-        Assert.Equal(new[] { "tool-call", "tool-result" }, result.Content.Select(part => part.Type));
+        Assert.Equal(
+            new[] { "tool-call", "tool-result" },
+            result.Content.Select(part => part.Type)
+        );
         var call = Assert.IsType<GeneratedToolCall>(result.Content[0]);
         Assert.True(call.Dynamic);
         Assert.Equal("{\"value\":\"test\"}", Compact(call.ArgumentsJson));

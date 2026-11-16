@@ -29,9 +29,14 @@ public sealed class ProdiaProvider : OpenAICompatibleProvider
     public HttpClient HttpClient { get; }
 
     /// <summary>Creates a provider.</summary>
-    public static new ProdiaProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new ProdiaProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         if (handler is not null)
         {
             options = options?.Copy() ?? new OpenAICompatibleOptions();
@@ -42,7 +47,8 @@ public sealed class ProdiaProvider : OpenAICompatibleProvider
     }
 
     /// <inheritdoc />
-    public override ILanguageModel LanguageModel(string modelId) => new ProdiaLanguageModel(this, modelId);
+    public override ILanguageModel LanguageModel(string modelId) =>
+        new ProdiaLanguageModel(this, modelId);
 
     /// <inheritdoc />
     public override IImageModel ImageModel(string modelId) => new ProdiaImageModel(this, modelId);
@@ -54,7 +60,11 @@ public sealed class ProdiaProvider : OpenAICompatibleProvider
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = (string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl).TrimEnd('/');
+        options.BaseUrl = (
+            string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
+                ? DefaultBaseUrl
+                : options.BaseUrl
+        ).TrimEnd('/');
         options.ApiKeyEnvironmentVariable = "PRODIA_API_KEY";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
@@ -68,14 +78,20 @@ public sealed class ProdiaProvider : OpenAICompatibleProvider
 public static class ProdiaServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddProdia(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddProdia(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(ProdiaProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new ProdiaProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(ProdiaProvider.ProviderId), options);
+            return new ProdiaProvider(
+                sp.GetRequiredService<IHttpClientFactory>().CreateClient(ProdiaProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

@@ -15,11 +15,17 @@ internal static class BasetenChatCalls
 {
     public const string ModelId = "deepseek-ai/DeepSeek-V4-Pro-0813";
     public const string ModelUrl = "https://model-123.api.baseten.co/sync/v1";
-    public const string Schema = "{\"type\":\"object\",\"properties\":{\"answer\":{\"type\":\"string\"}},\"required\":[\"answer\"],\"additionalProperties\":false}";
+    public const string Schema =
+        "{\"type\":\"object\",\"properties\":{\"answer\":{\"type\":\"string\"}},\"required\":[\"answer\"],\"additionalProperties\":false}";
 
-    private const string GenerateBody = "{\"choices\":[{\"message\":{\"content\":\"{\\\"answer\\\":\\\"PONG\\\"}\"},\"finish_reason\":\"stop\"}]}";
+    private const string GenerateBody =
+        "{\"choices\":[{\"message\":{\"content\":\"{\\\"answer\\\":\\\"PONG\\\"}\"},\"finish_reason\":\"stop\"}]}";
 
-    public static LanguageModelCallOptions Options(bool json = true, bool schema = true, string? reasoning = "high")
+    public static LanguageModelCallOptions Options(
+        bool json = true,
+        bool schema = true,
+        string? reasoning = "high"
+    )
     {
         return new LanguageModelCallOptions
         {
@@ -38,7 +44,8 @@ internal static class BasetenChatCalls
         bool stream,
         LanguageModelCallOptions options,
         string id = ModelId,
-        bool dedicated = false)
+        bool dedicated = false
+    )
     {
         var capture = new UpstreamCapture();
         if (stream)
@@ -46,7 +53,8 @@ internal static class BasetenChatCalls
             capture.MediaType = "text/event-stream";
             capture.ResponseBody = UpstreamChat.Sse(
                 "{\"choices\":[{\"index\":0,\"delta\":{\"content\":\"{\\\"answer\\\":\\\"PONG\\\"}\"},\"finish_reason\":\"stop\"}]}",
-                "[DONE]");
+                "[DONE]"
+            );
         }
         else
         {
@@ -54,13 +62,18 @@ internal static class BasetenChatCalls
         }
 
         var provider = BasetenProvider.Create(
-            dedicated ? new BasetenOptions { ApiKey = "test-api-key", ModelUrl = ModelUrl } : new OpenAICompatibleOptions { ApiKey = "test-api-key" },
-            capture);
+            dedicated
+                ? new BasetenOptions { ApiKey = "test-api-key", ModelUrl = ModelUrl }
+                : new OpenAICompatibleOptions { ApiKey = "test-api-key" },
+            capture
+        );
         var model = provider.LanguageModel(id);
         IReadOnlyList<CallWarning> warnings;
         if (stream)
         {
-            var parts = await UpstreamChat.Read(await model.DoStreamAsync(options, CancellationToken.None));
+            var parts = await UpstreamChat.Read(
+                await model.DoStreamAsync(options, CancellationToken.None)
+            );
             warnings = parts.OfType<StreamStartStreamPart>().First().Warnings;
         }
         else

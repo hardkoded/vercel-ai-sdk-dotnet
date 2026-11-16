@@ -13,25 +13,34 @@ namespace Vercel.AI.Tests.ConvertToModelMessages;
 [Collection("LogWarnings")]
 public sealed class AssistantMessageToolOutputErrorTests : WarningsOff
 {
-    private const string Suite = Prefix + "convertToModelMessages > assistant message > tool output error::";
+    private const string Suite =
+        Prefix + "convertToModelMessages > assistant message > tool output error::";
 
-    [UpstreamTest(Suite + "should preserve result provider metadata on a failed tool call when call metadata is unavailable", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Suite
+            + "should preserve result provider metadata on a failed tool call when call metadata is unavailable",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Should_preserve_result_provider_metadata_on_a_failed_tool_call_when_call_metadata_is_unavailable()
     {
-        var result = Convert(new[]
-        {
-            Assistant(new ToolUIPart("createWidget", "call1", ToolUIPartState.OutputError)
+        var result = Convert(
+            new[]
             {
-                Input = null,
-                RawInput = Json("{}"),
-                ErrorText = "Invalid input",
-                ResultProviderMetadata = new Dictionary<string, JsonElement>
-                {
-                    ["openai"] = Json("{\"namespace\":\"widget_tools\"}"),
-                },
-            }),
-        });
+                Assistant(
+                    new ToolUIPart("createWidget", "call1", ToolUIPartState.OutputError)
+                    {
+                        Input = null,
+                        RawInput = Json("{}"),
+                        ErrorText = "Invalid input",
+                        ResultProviderMetadata = new Dictionary<string, JsonElement>
+                        {
+                            ["openai"] = Json("{\"namespace\":\"widget_tools\"}"),
+                        },
+                    }
+                ),
+            }
+        );
 
         AssertEqual(
             """
@@ -61,28 +70,35 @@ public sealed class AssistantMessageToolOutputErrorTests : WarningsOff
               }
             ]
             """,
-            result);
+            result
+        );
     }
 
-    [UpstreamTest(Suite + "should handle assistant message with tool output error that has raw input", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Suite + "should handle assistant message with tool output error that has raw input",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Should_handle_assistant_message_with_tool_output_error_that_has_raw_input()
     {
         var warnings = new List<LogWarningsOptions>();
         LogWarnings.Logger = new Action<LogWarningsOptions>(warnings.Add);
 
-        var result = Convert(new[]
-        {
-            Assistant(
-                new StepStartUIPart(),
-                new TextUIPart("Let me calculate that for you."),
-                new ToolUIPart("calculator", "call1", ToolUIPartState.OutputError)
-                {
-                    ErrorText = "Error: Invalid input",
-                    Input = null,
-                    RawInput = Json("\"{\\\"operation\\\":\\\"add\\\",\\\"numbers\\\":[1,2]\""),
-                }),
-        });
+        var result = Convert(
+            new[]
+            {
+                Assistant(
+                    new StepStartUIPart(),
+                    new TextUIPart("Let me calculate that for you."),
+                    new ToolUIPart("calculator", "call1", ToolUIPartState.OutputError)
+                    {
+                        ErrorText = "Error: Invalid input",
+                        Input = null,
+                        RawInput = Json("\"{\\\"operation\\\":\\\"add\\\",\\\"numbers\\\":[1,2]\""),
+                    }
+                ),
+            }
+        );
 
         AssertEqual(
             """
@@ -112,27 +128,38 @@ public sealed class AssistantMessageToolOutputErrorTests : WarningsOff
               }
             ]
             """,
-            result);
+            result
+        );
 
         var logged = Assert.Single(warnings);
         var warning = Assert.IsType<DeprecatedWarning>(Assert.Single(logged.Warnings));
         Assert.Equal("rawInput in output-error UI message parts", warning.Setting);
-        Assert.Equal("Use the \"input\" field instead. The \"rawInput\" field will be removed in the next major version.", warning.Message);
+        Assert.Equal(
+            "Use the \"input\" field instead. The \"rawInput\" field will be removed in the next major version.",
+            warning.Message
+        );
     }
 
-    [UpstreamTest(Suite + "should preserve the deprecated rawInput fallback when input is null", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Suite + "should preserve the deprecated rawInput fallback when input is null",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Should_preserve_the_deprecated_rawInput_fallback_when_input_is_null()
     {
-        var result = Convert(new[]
-        {
-            Assistant(new ToolUIPart("calculator", "call1", ToolUIPartState.OutputError)
+        var result = Convert(
+            new[]
             {
-                ErrorText = "Error: Invalid input",
-                Input = Json("null"),
-                RawInput = Json("\"legacy input\""),
-            }),
-        });
+                Assistant(
+                    new ToolUIPart("calculator", "call1", ToolUIPartState.OutputError)
+                    {
+                        ErrorText = "Error: Invalid input",
+                        Input = Json("null"),
+                        RawInput = Json("\"legacy input\""),
+                    }
+                ),
+            }
+        );
 
         var rendered = Render(result);
         Assert.Equal("assistant", (string?)rendered[0]!["role"]);
@@ -140,21 +167,27 @@ public sealed class AssistantMessageToolOutputErrorTests : WarningsOff
         Assert.Equal("legacy input", (string?)rendered[0]!["content"]![0]!["input"]);
     }
 
-    [UpstreamTest(Suite + "should handle assistant message with tool output error that has no raw input", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Suite + "should handle assistant message with tool output error that has no raw input",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Should_handle_assistant_message_with_tool_output_error_that_has_no_raw_input()
     {
-        var result = Convert(new[]
-        {
-            Assistant(
-                new StepStartUIPart(),
-                new TextUIPart("Let me calculate that for you."),
-                new ToolUIPart("calculator", "call1", ToolUIPartState.OutputError)
-                {
-                    Input = Json("{\"operation\":\"add\",\"numbers\":[1,2]}"),
-                    ErrorText = "Error: Invalid input",
-                }),
-        });
+        var result = Convert(
+            new[]
+            {
+                Assistant(
+                    new StepStartUIPart(),
+                    new TextUIPart("Let me calculate that for you."),
+                    new ToolUIPart("calculator", "call1", ToolUIPartState.OutputError)
+                    {
+                        Input = Json("{\"operation\":\"add\",\"numbers\":[1,2]}"),
+                        ErrorText = "Error: Invalid input",
+                    }
+                ),
+            }
+        );
 
         AssertEqual(
             """
@@ -184,6 +217,7 @@ public sealed class AssistantMessageToolOutputErrorTests : WarningsOff
               }
             ]
             """,
-            result);
+            result
+        );
     }
 }

@@ -11,10 +11,17 @@ namespace Vercel.AI.Tests;
 
 public sealed class GatewayEmbeddingParityTests
 {
-    private static readonly string[] Values = { "sunny day at the beach", "rainy afternoon in the city" };
+    private static readonly string[] Values =
+    {
+        "sunny day at the beach",
+        "rainy afternoon in the city",
+    };
 
     [Fact]
-    [UpstreamTest("packages/gateway/src/gateway-embedding-model.test.ts::GatewayEmbeddingModel > doEmbed::should send value as array", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/gateway/src/gateway-embedding-model.test.ts::GatewayEmbeddingModel > doEmbed::should send value as array",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Sends_values_as_an_array()
     {
         var handler = await Embed(null, null);
@@ -25,18 +32,31 @@ public sealed class GatewayEmbeddingParityTests
     }
 
     [Fact]
-    [UpstreamTest("packages/gateway/src/gateway-embedding-model.test.ts::GatewayEmbeddingModel > doEmbed::should pass providerOptions into request body", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/gateway/src/gateway-embedding-model.test.ts::GatewayEmbeddingModel > doEmbed::should pass providerOptions into request body",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Passes_provider_options()
     {
         using var options = JsonDocument.Parse("{\"openai\":{\"dimensions\":64}}");
         var handler = await Embed(options.RootElement.Clone(), null);
         using var document = JsonDocument.Parse(handler.Body);
-        Assert.Equal(64, document.RootElement.GetProperty("providerOptions").GetProperty("openai").GetProperty("dimensions").GetInt32());
+        Assert.Equal(
+            64,
+            document
+                .RootElement.GetProperty("providerOptions")
+                .GetProperty("openai")
+                .GetProperty("dimensions")
+                .GetInt32()
+        );
         Assert.Equal(Values[0], document.RootElement.GetProperty("values")[0].GetString());
     }
 
     [Fact]
-    [UpstreamTest("packages/gateway/src/gateway-embedding-model.test.ts::GatewayEmbeddingModel > doEmbed::should not include providerOptions when not provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/gateway/src/gateway-embedding-model.test.ts::GatewayEmbeddingModel > doEmbed::should not include providerOptions when not provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Omits_provider_options_when_they_are_absent()
     {
         var handler = await Embed(null, null);
@@ -46,10 +66,16 @@ public sealed class GatewayEmbeddingParityTests
     }
 
     [Fact]
-    [UpstreamTest("packages/gateway/src/gateway-embedding-model.test.ts::GatewayEmbeddingModel > doEmbed::should pass headers correctly", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/gateway/src/gateway-embedding-model.test.ts::GatewayEmbeddingModel > doEmbed::should pass headers correctly",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Passes_embedding_headers()
     {
-        var handler = await Embed(null, new Dictionary<string, string?> { ["Custom-Header"] = "test-value" });
+        var handler = await Embed(
+            null,
+            new Dictionary<string, string?> { ["Custom-Header"] = "test-value" }
+        );
         Assert.Equal("Bearer test-token", handler.Headers["Authorization"]);
         Assert.Equal("test-value", handler.Headers["Custom-Header"]);
         Assert.Equal("4", handler.Headers["ai-embedding-model-specification-version"]);
@@ -57,19 +83,37 @@ public sealed class GatewayEmbeddingParityTests
     }
 
     [Fact]
-    [UpstreamTest("packages/gateway/src/gateway-embedding-model.test.ts::GatewayEmbeddingModel > doEmbed::should convert gateway error responses", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/gateway/src/gateway-embedding-model.test.ts::GatewayEmbeddingModel > doEmbed::should convert gateway error responses",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Converts_gateway_error_responses()
     {
-        var invalid = await Assert.ThrowsAsync<GatewayInvalidRequestError>(() => EmbedError(HttpStatusCode.BadRequest, "{\"error\":{\"message\":\"Invalid input\",\"type\":\"invalid_request_error\"}}"));
+        var invalid = await Assert.ThrowsAsync<GatewayInvalidRequestError>(() =>
+            EmbedError(
+                HttpStatusCode.BadRequest,
+                "{\"error\":{\"message\":\"Invalid input\",\"type\":\"invalid_request_error\"}}"
+            )
+        );
         Assert.Equal(400, invalid.StatusCode);
 
-        var server = await Assert.ThrowsAsync<GatewayInternalServerError>(() => EmbedError(HttpStatusCode.InternalServerError, "{\"error\":{\"message\":\"Server blew up\",\"type\":\"internal_server_error\"}}"));
+        var server = await Assert.ThrowsAsync<GatewayInternalServerError>(() =>
+            EmbedError(
+                HttpStatusCode.InternalServerError,
+                "{\"error\":{\"message\":\"Server blew up\",\"type\":\"internal_server_error\"}}"
+            )
+        );
         Assert.Equal(500, server.StatusCode);
     }
 
-    private static async Task<UpstreamRecordingHandler> Embed(JsonElement? providerOptions, IReadOnlyDictionary<string, string?>? headers)
+    private static async Task<UpstreamRecordingHandler> Embed(
+        JsonElement? providerOptions,
+        IReadOnlyDictionary<string, string?>? headers
+    )
     {
-        var handler = new UpstreamRecordingHandler("{\"embeddings\":[[0.1,0.2,0.3],[0.4,0.5,0.6]],\"usage\":{\"tokens\":8}}");
+        var handler = new UpstreamRecordingHandler(
+            "{\"embeddings\":[[0.1,0.2,0.3],[0.4,0.5,0.6]],\"usage\":{\"tokens\":8}}"
+        );
         var model = Model(handler);
         await model.DoEmbedAsync(Values, providerOptions, headers, CancellationToken.None);
         return handler;
@@ -83,7 +127,10 @@ public sealed class GatewayEmbeddingParityTests
 
     private static GatewayEmbeddingModel Model(HttpMessageHandler handler)
     {
-        var provider = GatewayProvider.Create(new GatewayOptions { ApiKey = "test-token", BaseUrl = "https://api.test.com" }, handler);
+        var provider = GatewayProvider.Create(
+            new GatewayOptions { ApiKey = "test-token", BaseUrl = "https://api.test.com" },
+            handler
+        );
         return (GatewayEmbeddingModel)provider.EmbeddingModel("openai/text-embedding-3-small");
     }
 }

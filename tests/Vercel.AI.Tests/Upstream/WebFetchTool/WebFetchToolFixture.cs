@@ -55,9 +55,7 @@ internal static class WebFetchToolFixture
         private readonly Func<string, DownloadRequest, Task<DownloadResponse>> _handler;
 
         public RecordingFetch(Func<string, DownloadRequest, DownloadResponse> handler)
-            : this((url, request) => Task.FromResult(handler(url, request)))
-        {
-        }
+            : this((url, request) => Task.FromResult(handler(url, request))) { }
 
         public RecordingFetch(Func<string, DownloadRequest, Task<DownloadResponse>> handler)
         {
@@ -66,33 +64,48 @@ internal static class WebFetchToolFixture
 
         public List<(string Url, DownloadRequest Request)> Calls { get; } = new();
 
-        public DownloadFetch Fetch => (url, request) =>
-        {
-            lock (Calls)
+        public DownloadFetch Fetch =>
+            (url, request) =>
             {
-                Calls.Add((url, request));
-            }
+                lock (Calls)
+                {
+                    Calls.Add((url, request));
+                }
 
-            return _handler(url, request);
-        };
+                return _handler(url, request);
+            };
     }
 
-    public static async Task<JsonElement> ExecuteAsync(Tool webFetch, string url, int? offset = null, IReadOnlyList<ModelMessage>? messages = null, CancellationToken abortSignal = default)
+    public static async Task<JsonElement> ExecuteAsync(
+        Tool webFetch,
+        string url,
+        int? offset = null,
+        IReadOnlyList<ModelMessage>? messages = null,
+        CancellationToken abortSignal = default
+    )
     {
-        var input = offset == null
-            ? JsonSerializer.Serialize(new { url })
-            : JsonSerializer.Serialize(new { url, offset });
+        var input =
+            offset == null
+                ? JsonSerializer.Serialize(new { url })
+                : JsonSerializer.Serialize(new { url, offset });
         using var document = JsonDocument.Parse(input);
         var output = await webFetch.ExecuteWithOptions!(
             document.RootElement.Clone(),
-            new ToolExecutionOptions("test-call", messages ?? Array.Empty<ModelMessage>(), abortSignal));
+            new ToolExecutionOptions(
+                "test-call",
+                messages ?? Array.Empty<ModelMessage>(),
+                abortSignal
+            )
+        );
         using var parsed = JsonDocument.Parse(output);
         return parsed.RootElement.Clone();
     }
 
     public static Vercel.AI.Prompt.ToolModelOutput ToModelOutput(Tool webFetch, JsonElement output)
     {
-        return webFetch.ToModelOutput!(new Vercel.AI.Prompt.ToolModelOutputCall("test-call", null, output.GetRawText()));
+        return webFetch.ToModelOutput!(
+            new Vercel.AI.Prompt.ToolModelOutputCall("test-call", null, output.GetRawText())
+        );
     }
 
     public static string Content(JsonElement output)

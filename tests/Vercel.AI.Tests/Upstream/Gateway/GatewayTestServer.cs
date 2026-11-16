@@ -24,24 +24,43 @@ internal sealed class GatewayTestServer : HttpMessageHandler
 
     public List<HttpRequestMessage> Calls { get; } = [];
 
-    public static GatewayConfig CreateConfig(GatewayTestServer server, Func<IReadOnlyDictionary<string, string?>>? headers = null)
+    public static GatewayConfig CreateConfig(
+        GatewayTestServer server,
+        Func<IReadOnlyDictionary<string, string?>>? headers = null
+    )
     {
         return new GatewayConfig
         {
             BaseUrl = "https://api.example.com",
-            Headers = headers ?? (() => new Dictionary<string, string?> { ["Authorization"] = "Bearer test-token" }),
-            Http = new ProviderHttp(new HttpClient(server, disposeHandler: false), new RetryPolicy { MaxRetries = 0 }),
+            Headers = headers
+                ?? (
+                    () =>
+                        new Dictionary<string, string?> { ["Authorization"] = "Bearer test-token" }
+                ),
+            Http = new ProviderHttp(
+                new HttpClient(server, disposeHandler: false),
+                new RetryPolicy { MaxRetries = 0 }
+            ),
         };
     }
 
     public Dictionary<string, string> RequestHeaders(int call = 0)
     {
-        return Calls[call].Headers.ToDictionary(h => h.Key.ToLowerInvariant(), h => string.Join(",", h.Value));
+        return Calls[call]
+            .Headers.ToDictionary(h => h.Key.ToLowerInvariant(), h => string.Join(",", h.Value));
     }
 
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         Calls.Add(request);
-        return Task.FromResult(new HttpResponseMessage(Status) { Content = new StringContent(Body, Encoding.UTF8, "application/json") });
+        return Task.FromResult(
+            new HttpResponseMessage(Status)
+            {
+                Content = new StringContent(Body, Encoding.UTF8, "application/json"),
+            }
+        );
     }
 }

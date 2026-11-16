@@ -11,28 +11,44 @@ namespace Vercel.AI.Tests.OpenResponsesLanguageModelTests;
 /// <summary>Port of <c>open-responses-language-model.test.ts</c> &gt; <c>OpenResponsesLanguageModel &gt; doStream &gt; pdf input file</c>.</summary>
 public sealed class DoStreamPdfInputFileTests
 {
-    private const string Prefix = "packages/open-responses/src/responses/open-responses-language-model.test.ts::OpenResponsesLanguageModel > doStream > pdf input file::";
+    private const string Prefix =
+        "packages/open-responses/src/responses/open-responses-language-model.test.ts::OpenResponsesLanguageModel > doStream > pdf input file::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should stream content from pdf input", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should stream content from pdf input",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_stream_content_from_pdf_input()
     {
         var options = new LanguageModelCallOptions
         {
             Prompt = new ModelMessage[]
             {
-                new UserModelMessage(new UserContentPart[]
-                {
-                    new TextContentPart("What text does this PDF contain?"),
-                    new FileContentPart("application/pdf", "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", null, null),
-                }),
+                new UserModelMessage(
+                    new UserContentPart[]
+                    {
+                        new TextContentPart("What text does this PDF contain?"),
+                        new FileContentPart(
+                            "application/pdf",
+                            "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+                            null,
+                            null
+                        ),
+                    }
+                ),
             },
         };
 
-        var parts = await Collect(Model(ChunksFixture("openai-pdf-input-file.1"), "gpt-4.1-nano"), options);
+        var parts = await Collect(
+            Model(ChunksFixture("openai-pdf-input-file.1"), "gpt-4.1-nano"),
+            options
+        );
 
         const string id = "msg_051ebd7ab60063870069d4fe8c1b7c8194b701e22f1ef094dd";
-        JsonAssert.Equal(ToJson(parts), """
+        JsonAssert.Equal(
+            ToJson(parts),
+            """
             [
               {"type":"stream-start","warnings":[]},
               {"id":"ID","type":"text-start"},
@@ -50,6 +66,7 @@ public sealed class DoStreamPdfInputFileTests
                 }
               }
             ]
-            """.Replace("ID", id));
+            """.Replace("ID", id)
+        );
     }
 }

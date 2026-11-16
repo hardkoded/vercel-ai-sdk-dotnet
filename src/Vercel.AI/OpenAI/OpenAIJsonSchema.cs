@@ -59,35 +59,58 @@ public static class OpenAIJsonSchema
         var warnings = new List<OpenAICallWarning>();
         if (removedPropertyNames)
         {
-            warnings.Add(new OpenAICallWarning("compatibility", "JSON Schema propertyNames", PropertyNamesDetails));
+            warnings.Add(
+                new OpenAICallWarning(
+                    "compatibility",
+                    "JSON Schema propertyNames",
+                    PropertyNamesDetails
+                )
+            );
         }
 
         if (removedLookaround)
         {
-            warnings.Add(new OpenAICallWarning("compatibility", "JSON Schema pattern with regex lookaround", LookaroundDetails));
+            warnings.Add(
+                new OpenAICallWarning(
+                    "compatibility",
+                    "JSON Schema pattern with regex lookaround",
+                    LookaroundDetails
+                )
+            );
         }
 
         return new OpenAIJsonSchemaResult(clone, warnings);
     }
 
-    private static void Walk(JsonNode? node, ref bool removedPropertyNames, ref bool removedLookaround)
+    private static void Walk(
+        JsonNode? node,
+        ref bool removedPropertyNames,
+        ref bool removedLookaround
+    )
     {
         if (node is JsonObject obj)
         {
-            if (obj.TryGetPropertyValue("propertyNames", out var propertyNames) && propertyNames != null)
+            if (
+                obj.TryGetPropertyValue("propertyNames", out var propertyNames)
+                && propertyNames != null
+            )
             {
                 if (propertyNames is not JsonObject nameSchema || !IsStringSchema(nameSchema))
                 {
-                    throw new Provider.AiSdkException("JSON Schema propertyNames that does not use a string schema");
+                    throw new Provider.AiSdkException(
+                        "JSON Schema propertyNames that does not use a string schema"
+                    );
                 }
 
                 obj.Remove("propertyNames");
                 removedPropertyNames = true;
             }
 
-            if (obj["pattern"] is JsonValue patternValue
+            if (
+                obj["pattern"] is JsonValue patternValue
                 && patternValue.TryGetValue<string>(out var pattern)
-                && ContainsRegexLookaround(pattern))
+                && ContainsRegexLookaround(pattern)
+            )
             {
                 obj.Remove("pattern");
                 removedLookaround = true;
@@ -109,7 +132,9 @@ public static class OpenAIJsonSchema
 
     private static bool IsStringSchema(JsonObject schema)
     {
-        return schema["type"] is JsonValue type && type.TryGetValue<string>(out var text) && text == "string";
+        return schema["type"] is JsonValue type
+            && type.TryGetValue<string>(out var text)
+            && text == "string";
     }
 
     /// <summary>True when <paramref name="pattern"/> contains an unescaped regex lookaround.</summary>
@@ -144,7 +169,12 @@ public static class OpenAIJsonSchema
                 continue;
             }
 
-            if (!inCharacterClass && character == '(' && index + 1 < pattern.Length && pattern[index + 1] == '?')
+            if (
+                !inCharacterClass
+                && character == '('
+                && index + 1 < pattern.Length
+                && pattern[index + 1] == '?'
+            )
             {
                 var lookaroundPrefix = index + 2 < pattern.Length ? pattern[index + 2] : '\0';
                 if (lookaroundPrefix == '=' || lookaroundPrefix == '!')
@@ -152,9 +182,11 @@ public static class OpenAIJsonSchema
                     return true;
                 }
 
-                if (lookaroundPrefix == '<'
+                if (
+                    lookaroundPrefix == '<'
                     && index + 3 < pattern.Length
-                    && (pattern[index + 3] == '=' || pattern[index + 3] == '!'))
+                    && (pattern[index + 3] == '=' || pattern[index + 3] == '!')
+                )
                 {
                     return true;
                 }

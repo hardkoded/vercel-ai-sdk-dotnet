@@ -14,19 +14,38 @@ public sealed class PrepareResponsesToolsImageGenerationTests
     private const string Prefix = TestFile + " > image_generation::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should prepare image_generation tool with no args", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should prepare image_generation tool with no args",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_prepare_image_generation_tool_with_no_args()
     {
-        var result = XaiResponsesTools.Prepare(new[] { ProviderTool("xai.image_generation", "image_generation") }, null);
+        var result = XaiResponsesTools.Prepare(
+            new[] { ProviderTool("xai.image_generation", "image_generation") },
+            null
+        );
 
         JsonAssert.Equal(result.Tools, """[{"type":"image_generation"}]""");
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should prepare image_generation tool with action", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should prepare image_generation tool with action",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_prepare_image_generation_tool_with_action()
     {
-        var result = XaiResponsesTools.Prepare(new[] { ProviderTool("xai.image_generation", "image_generation", """{"action":"generate"}""") }, null);
+        var result = XaiResponsesTools.Prepare(
+            new[]
+            {
+                ProviderTool(
+                    "xai.image_generation",
+                    "image_generation",
+                    """{"action":"generate"}"""
+                ),
+            },
+            null
+        );
 
         JsonAssert.Equal(result.Tools, """[{"action":"generate","type":"image_generation"}]""");
     }

@@ -27,7 +27,11 @@ public sealed class OpenAIUnsupportedTool
 /// <summary>Chat Completions tools and tool choice.</summary>
 public sealed class OpenAIChatToolPreparation
 {
-    internal OpenAIChatToolPreparation(JsonArray? tools, JsonNode? toolChoice, IReadOnlyList<OpenAICallWarning> warnings)
+    internal OpenAIChatToolPreparation(
+        JsonArray? tools,
+        JsonNode? toolChoice,
+        IReadOnlyList<OpenAICallWarning> warnings
+    )
     {
         Tools = tools;
         ToolChoice = toolChoice;
@@ -48,7 +52,10 @@ public sealed class OpenAIChatToolPreparation
 public static class OpenAIChatTools
 {
     /// <summary>Prepares function tools. Strict is omitted when <see cref="LanguageModelTool.Strict"/> is null.</summary>
-    public static OpenAIChatToolPreparation Prepare(IReadOnlyList<LanguageModelTool>? tools, ToolChoice? toolChoice)
+    public static OpenAIChatToolPreparation Prepare(
+        IReadOnlyList<LanguageModelTool>? tools,
+        ToolChoice? toolChoice
+    )
     {
         return Prepare(tools, null, toolChoice);
     }
@@ -57,7 +64,8 @@ public static class OpenAIChatTools
     public static OpenAIChatToolPreparation Prepare(
         IReadOnlyList<LanguageModelTool>? tools,
         IReadOnlyList<OpenAIUnsupportedTool>? unsupported,
-        ToolChoice? toolChoice)
+        ToolChoice? toolChoice
+    )
     {
         var functionCount = tools?.Count ?? 0;
         var otherCount = unsupported?.Count ?? 0;

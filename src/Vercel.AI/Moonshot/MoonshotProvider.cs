@@ -21,9 +21,7 @@ public sealed class MoonshotProvider : OpenAICompatibleProvider
 
     /// <summary>Creates a provider.</summary>
     public MoonshotProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
-        : base(Prepare(options), httpClient)
-    {
-    }
+        : base(Prepare(options), httpClient) { }
 
     /// <summary>Whether <paramref name="modelId"/> accepts JSON schema responses. Every non-empty id does.</summary>
     public static bool SupportsStructuredOutputs(string modelId)
@@ -45,9 +43,14 @@ public sealed class MoonshotProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static new MoonshotProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new MoonshotProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new MoonshotProvider(client, options);
     }
 
@@ -60,7 +63,10 @@ public sealed class MoonshotProvider : OpenAICompatibleProvider
             ["video/*"] = "^ms://",
         };
 
-        if (string.IsNullOrEmpty(options.ProviderName) || options.ProviderName == "openai-compatible")
+        if (
+            string.IsNullOrEmpty(options.ProviderName)
+            || options.ProviderName == "openai-compatible"
+        )
         {
             options.ProviderName = ProviderId;
         }
@@ -94,14 +100,21 @@ public sealed class MoonshotProvider : OpenAICompatibleProvider
 public static class MoonshotServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddMoonshot(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddMoonshot(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(MoonshotProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new MoonshotProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(MoonshotProvider.ProviderId), options);
+            return new MoonshotProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(MoonshotProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

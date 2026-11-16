@@ -129,22 +129,38 @@ public static class XaiTools
             throw new ArgumentNullException(nameof(options));
         }
 
-        return Tool.ProviderDefined("xai.file_search", name, Args(
-            ("vectorStoreIds", Strings(options.VectorStoreIds)),
-            ("maxNumResults", options.MaxNumResults is { } max ? JsonValue.Create(max) : null)));
+        return Tool.ProviderDefined(
+            "xai.file_search",
+            name,
+            Args(
+                ("vectorStoreIds", Strings(options.VectorStoreIds)),
+                ("maxNumResults", options.MaxNumResults is { } max ? JsonValue.Create(max) : null)
+            )
+        );
     }
 
     /// <summary>The <c>xai.image_generation</c> tool. Maps to <c>imageGeneration</c>.</summary>
-    public static Tool ImageGeneration(XaiImageGenerationOptions? options = null, string name = "image_generation")
+    public static Tool ImageGeneration(
+        XaiImageGenerationOptions? options = null,
+        string name = "image_generation"
+    )
     {
-        return Tool.ProviderDefined("xai.image_generation", name, Args(
-            ("action", options?.Action switch
-            {
-                XaiImageGenerationAction.Auto => JsonValue.Create("auto"),
-                XaiImageGenerationAction.Generate => JsonValue.Create("generate"),
-                XaiImageGenerationAction.Edit => JsonValue.Create("edit"),
-                _ => null,
-            })));
+        return Tool.ProviderDefined(
+            "xai.image_generation",
+            name,
+            Args(
+                (
+                    "action",
+                    options?.Action switch
+                    {
+                        XaiImageGenerationAction.Auto => JsonValue.Create("auto"),
+                        XaiImageGenerationAction.Generate => JsonValue.Create("generate"),
+                        XaiImageGenerationAction.Edit => JsonValue.Create("edit"),
+                        _ => null,
+                    }
+                )
+            )
+        );
     }
 
     /// <summary>The <c>xai.mcp</c> tool. Maps to <c>mcpServer</c>.</summary>
@@ -167,13 +183,18 @@ public static class XaiTools
             headers = node;
         }
 
-        return Tool.ProviderDefined("xai.mcp", name, Args(
-            ("serverUrl", JsonValue.Create(options.ServerUrl)),
-            ("serverLabel", Text(options.ServerLabel)),
-            ("serverDescription", Text(options.ServerDescription)),
-            ("allowedTools", Strings(options.AllowedTools)),
-            ("headers", headers),
-            ("authorization", Text(options.Authorization))));
+        return Tool.ProviderDefined(
+            "xai.mcp",
+            name,
+            Args(
+                ("serverUrl", JsonValue.Create(options.ServerUrl)),
+                ("serverLabel", Text(options.ServerLabel)),
+                ("serverDescription", Text(options.ServerDescription)),
+                ("allowedTools", Strings(options.AllowedTools)),
+                ("headers", headers),
+                ("authorization", Text(options.Authorization))
+            )
+        );
     }
 
     /// <summary>The <c>xai.view_image</c> tool. Maps to <c>viewImage</c>.</summary>
@@ -191,23 +212,33 @@ public static class XaiTools
     /// <summary>The <c>xai.web_search</c> tool. Maps to <c>webSearch</c>.</summary>
     public static Tool WebSearch(XaiWebSearchOptions? options = null, string name = "web_search")
     {
-        return Tool.ProviderDefined("xai.web_search", name, Args(
-            ("allowedDomains", Strings(options?.AllowedDomains)),
-            ("excludedDomains", Strings(options?.ExcludedDomains)),
-            ("enableImageSearch", Flag(options?.EnableImageSearch)),
-            ("enableImageUnderstanding", Flag(options?.EnableImageUnderstanding))));
+        return Tool.ProviderDefined(
+            "xai.web_search",
+            name,
+            Args(
+                ("allowedDomains", Strings(options?.AllowedDomains)),
+                ("excludedDomains", Strings(options?.ExcludedDomains)),
+                ("enableImageSearch", Flag(options?.EnableImageSearch)),
+                ("enableImageUnderstanding", Flag(options?.EnableImageUnderstanding))
+            )
+        );
     }
 
     /// <summary>The <c>xai.x_search</c> tool. Maps to <c>xSearch</c>.</summary>
     public static Tool XSearch(XaiXSearchOptions? options = null, string name = "x_search")
     {
-        return Tool.ProviderDefined("xai.x_search", name, Args(
-            ("allowedXHandles", Strings(options?.AllowedXHandles)),
-            ("excludedXHandles", Strings(options?.ExcludedXHandles)),
-            ("fromDate", Text(options?.FromDate)),
-            ("toDate", Text(options?.ToDate)),
-            ("enableImageUnderstanding", Flag(options?.EnableImageUnderstanding)),
-            ("enableVideoUnderstanding", Flag(options?.EnableVideoUnderstanding))));
+        return Tool.ProviderDefined(
+            "xai.x_search",
+            name,
+            Args(
+                ("allowedXHandles", Strings(options?.AllowedXHandles)),
+                ("excludedXHandles", Strings(options?.ExcludedXHandles)),
+                ("fromDate", Text(options?.FromDate)),
+                ("toDate", Text(options?.ToDate)),
+                ("enableImageUnderstanding", Flag(options?.EnableImageUnderstanding)),
+                ("enableVideoUnderstanding", Flag(options?.EnableVideoUnderstanding))
+            )
+        );
     }
 
     private static JsonNode? Text(string? value)

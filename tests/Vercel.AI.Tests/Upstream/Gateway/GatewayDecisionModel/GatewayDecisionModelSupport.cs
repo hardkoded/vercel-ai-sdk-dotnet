@@ -45,32 +45,80 @@ internal static class GatewayDecisionModelSupport
         return new Dictionary<string, DecisionQuestion>
         {
             ["correct"] = Q("boolean", "Is the statement factually correct?"),
-            ["tone"] = Q("choice", "What is the tone?", new Dictionary<string, object?> { ["neutral"] = "Plain and factual.", ["playful"] = null }),
-            ["quality"] = Q("score", "Rate the quality.", new List<object?> { "Poor.", "Acceptable.", "Excellent." }),
+            ["tone"] = Q(
+                "choice",
+                "What is the tone?",
+                new Dictionary<string, object?>
+                {
+                    ["neutral"] = "Plain and factual.",
+                    ["playful"] = null,
+                }
+            ),
+            ["quality"] = Q(
+                "score",
+                "Rate the quality.",
+                new List<object?> { "Poor.", "Acceptable.", "Excellent." }
+            ),
         };
     }
 
     internal static List<object?> State(string text)
     {
-        return new List<object?> { new Dictionary<string, object?> { ["type"] = "text", ["text"] = text } };
+        return new List<object?>
+        {
+            new Dictionary<string, object?> { ["type"] = "text", ["text"] = text },
+        };
     }
 
-    internal static DecisionModelCall Call(string? providerOptions = "{}", IReadOnlyDictionary<string, string>? headers = null, object? state = null, double? maxOutputTokens = null, string? reasoning = null)
+    internal static DecisionModelCall Call(
+        string? providerOptions = "{}",
+        IReadOnlyDictionary<string, string>? headers = null,
+        object? state = null,
+        double? maxOutputTokens = null,
+        string? reasoning = null
+    )
     {
         using var document = JsonDocument.Parse(providerOptions ?? "{}");
         var options = providerOptions == null ? default : document.RootElement.Clone();
-        return new DecisionModelCall(P((IEnumerable<object?>)(state ?? State(TestState))), Questions(), options, headers ?? new Dictionary<string, string>(), CancellationToken.None, maxOutputTokens, reasoning);
+        return new DecisionModelCall(
+            P((IEnumerable<object?>)(state ?? State(TestState))),
+            Questions(),
+            options,
+            headers ?? new Dictionary<string, string>(),
+            CancellationToken.None,
+            maxOutputTokens,
+            reasoning
+        );
     }
 
     /// <summary>Builds a model whose requests are answered with <paramref name="body"/> (a decision-model response).</summary>
-    internal static (Vercel.AI.Gateway.GatewayDecisionModel Model, OpenAICapture Capture) Setup(string? body = null, HttpStatusCode status = HttpStatusCode.OK, IReadOnlyDictionary<string, string>? o11yHeaders = null)
+    internal static (Vercel.AI.Gateway.GatewayDecisionModel Model, OpenAICapture Capture) Setup(
+        string? body = null,
+        HttpStatusCode status = HttpStatusCode.OK,
+        IReadOnlyDictionary<string, string>? o11yHeaders = null
+    )
     {
-        var capture = new OpenAICapture { ResponseJson = body ?? "{\"answers\":" + DummyAnswers + "}", Status = status };
-        var provider = GatewayProvider.Create(new GatewayOptions { ApiKey = "test-token", BaseUrl = "https://api.test.com", O11yHeaders = o11yHeaders }, capture);
+        var capture = new OpenAICapture
+        {
+            ResponseJson = body ?? "{\"answers\":" + DummyAnswers + "}",
+            Status = status,
+        };
+        var provider = GatewayProvider.Create(
+            new GatewayOptions
+            {
+                ApiKey = "test-token",
+                BaseUrl = "https://api.test.com",
+                O11yHeaders = o11yHeaders,
+            },
+            capture
+        );
         return (provider.DecisionModel("typesafe-ai/jev"), capture);
     }
 
-    internal static string Response(string? answers = null, params (string Name, string Json)[] extra)
+    internal static string Response(
+        string? answers = null,
+        params (string Name, string Json)[] extra
+    )
     {
         var body = new JsonObject { ["answers"] = JsonNode.Parse(answers ?? DummyAnswers) };
         foreach (var pair in extra)

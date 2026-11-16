@@ -14,7 +14,13 @@ public sealed class InvalidToolApprovalSignatureError : AiSdkError
     public InvalidToolApprovalSignatureError(string approvalId, string toolCallId, string reason)
         : base(
             "AI_InvalidToolApprovalSignatureError",
-            "Tool approval signature verification failed for approval \"" + approvalId + "\" (tool call \"" + toolCallId + "\"): " + reason)
+            "Tool approval signature verification failed for approval \""
+                + approvalId
+                + "\" (tool call \""
+                + toolCallId
+                + "\"): "
+                + reason
+        )
     {
         ApprovalId = approvalId;
         ToolCallId = toolCallId;

@@ -12,7 +12,11 @@ namespace Vercel.AI.Tests.Upstream.DeepSeek.ConvertToDeepSeekResponsesInput;
 public sealed class ConvertToDeepSeekResponsesInputTests
 {
     [Fact]
-    [UpstreamTest(TestFile + "::should convert an empty prompt", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        TestFile + "::should convert an empty prompt",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public void Should_convert_an_empty_prompt()
     {
         var warnings = new List<CallWarning>();

@@ -10,10 +10,14 @@ namespace Vercel.AI.Tests.Upstream.Google.ExtractGoogleInteractionsSources;
 /// <summary>Port of <c>extract-google-interactions-sources.test.ts</c> &gt; <c>annotationsToSources</c>.</summary>
 public sealed class AnnotationsToSourcesTests
 {
-    private const string File = "packages/google/src/interactions/extract-google-interactions-sources.test.ts::annotationsToSources::";
+    private const string File =
+        "packages/google/src/interactions/extract-google-interactions-sources.test.ts::annotationsToSources::";
 
     [Fact]
-    [UpstreamTest(File + "returns [] for null/undefined annotations", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        File + "returns [] for null/undefined annotations",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Returns_empty_for_null_undefined_annotations()
     {
         // The port has no undefined: a missing annotations field reads as null.
@@ -22,13 +26,24 @@ public sealed class AnnotationsToSourcesTests
     }
 
     [Fact]
-    [UpstreamTest(File + "de-duplicates url citations across multiple annotations", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        File + "de-duplicates url citations across multiple annotations",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void De_duplicates_url_citations_across_multiple_annotations()
     {
         var sources = GoogleInteractionsSources.AnnotationsToSources(
-            JsonNode.Parse("[{\"type\":\"url_citation\",\"url\":\"https://a.example.com\",\"title\":\"A\"},{\"type\":\"url_citation\",\"url\":\"https://a.example.com\",\"title\":\"A\"},{\"type\":\"url_citation\",\"url\":\"https://b.example.com\",\"title\":\"B\"}]")!.AsArray(),
-            new IdCounter().Next);
+            JsonNode
+                .Parse(
+                    "[{\"type\":\"url_citation\",\"url\":\"https://a.example.com\",\"title\":\"A\"},{\"type\":\"url_citation\",\"url\":\"https://a.example.com\",\"title\":\"A\"},{\"type\":\"url_citation\",\"url\":\"https://b.example.com\",\"title\":\"B\"}]"
+                )!
+                .AsArray(),
+            new IdCounter().Next
+        );
 
-        Assert.Equal(new List<string?> { "https://a.example.com", "https://b.example.com" }, SourceAssert.Urls(sources));
+        Assert.Equal(
+            new List<string?> { "https://a.example.com", "https://b.example.com" },
+            SourceAssert.Urls(sources)
+        );
     }
 }

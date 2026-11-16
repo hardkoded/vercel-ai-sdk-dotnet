@@ -12,7 +12,8 @@ internal static class UIMessageRawInputWarning
 {
     private static readonly DeprecatedWarning RawInputDeprecationWarning = new(
         "rawInput in output-error UI message parts",
-        "Use the \"input\" field instead. The \"rawInput\" field will be removed in the next major version.");
+        "Use the \"input\" field instead. The \"rawInput\" field will be removed in the next major version."
+    );
 
     /// <summary>Logs a deprecation warning when an <c>output-error</c> tool part carries a <c>rawInput</c>. Maps to <c>warnIfUIMessageHasDeprecatedRawInput</c>.</summary>
     internal static void WarnIfUIMessageHasDeprecatedRawInput(IReadOnlyList<UIMessage> messages)
@@ -23,7 +24,9 @@ internal static class UIMessageRawInputWarning
             {
                 if (part is ToolUIPart { State: ToolUIPartState.OutputError, RawInput: not null })
                 {
-                    LogWarnings.Log(new LogWarningsOptions(new ModelWarning[] { RawInputDeprecationWarning }));
+                    LogWarnings.Log(
+                        new LogWarningsOptions(new ModelWarning[] { RawInputDeprecationWarning })
+                    );
                     return;
                 }
             }

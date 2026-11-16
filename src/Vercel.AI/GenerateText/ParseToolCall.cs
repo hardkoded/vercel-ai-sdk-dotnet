@@ -81,7 +81,8 @@ public sealed class ToolCallRepairContext
         AiSdkError error,
         IReadOnlyList<ModelMessage> messages,
         Instructions? instructions,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         ToolCall = toolCall;
         Tools = tools;
@@ -145,7 +146,10 @@ public sealed class ParseToolCallOptions
     /// Refines the input of a valid call, keyed by tool name. A tool without an entry keeps its parsed input.
     /// Maps to <c>refineToolInput</c>.
     /// </summary>
-    public IReadOnlyDictionary<string, Func<JsonElement, CancellationToken, Task<JsonElement>>>? RefineToolInput { get; init; }
+    public IReadOnlyDictionary<
+        string,
+        Func<JsonElement, CancellationToken, Task<JsonElement>>
+    >? RefineToolInput { get; init; }
 
     /// <summary>The messages of the current step. They are passed to <see cref="RepairToolCall"/>.</summary>
     public IReadOnlyList<ModelMessage>? Messages { get; init; }
@@ -157,7 +161,9 @@ public sealed class ParseToolCallOptions
 /// <summary>Parses the input of a tool call and validates it against the tool's input schema. Maps to <c>parseToolCall</c>.</summary>
 public static class ToolCallParser
 {
-    private static readonly JsonElement EmptyInputSchema = ParseJson("{\"properties\":{},\"additionalProperties\":false}");
+    private static readonly JsonElement EmptyInputSchema = ParseJson(
+        "{\"properties\":{},\"additionalProperties\":false}"
+    );
 
     /// <summary>
     /// Parses the call in <paramref name="options"/>. Empty input is validated as an empty object. A call that cannot be parsed
@@ -166,7 +172,10 @@ public static class ToolCallParser
     /// <see cref="ParseToolCallOptions.RepairToolCall"/> failed. A failing repair never hides a cancellation:
     /// when <paramref name="cancellationToken"/> is cancelled the task is cancelled.
     /// </summary>
-    public static async Task<ParsedToolCall> ParseToolCallAsync(ParseToolCallOptions options, CancellationToken cancellationToken = default)
+    public static async Task<ParsedToolCall> ParseToolCallAsync(
+        ParseToolCallOptions options,
+        CancellationToken cancellationToken = default
+    )
     {
         if (options == null)
         {
@@ -184,7 +193,11 @@ public static class ToolCallParser
 
             var text = toolCall.ArgumentsJson;
             var tool = FindTool(options.Tools, toolCall.ToolName);
-            return new ParsedToolCall(toolCall.ToolCallId, toolCall.ToolName, TryParseJson(text) ?? JsonString(text))
+            return new ParsedToolCall(
+                toolCall.ToolCallId,
+                toolCall.ToolName,
+                TryParseJson(text) ?? JsonString(text)
+            )
             {
                 Dynamic = true,
                 Invalid = true,
@@ -197,7 +210,10 @@ public static class ToolCallParser
         }
     }
 
-    private static async Task<ParsedToolCall> ParseOrRepairAsync(ParseToolCallOptions options, CancellationToken cancellationToken)
+    private static async Task<ParsedToolCall> ParseOrRepairAsync(
+        ParseToolCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var toolCall = options.ToolCall;
         var tools = options.Tools;
@@ -207,7 +223,12 @@ public static class ToolCallParser
             // provider-executed dynamic tools are not part of our list of tools
             if (toolCall.ProviderExecuted && toolCall.Dynamic)
             {
-                return await RefineAsync(ParseProviderExecutedDynamicToolCall(toolCall), options, cancellationToken).ConfigureAwait(false);
+                return await RefineAsync(
+                        ParseProviderExecutedDynamicToolCall(toolCall),
+                        options,
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
             }
 
             throw new NoSuchToolError(toolCall.ToolName);
@@ -215,9 +236,13 @@ public static class ToolCallParser
 
         try
         {
-            return await RefineAsync(DoParseToolCall(toolCall, tools), options, cancellationToken).ConfigureAwait(false);
+            return await RefineAsync(DoParseToolCall(toolCall, tools), options, cancellationToken)
+                .ConfigureAwait(false);
         }
-        catch (Exception error) when (options.RepairToolCall != null && (error is NoSuchToolError || error is InvalidToolInputError))
+        catch (Exception error)
+            when (options.RepairToolCall != null
+                && (error is NoSuchToolError || error is InvalidToolInputError)
+            )
         {
             GeneratedToolCall? repairedToolCall;
             try
@@ -229,13 +254,20 @@ public static class ToolCallParser
                     toolName =>
                     {
                         var schema = FindTool(tools, toolName)?.InputSchema ?? default;
-                        return Task.FromResult(schema.ValueKind == JsonValueKind.Undefined ? EmptyInputSchema : schema);
+                        return Task.FromResult(
+                            schema.ValueKind == JsonValueKind.Undefined ? EmptyInputSchema : schema
+                        );
                     },
                     (AiSdkError)error,
                     options.Messages ?? Array.Empty<ModelMessage>(),
                     options.Instructions,
-                    cancellationToken);
-                repairedToolCall = await WaitAsync(options.RepairToolCall!(context), cancellationToken).ConfigureAwait(false);
+                    cancellationToken
+                );
+                repairedToolCall = await WaitAsync(
+                        options.RepairToolCall!(context),
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
             }
             catch (Exception repairError)
             {
@@ -249,7 +281,12 @@ public static class ToolCallParser
                 throw;
             }
 
-            var parsedRepairedToolCall = await RefineAsync(DoParseToolCall(repairedToolCall, tools), options, cancellationToken).ConfigureAwait(false);
+            var parsedRepairedToolCall = await RefineAsync(
+                    DoParseToolCall(repairedToolCall, tools),
+                    options,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
             return parsedRepairedToolCall;
         }
@@ -263,16 +300,23 @@ public static class ToolCallParser
             return await task.ConfigureAwait(false);
         }
 
-        var cancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cancelled = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         using (cancellationToken.Register(() => cancelled.TrySetResult(true)))
         {
             if (await Task.WhenAny(task, cancelled.Task).ConfigureAwait(false) != task)
             {
                 _ = task.ContinueWith(
-                    failed => { _ = failed.Exception; },
+                    failed =>
+                    {
+                        _ = failed.Exception;
+                    },
                     CancellationToken.None,
-                    TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
-                    TaskScheduler.Default);
+                    TaskContinuationOptions.OnlyOnFaulted
+                        | TaskContinuationOptions.ExecuteSynchronously,
+                    TaskScheduler.Default
+                );
                 throw new OperationCanceledException(cancellationToken);
             }
         }
@@ -280,14 +324,24 @@ public static class ToolCallParser
         return await task.ConfigureAwait(false);
     }
 
-    private static async Task<ParsedToolCall> RefineAsync(ParsedToolCall toolCall, ParseToolCallOptions options, CancellationToken cancellationToken)
+    private static async Task<ParsedToolCall> RefineAsync(
+        ParsedToolCall toolCall,
+        ParseToolCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
-        if (options.RefineToolInput == null || !options.RefineToolInput.TryGetValue(toolCall.ToolName, out var refine) || refine == null)
+        if (
+            options.RefineToolInput == null
+            || !options.RefineToolInput.TryGetValue(toolCall.ToolName, out var refine)
+            || refine == null
+        )
         {
             return toolCall;
         }
 
-        return toolCall.WithInput(await refine(toolCall.Input, cancellationToken).ConfigureAwait(false));
+        return toolCall.WithInput(
+            await refine(toolCall.Input, cancellationToken).ConfigureAwait(false)
+        );
     }
 
     private static ParsedToolCall ParseProviderExecutedDynamicToolCall(GeneratedToolCall toolCall)
@@ -311,7 +365,10 @@ public static class ToolCallParser
         };
     }
 
-    private static ParsedToolCall DoParseToolCall(GeneratedToolCall toolCall, IReadOnlyList<Tool> tools)
+    private static ParsedToolCall DoParseToolCall(
+        GeneratedToolCall toolCall,
+        IReadOnlyList<Tool> tools
+    )
     {
         var tool = FindTool(tools, toolCall.ToolName);
         if (tool == null)
@@ -347,7 +404,15 @@ public static class ToolCallParser
         // a provider tool's schema is a Zod object upstream, which drops the properties it does not declare before it validates
         if (tool.IsProviderDefined && tool.InputSchema.ValueKind == JsonValueKind.Object)
         {
-            input = ParseJson(JsonSchemaProjection.Project(tool.InputSchema, System.Text.Json.Nodes.JsonNode.Parse(input.GetRawText()))?.ToJsonString() ?? "null");
+            input = ParseJson(
+                JsonSchemaProjection
+                    .Project(
+                        tool.InputSchema,
+                        System.Text.Json.Nodes.JsonNode.Parse(input.GetRawText())
+                    )
+                    ?.ToJsonString()
+                    ?? "null"
+            );
         }
 
         if (!tool.IsProviderDefined || tool.InputSchema.ValueKind == JsonValueKind.Object)
@@ -358,7 +423,13 @@ public static class ToolCallParser
                 throw new InvalidToolInputError(
                     toolCall.ToolName,
                     text,
-                    new FormatException("Type validation failed: Value: " + input.GetRawText() + ".\nError message: " + string.Join("; ", errors)));
+                    new FormatException(
+                        "Type validation failed: Value: "
+                            + input.GetRawText()
+                            + ".\nError message: "
+                            + string.Join("; ", errors)
+                    )
+                );
             }
         }
 

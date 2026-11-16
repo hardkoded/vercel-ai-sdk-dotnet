@@ -16,16 +16,20 @@ internal static class EventStreamFrames
 {
     public static byte[] Event(string eventType, string data)
     {
-        return Encode(
-            new[] { (":message-type", "event"), (":event-type", eventType) },
-            data);
+        return Encode(new[] { (":message-type", "event"), (":event-type", eventType) }, data);
     }
 
     public static byte[] Exception(string exceptionType, string data)
     {
         return Encode(
-            new[] { (":message-type", "exception"), (":exception-type", exceptionType), (":content-type", "application/json") },
-            data);
+            new[]
+            {
+                (":message-type", "exception"),
+                (":exception-type", exceptionType),
+                (":content-type", "application/json"),
+            },
+            data
+        );
     }
 
     /// <summary>One frame per line; the event type is the line's only top-level key and the payload is its value.</summary>
@@ -67,10 +71,22 @@ internal static class EventStreamFrames
         var frame = new List<byte>();
         frame.AddRange(UInt32(total));
         frame.AddRange(UInt32(headerBytes.Count));
-        frame.AddRange(UInt32(Vercel.AI.AmazonBedrock.AmazonBedrockEventStreamDecoder.Crc32(frame.ToArray(), 0, 8)));
+        frame.AddRange(
+            UInt32(
+                Vercel.AI.AmazonBedrock.AmazonBedrockEventStreamDecoder.Crc32(frame.ToArray(), 0, 8)
+            )
+        );
         frame.AddRange(headerBytes);
         frame.AddRange(payload);
-        frame.AddRange(UInt32(Vercel.AI.AmazonBedrock.AmazonBedrockEventStreamDecoder.Crc32(frame.ToArray(), 0, frame.Count)));
+        frame.AddRange(
+            UInt32(
+                Vercel.AI.AmazonBedrock.AmazonBedrockEventStreamDecoder.Crc32(
+                    frame.ToArray(),
+                    0,
+                    frame.Count
+                )
+            )
+        );
         return frame.ToArray();
     }
 
@@ -86,7 +102,10 @@ internal sealed class UpstreamEventStreamHandler : HttpMessageHandler
     private readonly IReadOnlyList<byte[]> _chunks;
     private readonly IReadOnlyDictionary<string, string>? _headers;
 
-    public UpstreamEventStreamHandler(IReadOnlyList<byte[]> chunks, IReadOnlyDictionary<string, string>? headers = null)
+    public UpstreamEventStreamHandler(
+        IReadOnlyList<byte[]> chunks,
+        IReadOnlyDictionary<string, string>? headers = null
+    )
     {
         _chunks = chunks;
         _headers = headers;
@@ -110,11 +129,16 @@ internal sealed class UpstreamEventStreamHandler : HttpMessageHandler
     }
 
     /// <inheritdoc />
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         Calls++;
         Uri = request.RequestUri?.AbsoluteUri ?? string.Empty;
-        Body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+        Body = request.Content is null
+            ? string.Empty
+            : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
         Headers.Clear();
         foreach (var header in request.Headers)
         {
@@ -128,8 +152,13 @@ internal sealed class UpstreamEventStreamHandler : HttpMessageHandler
         }
 
         stream.Position = 0;
-        var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new UnknownLengthContent(stream) };
-        response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/vnd.amazon.eventstream");
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new UnknownLengthContent(stream),
+        };
+        response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+            "application/vnd.amazon.eventstream"
+        );
         response.Headers.TryAddWithoutValidation("cache-control", "no-cache");
         response.Headers.TryAddWithoutValidation("connection", "keep-alive");
         if (_headers != null)
@@ -150,11 +179,14 @@ internal static class BedrockStreamSupport
 
     public const string Start = "stream-start warnings=0";
 
-    public const string Meta = "response-metadata id=undefined modelId=anthropic.claude-3-haiku-20240307-v1:0 timestamp=undefined";
+    public const string Meta =
+        "response-metadata id=undefined modelId=anthropic.claude-3-haiku-20240307-v1:0 timestamp=undefined";
 
-    public const string NoUsage = "in(undefined,undefined,undefined,undefined) out(undefined,undefined,undefined) raw=undefined";
+    public const string NoUsage =
+        "in(undefined,undefined,undefined,undefined) out(undefined,undefined,undefined) raw=undefined";
 
-    public const string JsonToolMeta = " meta={\"amazonBedrock\":{\"isJsonResponseFromTool\":true,\"stopSequence\":null},\"bedrock\":{\"isJsonResponseFromTool\":true,\"stopSequence\":null}}";
+    public const string JsonToolMeta =
+        " meta={\"amazonBedrock\":{\"isJsonResponseFromTool\":true,\"stopSequence\":null},\"bedrock\":{\"isJsonResponseFromTool\":true,\"stopSequence\":null}}";
 
     public static readonly ModelMessage[] TestPrompt =
     {
@@ -167,28 +199,54 @@ internal static class BedrockStreamSupport
         return new UpstreamEventStreamHandler(EventStreamFrames.FromChunkLines(lines));
     }
 
-    public static UpstreamEventStreamHandler Fixture(string name, IReadOnlyDictionary<string, string>? headers = null)
+    public static UpstreamEventStreamHandler Fixture(
+        string name,
+        IReadOnlyDictionary<string, string>? headers = null
+    )
     {
-        var lines = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", "amazon-bedrock-" + name + ".chunks.txt"));
+        var lines = File.ReadAllLines(
+            Path.Combine(
+                AppContext.BaseDirectory,
+                "Fixtures",
+                "amazon-bedrock-" + name + ".chunks.txt"
+            )
+        );
         return new UpstreamEventStreamHandler(EventStreamFrames.FromChunkLines(lines), headers);
     }
 
-    public static ILanguageModel CreateModel(HttpMessageHandler handler, string modelId = ModelId, Dictionary<string, string?>? providerHeaders = null)
+    public static ILanguageModel CreateModel(
+        HttpMessageHandler handler,
+        string modelId = ModelId,
+        Dictionary<string, string?>? providerHeaders = null
+    )
     {
-        var provider = global::Vercel.AI.AmazonBedrock.AmazonBedrockProvider.Create(new AmazonBedrockOptions
-        {
-            AccessKeyId = "test-access-key",
-            SecretAccessKey = "test-secret",
-            UtcNow = () => new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            Headers = providerHeaders ?? new(),
-        }, handler);
+        var provider = global::Vercel.AI.AmazonBedrock.AmazonBedrockProvider.Create(
+            new AmazonBedrockOptions
+            {
+                AccessKeyId = "test-access-key",
+                SecretAccessKey = "test-secret",
+                UtcNow = () => new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                Headers = providerHeaders ?? new(),
+            },
+            handler
+        );
         return provider.LanguageModel(modelId);
     }
 
-    public static async Task<List<LanguageModelStreamPart>> Stream(HttpMessageHandler handler, LanguageModelCallOptions? options = null, string modelId = ModelId, Dictionary<string, string?>? providerHeaders = null)
+    public static async Task<List<LanguageModelStreamPart>> Stream(
+        HttpMessageHandler handler,
+        LanguageModelCallOptions? options = null,
+        string modelId = ModelId,
+        Dictionary<string, string?>? providerHeaders = null
+    )
     {
         var parts = new List<LanguageModelStreamPart>();
-        await foreach (var part in (await CreateModel(handler, modelId, providerHeaders).DoStreamAsync(options ?? Call(), CancellationToken.None)))
+        await foreach (
+            var part in (
+                await CreateModel(handler, modelId, providerHeaders)
+                    .DoStreamAsync(options ?? Call(), CancellationToken.None)
+            )
+        )
         {
             parts.Add(part);
         }
@@ -217,7 +275,8 @@ internal static class BedrockStreamSupport
         return result;
     }
 
-    public static string[] Render(IEnumerable<LanguageModelStreamPart> parts) => parts.Select(Render).ToArray();
+    public static string[] Render(IEnumerable<LanguageModelStreamPart> parts) =>
+        parts.Select(Render).ToArray();
 
     /// <summary>One compact line per part, standing in for vitest's inline snapshots.</summary>
     public static string Render(LanguageModelStreamPart part)
@@ -227,7 +286,15 @@ internal static class BedrockStreamSupport
             case StreamStartStreamPart start:
                 return "stream-start warnings=" + start.Warnings.Count;
             case ResponseMetadataStreamPart metadata:
-                return "response-metadata id=" + (metadata.Id ?? "undefined") + " modelId=" + metadata.ModelId + " timestamp=" + (metadata.Timestamp?.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'") ?? "undefined");
+                return "response-metadata id="
+                    + (metadata.Id ?? "undefined")
+                    + " modelId="
+                    + metadata.ModelId
+                    + " timestamp="
+                    + (
+                        metadata.Timestamp?.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'")
+                        ?? "undefined"
+                    );
             case TextStartStreamPart textStart:
                 return "text-start " + textStart.Id;
             case TextDeltaStreamPart textDelta:
@@ -237,9 +304,15 @@ internal static class BedrockStreamSupport
             case ReasoningStartStreamPart reasoningStart:
                 return "reasoning-start " + reasoningStart.Id;
             case ReasoningDeltaStreamPart reasoningDelta:
-                return "reasoning-delta " + reasoningDelta.Id + " " + Quote(reasoningDelta.Delta) + MetaSuffix(reasoningDelta.ProviderMetadata);
+                return "reasoning-delta "
+                    + reasoningDelta.Id
+                    + " "
+                    + Quote(reasoningDelta.Delta)
+                    + MetaSuffix(reasoningDelta.ProviderMetadata);
             case ReasoningEndStreamPart reasoningEnd:
-                return "reasoning-end " + reasoningEnd.Id + MetaSuffix(reasoningEnd.ProviderMetadata);
+                return "reasoning-end "
+                    + reasoningEnd.Id
+                    + MetaSuffix(reasoningEnd.ProviderMetadata);
             case ToolInputStartStreamPart inputStart:
                 return "tool-input-start " + inputStart.Id + " " + inputStart.ToolName;
             case ToolInputDeltaStreamPart inputDelta:
@@ -247,14 +320,24 @@ internal static class BedrockStreamSupport
             case ToolInputEndStreamPart inputEnd:
                 return "tool-input-end " + inputEnd.Id;
             case ToolCallStreamPart call:
-                return "tool-call " + call.ToolCallId + " " + call.ToolName + " " + Quote(call.ArgumentsJson);
+                return "tool-call "
+                    + call.ToolCallId
+                    + " "
+                    + call.ToolName
+                    + " "
+                    + Quote(call.ArgumentsJson);
             case RawStreamPart raw:
                 return "raw " + raw.RawJson;
             case ErrorStreamPart error:
                 return "error " + Quote(error.Message);
             case FinishStreamPart finish:
-                return "finish " + FinishReasonName(finish.FinishReason) + " raw=" + (finish.RawFinishReason ?? "undefined")
-                    + " usage=" + Usage(finish.Usage) + MetaSuffix(finish.ProviderMetadata);
+                return "finish "
+                    + FinishReasonName(finish.FinishReason)
+                    + " raw="
+                    + (finish.RawFinishReason ?? "undefined")
+                    + " usage="
+                    + Usage(finish.Usage)
+                    + MetaSuffix(finish.ProviderMetadata);
             default:
                 return part.Type;
         }
@@ -275,21 +358,44 @@ internal static class BedrockStreamSupport
 
     private static string Usage(LanguageModelUsage usage)
     {
-        string N(int? value) => value?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "undefined";
-        return "in(" + N(usage.InputTokens) + "," + N(usage.NoCacheInputTokens) + "," + N(usage.CacheReadTokens) + "," + N(usage.CacheWriteTokens)
-            + ") out(" + N(usage.OutputTokens) + "," + N(usage.TextTokens) + "," + N(usage.ReasoningTokens) + ") raw=" + (usage.Raw?.GetRawText() ?? "undefined");
+        string N(int? value) =>
+            value?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "undefined";
+        return "in("
+            + N(usage.InputTokens)
+            + ","
+            + N(usage.NoCacheInputTokens)
+            + ","
+            + N(usage.CacheReadTokens)
+            + ","
+            + N(usage.CacheWriteTokens)
+            + ") out("
+            + N(usage.OutputTokens)
+            + ","
+            + N(usage.TextTokens)
+            + ","
+            + N(usage.ReasoningTokens)
+            + ") raw="
+            + (usage.Raw?.GetRawText() ?? "undefined");
     }
 
-    private static string MetaSuffix(JsonElement? metadata) => metadata is { } value ? " meta=" + Canonical(value) : string.Empty;
+    private static string MetaSuffix(JsonElement? metadata) =>
+        metadata is { } value ? " meta=" + Canonical(value) : string.Empty;
 
-    public static string Canonical(JsonElement value) => Canonical(JsonNode.Parse(value.GetRawText()));
+    public static string Canonical(JsonElement value) =>
+        Canonical(JsonNode.Parse(value.GetRawText()));
 
     private static string Canonical(JsonNode? node)
     {
         switch (node)
         {
             case JsonObject obj:
-                return "{" + string.Join(",", obj.OrderBy(p => p.Key, StringComparer.Ordinal).Select(p => JsonSerializer.Serialize(p.Key) + ":" + Canonical(p.Value))) + "}";
+                return "{"
+                    + string.Join(
+                        ",",
+                        obj.OrderBy(p => p.Key, StringComparer.Ordinal)
+                            .Select(p => JsonSerializer.Serialize(p.Key) + ":" + Canonical(p.Value))
+                    )
+                    + "}";
             case JsonArray array:
                 return "[" + string.Join(",", array.Select(Canonical)) + "]";
             case JsonValue value when value.TryGetValue<string>(out var text):
@@ -299,14 +405,25 @@ internal static class BedrockStreamSupport
         }
     }
 
-    public static string Quote(string value) => JsonSerializer.Serialize(value, new JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+    public static string Quote(string value) =>
+        JsonSerializer.Serialize(
+            value,
+            new JsonSerializerOptions
+            {
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            }
+        );
 
     public static bool JsonEquals(string expectedJson, JsonElement actual)
     {
-        return JsonNode.DeepEquals(JsonNode.Parse(expectedJson), JsonNode.Parse(actual.GetRawText()));
+        return JsonNode.DeepEquals(
+            JsonNode.Parse(expectedJson),
+            JsonNode.Parse(actual.GetRawText())
+        );
     }
 
-    public static bool JsonMatches(string expectedJson, JsonElement actual) => Matches(JsonNode.Parse(expectedJson), JsonNode.Parse(actual.GetRawText()));
+    public static bool JsonMatches(string expectedJson, JsonElement actual) =>
+        Matches(JsonNode.Parse(expectedJson), JsonNode.Parse(actual.GetRawText()));
 
     // Mirrors vitest's toMatchObject: every expected property must match, extra actual properties are fine.
     private static bool Matches(JsonNode? expected, JsonNode? actual)
@@ -320,7 +437,10 @@ internal static class BedrockStreamSupport
 
             foreach (var property in expectedObject)
             {
-                if (!actualObject.TryGetPropertyValue(property.Key, out var value) || !Matches(property.Value, value))
+                if (
+                    !actualObject.TryGetPropertyValue(property.Key, out var value)
+                    || !Matches(property.Value, value)
+                )
                 {
                     return false;
                 }
@@ -343,7 +463,8 @@ internal sealed class UnknownLengthContent : HttpContent
         _stream = stream;
     }
 
-    protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) => _stream.CopyToAsync(stream);
+    protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+        _stream.CopyToAsync(stream);
 
     protected override Task<Stream> CreateContentReadStreamAsync() => Task.FromResult(_stream);
 
@@ -399,13 +520,12 @@ internal sealed class ChunkedStream : Stream
         return length;
     }
 
-    public override void Flush()
-    {
-    }
+    public override void Flush() { }
 
     public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 
     public override void SetLength(long value) => throw new NotSupportedException();
 
-    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    public override void Write(byte[] buffer, int offset, int count) =>
+        throw new NotSupportedException();
 }

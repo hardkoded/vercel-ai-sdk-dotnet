@@ -14,7 +14,11 @@ public sealed class MultiTurnConversationsTests
     private const string Prefix = TestFile + " > multi-turn conversations::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should preserve a full conversation with reasoning and a tool roundtrip", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "should preserve a full conversation with reasoning and a tool roundtrip",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public void Should_preserve_a_full_conversation_with_reasoning_and_a_tool_roundtrip()
     {
         var warnings = new List<CallWarning>();
@@ -23,16 +27,26 @@ public sealed class MultiTurnConversationsTests
             warnings,
             new SystemModelMessage("You are a helpful assistant."),
             User(new TextContentPart("What is the weather in Paris?")),
-            new AssistantModelMessage(new AssistantContentPart[]
-            {
-                new AssistantReasoningPart("I need the current weather.", Opts(("deepseek", """{"itemId":"rs_1"}"""))),
-                new AssistantToolCallPart(new GeneratedToolCall("call_1", "weather", """{"location":"Paris"}""")),
-            }),
+            new AssistantModelMessage(
+                new AssistantContentPart[]
+                {
+                    new AssistantReasoningPart(
+                        "I need the current weather.",
+                        Opts(("deepseek", """{"itemId":"rs_1"}"""))
+                    ),
+                    new AssistantToolCallPart(
+                        new GeneratedToolCall("call_1", "weather", """{"location":"Paris"}""")
+                    ),
+                }
+            ),
             ToolText("call_1", "weather", """{"temperature":20}""", "json"),
             new AssistantModelMessage("It is 20 degrees in Paris.", null, null),
-            User(new TextContentPart("And in London?")));
+            User(new TextContentPart("And in London?"))
+        );
 
-        JsonAssert.Equal(input, """
+        JsonAssert.Equal(
+            input,
+            """
             [{"content":"You are a helpful assistant.","role":"system"},
              {"content":[{"text":"What is the weather in Paris?","type":"input_text"}],"role":"user"},
              {"content":[{"text":"I need the current weather.","type":"reasoning_text"}],"id":"rs_1","type":"reasoning"},
@@ -40,7 +54,8 @@ public sealed class MultiTurnConversationsTests
              {"call_id":"call_1","output":"{\"temperature\":20}","type":"function_call_output"},
              {"content":"It is 20 degrees in Paris.","role":"assistant"},
              {"content":[{"text":"And in London?","type":"input_text"}],"role":"user"}]
-            """);
+            """
+        );
         Assert.Empty(warnings);
     }
 }

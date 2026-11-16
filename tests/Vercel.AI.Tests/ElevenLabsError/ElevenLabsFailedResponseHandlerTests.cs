@@ -10,12 +10,17 @@ namespace Vercel.AI.Tests.ElevenLabsError;
 
 public sealed class ElevenLabsFailedResponseHandlerTests
 {
-    private const string Prefix = "packages/elevenlabs/src/elevenlabs-error.test.ts::elevenlabsFailedResponseHandler::";
+    private const string Prefix =
+        "packages/elevenlabs/src/elevenlabs-error.test.ts::elevenlabsFailedResponseHandler::";
     private const string Url = "https://api.elevenlabs.io/v1/text-to-speech/test-voice";
     private const string UpstreamCommit = "7062ab6818c90e135d068433ce99b11ac0dfa081";
 
     [Fact]
-    [UpstreamTest(Prefix + "should use the message and code of an object detail", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        Prefix + "should use the message and code of an object detail",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public void Should_use_the_message_and_code_of_an_object_detail()
     {
         const string body = """
@@ -35,7 +40,11 @@ public sealed class ElevenLabsFailedResponseHandlerTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should use the message of an object detail without a code", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        Prefix + "should use the message of an object detail without a code",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public void Should_use_the_message_of_an_object_detail_without_a_code()
     {
         const string body = """
@@ -48,7 +57,11 @@ public sealed class ElevenLabsFailedResponseHandlerTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should join the location and message of each array detail issue", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        Prefix + "should join the location and message of each array detail issue",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public void Should_join_the_location_and_message_of_each_array_detail_issue()
     {
         const string body = """
@@ -59,21 +72,28 @@ public sealed class ElevenLabsFailedResponseHandlerTests
 
         Assert.Equal(
             "body.text: Field required; body.voice_settings.stability.0: Input should be less than or equal to 1; Request is invalid",
-            error.Message);
+            error.Message
+        );
         var data = Assert.IsType<ElevenLabsErrorData>(error.ErrorData);
         Assert.Collection(
             data.Issues!,
             issue =>
             {
                 Assert.Equal("missing", issue.Type);
-                Assert.Equal(new[] { "body", "text" }, issue.Location!.Select(value => value.ToString()));
+                Assert.Equal(
+                    new[] { "body", "text" },
+                    issue.Location!.Select(value => value.ToString())
+                );
                 Assert.Equal("Field required", issue.Message);
                 Assert.Equal(JsonValueKind.Null, issue.AdditionalProperties["input"].ValueKind);
             },
             issue =>
             {
                 Assert.Equal("less_than_equal", issue.Type);
-                Assert.Equal(new[] { "body", "voice_settings", "stability", "0" }, issue.Location!.Select(value => value.ToString()));
+                Assert.Equal(
+                    new[] { "body", "voice_settings", "stability", "0" },
+                    issue.Location!.Select(value => value.ToString())
+                );
                 Assert.Equal("Input should be less than or equal to 1", issue.Message);
             },
             issue =>
@@ -81,11 +101,16 @@ public sealed class ElevenLabsFailedResponseHandlerTests
                 Assert.Null(issue.Type);
                 Assert.Null(issue.Location);
                 Assert.Equal("Request is invalid", issue.Message);
-            });
+            }
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should use a string detail", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        Prefix + "should use a string detail",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public void Should_use_a_string_detail()
     {
         const string body = """{"detail":"Not authenticated"}""";
@@ -98,7 +123,11 @@ public sealed class ElevenLabsFailedResponseHandlerTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should use the message of a legacy error object", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        Prefix + "should use the message of a legacy error object",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public void Should_use_the_message_of_a_legacy_error_object()
     {
         const string body = """{"error":{"message":"Quota exceeded","code":429}}""";
@@ -113,6 +142,11 @@ public sealed class ElevenLabsFailedResponseHandlerTests
 
     private static ApiException Handle(string body, int statusCode)
     {
-        return ElevenLabsFailedResponseHandler.Handle(body, statusCode, Url, new Dictionary<string, string>());
+        return ElevenLabsFailedResponseHandler.Handle(
+            body,
+            statusCode,
+            Url,
+            new Dictionary<string, string>()
+        );
     }
 }

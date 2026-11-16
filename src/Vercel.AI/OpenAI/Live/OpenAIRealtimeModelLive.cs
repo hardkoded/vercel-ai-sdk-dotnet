@@ -63,12 +63,13 @@ public sealed class OpenAIRealtimeModelLive : IServerWebSocketRealtimeModel
     public string ModelId { get; }
 
     /// <summary>The conversation mode and the connection kinds this model supports. Maps to <c>capabilities</c>.</summary>
-    public RealtimeCapabilities Capabilities { get; } = new()
-    {
-        Conversation = OpenAIModelCatalog.OpenAILiveRealtimeCapabilities.Conversation,
-        Transports = [.. OpenAIModelCatalog.OpenAILiveRealtimeCapabilities.Transports],
-        Connections = [.. OpenAIModelCatalog.OpenAILiveRealtimeCapabilities.Connections],
-    };
+    public RealtimeCapabilities Capabilities { get; } =
+        new()
+        {
+            Conversation = OpenAIModelCatalog.OpenAILiveRealtimeCapabilities.Conversation,
+            Transports = [.. OpenAIModelCatalog.OpenAILiveRealtimeCapabilities.Transports],
+            Connections = [.. OpenAIModelCatalog.OpenAILiveRealtimeCapabilities.Connections],
+        };
 
     /// <summary>How a session starts. Maps to <c>capabilities.startup</c>.</summary>
     public string Startup => OpenAIModelCatalog.OpenAILiveRealtimeCapabilities.Startup;
@@ -89,22 +90,32 @@ public sealed class OpenAIRealtimeModelLive : IServerWebSocketRealtimeModel
     }
 
     /// <inheritdoc />
-    public Task<RealtimeModelV4ServerConnection> GetServerWebSocketConfigAsync(RealtimeModelV4SessionIntent? intent, CancellationToken cancellationToken)
+    public Task<RealtimeModelV4ServerConnection> GetServerWebSocketConfigAsync(
+        RealtimeModelV4SessionIntent? intent,
+        CancellationToken cancellationToken
+    )
     {
         AssertConversationIntent(intent);
-        return Task.FromResult(new RealtimeModelV4ServerConnection(BuildServerUrl(), OpenAIRealtimeModel.ResolveHeaders(_provider)));
+        return Task.FromResult(
+            new RealtimeModelV4ServerConnection(
+                BuildServerUrl(),
+                OpenAIRealtimeModel.ResolveHeaders(_provider)
+            )
+        );
     }
 
     /// <summary>Exchanges a WebRTC offer for an answer. Maps to <c>doCreateWebRTCSession</c>.</summary>
     public async Task<OpenAIRealtimeModelLiveWebRTCSession> CreateWebRTCSessionAsync(
         string sdp,
         RealtimeModelV4SessionConfig? sessionConfig,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var session = OpenAILiveSessionConfig.BuildOpenAILiveSessionConfig(
             sessionConfig ?? new RealtimeModelV4SessionConfig(),
             ModelId,
-            OpenAILiveSessionConfig.WebRTCTransport);
+            OpenAILiveSessionConfig.WebRTCTransport
+        );
         if (string.IsNullOrEmpty(sdp))
         {
             throw new InvalidArgumentException("sdp", sdp, "sdp must be a non-empty string.");
@@ -115,12 +126,15 @@ public sealed class OpenAIRealtimeModelLive : IServerWebSocketRealtimeModel
             ["session"] = session,
             ["transport"] = new JsonObject { ["type"] = "webrtc", ["sdp"] = sdp },
         };
-        var response = await _provider.Http.SendJsonStringAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "live/sessions"),
-            body.ToJsonString(),
-            _provider.CreateOpenAIHeaders(),
-            cancellationToken).ConfigureAwait(false);
+        var response = await _provider
+            .Http.SendJsonStringAsync(
+                HttpMethod.Post,
+                ApiKeys.Combine(_provider.Options.BaseUrl, "live/sessions"),
+                body.ToJsonString(),
+                _provider.CreateOpenAIHeaders(),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return ReadWebRTCSession(response.Body);
     }
 
@@ -137,14 +151,20 @@ public sealed class OpenAIRealtimeModelLive : IServerWebSocketRealtimeModel
     }
 
     /// <summary>Serializes a normalized client event into the provider wire format. Maps to <c>serializeClientEvent</c>.</summary>
-    public JsonNode SerializeClientEvent(RealtimeModelV4ClientEvent clientEvent, RealtimeModelV4SessionIntent? intent = null)
+    public JsonNode SerializeClientEvent(
+        RealtimeModelV4ClientEvent clientEvent,
+        RealtimeModelV4SessionIntent? intent = null
+    )
     {
         AssertConversationIntent(intent);
         return OpenAILiveEventMapper.SerializeOpenAILiveClientEvent(clientEvent, ModelId);
     }
 
     /// <summary>Builds the provider session configuration from a normalized config. Maps to <c>buildSessionConfig</c>.</summary>
-    public JsonObject BuildSessionConfig(RealtimeModelV4SessionConfig config, RealtimeModelV4SessionIntent? intent = null)
+    public JsonObject BuildSessionConfig(
+        RealtimeModelV4SessionConfig config,
+        RealtimeModelV4SessionIntent? intent = null
+    )
     {
         AssertConversationIntent(intent);
         return OpenAILiveSessionConfig.BuildOpenAILiveSessionConfig(config, ModelId);
@@ -166,7 +186,8 @@ public sealed class OpenAIRealtimeModelLive : IServerWebSocketRealtimeModel
         {
             using var document = JsonDocument.Parse(body);
             var root = document.RootElement;
-            if (root.ValueKind == JsonValueKind.Object
+            if (
+                root.ValueKind == JsonValueKind.Object
                 && root.TryGetProperty("session", out var session)
                 && session.ValueKind == JsonValueKind.Object
                 && session.TryGetProperty("id", out var id)
@@ -179,7 +200,8 @@ public sealed class OpenAIRealtimeModelLive : IServerWebSocketRealtimeModel
                 && type.GetString() == "webrtc"
                 && transport.TryGetProperty("sdp", out var sdp)
                 && sdp.ValueKind == JsonValueKind.String
-                && sdp.GetString() is { Length: > 0 } answer)
+                && sdp.GetString() is { Length: > 0 } answer
+            )
             {
                 return new OpenAIRealtimeModelLiveWebRTCSession(sessionId, answer);
             }
@@ -196,7 +218,11 @@ public sealed class OpenAIRealtimeModelLive : IServerWebSocketRealtimeModel
     {
         if (intent != null && intent != RealtimeModelV4SessionIntent.Conversation)
         {
-            throw new InvalidOperationException("OpenAI Live session intent '" + OpenAIRealtimeEventMapper.IntentName(intent.Value) + "' is not supported.");
+            throw new InvalidOperationException(
+                "OpenAI Live session intent '"
+                    + OpenAIRealtimeEventMapper.IntentName(intent.Value)
+                    + "' is not supported."
+            );
         }
     }
 

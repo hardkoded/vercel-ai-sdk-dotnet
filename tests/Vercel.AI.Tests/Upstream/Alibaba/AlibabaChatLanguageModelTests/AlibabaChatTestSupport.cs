@@ -13,7 +13,8 @@ namespace Vercel.AI.Tests.Upstream.Alibaba.AlibabaChatLanguageModelTests;
 /// <summary>Shared setup for the ports of <c>alibaba-chat-language-model.test.ts</c>.</summary>
 internal static class AlibabaChatTestSupport
 {
-    public const string ChatCompletionsUrl = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions";
+    public const string ChatCompletionsUrl =
+        "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions";
 
     public static string Fixture(string name)
     {
@@ -25,18 +26,26 @@ internal static class AlibabaChatTestSupport
         return new UpstreamCapture { ResponseBody = Fixture(name) };
     }
 
-    public static OpenAICompatibleLanguageModel Model(HttpMessageHandler handler, string modelId = "qwen-plus", Action<OpenAICompatibleOptions>? configure = null)
+    public static OpenAICompatibleLanguageModel Model(
+        HttpMessageHandler handler,
+        string modelId = "qwen-plus",
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         var options = new OpenAICompatibleOptions { ApiKey = "test-api-key" };
         configure?.Invoke(options);
-        return (OpenAICompatibleLanguageModel)AlibabaProvider.Create(options, handler).LanguageModel(modelId);
+        return (OpenAICompatibleLanguageModel)
+            AlibabaProvider.Create(options, handler).LanguageModel(modelId);
     }
 
     /// <summary>The reasoning id upstream gets from its mocked <c>generateId</c>.</summary>
     public const string ReasoningId = "test-reasoning-id";
 
     /// <summary>A model whose reasoning block ids are <see cref="ReasoningId"/>, like the upstream test file mocks <c>generateId</c>.</summary>
-    public static OpenAICompatibleLanguageModel StreamModel(HttpMessageHandler handler, string modelId = "qwen-plus")
+    public static OpenAICompatibleLanguageModel StreamModel(
+        HttpMessageHandler handler,
+        string modelId = "qwen-plus"
+    )
     {
         return Model(handler, modelId, options => options.ReasoningBlockId = () => ReasoningId);
     }
@@ -46,7 +55,10 @@ internal static class AlibabaChatTestSupport
         return new SseStreamHandler(SseStreamHandler.FixtureChunks(name, done: true));
     }
 
-    public static async Task<List<LanguageModelStreamPart>> ReadStream(OpenAICompatibleLanguageModel model, LanguageModelCallOptions options)
+    public static async Task<List<LanguageModelStreamPart>> ReadStream(
+        OpenAICompatibleLanguageModel model,
+        LanguageModelCallOptions options
+    )
     {
         var result = await model.DoStreamAsync(options, CancellationToken.None);
         var parts = new List<LanguageModelStreamPart>();
@@ -59,9 +71,22 @@ internal static class AlibabaChatTestSupport
     }
 
     /// <summary>Asserts a stream against an upstream <c>toMatchSnapshot()</c> entry, which the port keeps as JSON in <c>Fixtures</c>.</summary>
-    public static void AssertStreamSnapshot(IReadOnlyList<LanguageModelStreamPart> parts, string fixture)
+    public static void AssertStreamSnapshot(
+        IReadOnlyList<LanguageModelStreamPart> parts,
+        string fixture
+    )
     {
-        var expected = JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", fixture + ".stream.snap.json")))!.AsArray();
+        var expected = JsonNode
+            .Parse(
+                File.ReadAllText(
+                    Path.Combine(
+                        AppContext.BaseDirectory,
+                        "Fixtures",
+                        fixture + ".stream.snap.json"
+                    )
+                )
+            )!
+            .AsArray();
         var actual = new JsonArray();
         foreach (var part in parts)
         {
@@ -72,7 +97,13 @@ internal static class AlibabaChatTestSupport
         {
             Assert.True(
                 JsonNode.DeepEquals(expected[index], actual[index]),
-                "Part " + index + ": expected " + expected[index]!.ToJsonString() + " but got " + actual[index]!.ToJsonString());
+                "Part "
+                    + index
+                    + ": expected "
+                    + expected[index]!.ToJsonString()
+                    + " but got "
+                    + actual[index]!.ToJsonString()
+            );
         }
 
         Assert.Equal(expected.Count, actual.Count);
@@ -84,12 +115,19 @@ internal static class AlibabaChatTestSupport
         switch (part)
         {
             case StreamStartStreamPart start:
-                node["warnings"] = new JsonArray(start.Warnings.Select(warning => (JsonNode?)JsonValue.Create(warning.Message)).ToArray());
+                node["warnings"] = new JsonArray(
+                    start
+                        .Warnings.Select(warning => (JsonNode?)JsonValue.Create(warning.Message))
+                        .ToArray()
+                );
                 break;
             case ResponseMetadataStreamPart metadata:
                 node["id"] = metadata.Id;
                 node["modelId"] = metadata.ModelId;
-                node["timestamp"] = metadata.Timestamp!.Value.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", System.Globalization.CultureInfo.InvariantCulture);
+                node["timestamp"] = metadata.Timestamp!.Value.UtcDateTime.ToString(
+                    "yyyy-MM-dd'T'HH:mm:ss.fff'Z'",
+                    System.Globalization.CultureInfo.InvariantCulture
+                );
                 break;
             case TextStartStreamPart textStart:
                 node["id"] = textStart.Id;
@@ -128,7 +166,14 @@ internal static class AlibabaChatTestSupport
                 node["toolName"] = call.ToolName;
                 break;
             case FinishStreamPart finish:
-                node["finishReason"] = new JsonObject { ["raw"] = finish.RawFinishReason, ["unified"] = finish.FinishReason == FinishReason.ToolCalls ? "tool-calls" : finish.FinishReason.ToString().ToLowerInvariant() };
+                node["finishReason"] = new JsonObject
+                {
+                    ["raw"] = finish.RawFinishReason,
+                    ["unified"] =
+                        finish.FinishReason == FinishReason.ToolCalls
+                            ? "tool-calls"
+                            : finish.FinishReason.ToString().ToLowerInvariant(),
+                };
                 node["usage"] = new JsonObject
                 {
                     ["inputTokens"] = new JsonObject
@@ -156,7 +201,10 @@ internal static class AlibabaChatTestSupport
 
     public static IReadOnlyDictionary<string, JsonElement> AlibabaOptions(string json)
     {
-        return new Dictionary<string, JsonElement> { ["alibaba"] = JsonDocument.Parse(json).RootElement.Clone() };
+        return new Dictionary<string, JsonElement>
+        {
+            ["alibaba"] = JsonDocument.Parse(json).RootElement.Clone(),
+        };
     }
 
     public static JsonObject Body(UpstreamCapture capture, int call = 0)
@@ -166,7 +214,10 @@ internal static class AlibabaChatTestSupport
 
     public static void AssertJson(string expected, JsonNode? actual)
     {
-        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expected), actual), "Expected " + expected + " but got " + actual?.ToJsonString());
+        Assert.True(
+            JsonNode.DeepEquals(JsonNode.Parse(expected), actual),
+            "Expected " + expected + " but got " + actual?.ToJsonString()
+        );
     }
 
     /// <summary>Asserts the request, response, usage, and warnings parts of an upstream result snapshot.</summary>
@@ -180,12 +231,21 @@ internal static class AlibabaChatTestSupport
         DateTimeOffset timestamp,
         int promptTokens,
         int completionTokens,
-        int reasoningTokens)
+        int reasoningTokens
+    )
     {
         Assert.Equal(finishReason, result.FinishReason);
         Assert.Equal(rawFinishReason, result.RawFinishReason);
-        AssertJson("{\"model\":\"qwen-plus\",\"messages\":[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"Hello\"}]}]}", JsonNode.Parse(capture.Requests[0].Body));
-        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(Fixture(fixture)), JsonNode.Parse(result.RawResponse!)));
+        AssertJson(
+            "{\"model\":\"qwen-plus\",\"messages\":[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"Hello\"}]}]}",
+            JsonNode.Parse(capture.Requests[0].Body)
+        );
+        Assert.True(
+            JsonNode.DeepEquals(
+                JsonNode.Parse(Fixture(fixture)),
+                JsonNode.Parse(result.RawResponse!)
+            )
+        );
         Assert.StartsWith("application/json", result.ResponseHeaders["content-type"]);
         Assert.Equal(id, result.ResponseId);
         Assert.Equal("qwen3-max", result.ResponseModelId);
@@ -197,7 +257,12 @@ internal static class AlibabaChatTestSupport
         Assert.Equal(completionTokens, result.Usage.OutputTokens);
         Assert.Equal(reasoningTokens, result.Usage.ReasoningTokens);
         Assert.Equal(completionTokens - reasoningTokens, result.Usage.TextTokens);
-        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(Fixture(fixture))!["usage"], JsonNode.Parse(result.Usage.Raw!.Value.GetRawText())));
+        Assert.True(
+            JsonNode.DeepEquals(
+                JsonNode.Parse(Fixture(fixture))!["usage"],
+                JsonNode.Parse(result.Usage.Raw!.Value.GetRawText())
+            )
+        );
         Assert.Empty(result.Warnings);
     }
 }

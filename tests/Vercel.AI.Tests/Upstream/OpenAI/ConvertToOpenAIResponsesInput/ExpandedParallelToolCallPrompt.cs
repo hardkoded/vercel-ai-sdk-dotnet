@@ -41,7 +41,8 @@ internal static class ExpandedParallelToolCallPrompt
         bool compactMetadata = false,
         Action<int, JsonObject>? changeMetadata = null,
         Func<int, JsonNode?>? additionalTools = null,
-        bool reverseResults = false)
+        bool reverseResults = false
+    )
     {
         JsonElement Options(int index, JsonObject? extra = null)
         {
@@ -57,7 +58,9 @@ internal static class ExpandedParallelToolCallPrompt
                 }
             }
 
-            return JsonDocument.Parse(new JsonObject { ["openai"] = openai }.ToJsonString()).RootElement.Clone();
+            return JsonDocument
+                .Parse(new JsonObject { ["openai"] = openai }.ToJsonString())
+                .RootElement.Clone();
         }
 
         JsonObject? ResultExtra(int index, bool breakpoint)
@@ -77,14 +80,28 @@ internal static class ExpandedParallelToolCallPrompt
         }
 
         var weather = new ToolModelMessage(
-            "call_parallel_0", "weather", "{\"temperature\":72}", false, "json", Options(0, ResultExtra(0, false)))
+            "call_parallel_0",
+            "weather",
+            "{\"temperature\":72}",
+            false,
+            "json",
+            Options(0, ResultExtra(0, false))
+        )
         {
             OutputProviderOptions = withPromptCacheBreakpoints
-                ? JsonDocument.Parse("{\"openai\":{\"promptCacheBreakpoint\":{\"mode\":\"explicit\"}}}").RootElement.Clone()
+                ? JsonDocument
+                    .Parse("{\"openai\":{\"promptCacheBreakpoint\":{\"mode\":\"explicit\"}}}")
+                    .RootElement.Clone()
                 : null,
         };
         var attractions = new ToolModelMessage(
-            "call_parallel_1", "cityAttractions", "Colosseum", false, "text", Options(1, ResultExtra(1, withPromptCacheBreakpoints)));
+            "call_parallel_1",
+            "cityAttractions",
+            "Colosseum",
+            false,
+            "text",
+            Options(1, ResultExtra(1, withPromptCacheBreakpoints))
+        );
         var results = new List<ToolModelMessage> { weather, attractions };
         if (reverseResults)
         {
@@ -93,11 +110,27 @@ internal static class ExpandedParallelToolCallPrompt
 
         return new ModelMessage[]
         {
-            new AssistantModelMessage(new AssistantContentPart[]
-            {
-                new AssistantToolCallPart(new GeneratedToolCall("call_parallel_0", "weather", "{\"location\":\"San Francisco\"}"), ToOptions(Options(0))),
-                new AssistantToolCallPart(new GeneratedToolCall("call_parallel_1", "cityAttractions", "{\"city\":\"Rome\"}"), ToOptions(Options(1))),
-            }),
+            new AssistantModelMessage(
+                new AssistantContentPart[]
+                {
+                    new AssistantToolCallPart(
+                        new GeneratedToolCall(
+                            "call_parallel_0",
+                            "weather",
+                            "{\"location\":\"San Francisco\"}"
+                        ),
+                        ToOptions(Options(0))
+                    ),
+                    new AssistantToolCallPart(
+                        new GeneratedToolCall(
+                            "call_parallel_1",
+                            "cityAttractions",
+                            "{\"city\":\"Rome\"}"
+                        ),
+                        ToOptions(Options(1))
+                    ),
+                }
+            ),
             new ToolModelMessage(results),
         };
     }
@@ -106,7 +139,8 @@ internal static class ExpandedParallelToolCallPrompt
         IReadOnlyList<ModelMessage> prompt,
         string systemMessageMode = "system",
         bool hasConversation = false,
-        bool hasPreviousResponseId = false)
+        bool hasPreviousResponseId = false
+    )
     {
         var converted = OpenAIResponsesLanguageModel.ConvertInput(
             prompt,
@@ -117,7 +151,8 @@ internal static class ExpandedParallelToolCallPrompt
             hasConversation || hasPreviousResponseId,
             true,
             hasConversation: hasConversation,
-            hasPreviousResponseId: hasPreviousResponseId);
+            hasPreviousResponseId: hasPreviousResponseId
+        );
         return (converted.Input, converted.Warnings.Count);
     }
 
@@ -125,5 +160,7 @@ internal static class ExpandedParallelToolCallPrompt
         Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expected), actual), actual?.ToJsonString());
 
     private static Dictionary<string, JsonElement> ToOptions(JsonElement options) =>
-        options.EnumerateObject().ToDictionary(property => property.Name, property => property.Value.Clone());
+        options
+            .EnumerateObject()
+            .ToDictionary(property => property.Name, property => property.Value.Clone());
 }

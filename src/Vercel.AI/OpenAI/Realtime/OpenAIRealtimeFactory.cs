@@ -18,7 +18,11 @@ public sealed class OpenAIRealtimeOptions
 internal static class OpenAIRealtimeFactory
 {
     /// <summary>Creates the model for <paramref name="modelId"/>.</summary>
-    internal static IRealtimeModel CreateModel(OpenAIProvider provider, string modelId, OpenAIRealtimeOptions? options)
+    internal static IRealtimeModel CreateModel(
+        OpenAIProvider provider,
+        string modelId,
+        OpenAIRealtimeOptions? options
+    )
     {
         return ResolveRealtimeApi(modelId, options) == "live"
             ? new OpenAIRealtimeModelLive(provider, modelId)
@@ -35,16 +39,23 @@ internal static class OpenAIRealtimeFactory
         OpenAIRealtimeOptions? options,
         RealtimeModelV4SessionConfig? sessionConfig,
         int? expiresAfterSeconds,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var created = CreateModel(provider, model, options);
         if (created is OpenAIRealtimeModelLive)
         {
-            const string Functionality = "Short-lived OpenAI credentials for the Live API. Use server WebSocket setup via GetServerWebSocketConfigAsync() with a server-side API key instead.";
-            throw new UnsupportedFunctionalityException(Functionality, "'" + Functionality + "' functionality not supported.");
+            const string Functionality =
+                "Short-lived OpenAI credentials for the Live API. Use server WebSocket setup via GetServerWebSocketConfigAsync() with a server-side API key instead.";
+            throw new UnsupportedFunctionalityException(
+                Functionality,
+                "'" + Functionality + "' functionality not supported."
+            );
         }
 
-        return await ((OpenAIRealtimeModel)created).CreateClientSecretAsync(sessionConfig, expiresAfterSeconds, cancellationToken).ConfigureAwait(false);
+        return await ((OpenAIRealtimeModel)created)
+            .CreateClientSecretAsync(sessionConfig, expiresAfterSeconds, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     private static string ResolveRealtimeApi(string modelId, OpenAIRealtimeOptions? options)
@@ -54,7 +65,11 @@ internal static class OpenAIRealtimeFactory
         {
             if (api != "live" && api != "realtime")
             {
-                throw new InvalidArgumentException("api", api, "OpenAI realtime api must be \"live\" or \"realtime\".");
+                throw new InvalidArgumentException(
+                    "api",
+                    api,
+                    "OpenAI realtime api must be \"live\" or \"realtime\"."
+                );
             }
 
             return api;

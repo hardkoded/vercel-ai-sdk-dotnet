@@ -11,7 +11,8 @@ namespace Vercel.AI.Tests.AnthropicLanguageModelTests;
 /// <summary>Port of <c>anthropic-language-model.test.ts</c> &gt; <c>AnthropicLanguageModel &gt; named tool choice with inline tools (%s) &gt; $name</c>.</summary>
 public sealed class NamedToolChoiceWithInlineToolsNameTests
 {
-    private const string Prefix = "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > named tool choice with inline tools (%s) > $name::";
+    private const string Prefix =
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > named tool choice with inline tools (%s) > $name::";
 
     private static readonly string[] InlineTools =
     {
@@ -37,9 +38,18 @@ public sealed class NamedToolChoiceWithInlineToolsNameTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    [UpstreamTest(Prefix + "should reject conflicting additions before sending a request for $modelId via $source", Coverage = UpstreamCoverage.Covered,
-        Commit = "ba302a14fcd98fbfa363130a53d46d7b61d22cff")]
-    public async Task Should_reject_conflicting_additions_before_sending_a_request_for_modelId_via_source(string method, string inlineTool, string modelId, string source)
+    [UpstreamTest(
+        Prefix
+            + "should reject conflicting additions before sending a request for $modelId via $source",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "ba302a14fcd98fbfa363130a53d46d7b61d22cff"
+    )]
+    public async Task Should_reject_conflicting_additions_before_sending_a_request_for_modelId_via_source(
+        string method,
+        string inlineTool,
+        string modelId,
+        string source
+    )
     {
         var prompt = new List<ModelMessage>
         {
@@ -71,7 +81,9 @@ public sealed class NamedToolChoiceWithInlineToolsNameTests
         {
             options.ProviderOptions = new Dictionary<string, JsonElement>
             {
-                ["anthropic"] = AnthropicParity.Json("{\"thinking\":{\"type\":\"enabled\",\"budgetTokens\":1024}}"),
+                ["anthropic"] = AnthropicParity.Json(
+                    "{\"thinking\":{\"type\":\"enabled\",\"budgetTokens\":1024}}"
+                ),
             };
         }
 

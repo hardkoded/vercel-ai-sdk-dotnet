@@ -15,32 +15,52 @@ namespace Vercel.AI.Tests.Upstream.WebFetchTool;
 public sealed class CreateWebFetchToolTests
 {
     [Fact]
-    [UpstreamTest(WebFetchToolFixture.FilePath + "::createWebFetchTool::executes as a function tool in the standard AI SDK loop", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        WebFetchToolFixture.FilePath
+            + "::createWebFetchTool::executes as a function tool in the standard AI SDK loop",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ExecutesAsAFunctionToolInTheStandardAiSdkLoop()
     {
-        var fetch = new WebFetchToolFixture.RecordingFetch((_, _) => DownloadResponse.Text("# Docs\n\nHello.", "text/markdown"));
+        var fetch = new WebFetchToolFixture.RecordingFetch(
+            (_, _) => DownloadResponse.Text("# Docs\n\nHello.", "text/markdown")
+        );
         var webFetch = WebFetchTools.Create(new WebFetchToolOptions { Fetch = fetch.Fetch });
         var model = new TestLanguageModel();
         var modelCalls = 0;
-        model.OnGenerate = _ => ++modelCalls == 1
-            ? new LanguageModelGenerateResult(
-                new GeneratedContent[] { new GeneratedToolCall("fetch-docs", "webFetch", "{\"url\":\"https://example.com/docs\"}") },
-                FinishReason.ToolCalls,
-                new LanguageModelUsage(1, 1, 2),
-                "tool_calls")
-            : TestLanguageModel.Text("The docs say hello.");
+        model.OnGenerate = _ =>
+            ++modelCalls == 1
+                ? new LanguageModelGenerateResult(
+                    new GeneratedContent[]
+                    {
+                        new GeneratedToolCall(
+                            "fetch-docs",
+                            "webFetch",
+                            "{\"url\":\"https://example.com/docs\"}"
+                        ),
+                    },
+                    FinishReason.ToolCalls,
+                    new LanguageModelUsage(1, 1, 2),
+                    "tool_calls"
+                )
+                : TestLanguageModel.Text("The docs say hello.");
 
-        var result = await new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })).GenerateTextAsync(
+        var result = await new AiClient(
+            GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })
+        ).GenerateTextAsync(
             new GenerateTextOptions
             {
                 Model = model,
                 Tools = new[] { webFetch },
                 Prompt = "Read https://example.com/docs",
                 StopWhen = StopWhen.IsStepCount(2),
-            });
+            }
+        );
 
         Assert.Equal("The docs say hello.", result.Text);
-        using var output = System.Text.Json.JsonDocument.Parse(result.Steps[0].ToolResults[0].OutputJson);
+        using var output = System.Text.Json.JsonDocument.Parse(
+            result.Steps[0].ToolResults[0].OutputJson
+        );
         Assert.Equal("document", output.RootElement.GetProperty("type").GetString());
         Assert.Equal("# Docs\n\nHello.", output.RootElement.GetProperty("content").GetString());
         Assert.Equal("webFetch", Assert.Single(model.Calls[0].Tools!).Name);
@@ -48,6 +68,9 @@ public sealed class CreateWebFetchToolTests
         Assert.Equal("fetch-docs", toolMessage.ToolCallId);
         Assert.Equal("webFetch", toolMessage.ToolName);
         Assert.Equal("text", toolMessage.OutputType);
-        Assert.Equal("URL: https://example.com/docs\nContent-Type: text/markdown\n\n# Docs\n\nHello.", toolMessage.OutputJson);
+        Assert.Equal(
+            "URL: https://example.com/docs\nContent-Type: text/markdown\n\n# Docs\n\nHello.",
+            toolMessage.OutputJson
+        );
     }
 }

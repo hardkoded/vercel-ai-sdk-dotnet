@@ -20,9 +20,15 @@ namespace Vercel.AI.Mistral;
 /// </summary>
 public sealed class MistralConversationLanguageModel : ILanguageModel
 {
-    private static readonly JsonSerializerOptions CompactOptions = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    private static readonly JsonSerializerOptions CompactOptions = new()
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
-    private static readonly IReadOnlyDictionary<string, string> PdfUrls = new Dictionary<string, string>
+    private static readonly IReadOnlyDictionary<string, string> PdfUrls = new Dictionary<
+        string,
+        string
+    >
     {
         ["application/pdf"] = "^https://.*\\z",
     };
@@ -53,15 +59,21 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
     private Uri ConversationsUri => ApiKeys.Combine(_provider.Options.BaseUrl, "conversations");
 
     /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         options ??= new LanguageModelCallOptions();
         var (body, warnings) = GetArgs(options);
-        var response = await _provider.PostJsonAsync(
-            ConversationsUri,
-            body.ToJsonString(CompactOptions),
-            _provider.CreateHeaders(options.Headers),
-            cancellationToken).ConfigureAwait(false);
+        var response = await _provider
+            .PostJsonAsync(
+                ConversationsUri,
+                body.ToJsonString(CompactOptions),
+                _provider.CreateHeaders(options.Headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
 
         using var document = ParseResponse(response.Body);
         var root = document.RootElement;
@@ -82,18 +94,35 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
                     break;
                 case "function.call":
                     hasFunctionCalls = true;
-                    var arguments = Require(output, "arguments", JsonValueKind.String, JsonValueKind.Object);
-                    content.Add(new GeneratedToolCall(
-                        RequireString(output, "tool_call_id"),
-                        RequireString(output, "name"),
-                        arguments.ValueKind == JsonValueKind.String ? arguments.GetString()! : Stringify(arguments)));
+                    var arguments = Require(
+                        output,
+                        "arguments",
+                        JsonValueKind.String,
+                        JsonValueKind.Object
+                    );
+                    content.Add(
+                        new GeneratedToolCall(
+                            RequireString(output, "tool_call_id"),
+                            RequireString(output, "name"),
+                            arguments.ValueKind == JsonValueKind.String
+                                ? arguments.GetString()!
+                                : Stringify(arguments)
+                        )
+                    );
                     break;
                 case "message.output":
                     modelId = String(output, "model") ?? modelId;
-                    var messageContent = Require(output, "content", JsonValueKind.String, JsonValueKind.Array);
+                    var messageContent = Require(
+                        output,
+                        "content",
+                        JsonValueKind.String,
+                        JsonValueKind.Array
+                    );
                     if (messageContent.ValueKind == JsonValueKind.String)
                     {
-                        content.AddRange(converter.ConvertChunk(new Chunk("text", messageContent.GetString())));
+                        content.AddRange(
+                            converter.ConvertChunk(new Chunk("text", messageContent.GetString()))
+                        );
                     }
                     else
                     {
@@ -120,24 +149,39 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
             response.Body,
             modelId,
             null,
-            response.Headers);
+            response.Headers
+        );
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         options ??= new LanguageModelCallOptions();
         var (args, warnings) = GetArgs(options);
         args["stream"] = true;
         var json = args.ToJsonString(CompactOptions);
-        var sse = await _provider.PostSseAsync(ConversationsUri, json, _provider.CreateHeaders(options.Headers), cancellationToken).ConfigureAwait(false);
+        var sse = await _provider
+            .PostSseAsync(
+                ConversationsUri,
+                json,
+                _provider.CreateHeaders(options.Headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         try
         {
             return new LanguageModelStreamResult(
-                new ReleasingAsyncEnumerable<LanguageModelStreamPart>(StreamAsync(options, warnings, sse, cancellationToken), sse),
+                new ReleasingAsyncEnumerable<LanguageModelStreamPart>(
+                    StreamAsync(options, warnings, sse, cancellationToken),
+                    sse
+                ),
                 LanguageModelStreamRequest.FromJson(json),
                 new LanguageModelStreamResponse(sse.Headers),
-                sse);
+                sse
+            );
         }
         catch
         {
@@ -148,14 +192,18 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
 
     private static string? String(JsonElement element, string name)
     {
-        return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+        return
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.String
             ? value.GetString()
             : null;
     }
 
     private static string Type(JsonElement element)
     {
-        return String(element, "type") ?? throw Invalid("Conversation entry needs a type.", element);
+        return String(element, "type")
+            ?? throw Invalid("Conversation entry needs a type.", element);
     }
 
     private static TypeValidationException Invalid(string message, JsonElement value)
@@ -165,12 +213,21 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
 
     private static JsonElement Require(JsonElement owner, string name, params JsonValueKind[] kinds)
     {
-        if (owner.ValueKind == JsonValueKind.Object && owner.TryGetProperty(name, out var value) && Array.IndexOf(kinds, value.ValueKind) >= 0)
+        if (
+            owner.ValueKind == JsonValueKind.Object
+            && owner.TryGetProperty(name, out var value)
+            && Array.IndexOf(kinds, value.ValueKind) >= 0
+        )
         {
             return value;
         }
 
-        throw Invalid("Invalid Mistral conversation response: '" + name + "' is missing or has the wrong type.", owner);
+        throw Invalid(
+            "Invalid Mistral conversation response: '"
+                + name
+                + "' is missing or has the wrong type.",
+            owner
+        );
     }
 
     private static string RequireString(JsonElement owner, string name)
@@ -180,9 +237,18 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
 
     private static string? NullishString(JsonElement owner, string name)
     {
-        if (owner.ValueKind == JsonValueKind.Object && owner.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null)
+        if (
+            owner.ValueKind == JsonValueKind.Object
+            && owner.TryGetProperty(name, out var value)
+            && value.ValueKind != JsonValueKind.Null
+        )
         {
-            return value.ValueKind == JsonValueKind.String ? value.GetString() : throw Invalid("Invalid Mistral conversation response: '" + name + "' must be a string.", owner);
+            return value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : throw Invalid(
+                    "Invalid Mistral conversation response: '" + name + "' must be a string.",
+                    owner
+                );
         }
 
         return null;
@@ -190,9 +256,18 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
 
     private static JsonElement? NullishObject(JsonElement owner, string name)
     {
-        if (owner.ValueKind == JsonValueKind.Object && owner.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null)
+        if (
+            owner.ValueKind == JsonValueKind.Object
+            && owner.TryGetProperty(name, out var value)
+            && value.ValueKind != JsonValueKind.Null
+        )
         {
-            return value.ValueKind == JsonValueKind.Object ? value : throw Invalid("Invalid Mistral conversation response: '" + name + "' must be an object.", owner);
+            return value.ValueKind == JsonValueKind.Object
+                ? value
+                : throw Invalid(
+                    "Invalid Mistral conversation response: '" + name + "' must be an object.",
+                    owner
+                );
         }
 
         return null;
@@ -237,7 +312,8 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
             RequireString(element, "name"),
             RequireString(element, "arguments"),
             NullishString(element, "function"),
-            NullishObject(element, "info"));
+            NullishObject(element, "info")
+        );
     }
 
     private static Chunk ParseChunk(JsonElement element)
@@ -262,7 +338,12 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
                 return new Chunk("thinking", text.ToString());
             case "tool_reference":
                 NullishString(element, "tool");
-                return new Chunk("tool_reference", null, NullishString(element, "title"), NullishString(element, "url"));
+                return new Chunk(
+                    "tool_reference",
+                    null,
+                    NullishString(element, "title"),
+                    NullishString(element, "url")
+                );
             default:
                 throw Invalid("Unknown Mistral conversation content chunk.", element);
         }
@@ -280,11 +361,20 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
         };
     }
 
-    private static IReadOnlyList<ModelMessage> InjectJsonInstructionIntoMessages(IReadOnlyList<ModelMessage> messages, JsonElement? schema)
+    private static IReadOnlyList<ModelMessage> InjectJsonInstructionIntoMessages(
+        IReadOnlyList<ModelMessage> messages,
+        JsonElement? schema
+    )
     {
         var first = messages.Count > 0 ? messages[0] as SystemModelMessage : null;
-        var instruction = Vercel.AI.GenerateText.JsonInstructions.InjectJsonInstruction(first?.Content, schema);
-        var result = new List<ModelMessage> { new SystemModelMessage(instruction, first?.ProviderOptions) };
+        var instruction = Vercel.AI.GenerateText.JsonInstructions.InjectJsonInstruction(
+            first?.Content,
+            schema
+        );
+        var result = new List<ModelMessage>
+        {
+            new SystemModelMessage(instruction, first?.ProviderOptions),
+        };
         for (var i = first != null ? 1 : 0; i < messages.Count; i++)
         {
             result.Add(messages[i]);
@@ -296,14 +386,17 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
     private (JsonObject Args, List<CallWarning> Warnings) GetArgs(LanguageModelCallOptions options)
     {
         var warnings = new List<CallWarning>();
-        var providerOptions = MistralLanguageModelConversationOptions.Parse(options.ProviderOptions) ?? new MistralLanguageModelChatOptions();
+        var providerOptions = MistralLanguageModelConversationOptions.Parse(options.ProviderOptions)
+            ?? new MistralLanguageModelChatOptions();
 
         if (options.TopK != null)
         {
             warnings.Add(new CallWarning("unsupported", "topK", null));
         }
 
-        var reasoningCapabilities = MistralModelCatalog.GetMistralLanguageModelEntry(ModelId).ConversationReasoning;
+        var reasoningCapabilities = MistralModelCatalog
+            .GetMistralLanguageModelEntry(ModelId)
+            .ConversationReasoning;
         string? resolvedReasoningEffort = null;
         if (reasoningCapabilities.Support)
         {
@@ -317,7 +410,8 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
                 resolvedReasoningEffort = ReasoningMap.MapReasoningToProviderEffort(
                     options.Reasoning!,
                     reasoningCapabilities.Efforts.ToDictionary(effort => effort, effort => effort),
-                    mappingWarnings);
+                    mappingWarnings
+                );
                 foreach (var warning in mappingWarnings)
                 {
                     if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
@@ -329,7 +423,13 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
         }
         else if (ReasoningMap.IsCustomReasoning(options.Reasoning))
         {
-            warnings.Add(new CallWarning("unsupported", "reasoning", "This model does not support reasoning configuration."));
+            warnings.Add(
+                new CallWarning(
+                    "unsupported",
+                    "reasoning",
+                    "This model does not support reasoning configuration."
+                )
+            );
         }
 
         var structuredOutputs = providerOptions.StructuredOutputs ?? true;
@@ -352,7 +452,9 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
         Set(completionArgs, "presence_penalty", options.PresencePenalty);
         if (options.StopSequences != null)
         {
-            completionArgs["stop"] = new JsonArray(options.StopSequences.Select(stop => (JsonNode?)stop).ToArray());
+            completionArgs["stop"] = new JsonArray(
+                options.StopSequences.Select(stop => (JsonNode?)stop).ToArray()
+            );
         }
 
         Set(completionArgs, "random_seed", options.Seed);
@@ -376,7 +478,11 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
                     jsonSchema["description"] = options.JsonSchemaDescription;
                 }
 
-                completionArgs["response_format"] = new JsonObject { ["type"] = "json_schema", ["json_schema"] = jsonSchema };
+                completionArgs["response_format"] = new JsonObject
+                {
+                    ["type"] = "json_schema",
+                    ["json_schema"] = jsonSchema,
+                };
             }
             else
             {
@@ -384,21 +490,29 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
             }
         }
 
-        var prepared = MistralConversationPrepareTools.PrepareConversationTools(options.Tools, options.ToolChoice);
+        var prepared = MistralConversationPrepareTools.PrepareConversationTools(
+            options.Tools,
+            options.ToolChoice
+        );
         if (prepared.ToolChoice != null)
         {
             completionArgs["tool_choice"] = prepared.ToolChoice;
         }
 
         UnsupportedOption(warnings, "safePrompt", providerOptions.SafePrompt != null);
-        UnsupportedOption(warnings, "documentImageLimit", providerOptions.DocumentImageLimit != null);
+        UnsupportedOption(
+            warnings,
+            "documentImageLimit",
+            providerOptions.DocumentImageLimit != null
+        );
         UnsupportedOption(warnings, "documentPageLimit", providerOptions.DocumentPageLimit != null);
         UnsupportedOption(warnings, "promptCacheKey", providerOptions.PromptCacheKey != null);
         UnsupportedOption(warnings, "parallelToolCalls", providerOptions.ParallelToolCalls != null);
 
         var (inputs, instructions) = ConvertToMistralConversationInputs.Convert(
             prompt,
-            MistralConversationPrepareTools.CreateToolNameMapping(options.Tools));
+            MistralConversationPrepareTools.CreateToolNameMapping(options.Tools)
+        );
         var args = new JsonObject
         {
             ["model"] = ModelId,
@@ -424,7 +538,13 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
     {
         if (present)
         {
-            warnings.Add(new CallWarning("unsupported", feature, "Not supported by the Mistral Conversations API."));
+            warnings.Add(
+                new CallWarning(
+                    "unsupported",
+                    feature,
+                    "Not supported by the Mistral Conversations API."
+                )
+            );
         }
     }
 
@@ -448,7 +568,8 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
         LanguageModelCallOptions options,
         List<CallWarning> warnings,
         OpenAICompatibleSseResponse sse,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         using var disposable = sse;
         var converter = new ContentConverter(options.Tools, _generateId);
@@ -502,12 +623,21 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
                     case "conversation.response.started":
                         var conversationId = RequireString(chunk, "conversation_id");
                         var createdAt = NullishString(chunk, "created_at");
-                        parts.Add(new ResponseMetadataStreamPart(
-                            conversationId,
-                            null,
-                            createdAt != null && DateTimeOffset.TryParse(createdAt, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal, out var timestamp)
-                                ? timestamp
-                                : null));
+                        parts.Add(
+                            new ResponseMetadataStreamPart(
+                                conversationId,
+                                null,
+                                createdAt != null
+                                && DateTimeOffset.TryParse(
+                                    createdAt,
+                                    System.Globalization.CultureInfo.InvariantCulture,
+                                    System.Globalization.DateTimeStyles.AssumeUniversal,
+                                    out var timestamp
+                                )
+                                    ? timestamp
+                                    : null
+                            )
+                        );
                         break;
                     case "conversation.response.done":
                         usage = Usage(chunk);
@@ -517,7 +647,9 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
                         RequireString(chunk, "message");
                         Require(chunk, "code", JsonValueKind.Number);
                         hasError = true;
-                        parts.Add(new ErrorStreamPart(new ConversationStreamException(chunk.GetRawText())));
+                        parts.Add(
+                            new ErrorStreamPart(new ConversationStreamException(chunk.GetRawText()))
+                        );
                         break;
                     case "message.output.delta":
                         var id = RequireString(chunk, "id");
@@ -529,29 +661,56 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
                             parts.Add(new ResponseMetadataStreamPart(null, model, null));
                         }
 
-                        var contentIndex = chunk.TryGetProperty("content_index", out var index) && index.ValueKind == JsonValueKind.Number
-                            ? index.GetInt32()
-                            : 0;
+                        var contentIndex =
+                            chunk.TryGetProperty("content_index", out var index)
+                            && index.ValueKind == JsonValueKind.Number
+                                ? index.GetInt32()
+                                : 0;
                         foreach (var part in converter.ConvertChunk(content))
                         {
                             if (part is GeneratedText or GeneratedReasoning)
                             {
                                 var partType = part is GeneratedText ? "text" : "reasoning";
-                                var blockId = id + "-" + contentIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                                if (active is null || active.Value.Id != blockId || active.Value.Type != partType)
+                                var blockId =
+                                    id
+                                    + "-"
+                                    + contentIndex.ToString(
+                                        System.Globalization.CultureInfo.InvariantCulture
+                                    );
+                                if (
+                                    active is null
+                                    || active.Value.Id != blockId
+                                    || active.Value.Type != partType
+                                )
                                 {
                                     CloseContent(parts, ref active);
                                     active = (blockId, partType);
-                                    parts.Add(partType == "text" ? new TextStartStreamPart(blockId) : new ReasoningStartStreamPart(blockId));
+                                    parts.Add(
+                                        partType == "text"
+                                            ? new TextStartStreamPart(blockId)
+                                            : new ReasoningStartStreamPart(blockId)
+                                    );
                                 }
 
-                                parts.Add(part is GeneratedText text
-                                    ? new TextDeltaStreamPart(blockId, text.Text)
-                                    : new ReasoningDeltaStreamPart(blockId, ((GeneratedReasoning)part).Text));
+                                parts.Add(
+                                    part is GeneratedText text
+                                        ? new TextDeltaStreamPart(blockId, text.Text)
+                                        : new ReasoningDeltaStreamPart(
+                                            blockId,
+                                            ((GeneratedReasoning)part).Text
+                                        )
+                                );
                             }
                             else if (part is GeneratedSource source)
                             {
-                                parts.Add(new SourceStreamPart(source.Id, source.Url, source.Title, source.ProviderMetadata));
+                                parts.Add(
+                                    new SourceStreamPart(
+                                        source.Id,
+                                        source.Url,
+                                        source.Title,
+                                        source.ProviderMetadata
+                                    )
+                                );
                             }
                         }
 
@@ -560,12 +719,16 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
                         var callId = RequireString(chunk, "tool_call_id");
                         var callName = RequireString(chunk, "name");
                         var callArguments = RequireString(chunk, "arguments");
-                        int? outputIndex = chunk.TryGetProperty("output_index", out var outputIndexElement) && outputIndexElement.ValueKind == JsonValueKind.Number
-                            ? outputIndexElement.GetInt32()
-                            : null;
+                        int? outputIndex =
+                            chunk.TryGetProperty("output_index", out var outputIndexElement)
+                            && outputIndexElement.ValueKind == JsonValueKind.Number
+                                ? outputIndexElement.GetInt32()
+                                : null;
                         CloseContent(parts, ref active);
                         hasFunctionCalls = true;
-                        var input = toolCalls.ProcessDelta(new StreamingToolCallDelta(outputIndex, callId, callName, callArguments));
+                        var input = toolCalls.ProcessDelta(
+                            new StreamingToolCallDelta(outputIndex, callId, callName, callArguments)
+                        );
                         if (input != null)
                         {
                             if (input.Started)
@@ -575,7 +738,9 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
 
                             if (input.ArgumentsDelta != null)
                             {
-                                parts.Add(new ToolInputDeltaStreamPart(input.Id, input.ArgumentsDelta));
+                                parts.Add(
+                                    new ToolInputDeltaStreamPart(input.Id, input.ArgumentsDelta)
+                                );
                             }
                         }
 
@@ -589,16 +754,28 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
                         CloseContent(parts, ref active);
                         if (!executions.TryGetValue(executionId, out var execution))
                         {
-                            executions[executionId] = new ToolExecution(executionId, executionName, executionArguments, function, null);
-                            parts.Add(new ToolInputStartStreamPart(
+                            executions[executionId] = new ToolExecution(
                                 executionId,
-                                converter.ToolNameMapping.ToCustomToolName(executionName),
-                                null,
-                                true));
+                                executionName,
+                                executionArguments,
+                                function,
+                                null
+                            );
+                            parts.Add(
+                                new ToolInputStartStreamPart(
+                                    executionId,
+                                    converter.ToolNameMapping.ToCustomToolName(executionName),
+                                    null,
+                                    true
+                                )
+                            );
                         }
                         else
                         {
-                            executions[executionId] = execution with { Arguments = execution.Arguments + executionArguments };
+                            executions[executionId] = execution with
+                            {
+                                Arguments = execution.Arguments + executionArguments,
+                            };
                         }
 
                         break;
@@ -610,20 +787,55 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
                         if (!executions.TryGetValue(doneId, out var started))
                         {
                             hasError = true;
-                            parts.Add(new ErrorStreamPart(new InvalidOperationException("Missing tool execution start for " + doneId)));
+                            parts.Add(
+                                new ErrorStreamPart(
+                                    new InvalidOperationException(
+                                        "Missing tool execution start for " + doneId
+                                    )
+                                )
+                            );
                             break;
                         }
 
-                        parts.Add(new ToolInputDeltaStreamPart(
-                            doneId,
-                            new JsonObject { ["arguments"] = started.Arguments }.ToJsonString(CompactOptions)));
+                        parts.Add(
+                            new ToolInputDeltaStreamPart(
+                                doneId,
+                                new JsonObject { ["arguments"] = started.Arguments }.ToJsonString(
+                                    CompactOptions
+                                )
+                            )
+                        );
                         parts.Add(new ToolInputEndStreamPart(doneId));
-                        var (doneCall, doneResult) = converter.ConvertTool(new ToolExecution(doneId, started.Name, started.Arguments, doneFunction ?? started.Function, info));
-                        parts.Add(new ToolCallStreamPart(doneCall.ToolCallId, doneCall.ToolName, doneCall.ArgumentsJson, doneCall.ProviderMetadata) { ProviderExecuted = true });
-                        parts.Add(new ToolResultStreamPart(doneResult.ToolCallId, doneResult.ToolName, JsonValues.ParseOrEmpty(doneResult.ResultJson))
-                        {
-                            ProviderMetadata = doneResult.ProviderMetadata,
-                        });
+                        var (doneCall, doneResult) = converter.ConvertTool(
+                            new ToolExecution(
+                                doneId,
+                                started.Name,
+                                started.Arguments,
+                                doneFunction ?? started.Function,
+                                info
+                            )
+                        );
+                        parts.Add(
+                            new ToolCallStreamPart(
+                                doneCall.ToolCallId,
+                                doneCall.ToolName,
+                                doneCall.ArgumentsJson,
+                                doneCall.ProviderMetadata
+                            )
+                            {
+                                ProviderExecuted = true,
+                            }
+                        );
+                        parts.Add(
+                            new ToolResultStreamPart(
+                                doneResult.ToolCallId,
+                                doneResult.ToolName,
+                                JsonValues.ParseOrEmpty(doneResult.ResultJson)
+                            )
+                            {
+                                ProviderMetadata = doneResult.ProviderMetadata,
+                            }
+                        );
                         executions.Remove(doneId);
                         break;
                     default:
@@ -646,18 +858,26 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
         }
 
         yield return new FinishStreamPart(
-            hasError || !isDone || executions.Count > 0
-                ? FinishReason.Error
-                : hasFunctionCalls ? FinishReason.ToolCalls : FinishReason.Stop,
+            hasError || !isDone || executions.Count > 0 ? FinishReason.Error
+                : hasFunctionCalls ? FinishReason.ToolCalls
+                : FinishReason.Stop,
             ConvertMistralUsage.Convert(usage),
-            null);
+            null
+        );
     }
 
-    private static void CloseContent(List<LanguageModelStreamPart> parts, ref (string Id, string Type)? active)
+    private static void CloseContent(
+        List<LanguageModelStreamPart> parts,
+        ref (string Id, string Type)? active
+    )
     {
         if (active is { } current)
         {
-            parts.Add(current.Type == "text" ? new TextEndStreamPart(current.Id) : new ReasoningEndStreamPart(current.Id));
+            parts.Add(
+                current.Type == "text"
+                    ? new TextEndStreamPart(current.Id)
+                    : new ReasoningEndStreamPart(current.Id)
+            );
             active = null;
         }
     }
@@ -665,14 +885,23 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
     private sealed class ConversationStreamException : Exception
     {
         public ConversationStreamException(string message)
-            : base(message)
-        {
-        }
+            : base(message) { }
     }
 
-    private sealed record Chunk(string Type, string? Text, string? Title = null, string? Url = null);
+    private sealed record Chunk(
+        string Type,
+        string? Text,
+        string? Title = null,
+        string? Url = null
+    );
 
-    private sealed record ToolExecution(string Id, string Name, string Arguments, string? Function, JsonElement? Info);
+    private sealed record ToolExecution(
+        string Id,
+        string Name,
+        string Arguments,
+        string? Function,
+        JsonElement? Info
+    );
 
     // Maps to createContentConverter.
     private sealed class ContentConverter
@@ -693,20 +922,29 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
             switch (chunk.Type)
             {
                 case "text":
-                    return chunk.Text is { Length: > 0 } text ? new GeneratedContent[] { new GeneratedText(text) } : Array.Empty<GeneratedContent>();
+                    return chunk.Text is { Length: > 0 } text
+                        ? new GeneratedContent[] { new GeneratedText(text) }
+                        : Array.Empty<GeneratedContent>();
                 case "thinking":
-                    return chunk.Text is { Length: > 0 } thinking ? new GeneratedContent[] { new GeneratedReasoning(thinking) } : Array.Empty<GeneratedContent>();
+                    return chunk.Text is { Length: > 0 } thinking
+                        ? new GeneratedContent[] { new GeneratedReasoning(thinking) }
+                        : Array.Empty<GeneratedContent>();
                 default:
                     if (chunk.Url == null || !_sourceUrls.Add(chunk.Url))
                     {
                         return Array.Empty<GeneratedContent>();
                     }
 
-                    return new GeneratedContent[] { new GeneratedSource(_generateId(), chunk.Url, chunk.Title ?? chunk.Url) };
+                    return new GeneratedContent[]
+                    {
+                        new GeneratedSource(_generateId(), chunk.Url, chunk.Title ?? chunk.Url),
+                    };
             }
         }
 
-        public (GeneratedToolCall Call, GeneratedToolResult Result) ConvertTool(ToolExecution output)
+        public (GeneratedToolCall Call, GeneratedToolResult Result) ConvertTool(
+            ToolExecution output
+        )
         {
             var toolName = ToolNameMapping.ToCustomToolName(output.Name);
             var metadata = new JsonObject { ["type"] = "tool.execution", ["name"] = output.Name };
@@ -715,7 +953,9 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
                 metadata["function"] = output.Function;
             }
 
-            var providerMetadata = JsonSerializer.SerializeToElement(new JsonObject { ["mistral"] = metadata });
+            var providerMetadata = JsonSerializer.SerializeToElement(
+                new JsonObject { ["mistral"] = metadata }
+            );
             var result = new JsonObject();
             if (output.Info is { } info)
             {
@@ -726,12 +966,16 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
                 new GeneratedToolCall(
                     output.Id,
                     toolName,
-                    new JsonObject { ["arguments"] = output.Arguments }.ToJsonString(CompactOptions),
-                    providerMetadata)
+                    new JsonObject { ["arguments"] = output.Arguments }.ToJsonString(
+                        CompactOptions
+                    ),
+                    providerMetadata
+                )
                 {
                     ProviderExecuted = true,
                 },
-                new GeneratedToolResult(output.Id, toolName, result.ToJsonString(CompactOptions)));
+                new GeneratedToolResult(output.Id, toolName, result.ToJsonString(CompactOptions))
+            );
         }
     }
 }

@@ -35,7 +35,11 @@ public static class ApplyDiffHelper
     /// Mode "create" is the create-file syntax that requires every line to start with "+".
     /// Trailing newlines of the original file are preserved. Throws when the diff cannot be applied cleanly.
     /// </summary>
-    public static string ApplyDiff(string input, string diff, ApplyDiffMode mode = ApplyDiffMode.Default)
+    public static string ApplyDiff(
+        string input,
+        string diff,
+        ApplyDiffMode mode = ApplyDiffMode.Default
+    )
     {
         var diffLines = NormalizeDiffLines(diff);
 
@@ -50,7 +54,8 @@ public static class ApplyDiffHelper
 
     private static List<string> NormalizeDiffLines(string diff)
     {
-        var lines = Regex.Split(diff, "\r?\n", RegexOptions.None, TimeSpan.FromSeconds(5))
+        var lines = Regex
+            .Split(diff, "\r?\n", RegexOptions.None, TimeSpan.FromSeconds(5))
             .Select(line => line.EndsWith('\r') ? line[..^1] : line)
             .ToList();
         if (lines.Count > 0 && lines[^1] == string.Empty)
@@ -74,7 +79,10 @@ public static class ApplyDiffHelper
 
     private static string ReadStr(ParserState state, string prefix)
     {
-        if (state.Index < state.Lines.Count && state.Lines[state.Index].StartsWith(prefix, StringComparison.Ordinal))
+        if (
+            state.Index < state.Lines.Count
+            && state.Lines[state.Index].StartsWith(prefix, StringComparison.Ordinal)
+        )
         {
             var current = state.Lines[state.Index];
             state.Index += 1;
@@ -114,7 +122,8 @@ public static class ApplyDiffHelper
         while (!IsDone(parser, EndSectionMarkers))
         {
             var anchor = ReadStr(parser, "@@ ");
-            var hasBareAnchor = anchor.Length == 0
+            var hasBareAnchor =
+                anchor.Length == 0
                 && parser.Index < parser.Lines.Count
                 && parser.Lines[parser.Index] == "@@";
             if (hasBareAnchor)
@@ -125,7 +134,8 @@ public static class ApplyDiffHelper
             if (!(anchor.Length > 0 || hasBareAnchor || cursor == 0))
             {
                 throw new InvalidOperationException(
-                    $"Invalid Line:\n{(parser.Index < parser.Lines.Count ? parser.Lines[parser.Index] : "undefined")}");
+                    $"Invalid Line:\n{(parser.Index < parser.Lines.Count ? parser.Lines[parser.Index] : "undefined")}"
+                );
             }
 
             if (anchor.Trim().Length > 0)
@@ -133,7 +143,10 @@ public static class ApplyDiffHelper
                 cursor = AdvanceCursorToAnchor(anchor, inputLines, cursor, parser);
             }
 
-            var (nextContext, sectionChunks, endIndex, eof) = ReadSection(parser.Lines, parser.Index);
+            var (nextContext, sectionChunks, endIndex, eof) = ReadSection(
+                parser.Lines,
+                parser.Index
+            );
             var nextContextText = string.Join("\n", nextContext);
             var (newIndex, fuzz) = FindContext(inputLines, nextContext, cursor, eof);
 
@@ -141,10 +154,14 @@ public static class ApplyDiffHelper
             {
                 if (eof)
                 {
-                    throw new InvalidOperationException($"Invalid EOF Context {cursor}:\n{nextContextText}");
+                    throw new InvalidOperationException(
+                        $"Invalid EOF Context {cursor}:\n{nextContextText}"
+                    );
                 }
 
-                throw new InvalidOperationException($"Invalid Context {cursor}:\n{nextContextText}");
+                throw new InvalidOperationException(
+                    $"Invalid Context {cursor}:\n{nextContextText}"
+                );
             }
 
             parser.Fuzz += fuzz;
@@ -160,7 +177,12 @@ public static class ApplyDiffHelper
         return (chunks, parser.Fuzz);
     }
 
-    private static int AdvanceCursorToAnchor(string anchor, string[] inputLines, int cursor, ParserState parser)
+    private static int AdvanceCursorToAnchor(
+        string anchor,
+        string[] inputLines,
+        int cursor,
+        ParserState parser
+    )
     {
         var found = false;
 
@@ -194,9 +216,12 @@ public static class ApplyDiffHelper
         return cursor;
     }
 
-    private static (List<string> NextContext, List<Chunk> SectionChunks, int EndIndex, bool Eof) ReadSection(
-        List<string> lines,
-        int startIndex)
+    private static (
+        List<string> NextContext,
+        List<Chunk> SectionChunks,
+        int EndIndex,
+        bool Eof
+    ) ReadSection(List<string> lines, int startIndex)
     {
         var context = new List<string>();
         var delLines = new List<string>();
@@ -209,12 +234,14 @@ public static class ApplyDiffHelper
         while (index < lines.Count)
         {
             var raw = lines[index];
-            if (raw.StartsWith("@@", StringComparison.Ordinal)
+            if (
+                raw.StartsWith("@@", StringComparison.Ordinal)
                 || raw.StartsWith(EndPatch, StringComparison.Ordinal)
                 || raw.StartsWith("*** Update File:", StringComparison.Ordinal)
                 || raw.StartsWith("*** Delete File:", StringComparison.Ordinal)
                 || raw.StartsWith("*** Add File:", StringComparison.Ordinal)
-                || raw.StartsWith(EndFile, StringComparison.Ordinal))
+                || raw.StartsWith(EndFile, StringComparison.Ordinal)
+            )
             {
                 break;
             }
@@ -291,13 +318,19 @@ public static class ApplyDiffHelper
         if (index == origIndex)
         {
             throw new InvalidOperationException(
-                $"Nothing in this section - index={index} {(index < lines.Count ? lines[index] : "undefined")}");
+                $"Nothing in this section - index={index} {(index < lines.Count ? lines[index] : "undefined")}"
+            );
         }
 
         return (context, sectionChunks, index, false);
     }
 
-    private static (int NewIndex, int Fuzz) FindContext(string[] lines, List<string> context, int start, bool eof)
+    private static (int NewIndex, int Fuzz) FindContext(
+        string[] lines,
+        List<string> context,
+        int start,
+        bool eof
+    )
     {
         if (eof)
         {
@@ -315,7 +348,11 @@ public static class ApplyDiffHelper
         return FindContextCore(lines, context, start);
     }
 
-    private static (int NewIndex, int Fuzz) FindContextCore(string[] lines, List<string> context, int start)
+    private static (int NewIndex, int Fuzz) FindContextCore(
+        string[] lines,
+        List<string> context,
+        int start
+    )
     {
         if (context.Count == 0)
         {
@@ -349,7 +386,12 @@ public static class ApplyDiffHelper
         return (-1, 0);
     }
 
-    private static bool EqualsSlice(string[] source, List<string> target, int start, Func<string, string> mapFn)
+    private static bool EqualsSlice(
+        string[] source,
+        List<string> target,
+        int start,
+        Func<string, string> mapFn
+    )
     {
         if (start + target.Count > source.Length)
         {
@@ -378,13 +420,15 @@ public static class ApplyDiffHelper
             if (chunk.OrigIndex > origLines.Length)
             {
                 throw new InvalidOperationException(
-                    $"applyDiff: chunk.origIndex {chunk.OrigIndex} > input length {origLines.Length}");
+                    $"applyDiff: chunk.origIndex {chunk.OrigIndex} > input length {origLines.Length}"
+                );
             }
 
             if (origIndex > chunk.OrigIndex)
             {
                 throw new InvalidOperationException(
-                    $"applyDiff: overlapping chunk at {chunk.OrigIndex} (cursor {origIndex})");
+                    $"applyDiff: overlapping chunk at {chunk.OrigIndex} (cursor {origIndex})"
+                );
             }
 
             destLines.AddRange(origLines.Skip(origIndex).Take(chunk.OrigIndex - origIndex));

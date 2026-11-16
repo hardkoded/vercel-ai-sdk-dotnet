@@ -11,7 +11,11 @@ namespace Vercel.AI.Tests.PruneMessages;
 /// <summary>Port of <c>prune-messages.test.ts</c> &gt; <c>pruneMessages &gt; reasoning &gt; before-trailing-message</c>.</summary>
 public sealed class ReasoningBeforeTrailingMessageTests
 {
-    [UpstreamTest(Prefix + "pruneMessages > reasoning > before-trailing-message::should prune the trailing message", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "pruneMessages > reasoning > before-trailing-message::should prune the trailing message",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Should_prune_the_trailing_message()
     {
@@ -98,27 +102,44 @@ public sealed class ReasoningBeforeTrailingMessageTests
               }
             ]
             """,
-            result);
+            result
+        );
     }
 
-    [UpstreamTest(Prefix + "pruneMessages > reasoning > before-trailing-message::should prune reasoning files before the last message", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "pruneMessages > reasoning > before-trailing-message::should prune reasoning files before the last message",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Should_prune_reasoning_files_before_the_last_message()
     {
         var messages = new ModelMessage[]
         {
-            new AssistantModelMessage(new AssistantContentPart[]
-            {
-                new AssistantReasoningPart("Earlier reasoning."),
-                new AssistantReasoningFilePart("image/png", null, Utf8("earlier-reasoning-image")),
-                new AssistantTextPart("Earlier answer."),
-            }),
-            new AssistantModelMessage(new AssistantContentPart[]
-            {
-                new AssistantReasoningPart("Latest reasoning."),
-                new AssistantReasoningFilePart("image/png", null, Utf8("latest-reasoning-image")),
-                new AssistantTextPart("Latest answer."),
-            }),
+            new AssistantModelMessage(
+                new AssistantContentPart[]
+                {
+                    new AssistantReasoningPart("Earlier reasoning."),
+                    new AssistantReasoningFilePart(
+                        "image/png",
+                        null,
+                        Utf8("earlier-reasoning-image")
+                    ),
+                    new AssistantTextPart("Earlier answer."),
+                }
+            ),
+            new AssistantModelMessage(
+                new AssistantContentPart[]
+                {
+                    new AssistantReasoningPart("Latest reasoning."),
+                    new AssistantReasoningFilePart(
+                        "image/png",
+                        null,
+                        Utf8("latest-reasoning-image")
+                    ),
+                    new AssistantTextPart("Latest answer."),
+                }
+            ),
         };
 
         var result = Prune(messages, PruneReasoning.BeforeLastMessage);
@@ -130,7 +151,8 @@ public sealed class ReasoningBeforeTrailingMessageTests
               { "role": "assistant", "content": [ { "type": "text", "text": "Earlier answer." } ] }
             ]
             """,
-            new[] { result[0] });
+            new[] { result[0] }
+        );
         Assert.Same(messages[1], result[1]);
     }
 }

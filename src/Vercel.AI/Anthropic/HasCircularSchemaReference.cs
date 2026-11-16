@@ -95,8 +95,15 @@ internal static class HasCircularSchemaReferenceChecker
             var segment = rawSegment.Replace("~1", "/").Replace("~0", "~");
             if (current.ValueKind == JsonValueKind.Array)
             {
-                if (!int.TryParse(segment, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var index)
-                    || index >= current.GetArrayLength())
+                if (
+                    !int.TryParse(
+                        segment,
+                        System.Globalization.NumberStyles.None,
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        out var index
+                    )
+                    || index >= current.GetArrayLength()
+                )
                 {
                     return null;
                 }
@@ -144,7 +151,10 @@ internal static class HasCircularSchemaReferenceChecker
             var value = property.Value;
             if (key == "$ref")
             {
-                if (value.ValueKind == JsonValueKind.String && value.GetString()!.StartsWith("#", StringComparison.Ordinal))
+                if (
+                    value.ValueKind == JsonValueKind.String
+                    && value.GetString()!.StartsWith("#", StringComparison.Ordinal)
+                )
                 {
                     refs.Add(value.GetString()!);
                 }
@@ -160,7 +170,8 @@ internal static class HasCircularSchemaReferenceChecker
                 // definitions are only reached through a `$ref`:
                 key != "$defs"
                 && key != "definitions"
-                && !DataKeywords.Contains(key))
+                && !DataKeywords.Contains(key)
+            )
             {
                 CollectLocalRefs(value, refs);
             }

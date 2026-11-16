@@ -13,25 +13,42 @@ namespace Vercel.AI.Tests;
 /// <summary>Upstream parity for Google multimodal <c>embedMany</c>.</summary>
 public sealed class EmbedGoogleTests
 {
-    private const string Prefix = "packages/ai/src/embed/embed-many-google.test.ts::embedMany with Google multimodal content::";
+    private const string Prefix =
+        "packages/ai/src/embed/embed-many-google.test.ts::embedMany with Google multimodal content::";
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves content alignment through wrapped models with maxParallelCalls %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "preserves content alignment through wrapped models with maxParallelCalls %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Preserves_content_alignment_through_wrapped_models()
     {
         foreach (var parallel in new int?[] { 1, 2, null })
         {
             var handler = new RecordingHandler();
-            var model = EmbedMany.Wrap(new GoogleMultimodalEmbedding("gemini-embedding-2", new HttpClient(handler), "https://generativelanguage.googleapis.com/v1beta"), null);
+            var model = EmbedMany.Wrap(
+                new GoogleMultimodalEmbedding(
+                    "gemini-embedding-2",
+                    new HttpClient(handler),
+                    "https://generativelanguage.googleapis.com/v1beta"
+                ),
+                null
+            );
             var values = Enumerable.Repeat(string.Empty, 201).ToArray();
-            var result = await EmbedMany.EmbedManyAsync(new EmbedManyRequest
-            {
-                Model = model,
-                Values = values,
-                ProviderOptions = OperationJson.Parse(ContentJson(201, index => index % 3 == 0 ? "null" : "[{\"text\":\"context " + index + "\"}]")),
-                MaxParallelCalls = parallel,
-                MaxRetries = 0,
-            });
+            var result = await EmbedMany.EmbedManyAsync(
+                new EmbedManyRequest
+                {
+                    Model = model,
+                    Values = values,
+                    ProviderOptions = OperationJson.Parse(
+                        ContentJson(201, index =>
+                            index % 3 == 0 ? "null" : "[{\"text\":\"context " + index + "\"}]"
+                        )
+                    ),
+                    MaxParallelCalls = parallel,
+                    MaxRetries = 0,
+                }
+            );
             Assert.Equal(201, result.Embeddings.Count);
             for (var index = 0; index < 201; index++)
             {
@@ -44,44 +61,79 @@ public sealed class EmbedGoogleTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "allows middleware to normalize provider options for %s values", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "allows middleware to normalize provider options for %s values",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Allows_middleware_to_normalize_provider_options()
     {
         foreach (var count in new[] { 1, 101 })
         {
             var handler = new RecordingHandler();
-            var inner = new GoogleMultimodalEmbedding("gemini-embedding-2", new HttpClient(handler), "https://generativelanguage.googleapis.com/v1beta");
+            var inner = new GoogleMultimodalEmbedding(
+                "gemini-embedding-2",
+                new HttpClient(handler),
+                "https://generativelanguage.googleapis.com/v1beta"
+            );
             var model = EmbedMany.Wrap(inner, (call, _, _) =>
             {
-                var json = call.ProviderOptions!.Value.GetRawText().Replace("\"outputDimensionality\":\"128\"", "\"outputDimensionality\":128");
-                return Task.FromResult(new EmbeddingModelCall(call.Values, call.Headers, OperationJson.Parse(json), call.CancellationToken));
+                var json = call.ProviderOptions!.Value.GetRawText()
+                    .Replace("\"outputDimensionality\":\"128\"", "\"outputDimensionality\":128");
+                return Task.FromResult(
+                    new EmbeddingModelCall(
+                        call.Values,
+                        call.Headers,
+                        OperationJson.Parse(json),
+                        call.CancellationToken
+                    )
+                );
             });
-            await EmbedMany.EmbedManyAsync(new EmbedManyRequest
-            {
-                Model = model,
-                Values = Enumerable.Repeat("document", count).ToArray(),
-                ProviderOptions = OperationJson.Parse("{\"google\":{\"outputDimensionality\":\"128\",\"content\":" + ContentArray(count, _ => "[{\"text\":\"context\"}]") + "}}"),
-                MaxRetries = 0,
-            });
+            await EmbedMany.EmbedManyAsync(
+                new EmbedManyRequest
+                {
+                    Model = model,
+                    Values = Enumerable.Repeat("document", count).ToArray(),
+                    ProviderOptions = OperationJson.Parse(
+                        "{\"google\":{\"outputDimensionality\":\"128\",\"content\":"
+                            + ContentArray(count, _ => "[{\"text\":\"context\"}]")
+                            + "}}"
+                    ),
+                    MaxRetries = 0,
+                }
+            );
             Assert.Equal(count, handler.Bodies.Sum(BatchLength));
-            Assert.All(handler.Bodies.SelectMany(Dimensionality), value => Assert.Equal(128, value));
+            Assert.All(handler.Bodies.SelectMany(Dimensionality), value =>
+                Assert.Equal(128, value)
+            );
         }
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "retries a failed batch with the same content without repeating successful batches", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "retries a failed batch with the same content without repeating successful batches",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Retries_a_failed_batch_without_repeating_successful_batches()
     {
         var handler = new RecordingHandler { FailAt = 1 };
-        var model = new GoogleMultimodalEmbedding("gemini-embedding-2", new HttpClient(handler), "https://generativelanguage.googleapis.com/v1beta");
-        var result = await EmbedMany.EmbedManyAsync(new EmbedManyRequest
-        {
-            Model = model,
-            Values = Enumerable.Repeat(string.Empty, 201).ToArray(),
-            ProviderOptions = OperationJson.Parse(ContentJson(201, index => "[{\"text\":\"context " + index + "\"}]")),
-            MaxParallelCalls = 1,
-            MaxRetries = 1,
-        });
+        var model = new GoogleMultimodalEmbedding(
+            "gemini-embedding-2",
+            new HttpClient(handler),
+            "https://generativelanguage.googleapis.com/v1beta"
+        );
+        var result = await EmbedMany.EmbedManyAsync(
+            new EmbedManyRequest
+            {
+                Model = model,
+                Values = Enumerable.Repeat(string.Empty, 201).ToArray(),
+                ProviderOptions = OperationJson.Parse(
+                    ContentJson(201, index => "[{\"text\":\"context " + index + "\"}]")
+                ),
+                MaxParallelCalls = 1,
+                MaxRetries = 1,
+            }
+        );
         Assert.Equal(201, result.Embeddings.Count);
         Assert.Equal(0, result.Embeddings[0][0]);
         Assert.Equal(200, result.Embeddings[200][0]);
@@ -92,36 +144,63 @@ public sealed class EmbedGoogleTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects mismatched content before making any requests", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "rejects mismatched content before making any requests",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_mismatched_content_before_any_request()
     {
         var handler = new RecordingHandler();
-        var model = new GoogleMultimodalEmbedding("gemini-embedding-2", new HttpClient(handler), "https://generativelanguage.googleapis.com/v1beta");
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => EmbedMany.EmbedManyAsync(new EmbedManyRequest
-        {
-            Model = model,
-            Values = Enumerable.Repeat("document", 101).ToArray(),
-            ProviderOptions = OperationJson.Parse(ContentJson(100, _ => "null")),
-            MaxRetries = 0,
-        }));
-        Assert.Contains("The number of multimodal content entries (100) must match the number of values (101).", error.Message);
+        var model = new GoogleMultimodalEmbedding(
+            "gemini-embedding-2",
+            new HttpClient(handler),
+            "https://generativelanguage.googleapis.com/v1beta"
+        );
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            EmbedMany.EmbedManyAsync(
+                new EmbedManyRequest
+                {
+                    Model = model,
+                    Values = Enumerable.Repeat("document", 101).ToArray(),
+                    ProviderOptions = OperationJson.Parse(ContentJson(100, _ => "null")),
+                    MaxRetries = 0,
+                }
+            )
+        );
+        Assert.Contains(
+            "The number of multimodal content entries (100) must match the number of values (101).",
+            error.Message
+        );
         Assert.Empty(handler.Bodies);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "validates malformed content when its batch is processed", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "validates malformed content when its batch is processed",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Validates_malformed_content_when_its_batch_is_processed()
     {
         var handler = new RecordingHandler();
-        var model = new GoogleMultimodalEmbedding("gemini-embedding-2", new HttpClient(handler), "https://generativelanguage.googleapis.com/v1beta");
-        var error = await Assert.ThrowsAnyAsync<Exception>(() => EmbedMany.EmbedManyAsync(new EmbedManyRequest
-        {
-            Model = model,
-            Values = Enumerable.Repeat("document", 101).ToArray(),
-            ProviderOptions = OperationJson.Parse(ContentJson(101, index => index == 100 ? "[{\"text\":123}]" : "null")),
-            MaxParallelCalls = 1,
-            MaxRetries = 0,
-        }));
+        var model = new GoogleMultimodalEmbedding(
+            "gemini-embedding-2",
+            new HttpClient(handler),
+            "https://generativelanguage.googleapis.com/v1beta"
+        );
+        var error = await Assert.ThrowsAnyAsync<Exception>(() =>
+            EmbedMany.EmbedManyAsync(
+                new EmbedManyRequest
+                {
+                    Model = model,
+                    Values = Enumerable.Repeat("document", 101).ToArray(),
+                    ProviderOptions = OperationJson.Parse(
+                        ContentJson(101, index => index == 100 ? "[{\"text\":123}]" : "null")
+                    ),
+                    MaxParallelCalls = 1,
+                    MaxRetries = 0,
+                }
+            )
+        );
         Assert.Contains("invalid google provider options", error.Message);
         Assert.Equal(new[] { 100 }, handler.Bodies.Select(BatchLength));
     }
@@ -139,7 +218,9 @@ public sealed class EmbedGoogleTests
     private static int BatchLength(string body)
     {
         using var document = JsonDocument.Parse(body);
-        return document.RootElement.TryGetProperty("requests", out var requests) ? requests.GetArrayLength() : 1;
+        return document.RootElement.TryGetProperty("requests", out var requests)
+            ? requests.GetArrayLength()
+            : 1;
     }
 
     private static IEnumerable<int> Dimensionality(string body)
@@ -164,14 +245,23 @@ public sealed class EmbedGoogleTests
 
         public int FailAt { get; set; } = -1;
 
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
         {
-            var body = request.Content == null ? "{}" : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var body =
+                request.Content == null
+                    ? "{}"
+                    : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
             var index = Bodies.Count;
             Bodies.Add(body);
             if (index == FailAt)
             {
-                var failed = new HttpResponseMessage((HttpStatusCode)429) { Content = new StringContent("{}", Encoding.UTF8, "application/json") };
+                var failed = new HttpResponseMessage((HttpStatusCode)429)
+                {
+                    Content = new StringContent("{}", Encoding.UTF8, "application/json"),
+                };
                 failed.Headers.TryAddWithoutValidation("retry-after-ms", "0");
                 return failed;
             }
@@ -194,21 +284,35 @@ public sealed class EmbedGoogleTests
             var payload = single
                 ? "{\"embedding\":" + embeddings[0] + "}"
                 : "{\"embeddings\":[" + string.Join(",", embeddings) + "]}";
-            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(payload, Encoding.UTF8, "application/json") };
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(payload, Encoding.UTF8, "application/json"),
+            };
         }
 
         private static string Vector(JsonElement request)
         {
             var value = -1;
-            foreach (var part in request.GetProperty("content").GetProperty("parts").EnumerateArray())
+            foreach (
+                var part in request.GetProperty("content").GetProperty("parts").EnumerateArray()
+            )
             {
-                if (part.TryGetProperty("text", out var text) && text.GetString() is string raw && raw.StartsWith("context ", StringComparison.Ordinal))
+                if (
+                    part.TryGetProperty("text", out var text)
+                    && text.GetString() is string raw
+                    && raw.StartsWith("context ", StringComparison.Ordinal)
+                )
                 {
-                    value = int.Parse(raw.Substring("context ".Length), System.Globalization.CultureInfo.InvariantCulture);
+                    value = int.Parse(
+                        raw.Substring("context ".Length),
+                        System.Globalization.CultureInfo.InvariantCulture
+                    );
                 }
             }
 
-            return "{\"values\":[" + value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "]}";
+            return "{\"values\":["
+                + value.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                + "]}";
         }
     }
 }

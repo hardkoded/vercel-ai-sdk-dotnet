@@ -58,7 +58,8 @@ public sealed class ElevenLabsValidationIssue
         string message,
         IReadOnlyList<ElevenLabsErrorLocation>? location,
         string? type,
-        IReadOnlyDictionary<string, JsonElement> additionalProperties)
+        IReadOnlyDictionary<string, JsonElement> additionalProperties
+    )
     {
         Message = message;
         Location = location;
@@ -89,7 +90,8 @@ public sealed class ElevenLabsErrorDetail
         string? type,
         string? requestId,
         string? parameter,
-        IReadOnlyDictionary<string, JsonElement> additionalProperties)
+        IReadOnlyDictionary<string, JsonElement> additionalProperties
+    )
     {
         Message = message;
         Code = code;
@@ -143,15 +145,14 @@ public sealed class ElevenLabsErrorData
 {
     /// <summary>Creates legacy parsed error data.</summary>
     public ElevenLabsErrorData(string message, int code)
-        : this(null, null, null, new ElevenLabsLegacyError(message ?? string.Empty, code))
-    {
-    }
+        : this(null, null, null, new ElevenLabsLegacyError(message ?? string.Empty, code)) { }
 
     private ElevenLabsErrorData(
         ElevenLabsErrorDetail? detail,
         IReadOnlyList<ElevenLabsValidationIssue>? issues,
         string? detailMessage,
-        ElevenLabsLegacyError? error)
+        ElevenLabsLegacyError? error
+    )
     {
         Detail = detail;
         Issues = issues;
@@ -179,11 +180,15 @@ public sealed class ElevenLabsErrorData
     [Obsolete("Use Error.Code.")]
     public int Code => checked((int)(Error?.Code ?? 0));
 
-    internal static ElevenLabsErrorData FromDetail(ElevenLabsErrorDetail detail) => new ElevenLabsErrorData(detail, null, null, null);
+    internal static ElevenLabsErrorData FromDetail(ElevenLabsErrorDetail detail) =>
+        new ElevenLabsErrorData(detail, null, null, null);
 
-    internal static ElevenLabsErrorData FromIssues(IReadOnlyList<ElevenLabsValidationIssue> issues) => new ElevenLabsErrorData(null, issues, null, null);
+    internal static ElevenLabsErrorData FromIssues(
+        IReadOnlyList<ElevenLabsValidationIssue> issues
+    ) => new ElevenLabsErrorData(null, issues, null, null);
 
-    internal static ElevenLabsErrorData FromMessage(string message) => new ElevenLabsErrorData(null, null, message, null);
+    internal static ElevenLabsErrorData FromMessage(string message) =>
+        new ElevenLabsErrorData(null, null, message, null);
 
     internal static ElevenLabsErrorData FromLegacy(string message, double code) =>
         new ElevenLabsErrorData(null, null, null, new ElevenLabsLegacyError(message, code));
@@ -235,19 +240,22 @@ public static class ElevenLabsError
                 return ParseDetail(detail);
             }
 
-            if (root.TryGetProperty("error", out var error)
+            if (
+                root.TryGetProperty("error", out var error)
                 && error.ValueKind == JsonValueKind.Object
                 && RequiredString(error, "message") is { } message
                 && error.TryGetProperty("code", out var code)
                 && code.ValueKind == JsonValueKind.Number
-                && code.TryGetDouble(out var codeValue))
+                && code.TryGetDouble(out var codeValue)
+            )
             {
-                return new ElevenLabsErrorParseResult(true, ElevenLabsErrorData.FromLegacy(message, codeValue));
+                return new ElevenLabsErrorParseResult(
+                    true,
+                    ElevenLabsErrorData.FromLegacy(message, codeValue)
+                );
             }
         }
-        catch (JsonException)
-        {
-        }
+        catch (JsonException) { }
 
         return new ElevenLabsErrorParseResult(false, null);
     }
@@ -266,10 +274,14 @@ public static class ElevenLabsError
 
         if (data.Issues is { } issues)
         {
-            return string.Join("; ", issues.Select(issue =>
-                issue.Location is { Count: > 0 } location
-                    ? string.Join(".", location) + ": " + issue.Message
-                    : issue.Message));
+            return string.Join(
+                "; ",
+                issues.Select(issue =>
+                    issue.Location is { Count: > 0 } location
+                        ? string.Join(".", location) + ": " + issue.Message
+                        : issue.Message
+                )
+            );
         }
 
         var detail = data.Detail!;
@@ -280,18 +292,23 @@ public static class ElevenLabsError
     {
         if (detail.ValueKind == JsonValueKind.String)
         {
-            return new ElevenLabsErrorParseResult(true, ElevenLabsErrorData.FromMessage(detail.GetString()!));
+            return new ElevenLabsErrorParseResult(
+                true,
+                ElevenLabsErrorData.FromMessage(detail.GetString()!)
+            );
         }
 
         if (detail.ValueKind == JsonValueKind.Object)
         {
             var message = RequiredString(detail, "message");
-            if (message == null
+            if (
+                message == null
                 || !OptionalString(detail, "code", out var code)
                 || !OptionalString(detail, "status", out var status)
                 || !OptionalString(detail, "type", out var type)
                 || !OptionalString(detail, "request_id", out var requestId)
-                || !OptionalString(detail, "param", out var parameter))
+                || !OptionalString(detail, "param", out var parameter)
+            )
             {
                 return new ElevenLabsErrorParseResult(false, null);
             }
@@ -303,7 +320,16 @@ public static class ElevenLabsError
                 type,
                 requestId,
                 parameter,
-                AdditionalProperties(detail, "message", "code", "status", "type", "request_id", "param"));
+                AdditionalProperties(
+                    detail,
+                    "message",
+                    "code",
+                    "status",
+                    "type",
+                    "request_id",
+                    "param"
+                )
+            );
             return new ElevenLabsErrorParseResult(true, ElevenLabsErrorData.FromDetail(value));
         }
 
@@ -315,25 +341,33 @@ public static class ElevenLabsError
         var issues = new List<ElevenLabsValidationIssue>();
         foreach (var issue in detail.EnumerateArray())
         {
-            if (issue.ValueKind != JsonValueKind.Object
+            if (
+                issue.ValueKind != JsonValueKind.Object
                 || RequiredString(issue, "msg") is not { } message
                 || !OptionalString(issue, "type", out var type)
-                || !TryLocation(issue, out var location))
+                || !TryLocation(issue, out var location)
+            )
             {
                 return new ElevenLabsErrorParseResult(false, null);
             }
 
-            issues.Add(new ElevenLabsValidationIssue(
-                message,
-                location,
-                type,
-                AdditionalProperties(issue, "msg", "loc", "type")));
+            issues.Add(
+                new ElevenLabsValidationIssue(
+                    message,
+                    location,
+                    type,
+                    AdditionalProperties(issue, "msg", "loc", "type")
+                )
+            );
         }
 
         return new ElevenLabsErrorParseResult(true, ElevenLabsErrorData.FromIssues(issues));
     }
 
-    private static bool TryLocation(JsonElement issue, out IReadOnlyList<ElevenLabsErrorLocation>? location)
+    private static bool TryLocation(
+        JsonElement issue,
+        out IReadOnlyList<ElevenLabsErrorLocation>? location
+    )
     {
         location = null;
         if (!issue.TryGetProperty("loc", out var value) || value.ValueKind == JsonValueKind.Null)
@@ -349,7 +383,10 @@ public static class ElevenLabsError
         var result = new List<ElevenLabsErrorLocation>();
         foreach (var component in value.EnumerateArray())
         {
-            if (component.ValueKind != JsonValueKind.String && component.ValueKind != JsonValueKind.Number)
+            if (
+                component.ValueKind != JsonValueKind.String
+                && component.ValueKind != JsonValueKind.Number
+            )
             {
                 return false;
             }
@@ -363,7 +400,9 @@ public static class ElevenLabsError
 
     private static string? RequiredString(JsonElement value, string name)
     {
-        return value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.String
+        return
+            value.TryGetProperty(name, out var property)
+            && property.ValueKind == JsonValueKind.String
             ? property.GetString()
             : null;
     }
@@ -371,7 +410,10 @@ public static class ElevenLabsError
     private static bool OptionalString(JsonElement value, string name, out string? result)
     {
         result = null;
-        if (!value.TryGetProperty(name, out var property) || property.ValueKind == JsonValueKind.Null)
+        if (
+            !value.TryGetProperty(name, out var property)
+            || property.ValueKind == JsonValueKind.Null
+        )
         {
             return true;
         }
@@ -385,12 +427,20 @@ public static class ElevenLabsError
         return true;
     }
 
-    private static IReadOnlyDictionary<string, JsonElement> AdditionalProperties(JsonElement value, params string[] knownProperties)
+    private static IReadOnlyDictionary<string, JsonElement> AdditionalProperties(
+        JsonElement value,
+        params string[] knownProperties
+    )
     {
         var known = new HashSet<string>(knownProperties, StringComparer.Ordinal);
-        return value.EnumerateObject()
+        return value
+            .EnumerateObject()
             .Where(property => !known.Contains(property.Name))
-            .ToDictionary(property => property.Name, property => property.Value.Clone(), StringComparer.Ordinal);
+            .ToDictionary(
+                property => property.Name,
+                property => property.Value.Clone(),
+                StringComparer.Ordinal
+            );
     }
 }
 
@@ -403,12 +453,14 @@ public static class ElevenLabsFailedResponseHandler
         int statusCode,
         string url,
         object requestBodyValues,
-        IReadOnlyDictionary<string, string>? responseHeaders = null)
+        IReadOnlyDictionary<string, string>? responseHeaders = null
+    )
     {
         var data = ElevenLabsError.Parse(responseBody).Value;
-        var message = data == null
-            ? JsonValues.ExtractErrorMessage(responseBody, statusCode)
-            : ElevenLabsError.ToMessage(data);
+        var message =
+            data == null
+                ? JsonValues.ExtractErrorMessage(responseBody, statusCode)
+                : ElevenLabsError.ToMessage(data);
 
         return statusCode switch
         {
@@ -513,7 +565,12 @@ public sealed class ElevenLabsSpeechRequest
 public sealed class ElevenLabsResponse
 {
     /// <summary>Creates response metadata.</summary>
-    public ElevenLabsResponse(DateTimeOffset timestamp, string modelId, IReadOnlyDictionary<string, string> headers, JsonElement? body)
+    public ElevenLabsResponse(
+        DateTimeOffset timestamp,
+        string modelId,
+        IReadOnlyDictionary<string, string> headers,
+        JsonElement? body
+    )
     {
         Timestamp = timestamp;
         ModelId = modelId ?? string.Empty;
@@ -538,7 +595,13 @@ public sealed class ElevenLabsResponse
 public sealed class ElevenLabsSpeechResult
 {
     /// <summary>Creates a speech result.</summary>
-    public ElevenLabsSpeechResult(byte[] audio, string mediaType, IReadOnlyList<ModelWarning> warnings, string requestBody, ElevenLabsResponse response)
+    public ElevenLabsSpeechResult(
+        byte[] audio,
+        string mediaType,
+        IReadOnlyList<ModelWarning> warnings,
+        string requestBody,
+        ElevenLabsResponse response
+    )
     {
         Audio = audio ?? Array.Empty<byte>();
         MediaType = mediaType ?? "audio/mpeg";
@@ -583,7 +646,8 @@ public sealed class ElevenLabsTranscriptionResult
         string? language,
         double? durationInSeconds,
         IReadOnlyList<ModelWarning> warnings,
-        ElevenLabsResponse response)
+        ElevenLabsResponse response
+    )
     {
         Text = text ?? string.Empty;
         Segments = segments ?? Array.Empty<TranscriptSegment>();
@@ -637,9 +701,14 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider.</summary>
-    public static new ElevenLabsProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new ElevenLabsProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new ElevenLabsProvider(client, options);
     }
 
@@ -647,7 +716,10 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
+        options.BaseUrl =
+            string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
+                ? DefaultBaseUrl
+                : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "ELEVENLABS_API_KEY";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
@@ -658,10 +730,12 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
     }
 
     /// <inheritdoc />
-    public override ISpeechModel SpeechModel(string modelId) => new ElevenLabsSpeechModel(this, modelId);
+    public override ISpeechModel SpeechModel(string modelId) =>
+        new ElevenLabsSpeechModel(this, modelId);
 
     /// <inheritdoc />
-    public override ITranscriptionModel TranscriptionModel(string modelId) => new ElevenLabsTranscriptionModel(this, modelId);
+    public override ITranscriptionModel TranscriptionModel(string modelId) =>
+        new ElevenLabsTranscriptionModel(this, modelId);
 
     private DateTimeOffset Now()
     {
@@ -671,14 +745,22 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
 
     private static JsonElement? ElevenLabsObject(JsonElement? providerOptions)
     {
-        return providerOptions is { ValueKind: JsonValueKind.Object } bag && bag.TryGetProperty("elevenlabs", out var value) && value.ValueKind == JsonValueKind.Object
+        return
+            providerOptions is { ValueKind: JsonValueKind.Object } bag
+            && bag.TryGetProperty("elevenlabs", out var value)
+            && value.ValueKind == JsonValueKind.Object
             ? value
             : null;
     }
 
     private static JsonElement? Child(JsonElement? parent, string name)
     {
-        return parent != null && parent.Value.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null ? value : null;
+        return
+            parent != null
+            && parent.Value.TryGetProperty(name, out var value)
+            && value.ValueKind != JsonValueKind.Null
+            ? value
+            : null;
     }
 
     private async Task<ProviderExchangeResult> SendAsync(
@@ -686,11 +768,14 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
         HttpContent content,
         object requestBodyValues,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         try
         {
-            return await ProviderExchange.SendAsync(_httpClient, HttpMethod.Post, uri, content, headers, cancellationToken).ConfigureAwait(false);
+            return await ProviderExchange
+                .SendAsync(_httpClient, HttpMethod.Post, uri, content, headers, cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (ApiException exception) when (ElevenLabsError.Parse(exception.ResponseBody).Success)
         {
@@ -699,14 +784,18 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 exception.StatusCode,
                 uri.ToString(),
                 requestBodyValues,
-                exception.ResponseHeaders);
+                exception.ResponseHeaders
+            );
         }
     }
 
     /// <summary>ElevenLabs text-to-speech model.</summary>
     public sealed class ElevenLabsSpeechModel : ISpeechModel
     {
-        private static readonly Dictionary<string, string> OutputFormats = new Dictionary<string, string>(StringComparer.Ordinal)
+        private static readonly Dictionary<string, string> OutputFormats = new Dictionary<
+            string,
+            string
+        >(StringComparer.Ordinal)
         {
             ["mp3"] = "mp3_44100_128",
             ["mp3_32"] = "mp3_44100_32",
@@ -738,15 +827,25 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
         public string ModelId { get; }
 
         /// <inheritdoc />
-        public async Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
+        public async Task<SpeechResult> DoGenerateAsync(
+            SpeechCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
             options = options ?? throw new ArgumentNullException(nameof(options));
-            var result = await GenerateAsync(new ElevenLabsSpeechRequest(options.Text) { Voice = options.Voice }, cancellationToken).ConfigureAwait(false);
+            var result = await GenerateAsync(
+                    new ElevenLabsSpeechRequest(options.Text) { Voice = options.Voice },
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             return new SpeechResult(result.Audio, result.MediaType);
         }
 
         /// <summary>Synthesizes speech and returns the audio with warnings and response metadata.</summary>
-        public async Task<ElevenLabsSpeechResult> GenerateAsync(ElevenLabsSpeechRequest request, CancellationToken cancellationToken)
+        public async Task<ElevenLabsSpeechResult> GenerateAsync(
+            ElevenLabsSpeechRequest request,
+            CancellationToken cancellationToken
+        )
         {
             request = request ?? throw new ArgumentNullException(nameof(request));
             var timestamp = _provider.Now();
@@ -756,7 +855,14 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             var query = new List<string>();
             if (!string.IsNullOrEmpty(request.OutputFormat))
             {
-                query.Add("output_format=" + Uri.EscapeDataString(OutputFormats.TryGetValue(request.OutputFormat, out var mapped) ? mapped : request.OutputFormat));
+                query.Add(
+                    "output_format="
+                        + Uri.EscapeDataString(
+                            OutputFormats.TryGetValue(request.OutputFormat, out var mapped)
+                                ? mapped
+                                : request.OutputFormat
+                        )
+                );
             }
 
             if (!string.IsNullOrEmpty(request.Language))
@@ -779,18 +885,36 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 voiceSettings["use_speaker_boost"] = speakerBoost.GetBoolean();
             }
 
-            if (body["language_code"] == null && Child(elevenlabs, "languageCode") is { ValueKind: JsonValueKind.String } languageCode && languageCode.GetString()!.Length > 0)
+            if (
+                body["language_code"] == null
+                && Child(elevenlabs, "languageCode")
+                    is { ValueKind: JsonValueKind.String } languageCode
+                && languageCode.GetString()!.Length > 0
+            )
             {
                 body["language_code"] = languageCode.GetString();
             }
 
-            if (Child(elevenlabs, "pronunciationDictionaryLocators") is { ValueKind: JsonValueKind.Array } locators)
+            if (
+                Child(elevenlabs, "pronunciationDictionaryLocators") is
+                { ValueKind: JsonValueKind.Array } locators
+            )
             {
                 var array = new JsonArray();
                 foreach (var locator in locators.EnumerateArray())
                 {
-                    var item = new JsonObject { ["pronunciation_dictionary_id"] = Child(locator, "pronunciationDictionaryId")?.GetString() };
-                    if (Child(locator, "versionId") is { ValueKind: JsonValueKind.String } version && version.GetString()!.Length > 0)
+                    var item = new JsonObject
+                    {
+                        ["pronunciation_dictionary_id"] = Child(
+                            locator,
+                            "pronunciationDictionaryId"
+                        )
+                            ?.GetString(),
+                    };
+                    if (
+                        Child(locator, "versionId") is { ValueKind: JsonValueKind.String } version
+                        && version.GetString()!.Length > 0
+                    )
                     {
                         item["version_id"] = version.GetString();
                     }
@@ -807,7 +931,12 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             CopyRaw(elevenlabs, "previousRequestIds", body, "previous_request_ids");
             CopyRaw(elevenlabs, "nextRequestIds", body, "next_request_ids");
             CopyText(elevenlabs, "applyTextNormalization", body, "apply_text_normalization");
-            CopyRaw(elevenlabs, "applyLanguageTextNormalization", body, "apply_language_text_normalization");
+            CopyRaw(
+                elevenlabs,
+                "applyLanguageTextNormalization",
+                body,
+                "apply_language_text_normalization"
+            );
             if (Child(elevenlabs, "enableLogging") is { } enableLogging)
             {
                 query.Add("enable_logging=" + (enableLogging.GetBoolean() ? "true" : "false"));
@@ -820,30 +949,59 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
 
             if (!string.IsNullOrEmpty(request.Instructions))
             {
-                warnings.Add(new UnsupportedWarning("instructions", "ElevenLabs speech models do not support instructions. Instructions parameter was ignored."));
+                warnings.Add(
+                    new UnsupportedWarning(
+                        "instructions",
+                        "ElevenLabs speech models do not support instructions. Instructions parameter was ignored."
+                    )
+                );
             }
 
-            var voice = string.IsNullOrEmpty(request.Voice) ? ElevenLabsSpeechRequest.DefaultVoiceId : request.Voice!;
-            var path = "/v1/text-to-speech/" + Uri.EscapeDataString(voice) + (query.Count > 0 ? "?" + string.Join("&", query) : string.Empty);
+            var voice = string.IsNullOrEmpty(request.Voice)
+                ? ElevenLabsSpeechRequest.DefaultVoiceId
+                : request.Voice!;
+            var path =
+                "/v1/text-to-speech/"
+                + Uri.EscapeDataString(voice)
+                + (query.Count > 0 ? "?" + string.Join("&", query) : string.Empty);
             var json = body.ToJsonString();
             var uri = ApiKeys.Combine(_provider.Options.BaseUrl, path);
-            var response = await _provider.SendAsync(
-                uri,
-                ProviderExchange.Json(json),
-                body,
-                ProviderExchange.Merge(_provider.CreateHeaders(), request.Headers),
-                cancellationToken).ConfigureAwait(false);
+            var response = await _provider
+                .SendAsync(
+                    uri,
+                    ProviderExchange.Json(json),
+                    body,
+                    ProviderExchange.Merge(_provider.CreateHeaders(), request.Headers),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             var mediaType = "audio/mpeg";
-            if (response.Headers.TryGetValue("Content-Type", out var contentType) && contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase))
+            if (
+                response.Headers.TryGetValue("Content-Type", out var contentType)
+                && contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase)
+            )
             {
                 var separator = contentType.IndexOf(';');
-                mediaType = (separator >= 0 ? contentType.Substring(0, separator) : contentType).Trim();
+                mediaType = (
+                    separator >= 0 ? contentType.Substring(0, separator) : contentType
+                ).Trim();
             }
 
-            return new ElevenLabsSpeechResult(response.Bytes, mediaType, warnings, json, new ElevenLabsResponse(timestamp, ModelId, response.Headers, null));
+            return new ElevenLabsSpeechResult(
+                response.Bytes,
+                mediaType,
+                warnings,
+                json,
+                new ElevenLabsResponse(timestamp, ModelId, response.Headers, null)
+            );
         }
 
-        private static void CopyNumber(JsonElement? source, string name, JsonObject target, string targetName)
+        private static void CopyNumber(
+            JsonElement? source,
+            string name,
+            JsonObject target,
+            string targetName
+        )
         {
             if (Child(source, name) is { } value)
             {
@@ -851,15 +1009,28 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             }
         }
 
-        private static void CopyText(JsonElement? source, string name, JsonObject target, string targetName)
+        private static void CopyText(
+            JsonElement? source,
+            string name,
+            JsonObject target,
+            string targetName
+        )
         {
-            if (Child(source, name) is { ValueKind: JsonValueKind.String } value && value.GetString()!.Length > 0)
+            if (
+                Child(source, name) is { ValueKind: JsonValueKind.String } value
+                && value.GetString()!.Length > 0
+            )
             {
                 target[targetName] = value.GetString();
             }
         }
 
-        private static void CopyRaw(JsonElement? source, string name, JsonObject target, string targetName)
+        private static void CopyRaw(
+            JsonElement? source,
+            string name,
+            JsonObject target,
+            string targetName
+        )
         {
             if (Child(source, name) is { } value)
             {
@@ -887,19 +1058,32 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
         public string ModelId { get; }
 
         /// <inheritdoc />
-        public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+        public async Task<TranscriptionResult> DoTranscribeAsync(
+            AudioInput audio,
+            CancellationToken cancellationToken
+        )
         {
-            var result = await TranscribeAsync(audio, null, cancellationToken).ConfigureAwait(false);
+            var result = await TranscribeAsync(audio, null, cancellationToken)
+                .ConfigureAwait(false);
             return new TranscriptionResult(result.Text);
         }
 
         /// <summary>Uploads audio to <c>/v1/speech-to-text</c> and reads the transcript.</summary>
-        public async Task<ElevenLabsTranscriptionResult> TranscribeAsync(AudioInput audio, ElevenLabsTranscriptionRequest? request, CancellationToken cancellationToken)
+        public async Task<ElevenLabsTranscriptionResult> TranscribeAsync(
+            AudioInput audio,
+            ElevenLabsTranscriptionRequest? request,
+            CancellationToken cancellationToken
+        )
         {
             audio = audio ?? throw new ArgumentNullException(nameof(audio));
             if (ModelId == "scribe_v2_realtime")
             {
-                throw new Operations.UnsupportedFunctionalityException("non-streaming transcription with " + ModelId, "'non-streaming transcription with " + ModelId + "' functionality not supported.");
+                throw new Operations.UnsupportedFunctionalityException(
+                    "non-streaming transcription with " + ModelId,
+                    "'non-streaming transcription with "
+                        + ModelId
+                        + "' functionality not supported."
+                );
             }
 
             var timestamp = _provider.Now();
@@ -907,7 +1091,12 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             var elevenlabs = ElevenLabsObject(request?.ProviderOptions);
             if (Child(elevenlabs, "streaming") != null)
             {
-                warnings.Add(new UnsupportedWarning("providerOptions.elevenlabs.streaming", "ElevenLabs batch transcription does not support streaming options."));
+                warnings.Add(
+                    new UnsupportedWarning(
+                        "providerOptions.elevenlabs.streaming",
+                        "ElevenLabs batch transcription does not support streaming options."
+                    )
+                );
             }
 
             var form = new MultipartFormDataContent();
@@ -919,39 +1108,69 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             }
 
             form.Add(file, "file", "audio." + ProviderValues.MediaTypeToExtension(audio.MediaType));
-            form.Add(new StringContent((elevenlabs != null ? FormValue(Child(elevenlabs, "diarize")) : null) ?? "true"), "diarize");
+            form.Add(
+                new StringContent(
+                    (elevenlabs != null ? FormValue(Child(elevenlabs, "diarize")) : null) ?? "true"
+                ),
+                "diarize"
+            );
             if (elevenlabs != null)
             {
                 // Option defaults apply once the elevenlabs object is present, as in the upstream schema.
                 AddField(form, "language_code", FormValue(Child(elevenlabs, "languageCode")));
-                AddField(form, "tag_audio_events", FormValue(Child(elevenlabs, "tagAudioEvents")) ?? "true");
+                AddField(
+                    form,
+                    "tag_audio_events",
+                    FormValue(Child(elevenlabs, "tagAudioEvents")) ?? "true"
+                );
                 AddField(form, "num_speakers", FormValue(Child(elevenlabs, "numSpeakers")));
-                AddField(form, "timestamps_granularity", FormValue(Child(elevenlabs, "timestampsGranularity")) ?? "word");
-                AddField(form, "file_format", FormValue(Child(elevenlabs, "fileFormat")) ?? "other");
+                AddField(
+                    form,
+                    "timestamps_granularity",
+                    FormValue(Child(elevenlabs, "timestampsGranularity")) ?? "word"
+                );
+                AddField(
+                    form,
+                    "file_format",
+                    FormValue(Child(elevenlabs, "fileFormat")) ?? "other"
+                );
             }
 
             var uri = ApiKeys.Combine(_provider.Options.BaseUrl, "/v1/speech-to-text");
-            var response = await _provider.SendAsync(
-                uri,
-                form,
-                new Dictionary<string, string> { ["model_id"] = ModelId },
-                ProviderExchange.Merge(_provider.CreateHeaders(), request?.Headers),
-                cancellationToken).ConfigureAwait(false);
+            var response = await _provider
+                .SendAsync(
+                    uri,
+                    form,
+                    new Dictionary<string, string> { ["model_id"] = ModelId },
+                    ProviderExchange.Merge(_provider.CreateHeaders(), request?.Headers),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             using var document = JsonDocument.Parse(response.Body);
             var root = document.RootElement;
             var segments = new List<TranscriptSegment>();
             double? duration = null;
-            if (root.TryGetProperty("words", out var words) && words.ValueKind == JsonValueKind.Array)
+            if (
+                root.TryGetProperty("words", out var words)
+                && words.ValueKind == JsonValueKind.Array
+            )
             {
                 foreach (var word in words.EnumerateArray())
                 {
                     var end = Child(word, "end")?.GetDouble();
-                    segments.Add(new TranscriptSegment(Child(word, "text")?.GetString() ?? string.Empty, Child(word, "start")?.GetDouble() ?? 0, end ?? 0));
+                    segments.Add(
+                        new TranscriptSegment(
+                            Child(word, "text")?.GetString() ?? string.Empty,
+                            Child(word, "start")?.GetDouble() ?? 0,
+                            end ?? 0
+                        )
+                    );
                     duration = end;
                 }
             }
 
-            var audioDuration = Child(root, "audio_duration_secs") is { ValueKind: JsonValueKind.Number } audioDurationElement
+            var audioDuration = Child(root, "audio_duration_secs")
+                is { ValueKind: JsonValueKind.Number } audioDurationElement
                 ? audioDurationElement.GetDouble()
                 : (double?)null;
 
@@ -961,7 +1180,8 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 Child(root, "language_code")?.GetString(),
                 audioDuration ?? duration,
                 warnings,
-                new ElevenLabsResponse(timestamp, ModelId, response.Headers, root.Clone()));
+                new ElevenLabsResponse(timestamp, ModelId, response.Headers, root.Clone())
+            );
         }
 
         private static void AddField(MultipartFormDataContent form, string name, string? value)
@@ -984,7 +1204,9 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 JsonValueKind.String => value.Value.GetString(),
                 JsonValueKind.True => "true",
                 JsonValueKind.False => "false",
-                JsonValueKind.Number => value.Value.GetDouble().ToString(CultureInfo.InvariantCulture),
+                JsonValueKind.Number => value
+                    .Value.GetDouble()
+                    .ToString(CultureInfo.InvariantCulture),
                 _ => value.Value.GetRawText(),
             };
         }
@@ -995,14 +1217,21 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
 public static class ElevenLabsServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddElevenLabs(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddElevenLabs(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(ElevenLabsProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new ElevenLabsProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(ElevenLabsProvider.ProviderId), options);
+            return new ElevenLabsProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(ElevenLabsProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

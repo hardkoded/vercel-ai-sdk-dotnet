@@ -13,11 +13,18 @@ internal sealed class LogWarningsRecorder : IDisposable
     {
         WarningLog.ResetState();
         WarningLog.Logger = logger;
-        WarningLog.ProcessEmitWarning = delegate (string message, string type, string? code) { Process.Add((message, type, code)); };
-        WarningLog.ConsoleWarn = delegate (string message) { Console.Add(message); };
+        WarningLog.ProcessEmitWarning = delegate(string message, string type, string? code)
+        {
+            Process.Add((message, type, code));
+        };
+        WarningLog.ConsoleWarn = delegate(string message)
+        {
+            Console.Add(message);
+        };
     }
 
-    public List<(string Message, string Type, string? Code)> Process { get; } = new List<(string, string, string?)>();
+    public List<(string Message, string Type, string? Code)> Process { get; } =
+        new List<(string, string, string?)>();
 
     public List<string> Console { get; } = new List<string>();
 

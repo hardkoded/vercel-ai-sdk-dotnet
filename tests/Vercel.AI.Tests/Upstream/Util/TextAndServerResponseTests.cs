@@ -10,28 +10,43 @@ namespace Vercel.AI.Tests;
 
 public sealed class TextAndServerResponseTests
 {
-    [UpstreamTest("packages/ai/src/text-stream/to-text-stream.test.ts::toTextStream::keeps only text deltas", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/text-stream/to-text-stream.test.ts::toTextStream::keeps only text deltas",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public async Task Keeps_only_text_deltas()
     {
-        var stream = TextStreams.ToTextStream(ReadableStream<UtilTextPart>.FromArray(new[]
-        {
-            new UtilTextPart("start"),
-            new UtilTextPart("text-start", "t1"),
-            new UtilTextPart("text-delta", "t1", "Hello"),
-            new UtilTextPart("text-delta", "t1", ", world!"),
-            new UtilTextPart("text-end", "t1"),
-        }));
+        var stream = TextStreams.ToTextStream(
+            ReadableStream<UtilTextPart>.FromArray(
+                new[]
+                {
+                    new UtilTextPart("start"),
+                    new UtilTextPart("text-start", "t1"),
+                    new UtilTextPart("text-delta", "t1", "Hello"),
+                    new UtilTextPart("text-delta", "t1", ", world!"),
+                    new UtilTextPart("text-end", "t1"),
+                }
+            )
+        );
         Assert.Equal(new[] { "Hello", ", world!" }, await stream.ToArrayAsync());
     }
 
-    [UpstreamTest("packages/ai/src/text-stream/create-text-stream-response.test.ts::createTextStreamResponse::should create a Response with correct headers and encoded stream", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/text-stream/create-text-stream-response.test.ts::createTextStreamResponse::should create a Response with correct headers and encoded stream",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public async Task Creates_a_text_response()
     {
         var headers = new HeaderCollection();
         headers.Add("Custom-Header", "test");
-        var response = TextStreams.CreateTextStreamResponse(ReadableStream<string>.FromArray(new[] { "test-data" }), 200, "OK", headers);
+        var response = TextStreams.CreateTextStreamResponse(
+            ReadableStream<string>.FromArray(new[] { "test-data" }),
+            200,
+            "OK",
+            headers
+        );
         Assert.Equal(200, response.Status);
         Assert.Equal("OK", response.StatusText!);
         Assert.Equal("text/plain; charset=utf-8", response.Headers.Get("Content-Type")!);
@@ -39,29 +54,45 @@ public sealed class TextAndServerResponseTests
         Assert.Equal(new[] { "test-data" }, await Decode(response.Body));
     }
 
-    [UpstreamTest("packages/ai/src/text-stream/create-text-stream-response.test.ts::createTextStreamResponse::can respond with a stream created by toTextStream", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/text-stream/create-text-stream-response.test.ts::createTextStreamResponse::can respond with a stream created by toTextStream",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public async Task Responds_with_a_text_stream()
     {
-        var text = TextStreams.ToTextStream(ReadableStream<UtilTextPart>.FromArray(new[]
-        {
-            new UtilTextPart("start"),
-            new UtilTextPart("text-delta", "t1", "Hello"),
-            new UtilTextPart("text-delta", "t1", ", world!"),
-            new UtilTextPart("text-end", "t1"),
-        }));
+        var text = TextStreams.ToTextStream(
+            ReadableStream<UtilTextPart>.FromArray(
+                new[]
+                {
+                    new UtilTextPart("start"),
+                    new UtilTextPart("text-delta", "t1", "Hello"),
+                    new UtilTextPart("text-delta", "t1", ", world!"),
+                    new UtilTextPart("text-end", "t1"),
+                }
+            )
+        );
         var response = TextStreams.CreateTextStreamResponse(text);
         Assert.Equal(new[] { "Hello", ", world!" }, await Decode(response.Body));
     }
 
-    [UpstreamTest("packages/ai/src/text-stream/pipe-text-stream-to-response.test.ts::pipeTextStreamToResponse::should write to ServerResponse with correct headers and encoded stream", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/text-stream/pipe-text-stream-to-response.test.ts::pipeTextStreamToResponse::should write to ServerResponse with correct headers and encoded stream",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public async Task Pipes_text_with_headers()
     {
         var response = new ServerResponse();
         var headers = new HeaderCollection();
         headers.Add("Custom-Header", "test");
-        await TextStreams.PipeTextStreamToResponseAsync(response, ReadableStream<string>.FromArray(new[] { "test-data" }), 200, "OK", headers);
+        await TextStreams.PipeTextStreamToResponseAsync(
+            response,
+            ReadableStream<string>.FromArray(new[] { "test-data" }),
+            200,
+            "OK",
+            headers
+        );
         Assert.Equal(200, response.StatusCode);
         Assert.Equal("OK", response.StatusMessage);
         Assert.Equal("text/plain; charset=utf-8", response.Headers["content-type"]);
@@ -69,7 +100,10 @@ public sealed class TextAndServerResponseTests
         Assert.Equal(new[] { "test-data" }, response.GetDecodedChunks());
     }
 
-    [UpstreamTest("packages/ai/src/text-stream/pipe-text-stream-to-response.test.ts::pipeTextStreamToResponse::should preserve multiple Set-Cookie headers with $name", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/text-stream/pipe-text-stream-to-response.test.ts::pipeTextStreamToResponse::should preserve multiple Set-Cookie headers with $name",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public async Task Preserves_multiple_set_cookie_headers()
     {
@@ -82,45 +116,67 @@ public sealed class TextAndServerResponseTests
         await AssertCookies(cookies);
     }
 
-    [UpstreamTest("packages/ai/src/text-stream/pipe-text-stream-to-response.test.ts::pipeTextStreamToResponse::can pipe a stream created by toTextStream", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/text-stream/pipe-text-stream-to-response.test.ts::pipeTextStreamToResponse::can pipe a stream created by toTextStream",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public async Task Pipes_a_text_stream()
     {
         var response = new ServerResponse();
-        var text = TextStreams.ToTextStream(ReadableStream<UtilTextPart>.FromArray(new[]
-        {
-            new UtilTextPart("start"),
-            new UtilTextPart("text-delta", "t1", "Hello"),
-            new UtilTextPart("text-delta", "t1", ", world!"),
-            new UtilTextPart("text-end", "t1"),
-        }));
+        var text = TextStreams.ToTextStream(
+            ReadableStream<UtilTextPart>.FromArray(
+                new[]
+                {
+                    new UtilTextPart("start"),
+                    new UtilTextPart("text-delta", "t1", "Hello"),
+                    new UtilTextPart("text-delta", "t1", ", world!"),
+                    new UtilTextPart("text-end", "t1"),
+                }
+            )
+        );
         await TextStreams.PipeTextStreamToResponseAsync(response, text);
         Assert.Equal(new[] { "Hello", ", world!" }, response.GetDecodedChunks());
     }
 
-    [UpstreamTest("packages/ai/src/text-stream/pipe-text-stream-to-response.test.ts::pipeTextStreamToResponse::should reject when reading the stream fails", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/text-stream/pipe-text-stream-to-response.test.ts::pipeTextStreamToResponse::should reject when reading the stream fails",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public async Task Pipe_rejects_when_the_stream_fails()
     {
         var response = new ServerResponse();
         var error = new InvalidOperationException("stream read failed");
-        var stream = new ReadableStream<string>(pull: delegate { return Task.FromException(error); });
-        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(delegate
-        {
-            return TextStreams.PipeTextStreamToResponseAsync(response, stream);
-        });
+        var stream = new ReadableStream<string>(
+            pull: delegate
+            {
+                return Task.FromException(error);
+            }
+        );
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(
+            delegate
+            {
+                return TextStreams.PipeTextStreamToResponseAsync(response, stream);
+            }
+        );
         Assert.Same(error, thrown);
         Assert.True(response.Ended);
     }
 
-    [UpstreamTest("packages/ai/src/util/write-to-server-response.test.ts::writeToServerResponse::should write data to ServerResponse", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/write-to-server-response.test.ts::writeToServerResponse::should write data to ServerResponse",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public async Task Writes_chunks_to_the_response()
     {
         var response = new ServerResponse();
         var headers = new HeaderCollection();
         headers.Add("Content-Type", "text/plain");
-        var stream = ReadableStream<byte[]>.FromArray(new[] { Encoding.UTF8.GetBytes("chunk1"), Encoding.UTF8.GetBytes("chunk2") });
+        var stream = ReadableStream<byte[]>.FromArray(
+            new[] { Encoding.UTF8.GetBytes("chunk1"), Encoding.UTF8.GetBytes("chunk2") }
+        );
         await ServerResponseWriter.WriteAsync(response, stream, 200, "OK", headers);
         Assert.Equal(200, response.StatusCode);
         Assert.Equal("OK", response.StatusMessage);
@@ -128,50 +184,65 @@ public sealed class TextAndServerResponseTests
         Assert.True(response.Ended);
     }
 
-    [UpstreamTest("packages/ai/src/util/write-to-server-response.test.ts::writeToServerResponse::should reject when reading the stream fails", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/write-to-server-response.test.ts::writeToServerResponse::should reject when reading the stream fails",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public async Task Write_rejects_when_the_stream_fails()
     {
         var response = new ServerResponse();
         var error = new InvalidOperationException("stream read failed");
-        var stream = new ReadableStream<byte[]>(pull: delegate { return Task.FromException(error); });
-        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(delegate
-        {
-            return ServerResponseWriter.WriteAsync(response, stream);
-        });
+        var stream = new ReadableStream<byte[]>(
+            pull: delegate
+            {
+                return Task.FromException(error);
+            }
+        );
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(
+            delegate
+            {
+                return ServerResponseWriter.WriteAsync(response, stream);
+            }
+        );
         Assert.Same(error, thrown);
         Assert.True(response.Ended);
     }
 
-    [UpstreamTest("packages/ai/src/util/write-to-server-response.test.ts::writeToServerResponse > backpressure handling::should respect backpressure and wait for drain event", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/write-to-server-response.test.ts::writeToServerResponse > backpressure handling::should respect backpressure and wait for drain event",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public async Task Waits_for_drain_before_the_next_write()
     {
         var response = new ServerResponse { EnableBackpressure = true };
         var flushCounts = new List<int>();
         var flushed = new SemaphoreSlim(0);
-        response.Flush = delegate (ServerResponse current)
+        response.Flush = delegate(ServerResponse current)
         {
             Assert.Same(response, current);
             flushCounts.Add(current.WrittenChunks.Count);
             flushed.Release();
         };
         Action<byte[]?>? enqueue = null;
-        var stream = new ReadableStream<byte[]>(delegate (ReadableStreamController<byte[]> controller)
-        {
-            controller.Enqueue(Encoding.UTF8.GetBytes("chunk1"));
-            enqueue = delegate (byte[]? value)
+        var stream = new ReadableStream<byte[]>(
+            delegate(ReadableStreamController<byte[]> controller)
             {
-                if (value == null)
+                controller.Enqueue(Encoding.UTF8.GetBytes("chunk1"));
+                enqueue = delegate(byte[]? value)
                 {
-                    controller.Close();
-                }
-                else
-                {
-                    controller.Enqueue(value);
-                }
-            };
-        });
+                    if (value == null)
+                    {
+                        controller.Close();
+                    }
+                    else
+                    {
+                        controller.Enqueue(value);
+                    }
+                };
+            }
+        );
         var write = ServerResponseWriter.WriteAsync(response, stream, 200);
         Assert.True(await flushed.WaitAsync(TimeSpan.FromSeconds(10)));
         Assert.Equal(new[] { 1 }, flushCounts);
@@ -194,7 +265,10 @@ public sealed class TextAndServerResponseTests
         Assert.Equal(3, response.WrittenChunks.Count);
     }
 
-    [UpstreamTest("packages/ai/src/util/write-to-server-response.test.ts::writeToServerResponse::should set headers correctly when statusText is undefined", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/write-to-server-response.test.ts::writeToServerResponse::should set headers correctly when statusText is undefined",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public async Task Sets_headers_without_status_text()
     {
@@ -211,7 +285,10 @@ public sealed class TextAndServerResponseTests
         Assert.Single(response.WrittenChunks);
     }
 
-    [UpstreamTest("packages/ai/src/util/write-to-server-response.test.ts::writeToServerResponse::should set headers correctly when statusText is provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/write-to-server-response.test.ts::writeToServerResponse::should set headers correctly when statusText is provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public async Task Sets_headers_with_status_text()
     {
@@ -219,7 +296,13 @@ public sealed class TextAndServerResponseTests
         var headers = new HeaderCollection();
         headers.Add("x-example-header", "example-value");
         headers.Add("x-example-chat-title", "New Chat Session");
-        await ServerResponseWriter.WriteAsync(response, Bytes("test data"), 201, "Created", headers);
+        await ServerResponseWriter.WriteAsync(
+            response,
+            Bytes("test data"),
+            201,
+            "Created",
+            headers
+        );
         Assert.Equal(201, response.StatusCode);
         Assert.Equal("Created", response.StatusMessage);
         Assert.Equal("example-value", response.Headers["x-example-header"]);
@@ -228,7 +311,10 @@ public sealed class TextAndServerResponseTests
         Assert.Single(response.WrittenChunks);
     }
 
-    [UpstreamTest("packages/ai/src/util/write-to-server-response.test.ts::writeToServerResponse::should set headers correctly when statusText is not set and status is not set", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/write-to-server-response.test.ts::writeToServerResponse::should set headers correctly when statusText is not set and status is not set",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public async Task Defaults_the_status_when_writing()
     {
@@ -250,7 +336,11 @@ public sealed class TextAndServerResponseTests
         var headers = new HeaderCollection();
         headers.Add("set-cookie", cookies[0]);
         headers.Add("set-cookie", cookies[1]);
-        await TextStreams.PipeTextStreamToResponseAsync(response, ReadableStream<string>.FromArray(new[] { "test-data" }), headers: headers);
+        await TextStreams.PipeTextStreamToResponseAsync(
+            response,
+            ReadableStream<string>.FromArray(new[] { "test-data" }),
+            headers: headers
+        );
         Assert.Equal(cookies, (List<string>)response.Headers["set-cookie"]);
     }
 

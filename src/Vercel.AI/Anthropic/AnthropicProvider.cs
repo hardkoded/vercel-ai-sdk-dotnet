@@ -42,13 +42,18 @@ public class AnthropicOptions
     public string? Name { get; set; }
 
     /// <summary>Headers merged into every request.</summary>
-    public Dictionary<string, string?> Headers { get; private set; } = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string?> Headers { get; private set; } =
+        new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Optional rewrite of the JSON body before it is sent.</summary>
     public Func<JsonObject, JsonObject>? TransformRequestBody { get; set; }
 
     /// <summary>Optional rewrite of the combined request headers. Receives the call's provider options and returns the headers to send.</summary>
-    public Func<Dictionary<string, string?>, IReadOnlyDictionary<string, JsonElement>?, Dictionary<string, string?>>? TransformRequestHeaders { get; set; }
+    public Func<
+        Dictionary<string, string?>,
+        IReadOnlyDictionary<string, JsonElement>?,
+        Dictionary<string, string?>
+    >? TransformRequestHeaders { get; set; }
 
     /// <summary>AWS region. Used when the AWS base URL is not set explicitly.</summary>
     public string? Region { get; set; }
@@ -82,38 +87,43 @@ public class AnthropicOptions
 
 /// <summary>Anthropic Messages provider.</summary>
 #pragma warning disable CS0618
-public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operations.IDecisionProvider, Operations.IEvaluationProvider
+public class AnthropicProvider
+    : ProviderBase,
+        Operations.IBatchProvider,
+        Operations.IDecisionProvider,
+        Operations.IEvaluationProvider
 {
     /// <summary>Provider id used for dependency injection.</summary>
     public const string ProviderName = "anthropic";
 
     /// <summary>Provider tool ids, such as <c>anthropic.web_search_20250305</c>. Pass one as a provider tool id.</summary>
-    public static IReadOnlyList<string> Tools { get; } = new[]
-    {
-        "anthropic.advisor_20260301",
-        "anthropic.bash_20241022",
-        "anthropic.bash_20250124",
-        "anthropic.code_execution_20250522",
-        "anthropic.code_execution_20250825",
-        "anthropic.code_execution_20260120",
-        "anthropic.computer_20241022",
-        "anthropic.computer_20250124",
-        "anthropic.computer_20251124",
-        "anthropic.computer_toolset_20260801",
-        "anthropic.memory_20250818",
-        "anthropic.text_editor_20241022",
-        "anthropic.text_editor_20250124",
-        "anthropic.text_editor_20250429",
-        "anthropic.text_editor_20250728",
-        "anthropic.web_fetch_20250910",
-        "anthropic.web_fetch_20260209",
-        "anthropic.web_fetch_20260318",
-        "anthropic.web_search_20250305",
-        "anthropic.web_search_20260209",
-        "anthropic.web_search_20260318",
-        "anthropic.tool_search_regex_20251119",
-        "anthropic.tool_search_bm25_20251119",
-    };
+    public static IReadOnlyList<string> Tools { get; } =
+        new[]
+        {
+            "anthropic.advisor_20260301",
+            "anthropic.bash_20241022",
+            "anthropic.bash_20250124",
+            "anthropic.code_execution_20250522",
+            "anthropic.code_execution_20250825",
+            "anthropic.code_execution_20260120",
+            "anthropic.computer_20241022",
+            "anthropic.computer_20250124",
+            "anthropic.computer_20251124",
+            "anthropic.computer_toolset_20260801",
+            "anthropic.memory_20250818",
+            "anthropic.text_editor_20241022",
+            "anthropic.text_editor_20250124",
+            "anthropic.text_editor_20250429",
+            "anthropic.text_editor_20250728",
+            "anthropic.web_fetch_20250910",
+            "anthropic.web_fetch_20260209",
+            "anthropic.web_fetch_20260318",
+            "anthropic.web_search_20250305",
+            "anthropic.web_search_20260209",
+            "anthropic.web_search_20260318",
+            "anthropic.tool_search_regex_20251119",
+            "anthropic.tool_search_bm25_20251119",
+        };
 
     /// <summary>User agent for the Messages API.</summary>
     public static readonly string UserAgent = "ai-sdk/anthropic/" + Operations.AiSdkVersion.Version;
@@ -128,9 +138,14 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
             throw new ArgumentException("baseURL must be a non-empty string.", nameof(options));
         }
 
-        if (!string.IsNullOrEmpty(Options.ApiKey) && (!string.IsNullOrEmpty(Options.AuthToken) || Options.AuthTokenProvider != null))
+        if (
+            !string.IsNullOrEmpty(Options.ApiKey)
+            && (!string.IsNullOrEmpty(Options.AuthToken) || Options.AuthTokenProvider != null)
+        )
         {
-            throw new InvalidOperationException("Both apiKey and authToken were provided. Please use only one authentication method.");
+            throw new InvalidOperationException(
+                "Both apiKey and authToken were provided. Please use only one authentication method."
+            );
         }
 
         Http = new ProviderHttp(httpClient ?? throw new ArgumentNullException(nameof(httpClient)));
@@ -165,9 +180,14 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
     }
 
     /// <summary>Creates a provider.</summary>
-    public static AnthropicProvider Create(AnthropicOptions? options = null, HttpMessageHandler? handler = null)
+    public static AnthropicProvider Create(
+        AnthropicOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new AnthropicProvider(client, options);
     }
 
@@ -182,12 +202,17 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
         return new AnthropicLanguageModel(this, modelId, ThreadSettings);
     }
 
-    internal static readonly AnthropicModelSettings ThreadSettings = new AnthropicModelSettings { SupportsMessageThreads = true };
+    internal static readonly AnthropicModelSettings ThreadSettings = new AnthropicModelSettings
+    {
+        SupportsMessageThreads = true,
+    };
 
     /// <summary>Throws because the JavaScript provider function rejects <c>new</c>.</summary>
     public ILanguageModel New(string modelId)
     {
-        throw new InvalidOperationException("The Anthropic model function cannot be called with the new keyword.");
+        throw new InvalidOperationException(
+            "The Anthropic model function cannot be called with the new keyword."
+        );
     }
 
     /// <inheritdoc />
@@ -220,7 +245,11 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
     /// </summary>
     public Operations.ExtractionLanguageModel ExtractionModel(string modelId)
     {
-        return new Operations.ExtractionLanguageModel(LanguageModel(modelId), "anthropic.extraction", maxFieldsPerCall: 16);
+        return new Operations.ExtractionLanguageModel(
+            LanguageModel(modelId),
+            "anthropic.extraction",
+            maxFieldsPerCall: 16
+        );
     }
 
     Operations.IDecisionCaller? Operations.IDecisionProvider.DecisionModel(string modelId)
@@ -257,7 +286,12 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
     /// <summary>Skills API client.</summary>
     public AnthropicSkills Skills()
     {
-        return new AnthropicSkills(Http, NormalizedBase, ProviderHeadersAsync, Aws ? "anthropic-aws.skills" : "anthropic.skills");
+        return new AnthropicSkills(
+            Http,
+            NormalizedBase,
+            ProviderHeadersAsync,
+            Aws ? "anthropic-aws.skills" : "anthropic.skills"
+        );
     }
 
     /// <summary>Messages URL for the resolved base.</summary>
@@ -279,7 +313,10 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
     }
 
     /// <summary>Rewrites the Messages body just before it is sent. Defaults to <see cref="AnthropicOptions.TransformRequestBody"/>.</summary>
-    protected internal virtual JsonObject TransformRequestBody(JsonObject body, IReadOnlyList<string> betas)
+    protected internal virtual JsonObject TransformRequestBody(
+        JsonObject body,
+        IReadOnlyList<string> betas
+    )
     {
         return Options.TransformRequestBody == null ? body : Options.TransformRequestBody(body);
     }
@@ -288,17 +325,19 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
     protected internal virtual bool SupportsNativeStructuredOutput => true;
 
     /// <summary>Per-model form of <see cref="SupportsNativeStructuredOutput"/>. Hosts that decide by model id override it.</summary>
-    protected internal virtual bool SupportsNativeStructuredOutputFor(string modelId) => SupportsNativeStructuredOutput;
+    protected internal virtual bool SupportsNativeStructuredOutputFor(string modelId) =>
+        SupportsNativeStructuredOutput;
 
     /// <summary>False when the host does not accept <c>strict</c> on tool definitions.</summary>
     protected internal virtual bool SupportsStrictTools => true;
 
     /// <summary>URL patterns that models of this provider accept for images and PDFs.</summary>
-    protected internal virtual IReadOnlyDictionary<string, string> SupportedUrls { get; } = new Dictionary<string, string>
-    {
-        ["image/*"] = "^https?://.*\\z",
-        ["application/pdf"] = "^https?://.*\\z",
-    };
+    protected internal virtual IReadOnlyDictionary<string, string> SupportedUrls { get; } =
+        new Dictionary<string, string>
+        {
+            ["image/*"] = "^https?://.*\\z",
+            ["application/pdf"] = "^https?://.*\\z",
+        };
 
     /// <summary>Resolved API origin, including <c>/v1</c> when the host is the public Anthropic API or a regional AWS host.</summary>
     public string NormalizedBase()
@@ -323,25 +362,44 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
         return raw;
     }
 
-    private async Task<IReadOnlyDictionary<string, string?>> ProviderHeadersAsync(CancellationToken cancellationToken)
+    private async Task<IReadOnlyDictionary<string, string?>> ProviderHeadersAsync(
+        CancellationToken cancellationToken
+    )
     {
-        return await CreateHeadersAsync(Array.Empty<string>(), null, null, cancellationToken).ConfigureAwait(false);
+        return await CreateHeadersAsync(Array.Empty<string>(), null, null, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <summary>Headers for a Messages call that already has an API key or auth token.</summary>
-    public Dictionary<string, string?> CreateHeaders(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders)
+    public Dictionary<string, string?> CreateHeaders(
+        IReadOnlyList<string> betas,
+        IReadOnlyDictionary<string, string?>? callHeaders
+    )
     {
-        return CreateHeadersAsync(betas, callHeaders, null, CancellationToken.None).GetAwaiter().GetResult();
+        return CreateHeadersAsync(betas, callHeaders, null, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult();
     }
 
     /// <summary>Headers for a Messages call. Signs the body when AWS credentials are used.</summary>
-    public virtual Task<Dictionary<string, string?>> CreateHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, CancellationToken cancellationToken)
+    public virtual Task<Dictionary<string, string?>> CreateHeadersAsync(
+        IReadOnlyList<string> betas,
+        IReadOnlyDictionary<string, string?>? callHeaders,
+        string? body,
+        CancellationToken cancellationToken
+    )
     {
         return CreateSignedHeadersAsync(betas, callHeaders, body, null, cancellationToken);
     }
 
     /// <summary>Headers for a call to <paramref name="signingUri"/> (the Messages URL when null). AWS credentials sign that URL and <paramref name="body"/>.</summary>
-    internal async Task<Dictionary<string, string?>> CreateSignedHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, Uri? signingUri, CancellationToken cancellationToken)
+    internal async Task<Dictionary<string, string?>> CreateSignedHeadersAsync(
+        IReadOnlyList<string> betas,
+        IReadOnlyDictionary<string, string?>? callHeaders,
+        string? body,
+        Uri? signingUri,
+        CancellationToken cancellationToken
+    )
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         foreach (var pair in Options.Headers)
@@ -356,7 +414,9 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
             var workspace = WorkspaceId();
             if (!ExplicitBaseUrl && string.IsNullOrEmpty(workspace))
             {
-                throw new ArgumentException("workspaceId is missing. Pass it using the 'workspaceId' parameter or the ANTHROPIC_AWS_WORKSPACE_ID environment variable.");
+                throw new ArgumentException(
+                    "workspaceId is missing. Pass it using the 'workspaceId' parameter or the ANTHROPIC_AWS_WORKSPACE_ID environment variable."
+                );
             }
 
             if (!string.IsNullOrEmpty(workspace))
@@ -388,8 +448,19 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
             }
             else if (Aws && body != null)
             {
-                var credentials = await ResolveCredentialsAsync(cancellationToken).ConfigureAwait(false);
-                var signed = AnthropicAwsFetch.Prepare((signingUri ?? MessagesUri()).AbsoluteUri, "POST", body, null, null, ToStringMap(headers), null, credentials, Options.UtcNow == null ? (DateTimeOffset?)null : Options.UtcNow());
+                var credentials = await ResolveCredentialsAsync(cancellationToken)
+                    .ConfigureAwait(false);
+                var signed = AnthropicAwsFetch.Prepare(
+                    (signingUri ?? MessagesUri()).AbsoluteUri,
+                    "POST",
+                    body,
+                    null,
+                    null,
+                    ToStringMap(headers),
+                    null,
+                    credentials,
+                    Options.UtcNow == null ? (DateTimeOffset?)null : Options.UtcNow()
+                );
                 foreach (var pair in signed.Headers)
                 {
                     headers[pair.Key] = pair.Value;
@@ -397,7 +468,10 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
             }
             else if (!Aws)
             {
-                headers["x-api-key"] = ApiKeys.Require(Options.ApiKey, Options.ApiKeyEnvironmentVariable);
+                headers["x-api-key"] = ApiKeys.Require(
+                    Options.ApiKey,
+                    Options.ApiKeyEnvironmentVariable
+                );
             }
             else
             {
@@ -410,7 +484,11 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
             foreach (var pair in callHeaders)
             {
                 // The call's anthropic-beta header is already part of betas, so it must not replace the merged set.
-                if (betas != null && betas.Count > 0 && pair.Key.Equals("anthropic-beta", StringComparison.OrdinalIgnoreCase))
+                if (
+                    betas != null
+                    && betas.Count > 0
+                    && pair.Key.Equals("anthropic-beta", StringComparison.OrdinalIgnoreCase)
+                )
                 {
                     continue;
                 }
@@ -429,7 +507,10 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
             return new CallWarning(warning.Type, warning.Feature, warning.Details);
         }
 
-        return new CallWarning(warning.Type, warning.Details ?? warning.Message ?? warning.Feature ?? warning.Type);
+        return new CallWarning(
+            warning.Type,
+            warning.Details ?? warning.Message ?? warning.Feature ?? warning.Type
+        );
     }
 
     private string? TryApiKey()
@@ -464,7 +545,9 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
 
         if (string.IsNullOrEmpty(region))
         {
-            throw new ArgumentException("AWS region setting is missing. Pass it using the 'region' parameter or the AWS_REGION environment variable.");
+            throw new ArgumentException(
+                "AWS region setting is missing. Pass it using the 'region' parameter or the AWS_REGION environment variable."
+            );
         }
 
         if (!HostnameParts.IsValidHostnamePart(region))
@@ -475,7 +558,9 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
         return region!;
     }
 
-    private async Task<AnthropicAwsCredentials> ResolveCredentialsAsync(CancellationToken cancellationToken)
+    private async Task<AnthropicAwsCredentials> ResolveCredentialsAsync(
+        CancellationToken cancellationToken
+    )
     {
         if (Options.CredentialProvider != null)
         {
@@ -485,19 +570,35 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
             }
             catch (Exception exception) when (!(exception is AiSdkException))
             {
-                throw new AiSdkException("AWS credential provider failed: " + exception.Message, exception);
+                throw new AiSdkException(
+                    "AWS credential provider failed: " + exception.Message,
+                    exception
+                );
             }
         }
 
-        var accessKey = string.IsNullOrEmpty(Options.AccessKeyId) ? Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID") : Options.AccessKeyId;
-        var secret = string.IsNullOrEmpty(Options.SecretAccessKey) ? Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY") : Options.SecretAccessKey;
-        var token = string.IsNullOrEmpty(Options.SessionToken) ? Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN") : Options.SessionToken;
+        var accessKey = string.IsNullOrEmpty(Options.AccessKeyId)
+            ? Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID")
+            : Options.AccessKeyId;
+        var secret = string.IsNullOrEmpty(Options.SecretAccessKey)
+            ? Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY")
+            : Options.SecretAccessKey;
+        var token = string.IsNullOrEmpty(Options.SessionToken)
+            ? Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN")
+            : Options.SessionToken;
         if (string.IsNullOrEmpty(accessKey) || string.IsNullOrEmpty(secret))
         {
-            throw new AiSdkException("AWS SigV4 authentication requires AWS credentials. Pass accessKeyId and secretAccessKey, or a credentialProvider.");
+            throw new AiSdkException(
+                "AWS SigV4 authentication requires AWS credentials. Pass accessKeyId and secretAccessKey, or a credentialProvider."
+            );
         }
 
-        return new AnthropicAwsCredentials(ExplicitBaseUrl ? Options.Region ?? "us-east-1" : ResolveRegion(), accessKey!, secret!, token);
+        return new AnthropicAwsCredentials(
+            ExplicitBaseUrl ? Options.Region ?? "us-east-1" : ResolveRegion(),
+            accessKey!,
+            secret!,
+            token
+        );
     }
 
     private static Dictionary<string, string?> ToStringMap(Dictionary<string, string?> headers)
@@ -522,12 +623,14 @@ public class AnthropicLanguageModel : ILanguageModel
 
     /// <summary>Creates a model.</summary>
     public AnthropicLanguageModel(AnthropicProvider provider, string modelId)
-        : this(provider, modelId, null)
-    {
-    }
+        : this(provider, modelId, null) { }
 
     /// <summary>Creates a model for a Messages-compatible provider that adjusts the adapter with <paramref name="settings"/>.</summary>
-    public AnthropicLanguageModel(AnthropicProvider provider, string modelId, AnthropicModelSettings? settings)
+    public AnthropicLanguageModel(
+        AnthropicProvider provider,
+        string modelId,
+        AnthropicModelSettings? settings
+    )
     {
         _provider = provider;
         _settings = settings;
@@ -550,17 +653,37 @@ public class AnthropicLanguageModel : ILanguageModel
     public bool SupportsUrl(string mediaType, string url)
     {
         return SupportedUrls.ContainsKey(mediaType)
-            && (url.StartsWith("https://", StringComparison.OrdinalIgnoreCase) || url.StartsWith("http://", StringComparison.OrdinalIgnoreCase));
+            && (
+                url.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                || url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            );
     }
 
     /// <inheritdoc />
-    public virtual async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public virtual async Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var prepared = Prepare(options, false);
         var body = prepared.Body.ToJsonString();
-        var headers = await CreateHeadersAsync(prepared, options, body, cancellationToken).ConfigureAwait(false);
-        var response = await _provider.Http.SendJsonStringAsync(HttpMethod.Post, _provider.RequestUri(ModelId, false), body, headers, cancellationToken).ConfigureAwait(false);
-        var context = new AnthropicParseContext(prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey, Warnings(prepared))
+        var headers = await CreateHeadersAsync(prepared, options, body, cancellationToken)
+            .ConfigureAwait(false);
+        var response = await _provider
+            .Http.SendJsonStringAsync(
+                HttpMethod.Post,
+                _provider.RequestUri(ModelId, false),
+                body,
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        var context = new AnthropicParseContext(
+            prepared.UsesJsonResponseTool,
+            prepared.ProviderOptionsName,
+            prepared.UsedCustomProviderKey,
+            Warnings(prepared)
+        )
         {
             GenerateId = _provider.Options.GenerateId,
             MarkCodeExecutionDynamic = prepared.MarkCodeExecutionDynamic,
@@ -576,17 +699,37 @@ public class AnthropicLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public virtual async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public virtual async Task<LanguageModelStreamResult> DoStreamAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var prepared = Prepare(options, true);
         var body = prepared.Body.ToJsonString();
-        var headers = await CreateHeadersAsync(prepared, options, body, cancellationToken).ConfigureAwait(false);
-        var sse = await _provider.Http.OpenSseResponseAsync(_provider.RequestUri(ModelId, true), body, headers, cancellationToken).ConfigureAwait(false);
+        var headers = await CreateHeadersAsync(prepared, options, body, cancellationToken)
+            .ConfigureAwait(false);
+        var sse = await _provider
+            .Http.OpenSseResponseAsync(
+                _provider.RequestUri(ModelId, true),
+                body,
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         try
         {
             // The first chunk needs to be pulled immediately to check if it is an error.
-            var events = await ThrowIfFirstChunkIsErrorAsync(sse, _provider.RequestUri(ModelId, true), prepared.Body, cancellationToken).ConfigureAwait(false);
-            return sse.ToStreamResult(StreamAsync(options, prepared, events, cancellationToken), body);
+            var events = await ThrowIfFirstChunkIsErrorAsync(
+                    sse,
+                    _provider.RequestUri(ModelId, true),
+                    prepared.Body,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+            return sse.ToStreamResult(
+                StreamAsync(options, prepared, events, cancellationToken),
+                body
+            );
         }
         catch
         {
@@ -604,7 +747,8 @@ public class AnthropicLanguageModel : ILanguageModel
         ProviderSseResponse sse,
         Uri url,
         JsonObject requestBodyValues,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var read = new List<string>();
         var enumerator = sse.Events.GetAsyncEnumerator(cancellationToken);
@@ -624,7 +768,11 @@ public class AnthropicLanguageModel : ILanguageModel
                     break;
                 }
 
-                var type = node?["type"] is JsonValue typeValue && typeValue.TryGetValue<string>(out var text) ? text : null;
+                var type =
+                    node?["type"] is JsonValue typeValue
+                    && typeValue.TryGetValue<string>(out var text)
+                        ? text
+                        : null;
                 if (type == "ping")
                 {
                     continue;
@@ -633,10 +781,25 @@ public class AnthropicLanguageModel : ILanguageModel
                 if (type == "error")
                 {
                     var error = node!["error"] as JsonObject ?? new JsonObject();
-                    var errorType = error["type"] is JsonValue kind && kind.TryGetValue<string>(out var kindText) ? kindText : null;
-                    var message = error["message"] is JsonValue messageValue && messageValue.TryGetValue<string>(out var messageText) ? messageText : "Unknown provider error.";
+                    var errorType =
+                        error["type"] is JsonValue kind
+                        && kind.TryGetValue<string>(out var kindText)
+                            ? kindText
+                            : null;
+                    var message =
+                        error["message"] is JsonValue messageValue
+                        && messageValue.TryGetValue<string>(out var messageText)
+                            ? messageText
+                            : "Unknown provider error.";
                     var statusCode = AnthropicStreamError.StatusCode(errorType) ?? 500;
-                    throw ProviderHttp.MapStatusWithHeaders(statusCode, message, error.ToJsonString(), sse.Headers, url.ToString(), requestBodyValues);
+                    throw ProviderHttp.MapStatusWithHeaders(
+                        statusCode,
+                        message,
+                        error.ToJsonString(),
+                        sse.Headers,
+                        url.ToString(),
+                        requestBodyValues
+                    );
                 }
 
                 break;
@@ -651,7 +814,10 @@ public class AnthropicLanguageModel : ILanguageModel
         return Replay(read, enumerator);
     }
 
-    private static async IAsyncEnumerable<string> Replay(List<string> read, IAsyncEnumerator<string> source)
+    private static async IAsyncEnumerable<string> Replay(
+        List<string> read,
+        IAsyncEnumerator<string> source
+    )
     {
         try
         {
@@ -675,10 +841,17 @@ public class AnthropicLanguageModel : ILanguageModel
         LanguageModelCallOptions options,
         AnthropicPreparedRequest prepared,
         IAsyncEnumerable<string> events,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         yield return new StreamStartStreamPart(Warnings(prepared));
-        var reader = new AnthropicStream(options.IncludeRawChunks, prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey, prepared.ToolNames)
+        var reader = new AnthropicStream(
+            options.IncludeRawChunks,
+            prepared.UsesJsonResponseTool,
+            prepared.ProviderOptionsName,
+            prepared.UsedCustomProviderKey,
+            prepared.ToolNames
+        )
         {
             MarkCodeExecutionDynamic = prepared.MarkCodeExecutionDynamic,
             PreparedTools = prepared.PreparedTools,
@@ -699,9 +872,16 @@ public class AnthropicLanguageModel : ILanguageModel
         }
     }
 
-    private async Task<Dictionary<string, string?>> CreateHeadersAsync(AnthropicPreparedRequest prepared, LanguageModelCallOptions options, string body, CancellationToken cancellationToken)
+    private async Task<Dictionary<string, string?>> CreateHeadersAsync(
+        AnthropicPreparedRequest prepared,
+        LanguageModelCallOptions options,
+        string body,
+        CancellationToken cancellationToken
+    )
     {
-        var headers = await _provider.CreateHeadersAsync(prepared.Betas, options.Headers, body, cancellationToken).ConfigureAwait(false);
+        var headers = await _provider
+            .CreateHeadersAsync(prepared.Betas, options.Headers, body, cancellationToken)
+            .ConfigureAwait(false);
         var transform = _provider.Options.TransformRequestHeaders;
         return transform == null ? headers : transform(headers, options.ProviderOptions);
     }
@@ -710,7 +890,10 @@ public class AnthropicLanguageModel : ILanguageModel
     /// Lets a compatible provider rewrite the call options before the request is built.
     /// Warnings added to <paramref name="warnings"/> are reported after the request's own warnings.
     /// </summary>
-    protected virtual LanguageModelCallOptions PrepareCallOptions(LanguageModelCallOptions options, IList<AnthropicWarning> warnings)
+    protected virtual LanguageModelCallOptions PrepareCallOptions(
+        LanguageModelCallOptions options,
+        IList<AnthropicWarning> warnings
+    )
     {
         return options;
     }
@@ -725,7 +908,8 @@ public class AnthropicLanguageModel : ILanguageModel
             Provider,
             _provider.SupportsNativeStructuredOutputFor(ModelId),
             _provider.SupportsStrictTools,
-            _settings);
+            _settings
+        );
         var transformed = _provider.TransformRequestBody(prepared.Body, prepared.Betas);
         if (ReferenceEquals(transformed, prepared.Body) && callWarnings.Count == 0)
         {
@@ -744,7 +928,8 @@ public class AnthropicLanguageModel : ILanguageModel
             prepared.MarkCodeExecutionDynamic,
             prepared.PreparedTools,
             prepared.ComputerToolsetName,
-            prepared.IncludePings)
+            prepared.IncludePings
+        )
         {
             ToolNames = prepared.ToolNames,
         };
@@ -777,8 +962,12 @@ public sealed class AnthropicAwsProvider : AnthropicProvider
         else
         {
             var trimmed = Options.BaseUrl.Trim().TrimEnd('/');
-            ExplicitBaseUrl = !trimmed.Equals("https://api.anthropic.com", StringComparison.OrdinalIgnoreCase)
-                && !trimmed.Equals("https://api.anthropic.com/v1", StringComparison.OrdinalIgnoreCase);
+            ExplicitBaseUrl =
+                !trimmed.Equals("https://api.anthropic.com", StringComparison.OrdinalIgnoreCase)
+                && !trimmed.Equals(
+                    "https://api.anthropic.com/v1",
+                    StringComparison.OrdinalIgnoreCase
+                );
         }
     }
 
@@ -803,9 +992,14 @@ public sealed class AnthropicAwsProvider : AnthropicProvider
     }
 
     /// <summary>Creates a provider.</summary>
-    public static new AnthropicAwsProvider Create(AnthropicOptions? options = null, HttpMessageHandler? handler = null)
+    public static new AnthropicAwsProvider Create(
+        AnthropicOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new AnthropicAwsProvider(client, options);
     }
 }
@@ -814,20 +1008,30 @@ public sealed class AnthropicAwsProvider : AnthropicProvider
 public static class AnthropicServiceCollectionExtensions
 {
     /// <summary>Adds <see cref="AnthropicProvider"/>.</summary>
-    public static IServiceCollection AddAnthropic(this IServiceCollection services, Action<AnthropicOptions>? configure = null)
+    public static IServiceCollection AddAnthropic(
+        this IServiceCollection services,
+        Action<AnthropicOptions>? configure = null
+    )
     {
         services.AddHttpClient(AnthropicProvider.ProviderName);
         services.AddSingleton(sp =>
         {
             var options = new AnthropicOptions();
             configure?.Invoke(options);
-            return new AnthropicProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(AnthropicProvider.ProviderName), options);
+            return new AnthropicProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(AnthropicProvider.ProviderName),
+                options
+            );
         });
         return services;
     }
 
     /// <summary>Adds <see cref="AnthropicAwsProvider"/>.</summary>
-    public static IServiceCollection AddAnthropicAws(this IServiceCollection services, Action<AnthropicOptions>? configure = null)
+    public static IServiceCollection AddAnthropicAws(
+        this IServiceCollection services,
+        Action<AnthropicOptions>? configure = null
+    )
     {
         services.AddHttpClient("anthropic-aws");
         services.AddSingleton(sp =>
@@ -838,7 +1042,10 @@ public static class AnthropicServiceCollectionExtensions
                 ApiKeyEnvironmentVariable = "ANTHROPIC_AWS_API_KEY",
             };
             configure?.Invoke(options);
-            return new AnthropicAwsProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient("anthropic-aws"), options);
+            return new AnthropicAwsProvider(
+                sp.GetRequiredService<IHttpClientFactory>().CreateClient("anthropic-aws"),
+                options
+            );
         });
         return services;
     }

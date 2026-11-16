@@ -28,8 +28,21 @@ internal static class PerplexityAgent
 
     private static readonly string[] Recency = { "hour", "day", "week", "month", "year" };
     private static readonly string[] ContextSizes = { "low", "medium", "high" };
-    private static readonly string[] BuiltinSkills = { "office", "office/docx", "office/pdf", "office/pptx", "office/xlsx" };
-    private static readonly string[] HandledTypes = { "message", "search_results", "fetch_url_results", "function_call" };
+    private static readonly string[] BuiltinSkills =
+    {
+        "office",
+        "office/docx",
+        "office/pdf",
+        "office/pptx",
+        "office/xlsx",
+    };
+    private static readonly string[] HandledTypes =
+    {
+        "message",
+        "search_results",
+        "fetch_url_results",
+        "function_call",
+    };
 
     public static PerplexityModelSelection GetModelSelection(string modelId)
     {
@@ -64,7 +77,11 @@ internal static class PerplexityAgent
         }
 
         var mappingWarnings = new List<ModelWarning>();
-        var effort = ReasoningMap.MapReasoningToProviderEffort(reasoning, EffortMap, mappingWarnings);
+        var effort = ReasoningMap.MapReasoningToProviderEffort(
+            reasoning,
+            EffortMap,
+            mappingWarnings
+        );
         foreach (var warning in mappingWarnings.OfType<CompatibilityWarning>())
         {
             warnings.Add(new CallWarning(warning.Type, warning.Feature, warning.Details));
@@ -96,7 +113,11 @@ internal static class PerplexityAgent
                     RequireInteger(property, minimum: 1, "max_steps must be a positive integer.");
                     break;
                 case "max_tool_calls":
-                    RequireInteger(property, minimum: 0, "max_tool_calls must be a non-negative integer.");
+                    RequireInteger(
+                        property,
+                        minimum: 0,
+                        "max_tool_calls must be a non-negative integer."
+                    );
                     break;
                 case "store":
                     RequireBool(property);
@@ -122,27 +143,37 @@ internal static class PerplexityAgent
             return false;
         }
 
-        if (!TryRequiredString(root, "id", out var id)
+        if (
+            !TryRequiredString(root, "id", out var id)
             || !TryRequiredString(root, "model", out var model)
             || !TryRequiredString(root, "status", out var status)
-            || !TryUnix(root, "created_at", out var createdAt))
+            || !TryUnix(root, "created_at", out var createdAt)
+        )
         {
             return false;
         }
 
-        if (!root.TryGetProperty("object", out var objectName)
+        if (
+            !root.TryGetProperty("object", out var objectName)
             || objectName.ValueKind != JsonValueKind.String
-            || !string.Equals(objectName.GetString(), "response", StringComparison.Ordinal))
+            || !string.Equals(objectName.GetString(), "response", StringComparison.Ordinal)
+        )
         {
             return false;
         }
 
-        if (!root.TryGetProperty("output", out var output) || output.ValueKind != JsonValueKind.Array)
+        if (
+            !root.TryGetProperty("output", out var output)
+            || output.ValueKind != JsonValueKind.Array
+        )
         {
             return false;
         }
 
-        if (!TryNullishObject(root, "incomplete_details", out var incomplete, out var incompleteOk) || !incompleteOk)
+        if (
+            !TryNullishObject(root, "incomplete_details", out var incomplete, out var incompleteOk)
+            || !incompleteOk
+        )
         {
             return false;
         }
@@ -210,12 +241,16 @@ internal static class PerplexityAgent
     public static bool TryReadChunk(JsonElement root, out AgentChunk chunk)
     {
         chunk = new AgentChunk();
-        if (root.ValueKind != JsonValueKind.Object || !TryRequiredString(root, "type", out var type))
+        if (
+            root.ValueKind != JsonValueKind.Object
+            || !TryRequiredString(root, "type", out var type)
+        )
         {
             return false;
         }
 
-        if (!TryNullishNumber(root, "sequence_number", out var sequence)
+        if (
+            !TryNullishNumber(root, "sequence_number", out var sequence)
             || !TryNullishNumber(root, "output_index", out var outputIndex)
             || !TryNullishNumber(root, "content_index", out var contentIndex)
             || !TryNullishString(root, "item_id", out var itemId)
@@ -223,13 +258,17 @@ internal static class PerplexityAgent
             || !TryNullishString(root, "text", out var text)
             || !TryNullishString(root, "thought", out var thought)
             || !TryNullishStringArray(root, "queries")
-            || !TryNullishStringArray(root, "urls"))
+            || !TryNullishStringArray(root, "urls")
+        )
         {
             return false;
         }
 
         AgentResponse? response = null;
-        if (root.TryGetProperty("response", out var responseElement) && responseElement.ValueKind != JsonValueKind.Null)
+        if (
+            root.TryGetProperty("response", out var responseElement)
+            && responseElement.ValueKind != JsonValueKind.Null
+        )
         {
             if (!TryReadResponse(responseElement, out var parsedResponse))
             {
@@ -240,7 +279,10 @@ internal static class PerplexityAgent
         }
 
         AgentItem? item = null;
-        if (root.TryGetProperty("item", out var itemElement) && itemElement.ValueKind != JsonValueKind.Null)
+        if (
+            root.TryGetProperty("item", out var itemElement)
+            && itemElement.ValueKind != JsonValueKind.Null
+        )
         {
             if (!TryReadItem(itemElement, out var parsedItem))
             {
@@ -250,7 +292,10 @@ internal static class PerplexityAgent
             item = parsedItem;
         }
 
-        if (!TryNullableSearchResults(root, "results", out var results) || !TryNullableFetchedContents(root, "contents", out var contents))
+        if (
+            !TryNullableSearchResults(root, "results", out var results)
+            || !TryNullableFetchedContents(root, "contents", out var contents)
+        )
         {
             return false;
         }
@@ -258,10 +303,12 @@ internal static class PerplexityAgent
         string? errorMessage = null;
         if (root.TryGetProperty("error", out var error) && error.ValueKind != JsonValueKind.Null)
         {
-            if (error.ValueKind != JsonValueKind.Object
+            if (
+                error.ValueKind != JsonValueKind.Object
                 || !TryRequiredString(error, "message", out var message)
                 || !TryNullishString(error, "code", out _)
-                || !TryNullishString(error, "type", out _))
+                || !TryNullishString(error, "type", out _)
+            )
             {
                 return false;
             }
@@ -298,39 +345,69 @@ internal static class PerplexityAgent
         var input = ReadInt(element, "input_tokens");
         var output = ReadInt(element, "output_tokens");
         int? total = null;
-        if (element.TryGetProperty("total_tokens", out var totalElement) && totalElement.ValueKind == JsonValueKind.Number)
+        if (
+            element.TryGetProperty("total_tokens", out var totalElement)
+            && totalElement.ValueKind == JsonValueKind.Number
+        )
         {
             total = ReadIntValue(totalElement);
         }
         var cacheRead = 0;
         var cacheWrite = 0;
         var reasoning = 0;
-        if (element.TryGetProperty("input_tokens_details", out var inputDetails) && inputDetails.ValueKind == JsonValueKind.Object)
+        if (
+            element.TryGetProperty("input_tokens_details", out var inputDetails)
+            && inputDetails.ValueKind == JsonValueKind.Object
+        )
         {
-            if (inputDetails.TryGetProperty("cache_read_input_tokens", out var cacheReadElement) && cacheReadElement.ValueKind == JsonValueKind.Number)
+            if (
+                inputDetails.TryGetProperty("cache_read_input_tokens", out var cacheReadElement)
+                && cacheReadElement.ValueKind == JsonValueKind.Number
+            )
             {
                 cacheRead = ReadIntValue(cacheReadElement);
             }
-            else if (inputDetails.TryGetProperty("cached_tokens", out var cached) && cached.ValueKind == JsonValueKind.Number)
+            else if (
+                inputDetails.TryGetProperty("cached_tokens", out var cached)
+                && cached.ValueKind == JsonValueKind.Number
+            )
             {
                 cacheRead = ReadIntValue(cached);
             }
 
-            if (inputDetails.TryGetProperty("cache_creation_input_tokens", out var cacheWriteElement) && cacheWriteElement.ValueKind == JsonValueKind.Number)
+            if (
+                inputDetails.TryGetProperty(
+                    "cache_creation_input_tokens",
+                    out var cacheWriteElement
+                )
+                && cacheWriteElement.ValueKind == JsonValueKind.Number
+            )
             {
                 cacheWrite = ReadIntValue(cacheWriteElement);
             }
         }
 
-        if (element.TryGetProperty("output_tokens_details", out var outputDetails)
+        if (
+            element.TryGetProperty("output_tokens_details", out var outputDetails)
             && outputDetails.ValueKind == JsonValueKind.Object
             && outputDetails.TryGetProperty("reasoning_tokens", out var reasoningElement)
-            && reasoningElement.ValueKind == JsonValueKind.Number)
+            && reasoningElement.ValueKind == JsonValueKind.Number
+        )
         {
             reasoning = ReadIntValue(reasoningElement);
         }
 
-        return new LanguageModelUsage(input, output, total, cacheRead, cacheWrite, reasoning, element.Clone(), input - cacheRead - cacheWrite, output - reasoning);
+        return new LanguageModelUsage(
+            input,
+            output,
+            total,
+            cacheRead,
+            cacheWrite,
+            reasoning,
+            element.Clone(),
+            input - cacheRead - cacheWrite,
+            output - reasoning
+        );
     }
 
     public static JsonElement ProviderMetadata(JsonElement? usage)
@@ -363,21 +440,32 @@ internal static class PerplexityAgent
         {
             ["snippet"] = result.Snippet is null ? JsonNull() : JsonValue.Create(result.Snippet),
         };
-        return new GeneratedSource(generateId(), result.Url, result.Title, ToElement(new JsonObject { ["perplexity"] = perplexity }));
+        return new GeneratedSource(
+            generateId(),
+            result.Url,
+            result.Title,
+            ToElement(new JsonObject { ["perplexity"] = perplexity })
+        );
     }
 
-    public static GeneratedSource CreateAnnotationSource(string url, string? title, Func<string> generateId)
+    public static GeneratedSource CreateAnnotationSource(
+        string url,
+        string? title,
+        Func<string> generateId
+    )
     {
         return new GeneratedSource(generateId(), url, title);
     }
 
     public static bool HasSearchResultId(GeneratedSource? source)
     {
-        if (source?.ProviderMetadata is not { } metadata
+        if (
+            source?.ProviderMetadata is not { } metadata
             || metadata.ValueKind != JsonValueKind.Object
             || !metadata.TryGetProperty("perplexity", out var perplexity)
             || perplexity.ValueKind != JsonValueKind.Object
-            || !perplexity.TryGetProperty("resultId", out var resultId))
+            || !perplexity.TryGetProperty("resultId", out var resultId)
+        )
         {
             return false;
         }
@@ -401,12 +489,14 @@ internal static class PerplexityAgent
 
     public static string? ThoughtSignature(JsonElement? metadata)
     {
-        if (metadata is not { } element
+        if (
+            metadata is not { } element
             || element.ValueKind != JsonValueKind.Object
             || !element.TryGetProperty("perplexity", out var perplexity)
             || perplexity.ValueKind != JsonValueKind.Object
             || !perplexity.TryGetProperty("thoughtSignature", out var signature)
-            || signature.ValueKind != JsonValueKind.String)
+            || signature.ValueKind != JsonValueKind.String
+        )
         {
             return null;
         }
@@ -414,7 +504,12 @@ internal static class PerplexityAgent
         return signature.GetString();
     }
 
-    public static FinishReason MapPerplexityFinishReason(string? status, string? incompleteReason, bool hasFunctionCall, out string? raw)
+    public static FinishReason MapPerplexityFinishReason(
+        string? status,
+        string? incompleteReason,
+        bool hasFunctionCall,
+        out string? raw
+    )
     {
         raw = incompleteReason ?? status;
         if (string.Equals(incompleteReason, "max_output_tokens", StringComparison.Ordinal))
@@ -442,7 +537,12 @@ internal static class PerplexityAgent
 
     public static string TextId(string? itemId, int? outputIndex, int? contentIndex)
     {
-        var id = itemId ?? (outputIndex.HasValue ? outputIndex.Value.ToString(CultureInfo.InvariantCulture) : "text");
+        var id = itemId
+            ?? (
+                outputIndex.HasValue
+                    ? outputIndex.Value.ToString(CultureInfo.InvariantCulture)
+                    : "text"
+            );
         if (!contentIndex.HasValue || contentIndex.Value == 0)
         {
             return id;
@@ -453,7 +553,8 @@ internal static class PerplexityAgent
 
     public static bool StartsWithOrdinal(string value, string prefix)
     {
-        return value.Length >= prefix.Length && string.CompareOrdinal(value, 0, prefix, 0, prefix.Length) == 0;
+        return value.Length >= prefix.Length
+            && string.CompareOrdinal(value, 0, prefix, 0, prefix.Length) == 0;
     }
 
     private static JsonElement SearchMetadata(AgentSearchResult result)
@@ -463,7 +564,9 @@ internal static class PerplexityAgent
             ["resultId"] = result.IdElement ?? JsonNull(),
             ["snippet"] = result.Snippet is null ? JsonNull() : JsonValue.Create(result.Snippet),
             ["date"] = result.Date is null ? JsonNull() : JsonValue.Create(result.Date),
-            ["lastUpdated"] = result.LastUpdated is null ? JsonNull() : JsonValue.Create(result.LastUpdated),
+            ["lastUpdated"] = result.LastUpdated is null
+                ? JsonNull()
+                : JsonValue.Create(result.LastUpdated),
             ["source"] = result.Source is null ? JsonNull() : JsonValue.Create(result.Source),
         };
         return ToElement(new JsonObject { ["perplexity"] = perplexity });
@@ -471,10 +574,12 @@ internal static class PerplexityAgent
 
     private static JsonNode SearchQueryCount(JsonElement? usage)
     {
-        if (usage is not { } element
+        if (
+            usage is not { } element
             || element.ValueKind != JsonValueKind.Object
             || !element.TryGetProperty("tool_calls_details", out var details)
-            || details.ValueKind != JsonValueKind.Object)
+            || details.ValueKind != JsonValueKind.Object
+        )
         {
             return JsonNull();
         }
@@ -482,10 +587,12 @@ internal static class PerplexityAgent
         var total = 0;
         foreach (var tool in details.EnumerateObject())
         {
-            if (tool.Name.IndexOf("search", StringComparison.Ordinal) < 0
+            if (
+                tool.Name.IndexOf("search", StringComparison.Ordinal) < 0
                 || tool.Value.ValueKind != JsonValueKind.Object
                 || !tool.Value.TryGetProperty("invocation", out var invocation)
-                || invocation.ValueKind != JsonValueKind.Number)
+                || invocation.ValueKind != JsonValueKind.Number
+            )
             {
                 continue;
             }
@@ -498,10 +605,12 @@ internal static class PerplexityAgent
 
     private static JsonNode CostNode(JsonElement? usage)
     {
-        if (usage is not { } element
+        if (
+            usage is not { } element
             || element.ValueKind != JsonValueKind.Object
             || !element.TryGetProperty("cost", out var cost)
-            || cost.ValueKind != JsonValueKind.Object)
+            || cost.ValueKind != JsonValueKind.Object
+        )
         {
             return JsonNull();
         }
@@ -521,10 +630,12 @@ internal static class PerplexityAgent
 
     private static JsonNode ToolCallsNode(JsonElement? usage)
     {
-        if (usage is not { } element
+        if (
+            usage is not { } element
             || element.ValueKind != JsonValueKind.Object
             || !element.TryGetProperty("tool_calls_details", out var details)
-            || details.ValueKind != JsonValueKind.Object)
+            || details.ValueKind != JsonValueKind.Object
+        )
         {
             return JsonNull();
         }
@@ -533,9 +644,11 @@ internal static class PerplexityAgent
         foreach (var tool in details.EnumerateObject())
         {
             JsonNode invocation = JsonNull();
-            if (tool.Value.ValueKind == JsonValueKind.Object
+            if (
+                tool.Value.ValueKind == JsonValueKind.Object
                 && tool.Value.TryGetProperty("invocation", out var value)
-                && value.ValueKind == JsonValueKind.Number)
+                && value.ValueKind == JsonValueKind.Number
+            )
             {
                 invocation = JsonNode.Parse(value.GetRawText())!;
             }
@@ -549,7 +662,10 @@ internal static class PerplexityAgent
     private static bool TryReadItem(JsonElement element, out AgentItem? item)
     {
         item = null;
-        if (element.ValueKind != JsonValueKind.Object || !TryRequiredString(element, "type", out var type))
+        if (
+            element.ValueKind != JsonValueKind.Object
+            || !TryRequiredString(element, "type", out var type)
+        )
         {
             return false;
         }
@@ -576,12 +692,20 @@ internal static class PerplexityAgent
     private static bool TryReadMessage(JsonElement element, out AgentItem? item)
     {
         item = null;
-        if (!TryNullishString(element, "id", out var id) || !TryNullishContent(element, out var content))
+        if (
+            !TryNullishString(element, "id", out var id)
+            || !TryNullishContent(element, out var content)
+        )
         {
             return false;
         }
 
-        item = new AgentItem { Type = "message", Id = id, Content = content };
+        item = new AgentItem
+        {
+            Type = "message",
+            Id = id,
+            Content = content,
+        };
         return true;
     }
 
@@ -612,11 +736,13 @@ internal static class PerplexityAgent
     private static bool TryReadFunctionCall(JsonElement element, out AgentItem? item)
     {
         item = null;
-        if (!TryNullishString(element, "id", out var id)
+        if (
+            !TryNullishString(element, "id", out var id)
             || !TryNullishString(element, "call_id", out var callId)
             || !TryNullishString(element, "name", out var name)
             || !TryNullishString(element, "arguments", out var arguments)
-            || !TryNullishString(element, "thought_signature", out var signature))
+            || !TryNullishString(element, "thought_signature", out var signature)
+        )
         {
             return false;
         }
@@ -636,7 +762,10 @@ internal static class PerplexityAgent
     private static bool TryNullishContent(JsonElement element, out List<AgentContentPart> content)
     {
         content = new List<AgentContentPart>();
-        if (!element.TryGetProperty("content", out var value) || value.ValueKind == JsonValueKind.Null)
+        if (
+            !element.TryGetProperty("content", out var value)
+            || value.ValueKind == JsonValueKind.Null
+        )
         {
             return true;
         }
@@ -648,7 +777,11 @@ internal static class PerplexityAgent
 
         foreach (var part in value.EnumerateArray())
         {
-            if (part.ValueKind != JsonValueKind.Object || !TryRequiredString(part, "type", out var type) || !TryOptionalString(part, "text", out var text))
+            if (
+                part.ValueKind != JsonValueKind.Object
+                || !TryRequiredString(part, "type", out var type)
+                || !TryOptionalString(part, "text", out var text)
+            )
             {
                 return false;
             }
@@ -658,16 +791,29 @@ internal static class PerplexityAgent
                 return false;
             }
 
-            content.Add(new AgentContentPart { Type = type, Text = text, Annotations = annotations });
+            content.Add(
+                new AgentContentPart
+                {
+                    Type = type,
+                    Text = text,
+                    Annotations = annotations,
+                }
+            );
         }
 
         return true;
     }
 
-    private static bool TryNullishAnnotations(JsonElement element, out List<AgentAnnotation> annotations)
+    private static bool TryNullishAnnotations(
+        JsonElement element,
+        out List<AgentAnnotation> annotations
+    )
     {
         annotations = new List<AgentAnnotation>();
-        if (!element.TryGetProperty("annotations", out var value) || value.ValueKind == JsonValueKind.Null)
+        if (
+            !element.TryGetProperty("annotations", out var value)
+            || value.ValueKind == JsonValueKind.Null
+        )
         {
             return true;
         }
@@ -679,7 +825,11 @@ internal static class PerplexityAgent
 
         foreach (var annotation in value.EnumerateArray())
         {
-            if (annotation.ValueKind != JsonValueKind.Object || !TryOptionalString(annotation, "url", out var url) || !TryOptionalString(annotation, "title", out var title))
+            if (
+                annotation.ValueKind != JsonValueKind.Object
+                || !TryOptionalString(annotation, "url", out var url)
+                || !TryOptionalString(annotation, "title", out var title)
+            )
             {
                 return false;
             }
@@ -690,7 +840,11 @@ internal static class PerplexityAgent
         return true;
     }
 
-    private static bool TryNullishSearchResults(JsonElement element, string name, out List<AgentSearchResult> results)
+    private static bool TryNullishSearchResults(
+        JsonElement element,
+        string name,
+        out List<AgentSearchResult> results
+    )
     {
         results = new List<AgentSearchResult>();
         if (!element.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null)
@@ -701,7 +855,11 @@ internal static class PerplexityAgent
         return TrySearchArray(value, results);
     }
 
-    private static bool TryNullableSearchResults(JsonElement element, string name, out List<AgentSearchResult>? results)
+    private static bool TryNullableSearchResults(
+        JsonElement element,
+        string name,
+        out List<AgentSearchResult>? results
+    )
     {
         results = null;
         if (!element.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null)
@@ -742,20 +900,25 @@ internal static class PerplexityAgent
     private static bool TrySearchResult(JsonElement element, out AgentSearchResult? result)
     {
         result = null;
-        if (element.ValueKind != JsonValueKind.Object
+        if (
+            element.ValueKind != JsonValueKind.Object
             || !TryRequiredString(element, "title", out var title)
             || !TryRequiredString(element, "url", out var url)
             || !TryOptionalString(element, "snippet", out var snippet)
             || !TryOptionalString(element, "source", out var source)
             || !TryNullishString(element, "date", out var date)
             || !TryNullishString(element, "last_updated", out var lastUpdated)
-            || !TryOptionalNumber(element, "id", out var id))
+            || !TryOptionalNumber(element, "id", out var id)
+        )
         {
             return false;
         }
 
         JsonNode? idElement = null;
-        if (element.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.Number)
+        if (
+            element.TryGetProperty("id", out var idValue)
+            && idValue.ValueKind == JsonValueKind.Number
+        )
         {
             idElement = JsonNode.Parse(idValue.GetRawText());
         }
@@ -774,7 +937,11 @@ internal static class PerplexityAgent
         return true;
     }
 
-    private static bool TryNullishFetched(JsonElement element, string name, out List<AgentFetched> contents)
+    private static bool TryNullishFetched(
+        JsonElement element,
+        string name,
+        out List<AgentFetched> contents
+    )
     {
         contents = new List<AgentFetched>();
         if (!element.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null)
@@ -785,7 +952,11 @@ internal static class PerplexityAgent
         return TryFetchedArray(value, contents);
     }
 
-    private static bool TryNullableFetchedContents(JsonElement element, string name, out List<AgentFetched>? contents)
+    private static bool TryNullableFetchedContents(
+        JsonElement element,
+        string name,
+        out List<AgentFetched>? contents
+    )
     {
         contents = null;
         if (!element.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null)
@@ -812,15 +983,24 @@ internal static class PerplexityAgent
 
         foreach (var item in value.EnumerateArray())
         {
-            if (item.ValueKind != JsonValueKind.Object
+            if (
+                item.ValueKind != JsonValueKind.Object
                 || !TryRequiredString(item, "title", out var title)
                 || !TryRequiredString(item, "url", out var url)
-                || !TryOptionalString(item, "snippet", out var snippet))
+                || !TryOptionalString(item, "snippet", out var snippet)
+            )
             {
                 return false;
             }
 
-            contents.Add(new AgentFetched { Title = title, Url = url, Snippet = snippet });
+            contents.Add(
+                new AgentFetched
+                {
+                    Title = title,
+                    Url = url,
+                    Snippet = snippet,
+                }
+            );
         }
 
         return true;
@@ -834,7 +1014,8 @@ internal static class PerplexityAgent
             return true;
         }
 
-        if (value.ValueKind != JsonValueKind.Object
+        if (
+            value.ValueKind != JsonValueKind.Object
             || !IsNumber(value, "input_tokens")
             || !IsNumber(value, "output_tokens")
             || !IsNumber(value, "total_tokens")
@@ -845,7 +1026,8 @@ internal static class PerplexityAgent
             || !TryNullishObject(value, "cost", out _, out var costOk)
             || !costOk
             || !TryNullishObject(value, "tool_calls_details", out _, out var toolsOk)
-            || !toolsOk)
+            || !toolsOk
+        )
         {
             return false;
         }
@@ -854,11 +1036,19 @@ internal static class PerplexityAgent
         return true;
     }
 
-    private static bool TryNullishObject(JsonElement element, string name, out JsonElement? value, out bool ok)
+    private static bool TryNullishObject(
+        JsonElement element,
+        string name,
+        out JsonElement? value,
+        out bool ok
+    )
     {
         value = null;
         ok = true;
-        if (!element.TryGetProperty(name, out var property) || property.ValueKind == JsonValueKind.Null)
+        if (
+            !element.TryGetProperty(name, out var property)
+            || property.ValueKind == JsonValueKind.Null
+        )
         {
             return true;
         }
@@ -876,7 +1066,10 @@ internal static class PerplexityAgent
     private static bool TryRequiredString(JsonElement element, string name, out string value)
     {
         value = string.Empty;
-        if (!element.TryGetProperty(name, out var property) || property.ValueKind != JsonValueKind.String)
+        if (
+            !element.TryGetProperty(name, out var property)
+            || property.ValueKind != JsonValueKind.String
+        )
         {
             return false;
         }
@@ -905,7 +1098,10 @@ internal static class PerplexityAgent
     private static bool TryNullishString(JsonElement element, string name, out string? value)
     {
         value = null;
-        if (!element.TryGetProperty(name, out var property) || property.ValueKind == JsonValueKind.Null)
+        if (
+            !element.TryGetProperty(name, out var property)
+            || property.ValueKind == JsonValueKind.Null
+        )
         {
             return true;
         }
@@ -939,7 +1135,10 @@ internal static class PerplexityAgent
     private static bool TryNullishNumber(JsonElement element, string name, out double? value)
     {
         value = null;
-        if (!element.TryGetProperty(name, out var property) || property.ValueKind == JsonValueKind.Null)
+        if (
+            !element.TryGetProperty(name, out var property)
+            || property.ValueKind == JsonValueKind.Null
+        )
         {
             return true;
         }
@@ -955,7 +1154,10 @@ internal static class PerplexityAgent
 
     private static bool TryNullishStringArray(JsonElement element, string name)
     {
-        if (!element.TryGetProperty(name, out var property) || property.ValueKind == JsonValueKind.Null)
+        if (
+            !element.TryGetProperty(name, out var property)
+            || property.ValueKind == JsonValueKind.Null
+        )
         {
             return true;
         }
@@ -979,7 +1181,10 @@ internal static class PerplexityAgent
     private static bool TryUnix(JsonElement element, string name, out long seconds)
     {
         seconds = 0;
-        if (!element.TryGetProperty(name, out var property) || property.ValueKind != JsonValueKind.Number)
+        if (
+            !element.TryGetProperty(name, out var property)
+            || property.ValueKind != JsonValueKind.Number
+        )
         {
             return false;
         }
@@ -995,7 +1200,8 @@ internal static class PerplexityAgent
 
     private static bool IsNumber(JsonElement element, string name)
     {
-        return element.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.Number;
+        return element.TryGetProperty(name, out var property)
+            && property.ValueKind == JsonValueKind.Number;
     }
 
     private static int ReadInt(JsonElement element, string name)
@@ -1028,7 +1234,9 @@ internal static class PerplexityAgent
     {
         if (value.ValueKind != JsonValueKind.Object)
         {
-            throw new AiSdkException("Invalid perplexity provider option: reasoning must be an object.");
+            throw new AiSdkException(
+                "Invalid perplexity provider option: reasoning must be an object."
+            );
         }
 
         if (!value.TryGetProperty("effort", out var effort))
@@ -1038,7 +1246,9 @@ internal static class PerplexityAgent
 
         if (effort.ValueKind != JsonValueKind.String || !Contains(Efforts, effort.GetString()))
         {
-            throw new AiSdkException("Invalid perplexity provider option: reasoning.effort is not supported.");
+            throw new AiSdkException(
+                "Invalid perplexity provider option: reasoning.effort is not supported."
+            );
         }
     }
 
@@ -1051,9 +1261,14 @@ internal static class PerplexityAgent
 
         foreach (var tool in value.EnumerateArray())
         {
-            if (tool.ValueKind != JsonValueKind.Object || !TryRequiredString(tool, "type", out var type))
+            if (
+                tool.ValueKind != JsonValueKind.Object
+                || !TryRequiredString(tool, "type", out var type)
+            )
             {
-                throw new AiSdkException("Invalid perplexity provider option: each native tool needs a type.");
+                throw new AiSdkException(
+                    "Invalid perplexity provider option: each native tool needs a type."
+                );
             }
 
             switch (type)
@@ -1077,7 +1292,11 @@ internal static class PerplexityAgent
                     RequirePresentString(tool, "server_label");
                     break;
                 default:
-                    throw new AiSdkException("Invalid perplexity provider option: unsupported native tool '" + type + "'.");
+                    throw new AiSdkException(
+                        "Invalid perplexity provider option: unsupported native tool '"
+                            + type
+                            + "'."
+                    );
             }
         }
     }
@@ -1088,16 +1307,26 @@ internal static class PerplexityAgent
         RequireOptionalNumber(tool, "max_tokens_per_page");
         if (tool.TryGetProperty("max_results", out var maxResults))
         {
-            if (maxResults.ValueKind != JsonValueKind.Number || !maxResults.TryGetInt32(out var count) || count <= 0)
+            if (
+                maxResults.ValueKind != JsonValueKind.Number
+                || !maxResults.TryGetInt32(out var count)
+                || count <= 0
+            )
             {
-                throw new AiSdkException("Invalid perplexity provider option: max_results must be a positive integer.");
+                throw new AiSdkException(
+                    "Invalid perplexity provider option: max_results must be a positive integer."
+                );
             }
         }
 
-        if (tool.TryGetProperty("search_context_size", out var size)
-            && (size.ValueKind != JsonValueKind.String || !Contains(ContextSizes, size.GetString())))
+        if (
+            tool.TryGetProperty("search_context_size", out var size)
+            && (size.ValueKind != JsonValueKind.String || !Contains(ContextSizes, size.GetString()))
+        )
         {
-            throw new AiSdkException("Invalid perplexity provider option: search_context_size is not supported.");
+            throw new AiSdkException(
+                "Invalid perplexity provider option: search_context_size is not supported."
+            );
         }
 
         if (!tool.TryGetProperty("filters", out var filters))
@@ -1107,13 +1336,21 @@ internal static class PerplexityAgent
 
         if (filters.ValueKind != JsonValueKind.Object)
         {
-            throw new AiSdkException("Invalid perplexity provider option: web_search filters must be an object.");
+            throw new AiSdkException(
+                "Invalid perplexity provider option: web_search filters must be an object."
+            );
         }
 
-        if (filters.TryGetProperty("search_recency_filter", out var recency)
-            && (recency.ValueKind != JsonValueKind.String || !Contains(Recency, recency.GetString())))
+        if (
+            filters.TryGetProperty("search_recency_filter", out var recency)
+            && (
+                recency.ValueKind != JsonValueKind.String || !Contains(Recency, recency.GetString())
+            )
+        )
         {
-            throw new AiSdkException("Invalid perplexity provider option: search_recency_filter is not supported.");
+            throw new AiSdkException(
+                "Invalid perplexity provider option: search_recency_filter is not supported."
+            );
         }
     }
 
@@ -1121,23 +1358,34 @@ internal static class PerplexityAgent
     {
         if (value.ValueKind != JsonValueKind.Array)
         {
-            throw new AiSdkException("Invalid perplexity provider option: skills must be an array.");
+            throw new AiSdkException(
+                "Invalid perplexity provider option: skills must be an array."
+            );
         }
 
         foreach (var skill in value.EnumerateArray())
         {
-            if (skill.ValueKind != JsonValueKind.Object || !TryRequiredString(skill, "type", out var type))
+            if (
+                skill.ValueKind != JsonValueKind.Object
+                || !TryRequiredString(skill, "type", out var type)
+            )
             {
-                throw new AiSdkException("Invalid perplexity provider option: each skill needs a type.");
+                throw new AiSdkException(
+                    "Invalid perplexity provider option: each skill needs a type."
+                );
             }
 
             if (string.Equals(type, "builtin", StringComparison.Ordinal))
             {
-                if (!skill.TryGetProperty("name", out var name)
+                if (
+                    !skill.TryGetProperty("name", out var name)
                     || name.ValueKind != JsonValueKind.String
-                    || !Contains(BuiltinSkills, name.GetString()))
+                    || !Contains(BuiltinSkills, name.GetString())
+                )
                 {
-                    throw new AiSdkException("Invalid perplexity provider option: builtin skill name is not supported.");
+                    throw new AiSdkException(
+                        "Invalid perplexity provider option: builtin skill name is not supported."
+                    );
                 }
             }
             else if (string.Equals(type, "inline", StringComparison.Ordinal))
@@ -1148,7 +1396,9 @@ internal static class PerplexityAgent
             }
             else
             {
-                throw new AiSdkException("Invalid perplexity provider option: unsupported skill type '" + type + "'.");
+                throw new AiSdkException(
+                    "Invalid perplexity provider option: unsupported skill type '" + type + "'."
+                );
             }
         }
     }
@@ -1157,15 +1407,22 @@ internal static class PerplexityAgent
     {
         if (property.Value.ValueKind != JsonValueKind.String)
         {
-            throw new AiSdkException("Invalid perplexity provider option: " + property.Name + " must be a string.");
+            throw new AiSdkException(
+                "Invalid perplexity provider option: " + property.Name + " must be a string."
+            );
         }
     }
 
     private static void RequireBool(JsonProperty property)
     {
-        if (property.Value.ValueKind != JsonValueKind.True && property.Value.ValueKind != JsonValueKind.False)
+        if (
+            property.Value.ValueKind != JsonValueKind.True
+            && property.Value.ValueKind != JsonValueKind.False
+        )
         {
-            throw new AiSdkException("Invalid perplexity provider option: " + property.Name + " must be a boolean.");
+            throw new AiSdkException(
+                "Invalid perplexity provider option: " + property.Name + " must be a boolean."
+            );
         }
     }
 
@@ -1173,21 +1430,33 @@ internal static class PerplexityAgent
     {
         if (property.Value.ValueKind != JsonValueKind.Array)
         {
-            throw new AiSdkException("Invalid perplexity provider option: " + property.Name + " must be an array of strings.");
+            throw new AiSdkException(
+                "Invalid perplexity provider option: "
+                    + property.Name
+                    + " must be an array of strings."
+            );
         }
 
         foreach (var item in property.Value.EnumerateArray())
         {
             if (item.ValueKind != JsonValueKind.String)
             {
-                throw new AiSdkException("Invalid perplexity provider option: " + property.Name + " must be an array of strings.");
+                throw new AiSdkException(
+                    "Invalid perplexity provider option: "
+                        + property.Name
+                        + " must be an array of strings."
+                );
             }
         }
     }
 
     private static void RequireInteger(JsonProperty property, int minimum, string message)
     {
-        if (property.Value.ValueKind != JsonValueKind.Number || !property.Value.TryGetInt32(out var number) || number < minimum)
+        if (
+            property.Value.ValueKind != JsonValueKind.Number
+            || !property.Value.TryGetInt32(out var number)
+            || number < minimum
+        )
         {
             throw new AiSdkException("Invalid perplexity provider option: " + message);
         }
@@ -1195,9 +1464,15 @@ internal static class PerplexityAgent
 
     private static void RequirePresentString(JsonElement element, string name)
     {
-        if (!element.TryGetProperty(name, out var value) || value.ValueKind != JsonValueKind.String || string.IsNullOrEmpty(value.GetString()))
+        if (
+            !element.TryGetProperty(name, out var value)
+            || value.ValueKind != JsonValueKind.String
+            || string.IsNullOrEmpty(value.GetString())
+        )
         {
-            throw new AiSdkException("Invalid perplexity provider option: " + name + " is required.");
+            throw new AiSdkException(
+                "Invalid perplexity provider option: " + name + " is required."
+            );
         }
     }
 
@@ -1205,7 +1480,9 @@ internal static class PerplexityAgent
     {
         if (element.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Number)
         {
-            throw new AiSdkException("Invalid perplexity provider option: " + name + " must be a number.");
+            throw new AiSdkException(
+                "Invalid perplexity provider option: " + name + " must be a number."
+            );
         }
     }
 

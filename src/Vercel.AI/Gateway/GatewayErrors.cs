@@ -12,13 +12,23 @@ namespace Vercel.AI.Gateway;
 public abstract class GatewayError : AiSdkException
 {
     /// <summary>Creates a Gateway error.</summary>
-    protected GatewayError(string message, int statusCode, Exception? cause, string? generationId, bool? isRetryable)
-        : base(generationId == null ? message : message + " [" + generationId + "]", cause ?? new Exception(message))
+    protected GatewayError(
+        string message,
+        int statusCode,
+        Exception? cause,
+        string? generationId,
+        bool? isRetryable
+    )
+        : base(
+            generationId == null ? message : message + " [" + generationId + "]",
+            cause ?? new Exception(message)
+        )
     {
         StatusCode = statusCode;
         Cause = cause;
         GenerationId = generationId;
-        IsRetryable = isRetryable ?? (statusCode == 408 || statusCode == 409 || statusCode == 429 || statusCode >= 500);
+        IsRetryable = isRetryable
+            ?? (statusCode == 408 || statusCode == 409 || statusCode == 429 || statusCode >= 500);
     }
 
     /// <summary>Gateway error type.</summary>
@@ -47,10 +57,13 @@ public abstract class GatewayError : AiSdkException
 public sealed class GatewayAuthenticationError : GatewayError
 {
     /// <summary>Creates an authentication error. The default message is <c>Authentication failed</c>.</summary>
-    public GatewayAuthenticationError(string? message = null, int statusCode = 401, Exception? cause = null, string? generationId = null)
-        : base(message ?? "Authentication failed", statusCode, cause, generationId, null)
-    {
-    }
+    public GatewayAuthenticationError(
+        string? message = null,
+        int statusCode = 401,
+        Exception? cause = null,
+        string? generationId = null
+    )
+        : base(message ?? "Authentication failed", statusCode, cause, generationId, null) { }
 
     /// <inheritdoc />
     public override string Type => "authentication_error";
@@ -62,20 +75,29 @@ public sealed class GatewayAuthenticationError : GatewayError
     }
 
     /// <summary>Builds the message for an API key, an OIDC token, or missing credentials.</summary>
-    public static GatewayAuthenticationError CreateContextual(bool apiKeyProvided, bool oidcTokenProvided, int statusCode = 401, Exception? cause = null, string? generationId = null)
+    public static GatewayAuthenticationError CreateContextual(
+        bool apiKeyProvided,
+        bool oidcTokenProvided,
+        int statusCode = 401,
+        Exception? cause = null,
+        string? generationId = null
+    )
     {
         string message;
         if (apiKeyProvided)
         {
-            message = "AI Gateway authentication failed: Invalid API key or token.\n\nCreate a new API key: https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%2Fapi-keys\n\nProvide an API key or Vercel access token via 'apiKey' option or 'AI_GATEWAY_API_KEY' environment variable.";
+            message =
+                "AI Gateway authentication failed: Invalid API key or token.\n\nCreate a new API key: https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%2Fapi-keys\n\nProvide an API key or Vercel access token via 'apiKey' option or 'AI_GATEWAY_API_KEY' environment variable.";
         }
         else if (oidcTokenProvided)
         {
-            message = "AI Gateway authentication failed: Invalid OIDC token.\n\nRun 'npx vercel link' to link your project, then 'vc env pull' to fetch the token.\n\nAlternatively, use an API key: https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%2Fapi-keys\nor pass a Vercel access token via the 'apiKey' option.";
+            message =
+                "AI Gateway authentication failed: Invalid OIDC token.\n\nRun 'npx vercel link' to link your project, then 'vc env pull' to fetch the token.\n\nAlternatively, use an API key: https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%2Fapi-keys\nor pass a Vercel access token via the 'apiKey' option.";
         }
         else
         {
-            message = "AI Gateway authentication failed: No authentication provided.\n\nOption 1 - API key:\nCreate an API key: https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%2Fapi-keys\nProvide via 'apiKey' option or 'AI_GATEWAY_API_KEY' environment variable.\n\nOption 2 - Vercel access token:\nPass a Vercel personal access token or Vercel app access token via the 'apiKey' option.\n\nOption 3 - OIDC token:\nRun 'npx vercel link' to link your project, then 'vc env pull' to fetch the token.";
+            message =
+                "AI Gateway authentication failed: No authentication provided.\n\nOption 1 - API key:\nCreate an API key: https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%2Fapi-keys\nProvide via 'apiKey' option or 'AI_GATEWAY_API_KEY' environment variable.\n\nOption 2 - Vercel access token:\nPass a Vercel personal access token or Vercel app access token via the 'apiKey' option.\n\nOption 3 - OIDC token:\nRun 'npx vercel link' to link your project, then 'vc env pull' to fetch the token.";
         }
 
         return new GatewayAuthenticationError(message, statusCode, cause, generationId);
@@ -86,10 +108,13 @@ public sealed class GatewayAuthenticationError : GatewayError
 public sealed class GatewayInvalidRequestError : GatewayError
 {
     /// <summary>Creates an invalid-request error.</summary>
-    public GatewayInvalidRequestError(string? message = null, int statusCode = 400, Exception? cause = null, string? generationId = null)
-        : base(message ?? "Invalid request", statusCode, cause, generationId, null)
-    {
-    }
+    public GatewayInvalidRequestError(
+        string? message = null,
+        int statusCode = 400,
+        Exception? cause = null,
+        string? generationId = null
+    )
+        : base(message ?? "Invalid request", statusCode, cause, generationId, null) { }
 
     /// <inheritdoc />
     public override string Type => "invalid_request_error";
@@ -105,10 +130,13 @@ public sealed class GatewayInvalidRequestError : GatewayError
 public sealed class GatewayRateLimitError : GatewayError
 {
     /// <summary>Creates a rate-limit error.</summary>
-    public GatewayRateLimitError(string? message = null, int statusCode = 429, Exception? cause = null, string? generationId = null)
-        : base(message ?? "Rate limit exceeded", statusCode, cause, generationId, null)
-    {
-    }
+    public GatewayRateLimitError(
+        string? message = null,
+        int statusCode = 429,
+        Exception? cause = null,
+        string? generationId = null
+    )
+        : base(message ?? "Rate limit exceeded", statusCode, cause, generationId, null) { }
 
     /// <inheritdoc />
     public override string Type => "rate_limit_exceeded";
@@ -124,7 +152,13 @@ public sealed class GatewayRateLimitError : GatewayError
 public sealed class GatewayModelNotFoundError : GatewayError
 {
     /// <summary>Creates a model-not-found error.</summary>
-    public GatewayModelNotFoundError(string? message = null, int statusCode = 404, string? modelId = null, Exception? cause = null, string? generationId = null)
+    public GatewayModelNotFoundError(
+        string? message = null,
+        int statusCode = 404,
+        string? modelId = null,
+        Exception? cause = null,
+        string? generationId = null
+    )
         : base(message ?? "Model not found", statusCode, cause, generationId, null)
     {
         ModelId = modelId;
@@ -147,10 +181,13 @@ public sealed class GatewayModelNotFoundError : GatewayError
 public sealed class GatewayNotFoundError : GatewayError
 {
     /// <summary>Creates a not-found error.</summary>
-    public GatewayNotFoundError(string? message = null, int statusCode = 404, Exception? cause = null, string? generationId = null)
-        : base(message ?? "Resource not found", statusCode, cause, generationId, null)
-    {
-    }
+    public GatewayNotFoundError(
+        string? message = null,
+        int statusCode = 404,
+        Exception? cause = null,
+        string? generationId = null
+    )
+        : base(message ?? "Resource not found", statusCode, cause, generationId, null) { }
 
     /// <inheritdoc />
     public override string Type => "not_found";
@@ -166,10 +203,13 @@ public sealed class GatewayNotFoundError : GatewayError
 public sealed class GatewayInternalServerError : GatewayError
 {
     /// <summary>Creates an internal-server error.</summary>
-    public GatewayInternalServerError(string? message = null, int statusCode = 500, Exception? cause = null, string? generationId = null)
-        : base(message ?? "Internal server error", statusCode, cause, generationId, null)
-    {
-    }
+    public GatewayInternalServerError(
+        string? message = null,
+        int statusCode = 500,
+        Exception? cause = null,
+        string? generationId = null
+    )
+        : base(message ?? "Internal server error", statusCode, cause, generationId, null) { }
 
     /// <inheritdoc />
     public override string Type => "internal_server_error";
@@ -185,10 +225,13 @@ public sealed class GatewayInternalServerError : GatewayError
 public sealed class GatewayFailedDependencyError : GatewayError
 {
     /// <summary>Creates a failed-dependency error.</summary>
-    public GatewayFailedDependencyError(string? message = null, int statusCode = 424, Exception? cause = null, string? generationId = null)
-        : base(message ?? "Failed dependency", statusCode, cause, generationId, null)
-    {
-    }
+    public GatewayFailedDependencyError(
+        string? message = null,
+        int statusCode = 424,
+        Exception? cause = null,
+        string? generationId = null
+    )
+        : base(message ?? "Failed dependency", statusCode, cause, generationId, null) { }
 
     /// <inheritdoc />
     public override string Type => "failed_dependency";
@@ -204,7 +247,13 @@ public sealed class GatewayFailedDependencyError : GatewayError
 public sealed class GatewayForbiddenError : GatewayError
 {
     /// <summary>Creates a forbidden error.</summary>
-    public GatewayForbiddenError(string? message = null, int statusCode = 403, Exception? cause = null, string? generationId = null, string? ruleId = null)
+    public GatewayForbiddenError(
+        string? message = null,
+        int statusCode = 403,
+        Exception? cause = null,
+        string? generationId = null,
+        string? ruleId = null
+    )
         : base(message ?? "Forbidden", statusCode, cause, generationId, null)
     {
         RuleId = ruleId;
@@ -227,8 +276,22 @@ public sealed class GatewayForbiddenError : GatewayError
 public sealed class GatewayResponseError : GatewayError
 {
     /// <summary>Creates a response error.</summary>
-    public GatewayResponseError(string? message = null, int statusCode = 502, JsonElement? response = null, string? validationError = null, Exception? cause = null, string? generationId = null, bool? isRetryable = null)
-        : base(message ?? "Invalid response from Gateway", statusCode, cause, generationId, isRetryable)
+    public GatewayResponseError(
+        string? message = null,
+        int statusCode = 502,
+        JsonElement? response = null,
+        string? validationError = null,
+        Exception? cause = null,
+        string? generationId = null,
+        bool? isRetryable = null
+    )
+        : base(
+            message ?? "Invalid response from Gateway",
+            statusCode,
+            cause,
+            generationId,
+            isRetryable
+        )
     {
         Response = response;
         ValidationError = validationError;
@@ -254,10 +317,13 @@ public sealed class GatewayResponseError : GatewayError
 public sealed class GatewayTimeoutError : GatewayError
 {
     /// <summary>Creates a timeout error.</summary>
-    public GatewayTimeoutError(string? message = null, int statusCode = 408, Exception? cause = null, string? generationId = null)
-        : base(message ?? "Request timed out", statusCode, cause, generationId, null)
-    {
-    }
+    public GatewayTimeoutError(
+        string? message = null,
+        int statusCode = 408,
+        Exception? cause = null,
+        string? generationId = null
+    )
+        : base(message ?? "Request timed out", statusCode, cause, generationId, null) { }
 
     /// <inheritdoc />
     public override string Type => "timeout_error";
@@ -269,9 +335,17 @@ public sealed class GatewayTimeoutError : GatewayError
     }
 
     /// <summary>Wraps a client timeout with the Gateway troubleshooting text.</summary>
-    public static GatewayTimeoutError Create(string originalMessage, Exception? cause = null, int statusCode = 408, string? generationId = null)
+    public static GatewayTimeoutError Create(
+        string originalMessage,
+        Exception? cause = null,
+        int statusCode = 408,
+        string? generationId = null
+    )
     {
-        var message = "Gateway request timed out: " + originalMessage + "\n\n    This is a client-side timeout. To resolve this, increase your timeout configuration: https://vercel.com/docs/ai-gateway/capabilities/video-generation#extending-timeouts-for-node.js";
+        var message =
+            "Gateway request timed out: "
+            + originalMessage
+            + "\n\n    This is a client-side timeout. To resolve this, increase your timeout configuration: https://vercel.com/docs/ai-gateway/capabilities/video-generation#extending-timeouts-for-node.js";
         return new GatewayTimeoutError(message, statusCode, cause, generationId);
     }
 }
@@ -279,7 +353,9 @@ public sealed class GatewayTimeoutError : GatewayError
 /// <summary>Parses Gateway auth headers and error bodies.</summary>
 public static class GatewayErrors
 {
-    private static readonly JsonElement EmptyObject = JsonSerializer.SerializeToElement(new Dictionary<string, object>());
+    private static readonly JsonElement EmptyObject = JsonSerializer.SerializeToElement(
+        new Dictionary<string, object>()
+    );
 
     /// <summary>Header that carries <c>api-key</c> or <c>oidc</c>.</summary>
     public const string AuthMethodHeader = "ai-gateway-auth-method";
@@ -290,12 +366,19 @@ public static class GatewayErrors
     /// <summary>Reads <see cref="AuthMethodHeader"/>. Any other value, including a different case, is ignored.</summary>
     public static string? ParseAuthMethod(IReadOnlyDictionary<string, string?>? headers)
     {
-        if (headers == null || !headers.TryGetValue(AuthMethodHeader, out var value) || string.IsNullOrWhiteSpace(value))
+        if (
+            headers == null
+            || !headers.TryGetValue(AuthMethodHeader, out var value)
+            || string.IsNullOrWhiteSpace(value)
+        )
         {
             return null;
         }
 
-        if (string.Equals(value, "api-key", StringComparison.Ordinal) || string.Equals(value, "oidc", StringComparison.Ordinal))
+        if (
+            string.Equals(value, "api-key", StringComparison.Ordinal)
+            || string.Equals(value, "oidc", StringComparison.Ordinal)
+        )
         {
             return value;
         }
@@ -326,8 +409,18 @@ public static class GatewayErrors
                 return GatewayTimeoutError.Create(api.Message, api);
             }
 
-            var retryable = api.IsRetryable && (api.StatusCode == null || api.StatusCode < 400) ? true : (bool?)null;
-            return Create(ExtractApiCallResponse(api), api.StatusCode ?? 500, authMethod, "Gateway request failed", api, retryable);
+            var retryable =
+                api.IsRetryable && (api.StatusCode == null || api.StatusCode < 400)
+                    ? true
+                    : (bool?)null;
+            return Create(
+                ExtractApiCallResponse(api),
+                api.StatusCode ?? 500,
+                authMethod,
+                "Gateway request failed",
+                api,
+                retryable
+            );
         }
 
         if (error is ApiException http)
@@ -335,7 +428,13 @@ public static class GatewayErrors
             return FromResponseBody(http.ResponseBody, http.StatusCode, authMethod, http);
         }
 
-        return Create(EmptyObject, 500, authMethod, error == null ? "Unknown Gateway error" : "Gateway request failed: " + error.Message, error);
+        return Create(
+            EmptyObject,
+            500,
+            authMethod,
+            error == null ? "Unknown Gateway error" : "Gateway request failed: " + error.Message,
+            error
+        );
     }
 
     /// <summary>
@@ -351,7 +450,9 @@ public static class GatewayErrors
 
         if (error.Data != null)
         {
-            return error.Data is JsonElement data ? data : JsonSerializer.SerializeToElement(error.Data);
+            return error.Data is JsonElement data
+                ? data
+                : JsonSerializer.SerializeToElement(error.Data);
         }
 
         if (error.ResponseBody == null)
@@ -370,29 +471,69 @@ public static class GatewayErrors
     }
 
     /// <summary>Maps a Gateway JSON body to a typed error. Invalid bodies become <see cref="GatewayResponseError"/>.</summary>
-    public static GatewayError Create(JsonElement response, int statusCode, string? authMethod = null, string defaultMessage = "Gateway request failed", Exception? cause = null, bool? isRetryable = null)
+    public static GatewayError Create(
+        JsonElement response,
+        int statusCode,
+        string? authMethod = null,
+        string defaultMessage = "Gateway request failed",
+        Exception? cause = null,
+        bool? isRetryable = null
+    )
     {
-        if (!TryRead(response, out var message, out var type, out var param, out var generationId, out var validationError))
+        if (
+            !TryRead(
+                response,
+                out var message,
+                out var type,
+                out var param,
+                out var generationId,
+                out var validationError
+            )
+        )
         {
             string? malformedGeneration = null;
-            if (response.ValueKind == JsonValueKind.Object && response.TryGetProperty("generationId", out var rawGeneration) && rawGeneration.ValueKind == JsonValueKind.String)
+            if (
+                response.ValueKind == JsonValueKind.Object
+                && response.TryGetProperty("generationId", out var rawGeneration)
+                && rawGeneration.ValueKind == JsonValueKind.String
+            )
             {
                 malformedGeneration = rawGeneration.GetString();
             }
 
-            return new GatewayResponseError("Invalid error response format: " + defaultMessage, statusCode, response.ValueKind == JsonValueKind.Undefined ? null : response.Clone(), validationError, cause, malformedGeneration, isRetryable);
+            return new GatewayResponseError(
+                "Invalid error response format: " + defaultMessage,
+                statusCode,
+                response.ValueKind == JsonValueKind.Undefined ? null : response.Clone(),
+                validationError,
+                cause,
+                malformedGeneration,
+                isRetryable
+            );
         }
 
         switch (type)
         {
             case "authentication_error":
-                return GatewayAuthenticationError.CreateContextual(apiKeyProvided: authMethod == "api-key", oidcTokenProvided: authMethod == "oidc", statusCode, cause, generationId);
+                return GatewayAuthenticationError.CreateContextual(
+                    apiKeyProvided: authMethod == "api-key",
+                    oidcTokenProvided: authMethod == "oidc",
+                    statusCode,
+                    cause,
+                    generationId
+                );
             case "invalid_request_error":
                 return new GatewayInvalidRequestError(message, statusCode, cause, generationId);
             case "rate_limit_exceeded":
                 return new GatewayRateLimitError(message, statusCode, cause, generationId);
             case "model_not_found":
-                return new GatewayModelNotFoundError(message, statusCode, ReadStringProperty(param, "modelId"), cause, generationId);
+                return new GatewayModelNotFoundError(
+                    message,
+                    statusCode,
+                    ReadStringProperty(param, "modelId"),
+                    cause,
+                    generationId
+                );
             case "not_found":
                 return new GatewayNotFoundError(message, statusCode, cause, generationId);
             case "internal_server_error":
@@ -400,44 +541,89 @@ public static class GatewayErrors
             case "failed_dependency":
                 return new GatewayFailedDependencyError(message, statusCode, cause, generationId);
             case "forbidden":
-                return new GatewayForbiddenError(message, statusCode, cause, generationId, ReadStringProperty(param, "ruleId"));
+                return new GatewayForbiddenError(
+                    message,
+                    statusCode,
+                    cause,
+                    generationId,
+                    ReadStringProperty(param, "ruleId")
+                );
             default:
                 return new GatewayInternalServerError(message, statusCode, cause, generationId);
         }
     }
 
     /// <summary>Maps an HTTP error body. Non-JSON bodies become <see cref="GatewayResponseError"/>.</summary>
-    public static GatewayError FromResponseBody(string? body, int statusCode, string? authMethod, Exception? cause)
+    public static GatewayError FromResponseBody(
+        string? body,
+        int statusCode,
+        string? authMethod,
+        Exception? cause
+    )
     {
         if (string.IsNullOrWhiteSpace(body))
         {
-            return new GatewayResponseError("Invalid error response format: Gateway request failed", statusCode, null, "Response body was empty.", cause, null);
+            return new GatewayResponseError(
+                "Invalid error response format: Gateway request failed",
+                statusCode,
+                null,
+                "Response body was empty.",
+                cause,
+                null
+            );
         }
 
         try
         {
             using var document = JsonDocument.Parse(body);
-            return Create(document.RootElement, statusCode, authMethod, "Gateway request failed", cause);
+            return Create(
+                document.RootElement,
+                statusCode,
+                authMethod,
+                "Gateway request failed",
+                cause
+            );
         }
         catch (JsonException exception)
         {
-            return new GatewayResponseError("Invalid error response format: Gateway request failed", statusCode, null, exception.Message, cause, null);
+            return new GatewayResponseError(
+                "Invalid error response format: Gateway request failed",
+                statusCode,
+                null,
+                exception.Message,
+                cause,
+                null
+            );
         }
     }
 
-    private static bool TryRead(JsonElement response, out string message, out string? type, out JsonElement param, out string? generationId, out string validationError)
+    private static bool TryRead(
+        JsonElement response,
+        out string message,
+        out string? type,
+        out JsonElement param,
+        out string? generationId,
+        out string validationError
+    )
     {
         message = string.Empty;
         type = null;
         param = default;
         generationId = null;
         validationError = "Gateway error response did not match the expected schema.";
-        if (response.ValueKind != JsonValueKind.Object || !response.TryGetProperty("error", out var error) || error.ValueKind != JsonValueKind.Object)
+        if (
+            response.ValueKind != JsonValueKind.Object
+            || !response.TryGetProperty("error", out var error)
+            || error.ValueKind != JsonValueKind.Object
+        )
         {
             return false;
         }
 
-        if (!error.TryGetProperty("message", out var messageElement) || messageElement.ValueKind != JsonValueKind.String)
+        if (
+            !error.TryGetProperty("message", out var messageElement)
+            || messageElement.ValueKind != JsonValueKind.String
+        )
         {
             return false;
         }
@@ -460,7 +646,10 @@ public static class GatewayErrors
             param = paramElement;
         }
 
-        if (response.TryGetProperty("generationId", out var generationElement) && generationElement.ValueKind == JsonValueKind.String)
+        if (
+            response.TryGetProperty("generationId", out var generationElement)
+            && generationElement.ValueKind == JsonValueKind.String
+        )
         {
             generationId = generationElement.GetString();
         }
@@ -478,7 +667,11 @@ public static class GatewayErrors
 
     private static string? ReadStringProperty(JsonElement element, string name)
     {
-        if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty(name, out var value) || value.ValueKind != JsonValueKind.String)
+        if (
+            element.ValueKind != JsonValueKind.Object
+            || !element.TryGetProperty(name, out var value)
+            || value.ValueKind != JsonValueKind.String
+        )
         {
             return null;
         }

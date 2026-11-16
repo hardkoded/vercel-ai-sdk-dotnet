@@ -10,7 +10,8 @@ namespace Vercel.AI.Tests;
 /// <summary>Upstream parity for speech translation.</summary>
 public sealed class TranslateTests
 {
-    private const string Prefix = "packages/ai/src/translate/stream-translate.test.ts::experimental_streamTranslate::";
+    private const string Prefix =
+        "packages/ai/src/translate/stream-translate.test.ts::experimental_streamTranslate::";
 
     [Fact]
     [UpstreamTest(Prefix + "should send args to doStream", Coverage = UpstreamCoverage.Covered)]
@@ -18,18 +19,20 @@ public sealed class TranslateTests
     {
         var audio = new AudioChunkStream();
         var model = new TranslateFake { Parts = Finish("hola", "hello") };
-        var result = StreamTranslate.Start(new StreamTranslateRequest
-        {
-            Model = model,
-            Audio = audio,
-            InputAudioFormat = "pcm16",
-            TargetLanguage = "es",
-            SourceLanguage = "en",
-            OutputAudioFormat = "mp3",
-            IncludeRawChunks = false,
-            ProviderOptions = OperationJson.Parse("{\"p\":true}"),
-            Headers = new Dictionary<string, string> { ["X-Test"] = "1" },
-        });
+        var result = StreamTranslate.Start(
+            new StreamTranslateRequest
+            {
+                Model = model,
+                Audio = audio,
+                InputAudioFormat = "pcm16",
+                TargetLanguage = "es",
+                SourceLanguage = "en",
+                OutputAudioFormat = "mp3",
+                IncludeRawChunks = false,
+                ProviderOptions = OperationJson.Parse("{\"p\":true}"),
+                Headers = new Dictionary<string, string> { ["X-Test"] = "1" },
+            }
+        );
         await model.Started.Task;
         Assert.Same(audio, model.Call!.Audio);
         Assert.Equal("pcm16", model.Call.InputAudioFormat.Type);
@@ -43,16 +46,31 @@ public sealed class TranslateTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should stream translation parts and resolve final metadata", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should stream translation parts and resolve final metadata",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Streams_translation_parts_and_resolves_metadata()
     {
         var model = new TranslateFake
         {
             Parts = new[]
             {
-                new ModelStreamPart { Type = "stream-start", Warnings = new[] { OperationWarning.Other("note") } },
+                new ModelStreamPart
+                {
+                    Type = "stream-start",
+                    Warnings = new[] { OperationWarning.Other("note") },
+                },
                 new ModelStreamPart { Type = "output-text-delta", Delta = "ho" },
-                new ModelStreamPart { Type = "finish", SourceText = "hello", OutputText = "hola", DurationInSeconds = 1.2, Usage = new OperationUsage(3, 2, 5), ProviderMetadata = OperationJson.Parse("{\"p\":true}") },
+                new ModelStreamPart
+                {
+                    Type = "finish",
+                    SourceText = "hello",
+                    OutputText = "hola",
+                    DurationInSeconds = 1.2,
+                    Usage = new OperationUsage(3, 2, 5),
+                    ProviderMetadata = OperationJson.Parse("{\"p\":true}"),
+                },
             },
         };
         var result = StreamTranslate.Start(Request(model));
@@ -67,11 +85,21 @@ public sealed class TranslateTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should pass raw chunks through when includeRawChunks is enabled", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should pass raw chunks through when includeRawChunks is enabled",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Passes_raw_chunks_when_requested()
     {
         var raw = OperationJson.Parse("{\"chunk\":1}");
-        var model = new TranslateFake { Parts = new[] { new ModelStreamPart { Type = "raw", Raw = raw }, new ModelStreamPart { Type = "finish", OutputText = "hola" } } };
+        var model = new TranslateFake
+        {
+            Parts = new[]
+            {
+                new ModelStreamPart { Type = "raw", Raw = raw },
+                new ModelStreamPart { Type = "finish", OutputText = "hola" },
+            },
+        };
         var request = Request(model);
         request.IncludeRawChunks = true;
         var result = StreamTranslate.Start(request);
@@ -82,53 +110,119 @@ public sealed class TranslateTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should reject final promises when no translation is returned", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should reject final promises when no translation is returned",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_when_no_translation_is_returned()
     {
-        var result = StreamTranslate.Start(Request(new TranslateFake { Parts = Finish(null, null) }));
-        await Assert.ThrowsAsync<NoTranslationGeneratedException>(async () => await Read(result.FullStream));
+        var result = StreamTranslate.Start(
+            Request(new TranslateFake { Parts = Finish(null, null) })
+        );
+        await Assert.ThrowsAsync<NoTranslationGeneratedException>(async () =>
+            await Read(result.FullStream)
+        );
         await Assert.ThrowsAsync<NoTranslationGeneratedException>(() => result.TranslationText);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should keep already-resolved promises resolved when the stream errors later", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should keep already-resolved promises resolved when the stream errors later",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Keeps_resolved_warnings_when_translation_fails()
     {
-        var result = StreamTranslate.Start(Request(new TranslateFake
-        {
-            Parts = new[] { new ModelStreamPart { Type = "stream-start", Warnings = new[] { OperationWarning.Other("test warning") } }, new ModelStreamPart { Type = "finish" } },
-        }));
-        await Assert.ThrowsAsync<NoTranslationGeneratedException>(async () => await Read(result.FullStream));
+        var result = StreamTranslate.Start(
+            Request(
+                new TranslateFake
+                {
+                    Parts = new[]
+                    {
+                        new ModelStreamPart
+                        {
+                            Type = "stream-start",
+                            Warnings = new[] { OperationWarning.Other("test warning") },
+                        },
+                        new ModelStreamPart { Type = "finish" },
+                    },
+                }
+            )
+        );
+        await Assert.ThrowsAsync<NoTranslationGeneratedException>(async () =>
+            await Read(result.FullStream)
+        );
         Assert.Equal("test warning", (await result.Warnings)[0].Message);
         await Assert.ThrowsAsync<NoTranslationGeneratedException>(() => result.TranslationText);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should cancel the audio stream when doStream rejects", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should cancel the audio stream when doStream rejects",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Cancels_audio_when_do_stream_rejects()
     {
         var audio = new AudioChunkStream();
-        var result = StreamTranslate.Start(Request(new TranslateFake { SetupError = new InvalidOperationException("authentication failed") }, audio));
-        await Assert.ThrowsAsync<InvalidOperationException>(async () => await Read(result.FullStream));
+        var result = StreamTranslate.Start(
+            Request(
+                new TranslateFake
+                {
+                    SetupError = new InvalidOperationException("authentication failed"),
+                },
+                audio
+            )
+        );
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await Read(result.FullStream)
+        );
         Assert.Equal("authentication failed", audio.CancelError!.Message);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should not interfere with a model-owned audio stream when the model stream errors mid-pipe", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "should not interfere with a model-owned audio stream when the model stream errors mid-pipe",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Leaves_a_locked_audio_stream_alone()
     {
         var audio = new AudioChunkStream();
-        var result = StreamTranslate.Start(Request(new TranslateFake { Parts = new[] { new ModelStreamPart { Type = "output-text-delta", Delta = "x" } }, Failure = new InvalidOperationException("mid"), LockAudio = true }, audio));
-        await Assert.ThrowsAsync<InvalidOperationException>(async () => await Read(result.FullStream));
+        var result = StreamTranslate.Start(
+            Request(
+                new TranslateFake
+                {
+                    Parts = new[]
+                    {
+                        new ModelStreamPart { Type = "output-text-delta", Delta = "x" },
+                    },
+                    Failure = new InvalidOperationException("mid"),
+                    LockAudio = true,
+                },
+                audio
+            )
+        );
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await Read(result.FullStream)
+        );
         Assert.True(audio.Locked);
         Assert.Null(audio.CancelError);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should cancel the model stream when fullStream is cancelled early", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should cancel the model stream when fullStream is cancelled early",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Cancels_the_model_stream_when_full_stream_is_cancelled()
     {
-        var model = new TranslateFake { Parts = new[] { new ModelStreamPart { Type = "output-text-delta", Delta = "x" } }, Completes = false };
+        var model = new TranslateFake
+        {
+            Parts = new[]
+            {
+                new ModelStreamPart { Type = "output-text-delta", Delta = "x" },
+            },
+            Completes = false,
+        };
         var result = StreamTranslate.Start(Request(model));
         await foreach (var part in result.FullStream)
         {
@@ -142,7 +236,10 @@ public sealed class TranslateTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should abort a still-pending doStream when fullStream is cancelled", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should abort a still-pending doStream when fullStream is cancelled",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Aborts_a_pending_do_stream()
     {
         var model = new TranslateFake { HoldSetup = true };
@@ -154,100 +251,207 @@ public sealed class TranslateTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should resolve the result promises without consuming fullStream", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should resolve the result promises without consuming fullStream",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Resolves_promises_without_full_stream()
     {
-        var result = StreamTranslate.Start(Request(new TranslateFake { Parts = Finish("hola", "hello") }));
+        var result = StreamTranslate.Start(
+            Request(new TranslateFake { Parts = Finish("hola", "hello") })
+        );
         Assert.Equal("hola", await result.TranslationText);
         Assert.Equal("hello", await result.SourceText);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should reject the result promises without consuming fullStream when no translation is produced", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "should reject the result promises without consuming fullStream when no translation is produced",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_promises_without_full_stream()
     {
-        var result = StreamTranslate.Start(Request(new TranslateFake { Parts = Finish(null, null) }));
+        var result = StreamTranslate.Start(
+            Request(new TranslateFake { Parts = Finish(null, null) })
+        );
         await Assert.ThrowsAsync<NoTranslationGeneratedException>(() => result.TranslationText);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should reject fullStream access after a result promise claimed the stream", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should reject fullStream access after a result promise claimed the stream",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_full_stream_after_a_result_promise()
     {
-        var result = StreamTranslate.Start(Request(new TranslateFake { Parts = Finish("hola", "hello") }));
+        var result = StreamTranslate.Start(
+            Request(new TranslateFake { Parts = Finish("hola", "hello") })
+        );
         Assert.Equal("hola", await result.TranslationText);
         var error = Assert.Throws<InvalidOperationException>(() => result.FullStream);
         Assert.Equal("fullStream cannot be accessed after a result promise.", error.Message);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should support iterating fullStream before awaiting promises", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should support iterating fullStream before awaiting promises",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Iterates_full_stream_before_promises()
     {
-        var result = StreamTranslate.Start(Request(new TranslateFake { Parts = new[] { new ModelStreamPart { Type = "output-text-delta", Delta = "ho" }, new ModelStreamPart { Type = "finish", OutputText = "hola", SourceText = "hello" } } }));
+        var result = StreamTranslate.Start(
+            Request(
+                new TranslateFake
+                {
+                    Parts = new[]
+                    {
+                        new ModelStreamPart { Type = "output-text-delta", Delta = "ho" },
+                        new ModelStreamPart
+                        {
+                            Type = "finish",
+                            OutputText = "hola",
+                            SourceText = "hello",
+                        },
+                    },
+                }
+            )
+        );
         Assert.Equal("ho", (await Read(result.FullStream))[0].Delta);
         Assert.Equal("hola", await result.TranslationText);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should resolve a result promise while fullStream is actively consumed", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should resolve a result promise while fullStream is actively consumed",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Resolves_translation_while_full_stream_is_consumed()
     {
-        var result = StreamTranslate.Start(Request(new TranslateFake { Parts = new[] { new ModelStreamPart { Type = "output-text-delta", Delta = "ho" }, new ModelStreamPart { Type = "finish", OutputText = "hola" } } }));
+        var result = StreamTranslate.Start(
+            Request(
+                new TranslateFake
+                {
+                    Parts = new[]
+                    {
+                        new ModelStreamPart { Type = "output-text-delta", Delta = "ho" },
+                        new ModelStreamPart { Type = "finish", OutputText = "hola" },
+                    },
+                }
+            )
+        );
         var reading = Read(result.FullStream);
         Assert.Equal("hola", await result.TranslationText);
         Assert.NotEmpty(await reading);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should reject a second fullStream access", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should reject a second fullStream access",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Rejects_a_second_full_stream_access()
     {
-        var result = StreamTranslate.Start(Request(new TranslateFake { Parts = Finish("hola", "hello"), Completes = false }));
+        var result = StreamTranslate.Start(
+            Request(new TranslateFake { Parts = Finish("hola", "hello"), Completes = false })
+        );
         _ = result.FullStream;
         var error = Assert.Throws<InvalidOperationException>(() => result.FullStream);
         Assert.Equal("fullStream can only be accessed once.", error.Message);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should succeed with an empty translationText for an audio-only stream", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should succeed with an empty translationText for an audio-only stream",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Succeeds_with_empty_text_when_audio_was_produced()
     {
-        var result = StreamTranslate.Start(Request(new TranslateFake
-        {
-            Parts = new[] { new ModelStreamPart { Type = "audio", Audio = new byte[] { 1, 2, 3 } }, new ModelStreamPart { Type = "finish", OutputText = string.Empty } },
-        }));
+        var result = StreamTranslate.Start(
+            Request(
+                new TranslateFake
+                {
+                    Parts = new[]
+                    {
+                        new ModelStreamPart { Type = "audio", Audio = new byte[] { 1, 2, 3 } },
+                        new ModelStreamPart { Type = "finish", OutputText = string.Empty },
+                    },
+                }
+            )
+        );
         var parts = await Read(result.FullStream);
         Assert.Equal("audio", parts[0].Type);
         Assert.Equal(string.Empty, await result.TranslationText);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should resolve sourceText to an empty string when only output text was produced", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should resolve sourceText to an empty string when only output text was produced",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Resolves_a_missing_source_text_to_empty()
     {
-        var result = StreamTranslate.Start(Request(new TranslateFake { Parts = new[] { new ModelStreamPart { Type = "finish", OutputText = "hola", SourceText = null } } }));
+        var result = StreamTranslate.Start(
+            Request(
+                new TranslateFake
+                {
+                    Parts = new[]
+                    {
+                        new ModelStreamPart
+                        {
+                            Type = "finish",
+                            OutputText = "hola",
+                            SourceText = null,
+                        },
+                    },
+                }
+            )
+        );
         Assert.Equal(string.Empty, await result.SourceText);
         Assert.Equal("hola", await result.TranslationText);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should pass error parts through on fullStream", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should pass error parts through on fullStream",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Passes_error_parts_through()
     {
         var failure = new InvalidOperationException("provider");
-        var result = StreamTranslate.Start(Request(new TranslateFake { Parts = new[] { new ModelStreamPart { Type = "error", Error = failure }, new ModelStreamPart { Type = "finish", OutputText = "hola" } } }));
+        var result = StreamTranslate.Start(
+            Request(
+                new TranslateFake
+                {
+                    Parts = new[]
+                    {
+                        new ModelStreamPart { Type = "error", Error = failure },
+                        new ModelStreamPart { Type = "finish", OutputText = "hola" },
+                    },
+                }
+            )
+        );
         var parts = await Read(result.FullStream);
         Assert.Same(failure, parts[0].Error);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should error the stream when the external abort signal fires mid-stream", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should error the stream when the external abort signal fires mid-stream",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Uses_the_abort_reason_when_the_token_fires()
     {
         using var source = new CancellationTokenSource();
         var reason = new InvalidOperationException("Cancelled");
-        var model = new TranslateFake { Parts = new[] { new ModelStreamPart { Type = "output-text-delta", Delta = "x" } }, Completes = false };
+        var model = new TranslateFake
+        {
+            Parts = new[]
+            {
+                new ModelStreamPart { Type = "output-text-delta", Delta = "x" },
+            },
+            Completes = false,
+        };
         var request = Request(model);
         request.CancellationToken = source.Token;
         request.AbortReason = reason;
@@ -255,19 +459,34 @@ public sealed class TranslateTests
         var stream = result.FullStream;
         await model.Started.Task;
         source.Cancel();
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Read(stream));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await Read(stream)
+        );
         Assert.Same(reason, error);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should throw when a string model cannot be resolved", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should throw when a string model cannot be resolved",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Throws_when_a_string_model_cannot_be_resolved()
     {
         var previous = SpeechTranslationModels.Default;
         SpeechTranslationModels.Default = null;
         try
         {
-            var error = Assert.Throws<InvalidOperationException>(() => StreamTranslate.Start(new StreamTranslateRequest { ModelId = "gpt-translate", Audio = new AudioChunkStream(), InputAudioFormat = "pcm16", TargetLanguage = "es" }));
+            var error = Assert.Throws<InvalidOperationException>(() =>
+                StreamTranslate.Start(
+                    new StreamTranslateRequest
+                    {
+                        ModelId = "gpt-translate",
+                        Audio = new AudioChunkStream(),
+                        InputAudioFormat = "pcm16",
+                        TargetLanguage = "es",
+                    }
+                )
+            );
             Assert.Equal(StreamTranslate.MissingProviderMessage, error.Message);
         }
         finally
@@ -278,10 +497,21 @@ public sealed class TranslateTests
 
     private static ModelStreamPart[] Finish(string? output, string? source)
     {
-        return new[] { new ModelStreamPart { Type = "finish", OutputText = output, SourceText = source } };
+        return new[]
+        {
+            new ModelStreamPart
+            {
+                Type = "finish",
+                OutputText = output,
+                SourceText = source,
+            },
+        };
     }
 
-    private static StreamTranslateRequest Request(TranslateFake model, AudioChunkStream? audio = null)
+    private static StreamTranslateRequest Request(
+        TranslateFake model,
+        AudioChunkStream? audio = null
+    )
     {
         return new StreamTranslateRequest
         {
@@ -329,9 +559,13 @@ public sealed class TranslateTests
 
         public TaskCompletionSource<bool> Started { get; } = new TaskCompletionSource<bool>();
 
-        public TaskCompletionSource<bool> SetupCancelled { get; } = new TaskCompletionSource<bool>();
+        public TaskCompletionSource<bool> SetupCancelled { get; } =
+            new TaskCompletionSource<bool>();
 
-        public async Task<TranslationStreamStart> DoStreamAsync(TranslationStreamCall call, CancellationToken cancellationToken)
+        public async Task<TranslationStreamStart> DoStreamAsync(
+            TranslationStreamCall call,
+            CancellationToken cancellationToken
+        )
         {
             Call = call;
             Started.TrySetResult(true);

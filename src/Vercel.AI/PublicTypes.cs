@@ -14,7 +14,13 @@ namespace Vercel.AI;
 public sealed class Tool
 {
     /// <summary>Creates a function tool.</summary>
-    public Tool(string name, string? description, JsonElement inputSchema, Func<JsonElement, CancellationToken, Task<string>>? execute, bool? strict = null)
+    public Tool(
+        string name,
+        string? description,
+        JsonElement inputSchema,
+        Func<JsonElement, CancellationToken, Task<string>>? execute,
+        bool? strict = null
+    )
     {
         Name = name ?? throw new ArgumentNullException(nameof(name));
         Description = description;
@@ -61,7 +67,11 @@ public sealed class Tool
     /// and <see cref="ExecuteWithOptions"/>. <c>streamText</c> emits each output as a preliminary tool result, and the last one is the final result.
     /// Maps to an async-iterable <c>execute</c>.
     /// </summary>
-    public Func<JsonElement, ToolExecutionOptions, IAsyncEnumerable<string>>? ExecuteStream { get; set; }
+    public Func<
+        JsonElement,
+        ToolExecutionOptions,
+        IAsyncEnumerable<string>
+    >? ExecuteStream { get; set; }
 
     /// <summary>
     /// Converts the JSON output of the tool into the result sent to the model. Null sends the output as it is.
@@ -80,7 +90,11 @@ public sealed class Tool
     /// Decides for each call, from its input, whether it needs approval. When it is set, it is used instead of
     /// <see cref="NeedsApproval"/>. Maps to the function form of <c>needsApproval</c>.
     /// </summary>
-    public Func<JsonElement, ToolNeedsApprovalOptions, Task<bool>>? NeedsApprovalFunction { get; set; }
+    public Func<
+        JsonElement,
+        ToolNeedsApprovalOptions,
+        Task<bool>
+    >? NeedsApprovalFunction { get; set; }
 
     /// <summary>
     /// Provider options of the tool, keyed by provider name, such as <c>{ "openai": { "omitFromRequestTools": true } }</c>.
@@ -121,13 +135,23 @@ public sealed class Tool
     /// Declares a provider-defined tool with an input schema. The input of a call the provider ran is parsed with the
     /// schema, so a property the schema does not declare is dropped, as a Zod object does. Maps to a provider tool's <c>inputSchema</c>.
     /// </summary>
-    public static Tool ProviderDefined(string id, string name, JsonElement args, JsonElement inputSchema)
+    public static Tool ProviderDefined(
+        string id,
+        string name,
+        JsonElement args,
+        JsonElement inputSchema
+    )
     {
         return new Tool(id, name, args.Clone(), inputSchema.Clone());
     }
 
     /// <summary>Creates a dynamic tool from a JSON schema string. Maps to <c>dynamicTool</c>.</summary>
-    public static Tool DynamicTool(string name, string? description, string jsonSchema, Func<JsonElement, CancellationToken, Task<string>>? execute)
+    public static Tool DynamicTool(
+        string name,
+        string? description,
+        string jsonSchema,
+        Func<JsonElement, CancellationToken, Task<string>>? execute
+    )
     {
         var tool = Function(name, description, jsonSchema, execute);
         tool.IsDynamic = true;
@@ -135,9 +159,17 @@ public sealed class Tool
     }
 
     /// <summary>Creates a tool from a JSON schema string.</summary>
-    public static Tool Function(string name, string? description, string jsonSchema, Func<JsonElement, CancellationToken, Task<string>>? execute, bool? strict = null)
+    public static Tool Function(
+        string name,
+        string? description,
+        string jsonSchema,
+        Func<JsonElement, CancellationToken, Task<string>>? execute,
+        bool? strict = null
+    )
     {
-        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(jsonSchema) ? "{}" : jsonSchema);
+        using var document = JsonDocument.Parse(
+            string.IsNullOrWhiteSpace(jsonSchema) ? "{}" : jsonSchema
+        );
         return new Tool(name, description, document.RootElement.Clone(), execute, strict);
     }
 }
@@ -146,7 +178,11 @@ public sealed class Tool
 public sealed class ToolExecutionOptions
 {
     /// <summary>Creates the options.</summary>
-    public ToolExecutionOptions(string toolCallId, IReadOnlyList<ModelMessage> messages, CancellationToken abortSignal)
+    public ToolExecutionOptions(
+        string toolCallId,
+        IReadOnlyList<ModelMessage> messages,
+        CancellationToken abortSignal
+    )
     {
         ToolCallId = toolCallId;
         Messages = messages ?? Array.Empty<ModelMessage>();
@@ -242,10 +278,12 @@ public sealed class StepResult
         StepPerformance? performance = null,
         LanguageModelRequestMetadata? request = null,
         StepResponse? response = null,
-        string? rawFinishReason = null)
+        string? rawFinishReason = null
+    )
     {
         Request = request ?? LanguageModelRequestMetadata.Empty;
-        Response = response ?? new StepResponse(string.Empty, DateTimeOffset.MinValue, modelId ?? string.Empty);
+        Response = response
+            ?? new StepResponse(string.Empty, DateTimeOffset.MinValue, modelId ?? string.Empty);
         RawFinishReason = rawFinishReason;
         Provider = provider;
         ModelId = modelId;
@@ -374,7 +412,10 @@ public static class StopWhen
     }
 
     /// <summary>Returns true when any stop condition returns true. Maps to <c>isStopConditionMet</c>.</summary>
-    public static async Task<bool> IsStopConditionMet(IReadOnlyList<Func<IReadOnlyList<StepResult>, Task<bool>>> stopConditions, IReadOnlyList<StepResult> steps)
+    public static async Task<bool> IsStopConditionMet(
+        IReadOnlyList<Func<IReadOnlyList<StepResult>, Task<bool>>> stopConditions,
+        IReadOnlyList<StepResult> steps
+    )
     {
         if (stopConditions is null)
         {
@@ -436,13 +477,20 @@ public static class StopWhen
             }
 
             var last = steps[steps.Count - 1];
-            LogWarnings.Log(new LogWarningsOptions(
-                new ModelWarning[]
-                {
-                    new OtherWarning("The tool loop stopped because it reached the default stopWhen condition, isStepCount(" + _stepCount + "). To allow more steps, set stopWhen to isStepCount(...) with a higher limit or provide a custom stop condition. Learn more: https://ai-sdk.dev/docs/agents/loop-control"),
-                },
-                last.Provider,
-                last.ModelId));
+            LogWarnings.Log(
+                new LogWarningsOptions(
+                    new ModelWarning[]
+                    {
+                        new OtherWarning(
+                            "The tool loop stopped because it reached the default stopWhen condition, isStepCount("
+                                + _stepCount
+                                + "). To allow more steps, set stopWhen to isStepCount(...) with a higher limit or provide a custom stop condition. Learn more: https://ai-sdk.dev/docs/agents/loop-control"
+                        ),
+                    },
+                    last.Provider,
+                    last.ModelId
+                )
+            );
             return true;
         }
     }
@@ -499,13 +547,21 @@ public abstract class OutputSpec
     }
 
     /// <summary>JSON object output validated against <paramref name="schema"/>.</summary>
-    public static OutputSpec Object(JsonElement schema, string? name = null, string? description = null)
+    public static OutputSpec Object(
+        JsonElement schema,
+        string? name = null,
+        string? description = null
+    )
     {
         return new ObjectOutput(schema, name, description);
     }
 
     /// <summary>JSON object output validated against a schema string.</summary>
-    public static OutputSpec Object(string jsonSchema, string? name = null, string? description = null)
+    public static OutputSpec Object(
+        string jsonSchema,
+        string? name = null,
+        string? description = null
+    )
     {
         using var document = JsonDocument.Parse(jsonSchema);
         return new ObjectOutput(document.RootElement.Clone(), name, description);
@@ -556,7 +612,12 @@ public sealed class PrepareStepContext
     }
 
     /// <summary>Creates context with the prompt and model the step is about to use.</summary>
-    public PrepareStepContext(int stepNumber, IReadOnlyList<StepResult> steps, IReadOnlyList<ModelMessage> messages, ILanguageModel model)
+    public PrepareStepContext(
+        int stepNumber,
+        IReadOnlyList<StepResult> steps,
+        IReadOnlyList<ModelMessage> messages,
+        ILanguageModel model
+    )
         : this(stepNumber, steps)
     {
         Messages = messages;
@@ -572,7 +633,8 @@ public sealed class PrepareStepContext
         Instructions? instructions,
         Instructions? initialInstructions,
         IReadOnlyList<ModelMessage> initialMessages,
-        IReadOnlyList<ModelMessage> responseMessages)
+        IReadOnlyList<ModelMessage> responseMessages
+    )
         : this(stepNumber, steps, messages, model)
     {
         Instructions = instructions;
@@ -653,7 +715,10 @@ public class GenerateTextOptions
     /// for one throws a <see cref="DownloadException"/>.
     /// Maps to <c>experimental_download</c>.
     /// </summary>
-    public Func<IReadOnlyList<Vercel.AI.Util.DownloadRequestItem>, Task<IReadOnlyList<Vercel.AI.Util.DownloadResult>>>? ExperimentalDownload { get; set; }
+    public Func<
+        IReadOnlyList<Vercel.AI.Util.DownloadRequestItem>,
+        Task<IReadOnlyList<Vercel.AI.Util.DownloadResult>>
+    >? ExperimentalDownload { get; set; }
 
     /// <summary>Gateway model id such as <c>openai/gpt-4.1-mini</c>.</summary>
     public string? ModelId { get; set; }
@@ -758,13 +823,21 @@ public class GenerateTextOptions
     /// Called after each provider model call returns, before tools run and before <see cref="OnStepEnd"/>.
     /// Maps to <c>onLanguageModelCallEnd</c>.
     /// </summary>
-    public Func<LanguageModelCallEndEvent, CancellationToken, Task>? OnLanguageModelCallEnd { get; set; }
+    public Func<
+        LanguageModelCallEndEvent,
+        CancellationToken,
+        Task
+    >? OnLanguageModelCallEnd { get; set; }
 
     /// <summary>
     /// Called before a tool's <c>Execute</c> runs. It is not called for a tool without <c>Execute</c>, a provider-executed call,
     /// or a call that is invalid or not approved. An exception it throws is ignored. Maps to <c>onToolExecutionStart</c>.
     /// </summary>
-    public Func<ToolExecutionStartEvent, CancellationToken, Task>? OnToolExecutionStart { get; set; }
+    public Func<
+        ToolExecutionStartEvent,
+        CancellationToken,
+        Task
+    >? OnToolExecutionStart { get; set; }
 
     /// <summary>
     /// Called after a tool's <c>Execute</c> returns or throws, before <see cref="OnStepEnd"/>. An exception it throws is ignored.
@@ -823,7 +896,10 @@ public class GenerateTextOptions
     /// Refines the parsed input of a tool call, keyed by tool name, before the tool runs and before outputs and callbacks see it.
     /// A tool without an entry keeps its parsed input. Maps to <c>experimental_refineToolInput</c>.
     /// </summary>
-    public IReadOnlyDictionary<string, Func<JsonElement, CancellationToken, Task<JsonElement>>>? RefineToolInput { get; set; }
+    public IReadOnlyDictionary<
+        string,
+        Func<JsonElement, CancellationToken, Task<JsonElement>>
+    >? RefineToolInput { get; set; }
 }
 
 /// <summary>Passed to <see cref="GenerateTextOptions.OnLanguageModelCallEnd"/> after a provider model call returns.</summary>
@@ -838,7 +914,8 @@ public sealed class LanguageModelCallEndEvent
         IReadOnlyList<GeneratedContent> content,
         string? responseId,
         JsonElement? providerMetadata,
-        TimeSpan responseTime)
+        TimeSpan responseTime
+    )
     {
         Provider = provider;
         ModelId = modelId;
@@ -896,7 +973,12 @@ public class ToolExecutionStartEvent
 public sealed class ToolExecutionEndEvent : ToolExecutionStartEvent
 {
     /// <summary>Creates an event.</summary>
-    public ToolExecutionEndEvent(GeneratedToolCall toolCall, IReadOnlyList<ModelMessage> messages, ExecutedTool toolOutput, TimeSpan toolExecutionTime)
+    public ToolExecutionEndEvent(
+        GeneratedToolCall toolCall,
+        IReadOnlyList<ModelMessage> messages,
+        ExecutedTool toolOutput,
+        TimeSpan toolExecutionTime
+    )
         : base(toolCall, messages)
     {
         ToolOutput = toolOutput;
@@ -959,7 +1041,8 @@ public sealed class GenerateTextResult
         LanguageModelUsage usage,
         JsonElement? output,
         IReadOnlyList<GeneratedSource> sources,
-        JsonElement? providerMetadata = null)
+        JsonElement? providerMetadata = null
+    )
     {
         Text = text ?? string.Empty;
         ReasoningText = reasoningText;
@@ -1054,7 +1137,8 @@ public sealed class GenerateTextResult
     /// Messages this call added to the conversation: the assistant message of each step, with any tool approval request, and the
     /// tool results the client ran. Pass them back with the caller's approval responses to continue the conversation.
     /// </summary>
-    public IReadOnlyList<ModelMessage> ResponseMessages { get; init; } = Array.Empty<ModelMessage>();
+    public IReadOnlyList<ModelMessage> ResponseMessages { get; init; } =
+        Array.Empty<ModelMessage>();
 }
 
 /// <summary>A part of the <c>streamText</c> full stream.</summary>
@@ -1075,9 +1159,7 @@ public sealed class StartPart : TextStreamPart
 {
     /// <summary>Creates a start part.</summary>
     public StartPart()
-        : base("start")
-    {
-    }
+        : base("start") { }
 }
 
 /// <summary>Metadata for a language model request. Maps to <c>LanguageModelRequestMetadata</c>.</summary>
@@ -1100,7 +1182,12 @@ public sealed class LanguageModelRequestMetadata
 public class LanguageModelResponseMetadata
 {
     /// <summary>Creates response metadata.</summary>
-    public LanguageModelResponseMetadata(string id, DateTimeOffset timestamp, string modelId, IReadOnlyDictionary<string, string>? headers = null)
+    public LanguageModelResponseMetadata(
+        string id,
+        DateTimeOffset timestamp,
+        string modelId,
+        IReadOnlyDictionary<string, string>? headers = null
+    )
     {
         Id = id;
         Timestamp = timestamp;
@@ -1133,7 +1220,8 @@ public sealed class StepResponse : LanguageModelResponseMetadata
         string modelId,
         IReadOnlyDictionary<string, string>? headers = null,
         IReadOnlyList<ModelMessage>? messages = null,
-        JsonElement? body = null)
+        JsonElement? body = null
+    )
         : base(id, timestamp, modelId, headers)
     {
         Messages = messages ?? Array.Empty<ModelMessage>();
@@ -1176,7 +1264,10 @@ public sealed class StreamTextInclude
 public sealed class StartStepPart : TextStreamPart
 {
     /// <summary>Creates a start-step part.</summary>
-    public StartStepPart(IReadOnlyList<CallWarning>? warnings = null, LanguageModelRequestMetadata? request = null)
+    public StartStepPart(
+        IReadOnlyList<CallWarning>? warnings = null,
+        LanguageModelRequestMetadata? request = null
+    )
         : base("start-step")
     {
         Warnings = warnings ?? Array.Empty<CallWarning>();
@@ -1212,9 +1303,7 @@ public sealed class PingPart : TextStreamPart
 {
     /// <summary>Creates a ping part.</summary>
     public PingPart()
-        : base("ping")
-    {
-    }
+        : base("ping") { }
 }
 
 /// <summary>A text block started. Maps to <c>text-start</c>.</summary>
@@ -1261,7 +1350,11 @@ public sealed class TextDeltaPart : TextStreamPart
 public sealed class TextEndPart : TextStreamPart
 {
     /// <summary>Creates a text end.</summary>
-    public TextEndPart(string id, IReadOnlyList<Citation>? citations = null, JsonElement? providerMetadata = null)
+    public TextEndPart(
+        string id,
+        IReadOnlyList<Citation>? citations = null,
+        JsonElement? providerMetadata = null
+    )
         : base("text-end")
     {
         Id = id;
@@ -1359,7 +1452,8 @@ public sealed class ToolApprovalRequestPart : TextStreamPart
         : base("tool-approval-request")
     {
         ApprovalId = request.ApprovalId;
-        ToolCall = request.ToolCall ?? throw new ArgumentException("The request has no tool call.", nameof(request));
+        ToolCall = request.ToolCall
+            ?? throw new ArgumentException("The request has no tool call.", nameof(request));
         Reason = request.Reason;
         IsAutomatic = request.IsAutomatic;
         Signature = request.Signature;
@@ -1481,7 +1575,15 @@ public sealed class SteeringMessagePart : TextStreamPart
 public sealed class ToolInputStartPart : TextStreamPart
 {
     /// <summary>Creates a tool-input-start part.</summary>
-    public ToolInputStartPart(string id, string toolName, JsonElement? providerMetadata, bool? providerExecuted, bool dynamic, ToolInputEncoding? inputEncoding = null, string? title = null)
+    public ToolInputStartPart(
+        string id,
+        string toolName,
+        JsonElement? providerMetadata,
+        bool? providerExecuted,
+        bool dynamic,
+        ToolInputEncoding? inputEncoding = null,
+        string? title = null
+    )
         : base("tool-input-start")
     {
         Id = id;
@@ -1654,7 +1756,11 @@ public sealed class DocumentSourcePart : TextStreamPart
 public sealed class StepFinishPart : TextStreamPart
 {
     /// <summary>Creates a step-finish part.</summary>
-    public StepFinishPart(StepResult step, LanguageModelResponseMetadata response, string? rawFinishReason = null)
+    public StepFinishPart(
+        StepResult step,
+        LanguageModelResponseMetadata response,
+        string? rawFinishReason = null
+    )
         : base("finish-step")
     {
         Step = step;
@@ -1682,7 +1788,14 @@ public sealed class StepFinishPart : TextStreamPart
 public sealed class OutputChunkTimingStats
 {
     /// <summary>Creates the statistics.</summary>
-    public OutputChunkTimingStats(double min, double max, double avg, double median, double p10, double p90)
+    public OutputChunkTimingStats(
+        double min,
+        double max,
+        double avg,
+        double median,
+        double p10,
+        double p90
+    )
     {
         Min = min;
         Max = max;
@@ -1736,7 +1849,8 @@ public sealed class StepPerformance
     public double ResponseTimeMs { get; init; }
 
     /// <summary>Time spent executing each client-side tool call in milliseconds, keyed by tool call id.</summary>
-    public IReadOnlyDictionary<string, double> ToolExecutionMs { get; init; } = new Dictionary<string, double>();
+    public IReadOnlyDictionary<string, double> ToolExecutionMs { get; init; } =
+        new Dictionary<string, double>();
 
     /// <summary>Time until the first generated output chunk in milliseconds. Only set for streaming steps.</summary>
     public double? TimeToFirstOutputMs { get; init; }

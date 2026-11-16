@@ -35,15 +35,16 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Schema of a Fish Audio error body.</summary>
-    public static JsonObject ErrorSchema { get; } = new JsonObject
-    {
-        ["type"] = "object",
-        ["properties"] = new JsonObject
+    public static JsonObject ErrorSchema { get; } =
+        new JsonObject
         {
-            ["status"] = new JsonObject { ["type"] = new JsonArray("number", "null") },
-            ["message"] = new JsonObject { ["type"] = new JsonArray("string", "null") },
-        },
-    };
+            ["type"] = "object",
+            ["properties"] = new JsonObject
+            {
+                ["status"] = new JsonObject { ["type"] = new JsonArray("number", "null") },
+                ["message"] = new JsonObject { ["type"] = new JsonArray("string", "null") },
+            },
+        };
 
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
@@ -64,9 +65,14 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider.</summary>
-    public static new FishAudioProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new FishAudioProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new FishAudioProvider(client, options);
     }
 
@@ -74,7 +80,10 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
+        options.BaseUrl =
+            string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
+                ? DefaultBaseUrl
+                : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "FISH_AUDIO_API_KEY";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
@@ -87,19 +96,38 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
     public override ISpeechModel SpeechModel(string modelId) => new FishSpeechModel(this, modelId);
 
     /// <inheritdoc />
-    public override ITranscriptionModel TranscriptionModel(string modelId) => new FishTranscriptionModel(this, string.IsNullOrEmpty(modelId) ? "transcribe-1" : modelId);
+    public override ITranscriptionModel TranscriptionModel(string modelId) =>
+        new FishTranscriptionModel(this, string.IsNullOrEmpty(modelId) ? "transcribe-1" : modelId);
 
-    private Task<ProviderExchangeResult> SendAsync(string path, HttpContent content, IEnumerable<KeyValuePair<string, string>>? modelHeaders, IReadOnlyDictionary<string, string> callHeaders, CancellationToken cancellationToken)
+    private Task<ProviderExchangeResult> SendAsync(
+        string path,
+        HttpContent content,
+        IEnumerable<KeyValuePair<string, string>>? modelHeaders,
+        IReadOnlyDictionary<string, string> callHeaders,
+        CancellationToken cancellationToken
+    )
     {
-        var headers = ProviderExchange.Merge(ProviderExchange.Merge(CreateHeaders(), modelHeaders), callHeaders);
-        return ProviderExchange.SendAsync(_httpClient, HttpMethod.Post, ApiKeys.Combine(Options.BaseUrl, path), content, headers, cancellationToken);
+        var headers = ProviderExchange.Merge(
+            ProviderExchange.Merge(CreateHeaders(), modelHeaders),
+            callHeaders
+        );
+        return ProviderExchange.SendAsync(
+            _httpClient,
+            HttpMethod.Post,
+            ApiKeys.Combine(Options.BaseUrl, path),
+            content,
+            headers,
+            cancellationToken
+        );
     }
 
     private static JsonElement? FishOptions(JsonElement providerOptions)
     {
-        if (providerOptions.ValueKind == JsonValueKind.Object
+        if (
+            providerOptions.ValueKind == JsonValueKind.Object
             && providerOptions.TryGetProperty(ProviderOptionsKey, out var fish)
-            && fish.ValueKind == JsonValueKind.Object)
+            && fish.ValueKind == JsonValueKind.Object
+        )
         {
             return fish;
         }
@@ -109,7 +137,10 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
 
     private static JsonElement? Option(JsonElement? options, string name)
     {
-        return options is { } value && value.TryGetProperty(name, out var property) && property.ValueKind != JsonValueKind.Null
+        return
+            options is { } value
+            && value.TryGetProperty(name, out var property)
+            && property.ValueKind != JsonValueKind.Null
             ? property
             : null;
     }
@@ -131,7 +162,10 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
             new KeyValuePair<string, string>("normalize", "normalize"),
             new KeyValuePair<string, string>("maxNewTokens", "max_new_tokens"),
             new KeyValuePair<string, string>("repetitionPenalty", "repetition_penalty"),
-            new KeyValuePair<string, string>("conditionOnPreviousChunks", "condition_on_previous_chunks"),
+            new KeyValuePair<string, string>(
+                "conditionOnPreviousChunks",
+                "condition_on_previous_chunks"
+            ),
             new KeyValuePair<string, string>("earlyStopThreshold", "early_stop_threshold"),
             new KeyValuePair<string, string>("features", "features"),
         };
@@ -140,7 +174,11 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
         private readonly Func<DateTime>? _clock;
 
         /// <summary>Creates a speech model. <paramref name="clock"/> sets the response timestamp.</summary>
-        public FishSpeechModel(FishAudioProvider provider, string modelId, Func<DateTime>? clock = null)
+        public FishSpeechModel(
+            FishAudioProvider provider,
+            string modelId,
+            Func<DateTime>? clock = null
+        )
         {
             _provider = provider;
             ModelId = modelId;
@@ -157,15 +195,31 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
         public string ModelId { get; }
 
         /// <inheritdoc />
-        public async Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
+        public async Task<SpeechResult> DoGenerateAsync(
+            SpeechCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
-            var call = new SpeechModelCall(options.Text, options.Voice, null, null, null, null, JsonValues.EmptyObject(), new Dictionary<string, string>(), cancellationToken);
+            var call = new SpeechModelCall(
+                options.Text,
+                options.Voice,
+                null,
+                null,
+                null,
+                null,
+                JsonValues.EmptyObject(),
+                new Dictionary<string, string>(),
+                cancellationToken
+            );
             var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
             return new SpeechResult(result.Audio, "audio/mpeg");
         }
 
         /// <inheritdoc />
-        public async Task<SpeechModelResult> DoGenerateAsync(SpeechModelCall call, CancellationToken cancellationToken)
+        public async Task<SpeechModelResult> DoGenerateAsync(
+            SpeechModelCall call,
+            CancellationToken cancellationToken
+        )
         {
             if (call is null)
             {
@@ -195,7 +249,12 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
                 }
                 else
                 {
-                    warnings.Add(OperationWarning.Unsupported("speed", "Fish Audio speed must be between 0.5 and 2. The speed option was ignored."));
+                    warnings.Add(
+                        OperationWarning.Unsupported(
+                            "speed",
+                            "Fish Audio speed must be between 0.5 and 2. The speed option was ignored."
+                        )
+                    );
                 }
             }
 
@@ -209,9 +268,12 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
                 // Fish Audio accepts normalize_loudness on s1 but ignores it.
                 if (ModelId == "s1")
                 {
-                    warnings.Add(OperationWarning.Unsupported(
-                        "providerOptions.fishAudio.normalizeLoudness",
-                        "Fish Audio ignores normalizeLoudness on s1. It is supported by the S2 family (s2-pro, s2.1-pro)."));
+                    warnings.Add(
+                        OperationWarning.Unsupported(
+                            "providerOptions.fishAudio.normalizeLoudness",
+                            "Fish Audio ignores normalizeLoudness on s1. It is supported by the S2 family (s2-pro, s2.1-pro)."
+                        )
+                    );
                 }
                 else
                 {
@@ -226,14 +288,22 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
 
             if (call.Language != null)
             {
-                warnings.Add(OperationWarning.Unsupported(
-                    "language",
-                    "Fish Audio infers the language from the input text and the selected voice, and has no language parameter. The language option was ignored."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "language",
+                        "Fish Audio infers the language from the input text and the selected voice, and has no language parameter. The language option was ignored."
+                    )
+                );
             }
 
             if (call.Instructions != null)
             {
-                warnings.Add(OperationWarning.Unsupported("instructions", "Fish Audio does not support instructions. The instructions option was ignored."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "instructions",
+                        "Fish Audio does not support instructions. The instructions option was ignored."
+                    )
+                );
             }
 
             CopyBitrate(fish, body, "mp3Bitrate", "mp3_bitrate", "mp3", format, warnings);
@@ -247,8 +317,24 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
             }
 
             var modelHeader = new Dictionary<string, string> { ["model"] = ModelId };
-            var response = await _provider.SendAsync("/v1/tts", ProviderExchange.Json(body.ToJsonString()), modelHeader, call.Headers, cancellationToken).ConfigureAwait(false);
-            return new SpeechModelResult(response.Bytes, warnings, response: new ProviderResponse(response.Headers, timestamp: timestamp, modelId: ModelId));
+            var response = await _provider
+                .SendAsync(
+                    "/v1/tts",
+                    ProviderExchange.Json(body.ToJsonString()),
+                    modelHeader,
+                    call.Headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+            return new SpeechModelResult(
+                response.Bytes,
+                warnings,
+                response: new ProviderResponse(
+                    response.Headers,
+                    timestamp: timestamp,
+                    modelId: ModelId
+                )
+            );
         }
 
         private static string Format(string? outputFormat, List<OperationWarning> warnings)
@@ -264,13 +350,28 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
                 return normalized;
             }
 
-            warnings.Add(OperationWarning.Unsupported(
-                "outputFormat",
-                "Fish Audio does not support the output format \"" + outputFormat + "\". Falling back to mp3. Supported formats are " + string.Join(", ", Formats) + "."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "outputFormat",
+                    "Fish Audio does not support the output format \""
+                        + outputFormat
+                        + "\". Falling back to mp3. Supported formats are "
+                        + string.Join(", ", Formats)
+                        + "."
+                )
+            );
             return "mp3";
         }
 
-        private static void CopyBitrate(JsonElement? fish, JsonObject body, string option, string field, string target, string format, List<OperationWarning> warnings)
+        private static void CopyBitrate(
+            JsonElement? fish,
+            JsonObject body,
+            string option,
+            string field,
+            string target,
+            string format,
+            List<OperationWarning> warnings
+        )
         {
             if (Option(fish, option) is not { } bitrate)
             {
@@ -283,9 +384,17 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
             }
             else
             {
-                warnings.Add(OperationWarning.Unsupported(
-                    "providerOptions.fishAudio." + option,
-                    option + " only applies to " + target + " output. The option was ignored for " + format + " output."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "providerOptions.fishAudio." + option,
+                        option
+                            + " only applies to "
+                            + target
+                            + " output. The option was ignored for "
+                            + format
+                            + " output."
+                    )
+                );
             }
         }
     }
@@ -297,7 +406,11 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
         private readonly Func<DateTime>? _clock;
 
         /// <summary>Creates a transcription model. <paramref name="clock"/> sets the response timestamp.</summary>
-        public FishTranscriptionModel(FishAudioProvider provider, string modelId, Func<DateTime>? clock = null)
+        public FishTranscriptionModel(
+            FishAudioProvider provider,
+            string modelId,
+            Func<DateTime>? clock = null
+        )
         {
             _provider = provider;
             ModelId = modelId;
@@ -317,20 +430,32 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
         public bool CanStream => false;
 
         /// <inheritdoc />
-        public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+        public async Task<TranscriptionResult> DoTranscribeAsync(
+            AudioInput audio,
+            CancellationToken cancellationToken
+        )
         {
             if (audio is null)
             {
                 throw new ArgumentNullException(nameof(audio));
             }
 
-            var call = new TranscriptionModelCall(audio.Data, audio.MediaType, JsonValues.EmptyObject(), new Dictionary<string, string>(), cancellationToken);
+            var call = new TranscriptionModelCall(
+                audio.Data,
+                audio.MediaType,
+                JsonValues.EmptyObject(),
+                new Dictionary<string, string>(),
+                cancellationToken
+            );
             var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
             return new TranscriptionResult(result.Text ?? string.Empty);
         }
 
         /// <inheritdoc />
-        public async Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
+        public async Task<TranscriptionModelResult> DoGenerateAsync(
+            TranscriptionModelCall call,
+            CancellationToken cancellationToken
+        )
         {
             if (call is null)
             {
@@ -342,7 +467,11 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
             var form = new MultipartFormDataContent();
             var audio = new ByteArrayContent(call.Audio);
             audio.Headers.ContentType = MediaTypeHeaderValue.Parse(call.MediaType);
-            form.Add(audio, "audio", "audio." + ProviderValues.MediaTypeToExtension(call.MediaType));
+            form.Add(
+                audio,
+                "audio",
+                "audio." + ProviderValues.MediaTypeToExtension(call.MediaType)
+            );
             if (Option(fish, "language") is { } language)
             {
                 form.Add(new StringContent(language.GetString() ?? string.Empty), "language");
@@ -352,7 +481,9 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
             var ignoreTimestamps = Option(fish, "ignoreTimestamps")?.GetBoolean() ?? false;
             form.Add(new StringContent(ignoreTimestamps ? "true" : "false"), "ignore_timestamps");
 
-            var response = await _provider.SendAsync("/v1/asr", form, null, call.Headers, cancellationToken).ConfigureAwait(false);
+            var response = await _provider
+                .SendAsync("/v1/asr", form, null, call.Headers, cancellationToken)
+                .ConfigureAwait(false);
             using var document = JsonDocument.Parse(response.Body);
             var root = document.RootElement;
             var segments = new List<TranscriptSegment>();
@@ -360,17 +491,28 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
             {
                 foreach (var segment in items.EnumerateArray())
                 {
-                    segments.Add(new TranscriptSegment(segment.GetProperty("text").GetString() ?? string.Empty, segment.GetProperty("start").GetDouble(), segment.GetProperty("end").GetDouble()));
+                    segments.Add(
+                        new TranscriptSegment(
+                            segment.GetProperty("text").GetString() ?? string.Empty,
+                            segment.GetProperty("start").GetDouble(),
+                            segment.GetProperty("end").GetDouble()
+                        )
+                    );
                 }
             }
 
             JsonElement? metadata = null;
             if (Option(root, "language") is { } displayLanguage)
             {
-                metadata = JsonValues.ParseOrEmpty(new JsonObject
-                {
-                    [ProviderOptionsKey] = new JsonObject { ["language"] = displayLanguage.GetString() },
-                }.ToJsonString());
+                metadata = JsonValues.ParseOrEmpty(
+                    new JsonObject
+                    {
+                        [ProviderOptionsKey] = new JsonObject
+                        {
+                            ["language"] = displayLanguage.GetString(),
+                        },
+                    }.ToJsonString()
+                );
             }
 
             return new TranscriptionModelResult(
@@ -380,11 +522,20 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
                 Option(root, "duration")?.GetDouble(),
                 Array.Empty<OperationWarning>(),
                 metadata,
-                new ProviderResponse(response.Headers, root.Clone(), timestamp: timestamp, modelId: ModelId));
+                new ProviderResponse(
+                    response.Headers,
+                    root.Clone(),
+                    timestamp: timestamp,
+                    modelId: ModelId
+                )
+            );
         }
 
         /// <inheritdoc />
-        public Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+        public Task<TranscriptionStreamStart?> DoStreamAsync(
+            TranscriptionStreamCall call,
+            CancellationToken cancellationToken
+        )
         {
             return Task.FromResult<TranscriptionStreamStart?>(null);
         }
@@ -395,14 +546,21 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
 public static class FishAudioServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddFishAudio(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddFishAudio(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(FishAudioProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new FishAudioProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(FishAudioProvider.ProviderId), options);
+            return new FishAudioProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(FishAudioProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

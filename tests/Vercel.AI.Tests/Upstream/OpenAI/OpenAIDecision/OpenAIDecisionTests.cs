@@ -43,7 +43,10 @@ public sealed class OpenAIDecisionTests
             { "{}", "Refund?" },
             { "{\"true\":null,\"false\":null}", "Refund?" },
             { "{\"true\":\"Money back\"}", "Refund?\n\nCriteria for true:\nMoney back" },
-            { "{\"false\":[\"Status request\"]}", "Refund?\n\nCriteria for false:\n[\"Status request\"]" },
+            {
+                "{\"false\":[\"Status request\"]}",
+                "Refund?\n\nCriteria for false:\n[\"Status request\"]"
+            },
         };
     }
 
@@ -66,10 +69,19 @@ public sealed class OpenAIDecisionTests
     {
         return new TheoryData<string, string>
         {
-            { "[{\"charge\":49},{\"charge\":49}]", "[{\"type\":\"input_json\",\"data\":[{\"charge\":49},{\"charge\":49}]}]" },
+            {
+                "[{\"charge\":49},{\"charge\":49}]",
+                "[{\"type\":\"input_json\",\"data\":[{\"charge\":49},{\"charge\":49}]}]"
+            },
             { "[]", "[{\"type\":\"input_text\",\"text\":\"[]\"}]" },
-            { "[{\"charge\":49},49]", "[{\"type\":\"input_text\",\"text\":\"[{\\\"charge\\\":49},49]\"}]" },
-            { "\"charged twice\"", "[{\"type\":\"input_text\",\"text\":\"\\\"charged twice\\\"\"}]" },
+            {
+                "[{\"charge\":49},49]",
+                "[{\"type\":\"input_text\",\"text\":\"[{\\\"charge\\\":49},49]\"}]"
+            },
+            {
+                "\"charged twice\"",
+                "[{\"type\":\"input_text\",\"text\":\"\\\"charged twice\\\"\"}]"
+            },
             { "null", "[{\"type\":\"input_text\",\"text\":\"null\"}]" },
         };
     }
@@ -89,11 +101,17 @@ public sealed class OpenAIDecisionTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "sends all primitives directly to Decisions with configured authentication and headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "sends all primitives directly to Decisions with configured authentication and headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Sends_all_primitives_directly_to_Decisions_with_configured_authentication_and_headers()
     {
         var (model, capture) = Setup();
-        await model.DoDecideAsync(Call(headers: new Dictionary<string, string> { ["shared"] = "call" }));
+        await model.DoDecideAsync(
+            Call(headers: new Dictionary<string, string> { ["shared"] = "call" })
+        );
         Assert.Equal("openai.decision", model.Provider);
         Assert.Equal("v4", model.SpecificationVersion);
         Assert.Equal(new[] { "choice", "score", "boolean" }, model.SupportedQuestionTypes);
@@ -105,7 +123,9 @@ public sealed class OpenAIDecisionTests
         Assert.Equal("configured", capture.Headers["x-provider"]);
         Assert.Equal("call", capture.Headers["shared"]);
         Assert.Contains("ai-sdk/openai/", capture.Headers["User-Agent"]);
-        JsonAssert.Equal(RequestBody(capture), """
+        JsonAssert.Equal(
+            RequestBody(capture),
+            """
             {
               "model": "gpt-6-luna",
               "input": [{ "role": "user", "content": [{ "type": "input_text", "text": "A billing issue with a workaround." }] }],
@@ -136,22 +156,46 @@ public sealed class OpenAIDecisionTests
                 }
               ]
             }
-            """);
+            """
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves native values, maps reordered named answers, and exposes confidence and response metadata", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "preserves native values, maps reordered named answers, and exposes confidence and response metadata",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Preserves_native_values_maps_reordered_named_answers_and_exposes_confidence_and_response_metadata()
     {
-        var reversed = new JsonArray(Fixture()["answers"]!.AsArray().Reverse().Select(answer => answer!.DeepClone()).ToArray());
+        var reversed = new JsonArray(
+            Fixture()["answers"]!
+                .AsArray()
+                .Reverse()
+                .Select(answer => answer!.DeepClone())
+                .ToArray()
+        );
         var body = new JsonObject { ["answers"] = reversed };
         var (model, _) = Setup(body);
         var result = await model.DoDecideAsync(Call());
         Assert.Equal(3, result.Answers.Count);
-        AssertAnswer(result.Answers["department"], "choice", choice: "billing", probabilities: new[] { ("technical", 0.08), ("billing", 0.92) });
-        AssertAnswer(result.Answers["severity"], "score", score: 0.98, probabilities: new[] { ("0", 0.08), ("1", 0.86), ("2", 0.06) });
+        AssertAnswer(
+            result.Answers["department"],
+            "choice",
+            choice: "billing",
+            probabilities: new[] { ("technical", 0.08), ("billing", 0.92) }
+        );
+        AssertAnswer(
+            result.Answers["severity"],
+            "score",
+            score: 0.98,
+            probabilities: new[] { ("0", 0.08), ("1", 0.86), ("2", 0.06) }
+        );
         AssertAnswer(result.Answers["refund"], "boolean", probability: 0.96);
-        JsonAssert.Equal(result.ProviderMetadata!.Value, "{\"openai\":{\"confidence\":{\"department\":0.88,\"severity\":0.79}}}");
+        JsonAssert.Equal(
+            result.ProviderMetadata!.Value,
+            "{\"openai\":{\"confidence\":{\"department\":0.88,\"severity\":0.79}}}"
+        );
         Assert.Equal(2, result.Rounding!.ProbabilityDecimals);
         Assert.Equal(2, result.Rounding.ScoreDecimals);
         Assert.Null(result.Usage);
@@ -161,7 +205,11 @@ public sealed class OpenAIDecisionTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "serializes structured input and rubrics, omits null descriptions, and preserves boolean criteria", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "serializes structured input and rubrics, omits null descriptions, and preserves boolean criteria",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Serializes_structured_input_and_rubrics_omits_null_descriptions_and_preserves_boolean_criteria()
     {
         var (model, capture) = Setup();
@@ -173,23 +221,53 @@ public sealed class OpenAIDecisionTests
                 new Dictionary<string, object?>
                 {
                     ["technical"] = null,
-                    ["billing"] = new Dictionary<string, object?> { ["rubric"] = new List<object?> { "charges" } },
-                }),
+                    ["billing"] = new Dictionary<string, object?>
+                    {
+                        ["rubric"] = new List<object?> { "charges" },
+                    },
+                }
+            ),
             ["severity"] = Q(
                 "score",
                 new List<object?> { "severity" },
-                new List<object?> { null, new Dictionary<string, object?> { ["meaning"] = "high" } }),
+                new List<object?>
+                {
+                    null,
+                    new Dictionary<string, object?> { ["meaning"] = "high" },
+                }
+            ),
             ["refund"] = Q(
                 "boolean",
                 "Refund?",
                 new Dictionary<string, object?>
                 {
-                    ["true"] = new Dictionary<string, object?> { ["meaning"] = "Explicit request for money back" },
+                    ["true"] = new Dictionary<string, object?>
+                    {
+                        ["meaning"] = "Explicit request for money back",
+                    },
                     ["false"] = "The customer only asks about refund status.",
-                }),
+                }
+            ),
         };
-        await model.DoDecideAsync(Call(questions, new List<object?> { new Dictionary<string, object?> { ["type"] = "json", ["value"] = new Dictionary<string, object?> { ["ticket"] = new List<object?> { "charged twice" } } } }));
-        JsonAssert.Equal(RequestBody(capture), """
+        await model.DoDecideAsync(
+            Call(
+                questions,
+                new List<object?>
+                {
+                    new Dictionary<string, object?>
+                    {
+                        ["type"] = "json",
+                        ["value"] = new Dictionary<string, object?>
+                        {
+                            ["ticket"] = new List<object?> { "charged twice" },
+                        },
+                    },
+                }
+            )
+        );
+        JsonAssert.Equal(
+            RequestBody(capture),
+            """
             {
               "model": "gpt-6-luna",
               "input": [{ "role": "user", "content": [{ "type": "input_json", "data": { "ticket": ["charged twice"] } }] }],
@@ -219,15 +297,21 @@ public sealed class OpenAIDecisionTests
                 }
               ]
             }
-            """);
+            """
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "warns about unsupported Responses options without sending them", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "warns about unsupported Responses options without sending them",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Warns_about_unsupported_Responses_options_without_sending_them()
     {
         var (model, capture) = Setup();
-        var result = await model.DoDecideAsync(Call(providerOptions: "{\"openai\":{\"reasoningEffort\":\"high\"}}"));
+        var result = await model.DoDecideAsync(
+            Call(providerOptions: "{\"openai\":{\"reasoningEffort\":\"high\"}}")
+        );
         var warning = Assert.Single(result.Warnings);
         Assert.Equal("unsupported", warning.Type);
         Assert.Equal("providerOptions.openai.reasoningEffort", warning.Feature);
@@ -235,7 +319,10 @@ public sealed class OpenAIDecisionTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "warns about unsupported maxOutputTokens without sending it", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "warns about unsupported maxOutputTokens without sending it",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Warns_about_unsupported_maxOutputTokens_without_sending_it()
     {
         var (model, capture) = Setup();
@@ -253,7 +340,10 @@ public sealed class OpenAIDecisionTests
     [InlineData("none")]
     [InlineData("provider-default")]
     [InlineData("high")]
-    [UpstreamTest(Prefix + "warns about unsupported reasoning without sending it: %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "warns about unsupported reasoning without sending it: %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Warns_about_unsupported_reasoning_without_sending_it(string? reasoning)
     {
         var (model, capture) = Setup();
@@ -276,7 +366,10 @@ public sealed class OpenAIDecisionTests
 
     [Theory]
     [MemberData(nameof(BadAnswerSets))]
-    [UpstreamTest(Prefix + "rejects missing, duplicate, and unexpected answer names", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "rejects missing, duplicate, and unexpected answer names",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_missing_duplicate_and_unexpected_answer_names(int set)
     {
         JsonNode Answer(int index) => Fixture()["answers"]![index]!.DeepClone();
@@ -285,61 +378,97 @@ public sealed class OpenAIDecisionTests
             0 => new JsonArray(),
             1 => new JsonArray(Answer(0), Answer(1), Answer(2), Answer(0)),
             2 => new JsonArray(Answer(0), Answer(0), Answer(2)),
-            _ => new JsonArray(Answer(0), Answer(1), JsonNode.Parse("{\"type\":\"predicate\",\"name\":\"unknown\",\"probability\":0.5}")),
+            _ => new JsonArray(
+                Answer(0),
+                Answer(1),
+                JsonNode.Parse("{\"type\":\"predicate\",\"name\":\"unknown\",\"probability\":0.5}")
+            ),
         };
-        await Assert.ThrowsAsync<InvalidResponseDataException>(() => Setup(new JsonObject { ["answers"] = answers }).Model.DoDecideAsync(Call()));
+        await Assert.ThrowsAsync<InvalidResponseDataException>(() =>
+            Setup(new JsonObject { ["answers"] = answers }).Model.DoDecideAsync(Call())
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects duplicate distribution values before converting arrays to maps", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "rejects duplicate distribution values before converting arrays to maps",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_duplicate_distribution_values_before_converting_arrays_to_maps()
     {
         var body = Fixture();
         var probabilities = body["answers"]![0]!["probabilities"]!.AsArray();
         probabilities.Add(probabilities[0]!.DeepClone());
-        await Assert.ThrowsAsync<InvalidResponseDataException>(() => Setup(body).Model.DoDecideAsync(Call()));
+        await Assert.ThrowsAsync<InvalidResponseDataException>(() =>
+            Setup(body).Model.DoDecideAsync(Call())
+        );
     }
 
     [Theory]
     [MemberData(nameof(MalformedBodies))]
-    [UpstreamTest(Prefix + "rejects malformed successful responses", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "rejects malformed successful responses",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_malformed_successful_responses(int index)
     {
-        var body = JsonNode.Parse(index switch
-        {
-            0 => "{\"answers\":[{\"type\":\"predicate\",\"name\":\"refund\",\"probability\":1.1}]}",
-            1 => "{\"answers\":[{\"type\":\"choice\",\"name\":\"department\",\"choice\":\"billing\"}]}",
-            2 => "{\"answers\":[{\"type\":\"score\",\"name\":\"severity\",\"score\":1,\"probabilities\":[{\"value\":0.5,\"probability\":1}]}]}",
-            _ => "{\"answers\":null}",
-        });
+        var body = JsonNode.Parse(
+            index switch
+            {
+                0 =>
+                    "{\"answers\":[{\"type\":\"predicate\",\"name\":\"refund\",\"probability\":1.1}]}",
+                1 =>
+                    "{\"answers\":[{\"type\":\"choice\",\"name\":\"department\",\"choice\":\"billing\"}]}",
+                2 =>
+                    "{\"answers\":[{\"type\":\"score\",\"name\":\"severity\",\"score\":1,\"probabilities\":[{\"value\":0.5,\"probability\":1}]}]}",
+                _ => "{\"answers\":null}",
+            }
+        );
         await Assert.ThrowsAsync<ApiException>(() => Setup(body).Model.DoDecideAsync(Call()));
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "uses the standard OpenAI API error handler", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "uses the standard OpenAI API error handler",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Uses_the_standard_OpenAI_API_error_handler()
     {
-        var body = JsonNode.Parse("{\"error\":{\"message\":\"Decisions access not enabled\",\"type\":\"invalid_request_error\"}}");
-        var error = await Assert.ThrowsAsync<PermissionDeniedException>(() => Setup(body, HttpStatusCode.Forbidden).Model.DoDecideAsync(Call()));
+        var body = JsonNode.Parse(
+            "{\"error\":{\"message\":\"Decisions access not enabled\",\"type\":\"invalid_request_error\"}}"
+        );
+        var error = await Assert.ThrowsAsync<PermissionDeniedException>(() =>
+            Setup(body, HttpStatusCode.Forbidden).Model.DoDecideAsync(Call())
+        );
         Assert.Equal("Decisions access not enabled", error.Message);
         Assert.Equal(403, error.StatusCode);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "forwards cancellation to custom fetch", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "forwards cancellation to custom fetch",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Forwards_cancellation_to_custom_fetch()
     {
         using var source = new CancellationTokenSource();
         source.Cancel();
         var handler = new CancellationObserver();
         var provider = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test" }, handler);
-        await Assert.ThrowsAsync<ApiUserAbortException>(() => provider.DecisionModel("gpt-6-luna").DoDecideAsync(Call(cancellationToken: source.Token), source.Token));
+        await Assert.ThrowsAsync<ApiUserAbortException>(() =>
+            provider
+                .DecisionModel("gpt-6-luna")
+                .DoDecideAsync(Call(cancellationToken: source.Token), source.Token)
+        );
         Assert.Equal(1, handler.Calls);
         Assert.True(handler.Cancelled);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "uses lazy environment authentication and configured provider name", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "uses lazy environment authentication and configured provider name",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Uses_lazy_environment_authentication_and_configured_provider_name()
     {
         var capture = new OpenAICapture { ResponseJson = Fixture().ToJsonString() };
@@ -348,14 +477,20 @@ public sealed class OpenAIDecisionTests
         try
         {
             Environment.SetEnvironmentVariable("OPENAI_BASE_URL", null);
-            var provider = OpenAIProvider.Create(new OpenAIOptions { ProviderName = "custom" }, capture);
+            var provider = OpenAIProvider.Create(
+                new OpenAIOptions { ProviderName = "custom" },
+                capture
+            );
             var model = provider.DecisionModel("future-decisions-model");
             Environment.SetEnvironmentVariable("OPENAI_API_KEY", "environment-key");
             await model.DoDecideAsync(Call());
             Assert.Equal("custom.decision", model.Provider);
             Assert.Equal("https://api.openai.com/v1/decisions", capture.Uri);
             Assert.Equal("Bearer environment-key", capture.Headers["Authorization"]);
-            Assert.Equal("future-decisions-model", RequestBody(capture)["model"]!.GetValue<string>());
+            Assert.Equal(
+                "future-decisions-model",
+                RequestBody(capture)["model"]!.GetValue<string>()
+            );
         }
         finally
         {
@@ -366,14 +501,24 @@ public sealed class OpenAIDecisionTests
 
     [Theory]
     [MemberData(nameof(JsonStateShapes))]
-    [UpstreamTest(Prefix + "sends JSON state natively only when it is an object or array of objects: $value", Coverage = UpstreamCoverage.Covered)]
-    public async Task Sends_JSON_state_natively_only_when_it_is_an_object_or_array_of_objects(string value, string expected)
+    [UpstreamTest(
+        Prefix + "sends JSON state natively only when it is an object or array of objects: $value",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Sends_JSON_state_natively_only_when_it_is_an_object_or_array_of_objects(
+        string value,
+        string expected
+    )
     {
         var (model, capture) = Setup();
         using var document = JsonDocument.Parse(value);
         var state = new List<object?>
         {
-            new Dictionary<string, object?> { ["type"] = "json", ["value"] = document.RootElement.Clone() },
+            new Dictionary<string, object?>
+            {
+                ["type"] = "json",
+                ["value"] = document.RootElement.Clone(),
+            },
         };
         await model.DoDecideAsync(Call(state: state));
         JsonAssert.Equal(RequestBody(capture)["input"]![0]!["content"], expected);
@@ -381,7 +526,10 @@ public sealed class OpenAIDecisionTests
 
     [Theory]
     [MemberData(nameof(InputJsonLimits))]
-    [UpstreamTest(Prefix + "falls back to input_text beyond input_json limits: $label", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "falls back to input_text beyond input_json limits: $label",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Falls_back_to_input_text_beyond_input_json_limits(string label, bool native)
     {
         object value = label switch
@@ -390,28 +538,48 @@ public sealed class OpenAIDecisionTests
             "33 container levels" => Nested(33),
             "9,000 values" => WithKeys(9_000),
             "10,000 keys plus the root" => WithKeys(10_000),
-            "200 KiB of JSON" => new Dictionary<string, object?> { ["blob"] = new string('x', 200 * 1024) },
-            "more than 256 KiB of JSON" => new Dictionary<string, object?> { ["blob"] = new string('x', 256 * 1024) },
+            "200 KiB of JSON" => new Dictionary<string, object?>
+            {
+                ["blob"] = new string('x', 200 * 1024),
+            },
+            "more than 256 KiB of JSON" => new Dictionary<string, object?>
+            {
+                ["blob"] = new string('x', 256 * 1024),
+            },
             _ => new Dictionary<string, object?> { ["blob"] = new string('é', 140 * 1024) },
         };
         var (model, capture) = Setup();
-        var state = new List<object?> { new Dictionary<string, object?> { ["type"] = "json", ["value"] = value } };
+        var state = new List<object?>
+        {
+            new Dictionary<string, object?> { ["type"] = "json", ["value"] = value },
+        };
         await model.DoDecideAsync(Call(state: state));
 
-        var serialized = JsonSerializer.Serialize(value, new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+        var serialized = JsonSerializer.Serialize(
+            value,
+            new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping }
+        );
         var expected = native
             ? new JsonObject { ["type"] = "input_json", ["data"] = JsonNode.Parse(serialized) }
             : new JsonObject { ["type"] = "input_text", ["text"] = serialized };
         var part = RequestBody(capture)["input"]![0]!["content"]![0];
-        Assert.True(JsonNode.DeepEquals(expected, part), part!.ToJsonString() + " != " + expected.ToJsonString());
+        Assert.True(
+            JsonNode.DeepEquals(expected, part),
+            part!.ToJsonString() + " != " + expected.ToJsonString()
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "sends promptCacheKey without warning and omits it when unset", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "sends promptCacheKey without warning and omits it when unset",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Sends_promptCacheKey_without_warning_and_omits_it_when_unset()
     {
         var (model, capture) = Setup();
-        var result = await model.DoDecideAsync(Call(providerOptions: "{\"openai\":{\"promptCacheKey\":\"tenant-42\"}}"));
+        var result = await model.DoDecideAsync(
+            Call(providerOptions: "{\"openai\":{\"promptCacheKey\":\"tenant-42\"}}")
+        );
         Assert.Empty(result.Warnings);
         Assert.Equal("tenant-42", RequestBody(capture)["prompt_cache_key"]!.GetValue<string>());
 
@@ -420,7 +588,11 @@ public sealed class OpenAIDecisionTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "maps a captured live Decisions response including usage, confidence, and resolved model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "maps a captured live Decisions response including usage, confidence, and resolved model",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Maps_a_captured_live_Decisions_response_including_usage_confidence_and_resolved_model()
     {
         var live = Fixture("decision-live.json");
@@ -437,32 +609,58 @@ public sealed class OpenAIDecisionTests
         Assert.Equal(387, result.Usage!.InputTokens);
         Assert.Equal(3, result.Usage.OutputTokens);
         Assert.Null(result.Usage.TotalTokens);
-        JsonAssert.Equal(result.ProviderMetadata!.Value, "{\"openai\":{\"confidence\":{\"department\":1,\"severity\":1},\"usage\":" + live["usage"]!.ToJsonString() + "}}");
+        JsonAssert.Equal(
+            result.ProviderMetadata!.Value,
+            "{\"openai\":{\"confidence\":{\"department\":1,\"severity\":1},\"usage\":"
+                + live["usage"]!.ToJsonString()
+                + "}}"
+        );
         Assert.Equal("gpt-6-luna-resolved", result.Response!.ModelId);
         JsonAssert.Equal(result.Response.Body!.Value, body.ToJsonString());
         Assert.Equal(3, result.Answers.Count);
-        AssertAnswer(result.Answers["department"], "choice", choice: "billing", probabilities: new[] { ("billing", 1.0), ("technical", 0.0), ("other", 0.0) });
-        AssertAnswer(result.Answers["severity"], "score", score: 1, probabilities: new[] { ("0", 0.0), ("1", 1.0), ("2", 0.0) });
+        AssertAnswer(
+            result.Answers["department"],
+            "choice",
+            choice: "billing",
+            probabilities: new[] { ("billing", 1.0), ("technical", 0.0), ("other", 0.0) }
+        );
+        AssertAnswer(
+            result.Answers["severity"],
+            "score",
+            score: 1,
+            probabilities: new[] { ("0", 0.0), ("1", 1.0), ("2", 0.0) }
+        );
         AssertAnswer(result.Answers["requestsRefund"], "boolean", probability: 0.99);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves nonzero native cache and reasoning counts without changing aggregate usage", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "preserves nonzero native cache and reasoning counts without changing aggregate usage",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Preserves_nonzero_native_cache_and_reasoning_counts_without_changing_aggregate_usage()
     {
-        const string usage = "{\"input_tokens\":387,\"output_tokens\":3,\"total_tokens\":390,\"input_tokens_details\":{\"cached_tokens\":50,\"cache_write_tokens\":20},\"output_tokens_details\":{\"reasoning_tokens\":2}}";
+        const string usage =
+            "{\"input_tokens\":387,\"output_tokens\":3,\"total_tokens\":390,\"input_tokens_details\":{\"cached_tokens\":50,\"cache_write_tokens\":20},\"output_tokens_details\":{\"reasoning_tokens\":2}}";
         var body = Fixture();
         body["usage"] = JsonNode.Parse(usage);
         var result = await Setup(body).Model.DoDecideAsync(Call());
         Assert.Equal(387, result.Usage!.InputTokens);
         Assert.Equal(3, result.Usage.OutputTokens);
         Assert.Null(result.Usage.TotalTokens);
-        JsonAssert.Equal(result.ProviderMetadata!.Value.GetProperty("openai").GetProperty("usage"), usage);
+        JsonAssert.Equal(
+            result.ProviderMetadata!.Value.GetProperty("openai").GetProperty("usage"),
+            usage
+        );
     }
 
     [Theory]
     [MemberData(nameof(AbsentOrNull))]
-    [UpstreamTest(Prefix + "accepts absent or null usage and model without inventing counts", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "accepts absent or null usage and model without inventing counts",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Accepts_absent_or_null_usage_and_model_without_inventing_counts(string value)
     {
         var body = Fixture();
@@ -474,26 +672,38 @@ public sealed class OpenAIDecisionTests
 
         var result = await Setup(body).Model.DoDecideAsync(Call());
         Assert.Null(result.Usage);
-        Assert.False(result.ProviderMetadata!.Value.GetProperty("openai").TryGetProperty("usage", out _));
+        Assert.False(
+            result.ProviderMetadata!.Value.GetProperty("openai").TryGetProperty("usage", out _)
+        );
         Assert.Equal("gpt-6-luna", result.Response!.ModelId);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "accepts partial usage and preserves zero token counts", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "accepts partial usage and preserves zero token counts",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Accepts_partial_usage_and_preserves_zero_token_counts()
     {
-        const string usage = "{\"input_tokens\":0,\"output_tokens\":null,\"input_tokens_details\":null,\"output_tokens_details\":null,\"total_tokens\":null}";
+        const string usage =
+            "{\"input_tokens\":0,\"output_tokens\":null,\"input_tokens_details\":null,\"output_tokens_details\":null,\"total_tokens\":null}";
         var body = Fixture();
         body["usage"] = JsonNode.Parse(usage);
         var result = await Setup(body).Model.DoDecideAsync(Call());
         Assert.Equal(0, result.Usage!.InputTokens);
         Assert.Null(result.Usage.OutputTokens);
-        JsonAssert.Equal(result.ProviderMetadata!.Value.GetProperty("openai").GetProperty("usage"), usage);
+        JsonAssert.Equal(
+            result.ProviderMetadata!.Value.GetProperty("openai").GetProperty("usage"),
+            usage
+        );
     }
 
     [Theory]
     [MemberData(nameof(BooleanCriteria))]
-    [UpstreamTest(Prefix + "formats only supplied boolean criteria", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "formats only supplied boolean criteria",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Formats_only_supplied_boolean_criteria(string? criteria, string expected)
     {
         var (model, capture) = Setup();
@@ -507,18 +717,27 @@ public sealed class OpenAIDecisionTests
         var questions = Questions();
         questions["refund"] = Q("boolean", "Refund?", parsed);
         await model.DoDecideAsync(Call(questions));
-        Assert.Equal(expected, RequestBody(capture)["questions"]![2]!["instructions"]!.GetValue<string>());
+        Assert.Equal(
+            expected,
+            RequestBody(capture)["questions"]![2]!["instructions"]!.GetValue<string>()
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "keeps the deprecated evaluation factory and method backed by Decisions", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "keeps the deprecated evaluation factory and method backed by Decisions",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Keeps_the_deprecated_evaluation_factory_and_method_backed_by_Decisions()
     {
         var capture = new OpenAICapture { ResponseJson = Fixture().ToJsonString() };
         var provider = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-key" }, capture);
 #pragma warning disable CS0618
         var model = provider.EvaluationModel("gpt-6-luna");
-        var result = await model.DoEvaluateAsync(EvaluationModelCall.From(Call()), CancellationToken.None);
+        var result = await model.DoEvaluateAsync(
+            EvaluationModelCall.From(Call()),
+            CancellationToken.None
+        );
 #pragma warning restore CS0618
         Assert.Equal("boolean", result.Answers["refund"].Type);
         Assert.Equal(0.96, result.Answers["refund"].Probability);
@@ -528,11 +747,23 @@ public sealed class OpenAIDecisionTests
 
     [Theory]
     [MemberData(nameof(SafetyIdentifiers))]
-    [UpstreamTest(Prefix + "sends safetyIdentifier and warns only about unsupported options", Coverage = UpstreamCoverage.Covered)]
-    public async Task Sends_safetyIdentifier_and_warns_only_about_unsupported_options(string safetyIdentifier)
+    [UpstreamTest(
+        Prefix + "sends safetyIdentifier and warns only about unsupported options",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Sends_safetyIdentifier_and_warns_only_about_unsupported_options(
+        string safetyIdentifier
+    )
     {
         var (model, capture) = Setup();
-        var options = new JsonObject { ["openai"] = new JsonObject { ["safetyIdentifier"] = safetyIdentifier, ["reasoningEffort"] = "high" } };
+        var options = new JsonObject
+        {
+            ["openai"] = new JsonObject
+            {
+                ["safetyIdentifier"] = safetyIdentifier,
+                ["reasoningEffort"] = "high",
+            },
+        };
         var result = await model.DoDecideAsync(Call(providerOptions: options.ToJsonString()));
         var body = RequestBody(capture);
         Assert.Equal(safetyIdentifier, body["safety_identifier"]!.GetValue<string>());
@@ -544,18 +775,34 @@ public sealed class OpenAIDecisionTests
 
     [Theory]
     [MemberData(nameof(InvalidSafetyIdentifiers))]
-    [UpstreamTest(Prefix + "rejects invalid safety identifiers before HTTP", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "rejects invalid safety identifiers before HTTP",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_invalid_safety_identifiers_before_HTTP(string safetyIdentifierJson)
     {
         var (model, capture) = Setup();
-        await Assert.ThrowsAsync<InvalidArgumentException>(() => model.DoDecideAsync(Call(providerOptions: "{\"openai\":{\"safetyIdentifier\":" + safetyIdentifierJson + "}}")));
+        await Assert.ThrowsAsync<InvalidArgumentException>(() =>
+            model.DoDecideAsync(
+                Call(
+                    providerOptions: "{\"openai\":{\"safetyIdentifier\":"
+                        + safetyIdentifierJson
+                        + "}}"
+                )
+            )
+        );
         Assert.Equal(0, capture.Calls);
     }
 
     [Theory]
     [MemberData(nameof(Names))]
-    [UpstreamTest(Prefix + "returns a refusal answer for a refused %s question and keeps the others", Coverage = UpstreamCoverage.Covered)]
-    public async Task Returns_a_refusal_answer_for_a_refused_question_and_keeps_the_others(string name)
+    [UpstreamTest(
+        Prefix + "returns a refusal answer for a refused %s question and keeps the others",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Returns_a_refusal_answer_for_a_refused_question_and_keeps_the_others(
+        string name
+    )
     {
         var body = Fixture();
         var answers = body["answers"]!.AsArray();
@@ -571,7 +818,10 @@ public sealed class OpenAIDecisionTests
         var refused = await refusing.DoDecideAsync(Call());
         var complete = await Setup().Model.DoDecideAsync(Call());
 
-        Assert.Equal(complete.Answers.Keys.OrderBy(key => key), refused.Answers.Keys.OrderBy(key => key));
+        Assert.Equal(
+            complete.Answers.Keys.OrderBy(key => key),
+            refused.Answers.Keys.OrderBy(key => key)
+        );
         foreach (var pair in complete.Answers)
         {
             if (pair.Key == name)
@@ -589,7 +839,12 @@ public sealed class OpenAIDecisionTests
             }
         }
 
-        Assert.False(refused.ProviderMetadata!.Value.GetProperty("openai").GetProperty("confidence").TryGetProperty(name, out _));
+        Assert.False(
+            refused
+                .ProviderMetadata!.Value.GetProperty("openai")
+                .GetProperty("confidence")
+                .TryGetProperty(name, out _)
+        );
         Assert.Equal(1, capture.Calls);
     }
 
@@ -604,26 +859,48 @@ public sealed class OpenAIDecisionTests
         {
             { "audio/wav", "data", "AAAA" },
             { "image/svg+xml", "data", "AAAA" },
-            { "image/png", "reference", new Dictionary<string, string> { ["openai"] = "file-123" } },
+            {
+                "image/png",
+                "reference",
+                new Dictionary<string, string> { ["openai"] = "file-123" }
+            },
             { "image/png", "url", new Uri("https://example.com/image.png") },
         };
     }
 
     [Theory]
     [MemberData(nameof(InlineImages))]
-    [UpstreamTest(Prefix + "maps ordered state parts to native text and inline images", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "maps ordered state parts to native text and inline images",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Maps_ordered_state_parts_to_native_text_and_inline_images(object data)
     {
         var (model, capture) = Setup();
         var state = new List<object?>
         {
-            new Dictionary<string, object?> { ["type"] = "text", ["text"] = "Inspect this package." },
-            new Dictionary<string, object?> { ["type"] = "json", ["value"] = new List<object?> { "glass vase", null } },
-            new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image/png", ["data"] = new Dictionary<string, object?> { ["type"] = "data", ["data"] = data } },
+            new Dictionary<string, object?>
+            {
+                ["type"] = "text",
+                ["text"] = "Inspect this package.",
+            },
+            new Dictionary<string, object?>
+            {
+                ["type"] = "json",
+                ["value"] = new List<object?> { "glass vase", null },
+            },
+            new Dictionary<string, object?>
+            {
+                ["type"] = "file",
+                ["mediaType"] = "image/png",
+                ["data"] = new Dictionary<string, object?> { ["type"] = "data", ["data"] = data },
+            },
             new Dictionary<string, object?> { ["type"] = "text", ["text"] = "Look for cracks." },
         };
         await model.DoDecideAsync(Call(state: state));
-        JsonAssert.Equal(RequestBody(capture)["input"], """
+        JsonAssert.Equal(
+            RequestBody(capture)["input"],
+            """
             [
               {
                 "role": "user",
@@ -635,24 +912,45 @@ public sealed class OpenAIDecisionTests
                 ]
               }
             ]
-            """);
+            """
+        );
     }
 
     [Theory]
     [MemberData(nameof(UnsupportedFiles))]
-    [UpstreamTest(Prefix + "rejects unsupported decision files before the API call: %j", Coverage = UpstreamCoverage.Covered)]
-    public async Task Rejects_unsupported_decision_files_before_the_API_call(string mediaType, string dataType, object? value)
+    [UpstreamTest(
+        Prefix + "rejects unsupported decision files before the API call: %j",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Rejects_unsupported_decision_files_before_the_API_call(
+        string mediaType,
+        string dataType,
+        object? value
+    )
     {
         var (model, capture) = Setup();
         var data = new Dictionary<string, object?> { ["type"] = dataType };
         data[dataType] = value;
-        var state = new List<object?> { new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = mediaType, ["data"] = data } };
-        await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => model.DoDecideAsync(Call(state: state)));
+        var state = new List<object?>
+        {
+            new Dictionary<string, object?>
+            {
+                ["type"] = "file",
+                ["mediaType"] = mediaType,
+                ["data"] = data,
+            },
+        };
+        await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() =>
+            model.DoDecideAsync(Call(state: state))
+        );
         Assert.Empty(capture.Body);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "fails the decision when an unnamed question is refused", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "fails the decision when an unnamed question is refused",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Fails_the_decision_when_an_unnamed_question_is_refused()
     {
         var body = Fixture();
@@ -665,7 +963,9 @@ public sealed class OpenAIDecisionTests
             }
         }
 
-        var error = await Assert.ThrowsAsync<InvalidResponseDataException>(() => Setup(body).Model.DoDecideAsync(Call()));
+        var error = await Assert.ThrowsAsync<InvalidResponseDataException>(() =>
+            Setup(body).Model.DoDecideAsync(Call())
+        );
         Assert.Equal("OpenAI Decisions refused an unnamed question.", error.Message);
         JsonAssert.Equal((JsonElement)error.Data!, body.ToJsonString());
     }
@@ -683,7 +983,12 @@ public sealed class OpenAIDecisionTests
 
     private static Dictionary<string, object?> WithKeys(int count)
     {
-        return Enumerable.Range(0, count).ToDictionary(index => "k" + index.ToString(CultureInfo.InvariantCulture), _ => (object?)0);
+        return Enumerable
+            .Range(0, count)
+            .ToDictionary(
+                index => "k" + index.ToString(CultureInfo.InvariantCulture),
+                _ => (object?)0
+            );
     }
 
     private sealed class CancellationObserver : HttpMessageHandler
@@ -692,7 +997,10 @@ public sealed class OpenAIDecisionTests
 
         public bool Cancelled { get; private set; }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
         {
             Calls++;
             Cancelled = cancellationToken.IsCancellationRequested;
@@ -703,19 +1011,47 @@ public sealed class OpenAIDecisionTests
     [Theory]
     [InlineData("{}")]
     [InlineData("{\"instructions\":null}")]
-    [UpstreamTest(Prefix + "sends criteria-only questions without locally rejecting missing instructions: %j", Coverage = UpstreamCoverage.Partial, Note = "A missing, undefined, and null instructions field are all a null instruction here, so no instructions field is sent. Upstream sends null for the null case.")]
-    public async Task Sends_criteria_only_questions_without_locally_rejecting_missing_instructions(string instructionFields)
+    [UpstreamTest(
+        Prefix + "sends criteria-only questions without locally rejecting missing instructions: %j",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "A missing, undefined, and null instructions field are all a null instruction here, so no instructions field is sent. Upstream sends null for the null case."
+    )]
+    public async Task Sends_criteria_only_questions_without_locally_rejecting_missing_instructions(
+        string instructionFields
+    )
     {
         _ = instructionFields;
         var (model, capture) = Setup();
-        await model.DoDecideAsync(Call(new Dictionary<string, DecisionQuestion>
-        {
-            ["department"] = Q("choice", null, new Dictionary<string, object?> { ["technical"] = "Bugs", ["billing"] = "Charges" }),
-            ["severity"] = Q("score", null, new List<object?> { "Low", "Medium", "High" }),
-            ["refund"] = Q("boolean", null, new Dictionary<string, object?> { ["true"] = "Requests money back", ["false"] = new List<object?> { "Status inquiry" } }),
-        }));
+        await model.DoDecideAsync(
+            Call(
+                new Dictionary<string, DecisionQuestion>
+                {
+                    ["department"] = Q(
+                        "choice",
+                        null,
+                        new Dictionary<string, object?>
+                        {
+                            ["technical"] = "Bugs",
+                            ["billing"] = "Charges",
+                        }
+                    ),
+                    ["severity"] = Q("score", null, new List<object?> { "Low", "Medium", "High" }),
+                    ["refund"] = Q(
+                        "boolean",
+                        null,
+                        new Dictionary<string, object?>
+                        {
+                            ["true"] = "Requests money back",
+                            ["false"] = new List<object?> { "Status inquiry" },
+                        }
+                    ),
+                }
+            )
+        );
         Assert.Equal(1, capture.Calls);
-        JsonAssert.Equal(RequestBody(capture)["questions"], """
+        JsonAssert.Equal(
+            RequestBody(capture)["questions"],
+            """
             [
               {
                 "type": "choice",
@@ -740,6 +1076,7 @@ public sealed class OpenAIDecisionTests
                 "instructions": "Criteria for true:\nRequests money back\n\nCriteria for false:\n[\"Status inquiry\"]"
               }
             ]
-            """);
+            """
+        );
     }
 }

@@ -8,7 +8,8 @@ namespace Vercel.AI.Tests.Upstream.ProviderUtils.ValidateDownloadUrl;
 
 public sealed class MalformedUrlsTests
 {
-    private const string Suite = "packages/provider-utils/src/validate-download-url.test.ts::validateDownloadUrl > malformed URLs::";
+    private const string Suite =
+        "packages/provider-utils/src/validate-download-url.test.ts::validateDownloadUrl > malformed URLs::";
 
     [Fact]
     [UpstreamTest(Suite + "should block invalid URLs", Coverage = UpstreamCoverage.Covered)]

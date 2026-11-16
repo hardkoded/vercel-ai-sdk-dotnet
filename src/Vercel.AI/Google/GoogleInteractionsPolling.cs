@@ -23,7 +23,10 @@ internal static class GoogleInteractionsPolling
     /// <summary>True for <c>completed</c>, <c>failed</c>, <c>cancelled</c>, and <c>incomplete</c>.</summary>
     internal static bool IsTerminal(string? status)
     {
-        return status == "completed" || status == "failed" || status == "cancelled" || status == "incomplete";
+        return status == "completed"
+            || status == "failed"
+            || status == "cancelled"
+            || status == "incomplete";
     }
 
     /// <summary>
@@ -39,18 +42,24 @@ internal static class GoogleInteractionsPolling
         TimeSpan? initialDelay,
         TimeSpan? maxDelay,
         TimeSpan? timeout,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         if (string.IsNullOrEmpty(interactionId))
         {
-            throw new InvalidOperationException("google.interactions: cannot poll a background interaction without an id. The POST response did not include an interaction id.");
+            throw new InvalidOperationException(
+                "google.interactions: cannot poll a background interaction without an id. The POST response did not include an interaction id."
+            );
         }
 
         var id = interactionId!;
         var limit = timeout ?? DefaultTimeout;
         var ceiling = maxDelay ?? DefaultMaxDelay;
         var nextDelay = initialDelay ?? DefaultInitialDelay;
-        var url = ProviderUtils.ApiKeys.Combine(baseUrl, "interactions/" + Uri.EscapeDataString(id));
+        var url = ProviderUtils.ApiKeys.Combine(
+            baseUrl,
+            "interactions/" + Uri.EscapeDataString(id)
+        );
         var startedAt = DateTime.UtcNow;
         try
         {
@@ -59,16 +68,30 @@ internal static class GoogleInteractionsPolling
                 cancellationToken.ThrowIfCancellationRequested();
                 if (DateTime.UtcNow - startedAt > limit)
                 {
-                    throw new TimeoutException("google.interactions: timed out polling interaction " + id + " after " + (long)limit.TotalMilliseconds + "ms.");
+                    throw new TimeoutException(
+                        "google.interactions: timed out polling interaction "
+                            + id
+                            + " after "
+                            + (long)limit.TotalMilliseconds
+                            + "ms."
+                    );
                 }
 
                 await Task.Delay(nextDelay, cancellationToken).ConfigureAwait(false);
-                var document = await http.SendJsonAsync(HttpMethod.Get, url, null, headers, cancellationToken).ConfigureAwait(false);
-                var status = document.RootElement.ValueKind == JsonValueKind.Object
+                var document = await http.SendJsonAsync(
+                        HttpMethod.Get,
+                        url,
+                        null,
+                        headers,
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
+                var status =
+                    document.RootElement.ValueKind == JsonValueKind.Object
                     && document.RootElement.TryGetProperty("status", out var value)
                     && value.ValueKind == JsonValueKind.String
-                    ? value.GetString()
-                    : null;
+                        ? value.GetString()
+                        : null;
                 if (IsTerminal(status))
                 {
                     return document;
@@ -86,17 +109,27 @@ internal static class GoogleInteractionsPolling
     }
 
     // Best effort: stops the run billing on Google's side. Errors are ignored, because the caller is already handling a cancelled run.
-    internal static async Task CancelOnServerAsync(ProviderHttp http, string baseUrl, string id, IReadOnlyDictionary<string, string?> headers)
+    internal static async Task CancelOnServerAsync(
+        ProviderHttp http,
+        string baseUrl,
+        string id,
+        IReadOnlyDictionary<string, string?> headers
+    )
     {
         using var timeout = new CancellationTokenSource(CancelTimeout);
         try
         {
             using var response = await http.SendJsonAsync(
-                HttpMethod.Post,
-                ProviderUtils.ApiKeys.Combine(baseUrl, "interactions/" + Uri.EscapeDataString(id) + "/cancel"),
-                "{}",
-                headers,
-                timeout.Token).ConfigureAwait(false);
+                    HttpMethod.Post,
+                    ProviderUtils.ApiKeys.Combine(
+                        baseUrl,
+                        "interactions/" + Uri.EscapeDataString(id) + "/cancel"
+                    ),
+                    "{}",
+                    headers,
+                    timeout.Token
+                )
+                .ConfigureAwait(false);
         }
         catch (Exception)
         {

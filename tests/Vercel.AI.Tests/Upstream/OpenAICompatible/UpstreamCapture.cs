@@ -34,19 +34,27 @@ internal sealed class UpstreamCapture : HttpMessageHandler
 {
     public List<CapturedRequest> Requests { get; } = new();
 
-    public string ResponseBody { get; set; } = "{\"id\":\"resp-1\",\"model\":\"m\",\"created\":1711363706,\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"Hello\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5,\"total_tokens\":15}}";
+    public string ResponseBody { get; set; } =
+        "{\"id\":\"resp-1\",\"model\":\"m\",\"created\":1711363706,\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"Hello\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5,\"total_tokens\":15}}";
 
     public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
 
     public string MediaType { get; set; } = "application/json";
 
-    public Dictionary<string, string> ResponseHeaders { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string> ResponseHeaders { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
 
     public Queue<string> Bodies { get; } = new();
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
-        var body = request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+        var body =
+            request.Content == null
+                ? string.Empty
+                : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
         var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var header in request.Headers)
         {
@@ -87,7 +95,12 @@ internal sealed class UpstreamCapture : HttpMessageHandler
 
 internal static class UpstreamChat
 {
-    public static OpenAICompatibleLanguageModel Model(UpstreamCapture capture, string name = "openai-compatible", string modelId = "gpt-test", Action<OpenAICompatibleOptions>? configure = null)
+    public static OpenAICompatibleLanguageModel Model(
+        UpstreamCapture capture,
+        string name = "openai-compatible",
+        string modelId = "gpt-test",
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         var options = new OpenAICompatibleOptions
         {
@@ -96,7 +109,8 @@ internal static class UpstreamChat
             ApiKey = "secret",
         };
         configure?.Invoke(options);
-        return OpenAICompatibleProvider.Create(options, capture).LanguageModel(modelId) as OpenAICompatibleLanguageModel
+        return OpenAICompatibleProvider.Create(options, capture).LanguageModel(modelId)
+                as OpenAICompatibleLanguageModel
             ?? throw new InvalidOperationException("Expected a chat model.");
     }
 
@@ -113,7 +127,9 @@ internal static class UpstreamChat
         return JsonNode.Parse(capture.Requests[0].Body)!.AsObject();
     }
 
-    public static async Task<List<LanguageModelStreamPart>> Read(IAsyncEnumerable<LanguageModelStreamPart> stream)
+    public static async Task<List<LanguageModelStreamPart>> Read(
+        IAsyncEnumerable<LanguageModelStreamPart> stream
+    )
     {
         var parts = new List<LanguageModelStreamPart>();
         await foreach (var part in stream.ConfigureAwait(false))

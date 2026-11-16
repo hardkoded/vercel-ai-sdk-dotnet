@@ -8,7 +8,8 @@ namespace Vercel.AI.Tests.Upstream.ProviderUtils.ValidateDownloadUrl;
 
 public sealed class BlockedIPv6AddressesTests
 {
-    private const string Suite = "packages/provider-utils/src/validate-download-url.test.ts::validateDownloadUrl > blocked IPv6 addresses::";
+    private const string Suite =
+        "packages/provider-utils/src/validate-download-url.test.ts::validateDownloadUrl > blocked IPv6 addresses::";
 
     [Fact]
     [UpstreamTest(Suite + "should block ::1 (loopback)", Coverage = UpstreamCoverage.Covered)]
@@ -25,7 +26,10 @@ public sealed class BlockedIPv6AddressesTests
     }
 
     [Fact]
-    [UpstreamTest(Suite + "should block fc00::/7 (unique local)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Suite + "should block fc00::/7 (unique local)",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_block_fc00_7_unique_local()
     {
         AssertBlocked("http://[fc00::1]/file");
@@ -33,21 +37,30 @@ public sealed class BlockedIPv6AddressesTests
     }
 
     [Fact]
-    [UpstreamTest(Suite + "should block fe80::/10 (link-local)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Suite + "should block fe80::/10 (link-local)",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_block_fe80_10_link_local()
     {
         AssertBlocked("http://[fe80::1]/file");
     }
 
     [Fact]
-    [UpstreamTest(Suite + "should block 2001:db8::/32 (documentation)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Suite + "should block 2001:db8::/32 (documentation)",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_block_2001_db8_32_documentation()
     {
         AssertBlocked("http://[2001:db8::1]/file");
     }
 
     [Fact]
-    [UpstreamTest(Suite + "should block 3fff::/20 (documentation, RFC 9637)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Suite + "should block 3fff::/20 (documentation, RFC 9637)",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_block_3fff_20_documentation_RFC_9637()
     {
         AssertBlocked("http://[3fff::1]/file");

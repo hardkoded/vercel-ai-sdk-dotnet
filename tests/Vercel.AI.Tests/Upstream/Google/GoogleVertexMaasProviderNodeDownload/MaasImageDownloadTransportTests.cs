@@ -22,9 +22,15 @@ public sealed class MaasImageDownloadTransportTests
     [InlineData("default")]
     [InlineData("forwarded global")]
     [InlineData("custom")]
-    [UpstreamTest("packages/google-vertex/src/maas/google-vertex-maas-provider-node-download.test.ts::MaaS %s image download transport::downloads images and redirect hops through the %s fetch without credentials", Coverage = UpstreamCoverage.Partial, Commit = Commit,
-        Note = "Node and edge are one build. The custom variant uses DownloadHttpClient for downloads, where a redirect is an observable second request and not a fetch init flag, so its redirect mode and abort signal are not asserted.")]
-    public async Task DownloadsImagesAndRedirectHopsThroughTheFetchWithoutCredentials(string transport)
+    [UpstreamTest(
+        "packages/google-vertex/src/maas/google-vertex-maas-provider-node-download.test.ts::MaaS %s image download transport::downloads images and redirect hops through the %s fetch without credentials",
+        Coverage = UpstreamCoverage.Partial,
+        Commit = Commit,
+        Note = "Node and edge are one build. The custom variant uses DownloadHttpClient for downloads, where a redirect is an observable second request and not a fetch init flag, so its redirect mode and abort signal are not asserted."
+    )]
+    public async Task DownloadsImagesAndRedirectHopsThroughTheFetchWithoutCredentials(
+        string transport
+    )
     {
         var global = new Recording(Respond);
         var custom = new Recording(Respond);
@@ -47,20 +53,34 @@ public sealed class MaasImageDownloadTransportTests
             else if (transport == "custom")
             {
                 handler = new FetchHandler(custom);
-                options.DownloadHttpClient = new HttpClient(new FetchHandler(custom), disposeHandler: true);
+                options.DownloadHttpClient = new HttpClient(
+                    new FetchHandler(custom),
+                    disposeHandler: true
+                );
             }
 
             var provider = new GoogleVertexMaasProvider(options, handler);
             using var cancellation = new CancellationTokenSource();
 
-            var result = await provider.ImageModel("test-model").DoGenerateAsync(new ImageCallOptions("A small blue square") { Count = 1 }, cancellation.Token);
+            var result = await provider
+                .ImageModel("test-model")
+                .DoGenerateAsync(
+                    new ImageCallOptions("A small blue square") { Count = 1 },
+                    cancellation.Token
+                );
 
             Assert.Equal(Png, result.Images.Single().Data);
             var selected = transport == "custom" ? custom : global;
             Assert.Empty((transport == "custom" ? global : custom).Calls);
             Assert.Equal(
-                new[] { "https://api.example/v1/images/generations", "https://images.example/image.png", "https://cdn.example/image.png" },
-                selected.Calls.Select(call => call.Url));
+                new[]
+                {
+                    "https://api.example/v1/images/generations",
+                    "https://images.example/image.png",
+                    "https://cdn.example/image.png",
+                },
+                selected.Calls.Select(call => call.Url)
+            );
             Assert.Equal("Bearer test-token", selected.Calls[0].Headers["Authorization"]);
             Assert.Equal("test-key", selected.Calls[0].Headers["x-provider-key"]);
             foreach (var download in selected.Calls.Skip(1))
@@ -82,8 +102,12 @@ public sealed class MaasImageDownloadTransportTests
     }
 
     [Fact]
-    [UpstreamTest("packages/google-vertex/src/maas/google-vertex-maas-provider-node-download.test.ts::MaaS %s browser redirects::preserves the native follow retry after an opaque redirect", Coverage = UpstreamCoverage.Covered, Commit = Commit,
-        Note = "Node and edge are one build. Download.IsBrowser stands in for the stubbed window global, and Download.Fetch for the custom fetch that serves the API call and the downloads.")]
+    [UpstreamTest(
+        "packages/google-vertex/src/maas/google-vertex-maas-provider-node-download.test.ts::MaaS %s browser redirects::preserves the native follow retry after an opaque redirect",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit,
+        Note = "Node and edge are one build. Download.IsBrowser stands in for the stubbed window global, and Download.Fetch for the custom fetch that serves the API call and the downloads."
+    )]
     public async Task PreservesTheNativeFollowRetryAfterAnOpaqueRedirect()
     {
         var calls = new List<(string Url, string Redirect)>();
@@ -99,26 +123,37 @@ public sealed class MaasImageDownloadTransportTests
 
             if (url == "https://api.example/v1/images/generations")
             {
-                return Task.FromResult(Json("{\"data\":[{\"url\":\"https://images.example/image.png\"}]}"));
+                return Task.FromResult(
+                    Json("{\"data\":[{\"url\":\"https://images.example/image.png\"}]}")
+                );
             }
 
             return init.Redirect switch
             {
-                "manual" => Task.FromResult(new DownloadResponse(0, string.Empty, null, null, "opaqueredirect")),
+                "manual" => Task.FromResult(
+                    new DownloadResponse(0, string.Empty, null, null, "opaqueredirect")
+                ),
                 "follow" => Task.FromResult(new DownloadResponse(200, "OK", null, Png)),
                 _ => throw new InvalidOperationException("Unexpected redirect mode"),
             };
         };
         try
         {
-            var provider = new GoogleVertexMaasProvider(new GoogleVertexPartnerOptions
-            {
-                Project = "test-project",
-                BaseUrl = "https://api.example/v1",
-                GenerateAuthToken = _ => Task.FromResult("test-token"),
-            });
+            var provider = new GoogleVertexMaasProvider(
+                new GoogleVertexPartnerOptions
+                {
+                    Project = "test-project",
+                    BaseUrl = "https://api.example/v1",
+                    GenerateAuthToken = _ => Task.FromResult("test-token"),
+                }
+            );
 
-            var result = await provider.ImageModel("test-model").DoGenerateAsync(new ImageCallOptions("A small blue square") { Count = 1 }, CancellationToken.None);
+            var result = await provider
+                .ImageModel("test-model")
+                .DoGenerateAsync(
+                    new ImageCallOptions("A small blue square") { Count = 1 },
+                    CancellationToken.None
+                );
 
             Assert.Equal(Png, result.Images.Single().Data);
             Assert.Equal(3, calls.Count);
@@ -156,7 +191,12 @@ public sealed class MaasImageDownloadTransportTests
         }
     }
 
-    private sealed record Call(string Url, string Redirect, CancellationToken Signal, Dictionary<string, string> Headers);
+    private sealed record Call(
+        string Url,
+        string Redirect,
+        CancellationToken Signal,
+        Dictionary<string, string> Headers
+    );
 
     private sealed class Recording(Func<string, DownloadResponse> respond)
     {
@@ -166,7 +206,19 @@ public sealed class MaasImageDownloadTransportTests
         {
             lock (Calls)
             {
-                Calls.Add(new Call(url, init.Redirect, init.AbortSignal, init.Headers.Entries().ToDictionary(h => h.Key, h => h.Value, StringComparer.OrdinalIgnoreCase)));
+                Calls.Add(
+                    new Call(
+                        url,
+                        init.Redirect,
+                        init.AbortSignal,
+                        init.Headers.Entries()
+                            .ToDictionary(
+                                h => h.Key,
+                                h => h.Value,
+                                StringComparer.OrdinalIgnoreCase
+                            )
+                    )
+                );
             }
 
             return Task.FromResult(respond(url));
@@ -176,7 +228,10 @@ public sealed class MaasImageDownloadTransportTests
     /// <summary>A transport that sends each request through a recording fetch.</summary>
     private sealed class FetchHandler(Recording fetch) : HttpMessageHandler
     {
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
         {
             var init = new DownloadRequest(null, cancellationToken, "manual");
             foreach (var header in request.Headers)
@@ -186,7 +241,10 @@ public sealed class MaasImageDownloadTransportTests
 
             var url = request.RequestUri!.AbsoluteUri;
             var response = await fetch.Fetch(url, init).ConfigureAwait(false);
-            var message = new HttpResponseMessage((HttpStatusCode)response.Status) { Content = new ByteArrayContent(response.Body ?? []) };
+            var message = new HttpResponseMessage((HttpStatusCode)response.Status)
+            {
+                Content = new ByteArrayContent(response.Body ?? []),
+            };
             var location = response.Headers.Get("location");
             if (location != null)
             {

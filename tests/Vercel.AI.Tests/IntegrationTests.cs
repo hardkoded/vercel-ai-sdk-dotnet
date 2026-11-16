@@ -14,12 +14,14 @@ public sealed class IntegrationTests
     {
         Skip.If(string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AI_GATEWAY_API_KEY")));
         var client = new AiClient(GatewayProvider.Create());
-        var result = await client.GenerateTextAsync(new GenerateTextOptions
-        {
-            ModelId = "openai/gpt-4.1-mini",
-            Prompt = "Reply with the single word pong.",
-            MaxOutputTokens = 16,
-        });
+        var result = await client.GenerateTextAsync(
+            new GenerateTextOptions
+            {
+                ModelId = "openai/gpt-4.1-mini",
+                Prompt = "Reply with the single word pong.",
+                MaxOutputTokens = 16,
+            }
+        );
         Assert.False(string.IsNullOrWhiteSpace(result.Text));
     }
 
@@ -29,12 +31,14 @@ public sealed class IntegrationTests
         Skip.If(string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OPENAI_API_KEY")));
         var model = OpenAIProvider.Create().LanguageModel("gpt-4.1-mini");
         var client = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "unused" }));
-        var result = await client.GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            Prompt = "Reply with the single word pong.",
-            MaxOutputTokens = 16,
-        });
+        var result = await client.GenerateTextAsync(
+            new GenerateTextOptions
+            {
+                Model = model,
+                Prompt = "Reply with the single word pong.",
+                MaxOutputTokens = 16,
+            }
+        );
         Assert.False(string.IsNullOrWhiteSpace(result.Text));
     }
 }

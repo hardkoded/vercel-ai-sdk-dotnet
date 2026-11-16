@@ -10,12 +10,17 @@ namespace Vercel.AI.Tests.Upstream.AmazonBedrock.AmazonBedrockChatLanguageModel;
 
 public sealed class DoGenerateTopLevelReasoningParameterTests
 {
-    private const string Prefix = "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate > top-level reasoning parameter::";
+    private const string Prefix =
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate > top-level reasoning parameter::";
     private const string NovaModelId = "us.amazon.nova-2-lite-v1:0";
     private const string OpenAiModelId = "openai.gpt-oss-120b-1:0";
 
     [Fact]
-    [UpstreamTest(Prefix + "should not set reasoning config when reasoning is \"provider-default\" for newer Anthropic models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "should not set reasoning config when reasoning is \"provider-default\" for newer Anthropic models",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_not_set_reasoning_config_when_reasoning_is_provider_default_for_newer_Anthropic_models()
     {
         var (_, body) = await Generate(NewerAnthropicModelId, "provider-default");
@@ -25,7 +30,10 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should map reasoning to adaptive thinking with effort for newer Anthropic models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should map reasoning to adaptive thinking with effort for newer Anthropic models",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_map_reasoning_to_adaptive_thinking_with_effort_for_newer_Anthropic_models()
     {
         var (_, body) = await Generate(NewerAnthropicModelId, "high");
@@ -35,7 +43,10 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should map reasoning \"xhigh\" to effort \"max\" for newer Anthropic models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should map reasoning \"xhigh\" to effort \"max\" for newer Anthropic models",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_map_reasoning_xhigh_to_effort_max_for_newer_Anthropic_models()
     {
         var (_, body) = await Generate(NewerAnthropicModelId, "xhigh");
@@ -45,7 +56,10 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should map reasoning \"max\" directly for newer Anthropic models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should map reasoning \"max\" directly for newer Anthropic models",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_map_reasoning_max_directly_for_newer_Anthropic_models()
     {
         var (result, body) = await Generate(NewerAnthropicModelId, "max");
@@ -55,28 +69,46 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should warn when reasoning \"minimal\" is mapped for newer Anthropic models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should warn when reasoning \"minimal\" is mapped for newer Anthropic models",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_warn_when_reasoning_minimal_is_mapped_for_newer_Anthropic_models()
     {
         var (result, body) = await Generate(NewerAnthropicModelId, "minimal");
 
-        Assert.Contains(result.Warnings, warning => warning.Type == "compatibility"
+        Assert.Contains(result.Warnings, warning =>
+            warning.Type == "compatibility"
             && warning.Feature == "reasoning"
-            && warning.Message == "reasoning \"minimal\" is not directly supported by this model. mapped to effort \"low\".");
+            && warning.Message
+                == "reasoning \"minimal\" is not directly supported by this model. mapped to effort \"low\"."
+        );
         Assert.Equal("low", Field(body, "output_config")!.Value.GetProperty("effort").GetString());
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should map reasoning to budget-based thinking for older Anthropic models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should map reasoning to budget-based thinking for older Anthropic models",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_map_reasoning_to_budget_based_thinking_for_older_Anthropic_models()
     {
         var (_, body) = await Generate(HaikuModelId, "high");
 
-        AssertEqual("{\"type\":\"enabled\",\"budget_tokens\":" + Math.Max(1024, (int)Math.Round(4096 * 0.6)) + "}", Field(body, "thinking")!.Value);
+        AssertEqual(
+            "{\"type\":\"enabled\",\"budget_tokens\":"
+                + Math.Max(1024, (int)Math.Round(4096 * 0.6))
+                + "}",
+            Field(body, "thinking")!.Value
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should map reasoning to budget with minimum of 1024 tokens for older Anthropic models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "should map reasoning to budget with minimum of 1024 tokens for older Anthropic models",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_map_reasoning_to_budget_with_minimum_of_1024_tokens_for_older_Anthropic_models()
     {
         var (_, body) = await Generate(HaikuModelId, "minimal");
@@ -87,8 +119,14 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
     [Theory]
     [InlineData("medium")]
     [InlineData("max")]
-    [UpstreamTest(Prefix + "should map reasoning \"%s\" directly to reasoning_effort for OpenAI gpt-oss models", Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_map_reasoning_directly_to_reasoning_effort_for_OpenAI_gpt_oss_models(string reasoning)
+    [UpstreamTest(
+        Prefix
+            + "should map reasoning \"%s\" directly to reasoning_effort for OpenAI gpt-oss models",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_map_reasoning_directly_to_reasoning_effort_for_OpenAI_gpt_oss_models(
+        string reasoning
+    )
     {
         var (result, body) = await Generate(OpenAiModelId, reasoning);
 
@@ -99,41 +137,77 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should map portable reasoning for Nova 2", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should map portable reasoning for Nova 2",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_map_portable_reasoning_for_Nova_2()
     {
         var (_, body) = await Generate(NovaModelId, "high");
 
-        AssertEqual("{\"type\":\"enabled\",\"maxReasoningEffort\":\"high\"}", Field(body, "reasoningConfig")!.Value);
+        AssertEqual(
+            "{\"type\":\"enabled\",\"maxReasoningEffort\":\"high\"}",
+            Field(body, "reasoningConfig")!.Value
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should let explicit reasoningConfig fields win over derived reasoning values", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should let explicit reasoningConfig fields win over derived reasoning values",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_let_explicit_reasoningConfig_fields_win_over_derived_reasoning_values()
     {
-        var (_, body) = await Generate(HaikuModelId, "high", "{\"bedrock\":{\"reasoningConfig\":{\"type\":\"enabled\",\"budgetTokens\":5000}}}");
+        var (_, body) = await Generate(
+            HaikuModelId,
+            "high",
+            "{\"bedrock\":{\"reasoningConfig\":{\"type\":\"enabled\",\"budgetTokens\":5000}}}"
+        );
 
-        AssertEqual("{\"type\":\"enabled\",\"budget_tokens\":5000}", Field(body, "thinking")!.Value);
+        AssertEqual(
+            "{\"type\":\"enabled\",\"budget_tokens\":5000}",
+            Field(body, "thinking")!.Value
+        );
     }
 
     [Theory]
     [InlineData("amazonBedrock")]
     [InlineData("bedrock")]
-    [UpstreamTest(Prefix + "should derive portable effort with display-only %s reasoningConfig for newer Anthropic models", Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_derive_portable_effort_with_display_only_reasoningConfig_for_newer_Anthropic_models(string providerKey)
+    [UpstreamTest(
+        Prefix
+            + "should derive portable effort with display-only %s reasoningConfig for newer Anthropic models",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_derive_portable_effort_with_display_only_reasoningConfig_for_newer_Anthropic_models(
+        string providerKey
+    )
     {
-        var (result, body) = await Generate(NewerAnthropicModelId, "high", "{\"" + providerKey + "\":{\"reasoningConfig\":{\"display\":\"summarized\"}}}");
+        var (result, body) = await Generate(
+            NewerAnthropicModelId,
+            "high",
+            "{\"" + providerKey + "\":{\"reasoningConfig\":{\"display\":\"summarized\"}}}"
+        );
 
-        AssertEqual("{\"type\":\"adaptive\",\"display\":\"summarized\"}", Field(body, "thinking")!.Value);
+        AssertEqual(
+            "{\"type\":\"adaptive\",\"display\":\"summarized\"}",
+            Field(body, "thinking")!.Value
+        );
         Assert.Equal("high", Field(body, "output_config")!.Value.GetProperty("effort").GetString());
         Assert.Empty(result.Warnings);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should honor reasoning \"none\" with display-only reasoningConfig", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should honor reasoning \"none\" with display-only reasoningConfig",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_honor_reasoning_none_with_display_only_reasoningConfig()
     {
-        var (result, body) = await Generate(NewerAnthropicModelId, "none", "{\"bedrock\":{\"reasoningConfig\":{\"display\":\"summarized\"}}}");
+        var (result, body) = await Generate(
+            NewerAnthropicModelId,
+            "none",
+            "{\"bedrock\":{\"reasoningConfig\":{\"display\":\"summarized\"}}}"
+        );
 
         Assert.Null(Field(body, "thinking"));
         Assert.Null(Field(body, "output_config"));
@@ -141,59 +215,108 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should preserve an explicit thinking budget alongside portable effort for adaptive-capable models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "should preserve an explicit thinking budget alongside portable effort for adaptive-capable models",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_preserve_an_explicit_thinking_budget_alongside_portable_effort_for_adaptive_capable_models()
     {
-        var (_, body) = await Generate(NewerAnthropicModelId, "high", "{\"bedrock\":{\"reasoningConfig\":{\"type\":\"enabled\",\"budgetTokens\":3000}}}");
+        var (_, body) = await Generate(
+            NewerAnthropicModelId,
+            "high",
+            "{\"bedrock\":{\"reasoningConfig\":{\"type\":\"enabled\",\"budgetTokens\":3000}}}"
+        );
 
-        AssertEqual("{\"type\":\"enabled\",\"budget_tokens\":3000}", Field(body, "thinking")!.Value);
+        AssertEqual(
+            "{\"type\":\"enabled\",\"budget_tokens\":3000}",
+            Field(body, "thinking")!.Value
+        );
         Assert.Equal("high", Field(body, "output_config")!.Value.GetProperty("effort").GetString());
     }
 
     [Theory]
     [InlineData("amazonBedrock")]
     [InlineData("bedrock")]
-    [UpstreamTest(Prefix + "should ignore portable max without warnings when %s reasoning effort is explicit", Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_ignore_portable_max_without_warnings_when_reasoning_effort_is_explicit(string providerKey)
+    [UpstreamTest(
+        Prefix + "should ignore portable max without warnings when %s reasoning effort is explicit",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_ignore_portable_max_without_warnings_when_reasoning_effort_is_explicit(
+        string providerKey
+    )
     {
-        var (result, body) = await Run(NovaModelId, TextResponse, new LanguageModelCallOptions
-        {
-            Prompt = TestPrompt,
-            Reasoning = "max",
-            MaxOutputTokens = 1024,
-            ProviderOptions = Options("{\"" + providerKey + "\":{\"reasoningConfig\":{\"type\":\"enabled\",\"maxReasoningEffort\":\"low\"}}}"),
-        });
+        var (result, body) = await Run(
+            NovaModelId,
+            TextResponse,
+            new LanguageModelCallOptions
+            {
+                Prompt = TestPrompt,
+                Reasoning = "max",
+                MaxOutputTokens = 1024,
+                ProviderOptions = Options(
+                    "{\""
+                        + providerKey
+                        + "\":{\"reasoningConfig\":{\"type\":\"enabled\",\"maxReasoningEffort\":\"low\"}}}"
+                ),
+            }
+        );
 
-        AssertEqual("{\"type\":\"enabled\",\"maxReasoningEffort\":\"low\"}", Field(body, "reasoningConfig")!.Value);
+        AssertEqual(
+            "{\"type\":\"enabled\",\"maxReasoningEffort\":\"low\"}",
+            Field(body, "reasoningConfig")!.Value
+        );
         Assert.Equal(1024, body.GetProperty("inferenceConfig").GetProperty("maxTokens").GetInt32());
         Assert.Empty(result.Warnings);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should strip temperature, topP, topK for Anthropic models when reasoning enables thinking", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "should strip temperature, topP, topK for Anthropic models when reasoning enables thinking",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_strip_temperature_topP_topK_for_Anthropic_models_when_reasoning_enables_thinking()
     {
-        var (result, body) = await Run(HaikuModelId, TextResponse, new LanguageModelCallOptions
-        {
-            Prompt = TestPrompt,
-            Reasoning = "high",
-            Temperature = 0.7,
-            TopP = 0.9,
-            TopK = 5,
-        });
+        var (result, body) = await Run(
+            HaikuModelId,
+            TextResponse,
+            new LanguageModelCallOptions
+            {
+                Prompt = TestPrompt,
+                Reasoning = "high",
+                Temperature = 0.7,
+                TopP = 0.9,
+                TopK = 5,
+            }
+        );
 
         var inference = body.GetProperty("inferenceConfig");
         Assert.False(inference.TryGetProperty("temperature", out _));
         Assert.False(inference.TryGetProperty("topP", out _));
         Assert.False(inference.TryGetProperty("topK", out _));
-        var warnings = result.Warnings.Select(warning => (warning.Type, warning.Feature, warning.Message)).ToArray();
-        Assert.Contains(("unsupported", "temperature", "temperature is not supported when thinking is enabled"), warnings);
-        Assert.Contains(("unsupported", "topP", "topP is not supported when thinking is enabled"), warnings);
-        Assert.Contains(("unsupported", "topK", "topK is not supported when thinking is enabled"), warnings);
+        var warnings = result
+            .Warnings.Select(warning => (warning.Type, warning.Feature, warning.Message))
+            .ToArray();
+        Assert.Contains(
+            ("unsupported", "temperature", "temperature is not supported when thinking is enabled"),
+            warnings
+        );
+        Assert.Contains(
+            ("unsupported", "topP", "topP is not supported when thinking is enabled"),
+            warnings
+        );
+        Assert.Contains(
+            ("unsupported", "topK", "topK is not supported when thinking is enabled"),
+            warnings
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should handle reasoning \"none\" for Anthropic models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should handle reasoning \"none\" for Anthropic models",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_handle_reasoning_none_for_Anthropic_models()
     {
         var (_, body) = await Generate(HaikuModelId, "none");
@@ -202,7 +325,10 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should handle reasoning \"none\" for OpenAI models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should handle reasoning \"none\" for OpenAI models",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_handle_reasoning_none_for_OpenAI_models()
     {
         var (_, body) = await Generate(OpenAiModelId, "none");
@@ -210,20 +336,30 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
         Assert.Null(Field(body, "reasoning_effort"));
     }
 
-    private static Task<(LanguageModelGenerateResult Result, JsonElement Body)> Generate(string modelId, string reasoning, string? providerOptions = null)
+    private static Task<(LanguageModelGenerateResult Result, JsonElement Body)> Generate(
+        string modelId,
+        string reasoning,
+        string? providerOptions = null
+    )
     {
-        return Run(modelId, TextResponse, new LanguageModelCallOptions
-        {
-            Prompt = TestPrompt,
-            Reasoning = reasoning,
-            ProviderOptions = providerOptions == null ? null : Options(providerOptions),
-        });
+        return Run(
+            modelId,
+            TextResponse,
+            new LanguageModelCallOptions
+            {
+                Prompt = TestPrompt,
+                Reasoning = reasoning,
+                ProviderOptions = providerOptions == null ? null : Options(providerOptions),
+            }
+        );
     }
 
     // Reads requestBody.additionalModelRequestFields?.<name>, which is undefined when either level is missing.
     private static JsonElement? Field(JsonElement body, string name)
     {
-        return body.TryGetProperty("additionalModelRequestFields", out var fields) && fields.TryGetProperty(name, out var value)
+        return
+            body.TryGetProperty("additionalModelRequestFields", out var fields)
+            && fields.TryGetProperty(name, out var value)
             ? value
             : null;
     }

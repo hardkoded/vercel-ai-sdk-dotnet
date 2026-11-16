@@ -23,10 +23,18 @@ internal sealed class OversizedResponseContent : HttpContent
 
     public bool Cancelled { get; private set; }
 
-    public static (HttpResponseMessage Response, OversizedResponseContent Content) Create(string body = "{}", HttpStatusCode status = HttpStatusCode.OK, string? statusText = null)
+    public static (HttpResponseMessage Response, OversizedResponseContent Content) Create(
+        string body = "{}",
+        HttpStatusCode status = HttpStatusCode.OK,
+        string? statusText = null
+    )
     {
         var content = new OversizedResponseContent(body);
-        var response = new HttpResponseMessage(status) { Content = content, ReasonPhrase = statusText };
+        var response = new HttpResponseMessage(status)
+        {
+            Content = content,
+            ReasonPhrase = statusText,
+        };
         return (response, content);
     }
 

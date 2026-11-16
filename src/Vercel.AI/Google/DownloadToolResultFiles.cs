@@ -20,7 +20,11 @@ public sealed class ToolResultDownloads
 /// The <c>downloadToolResultFiles</c> config of the Google language model. <paramref name="SupportsGoogleCloudStorageUrls"/> lets
 /// <c>gs://</c> URLs reach the model without a download. <paramref name="Fetch"/> is the transport for untrusted file URLs.
 /// </summary>
-internal sealed record GoogleToolResultDownloadSettings(long MaxBytes, bool SupportsGoogleCloudStorageUrls, DownloadFetch? Fetch);
+internal sealed record GoogleToolResultDownloadSettings(
+    long MaxBytes,
+    bool SupportsGoogleCloudStorageUrls,
+    DownloadFetch? Fetch
+);
 
 /// <summary>Maps to <c>download-tool-result-files.ts</c>.</summary>
 internal static class DownloadToolResultFiles
@@ -34,7 +38,8 @@ internal static class DownloadToolResultFiles
         CancellationToken abortSignal,
         long maxBytes,
         DownloadFetch? fetch = null,
-        IReadOnlyDictionary<string, IReadOnlyList<Regex>>? supportedUrls = null)
+        IReadOnlyDictionary<string, IReadOnlyList<Regex>>? supportedUrls = null
+    )
     {
         var result = new List<ModelMessage>(prompt.Count);
         foreach (var message in prompt)
@@ -49,7 +54,14 @@ internal static class DownloadToolResultFiles
             var results = new List<ToolModelMessage>(tool.Results.Count);
             foreach (var part in tool.Results)
             {
-                var next = await DownloadToolResultOutputAsync(part, abortSignal, maxBytes, fetch, supportedUrls ?? EmptyUrls).ConfigureAwait(false);
+                var next = await DownloadToolResultOutputAsync(
+                        part,
+                        abortSignal,
+                        maxBytes,
+                        fetch,
+                        supportedUrls ?? EmptyUrls
+                    )
+                    .ConfigureAwait(false);
                 changed |= !ReferenceEquals(next, part);
                 results.Add(next);
             }
@@ -64,21 +76,28 @@ internal static class DownloadToolResultFiles
             }
             else
             {
-                result.Add(new ToolModelMessage(results) { MessageProviderOptions = tool.MessageProviderOptions });
+                result.Add(
+                    new ToolModelMessage(results)
+                    {
+                        MessageProviderOptions = tool.MessageProviderOptions,
+                    }
+                );
             }
         }
 
         return result;
     }
 
-    private static readonly IReadOnlyDictionary<string, IReadOnlyList<Regex>> EmptyUrls = new Dictionary<string, IReadOnlyList<Regex>>();
+    private static readonly IReadOnlyDictionary<string, IReadOnlyList<Regex>> EmptyUrls =
+        new Dictionary<string, IReadOnlyList<Regex>>();
 
     private static async Task<ToolModelMessage> DownloadToolResultOutputAsync(
         ToolModelMessage output,
         CancellationToken abortSignal,
         long maxBytes,
         DownloadFetch? fetch,
-        IReadOnlyDictionary<string, IReadOnlyList<Regex>> supportedUrls)
+        IReadOnlyDictionary<string, IReadOnlyList<Regex>> supportedUrls
+    )
     {
         if (output.OutputContent is null)
         {
@@ -89,7 +108,10 @@ internal static class DownloadToolResultFiles
         var value = new List<UserContentPart>(output.OutputContent.Count);
         foreach (var part in output.OutputContent)
         {
-            if (part is not FileContentPart { Url: not null, Data: null, ProviderReference: null } file)
+            if (
+                part
+                is not FileContentPart { Url: not null, Data: null, ProviderReference: null } file
+            )
             {
                 value.Add(part);
                 continue;
@@ -101,12 +123,26 @@ internal static class DownloadToolResultFiles
                 continue;
             }
 
-            var blob = await Download.GetAsync(new Uri(file.Url), maxBytes, abortSignal, fetch).ConfigureAwait(false);
+            var blob = await Download
+                .GetAsync(new Uri(file.Url), maxBytes, abortSignal, fetch)
+                .ConfigureAwait(false);
             var detected = MediaTypes.DetectMediaType(blob.Data, "image");
-            var blobType = string.IsNullOrEmpty(blob.MediaType) ? null : blob.MediaType!.ToLowerInvariant();
-            var mediaType = detected ?? (blobType != null && !MediaTypes.IsFullMediaType(file.MediaType) ? blobType : file.MediaType);
+            var blobType = string.IsNullOrEmpty(blob.MediaType)
+                ? null
+                : blob.MediaType!.ToLowerInvariant();
+            var mediaType = detected
+                ?? (
+                    blobType != null && !MediaTypes.IsFullMediaType(file.MediaType)
+                        ? blobType
+                        : file.MediaType
+                );
             downloaded = true;
-            value.Add(new FileContentPart(mediaType, null, blob.Data, file.FileName) { ProviderOptions = file.ProviderOptions });
+            value.Add(
+                new FileContentPart(mediaType, null, blob.Data, file.FileName)
+                {
+                    ProviderOptions = file.ProviderOptions,
+                }
+            );
         }
 
         if (!downloaded)
@@ -114,7 +150,12 @@ internal static class DownloadToolResultFiles
             return output;
         }
 
-        return new ToolModelMessage(output.ToolCallId, output.ToolName, value, output.ProviderMetadata)
+        return new ToolModelMessage(
+            output.ToolCallId,
+            output.ToolName,
+            value,
+            output.ProviderMetadata
+        )
         {
             ProviderOptions = output.ProviderOptions,
             OutputProviderOptions = output.OutputProviderOptions,

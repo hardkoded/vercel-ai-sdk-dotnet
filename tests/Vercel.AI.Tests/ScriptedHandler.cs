@@ -19,11 +19,16 @@ internal sealed class ScriptedHandler : HttpMessageHandler
 
     public Dictionary<string, string> Headers { get; } = new(StringComparer.OrdinalIgnoreCase);
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         Calls++;
         Uri = request.RequestUri?.AbsoluteUri ?? string.Empty;
-        Body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+        Body = request.Content is null
+            ? string.Empty
+            : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
         Headers.Clear();
         foreach (var header in request.Headers)
         {
@@ -35,13 +40,17 @@ internal sealed class ScriptedHandler : HttpMessageHandler
             Headers["Authorization"] = request.Headers.Authorization.ToString();
         }
 
-        var status = Statuses.Count > 0 ? Statuses[Math.Min(Calls - 1, Statuses.Count - 1)] : HttpStatusCode.OK;
+        var status =
+            Statuses.Count > 0
+                ? Statuses[Math.Min(Calls - 1, Statuses.Count - 1)]
+                : HttpStatusCode.OK;
         if (status == HttpStatusCode.OK && Uri.Contains("/job?price=true"))
         {
             return new HttpResponseMessage(status) { Content = ProdiaJob() };
         }
 
-        var json = status == HttpStatusCode.OK ? BodyFor(Uri) : "{\"error\":{\"message\":\"nope\"}}";
+        var json =
+            status == HttpStatusCode.OK ? BodyFor(Uri) : "{\"error\":{\"message\":\"nope\"}}";
         return new HttpResponseMessage(status)
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
@@ -52,8 +61,11 @@ internal sealed class ScriptedHandler : HttpMessageHandler
     {
         var content = new StringContent(
             "--b\r\nContent-Disposition: form-data; name=\"job\"\r\n\r\n{\"id\":\"job\"}\r\n--b\r\nContent-Disposition: form-data; name=\"output\"\r\nContent-Type: image/png\r\n\r\npng\r\n--b--\r\n",
-            Encoding.UTF8);
-        content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("multipart/form-data; boundary=b");
+            Encoding.UTF8
+        );
+        content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse(
+            "multipart/form-data; boundary=b"
+        );
         return content;
     }
 

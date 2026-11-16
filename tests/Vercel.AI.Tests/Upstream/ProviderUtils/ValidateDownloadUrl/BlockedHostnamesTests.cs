@@ -8,7 +8,8 @@ namespace Vercel.AI.Tests.Upstream.ProviderUtils.ValidateDownloadUrl;
 
 public sealed class BlockedHostnamesTests
 {
-    private const string Suite = "packages/provider-utils/src/validate-download-url.test.ts::validateDownloadUrl > blocked hostnames::";
+    private const string Suite =
+        "packages/provider-utils/src/validate-download-url.test.ts::validateDownloadUrl > blocked hostnames::";
 
     [Fact]
     [UpstreamTest(Suite + "should block localhost", Coverage = UpstreamCoverage.Covered)]
@@ -44,7 +45,10 @@ public sealed class BlockedHostnamesTests
     [InlineData("https://SERVICE.INTERNAL/file")]
     [InlineData("https://service.internal./file")]
     [InlineData("http://service.internal:8080/file")]
-    [UpstreamTest(Suite + "should block .internal hostnames: %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Suite + "should block .internal hostnames: %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_block_internal_hostnames(string url)
     {
         AssertBlocked(url);

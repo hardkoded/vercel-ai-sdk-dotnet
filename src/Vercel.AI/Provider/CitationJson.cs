@@ -63,8 +63,14 @@ internal static class CitationJson
             return null;
         }
 
-        var start = json["startIndex"] is JsonValue s && s.TryGetValue<int>(out var startIndex) ? startIndex : (int?)null;
-        var end = json["endIndex"] is JsonValue e && e.TryGetValue<int>(out var endIndex) ? endIndex : (int?)null;
+        var start =
+            json["startIndex"] is JsonValue s && s.TryGetValue<int>(out var startIndex)
+                ? startIndex
+                : (int?)null;
+        var end =
+            json["endIndex"] is JsonValue e && e.TryGetValue<int>(out var endIndex)
+                ? endIndex
+                : (int?)null;
         var citedText = (string?)json["citedText"];
         JsonElement? metadata = source["providerMetadata"] is { } node
             ? JsonSerializer.SerializeToElement(node)
@@ -79,17 +85,25 @@ internal static class CitationJson
                     (string?)source["mediaType"] ?? string.Empty,
                     (string?)source["title"] ?? string.Empty,
                     (string?)source["filename"],
-                    metadata),
+                    metadata
+                ),
                 start,
                 end,
-                citedText);
+                citedText
+            );
         }
 
         return new Citation(
-            new GeneratedSource(id, (string?)source["url"] ?? string.Empty, (string?)source["title"], metadata),
+            new GeneratedSource(
+                id,
+                (string?)source["url"] ?? string.Empty,
+                (string?)source["title"],
+                metadata
+            ),
             start,
             end,
-            citedText);
+            citedText
+        );
     }
 
     private static JsonObject SourceToJson(GeneratedContent source)
@@ -130,7 +144,10 @@ internal static class CitationJson
                 metadata = document.ProviderMetadata;
                 break;
             default:
-                throw new ArgumentException("A citation source is a URL source or a document source.", nameof(source));
+                throw new ArgumentException(
+                    "A citation source is a URL source or a document source.",
+                    nameof(source)
+                );
         }
 
         if (metadata is { ValueKind: not (JsonValueKind.Null or JsonValueKind.Undefined) } element)

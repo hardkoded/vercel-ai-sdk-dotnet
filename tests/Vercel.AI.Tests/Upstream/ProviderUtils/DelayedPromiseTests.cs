@@ -10,7 +10,10 @@ namespace Vercel.AI.Tests.Upstream.ProviderUtils;
 public sealed class DelayedPromiseTests
 {
     [Fact]
-    [UpstreamTest("packages/provider-utils/src/delayed-promise.test.ts::DelayedPromise::should resolve when accessed after resolution", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/provider-utils/src/delayed-promise.test.ts::DelayedPromise::should resolve when accessed after resolution",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Delayed_promise_resolves_after_the_value_is_set()
     {
         var promise = new DelayedPromise<string>();
@@ -19,7 +22,10 @@ public sealed class DelayedPromiseTests
     }
 
     [Fact]
-    [UpstreamTest("packages/provider-utils/src/delayed-promise.test.ts::DelayedPromise::should reject when accessed after rejection", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/provider-utils/src/delayed-promise.test.ts::DelayedPromise::should reject when accessed after rejection",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Delayed_promise_rejects_after_the_error_is_set()
     {
         var promise = new DelayedPromise<string>();
@@ -29,7 +35,10 @@ public sealed class DelayedPromiseTests
     }
 
     [Fact]
-    [UpstreamTest("packages/provider-utils/src/delayed-promise.test.ts::DelayedPromise::should resolve when accessed before resolution", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/provider-utils/src/delayed-promise.test.ts::DelayedPromise::should resolve when accessed before resolution",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Delayed_promise_resolves_a_waiter()
     {
         var promise = new DelayedPromise<string>();
@@ -39,7 +48,10 @@ public sealed class DelayedPromiseTests
     }
 
     [Fact]
-    [UpstreamTest("packages/provider-utils/src/delayed-promise.test.ts::DelayedPromise::should reject when accessed before rejection", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/provider-utils/src/delayed-promise.test.ts::DelayedPromise::should reject when accessed before rejection",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Delayed_promise_rejects_a_waiter()
     {
         var promise = new DelayedPromise<string>();
@@ -50,7 +62,10 @@ public sealed class DelayedPromiseTests
     }
 
     [Fact]
-    [UpstreamTest("packages/provider-utils/src/delayed-promise.test.ts::DelayedPromise::should maintain the resolved state after multiple accesses", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/provider-utils/src/delayed-promise.test.ts::DelayedPromise::should maintain the resolved state after multiple accesses",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Delayed_promise_stays_resolved()
     {
         var promise = new DelayedPromise<string>();
@@ -61,7 +76,10 @@ public sealed class DelayedPromiseTests
     }
 
     [Fact]
-    [UpstreamTest("packages/provider-utils/src/delayed-promise.test.ts::DelayedPromise::should maintain the rejected state after multiple accesses", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/provider-utils/src/delayed-promise.test.ts::DelayedPromise::should maintain the rejected state after multiple accesses",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Delayed_promise_stays_rejected()
     {
         var promise = new DelayedPromise<string>();
@@ -72,7 +90,10 @@ public sealed class DelayedPromiseTests
     }
 
     [Fact]
-    [UpstreamTest("packages/provider-utils/src/delayed-promise.test.ts::DelayedPromise::should block until resolved when accessed before resolution", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/provider-utils/src/delayed-promise.test.ts::DelayedPromise::should block until resolved when accessed before resolution",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Delayed_promise_blocks_until_resolve()
     {
         var promise = new DelayedPromise<string>();
@@ -83,7 +104,10 @@ public sealed class DelayedPromiseTests
     }
 
     [Fact]
-    [UpstreamTest("packages/provider-utils/src/delayed-promise.test.ts::DelayedPromise::should block until rejected when accessed before rejection", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/provider-utils/src/delayed-promise.test.ts::DelayedPromise::should block until rejected when accessed before rejection",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Delayed_promise_blocks_until_reject()
     {
         var promise = new DelayedPromise<string>();
@@ -95,7 +119,10 @@ public sealed class DelayedPromiseTests
     }
 
     [Fact]
-    [UpstreamTest("packages/provider-utils/src/delayed-promise.test.ts::DelayedPromise::should resolve all pending promises when resolved after access", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/provider-utils/src/delayed-promise.test.ts::DelayedPromise::should resolve all pending promises when resolved after access",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Delayed_promise_resolves_every_waiter()
     {
         var promise = new DelayedPromise<string>();

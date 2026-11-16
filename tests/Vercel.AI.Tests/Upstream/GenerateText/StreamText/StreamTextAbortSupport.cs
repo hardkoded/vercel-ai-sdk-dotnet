@@ -13,11 +13,16 @@ internal static class StreamTextAbortSupport
     {
         yield return new StreamStartStreamPart(null);
         yield return new ToolCallStreamPart("call-1", "tool1", "{ \"value\": \"value\" }");
-        yield return new FinishStreamPart(FinishReason.ToolCalls, new LanguageModelUsage(3, 10, 13));
+        yield return new FinishStreamPart(
+            FinishReason.ToolCalls,
+            new LanguageModelUsage(3, 10, 13)
+        );
         await Task.CompletedTask;
     }
 
-    internal static async IAsyncEnumerable<LanguageModelStreamPart> SecondStep(CancellationTokenSource cancellation)
+    internal static async IAsyncEnumerable<LanguageModelStreamPart> SecondStep(
+        CancellationTokenSource cancellation
+    )
     {
         yield return new StreamStartStreamPart(null);
         yield return new TextStartStreamPart("1");
@@ -28,7 +33,10 @@ internal static class StreamTextAbortSupport
     }
 
     // Reads the whole stream. Signals once the first text delta is seen.
-    internal static async Task<List<TextStreamPart>> Collect(StreamTextResult result, TaskCompletionSource? firstDelta)
+    internal static async Task<List<TextStreamPart>> Collect(
+        StreamTextResult result,
+        TaskCompletionSource? firstDelta
+    )
     {
         var parts = new List<TextStreamPart>();
         await foreach (var part in result.Stream())
@@ -45,7 +53,9 @@ internal static class StreamTextAbortSupport
 
     internal static async Task Settle(Task[] results)
     {
-        var settled = Task.WhenAll(results.Select(task => task.ContinueWith(_ => { }, TaskScheduler.Default)));
+        var settled = Task.WhenAll(
+            results.Select(task => task.ContinueWith(_ => { }, TaskScheduler.Default))
+        );
         await settled.WaitAsync(TimeSpan.FromSeconds(5));
     }
 
@@ -67,7 +77,8 @@ internal static class StreamTextAbortSupport
 
         public int Disposals => Volatile.Read(ref _disposals);
 
-        public IReadOnlyDictionary<string, string> SupportedUrls => Vercel.AI.ProviderUtils.UrlSupport.None;
+        public IReadOnlyDictionary<string, string> SupportedUrls =>
+            Vercel.AI.ProviderUtils.UrlSupport.None;
 
         public string SpecificationVersion => "V4";
 
@@ -75,12 +86,18 @@ internal static class StreamTextAbortSupport
 
         public string ModelId => "open-stream";
 
-        public Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        public Task<LanguageModelGenerateResult> DoGenerateAsync(
+            LanguageModelCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
             throw new NotSupportedException();
         }
 
-        public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        public Task<LanguageModelStreamResult> DoStreamAsync(
+            LanguageModelCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
             return Task.FromResult(new LanguageModelStreamResult(new Source(this)));
         }
@@ -94,7 +111,9 @@ internal static class StreamTextAbortSupport
                 _model = model;
             }
 
-            public IAsyncEnumerator<LanguageModelStreamPart> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+            public IAsyncEnumerator<LanguageModelStreamPart> GetAsyncEnumerator(
+                CancellationToken cancellationToken = default
+            )
             {
                 return new Reader(_model);
             }
@@ -137,7 +156,8 @@ internal static class StreamTextAbortSupport
             _next = next;
         }
 
-        public IReadOnlyDictionary<string, string> SupportedUrls => Vercel.AI.ProviderUtils.UrlSupport.None;
+        public IReadOnlyDictionary<string, string> SupportedUrls =>
+            Vercel.AI.ProviderUtils.UrlSupport.None;
 
         public string SpecificationVersion => "V4";
 
@@ -145,12 +165,18 @@ internal static class StreamTextAbortSupport
 
         public string ModelId => "scripted";
 
-        public Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        public Task<LanguageModelGenerateResult> DoGenerateAsync(
+            LanguageModelCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
             throw new NotSupportedException();
         }
 
-        public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        public Task<LanguageModelStreamResult> DoStreamAsync(
+            LanguageModelCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
             return Task.FromResult(new LanguageModelStreamResult(_next()));
         }

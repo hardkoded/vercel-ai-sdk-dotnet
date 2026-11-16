@@ -21,7 +21,10 @@ public static class ProviderReferences
 
     /// <summary>Returns the id for <paramref name="provider"/>. Maps to <c>resolveProviderReference</c>.</summary>
     /// <exception cref="NoSuchProviderReferenceError">The reference has no entry for <paramref name="provider"/>.</exception>
-    public static string ResolveProviderReference(IReadOnlyDictionary<string, string> reference, string provider)
+    public static string ResolveProviderReference(
+        IReadOnlyDictionary<string, string> reference,
+        string provider
+    )
     {
         if (reference is null)
         {
@@ -49,10 +52,21 @@ public sealed class NoSuchProviderReferenceError : AiSdkError
     public const string ErrorMarker = "vercel.ai.error.AI_NoSuchProviderReferenceError";
 
     /// <summary>Creates the error.</summary>
-    public NoSuchProviderReferenceError(string provider, IReadOnlyDictionary<string, string> reference, string? message = null)
+    public NoSuchProviderReferenceError(
+        string provider,
+        IReadOnlyDictionary<string, string> reference,
+        string? message = null
+    )
         : base(
             "AI_NoSuchProviderReferenceError",
-            message ?? ("No provider reference found for provider '" + provider + "'. Available providers: " + string.Join(", ", reference.Keys)))
+            message
+                ?? (
+                    "No provider reference found for provider '"
+                    + provider
+                    + "'. Available providers: "
+                    + string.Join(", ", reference.Keys)
+                )
+        )
     {
         Provider = provider;
         Reference = reference;

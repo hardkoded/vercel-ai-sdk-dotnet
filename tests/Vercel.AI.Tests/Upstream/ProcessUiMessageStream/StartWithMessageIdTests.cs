@@ -12,19 +12,27 @@ namespace Vercel.AI.Tests.Upstream.ProcessUiMessageStream;
 /// <summary>Port of <c>process-ui-message-stream.test.ts</c> &gt; <c>processUIMessageStream</c> &gt; <c>start with message id</c>.</summary>
 public sealed class StartWithMessageIdTests
 {
-    private const string Prefix = "packages/ai/src/ui/process-ui-message-stream.test.ts::processUIMessageStream > ";
+    private const string Prefix =
+        "packages/ai/src/ui/process-ui-message-stream.test.ts::processUIMessageStream > ";
 
     [Fact]
-    [UpstreamTest(Prefix + "start with message id::should call the update function with the correct arguments", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "start with message id::should call the update function with the correct arguments",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_call_the_update_function_with_the_correct_arguments()
     {
         var harness = new ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
-        await harness.ProcessAsync("""
+        await harness.ProcessAsync(
+            """
             [{"type":"start","messageId":"msg-123"},{"type":"start-step"},{"type":"text-start","id":"text-1"},{"type":"text-delta","id":"text-1","delta":"Hello, "},{"type":"text-delta","id":"text-1","delta":"world!"},{"type":"text-end","id":"text-1"},{"type":"finish-step"},{"type":"finish"}]
-            """);
+            """
+        );
 
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             [
               {
                 "message": {
@@ -98,20 +106,28 @@ public sealed class StartWithMessageIdTests
                 }
               }
             ]
-            """, harness.WriteCalls);
+            """,
+            harness.WriteCalls
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "start with message id::should have the correct final message state", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "start with message id::should have the correct final message state",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_have_the_correct_final_message_state()
     {
         var harness = new ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
-        await harness.ProcessAsync("""
+        await harness.ProcessAsync(
+            """
             [{"type":"start","messageId":"msg-123"},{"type":"start-step"},{"type":"text-start","id":"text-1"},{"type":"text-delta","id":"text-1","delta":"Hello, "},{"type":"text-delta","id":"text-1","delta":"world!"},{"type":"text-end","id":"text-1"},{"type":"finish-step"},{"type":"finish"}]
-            """);
+            """
+        );
 
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             {
               "id": "msg-123",
               "parts": [
@@ -126,6 +142,8 @@ public sealed class StartWithMessageIdTests
               ],
               "role": "assistant"
             }
-            """, harness.Message);
+            """,
+            harness.Message
+        );
     }
 }

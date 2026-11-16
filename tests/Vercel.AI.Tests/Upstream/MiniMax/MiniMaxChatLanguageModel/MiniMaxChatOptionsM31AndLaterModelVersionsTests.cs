@@ -21,12 +21,16 @@ public sealed class MiniMaxChatOptionsM31AndLaterModelVersionsTests
             new object?[] { "minimax-m3.123-flash" },
             new object?[] { "minimax-m4" },
             new object?[] { "MiniMax-M4.0-Highspeed" },
-            new object?[] { "minimax-m10" });
+            new object?[] { "minimax-m10" }
+        );
     }
 
     public static IEnumerable<object?[]> NoneModels()
     {
-        return MiniMaxChatOptionsCall.Modes(new object?[] { "minimax-m3.2" }, new object?[] { "minimax-m4" });
+        return MiniMaxChatOptionsCall.Modes(
+            new object?[] { "minimax-m3.2" },
+            new object?[] { "minimax-m4" }
+        );
     }
 
     public static IEnumerable<object?[]> OlderModels()
@@ -38,48 +42,87 @@ public sealed class MiniMaxChatOptionsM31AndLaterModelVersionsTests
             new object?[] { "custom-model" },
             new object?[] { "other-minimax-m4" },
             new object?[] { "minimax-m3.1oops" },
-            new object?[] { "minimax-m4oops" });
+            new object?[] { "minimax-m4oops" }
+        );
     }
 
     [Theory]
     [MemberData(nameof(CapabilityModels))]
-    [UpstreamTest("packages/minimax/src/minimax-chat-language-model.test.ts::MiniMax chat options (%s) > M3.1 and later model versions::applies reasoning, sampling, media, and caching capabilities to %s", Coverage = UpstreamCoverage.Covered)]
-    public async Task Applies_reasoning_sampling_media_and_caching_capabilities(string mode, string modelId)
+    [UpstreamTest(
+        "packages/minimax/src/minimax-chat-language-model.test.ts::MiniMax chat options (%s) > M3.1 and later model versions::applies reasoning, sampling, media, and caching capabilities to %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Applies_reasoning_sampling_media_and_caching_capabilities(
+        string mode,
+        string modelId
+    )
     {
         var options = new LanguageModelCallOptions
         {
             Reasoning = "high",
             Temperature = 2,
             TopP = 0.9,
-            ProviderOptions = MiniMaxParity.Options("minimax", "{\"thinking\":{\"type\":\"adaptive\"}}"),
+            ProviderOptions = MiniMaxParity.Options(
+                "minimax",
+                "{\"thinking\":{\"type\":\"adaptive\"}}"
+            ),
             Prompt = new ModelMessage[]
             {
-                new UserModelMessage(new UserContentPart[]
-                {
-                    MiniMaxChatOptionsCall.Text("Reference.", "{\"minimax\":{\"cacheControl\":{\"type\":\"ephemeral\"}}}"),
-                    MiniMaxParity.FileUrl("image/png", "https://example.com/image.png", "{\"detail\":\"high\"}"),
-                    MiniMaxParity.FileReference("video/mp4", "minimax", "123", "{\"fps\":1}"),
-                }),
+                new UserModelMessage(
+                    new UserContentPart[]
+                    {
+                        MiniMaxChatOptionsCall.Text(
+                            "Reference.",
+                            "{\"minimax\":{\"cacheControl\":{\"type\":\"ephemeral\"}}}"
+                        ),
+                        MiniMaxParity.FileUrl(
+                            "image/png",
+                            "https://example.com/image.png",
+                            "{\"detail\":\"high\"}"
+                        ),
+                        MiniMaxParity.FileReference("video/mp4", "minimax", "123", "{\"fps\":1}"),
+                    }
+                ),
             },
         };
 
         var (body, warnings, _) = await MiniMaxChatOptionsCall.Call(mode, options, modelId);
 
-        MiniMaxParity.AssertMatch(body, "{\"model\":\"" + modelId + "\",\"temperature\":2,\"top_p\":0.9,\"thinking\":{\"type\":\"adaptive\"},\"output_config\":{\"effort\":\"high\"}}");
+        MiniMaxParity.AssertMatch(
+            body,
+            "{\"model\":\""
+                + modelId
+                + "\",\"temperature\":2,\"top_p\":0.9,\"thinking\":{\"type\":\"adaptive\"},\"output_config\":{\"effort\":\"high\"}}"
+        );
         JsonAssert.Equal(
             body["messages"]![0]!["content"],
-            "[{\"type\":\"text\",\"text\":\"Reference.\",\"cache_control\":{\"type\":\"ephemeral\"}},{\"type\":\"image\",\"source\":{\"type\":\"url\",\"url\":\"https://example.com/image.png\",\"detail\":\"high\"}},{\"type\":\"video\",\"source\":{\"type\":\"url\",\"url\":\"mm_file://123\",\"fps\":1}}]");
-        var expectedUrls = new Dictionary<string, string> { ["image/*"] = "^https?://", ["video/*"] = "^https?://" };
-        Assert.Equal(expectedUrls, MiniMaxParity.Provider(new MiniMaxServer()).Chat(modelId).SupportedUrls);
+            "[{\"type\":\"text\",\"text\":\"Reference.\",\"cache_control\":{\"type\":\"ephemeral\"}},{\"type\":\"image\",\"source\":{\"type\":\"url\",\"url\":\"https://example.com/image.png\",\"detail\":\"high\"}},{\"type\":\"video\",\"source\":{\"type\":\"url\",\"url\":\"mm_file://123\",\"fps\":1}}]"
+        );
+        var expectedUrls = new Dictionary<string, string>
+        {
+            ["image/*"] = "^https?://",
+            ["video/*"] = "^https?://",
+        };
+        Assert.Equal(
+            expectedUrls,
+            MiniMaxParity.Provider(new MiniMaxServer()).Chat(modelId).SupportedUrls
+        );
         Assert.Empty(warnings);
     }
 
     [Theory]
     [MemberData(nameof(NoneModels))]
-    [UpstreamTest("packages/minimax/src/minimax-chat-language-model.test.ts::MiniMax chat options (%s) > M3.1 and later model versions::maps reasoning none to low effort for %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/minimax/src/minimax-chat-language-model.test.ts::MiniMax chat options (%s) > M3.1 and later model versions::maps reasoning none to low effort for %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Maps_reasoning_none_to_low_effort(string mode, string modelId)
     {
-        var (body, warnings, _) = await MiniMaxChatOptionsCall.Call(mode, new LanguageModelCallOptions { Reasoning = "none" }, modelId);
+        var (body, warnings, _) = await MiniMaxChatOptionsCall.Call(
+            mode,
+            new LanguageModelCallOptions { Reasoning = "none" },
+            modelId
+        );
 
         JsonAssert.Equal(body["output_config"], "{\"effort\":\"low\"}");
         Assert.Null(body["thinking"]);
@@ -90,10 +133,19 @@ public sealed class MiniMaxChatOptionsM31AndLaterModelVersionsTests
 
     [Theory]
     [MemberData(nameof(OlderModels))]
-    [UpstreamTest("packages/minimax/src/minimax-chat-language-model.test.ts::MiniMax chat options (%s) > M3.1 and later model versions::does not opt older or unrecognized model IDs into the new capabilities: %s", Coverage = UpstreamCoverage.Covered)]
-    public async Task Does_not_opt_older_or_unrecognized_model_IDs_into_the_new_capabilities(string mode, string modelId)
+    [UpstreamTest(
+        "packages/minimax/src/minimax-chat-language-model.test.ts::MiniMax chat options (%s) > M3.1 and later model versions::does not opt older or unrecognized model IDs into the new capabilities: %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Does_not_opt_older_or_unrecognized_model_IDs_into_the_new_capabilities(
+        string mode,
+        string modelId
+    )
     {
-        var options = MiniMaxChatOptionsCall.WithText("Reference.", "{\"minimax\":{\"cacheControl\":{\"type\":\"ephemeral\"}}}");
+        var options = MiniMaxChatOptionsCall.WithText(
+            "Reference.",
+            "{\"minimax\":{\"cacheControl\":{\"type\":\"ephemeral\"}}}"
+        );
         options.Temperature = 1.5;
 
         var (body, warnings, _) = await MiniMaxChatOptionsCall.Call(mode, options, modelId);

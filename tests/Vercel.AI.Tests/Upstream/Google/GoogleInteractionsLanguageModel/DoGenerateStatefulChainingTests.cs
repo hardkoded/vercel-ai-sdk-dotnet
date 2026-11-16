@@ -16,7 +16,8 @@ namespace Vercel.AI.Tests.Upstream.Google.GoogleInteractionsLanguageModel;
 /// </summary>
 public sealed class DoGenerateStatefulChainingTests
 {
-    private const string Prefix = "packages/google/src/interactions/google-interactions-language-model.test.ts::GoogleInteractionsLanguageModel.doGenerate > stateful chaining (previousInteractionId, store, thinking)::";
+    private const string Prefix =
+        "packages/google/src/interactions/google-interactions-language-model.test.ts::GoogleInteractionsLanguageModel.doGenerate > stateful chaining (previousInteractionId, store, thinking)::";
 
     private static LanguageModelCallOptions Options(string? providerOptions = null)
     {
@@ -35,12 +36,21 @@ public sealed class DoGenerateStatefulChainingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "emits previous_interaction_id and omits store when previousInteractionId is set + default store", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "emits previous_interaction_id and omits store when previousInteractionId is set + default store",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Emits_previous_interaction_id_and_omits_store_when_previousInteractionId_is_set_plus_default_store()
     {
         var handler = Basic();
 
-        await GoogleInteractionsStreamSupport.Model(handler).DoGenerateAsync(Options("{\"google\":{\"previousInteractionId\":\"v1_prev-abc\"}}"), CancellationToken.None);
+        await GoogleInteractionsStreamSupport
+            .Model(handler)
+            .DoGenerateAsync(
+                Options("{\"google\":{\"previousInteractionId\":\"v1_prev-abc\"}}"),
+                CancellationToken.None
+            );
 
         var body = JsonNode.Parse(handler.Bodies[0])!.AsObject();
         Assert.Equal("v1_prev-abc", (string?)body["previous_interaction_id"]);
@@ -48,12 +58,17 @@ public sealed class DoGenerateStatefulChainingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "emits store: false (and no previous_interaction_id) for stateless mode", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "emits store: false (and no previous_interaction_id) for stateless mode",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Emits_store_false_and_no_previous_interaction_id_for_stateless_mode()
     {
         var handler = Basic();
 
-        await GoogleInteractionsStreamSupport.Model(handler).DoGenerateAsync(Options("{\"google\":{\"store\":false}}"), CancellationToken.None);
+        await GoogleInteractionsStreamSupport
+            .Model(handler)
+            .DoGenerateAsync(Options("{\"google\":{\"store\":false}}"), CancellationToken.None);
 
         var body = JsonNode.Parse(handler.Bodies[0])!.AsObject();
         Assert.False((bool?)body["store"]);
@@ -61,28 +76,46 @@ public sealed class DoGenerateStatefulChainingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "emits both previous_interaction_id and store: false when both are set, and surfaces a warning", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "emits both previous_interaction_id and store: false when both are set, and surfaces a warning",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Emits_both_previous_interaction_id_and_store_false_when_both_are_set_and_surfaces_a_warning()
     {
         var handler = Basic();
 
-        var result = await GoogleInteractionsStreamSupport.Model(handler).DoGenerateAsync(Options("{\"google\":{\"previousInteractionId\":\"v1_prev\",\"store\":false}}"), CancellationToken.None);
+        var result = await GoogleInteractionsStreamSupport
+            .Model(handler)
+            .DoGenerateAsync(
+                Options("{\"google\":{\"previousInteractionId\":\"v1_prev\",\"store\":false}}"),
+                CancellationToken.None
+            );
 
         var body = JsonNode.Parse(handler.Bodies[0])!.AsObject();
         Assert.Equal("v1_prev", (string?)body["previous_interaction_id"]);
         Assert.False((bool?)body["store"]);
-        Assert.Contains(result.Warnings, warning => warning.Type == "other" && warning.Message.Contains("store: false"));
+        Assert.Contains(result.Warnings, warning =>
+            warning.Type == "other" && warning.Message.Contains("store: false")
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "emits thinking_level and thinking_summaries inside generation_config", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "emits thinking_level and thinking_summaries inside generation_config",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Emits_thinking_level_and_thinking_summaries_inside_generation_config()
     {
         var handler = Basic();
 
-        var options = Options("{\"google\":{\"thinkingLevel\":\"high\",\"thinkingSummaries\":\"auto\"}}");
+        var options = Options(
+            "{\"google\":{\"thinkingLevel\":\"high\",\"thinkingSummaries\":\"auto\"}}"
+        );
         options.Reasoning = "xhigh";
-        var result = await GoogleInteractionsStreamSupport.Model(handler).DoGenerateAsync(options, CancellationToken.None);
+        var result = await GoogleInteractionsStreamSupport
+            .Model(handler)
+            .DoGenerateAsync(options, CancellationToken.None);
 
         var generationConfig = JsonNode.Parse(handler.Bodies[0])!["generation_config"]!;
         Assert.Equal("high", (string?)generationConfig["thinking_level"]);
@@ -91,45 +124,75 @@ public sealed class DoGenerateStatefulChainingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "maps top-level reasoning to the Hydrogen thinking level", Coverage = UpstreamCoverage.Covered, Commit = "8e60cb4ba35426e7f4a21e341a5e16f37a478a5b")]
+    [UpstreamTest(
+        Prefix + "maps top-level reasoning to the Hydrogen thinking level",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "8e60cb4ba35426e7f4a21e341a5e16f37a478a5b"
+    )]
     public async Task Maps_top_level_reasoning_to_the_Hydrogen_thinking_level()
     {
         var handler = Basic();
         var options = Options();
         options.Reasoning = "xhigh";
 
-        var result = await GoogleInteractionsStreamSupport.Model(handler, "gemini-4-hydrogen").DoGenerateAsync(options, CancellationToken.None);
+        var result = await GoogleInteractionsStreamSupport
+            .Model(handler, "gemini-4-hydrogen")
+            .DoGenerateAsync(options, CancellationToken.None);
 
-        Assert.Equal("xhigh", (string?)JsonNode.Parse(handler.Bodies[0])!["generation_config"]!["thinking_level"]);
+        Assert.Equal(
+            "xhigh",
+            (string?)JsonNode.Parse(handler.Bodies[0])!["generation_config"]!["thinking_level"]
+        );
         Assert.Empty(result.Warnings);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "warns and falls back for unsupported reasoning levels", Coverage = UpstreamCoverage.Covered, Commit = "8e60cb4ba35426e7f4a21e341a5e16f37a478a5b")]
+    [UpstreamTest(
+        Prefix + "warns and falls back for unsupported reasoning levels",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "8e60cb4ba35426e7f4a21e341a5e16f37a478a5b"
+    )]
     public async Task Warns_and_falls_back_for_unsupported_reasoning_levels()
     {
         var handler = Basic();
         var options = Options();
         options.Reasoning = "xhigh";
 
-        var result = await GoogleInteractionsStreamSupport.Model(handler, "gemini-4-argon").DoGenerateAsync(options, CancellationToken.None);
+        var result = await GoogleInteractionsStreamSupport
+            .Model(handler, "gemini-4-argon")
+            .DoGenerateAsync(options, CancellationToken.None);
 
-        Assert.Equal("high", (string?)JsonNode.Parse(handler.Bodies[0])!["generation_config"]!["thinking_level"]);
+        Assert.Equal(
+            "high",
+            (string?)JsonNode.Parse(handler.Bodies[0])!["generation_config"]!["thinking_level"]
+        );
         var warning = Assert.Single(result.Warnings);
         Assert.Equal("compatibility", warning.Type);
         Assert.Equal("reasoning", warning.Feature);
-        Assert.Equal("reasoning \"xhigh\" is not directly supported by this model. mapped to effort \"high\".", warning.Message);
+        Assert.Equal(
+            "reasoning \"xhigh\" is not directly supported by this model. mapped to effort \"high\".",
+            warning.Message
+        );
     }
 
     [Theory]
     [InlineData("gemini-4-hydrogen")]
     [InlineData("gemini-4-hydrogen-eap")]
-    [UpstreamTest(Prefix + "passes the xhigh thinking level for %s", Coverage = UpstreamCoverage.Covered, Commit = "4e43721f73006cda79d95cb3e8733360493ed388")]
+    [UpstreamTest(
+        Prefix + "passes the xhigh thinking level for %s",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "4e43721f73006cda79d95cb3e8733360493ed388"
+    )]
     public async Task Passes_the_xhigh_thinking_level_for_model_id(string modelId)
     {
         var handler = Basic();
 
-        var result = await GoogleInteractionsStreamSupport.Model(handler, modelId).DoGenerateAsync(Options("{\"google\":{\"thinkingLevel\":\"xhigh\"}}"), CancellationToken.None);
+        var result = await GoogleInteractionsStreamSupport
+            .Model(handler, modelId)
+            .DoGenerateAsync(
+                Options("{\"google\":{\"thinkingLevel\":\"xhigh\"}}"),
+                CancellationToken.None
+            );
 
         var body = JsonNode.Parse(handler.Bodies[0])!;
         Assert.Equal(modelId, (string?)body["model"]);
@@ -138,7 +201,10 @@ public sealed class DoGenerateStatefulChainingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "forwards topK and warns for unsupported penalties", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "forwards topK and warns for unsupported penalties",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Forwards_topK_and_warns_for_unsupported_penalties()
     {
         var handler = Basic();
@@ -147,9 +213,14 @@ public sealed class DoGenerateStatefulChainingTests
         options.FrequencyPenalty = 0.5;
         options.PresencePenalty = 0.5;
 
-        var result = await GoogleInteractionsStreamSupport.Model(handler).DoGenerateAsync(options, CancellationToken.None);
+        var result = await GoogleInteractionsStreamSupport
+            .Model(handler)
+            .DoGenerateAsync(options, CancellationToken.None);
 
-        GoogleUpstream.JsonEqual(JsonNode.Parse(handler.Bodies[0])!["generation_config"], "{\"top_k\":10}");
+        GoogleUpstream.JsonEqual(
+            JsonNode.Parse(handler.Bodies[0])!["generation_config"],
+            "{\"top_k\":10}"
+        );
         Assert.Collection(
             result.Warnings,
             warning =>
@@ -161,22 +232,37 @@ public sealed class DoGenerateStatefulChainingTests
             {
                 Assert.Equal("unsupported", warning.Type);
                 Assert.Equal("presencePenalty", warning.Feature);
-            });
+            }
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "returns interactionId for turn 1 from a captured fixture", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "returns interactionId for turn 1 from a captured fixture",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Returns_interactionId_for_turn_1_from_a_captured_fixture()
     {
-        var handler = new SequencedHandler().Json(GoogleInteractionsStreamSupport.JsonFixture("multi-turn-stateful-turn1"));
+        var handler = new SequencedHandler().Json(
+            GoogleInteractionsStreamSupport.JsonFixture("multi-turn-stateful-turn1")
+        );
 
-        var result = await GoogleInteractionsStreamSupport.Model(handler).DoGenerateAsync(
-            GoogleUpstream.Prompt(new UserModelMessage("What are the three largest cities in Spain?")),
-            CancellationToken.None);
+        var result = await GoogleInteractionsStreamSupport
+            .Model(handler)
+            .DoGenerateAsync(
+                GoogleUpstream.Prompt(
+                    new UserModelMessage("What are the three largest cities in Spain?")
+                ),
+                CancellationToken.None
+            );
 
         Assert.Equal(
             "v1_ChdWV3NIYXNYZEc5S19xdHNQcmVYeG1BRRIXVldzSGFzWGRHOUtfcXRzUHJlWHhtQUU",
-            result.ProviderMetadata!.Value.GetProperty("google").GetProperty("interactionId").GetString());
+            result
+                .ProviderMetadata!.Value.GetProperty("google")
+                .GetProperty("interactionId")
+                .GetString()
+        );
         var text = string.Concat(result.Content.OfType<GeneratedText>().Select(part => part.Text));
         Assert.Contains("Madrid", text);
         Assert.Contains("Barcelona", text);

@@ -23,16 +23,36 @@ public sealed class GatewayBatchApi : BatchResultsApiBase
     public override string Provider => "gateway.batch";
 
     /// <inheritdoc />
-    public override async Task<IAsyncEnumerable<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    public override async Task<IAsyncEnumerable<BatchItem>> DoGetResultsAsync(
+        BatchOperationCall call,
+        CancellationToken cancellationToken
+    )
     {
-        var headers = _provider.BatchHeaders(call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value));
+        var headers = _provider.BatchHeaders(
+            call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)
+        );
         var body = new JsonObject { ["batchId"] = call.BatchId }.ToJsonString();
         try
         {
-            var lines = await _provider.Http.OpenJsonLinesAsync(HttpMethod.Post, _provider.Route("batch/results"), body, headers, _provider.Options.BatchResultDownloads?.MaxLineBytes, cancellationToken).ConfigureAwait(false);
+            var lines = await _provider
+                .Http.OpenJsonLinesAsync(
+                    HttpMethod.Post,
+                    _provider.Route("batch/results"),
+                    body,
+                    headers,
+                    _provider.Options.BatchResultDownloads?.MaxLineBytes,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             return ConvertRows(lines, Convert, cancellationToken);
         }
-        catch (Exception exception) when (!(exception is OperationCanceledException) && !(exception is Provider.ApiUserAbortException) && !Util.DownloadError.IsInstance(exception) && !(exception is Util.InvalidArgumentError) && !(exception is Operations.InvalidArgumentException))
+        catch (Exception exception)
+            when (!(exception is OperationCanceledException)
+                && !(exception is Provider.ApiUserAbortException)
+                && !Util.DownloadError.IsInstance(exception)
+                && !(exception is Util.InvalidArgumentError)
+                && !(exception is Operations.InvalidArgumentException)
+            )
         {
             throw GatewayProvider.MapFailure(exception);
         }
@@ -45,7 +65,10 @@ public sealed class GatewayBatchApi : BatchResultsApiBase
         if (status == "succeeded" && line.TryGetProperty("result", out var result))
         {
             var texts = new List<string>();
-            if (result.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
+            if (
+                result.TryGetProperty("content", out var content)
+                && content.ValueKind == JsonValueKind.Array
+            )
             {
                 foreach (var part in content.EnumerateArray())
                 {
@@ -56,7 +79,9 @@ public sealed class GatewayBatchApi : BatchResultsApiBase
                 }
             }
 
-            var finish = result.TryGetProperty("finishReason", out var reason) ? Str(reason, "unified") : null;
+            var finish = result.TryGetProperty("finishReason", out var reason)
+                ? Str(reason, "unified")
+                : null;
             var response = result.TryGetProperty("response", out var value) ? value : default;
             return TextItem(id, texts, finish, Str(response, "id"), Str(response, "modelId"));
         }

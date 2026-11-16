@@ -11,7 +11,10 @@ namespace Vercel.AI.Util;
 public static class Deprecations
 {
     // These codes are stable identifiers. Do not rename or reuse an existing code.
-    private static readonly Dictionary<string, string> DeprecationCodes = new Dictionary<string, string>(StringComparer.Ordinal)
+    private static readonly Dictionary<string, string> DeprecationCodes = new Dictionary<
+        string,
+        string
+    >(StringComparer.Ordinal)
     {
         ["generateObject"] = "AISDK_DEP_GENERATE_OBJECT",
         ["streamObject"] = "AISDK_DEP_STREAM_OBJECT",
@@ -21,11 +24,14 @@ public static class Deprecations
         ["\"tool-result\" content of type \"file-data\""] = "AISDK_DEP_TOOL_RESULT_FILE_DATA",
         ["\"tool-result\" content of type \"file-url\""] = "AISDK_DEP_TOOL_RESULT_FILE_URL",
         ["\"tool-result\" content of type \"file-id\""] = "AISDK_DEP_TOOL_RESULT_FILE_ID",
-        ["\"tool-result\" content of type \"file-reference\""] = "AISDK_DEP_TOOL_RESULT_FILE_REFERENCE",
+        ["\"tool-result\" content of type \"file-reference\""] =
+            "AISDK_DEP_TOOL_RESULT_FILE_REFERENCE",
         ["\"tool-result\" content of type \"image-data\""] = "AISDK_DEP_TOOL_RESULT_IMAGE_DATA",
         ["\"tool-result\" content of type \"image-url\""] = "AISDK_DEP_TOOL_RESULT_IMAGE_URL",
-        ["\"tool-result\" content of type \"image-file-id\""] = "AISDK_DEP_TOOL_RESULT_IMAGE_FILE_ID",
-        ["\"tool-result\" content of type \"image-file-reference\""] = "AISDK_DEP_TOOL_RESULT_IMAGE_FILE_REFERENCE",
+        ["\"tool-result\" content of type \"image-file-id\""] =
+            "AISDK_DEP_TOOL_RESULT_IMAGE_FILE_ID",
+        ["\"tool-result\" content of type \"image-file-reference\""] =
+            "AISDK_DEP_TOOL_RESULT_IMAGE_FILE_REFERENCE",
         ["rawInput in output-error UI message parts"] = "AISDK_DEP_UI_MESSAGE_RAW_INPUT",
     };
 
@@ -37,7 +43,9 @@ public static class Deprecations
     {
         if (provider == null)
         {
-            return DeprecationCodes.TryGetValue(setting, out var code) ? code : "AISDK_DEP_SETTING_" + EncodeCodePart(setting);
+            return DeprecationCodes.TryGetValue(setting, out var code)
+                ? code
+                : "AISDK_DEP_SETTING_" + EncodeCodePart(setting);
         }
 
         return "AISDK_DEP_PROVIDER_" + EncodeCodePart(provider) + "__" + EncodeCodePart(setting);
@@ -49,13 +57,19 @@ public static class Deprecations
         var builder = new StringBuilder(value.Length);
         foreach (var character in value)
         {
-            if ((character >= 'A' && character <= 'Z') || (character >= 'a' && character <= 'z') || (character >= '0' && character <= '9'))
+            if (
+                (character >= 'A' && character <= 'Z')
+                || (character >= 'a' && character <= 'z')
+                || (character >= '0' && character <= '9')
+            )
             {
                 builder.Append(character);
             }
             else
             {
-                builder.Append('_').Append(((int)character).ToString("X4", CultureInfo.InvariantCulture));
+                builder
+                    .Append('_')
+                    .Append(((int)character).ToString("X4", CultureInfo.InvariantCulture));
             }
         }
 

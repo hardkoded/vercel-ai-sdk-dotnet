@@ -12,9 +12,12 @@ public class NoSuchModelError : AiSdkError
 
     /// <summary>Creates the error. <paramref name="modelType"/> is a name such as <c>languageModel</c>.</summary>
     public NoSuchModelError(string modelId, string modelType, string? message = null)
-        : this("AI_NoSuchModelError", modelId, modelType, message ?? "No such " + modelType + ": " + modelId)
-    {
-    }
+        : this(
+            "AI_NoSuchModelError",
+            modelId,
+            modelType,
+            message ?? "No such " + modelType + ": " + modelId
+        ) { }
 
     /// <summary>Creates the error with a subclass error name.</summary>
     protected NoSuchModelError(string errorName, string modelId, string modelType, string message)

@@ -17,9 +17,7 @@ public sealed class XaiReasoning : GeneratedReasoning
 {
     /// <summary>Creates reasoning.</summary>
     public XaiReasoning(string text, JsonElement? providerMetadata)
-        : base(text, providerMetadata)
-    {
-    }
+        : base(text, providerMetadata) { }
 }
 
 /// <summary>
@@ -30,7 +28,10 @@ public sealed class XaiReasoning : GeneratedReasoning
 /// </summary>
 public sealed class XaiResponsesLanguageModel : ILanguageModel
 {
-    private static readonly Dictionary<string, string> BaseEffortMap = new Dictionary<string, string>
+    private static readonly Dictionary<string, string> BaseEffortMap = new Dictionary<
+        string,
+        string
+    >
     {
         { "minimal", "low" },
         { "low", "low" },
@@ -43,11 +44,13 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
 
     /// <summary>Creates a Responses model for <paramref name="modelId"/>.</summary>
     public XaiResponsesLanguageModel(XaiProvider provider, string modelId)
-        : this(provider, modelId, IdGenerator.Generate)
-    {
-    }
+        : this(provider, modelId, IdGenerator.Generate) { }
 
-    internal XaiResponsesLanguageModel(XaiProvider provider, string modelId, Func<string> generateId)
+    internal XaiResponsesLanguageModel(
+        XaiProvider provider,
+        string modelId,
+        Func<string> generateId
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -58,12 +61,13 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<string, string> SupportedUrls { get; } = new Dictionary<string, string>
-    {
-        ["image/*"] = "^https?://.*\\z",
-        ["application/pdf"] = "^https?://.*\\z",
-        ["text/*"] = "^https?://.*\\z",
-    };
+    public IReadOnlyDictionary<string, string> SupportedUrls { get; } =
+        new Dictionary<string, string>
+        {
+            ["image/*"] = "^https?://.*\\z",
+            ["application/pdf"] = "^https?://.*\\z",
+            ["text/*"] = "^https?://.*\\z",
+        };
 
     /// <inheritdoc />
     public string Provider => XaiProvider.ProviderId + ".responses";
@@ -72,19 +76,27 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var prepared = Prepare(options, stream: false);
-        var http = await _provider.Http.SendJsonStringAsync(
-            HttpMethod.Post,
-            RequestUri(),
-            prepared.Body.ToJsonString(),
-            _provider.CreateHeaders(options?.Headers),
-            cancellationToken).ConfigureAwait(false);
+        var http = await _provider
+            .Http.SendJsonStringAsync(
+                HttpMethod.Post,
+                RequestUri(),
+                prepared.Body.ToJsonString(),
+                _provider.CreateHeaders(options?.Headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         JsonDocument document;
         try
         {
-            document = JsonDocument.Parse(string.IsNullOrWhiteSpace(http.Body) ? "null" : http.Body);
+            document = JsonDocument.Parse(
+                string.IsNullOrWhiteSpace(http.Body) ? "null" : http.Body
+            );
         }
         catch (JsonException)
         {
@@ -99,25 +111,44 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
             }
             catch (InvalidOperationException exception)
             {
-                throw new ApiException("Invalid JSON response: " + exception.Message, 200, http.Body, exception);
+                throw new ApiException(
+                    "Invalid JSON response: " + exception.Message,
+                    200,
+                    http.Body,
+                    exception
+                );
             }
         }
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var prepared = Prepare(options, stream: true);
         var json = prepared.Body.ToJsonString();
-        var sse = await _provider.Http.OpenSseResponseAsync(RequestUri(), json, _provider.CreateHeaders(options?.Headers), cancellationToken).ConfigureAwait(false);
-        return sse.ToStreamResult(StreamAsync(options, prepared, sse.Events, cancellationToken), json);
+        var sse = await _provider
+            .Http.OpenSseResponseAsync(
+                RequestUri(),
+                json,
+                _provider.CreateHeaders(options?.Headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        return sse.ToStreamResult(
+            StreamAsync(options, prepared, sse.Events, cancellationToken),
+            json
+        );
     }
 
     private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
         LanguageModelCallOptions? options,
         PreparedRequest prepared,
         IAsyncEnumerable<string> events,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         var session = new XaiResponsesStream(_generateId, prepared.ToolNames);
         var enumerator = events.GetAsyncEnumerator(cancellationToken);
@@ -127,7 +158,12 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
             yield return new StreamStartStreamPart(prepared.Warnings);
             while (more)
             {
-                foreach (var part in session.Accept(enumerator.Current, options?.IncludeRawChunks == true))
+                foreach (
+                    var part in session.Accept(
+                        enumerator.Current,
+                        options?.IncludeRawChunks == true
+                    )
+                )
                 {
                     yield return part;
                 }
@@ -184,29 +220,70 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
             body["logprobs"] = true;
         }
 
-        OpenAIJson.Set(body, "top_logprobs", xai.TopLogprobs.HasValue ? JsonValue.Create(xai.TopLogprobs.Value) : null);
-        OpenAIJson.Set(body, "max_output_tokens", options.MaxOutputTokens.HasValue ? JsonValue.Create(options.MaxOutputTokens.Value) : null);
-        OpenAIJson.Set(body, "temperature", options.Temperature.HasValue ? JsonValue.Create(options.Temperature.Value) : null);
-        OpenAIJson.Set(body, "top_p", options.TopP.HasValue ? JsonValue.Create(options.TopP.Value) : null);
-        OpenAIJson.Set(body, "top_k", options.TopK.HasValue ? JsonValue.Create(options.TopK.Value) : null);
+        OpenAIJson.Set(
+            body,
+            "top_logprobs",
+            xai.TopLogprobs.HasValue ? JsonValue.Create(xai.TopLogprobs.Value) : null
+        );
+        OpenAIJson.Set(
+            body,
+            "max_output_tokens",
+            options.MaxOutputTokens.HasValue
+                ? JsonValue.Create(options.MaxOutputTokens.Value)
+                : null
+        );
+        OpenAIJson.Set(
+            body,
+            "temperature",
+            options.Temperature.HasValue ? JsonValue.Create(options.Temperature.Value) : null
+        );
+        OpenAIJson.Set(
+            body,
+            "top_p",
+            options.TopP.HasValue ? JsonValue.Create(options.TopP.Value) : null
+        );
+        OpenAIJson.Set(
+            body,
+            "top_k",
+            options.TopK.HasValue ? JsonValue.Create(options.TopK.Value) : null
+        );
         OpenAIJson.Set(body, "min_p", xai.MinP.HasValue ? JsonValue.Create(xai.MinP.Value) : null);
-        OpenAIJson.Set(body, "seed", options.Seed.HasValue ? JsonValue.Create(options.Seed.Value) : null);
+        OpenAIJson.Set(
+            body,
+            "seed",
+            options.Seed.HasValue ? JsonValue.Create(options.Seed.Value) : null
+        );
 
-        if (options.JsonSchema is { } schema && schema.ValueKind != JsonValueKind.Undefined && schema.ValueKind != JsonValueKind.Null)
+        if (
+            options.JsonSchema is { } schema
+            && schema.ValueKind != JsonValueKind.Undefined
+            && schema.ValueKind != JsonValueKind.Null
+        )
         {
             var format = new JsonObject
             {
                 ["type"] = "json_schema",
                 ["strict"] = true,
-                ["name"] = string.IsNullOrEmpty(options.JsonSchemaName) ? "response" : options.JsonSchemaName,
+                ["name"] = string.IsNullOrEmpty(options.JsonSchemaName)
+                    ? "response"
+                    : options.JsonSchemaName,
             };
-            OpenAIJson.Set(format, "description", options.JsonSchemaDescription == null ? null : JsonValue.Create(options.JsonSchemaDescription));
+            OpenAIJson.Set(
+                format,
+                "description",
+                options.JsonSchemaDescription == null
+                    ? null
+                    : JsonValue.Create(options.JsonSchemaDescription)
+            );
             format["schema"] = JsonNode.Parse(schema.GetRawText());
             body["text"] = new JsonObject { ["format"] = format };
         }
         else if (options.JsonResponse)
         {
-            body["text"] = new JsonObject { ["format"] = new JsonObject { ["type"] = "json_object" } };
+            body["text"] = new JsonObject
+            {
+                ["format"] = new JsonObject { ["type"] = "json_object" },
+            };
         }
 
         var effort = ResolveReasoningEffort(xai.ReasoningEffort, options.Reasoning, warnings);
@@ -231,12 +308,36 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
             body["include"] = includeArray;
         }
 
-        OpenAIJson.Set(body, "previous_response_id", xai.PreviousResponseId == null ? null : JsonValue.Create(xai.PreviousResponseId));
-        OpenAIJson.Set(body, "max_turns", xai.MaxTurns.HasValue ? JsonValue.Create(xai.MaxTurns.Value) : null);
-        OpenAIJson.Set(body, "parallel_tool_calls", xai.ParallelToolCalls.HasValue ? JsonValue.Create(xai.ParallelToolCalls.Value) : null);
-        OpenAIJson.Set(body, "prompt_cache_key", xai.PromptCacheKey == null ? null : JsonValue.Create(xai.PromptCacheKey));
-        OpenAIJson.Set(body, "safety_identifier", xai.SafetyIdentifier == null ? null : JsonValue.Create(xai.SafetyIdentifier));
-        OpenAIJson.Set(body, "service_tier", xai.ServiceTier == null ? null : JsonValue.Create(xai.ServiceTier));
+        OpenAIJson.Set(
+            body,
+            "previous_response_id",
+            xai.PreviousResponseId == null ? null : JsonValue.Create(xai.PreviousResponseId)
+        );
+        OpenAIJson.Set(
+            body,
+            "max_turns",
+            xai.MaxTurns.HasValue ? JsonValue.Create(xai.MaxTurns.Value) : null
+        );
+        OpenAIJson.Set(
+            body,
+            "parallel_tool_calls",
+            xai.ParallelToolCalls.HasValue ? JsonValue.Create(xai.ParallelToolCalls.Value) : null
+        );
+        OpenAIJson.Set(
+            body,
+            "prompt_cache_key",
+            xai.PromptCacheKey == null ? null : JsonValue.Create(xai.PromptCacheKey)
+        );
+        OpenAIJson.Set(
+            body,
+            "safety_identifier",
+            xai.SafetyIdentifier == null ? null : JsonValue.Create(xai.SafetyIdentifier)
+        );
+        OpenAIJson.Set(
+            body,
+            "service_tier",
+            xai.ServiceTier == null ? null : JsonValue.Create(xai.ServiceTier)
+        );
         OpenAIJson.Set(body, "user", xai.User == null ? null : JsonValue.Create(xai.User));
 
         OpenAIJson.Set(body, "tools", tools.Tools is { Count: > 0 } ? tools.Tools : null);
@@ -250,7 +351,11 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
         return new PreparedRequest(body, warnings, new XaiToolNames(options.Tools));
     }
 
-    private string? ResolveReasoningEffort(string? providerEffort, string? reasoning, List<CallWarning> warnings)
+    private string? ResolveReasoningEffort(
+        string? providerEffort,
+        string? reasoning,
+        List<CallWarning> warnings
+    )
     {
         if (providerEffort != null || !ReasoningMap.IsCustomReasoning(reasoning))
         {
@@ -259,7 +364,13 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
 
         if (!XaiReasoningEffort.Supports(ModelId))
         {
-            warnings.Add(new CallWarning("unsupported", "reasoning", "reasoning \"" + reasoning + "\" is not supported by this model."));
+            warnings.Add(
+                new CallWarning(
+                    "unsupported",
+                    "reasoning",
+                    "reasoning \"" + reasoning + "\" is not supported by this model."
+                )
+            );
             return null;
         }
 
@@ -270,9 +381,17 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
 
         // Only grok-4.6 accepts xhigh. Other models take high for both xhigh and max.
         var top = ModelId == "grok-4.6" ? "xhigh" : "high";
-        var effortMap = new Dictionary<string, string>(BaseEffortMap) { { "xhigh", top }, { "max", top } };
+        var effortMap = new Dictionary<string, string>(BaseEffortMap)
+        {
+            { "xhigh", top },
+            { "max", top },
+        };
         var mappingWarnings = new List<ModelWarning>();
-        var effort = ReasoningMap.MapReasoningToProviderEffort(reasoning!, effortMap, mappingWarnings);
+        var effort = ReasoningMap.MapReasoningToProviderEffort(
+            reasoning!,
+            effortMap,
+            mappingWarnings
+        );
         foreach (var warning in mappingWarnings)
         {
             if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
@@ -293,12 +412,15 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
         JsonElement root,
         PreparedRequest prepared,
         string raw,
-        IReadOnlyDictionary<string, string> headers)
+        IReadOnlyDictionary<string, string> headers
+    )
     {
-        if (root.ValueKind != JsonValueKind.Object
+        if (
+            root.ValueKind != JsonValueKind.Object
             || !root.TryGetProperty("output", out var output)
             || output.ValueKind != JsonValueKind.Array
-            || OpenAIJson.String(root, "status") is not { } status)
+            || OpenAIJson.String(root, "status") is not { } status
+        )
         {
             throw new InvalidOperationException("The response has no output or status.");
         }
@@ -321,10 +443,13 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
                     break;
                 case "function_call":
                     hasFunctionCall = true;
-                    content.Add(new GeneratedToolCall(
-                        OpenAIJson.String(item, "call_id") ?? string.Empty,
-                        OpenAIJson.String(item, "name") ?? string.Empty,
-                        OpenAIJson.String(item, "arguments") ?? "{}"));
+                    content.Add(
+                        new GeneratedToolCall(
+                            OpenAIJson.String(item, "call_id") ?? string.Empty,
+                            OpenAIJson.String(item, "name") ?? string.Empty,
+                            OpenAIJson.String(item, "arguments") ?? "{}"
+                        )
+                    );
                     break;
                 case "reasoning":
                     AddReasoning(item, content);
@@ -355,29 +480,55 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
                 cost,
                 OpenAIJson.String(root, "service_tier"),
                 OpenAIJson.String(root, "prompt_cache_key"),
-                OpenAIJson.String(root, "safety_identifier")),
+                OpenAIJson.String(root, "safety_identifier")
+            ),
             raw,
             OpenAIJson.String(root, "model"),
             XaiResponsesStream.CreatedAt(root),
-            headers);
+            headers
+        );
     }
 
-    private static void AddProviderToolItem(string type, JsonElement item, XaiToolNames toolNames, List<GeneratedContent> content)
+    private static void AddProviderToolItem(
+        string type,
+        JsonElement item,
+        XaiToolNames toolNames,
+        List<GeneratedContent> content
+    )
     {
         var id = OpenAIJson.String(item, "id") ?? throw new InvalidOperationException("missing id");
         var toolName = toolNames.Resolve(type, OpenAIJson.String(item, "name"));
-        content.Add(new GeneratedToolCall(id, toolName, XaiResponsesOutput.ToolInput(type, item)) { ProviderExecuted = true });
+        content.Add(
+            new GeneratedToolCall(id, toolName, XaiResponsesOutput.ToolInput(type, item))
+            {
+                ProviderExecuted = true,
+            }
+        );
         switch (type)
         {
             case "file_search_call":
-                content.Add(new GeneratedToolResult(id, toolName, XaiResponsesOutput.FileSearchResult(item).ToJsonString()));
+                content.Add(
+                    new GeneratedToolResult(
+                        id,
+                        toolName,
+                        XaiResponsesOutput.FileSearchResult(item).ToJsonString()
+                    )
+                );
                 break;
             case "image_generation_call":
                 var (result, isError) = XaiResponsesOutput.ImageGenerationResult(item);
                 content.Add(new GeneratedToolResult(id, toolName, result.ToJsonString(), isError));
                 break;
             case "web_search_call":
-                content.Add(new GeneratedToolResult(id, toolName, XaiResponsesOutput.WebSearchResult(OpenAIJson.Child(item, "action")).ToJsonString()));
+                content.Add(
+                    new GeneratedToolResult(
+                        id,
+                        toolName,
+                        XaiResponsesOutput
+                            .WebSearchResult(OpenAIJson.Child(item, "action"))
+                            .ToJsonString()
+                    )
+                );
                 break;
         }
     }
@@ -396,7 +547,10 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
                 content.Add(new GeneratedText(text));
             }
 
-            if (OpenAIJson.Child(part, "annotations") is not { ValueKind: JsonValueKind.Array } annotations)
+            if (
+                OpenAIJson.Child(part, "annotations")
+                is not { ValueKind: JsonValueKind.Array } annotations
+            )
             {
                 continue;
             }
@@ -415,11 +569,16 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
     {
         var texts = new List<string>();
         var summary = OpenAIJson.Child(item, "summary");
-        if (summary is { ValueKind: JsonValueKind.Array } summaryParts && summaryParts.GetArrayLength() > 0)
+        if (
+            summary is { ValueKind: JsonValueKind.Array } summaryParts
+            && summaryParts.GetArrayLength() > 0
+        )
         {
             texts.AddRange(Texts(summaryParts));
         }
-        else if (OpenAIJson.Child(item, "content") is { ValueKind: JsonValueKind.Array } contentParts)
+        else if (
+            OpenAIJson.Child(item, "content") is { ValueKind: JsonValueKind.Array } contentParts
+        )
         {
             texts.AddRange(Texts(contentParts));
         }

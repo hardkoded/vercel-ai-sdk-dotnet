@@ -153,16 +153,15 @@ public sealed class OpenAIShellLocalSkill
 /// <summary>A skill of a <c>containerAuto</c> shell environment: <see cref="OpenAIShellSkillReference"/> or <see cref="OpenAIShellInlineSkill"/>.</summary>
 public abstract class OpenAIShellContainerSkill
 {
-    internal OpenAIShellContainerSkill()
-    {
-    }
+    internal OpenAIShellContainerSkill() { }
 }
 
 /// <summary>A <c>skillReference</c> skill of a <c>containerAuto</c> shell environment.</summary>
 public sealed class OpenAIShellSkillReference : OpenAIShellContainerSkill
 {
     /// <summary>Provider reference of the skill, keyed by provider name. The <c>openai</c> entry is the skill id.</summary>
-    public IReadOnlyDictionary<string, string> ProviderReference { get; set; } = new Dictionary<string, string>();
+    public IReadOnlyDictionary<string, string> ProviderReference { get; set; } =
+        new Dictionary<string, string>();
 
     /// <summary>Skill version. Defaults to <c>latest</c>.</summary>
     public string? Version { get; set; }
@@ -320,7 +319,9 @@ public sealed class OpenAIMcpToolOptions
 public static class OpenAITools
 {
     /// <summary>The image generation tool (<c>openai.image_generation</c>).</summary>
-    public static LanguageModelTool ImageGeneration(OpenAIImageGenerationToolOptions? options = null)
+    public static LanguageModelTool ImageGeneration(
+        OpenAIImageGenerationToolOptions? options = null
+    )
     {
         var args = new JsonObject();
         if (options != null)
@@ -400,12 +401,18 @@ public static class OpenAITools
 
         if (options.ServerUrl == null && options.ConnectorId == null && options.TunnelId == null)
         {
-            throw new ArgumentException("One of serverUrl, connectorId, or tunnelId must be provided.", nameof(options));
+            throw new ArgumentException(
+                "One of serverUrl, connectorId, or tunnelId must be provided.",
+                nameof(options)
+            );
         }
 
         if (options.TunnelId != null && (options.ServerUrl != null || options.ConnectorId != null))
         {
-            throw new ArgumentException("tunnelId cannot be combined with serverUrl or connectorId.", nameof(options));
+            throw new ArgumentException(
+                "tunnelId cannot be combined with serverUrl or connectorId.",
+                nameof(options)
+            );
         }
 
         var args = new JsonObject { ["serverLabel"] = options.ServerLabel };
@@ -451,13 +458,16 @@ public static class OpenAITools
     }
 
     /// <summary>The local shell tool (<c>openai.local_shell</c>).</summary>
-    public static LanguageModelTool LocalShell() => Create("openai.local_shell", "local_shell", new JsonObject());
+    public static LanguageModelTool LocalShell() =>
+        Create("openai.local_shell", "local_shell", new JsonObject());
 
     /// <summary>The apply patch tool (<c>openai.apply_patch</c>).</summary>
-    public static LanguageModelTool ApplyPatch() => Create("openai.apply_patch", "apply_patch", new JsonObject());
+    public static LanguageModelTool ApplyPatch() =>
+        Create("openai.apply_patch", "apply_patch", new JsonObject());
 
     /// <summary>The computer tool (<c>openai.computer</c>).</summary>
-    public static LanguageModelTool Computer() => Create("openai.computer", "computer", new JsonObject());
+    public static LanguageModelTool Computer() =>
+        Create("openai.computer", "computer", new JsonObject());
 
     /// <summary>The file search tool (<c>openai.file_search</c>).</summary>
     public static LanguageModelTool FileSearch(OpenAIFileSearchToolOptions options)
@@ -495,7 +505,9 @@ public static class OpenAITools
     }
 
     /// <summary>The code interpreter tool (<c>openai.code_interpreter</c>).</summary>
-    public static LanguageModelTool CodeInterpreter(OpenAICodeInterpreterToolOptions? options = null)
+    public static LanguageModelTool CodeInterpreter(
+        OpenAICodeInterpreterToolOptions? options = null
+    )
     {
         var args = new JsonObject();
         if (options?.ContainerId != null)
@@ -535,7 +547,14 @@ public static class OpenAITools
                     var secrets = new JsonArray();
                     foreach (var secret in environment.DomainSecrets)
                     {
-                        secrets.Add(new JsonObject { ["domain"] = secret.Domain, ["name"] = secret.Name, ["value"] = secret.Value });
+                        secrets.Add(
+                            new JsonObject
+                            {
+                                ["domain"] = secret.Domain,
+                                ["name"] = secret.Name,
+                                ["value"] = secret.Value,
+                            }
+                        );
                     }
 
                     policy["domainSecrets"] = secrets;
@@ -549,7 +568,14 @@ public static class OpenAITools
                 var skills = new JsonArray();
                 foreach (var skill in environment.Skills)
                 {
-                    skills.Add(new JsonObject { ["name"] = skill.Name, ["description"] = skill.Description, ["path"] = skill.Path });
+                    skills.Add(
+                        new JsonObject
+                        {
+                            ["name"] = skill.Name,
+                            ["description"] = skill.Description,
+                            ["path"] = skill.Path,
+                        }
+                    );
                 }
 
                 mapped["skills"] = skills;
@@ -610,7 +636,9 @@ public static class OpenAITools
     }
 
     /// <summary>The web search preview tool (<c>openai.web_search_preview</c>).</summary>
-    public static LanguageModelTool WebSearchPreview(OpenAIWebSearchPreviewToolOptions? options = null)
+    public static LanguageModelTool WebSearchPreview(
+        OpenAIWebSearchPreviewToolOptions? options = null
+    )
     {
         var args = new JsonObject();
         Set(args, "searchContextSize", options?.SearchContextSize);
@@ -642,7 +670,11 @@ public static class OpenAITools
                     providerReference[entry.Key] = entry.Value;
                 }
 
-                var mappedReference = new JsonObject { ["type"] = "skillReference", ["providerReference"] = providerReference };
+                var mappedReference = new JsonObject
+                {
+                    ["type"] = "skillReference",
+                    ["providerReference"] = providerReference,
+                };
                 Set(mappedReference, "version", reference.Version);
                 return mappedReference;
             case OpenAIShellInlineSkill inline:
@@ -651,7 +683,12 @@ public static class OpenAITools
                     ["type"] = "inline",
                     ["name"] = inline.Name,
                     ["description"] = inline.Description,
-                    ["source"] = new JsonObject { ["type"] = "base64", ["mediaType"] = "application/zip", ["data"] = inline.Data },
+                    ["source"] = new JsonObject
+                    {
+                        ["type"] = "base64",
+                        ["mediaType"] = "application/zip",
+                        ["data"] = inline.Data,
+                    },
                 };
             default:
                 throw new ArgumentException("Unsupported shell container skill.", nameof(skill));

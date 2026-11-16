@@ -16,30 +16,51 @@ public sealed class AnthropicFilesTests
     [InlineData("getFileMetadata")]
     [InlineData("downloadFile")]
     [InlineData("deleteFile")]
-    [UpstreamTest("packages/anthropic/src/files/anthropic-files.test.ts::AnthropicFiles::preserves API errors and async request headers for %s", Coverage = UpstreamCoverage.Covered, Commit = "8b11ff6eb6302564cf4c2cabd67420f0f04cda05")]
+    [UpstreamTest(
+        "packages/anthropic/src/files/anthropic-files.test.ts::AnthropicFiles::preserves API errors and async request headers for %s",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "8b11ff6eb6302564cf4c2cabd67420f0f04cda05"
+    )]
     public async Task Preserves_API_errors_and_request_headers(string operation)
     {
         var headerCalls = 0;
-        var (files, handler) = FilesFixture.Create(_ =>
-        {
-            var response = new HttpResponseMessage(HttpStatusCode.NotFound)
+        var (files, handler) = FilesFixture.Create(
+            _ =>
             {
-                Content = new StringContent("{\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"File not found\"}}", Encoding.UTF8, "application/json"),
-            };
-            return response;
-        }, _ =>
-        {
-            headerCalls++;
-            return Task.FromResult<IReadOnlyDictionary<string, string?>>(new Dictionary<string, string?> { ["Authorization"] = "Bearer test-token" });
-        });
+                var response = new HttpResponseMessage(HttpStatusCode.NotFound)
+                {
+                    Content = new StringContent(
+                        "{\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"File not found\"}}",
+                        Encoding.UTF8,
+                        "application/json"
+                    ),
+                };
+                return response;
+            },
+            _ =>
+            {
+                headerCalls++;
+                return Task.FromResult<IReadOnlyDictionary<string, string?>>(
+                    new Dictionary<string, string?> { ["Authorization"] = "Bearer test-token" }
+                );
+            }
+        );
         var reference = FilesFixture.Ref("file-abc123");
         var call = new Dictionary<string, string?> { ["x-request-id"] = "request-1" };
-        var error = await Assert.ThrowsAsync<NotFoundException>(() => operation switch
-        {
-            "downloadFile" => files.DownloadFileAsync(reference, CancellationToken.None, call),
-            "deleteFile" => files.DeleteFileAsync(reference, CancellationToken.None, call),
-            _ => files.GetFileMetadataAsync(reference, CancellationToken.None, call),
-        }).ConfigureAwait(false);
+        var error = await Assert
+            .ThrowsAsync<NotFoundException>(() =>
+                operation switch
+                {
+                    "downloadFile" => files.DownloadFileAsync(
+                        reference,
+                        CancellationToken.None,
+                        call
+                    ),
+                    "deleteFile" => files.DeleteFileAsync(reference, CancellationToken.None, call),
+                    _ => files.GetFileMetadataAsync(reference, CancellationToken.None, call),
+                }
+            )
+            .ConfigureAwait(false);
         Assert.Equal(404, error.StatusCode);
         Assert.Contains("File not found", error.Message);
         Assert.Equal(1, headerCalls);
@@ -53,13 +74,33 @@ public sealed class AnthropicFilesTests
     [InlineData(null)]
     [InlineData("null")]
     [InlineData("\"2027-01-01T00:00:00Z\"")]
-    [UpstreamTest("packages/anthropic/src/files/anthropic-files.test.ts::AnthropicFiles::maps upload and metadata fields consistently with expiry %s", Coverage = UpstreamCoverage.Covered, Commit = "8b11ff6eb6302564cf4c2cabd67420f0f04cda05")]
+    [UpstreamTest(
+        "packages/anthropic/src/files/anthropic-files.test.ts::AnthropicFiles::maps upload and metadata fields consistently with expiry %s",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "8b11ff6eb6302564cf4c2cabd67420f0f04cda05"
+    )]
     public async Task Maps_upload_and_metadata_fields_consistently_with_expiry(string? expiresAt)
     {
-        var json = FilesFixture.Metadata.TrimEnd('}') + (expiresAt == null ? string.Empty : ",\"expires_at\":" + expiresAt) + "}";
+        var json =
+            FilesFixture.Metadata.TrimEnd('}')
+            + (expiresAt == null ? string.Empty : ",\"expires_at\":" + expiresAt)
+            + "}";
         var (files, _) = FilesFixture.Json(json);
-        var uploaded = await files.UploadAsync("blob", Encoding.UTF8.GetBytes("hello"), "text/plain", null, CancellationToken.None).ConfigureAwait(false);
-        var metadata = await files.GetFileMetadataAsync(uploaded.ProviderReference.ToDictionary(p => p.Key, p => (string?)p.Value), CancellationToken.None).ConfigureAwait(false);
+        var uploaded = await files
+            .UploadAsync(
+                "blob",
+                Encoding.UTF8.GetBytes("hello"),
+                "text/plain",
+                null,
+                CancellationToken.None
+            )
+            .ConfigureAwait(false);
+        var metadata = await files
+            .GetFileMetadataAsync(
+                uploaded.ProviderReference.ToDictionary(p => p.Key, p => (string?)p.Value),
+                CancellationToken.None
+            )
+            .ConfigureAwait(false);
         Assert.Equal(uploaded.ProviderReference, metadata.ProviderReference);
         Assert.Equal(uploaded.FileName, metadata.FileName);
         Assert.Equal(uploaded.ProviderMetadata, metadata.ProviderMetadata);
@@ -74,8 +115,14 @@ public sealed class AnthropicFilesTests
         }
         else
         {
-            Assert.Equal(new DateTimeOffset(2027, 1, 1, 0, 0, 0, TimeSpan.Zero), metadata.ExpiresAt);
-            Assert.Equal("2027-01-01T00:00:00Z", metadata.ProviderMetadata["anthropic"]["expiresAt"]);
+            Assert.Equal(
+                new DateTimeOffset(2027, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                metadata.ExpiresAt
+            );
+            Assert.Equal(
+                "2027-01-01T00:00:00Z",
+                metadata.ProviderMetadata["anthropic"]["expiresAt"]
+            );
         }
     }
 }

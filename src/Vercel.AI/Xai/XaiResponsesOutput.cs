@@ -12,8 +12,19 @@ namespace Vercel.AI.Xai;
 /// <summary>The names of the xAI provider-defined tools in a request. Provider-executed calls are reported under these names.</summary>
 internal sealed class XaiToolNames
 {
-    private static readonly string[] WebSearchSubTools = { "web_search", "web_search_with_snippets", "browse_page" };
-    private static readonly string[] XSearchSubTools = { "x_user_search", "x_keyword_search", "x_semantic_search", "x_thread_fetch" };
+    private static readonly string[] WebSearchSubTools =
+    {
+        "web_search",
+        "web_search_with_snippets",
+        "browse_page",
+    };
+    private static readonly string[] XSearchSubTools =
+    {
+        "x_user_search",
+        "x_keyword_search",
+        "x_semantic_search",
+        "x_thread_fetch",
+    };
 
     private readonly string? _webSearch;
     private readonly string? _xSearch;
@@ -48,17 +59,27 @@ internal sealed class XaiToolNames
             return _imageGeneration ?? "image_generation";
         }
 
-        if (Array.IndexOf(WebSearchSubTools, name ?? string.Empty) >= 0 || itemType == "web_search_call")
+        if (
+            Array.IndexOf(WebSearchSubTools, name ?? string.Empty) >= 0
+            || itemType == "web_search_call"
+        )
         {
             return _webSearch ?? "web_search";
         }
 
-        if (Array.IndexOf(XSearchSubTools, name ?? string.Empty) >= 0 || itemType == "x_search_call")
+        if (
+            Array.IndexOf(XSearchSubTools, name ?? string.Empty) >= 0
+            || itemType == "x_search_call"
+        )
         {
             return _xSearch ?? "x_search";
         }
 
-        if (name == "code_execution" || itemType == "code_interpreter_call" || itemType == "code_execution_call")
+        if (
+            name == "code_execution"
+            || itemType == "code_interpreter_call"
+            || itemType == "code_execution_call"
+        )
         {
             return _codeExecution ?? "code_execution";
         }
@@ -114,7 +135,8 @@ internal static class XaiResponsesOutput
     /// <summary>The result of a <c>file_search_call</c> item: its queries and results, with results null when xAI sent none.</summary>
     public static JsonObject FileSearchResult(JsonElement item)
     {
-        var queries = OpenAIJson.Child(item, "queries") is { ValueKind: JsonValueKind.Array } queryList
+        var queries = OpenAIJson.Child(item, "queries")
+            is { ValueKind: JsonValueKind.Array } queryList
             ? OpenAIJson.Node(queryList)!
             : new JsonArray();
         JsonArray? results = null;
@@ -123,13 +145,15 @@ internal static class XaiResponsesOutput
             results = new JsonArray();
             foreach (var result in resultList.EnumerateArray())
             {
-                results.Add(new JsonObject
-                {
-                    ["fileId"] = OpenAIJson.Node(OpenAIJson.Child(result, "file_id")),
-                    ["filename"] = OpenAIJson.Node(OpenAIJson.Child(result, "filename")),
-                    ["score"] = OpenAIJson.Node(OpenAIJson.Child(result, "score")),
-                    ["text"] = OpenAIJson.Node(OpenAIJson.Child(result, "text")),
-                });
+                results.Add(
+                    new JsonObject
+                    {
+                        ["fileId"] = OpenAIJson.Node(OpenAIJson.Child(result, "file_id")),
+                        ["filename"] = OpenAIJson.Node(OpenAIJson.Child(result, "filename")),
+                        ["score"] = OpenAIJson.Node(OpenAIJson.Child(result, "score")),
+                        ["text"] = OpenAIJson.Node(OpenAIJson.Child(result, "text")),
+                    }
+                );
             }
         }
 
@@ -152,7 +176,12 @@ internal static class XaiResponsesOutput
             return (result, false);
         }
 
-        return (JsonValue.Create("Image generation failed (status: " + OpenAIJson.String(item, "status") + ").")!, true);
+        return (
+            JsonValue.Create(
+                "Image generation failed (status: " + OpenAIJson.String(item, "status") + ")."
+            )!,
+            true
+        );
     }
 
     /// <summary>
@@ -161,8 +190,10 @@ internal static class XaiResponsesOutput
     /// </summary>
     public static JsonObject WebSearchResult(JsonElement? action)
     {
-        if (action is not { ValueKind: JsonValueKind.Object } value
-            || !TryOptionalArray(value, "sources", out var sourceList))
+        if (
+            action is not { ValueKind: JsonValueKind.Object } value
+            || !TryOptionalArray(value, "sources", out var sourceList)
+        )
         {
             return new JsonObject();
         }
@@ -171,9 +202,16 @@ internal static class XaiResponsesOutput
         switch (OpenAIJson.String(value, "type"))
         {
             case "search":
-                if (!TryOptionalString(value, "query", out var query)
+                if (
+                    !TryOptionalString(value, "query", out var query)
                     || !TryOptionalArray(value, "queries", out var queries)
-                    || (queries != null && queries.Value.EnumerateArray().Any(entry => entry.ValueKind != JsonValueKind.String)))
+                    || (
+                        queries != null
+                        && queries
+                            .Value.EnumerateArray()
+                            .Any(entry => entry.ValueKind != JsonValueKind.String)
+                    )
+                )
                 {
                     return new JsonObject();
                 }
@@ -202,7 +240,10 @@ internal static class XaiResponsesOutput
                 result["action"] = openPage;
                 break;
             case "find_in_page":
-                if (!TryOptionalString(value, "url", out var findUrl) || !TryOptionalString(value, "pattern", out var pattern))
+                if (
+                    !TryOptionalString(value, "url", out var findUrl)
+                    || !TryOptionalString(value, "pattern", out var pattern)
+                )
                 {
                     return new JsonObject();
                 }
@@ -221,7 +262,10 @@ internal static class XaiResponsesOutput
         {
             foreach (var source in sourceList.Value.EnumerateArray())
             {
-                if (OpenAIJson.String(source, "type") == "url" && OpenAIJson.String(source, "url") is { } url)
+                if (
+                    OpenAIJson.String(source, "type") == "url"
+                    && OpenAIJson.String(source, "url") is { } url
+                )
                 {
                     sources.Add(new JsonObject { ["type"] = "url", ["url"] = url });
                 }
@@ -240,14 +284,18 @@ internal static class XaiResponsesOutput
     private static bool TryOptionalString(JsonElement element, string name, out JsonElement? value)
     {
         value = element.TryGetProperty(name, out var property) ? property : null;
-        return value is not { } present || present.ValueKind is JsonValueKind.Null or JsonValueKind.String;
+        return value is not { } present
+            || present.ValueKind is JsonValueKind.Null or JsonValueKind.String;
     }
 
     /// <summary>Reads a property that may be missing, null, or an array. Null and missing both give null. False for another type.</summary>
     private static bool TryOptionalArray(JsonElement element, string name, out JsonElement? value)
     {
         value = null;
-        if (!element.TryGetProperty(name, out var property) || property.ValueKind == JsonValueKind.Null)
+        if (
+            !element.TryGetProperty(name, out var property)
+            || property.ValueKind == JsonValueKind.Null
+        )
         {
             return true;
         }
@@ -261,7 +309,10 @@ internal static class XaiResponsesOutput
     {
         if (value is { } present)
         {
-            target[name] = present.ValueKind == JsonValueKind.String ? JsonValue.Create(present.GetString()) : null;
+            target[name] =
+                present.ValueKind == JsonValueKind.String
+                    ? JsonValue.Create(present.GetString())
+                    : null;
         }
     }
 }

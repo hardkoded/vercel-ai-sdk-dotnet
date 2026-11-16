@@ -15,7 +15,11 @@ namespace Vercel.AI;
 internal sealed class ProviderExchangeResult
 {
     /// <summary>Creates a completed exchange.</summary>
-    public ProviderExchangeResult(string body, byte[] bytes, IReadOnlyDictionary<string, string> headers)
+    public ProviderExchangeResult(
+        string body,
+        byte[] bytes,
+        IReadOnlyDictionary<string, string> headers
+    )
     {
         Body = body ?? string.Empty;
         Bytes = bytes ?? Array.Empty<byte>();
@@ -41,7 +45,9 @@ internal static class ProviderExchange
     private const long MaxErrorBodyBytes = 1024 * 1024;
     private const int MaxRedirects = 10;
 
-    private static readonly Lazy<HttpClient> NoRedirectClient = new Lazy<HttpClient>(() => new HttpClient(new GlobalFetchHandler(allowAutoRedirect: false)));
+    private static readonly Lazy<HttpClient> NoRedirectClient = new Lazy<HttpClient>(() =>
+        new HttpClient(new GlobalFetchHandler(allowAutoRedirect: false))
+    );
 
     /// <summary>Sends <paramref name="content"/> and returns the body when the status is successful.</summary>
     public static async Task<ProviderExchangeResult> SendAsync(
@@ -50,7 +56,8 @@ internal static class ProviderExchange
         Uri uri,
         HttpContent? content,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         using (var request = new HttpRequestMessage(method, uri))
         {
@@ -59,25 +66,34 @@ internal static class ProviderExchange
             HttpResponseMessage response;
             try
             {
-                response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                response = await httpClient
+                    .SendAsync(request, cancellationToken)
+                    .ConfigureAwait(false);
             }
-            catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException exception)
+                when (cancellationToken.IsCancellationRequested)
             {
                 throw new ApiUserAbortException(exception, cancellationToken);
             }
 
             try
             {
-                var bytes = response.Content == null
-                    ? Array.Empty<byte>()
-                    : await CancellableReads.ReadAsByteArrayAsync(response.Content, cancellationToken).ConfigureAwait(false);
+                var bytes =
+                    response.Content == null
+                        ? Array.Empty<byte>()
+                        : await CancellableReads
+                            .ReadAsByteArrayAsync(response.Content, cancellationToken)
+                            .ConfigureAwait(false);
                 var body = Encoding.UTF8.GetString(bytes);
                 if (!response.IsSuccessStatusCode)
                 {
                     throw ProviderHttp.MapStatus((int)response.StatusCode, body);
                 }
 
-                return new ProviderExchangeResult(body, bytes, Copy(response)) { StatusCode = (int)response.StatusCode };
+                return new ProviderExchangeResult(body, bytes, Copy(response))
+                {
+                    StatusCode = (int)response.StatusCode,
+                };
             }
             finally
             {
@@ -101,17 +117,28 @@ internal static class ProviderExchange
         CancellationToken cancellationToken,
         HttpClient? downloadClient = null,
         IReadOnlyDictionary<string, string?>? untrustedHeaders = null,
-        Vercel.AI.Util.DownloadFetch? downloadFetch = null)
+        Vercel.AI.Util.DownloadFetch? downloadFetch = null
+    )
     {
         if (downloadFetch != null)
         {
-            return await GetResponseUrlThroughFetchAsync(url, trustedOrigin, trustedHeaders, untrustedHeaders, downloadFetch, cancellationToken).ConfigureAwait(false);
+            return await GetResponseUrlThroughFetchAsync(
+                    url,
+                    trustedOrigin,
+                    trustedHeaders,
+                    untrustedHeaders,
+                    downloadFetch,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
 
         var current = new Uri(url);
         for (var redirectCount = 0; redirectCount <= MaxRedirects; redirectCount++)
         {
-            var trusted = trustedOrigin != null && ProviderValues.IsSameOrigin(current.AbsoluteUri, trustedOrigin);
+            var trusted =
+                trustedOrigin != null
+                && ProviderValues.IsSameOrigin(current.AbsoluteUri, trustedOrigin);
             if (!trusted)
             {
                 validateUrl(current.AbsoluteUri);
@@ -121,7 +148,15 @@ internal static class ProviderExchange
             {
                 Apply(request, trusted ? trustedHeaders : untrustedHeaders);
                 var client = trusted ? httpClient : downloadClient ?? httpClient;
-                using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
+                using (
+                    var response = await client
+                        .SendAsync(
+                            request,
+                            HttpCompletionOption.ResponseHeadersRead,
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false)
+                )
                 {
                     var location = response.Headers.Location;
                     if (IsRedirect(response.StatusCode) && location != null)
@@ -131,9 +166,14 @@ internal static class ProviderExchange
                     }
 
                     var finalUri = response.RequestMessage?.RequestUri;
-                    if (finalUri != null
+                    if (
+                        finalUri != null
                         && finalUri != current
-                        && (trustedOrigin == null || !ProviderValues.IsSameOrigin(finalUri.AbsoluteUri, trustedOrigin)))
+                        && (
+                            trustedOrigin == null
+                            || !ProviderValues.IsSameOrigin(finalUri.AbsoluteUri, trustedOrigin)
+                        )
+                    )
                     {
                         validateUrl(finalUri.AbsoluteUri);
                     }
@@ -143,7 +183,16 @@ internal static class ProviderExchange
                         var errorBody = string.Empty;
                         try
                         {
-                            errorBody = Encoding.UTF8.GetString(await ResponseBodies.ReadResponseWithSizeLimitAsync(response, url, MaxErrorBodyBytes, cancellationToken).ConfigureAwait(false));
+                            errorBody = Encoding.UTF8.GetString(
+                                await ResponseBodies
+                                    .ReadResponseWithSizeLimitAsync(
+                                        response,
+                                        url,
+                                        MaxErrorBodyBytes,
+                                        cancellationToken
+                                    )
+                                    .ConfigureAwait(false)
+                            );
                         }
                         catch (DownloadError)
                         {
@@ -153,8 +202,17 @@ internal static class ProviderExchange
                         throw ProviderHttp.MapStatus((int)response.StatusCode, errorBody);
                     }
 
-                    var bytes = await ResponseBodies.ReadResponseWithSizeLimitAsync(response, url, null, cancellationToken).ConfigureAwait(false);
-                    return new ProviderExchangeResult(Encoding.UTF8.GetString(bytes), bytes, Copy(response)) { StatusCode = (int)response.StatusCode };
+                    var bytes = await ResponseBodies
+                        .ReadResponseWithSizeLimitAsync(response, url, null, cancellationToken)
+                        .ConfigureAwait(false);
+                    return new ProviderExchangeResult(
+                        Encoding.UTF8.GetString(bytes),
+                        bytes,
+                        Copy(response)
+                    )
+                    {
+                        StatusCode = (int)response.StatusCode,
+                    };
                 }
             }
         }
@@ -172,11 +230,15 @@ internal static class ProviderExchange
         IReadOnlyDictionary<string, string?>? trustedHeaders,
         IReadOnlyDictionary<string, string?>? untrustedHeaders,
         Vercel.AI.Util.DownloadFetch fetch,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var trusted = trustedOrigin != null && ProviderValues.IsSameOrigin(url, trustedOrigin);
         var headers = new Vercel.AI.Util.HeaderCollection();
-        foreach (var pair in (trusted ? trustedHeaders : untrustedHeaders) ?? new Dictionary<string, string?>())
+        foreach (
+            var pair in (trusted ? trustedHeaders : untrustedHeaders)
+                ?? new Dictionary<string, string?>()
+        )
         {
             if (pair.Value != null)
             {
@@ -184,17 +246,36 @@ internal static class ProviderExchange
             }
         }
 
-        var response = await Vercel.AI.Util.Download.FetchWithValidatedRedirectsAsync(url, headers, cancellationToken, MaxRedirects, fetch, trustedOrigin).ConfigureAwait(false);
+        var response = await Vercel
+            .AI.Util.Download.FetchWithValidatedRedirectsAsync(
+                url,
+                headers,
+                cancellationToken,
+                MaxRedirects,
+                fetch,
+                trustedOrigin
+            )
+            .ConfigureAwait(false);
         var bytes = response.Body ?? Array.Empty<byte>();
         if (!response.Ok)
         {
             response.Cancel();
-            throw ProviderHttp.MapStatus(response.Status, bytes.LongLength > MaxErrorBodyBytes ? string.Empty : Encoding.UTF8.GetString(bytes));
+            throw ProviderHttp.MapStatus(
+                response.Status,
+                bytes.LongLength > MaxErrorBodyBytes ? string.Empty : Encoding.UTF8.GetString(bytes)
+            );
         }
 
         if (bytes.LongLength > Vercel.AI.Util.Download.DefaultMaxBytes)
         {
-            throw new DownloadError(url, "Download of " + url + " exceeded maximum size of " + Vercel.AI.Util.Download.DefaultMaxBytes + " bytes.");
+            throw new DownloadError(
+                url,
+                "Download of "
+                    + url
+                    + " exceeded maximum size of "
+                    + Vercel.AI.Util.Download.DefaultMaxBytes
+                    + " bytes."
+            );
         }
 
         var copied = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -203,11 +284,16 @@ internal static class ProviderExchange
             copied[header.Key] = header.Value;
         }
 
-        return new ProviderExchangeResult(Encoding.UTF8.GetString(bytes), bytes, copied) { StatusCode = response.Status };
+        return new ProviderExchangeResult(Encoding.UTF8.GetString(bytes), bytes, copied)
+        {
+            StatusCode = response.Status,
+        };
     }
 
     /// <summary>Client for hops off the provider origin: it never follows a redirect, so the loop can check each hop first.</summary>
-    public static HttpClient DownloadClient(Vercel.AI.OpenAICompatible.OpenAICompatibleOptions options)
+    public static HttpClient DownloadClient(
+        Vercel.AI.OpenAICompatible.OpenAICompatibleOptions options
+    )
     {
         return options.DownloadHttpClient ?? NoRedirectClient.Value;
     }
@@ -227,7 +313,9 @@ internal static class ProviderExchange
     }
 
     /// <summary>Copies the headers of one call into a request header map. A header whose value is <c>null</c> is left out.</summary>
-    public static Dictionary<string, string>? ToRequestHeaders(IReadOnlyDictionary<string, string?>? headers)
+    public static Dictionary<string, string>? ToRequestHeaders(
+        IReadOnlyDictionary<string, string?>? headers
+    )
     {
         if (headers == null)
         {
@@ -249,7 +337,8 @@ internal static class ProviderExchange
     /// <summary>Copies provider headers and lets the call override them.</summary>
     public static Dictionary<string, string?> Merge(
         IReadOnlyDictionary<string, string?>? providerHeaders,
-        IEnumerable<KeyValuePair<string, string>>? requestHeaders)
+        IEnumerable<KeyValuePair<string, string>>? requestHeaders
+    )
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         if (providerHeaders != null)
@@ -280,12 +369,14 @@ internal static class ProviderExchange
         {
             using (var document = System.Text.Json.JsonDocument.Parse(json))
             {
-                if (!document.RootElement.TryGetProperty("error", out var error)
+                if (
+                    !document.RootElement.TryGetProperty("error", out var error)
                     || error.ValueKind != System.Text.Json.JsonValueKind.Object
                     || !error.TryGetProperty("message", out var messageValue)
                     || messageValue.ValueKind != System.Text.Json.JsonValueKind.String
                     || !error.TryGetProperty("code", out var codeValue)
-                    || codeValue.ValueKind != System.Text.Json.JsonValueKind.Number)
+                    || codeValue.ValueKind != System.Text.Json.JsonValueKind.Number
+                )
                 {
                     return false;
                 }
@@ -308,7 +399,9 @@ internal static class ProviderExchange
     }
 
     /// <summary>The headers a hop off the provider origin may carry: only <c>User-Agent</c>, as upstream <c>getFromApi</c> keeps it when it drops the rest.</summary>
-    public static Dictionary<string, string?> UserAgentOnly(IReadOnlyDictionary<string, string?>? headers)
+    public static Dictionary<string, string?> UserAgentOnly(
+        IReadOnlyDictionary<string, string?>? headers
+    )
     {
         var result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         if (headers != null && headers.TryGetValue("User-Agent", out var userAgent))
@@ -333,7 +426,10 @@ internal static class ProviderExchange
         headers["User-Agent"] = UserAgent(provider);
     }
 
-    private static void Apply(HttpRequestMessage request, IReadOnlyDictionary<string, string?>? headers)
+    private static void Apply(
+        HttpRequestMessage request,
+        IReadOnlyDictionary<string, string?>? headers
+    )
     {
         if (headers == null)
         {
@@ -360,7 +456,8 @@ internal static class ProviderExchange
                 {
                     request.Headers.Authorization = new AuthenticationHeaderValue(
                         value.Substring(0, space),
-                        value.Substring(space + 1));
+                        value.Substring(space + 1)
+                    );
                 }
                 else
                 {
@@ -401,11 +498,12 @@ internal static class ProviderExchange
 internal sealed class GlobalFetchHandler : DelegatingHandler
 {
     public GlobalFetchHandler(bool allowAutoRedirect)
-        : base(new HttpClientHandler { AllowAutoRedirect = allowAutoRedirect })
-    {
-    }
+        : base(new HttpClientHandler { AllowAutoRedirect = allowAutoRedirect }) { }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         var fetch = Vercel.AI.Util.Download.Fetch;
         if (fetch == null)
@@ -430,8 +528,17 @@ internal sealed class GlobalFetchHandler : DelegatingHandler
         }
 
         var redirect = ((HttpClientHandler)InnerHandler!).AllowAutoRedirect ? "follow" : "manual";
-        var downloadRequest = new Vercel.AI.Util.DownloadRequest(headers, cancellationToken, redirect) { Method = request.Method.Method, Body = body };
-        var result = await fetch(request.RequestUri!.AbsoluteUri, downloadRequest).ConfigureAwait(false);
+        var downloadRequest = new Vercel.AI.Util.DownloadRequest(
+            headers,
+            cancellationToken,
+            redirect
+        )
+        {
+            Method = request.Method.Method,
+            Body = body,
+        };
+        var result = await fetch(request.RequestUri!.AbsoluteUri, downloadRequest)
+            .ConfigureAwait(false);
         var message = new HttpResponseMessage((System.Net.HttpStatusCode)result.Status)
         {
             Content = new ByteArrayContent(result.Body ?? Array.Empty<byte>()),

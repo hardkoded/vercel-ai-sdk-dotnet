@@ -34,7 +34,15 @@ public sealed class OpenAISkillFile
 /// <summary>Skill upload result.</summary>
 public sealed class OpenAISkillUpload
 {
-    internal OpenAISkillUpload(string id, string? name, string? description, string? latestVersion, string? defaultVersion, long? createdAt, IReadOnlyList<OpenAICallWarning> warnings)
+    internal OpenAISkillUpload(
+        string id,
+        string? name,
+        string? description,
+        string? latestVersion,
+        string? defaultVersion,
+        long? createdAt,
+        IReadOnlyList<OpenAICallWarning> warnings
+    )
     {
         Id = id;
         Name = name;
@@ -82,15 +90,28 @@ public sealed class OpenAISkillStore : ISkillStore
     public string Provider => _provider.Name + ".skills";
 
     /// <inheritdoc />
-    public async Task<UploadedSkill> UploadSkillAsync(string name, string instructions, CancellationToken cancellationToken)
+    public async Task<UploadedSkill> UploadSkillAsync(
+        string name,
+        string instructions,
+        CancellationToken cancellationToken
+    )
     {
-        var file = new OpenAISkillFile("SKILL.md", Encoding.UTF8.GetBytes(instructions ?? string.Empty), "text/markdown");
-        var result = await UploadAsync(new[] { file }, null, cancellationToken).ConfigureAwait(false);
+        var file = new OpenAISkillFile(
+            "SKILL.md",
+            Encoding.UTF8.GetBytes(instructions ?? string.Empty),
+            "text/markdown"
+        );
+        var result = await UploadAsync(new[] { file }, null, cancellationToken)
+            .ConfigureAwait(false);
         return new UploadedSkill(result.Id, result.Name ?? name);
     }
 
     /// <summary>Uploads skill files as <c>files[]</c>. <paramref name="displayTitle"/> is warned and omitted.</summary>
-    public async Task<OpenAISkillUpload> UploadAsync(IReadOnlyList<OpenAISkillFile> files, string? displayTitle, CancellationToken cancellationToken)
+    public async Task<OpenAISkillUpload> UploadAsync(
+        IReadOnlyList<OpenAISkillFile> files,
+        string? displayTitle,
+        CancellationToken cancellationToken
+    )
     {
         var warnings = new List<OpenAICallWarning>();
         if (displayTitle != null)
@@ -102,26 +123,55 @@ public sealed class OpenAISkillStore : ISkillStore
         foreach (var file in files)
         {
             var bytes = new ByteArrayContent(file.Data);
-            bytes.Headers.ContentType = new MediaTypeHeaderValue(string.IsNullOrEmpty(file.MediaType) ? "application/octet-stream" : file.MediaType);
+            bytes.Headers.ContentType = new MediaTypeHeaderValue(
+                string.IsNullOrEmpty(file.MediaType) ? "application/octet-stream" : file.MediaType
+            );
             content.Add(bytes, "files[]", file.Path);
         }
 
-        var raw = await _provider.Http.SendBytesAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "skills"),
-            content,
-            _provider.CreateOpenAIHeaders(),
-            cancellationToken).ConfigureAwait(false);
+        var raw = await _provider
+            .Http.SendBytesAsync(
+                HttpMethod.Post,
+                ApiKeys.Combine(_provider.Options.BaseUrl, "skills"),
+                content,
+                _provider.CreateOpenAIHeaders(),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         using var document = JsonDocument.Parse(Encoding.UTF8.GetString(raw));
         var root = document.RootElement;
-        var id = root.TryGetProperty("id", out var idElement) ? idElement.GetString() ?? string.Empty : string.Empty;
-        var name = root.TryGetProperty("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String ? nameElement.GetString() : null;
-        var description = root.TryGetProperty("description", out var descriptionElement) && descriptionElement.ValueKind == JsonValueKind.String
-            ? descriptionElement.GetString()
-            : null;
-        var latest = root.TryGetProperty("latest_version", out var latestElement) && latestElement.ValueKind == JsonValueKind.String ? latestElement.GetString() : null;
-        var defaultVersion = root.TryGetProperty("default_version", out var defaultElement) && defaultElement.ValueKind == JsonValueKind.String ? defaultElement.GetString() : null;
+        var id = root.TryGetProperty("id", out var idElement)
+            ? idElement.GetString() ?? string.Empty
+            : string.Empty;
+        var name =
+            root.TryGetProperty("name", out var nameElement)
+            && nameElement.ValueKind == JsonValueKind.String
+                ? nameElement.GetString()
+                : null;
+        var description =
+            root.TryGetProperty("description", out var descriptionElement)
+            && descriptionElement.ValueKind == JsonValueKind.String
+                ? descriptionElement.GetString()
+                : null;
+        var latest =
+            root.TryGetProperty("latest_version", out var latestElement)
+            && latestElement.ValueKind == JsonValueKind.String
+                ? latestElement.GetString()
+                : null;
+        var defaultVersion =
+            root.TryGetProperty("default_version", out var defaultElement)
+            && defaultElement.ValueKind == JsonValueKind.String
+                ? defaultElement.GetString()
+                : null;
         long? created = OpenAIJson.Unix(root, "created_at");
-        return new OpenAISkillUpload(id, name, description, latest, defaultVersion, created, warnings);
+        return new OpenAISkillUpload(
+            id,
+            name,
+            description,
+            latest,
+            defaultVersion,
+            created,
+            warnings
+        );
     }
 }

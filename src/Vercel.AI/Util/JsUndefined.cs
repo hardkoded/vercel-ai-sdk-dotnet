@@ -9,9 +9,7 @@ namespace Vercel.AI.Util;
 /// </summary>
 public sealed class JsUndefined
 {
-    private JsUndefined()
-    {
-    }
+    private JsUndefined() { }
 
     /// <summary>The single undefined value.</summary>
     public static JsUndefined Value { get; } = new JsUndefined();

@@ -11,14 +11,19 @@ namespace Vercel.AI.Tests.PruneMessages;
 /// <summary>Port of <c>prune-messages.test.ts</c> &gt; <c>pruneMessages &gt; toolCalls &gt; consecutive reasoning parts &gt; %s</c>, run for the rules all, before-last-message, and before-last-2-messages.</summary>
 public sealed class ToolCallsConsecutiveReasoningPartsEachTests
 {
-    private static PruneToolCallsRule Rule(string name) => name switch
-    {
-        "all" => PruneToolCallsRule.All(),
-        "before-last-message" => PruneToolCallsRule.BeforeLastMessage(),
-        _ => PruneToolCallsRule.BeforeLastMessages(2),
-    };
+    private static PruneToolCallsRule Rule(string name) =>
+        name switch
+        {
+            "all" => PruneToolCallsRule.All(),
+            "before-last-message" => PruneToolCallsRule.BeforeLastMessage(),
+            _ => PruneToolCallsRule.BeforeLastMessages(2),
+        };
 
-    [UpstreamTest(Prefix + "pruneMessages > toolCalls > consecutive reasoning parts > %s::should prune all %i reasoning summaries", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "pruneMessages > toolCalls > consecutive reasoning parts > %s::should prune all %i reasoning summaries",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Theory]
     [InlineData("all", 2)]
     [InlineData("all", 3)]
@@ -41,7 +46,9 @@ public sealed class ToolCallsConsecutiveReasoningPartsEachTests
             new AssistantModelMessage(parts),
             new ToolModelMessage("call-1", "remove-me", "Tool result.", false, "text"),
             new UserModelMessage("Continue."),
-            new AssistantModelMessage(new AssistantContentPart[] { new AssistantTextPart("Final answer.") }),
+            new AssistantModelMessage(
+                new AssistantContentPart[] { new AssistantTextPart("Final answer.") }
+            ),
         };
 
         AssertEqual(messages.Skip(2).ToArray(), Prune(messages, PruneReasoning.None, Rule(rule)));

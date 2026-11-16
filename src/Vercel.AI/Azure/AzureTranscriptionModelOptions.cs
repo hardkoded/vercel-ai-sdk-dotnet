@@ -65,17 +65,27 @@ internal sealed class AzureTranscriptionModelOptions
         var error = ProviderOptionShape.Validate(options, Shape(), true);
         if (error != null)
         {
-            throw new InvalidArgumentException("providerOptions", options.GetRawText(), "invalid azure provider options: " + error);
+            throw new InvalidArgumentException(
+                "providerOptions",
+                options.GetRawText(),
+                "invalid azure provider options: " + error
+            );
         }
 
-        return new AzureTranscriptionModelOptions(OpenAIJson.String(options, "api"), OpenAIJson.String(options, "language"), options);
+        return new AzureTranscriptionModelOptions(
+            OpenAIJson.String(options, "api"),
+            OpenAIJson.String(options, "language"),
+            options
+        );
     }
 
     /// <summary>The Speech-API model for <paramref name="modelId"/>, or null. Maps to <c>getMAITranscribeModel</c>.</summary>
     public static MAITranscribeModel? GetMAITranscribeModel(string modelId)
     {
         var config = AzureModelCatalog.GetAzureModelEntry(modelId);
-        return config?.TranscribeName is { } name ? new MAITranscribeModel(name, config.TranscribeSupportsTimestamps) : null;
+        return config?.TranscribeName is { } name
+            ? new MAITranscribeModel(name, config.TranscribeSupportsTimestamps)
+            : null;
     }
 
     /// <summary>True when <paramref name="modelId"/> uses MAI streaming transcription. Maps to <c>isMAITranscribeStreaming</c>.</summary>
@@ -91,8 +101,17 @@ internal sealed class AzureTranscriptionModelOptions
         {
             ["api"] = ProviderOptionShape.Enum("openai", "speech", "mai"),
         };
-        ProviderOptionShape.Spread(shape, OpenAITranscriptionModelOptions.OpenAITranscriptionModelOptionsShape());
-        ProviderOptionShape.Spread(shape, AzureSpeechTranscriptionModelOptions.AzureSpeechTranscriptionModelOptionsShape());
-        return ProviderOptionShape.Spread(shape, AzureMaiTranscriptionModelOptions.AzureMaiTranscriptionModelOptionsShape());
+        ProviderOptionShape.Spread(
+            shape,
+            OpenAITranscriptionModelOptions.OpenAITranscriptionModelOptionsShape()
+        );
+        ProviderOptionShape.Spread(
+            shape,
+            AzureSpeechTranscriptionModelOptions.AzureSpeechTranscriptionModelOptionsShape()
+        );
+        return ProviderOptionShape.Spread(
+            shape,
+            AzureMaiTranscriptionModelOptions.AzureMaiTranscriptionModelOptionsShape()
+        );
     }
 }

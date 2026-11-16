@@ -9,12 +9,17 @@ namespace Vercel.AI.Tests.AssemblyaiError;
 
 public sealed class AssemblyaiFailedResponseHandlerTests
 {
-    private const string Prefix = "packages/assemblyai/src/assemblyai-error.test.ts::assemblyaiFailedResponseHandler::";
+    private const string Prefix =
+        "packages/assemblyai/src/assemblyai-error.test.ts::assemblyaiFailedResponseHandler::";
     private const string Url = "https://api.assemblyai.com/v2/transcript";
     private const string UpstreamCommit = "c87b19ee759b37e353f0b111943c2533dfc561f8";
 
     [Fact]
-    [UpstreamTest(Prefix + "should use the flat error message", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        Prefix + "should use the flat error message",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public void Should_use_the_flat_error_message()
     {
         var error = Handle("{\"error\":\"Invalid API key\"}", 401);
@@ -27,10 +32,17 @@ public sealed class AssemblyaiFailedResponseHandlerTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should use the flat error message with a status", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        Prefix + "should use the flat error message with a status",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public void Should_use_the_flat_error_message_with_a_status()
     {
-        var error = Handle("{\"error\":\"format_text must be a Boolean\",\"status\":\"error\"}", 400);
+        var error = Handle(
+            "{\"error\":\"format_text must be a Boolean\",\"status\":\"error\"}",
+            400
+        );
 
         Assert.Equal("format_text must be a Boolean", error.Message);
         Assert.Equal(400, error.StatusCode);
@@ -40,13 +52,22 @@ public sealed class AssemblyaiFailedResponseHandlerTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should keep using the nested error message", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        Prefix + "should keep using the nested error message",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public void Should_keep_using_the_nested_error_message()
     {
-        const string message = "{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Resource has been exhausted (e.g. check quota).\",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n";
+        const string message =
+            "{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Resource has been exhausted (e.g. check quota).\",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n";
         var body = new System.Text.Json.Nodes.JsonObject
         {
-            ["error"] = new System.Text.Json.Nodes.JsonObject { ["message"] = message, ["code"] = 429 },
+            ["error"] = new System.Text.Json.Nodes.JsonObject
+            {
+                ["message"] = message,
+                ["code"] = 429,
+            },
         }.ToJsonString();
 
         var error = Handle(body, 429);
@@ -59,7 +80,11 @@ public sealed class AssemblyaiFailedResponseHandlerTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should fall back to the status text for an unrecognized error body", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        Prefix + "should fall back to the status text for an unrecognized error body",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public void Should_fall_back_to_the_status_text_for_an_unrecognized_error_body()
     {
         var error = Handle("{\"foo\":\"bar\"}", 500, "Internal Server Error");
@@ -70,7 +95,11 @@ public sealed class AssemblyaiFailedResponseHandlerTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should fall back to the status text for a non-JSON error body", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        Prefix + "should fall back to the status text for a non-JSON error body",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public void Should_fall_back_to_the_status_text_for_a_non_JSON_error_body()
     {
         var error = Handle("not json", 502, "Bad Gateway");
@@ -82,6 +111,13 @@ public sealed class AssemblyaiFailedResponseHandlerTests
 
     private static ApiException Handle(string body, int statusCode, string? statusText = null)
     {
-        return AssemblyAIFailedResponseHandler.Handle(body, statusCode, Url, new Dictionary<string, string>(), null, statusText);
+        return AssemblyAIFailedResponseHandler.Handle(
+            body,
+            statusCode,
+            Url,
+            new Dictionary<string, string>(),
+            null,
+            statusText
+        );
     }
 }

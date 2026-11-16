@@ -18,7 +18,11 @@ internal static class PerplexityDecisionState
 
     private static readonly string[] ImageMediaTypes = { "image/png", "image/jpeg", "image/webp" };
 
-    private static readonly Regex ImageDataUrl = new Regex("^data:image/(png|jpeg|webp);base64,", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+    private static readonly Regex ImageDataUrl = new Regex(
+        "^data:image/(png|jpeg|webp);base64,",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(1)
+    );
 
     internal static JsonNode? Convert(IReadOnlyList<DecisionModelStatePart> state)
     {
@@ -47,12 +51,22 @@ internal static class PerplexityDecisionState
 
         if (images > MaxImages)
         {
-            throw new InvalidArgumentException("state", state, "Perplexity Decisions supports at most 8 images in the shared state.");
+            throw new InvalidArgumentException(
+                "state",
+                state,
+                "Perplexity Decisions supports at most 8 images in the shared state."
+            );
         }
 
         // Preserve a single string/object/array as native state. Other JSON values
         // must remain inside an array because the API rejects them at the top level.
-        if (parts.Count == 1 && (parts[0] is JsonObject or JsonArray || (parts[0] is JsonValue value && value.GetValueKind() == JsonValueKind.String)))
+        if (
+            parts.Count == 1
+            && (
+                parts[0] is JsonObject or JsonArray
+                || (parts[0] is JsonValue value && value.GetValueKind() == JsonValueKind.String)
+            )
+        )
         {
             return parts[0];
         }
@@ -71,17 +85,26 @@ internal static class PerplexityDecisionState
         var dataType = file.Data.DataType;
         if (dataType != "data")
         {
-            throw new UnsupportedFunctionalityException("Perplexity decision file input", "'Perplexity decision file input: " + dataType + "' functionality not supported.");
+            throw new UnsupportedFunctionalityException(
+                "Perplexity decision file input",
+                "'Perplexity decision file input: " + dataType + "' functionality not supported."
+            );
         }
 
         var bytes = file.Data.Bytes;
         var base64Text = file.Data.Base64 ?? string.Empty;
-        var mediaType = MediaTypes.IsFullMediaType(file.MediaType)
-            ? file.MediaType
-            : bytes != null ? MediaTypes.DetectMediaType(bytes, "image") : MediaTypes.DetectMediaType(base64Text, "image");
+        var mediaType =
+            MediaTypes.IsFullMediaType(file.MediaType) ? file.MediaType
+            : bytes != null ? MediaTypes.DetectMediaType(bytes, "image")
+            : MediaTypes.DetectMediaType(base64Text, "image");
         if (mediaType == null || Array.IndexOf(ImageMediaTypes, mediaType) < 0)
         {
-            throw new UnsupportedFunctionalityException("Perplexity decision image media type", "'Perplexity decision image media type: " + file.MediaType + "' functionality not supported.");
+            throw new UnsupportedFunctionalityException(
+                "Perplexity decision image media type",
+                "'Perplexity decision image media type: "
+                    + file.MediaType
+                    + "' functionality not supported."
+            );
         }
 
         var base64 = bytes != null ? System.Convert.ToBase64String(bytes) : base64Text;
@@ -99,14 +122,23 @@ internal static class PerplexityDecisionState
             case JsonArray array:
                 return array.Sum(CountImages);
             case JsonObject obj:
-                if (obj["type"] is JsonValue type && type.TryGetValue<string>(out var typeName) && typeName == "image_url")
+                if (
+                    obj["type"] is JsonValue type
+                    && type.TryGetValue<string>(out var typeName)
+                    && typeName == "image_url"
+                )
                 {
-                    if (obj["image_url"] is not JsonObject image
+                    if (
+                        obj["image_url"] is not JsonObject image
                         || image["url"] is not JsonValue url
                         || !url.TryGetValue<string>(out var text)
-                        || !ImageDataUrl.IsMatch(text))
+                        || !ImageDataUrl.IsMatch(text)
+                    )
                     {
-                        throw new UnsupportedFunctionalityException("Perplexity decision images", "Perplexity decision images require PNG, JPEG, or WebP base64 data URLs");
+                        throw new UnsupportedFunctionalityException(
+                            "Perplexity decision images",
+                            "Perplexity decision images require PNG, JPEG, or WebP base64 data URLs"
+                        );
                     }
 
                     return 1;

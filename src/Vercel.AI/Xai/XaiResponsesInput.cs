@@ -33,12 +33,14 @@ internal static class XaiResponsesInput
                     ConvertAssistant(assistant, input, warnings);
                     break;
                 case ToolModelMessage tool:
-                    input.Add(new JsonObject
-                    {
-                        ["type"] = "function_call_output",
-                        ["call_id"] = tool.ToolCallId,
-                        ["output"] = ToolOutput(tool),
-                    });
+                    input.Add(
+                        new JsonObject
+                        {
+                            ["type"] = "function_call_output",
+                            ["call_id"] = tool.ToolCallId,
+                            ["output"] = ToolOutput(tool),
+                        }
+                    );
                     break;
                 default:
                     warnings.Add(new CallWarning("other", "unsupported message role"));
@@ -63,7 +65,12 @@ internal static class XaiResponsesInput
                     parts.Add(ConvertFile(file));
                     break;
                 default:
-                    warnings.Add(new CallWarning("other", "xAI Responses API does not support this content type in user messages"));
+                    warnings.Add(
+                        new CallWarning(
+                            "other",
+                            "xAI Responses API does not support this content type in user messages"
+                        )
+                    );
                     break;
             }
         }
@@ -78,7 +85,10 @@ internal static class XaiResponsesInput
             return new JsonObject
             {
                 ["type"] = "input_file",
-                ["file_id"] = ProviderReferences.ResolveProviderReference(file.ProviderReference, XaiProvider.ProviderId),
+                ["file_id"] = ProviderReferences.ResolveProviderReference(
+                    file.ProviderReference,
+                    XaiProvider.ProviderId
+                ),
             };
         }
 
@@ -87,9 +97,13 @@ internal static class XaiResponsesInput
             var image = new JsonObject
             {
                 ["type"] = "input_image",
-                ["image_url"] = file.Url != null
-                    ? file.Url
-                    : "data:" + MediaTypes.ResolveFullMediaType(file.MediaType, file.Data) + ";base64," + System.Convert.ToBase64String(file.Data ?? Array.Empty<byte>()),
+                ["image_url"] =
+                    file.Url != null
+                        ? file.Url
+                        : "data:"
+                            + MediaTypes.ResolveFullMediaType(file.MediaType, file.Data)
+                            + ";base64,"
+                            + System.Convert.ToBase64String(file.Data ?? Array.Empty<byte>()),
             };
             if (ImageDetail(file) is { } detail)
             {
@@ -105,17 +119,22 @@ internal static class XaiResponsesInput
             return new JsonObject { ["type"] = "input_file", ["file_url"] = file.Url };
         }
 
-        var functionality = "file part media type " + file.MediaType + " as inline data (xAI Responses requires a URL or a Files API reference for non-image files)";
+        var functionality =
+            "file part media type "
+            + file.MediaType
+            + " as inline data (xAI Responses requires a URL or a Files API reference for non-image files)";
         throw new UnsupportedFunctionalityException(functionality, functionality);
     }
 
     private static string? ImageDetail(FileContentPart file)
     {
-        if (file.ProviderOptions == null
+        if (
+            file.ProviderOptions == null
             || !file.ProviderOptions.TryGetValue(XaiProvider.ProviderId, out var options)
             || options.ValueKind != JsonValueKind.Object
             || !options.TryGetProperty("imageDetail", out var value)
-            || value.ValueKind == JsonValueKind.Null)
+            || value.ValueKind == JsonValueKind.Null
+        )
         {
             return null;
         }
@@ -123,20 +142,32 @@ internal static class XaiResponsesInput
         var detail = value.ValueKind == JsonValueKind.String ? value.GetString() : null;
         if (detail == null || Array.IndexOf(ImageDetails, detail) < 0)
         {
-            throw new InvalidArgumentError("providerOptions.xai.imageDetail", null, "expected one of low, high, auto.");
+            throw new InvalidArgumentError(
+                "providerOptions.xai.imageDetail",
+                null,
+                "expected one of low, high, auto."
+            );
         }
 
         return detail;
     }
 
-    private static void ConvertAssistant(AssistantModelMessage assistant, JsonArray input, List<CallWarning> warnings)
+    private static void ConvertAssistant(
+        AssistantModelMessage assistant,
+        JsonArray input,
+        List<CallWarning> warnings
+    )
     {
         foreach (var part in assistant.Parts)
         {
             switch (part)
             {
                 case AssistantTextPart text:
-                    var message = new JsonObject { ["role"] = "assistant", ["content"] = text.Text };
+                    var message = new JsonObject
+                    {
+                        ["role"] = "assistant",
+                        ["content"] = text.Text,
+                    };
                     if (XaiString(part, "itemId") is { } textItemId)
                     {
                         message["id"] = textItemId;
@@ -152,15 +183,19 @@ internal static class XaiResponsesInput
                     }
 
                     var call = toolCall.ToolCall;
-                    input.Add(new JsonObject
-                    {
-                        ["type"] = "function_call",
-                        ["id"] = XaiString(part, "itemId") ?? call.ToolCallId,
-                        ["call_id"] = call.ToolCallId,
-                        ["name"] = call.ToolName,
-                        ["arguments"] = string.IsNullOrEmpty(call.ArgumentsJson) ? "{}" : call.ArgumentsJson,
-                        ["status"] = "completed",
-                    });
+                    input.Add(
+                        new JsonObject
+                        {
+                            ["type"] = "function_call",
+                            ["id"] = XaiString(part, "itemId") ?? call.ToolCallId,
+                            ["call_id"] = call.ToolCallId,
+                            ["name"] = call.ToolName,
+                            ["arguments"] = string.IsNullOrEmpty(call.ArgumentsJson)
+                                ? "{}"
+                                : call.ArgumentsJson,
+                            ["status"] = "completed",
+                        }
+                    );
                     break;
                 case AssistantToolResultPart:
                     break;
@@ -168,19 +203,35 @@ internal static class XaiResponsesInput
                     ConvertReasoning(reasoning, input, warnings);
                     break;
                 default:
-                    warnings.Add(new CallWarning("other", "xAI Responses API does not support " + part.Type + " in assistant messages"));
+                    warnings.Add(
+                        new CallWarning(
+                            "other",
+                            "xAI Responses API does not support "
+                                + part.Type
+                                + " in assistant messages"
+                        )
+                    );
                     break;
             }
         }
     }
 
-    private static void ConvertReasoning(AssistantReasoningPart part, JsonArray input, List<CallWarning> warnings)
+    private static void ConvertReasoning(
+        AssistantReasoningPart part,
+        JsonArray input,
+        List<CallWarning> warnings
+    )
     {
         var itemId = XaiString(part, "itemId");
         var encryptedContent = XaiString(part, "reasoningEncryptedContent");
         if (itemId == null && encryptedContent == null)
         {
-            warnings.Add(new CallWarning("other", "Reasoning parts without itemId or encrypted content cannot be sent back to xAI. Skipping."));
+            warnings.Add(
+                new CallWarning(
+                    "other",
+                    "Reasoning parts without itemId or encrypted content cannot be sent back to xAI. Skipping."
+                )
+            );
             return;
         }
 
@@ -208,7 +259,9 @@ internal static class XaiResponsesInput
     /// <summary>A string under the part's <c>xai</c> provider options, or null when it is missing or not a string.</summary>
     private static string? XaiString(AssistantContentPart part, string name)
     {
-        return part.ProviderOptions != null && part.ProviderOptions.TryGetValue(XaiProvider.ProviderId, out var options)
+        return
+            part.ProviderOptions != null
+            && part.ProviderOptions.TryGetValue(XaiProvider.ProviderId, out var options)
             ? OpenAI.OpenAIJson.String(options, name)
             : null;
     }

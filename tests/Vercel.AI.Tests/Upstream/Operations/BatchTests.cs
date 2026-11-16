@@ -15,40 +15,80 @@ public sealed class BatchTests
     private const string Prefix = "packages/ai/src/batch/batch.test.ts::";
 
     [Fact]
-    [UpstreamTest(Prefix + "cancelBatch::requests cancellation and returns provider metadata", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "cancelBatch::requests cancellation and returns provider metadata",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Requests_cancellation_and_returns_metadata()
     {
         var api = new BatchFake();
-        var result = await Batch.CancelBatchAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api), Batch = new BatchReference(2, "batch-1", "test") });
+        var result = await Batch.CancelBatchAsync(
+            new BatchRequestOptions
+            {
+                Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
+                Batch = new BatchReference(2, "batch-1", "test"),
+            }
+        );
         Assert.Equal("batch-1", api.Last!.BatchId);
         Assert.Equal("cancelling", result.Status);
         Assert.Equal("test", result.ProviderMetadata!.Value.GetProperty("provider").GetString());
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "cancelBatch::throws when cancellation is unsupported", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "cancelBatch::throws when cancellation is unsupported",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Throws_when_cancellation_is_unsupported()
     {
-        var error = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => Batch.CancelBatchAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake { CanCancel = false }), Batch = new BatchReference(2, "batch-1", "test") }));
+        var error = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() =>
+            Batch.CancelBatchAsync(
+                new BatchRequestOptions
+                {
+                    Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(
+                        new BatchFake { CanCancel = false }
+                    ),
+                    Batch = new BatchReference(2, "batch-1", "test"),
+                }
+            )
+        );
         Assert.Equal("batch cancellation", error.Functionality);
         Assert.Equal("The provider does not support batch cancellation.", error.Message);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "listBatches::preserves the batch API as the method receiver", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "listBatches::preserves the batch API as the method receiver",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Preserves_the_batch_api_as_the_receiver()
     {
         var api = new BatchFake();
-        await Batch.ListBatchesAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api) });
+        await Batch.ListBatchesAsync(
+            new BatchRequestOptions
+            {
+                Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
+            }
+        );
         Assert.Same(api, api.Last!.Receiver);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "listBatches::returns normalized batch references and the next cursor", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "listBatches::returns normalized batch references and the next cursor",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Returns_normalized_batch_references()
     {
         var api = new BatchFake();
-        var page = await Batch.ListBatchesAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api), Limit = 2, Cursor = "start" });
+        var page = await Batch.ListBatchesAsync(
+            new BatchRequestOptions
+            {
+                Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
+                Limit = 2,
+                Cursor = "start",
+            }
+        );
         Assert.Equal((int?)2, api.Last!.Limit);
         Assert.Equal("start", api.Last.Cursor);
         Assert.Equal(2, page.Batches[0].Version);
@@ -59,32 +99,71 @@ public sealed class BatchTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "listBatches::throws when listing is unsupported", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "listBatches::throws when listing is unsupported",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Throws_when_listing_is_unsupported()
     {
-        var error = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => Batch.ListBatchesAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake { CanList = false }) }));
+        var error = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() =>
+            Batch.ListBatchesAsync(
+                new BatchRequestOptions
+                {
+                    Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(
+                        new BatchFake { CanList = false }
+                    ),
+                }
+            )
+        );
         Assert.Equal("batch listing", error.Functionality);
         Assert.Equal("The provider does not support listing batches.", error.Message);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "startBatch::rejects unsupported request types before starting a batch", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "startBatch::rejects unsupported request types before starting a batch",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_unsupported_request_types_before_starting()
     {
         var api = new BatchFake();
-        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.StartBatchAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api), Requests = new[] { new BatchRequest("a", "audio", "model") } }));
+        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() =>
+            Batch.StartBatchAsync(
+                new BatchRequestOptions
+                {
+                    Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
+                    Requests = new[] { new BatchRequest("a", "audio", "model") },
+                }
+            )
+        );
         Assert.Equal("requests", error.Parameter);
         Assert.Contains("Unsupported batch request type \"audio\".", error.Message);
         Assert.Null(api.Last);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "startBatch::normalizes image requests before starting a batch", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "startBatch::normalizes image requests before starting a batch",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Normalizes_image_requests()
     {
         var api = new BatchFake();
-        var request = new BatchRequest("image-1", "image", "image-model") { Prompt = "a cat", N = 2, Size = "1024x1024", AspectRatio = "1:1", Seed = 4 };
-        await Batch.StartBatchAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api), Requests = new[] { request } });
+        var request = new BatchRequest("image-1", "image", "image-model")
+        {
+            Prompt = "a cat",
+            N = 2,
+            Size = "1024x1024",
+            AspectRatio = "1:1",
+            Seed = 4,
+        };
+        await Batch.StartBatchAsync(
+            new BatchRequestOptions
+            {
+                Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
+                Requests = new[] { request },
+            }
+        );
         var options = api.Last!.Requests![0].Options;
         Assert.Equal("image", api.Last.Requests[0].Type);
         Assert.Equal("a cat", options.GetProperty("prompt").GetString());
@@ -94,7 +173,10 @@ public sealed class BatchTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "startBatch::uses the global default provider when provider is omitted", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "startBatch::uses the global default provider when provider is omitted",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Uses_the_global_default_provider()
     {
         var api = new BatchFake();
@@ -102,7 +184,15 @@ public sealed class BatchTests
         BatchModels.Default = () => new BatchProvider(api);
         try
         {
-            var started = await Batch.StartBatchAsync(new BatchRequestOptions { Requests = new[] { new BatchRequest("a", "text", "language") { Prompt = "hi" } } });
+            var started = await Batch.StartBatchAsync(
+                new BatchRequestOptions
+                {
+                    Requests = new[]
+                    {
+                        new BatchRequest("a", "text", "language") { Prompt = "hi" },
+                    },
+                }
+            );
             Assert.Same(api, api.Last!.Receiver);
             Assert.Equal("test", started.Provider);
             Assert.Equal(2, started.Version);
@@ -114,16 +204,30 @@ public sealed class BatchTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "startBatch::resolves the batch service from a provider", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "startBatch::resolves the batch service from a provider",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Resolves_the_batch_service_from_a_provider()
     {
         var api = new BatchFake();
-        await Batch.StartBatchAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromProvider(new BatchProvider(api)), Requests = new[] { new BatchRequest("a", "text", "language") { Prompt = "hi" } } });
+        await Batch.StartBatchAsync(
+            new BatchRequestOptions
+            {
+                Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromProvider(
+                    new BatchProvider(api)
+                ),
+                Requests = new[] { new BatchRequest("a", "text", "language") { Prompt = "hi" } },
+            }
+        );
         Assert.Same(api, api.Last!.Receiver);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "startBatch::normalizes requests and returns the acknowledged batch", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "startBatch::normalizes requests and returns the acknowledged batch",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Normalizes_text_requests_and_returns_the_batch()
     {
         var api = new BatchFake();
@@ -135,10 +239,24 @@ public sealed class BatchTests
             TopP = null,
             Seed = 3,
         };
-        var started = await Batch.StartBatchAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api), Requests = new[] { request }, Headers = new Dictionary<string, string> { ["X-Test"] = "1" } });
+        var started = await Batch.StartBatchAsync(
+            new BatchRequestOptions
+            {
+                Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
+                Requests = new[] { request },
+                Headers = new Dictionary<string, string> { ["X-Test"] = "1" },
+            }
+        );
         var options = api.Last!.Requests![0].Options;
         Assert.Equal("user", options.GetProperty("prompt")[0].GetProperty("role").GetString());
-        Assert.Equal("Hello", options.GetProperty("prompt")[0].GetProperty("content")[0].GetProperty("text").GetString());
+        Assert.Equal(
+            "Hello",
+            options
+                .GetProperty("prompt")[0]
+                .GetProperty("content")[0]
+                .GetProperty("text")
+                .GetString()
+        );
         Assert.Equal(16, options.GetProperty("maxOutputTokens").GetInt32());
         Assert.Equal(JsonValueKind.Null, options.GetProperty("topP").ValueKind);
         Assert.Equal("batch-1", started.Id);
@@ -149,44 +267,116 @@ public sealed class BatchTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "startBatch::rejects empty and duplicate request IDs", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "startBatch::rejects empty and duplicate request IDs",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_empty_and_duplicate_request_ids()
     {
-        var empty = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.StartBatchAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake()), Requests = Array.Empty<BatchRequest>() }));
+        var empty = await Assert.ThrowsAsync<InvalidArgumentException>(() =>
+            Batch.StartBatchAsync(
+                new BatchRequestOptions
+                {
+                    Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake()),
+                    Requests = Array.Empty<BatchRequest>(),
+                }
+            )
+        );
         Assert.Contains("requests must not be empty", empty.Message);
-        var blank = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.StartBatchAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake()), Requests = new[] { new BatchRequest("  ", "text", "model") } }));
+        var blank = await Assert.ThrowsAsync<InvalidArgumentException>(() =>
+            Batch.StartBatchAsync(
+                new BatchRequestOptions
+                {
+                    Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake()),
+                    Requests = new[] { new BatchRequest("  ", "text", "model") },
+                }
+            )
+        );
         Assert.Contains("request IDs must not be empty", blank.Message);
-        var duplicate = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.StartBatchAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake()), Requests = new[] { new BatchRequest("a", "text", "model"), new BatchRequest("a", "text", "model") } }));
+        var duplicate = await Assert.ThrowsAsync<InvalidArgumentException>(() =>
+            Batch.StartBatchAsync(
+                new BatchRequestOptions
+                {
+                    Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake()),
+                    Requests = new[]
+                    {
+                        new BatchRequest("a", "text", "model"),
+                        new BatchRequest("a", "text", "model"),
+                    },
+                }
+            )
+        );
         Assert.Contains("duplicate ID \"a\"", duplicate.Message);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "startBatch::rejects providers without batch support", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "startBatch::rejects providers without batch support",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_providers_without_batch_support()
     {
-        var error = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => Batch.StartBatchAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromProvider(new BatchProvider(null)), Requests = new[] { new BatchRequest("a", "text", "model") } }));
+        var error = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() =>
+            Batch.StartBatchAsync(
+                new BatchRequestOptions
+                {
+                    Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromProvider(
+                        new BatchProvider(null)
+                    ),
+                    Requests = new[] { new BatchRequest("a", "text", "model") },
+                }
+            )
+        );
         Assert.Contains("experimental_batch()", error.Message);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "startBatch::forwards the webhook URL to the batch service", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "startBatch::forwards the webhook URL to the batch service",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Forwards_the_webhook_url()
     {
         var api = new BatchFake();
-        await Batch.StartBatchAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api), WebhookUrl = "https://example.com/hook", Requests = new[] { new BatchRequest("a", "text", "model") { Prompt = "hi" } } });
+        await Batch.StartBatchAsync(
+            new BatchRequestOptions
+            {
+                Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
+                WebhookUrl = "https://example.com/hook",
+                Requests = new[] { new BatchRequest("a", "text", "model") { Prompt = "hi" } },
+            }
+        );
         Assert.Equal("https://example.com/hook", api.Last!.WebhookUrl);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "startBatch::logs request warnings with the request model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "startBatch::logs request warnings with the request model",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Logs_request_warnings_with_the_request_model()
     {
         var seen = new List<WarningLogContext>();
         WarningLog.Observer = seen.Add;
         try
         {
-            var api = new BatchFake { StartWarnings = new[] { new BatchRequestWarning("a", OperationWarning.Other("careful")) } };
-            await Batch.StartBatchAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api), Requests = new[] { new BatchRequest("a", "text", "language-model") { Prompt = "hi" } } });
+            var api = new BatchFake
+            {
+                StartWarnings = new[]
+                {
+                    new BatchRequestWarning("a", OperationWarning.Other("careful")),
+                },
+            };
+            await Batch.StartBatchAsync(
+                new BatchRequestOptions
+                {
+                    Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
+                    Requests = new[]
+                    {
+                        new BatchRequest("a", "text", "language-model") { Prompt = "hi" },
+                    },
+                }
+            );
             Assert.Equal("careful", seen[0].Warnings[0].Message);
             Assert.Equal("test", seen[0].Provider);
             Assert.Equal("language-model", seen[0].Model);
@@ -198,37 +388,103 @@ public sealed class BatchTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "startBatch::forwards definition-only tools without executing them", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "startBatch::forwards definition-only tools without executing them",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Forwards_tools_without_executing_them()
     {
         var executed = 0;
-        var tool = new BatchTool("weather", OperationJson.Parse("{\"type\":\"object\"}"), "Forecast", (_, _) => { executed++; return Task.FromResult<object?>("nope"); });
+        var tool = new BatchTool(
+            "weather",
+            OperationJson.Parse("{\"type\":\"object\"}"),
+            "Forecast",
+            (_, _) =>
+            {
+                executed++;
+                return Task.FromResult<object?>("nope");
+            }
+        );
         var api = new BatchFake();
-        await Batch.StartBatchAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api), Requests = new[] { new BatchRequest("a", "text", "model") { Prompt = "hi", Tools = new[] { tool }, ToolChoice = "required" } } });
+        await Batch.StartBatchAsync(
+            new BatchRequestOptions
+            {
+                Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
+                Requests = new[]
+                {
+                    new BatchRequest("a", "text", "model")
+                    {
+                        Prompt = "hi",
+                        Tools = new[] { tool },
+                        ToolChoice = "required",
+                    },
+                },
+            }
+        );
         var tools = api.Last!.Requests![0].Options.GetProperty("tools");
         Assert.Equal("function", tools[0].GetProperty("type").GetString());
         Assert.Equal("weather", tools[0].GetProperty("name").GetString());
         Assert.Equal("Forecast", tools[0].GetProperty("description").GetString());
-        Assert.Equal("required", api.Last.Requests[0].Options.GetProperty("toolChoice").GetProperty("type").GetString());
+        Assert.Equal(
+            "required",
+            api.Last.Requests[0].Options.GetProperty("toolChoice").GetProperty("type").GetString()
+        );
         Assert.Equal(0, executed);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "startBatch::rejects incompatible definitions for the same tool name", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "startBatch::rejects incompatible definitions for the same tool name",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_incompatible_tool_definitions()
     {
-        var first = new BatchRequest("a", "text", "model") { Prompt = "hi", Tools = new[] { new BatchTool("weather", OperationJson.Parse("{\"type\":\"object\"}"), "One") } };
-        var second = new BatchRequest("b", "text", "model") { Prompt = "hi", Tools = new[] { new BatchTool("weather", OperationJson.Parse("{\"type\":\"object\"}"), "Two") } };
-        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.StartBatchAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake()), Requests = new[] { first, second } }));
-        Assert.Contains("tool \"weather\" must have the same definition in every batch request", error.Message);
+        var first = new BatchRequest("a", "text", "model")
+        {
+            Prompt = "hi",
+            Tools = new[]
+            {
+                new BatchTool("weather", OperationJson.Parse("{\"type\":\"object\"}"), "One"),
+            },
+        };
+        var second = new BatchRequest("b", "text", "model")
+        {
+            Prompt = "hi",
+            Tools = new[]
+            {
+                new BatchTool("weather", OperationJson.Parse("{\"type\":\"object\"}"), "Two"),
+            },
+        };
+        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() =>
+            Batch.StartBatchAsync(
+                new BatchRequestOptions
+                {
+                    Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake()),
+                    Requests = new[] { first, second },
+                }
+            )
+        );
+        Assert.Contains(
+            "tool \"weather\" must have the same definition in every batch request",
+            error.Message
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "getBatchStatus::returns the latest status without the batch reference", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "getBatchStatus::returns the latest status without the batch reference",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Returns_the_latest_status()
     {
         var api = new BatchFake();
-        var status = await Batch.GetBatchStatusAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api), Batch = new BatchReference(2, "batch-1", "test") });
+        var status = await Batch.GetBatchStatusAsync(
+            new BatchRequestOptions
+            {
+                Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
+                Batch = new BatchReference(2, "batch-1", "test"),
+            }
+        );
         Assert.Equal("batch-1", api.Last!.BatchId);
         Assert.Equal("in_progress", status.Status);
         Assert.Equal(3, status.RequestCounts!.Total);
@@ -236,27 +492,58 @@ public sealed class BatchTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "getBatchStatus::rejects an incompatible provider", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "getBatchStatus::rejects an incompatible provider",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_an_incompatible_provider()
     {
-        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.GetBatchStatusAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake()), Batch = new BatchReference(2, "batch-1", "other") }));
+        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() =>
+            Batch.GetBatchStatusAsync(
+                new BatchRequestOptions
+                {
+                    Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake()),
+                    Batch = new BatchReference(2, "batch-1", "other"),
+                }
+            )
+        );
         Assert.Contains("provider test is not compatible with batch provider other", error.Message);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "getBatchStatus::rejects a version 1 batch reference", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "getBatchStatus::rejects a version 1 batch reference",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_a_version_1_reference()
     {
-        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.GetBatchStatusAsync(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake()), Batch = new BatchReference(1, "batch-1", "test") }));
+        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() =>
+            Batch.GetBatchStatusAsync(
+                new BatchRequestOptions
+                {
+                    Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake()),
+                    Batch = new BatchReference(1, "batch-1", "test"),
+                }
+            )
+        );
         Assert.Contains("batch must be a supported batch reference", error.Message);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "getBatchResults::opens eagerly and streams normalized item results", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "getBatchResults::opens eagerly and streams normalized item results",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Opens_results_eagerly_and_streams_them()
     {
         var api = new BatchFake();
-        var stream = Batch.GetBatchResults(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api), Batch = new BatchReference(2, "batch-1", "test") });
+        var stream = Batch.GetBatchResults(
+            new BatchRequestOptions
+            {
+                Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
+                Batch = new BatchReference(2, "batch-1", "test"),
+            }
+        );
         await Task.Delay(30);
         Assert.Equal(1, api.ResultOpens);
         var results = await Read(stream);
@@ -268,17 +555,31 @@ public sealed class BatchTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "getBatchResults::normalizes provider-executed tool content and preserves usage", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "getBatchResults::normalizes provider-executed tool content and preserves usage",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Normalizes_provider_executed_tools_and_usage()
     {
         var api = new BatchFake { Items = new[] { ToolItem(providerExecuted: true) } };
         var executed = 0;
-        var results = await Read(Batch.GetBatchResults(new BatchRequestOptions
-        {
-            Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
-            Batch = new BatchReference(2, "batch-1", "test"),
-            Tools = new[] { new BatchTool("weather", OperationJson.Parse("{}"), execute: (_, _) => { executed++; return Task.FromResult<object?>("local"); }) },
-        }));
+        var results = await Read(
+            Batch.GetBatchResults(
+                new BatchRequestOptions
+                {
+                    Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
+                    Batch = new BatchReference(2, "batch-1", "test"),
+                    Tools = new[]
+                    {
+                        new BatchTool("weather", OperationJson.Parse("{}"), execute: (_, _) =>
+                        {
+                            executed++;
+                            return Task.FromResult<object?>("local");
+                        }),
+                    },
+                }
+            )
+        );
         var call = results[0].Content![0];
         Assert.Equal("tool-call", call.Type);
         Assert.Equal("Paris", call.Input!.Value.GetProperty("city").GetString());
@@ -295,7 +596,10 @@ public sealed class BatchTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "getBatchResults::normalizes successful image results", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "getBatchResults::normalizes successful image results",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Normalizes_successful_image_results()
     {
         var item = new BatchItem("image", "image-1", "succeeded")
@@ -304,44 +608,92 @@ public sealed class BatchTests
             {
                 Images = new object?[] { "aGVsbG8=" },
                 Warnings = new[] { OperationWarning.Other("image") },
-                ProviderMetadata = OperationJson.Parse("{\"openai\":{\"images\":[{\"revised\":\"cat\"}]}}"),
+                ProviderMetadata = OperationJson.Parse(
+                    "{\"openai\":{\"images\":[{\"revised\":\"cat\"}]}}"
+                ),
                 Usage = new OperationUsage(4, 0, 4),
             },
         };
-        var results = await Read(Batch.GetBatchResults(new BatchRequestOptions { Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake { Items = new[] { item } }), Batch = new BatchReference(2, "batch-1", "test") }));
+        var results = await Read(
+            Batch.GetBatchResults(
+                new BatchRequestOptions
+                {
+                    Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(
+                        new BatchFake { Items = new[] { item } }
+                    ),
+                    Batch = new BatchReference(2, "batch-1", "test"),
+                }
+            )
+        );
         var image = results[0].Images![0];
         Assert.Equal("hello", Encoding.UTF8.GetString(image.Data));
-        Assert.Equal("cat", image.ProviderMetadata!.Value.GetProperty("openai").GetProperty("revised").GetString());
+        Assert.Equal(
+            "cat",
+            image.ProviderMetadata!.Value.GetProperty("openai").GetProperty("revised").GetString()
+        );
         Assert.Equal((int?)4, results[0].ImageUsage!.InputTokens);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "getBatchResults::normalizes client tool calls with their definitions without executing them", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "getBatchResults::normalizes client tool calls with their definitions without executing them",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Copies_pending_tool_input_without_executing()
     {
         var executed = 0;
-        var results = await Batch.GetAllBatchResultsAsync(new BatchRequestOptions
-        {
-            Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake { Items = new[] { ToolItem(providerExecuted: false, includeResult: true) } }),
-            Batch = new BatchReference(2, "batch-1", "test"),
-            Tools = new[] { new BatchTool("weather", OperationJson.Parse("{}"), execute: (_, _) => { executed++; return Task.FromResult<object?>("local"); }) },
-        });
+        var results = await Batch.GetAllBatchResultsAsync(
+            new BatchRequestOptions
+            {
+                Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(
+                    new BatchFake
+                    {
+                        Items = new[] { ToolItem(providerExecuted: false, includeResult: true) },
+                    }
+                ),
+                Batch = new BatchReference(2, "batch-1", "test"),
+                Tools = new[]
+                {
+                    new BatchTool("weather", OperationJson.Parse("{}"), execute: (_, _) =>
+                    {
+                        executed++;
+                        return Task.FromResult<object?>("local");
+                    }),
+                },
+            }
+        );
         Assert.Equal("Paris", results[0].Content![1].Input!.Value.GetProperty("city").GetString());
         Assert.Equal(0, executed);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "batch generated file downloads::downloads %s content", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "batch generated file downloads::downloads %s content",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Downloads_generated_file_content()
     {
         foreach (var type in new[] { "file", "reasoning-file" })
         {
-            var results = await Read(Batch.GetBatchResults(new BatchRequestOptions
-            {
-                Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake { Items = new[] { FileItem(type) } }),
-                Batch = new BatchReference(2, "batch-1", "test"),
-                Download = (_, _) => Task.FromResult(new DownloadedMedia(Encoding.UTF8.GetBytes("Hello World"), "text/plain")),
-            }));
+            var results = await Read(
+                Batch.GetBatchResults(
+                    new BatchRequestOptions
+                    {
+                        Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(
+                            new BatchFake { Items = new[] { FileItem(type) } }
+                        ),
+                        Batch = new BatchReference(2, "batch-1", "test"),
+                        Download = (_, _) =>
+                            Task.FromResult(
+                                new DownloadedMedia(
+                                    Encoding.UTF8.GetBytes("Hello World"),
+                                    "text/plain"
+                                )
+                            ),
+                    }
+                )
+            );
             var file = results[0].Content![0];
             Assert.Equal(type, file.Type);
             Assert.Equal("Hello World", Encoding.UTF8.GetString(file.FileBytes!));
@@ -350,7 +702,10 @@ public sealed class BatchTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "batch generated file downloads::cancels in-flight downloads on %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "batch generated file downloads::cancels in-flight downloads on %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Cancels_in_flight_downloads()
     {
         foreach (var mode in new[] { "abort", "timeout" })
@@ -358,20 +713,24 @@ public sealed class BatchTests
             using var source = new CancellationTokenSource();
             var started = new TaskCompletionSource<bool>();
             CancellationToken seen = default;
-            var stream = Batch.GetBatchResults(new BatchRequestOptions
-            {
-                Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake { Items = new[] { FileItem("file") } }),
-                Batch = new BatchReference(2, "batch-1", "test"),
-                CancellationToken = source.Token,
-                TimeoutMs = mode == "timeout" ? 80 : null,
-                Download = async (_, token) =>
+            var stream = Batch.GetBatchResults(
+                new BatchRequestOptions
                 {
-                    seen = token;
-                    started.TrySetResult(true);
-                    await Task.Delay(Timeout.Infinite, token);
-                    return new DownloadedMedia(Array.Empty<byte>(), null);
-                },
-            });
+                    Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(
+                        new BatchFake { Items = new[] { FileItem("file") } }
+                    ),
+                    Batch = new BatchReference(2, "batch-1", "test"),
+                    CancellationToken = source.Token,
+                    TimeoutMs = mode == "timeout" ? 80 : null,
+                    Download = async (_, token) =>
+                    {
+                        seen = token;
+                        started.TrySetResult(true);
+                        await Task.Delay(Timeout.Infinite, token);
+                        return new DownloadedMedia(Array.Empty<byte>(), null);
+                    },
+                }
+            );
             var reading = Read(stream);
             await started.Task;
             if (mode == "abort")
@@ -399,11 +758,24 @@ public sealed class BatchTests
     {
         var content = new List<BatchContentPart>
         {
-            new BatchContentPart("tool-call") { ToolCallId = "call-1", ToolName = "weather", Text = "{\"city\":\"Paris\"}", ProviderExecuted = providerExecuted },
+            new BatchContentPart("tool-call")
+            {
+                ToolCallId = "call-1",
+                ToolName = "weather",
+                Text = "{\"city\":\"Paris\"}",
+                ProviderExecuted = providerExecuted,
+            },
         };
         if (includeResult)
         {
-            content.Add(new BatchContentPart("tool-result") { ToolCallId = "call-1", ToolName = "weather", Output = OperationJson.Parse("{\"ok\":true}") });
+            content.Add(
+                new BatchContentPart("tool-result")
+                {
+                    ToolCallId = "call-1",
+                    ToolName = "weather",
+                    Output = OperationJson.Parse("{\"ok\":true}"),
+                }
+            );
         }
 
         return new BatchItem("text", "request", "succeeded")
@@ -423,7 +795,14 @@ public sealed class BatchTests
         {
             Text = new BatchTextGeneration
             {
-                Content = new[] { new BatchContentPart(type) { MediaType = "text/plain", FileUrl = "https://example.com/batch.txt" } },
+                Content = new[]
+                {
+                    new BatchContentPart(type)
+                    {
+                        MediaType = "text/plain",
+                        FileUrl = "https://example.com/batch.txt",
+                    },
+                },
                 FinishReason = "stop",
                 Usage = new BatchModelUsage(3, 2, 1, outputTotal: 5, text: 4, reasoning: 1),
             },
@@ -457,52 +836,102 @@ public sealed class BatchTests
 
         public int ResultOpens { get; private set; }
 
-        public IReadOnlyList<BatchRequestWarning> StartWarnings { get; set; } = Array.Empty<BatchRequestWarning>();
+        public IReadOnlyList<BatchRequestWarning> StartWarnings { get; set; } =
+            Array.Empty<BatchRequestWarning>();
 
-        public IReadOnlyList<BatchItem> Items { get; set; } = new[]
-        {
-            new BatchItem("text", "request", "succeeded")
+        public IReadOnlyList<BatchItem> Items { get; set; } =
+            new[]
             {
-                Text = new BatchTextGeneration
+                new BatchItem("text", "request", "succeeded")
                 {
-                    Content = new[] { new BatchContentPart("text") { Text = "Hello" } },
-                    FinishReason = "stop",
-                    RawFinishReason = "stop",
-                    Usage = new BatchModelUsage(3, 2, 1, outputTotal: 5, text: 4, reasoning: 1),
+                    Text = new BatchTextGeneration
+                    {
+                        Content = new[] { new BatchContentPart("text") { Text = "Hello" } },
+                        FinishReason = "stop",
+                        RawFinishReason = "stop",
+                        Usage = new BatchModelUsage(3, 2, 1, outputTotal: 5, text: 4, reasoning: 1),
+                    },
                 },
-            },
-            new BatchItem("text", "failed", "failed") { ErrorMessage = "bad", ErrorCode = "bad" },
-        };
+                new BatchItem("text", "failed", "failed")
+                {
+                    ErrorMessage = "bad",
+                    ErrorCode = "bad",
+                },
+            };
 
-        public Task<BatchStartResult> DoStartAsync(BatchOperationCall call, CancellationToken cancellationToken)
+        public Task<BatchStartResult> DoStartAsync(
+            BatchOperationCall call,
+            CancellationToken cancellationToken
+        )
         {
             Last = call;
-            return Task.FromResult(new BatchStartResult { Id = "batch-1", Status = "submitted", Warnings = StartWarnings, ProviderMetadata = OperationJson.Parse("{\"provider\":\"test\"}") });
+            return Task.FromResult(
+                new BatchStartResult
+                {
+                    Id = "batch-1",
+                    Status = "submitted",
+                    Warnings = StartWarnings,
+                    ProviderMetadata = OperationJson.Parse("{\"provider\":\"test\"}"),
+                }
+            );
         }
 
-        public Task<BatchStatus> DoGetStatusAsync(BatchOperationCall call, CancellationToken cancellationToken)
+        public Task<BatchStatus> DoGetStatusAsync(
+            BatchOperationCall call,
+            CancellationToken cancellationToken
+        )
         {
             Last = call;
-            return Task.FromResult(new BatchStatus { Status = "in_progress", RawStatus = "in_progress", RequestCounts = new BatchRequestCounts(3, 1, 2, 0) });
+            return Task.FromResult(
+                new BatchStatus
+                {
+                    Status = "in_progress",
+                    RawStatus = "in_progress",
+                    RequestCounts = new BatchRequestCounts(3, 1, 2, 0),
+                }
+            );
         }
 
-        public Task<IAsyncEnumerable<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken)
+        public Task<IAsyncEnumerable<BatchItem>> DoGetResultsAsync(
+            BatchOperationCall call,
+            CancellationToken cancellationToken
+        )
         {
             Last = call;
             ResultOpens++;
             return Task.FromResult(Items.ToAsyncEnumerable());
         }
 
-        public Task<BatchCancelResult> DoCancelAsync(BatchOperationCall call, CancellationToken cancellationToken)
+        public Task<BatchCancelResult> DoCancelAsync(
+            BatchOperationCall call,
+            CancellationToken cancellationToken
+        )
         {
             Last = call;
-            return Task.FromResult(new BatchCancelResult { Status = "cancelling", ProviderMetadata = OperationJson.Parse("{\"provider\":\"test\"}") });
+            return Task.FromResult(
+                new BatchCancelResult
+                {
+                    Status = "cancelling",
+                    ProviderMetadata = OperationJson.Parse("{\"provider\":\"test\"}"),
+                }
+            );
         }
 
-        public Task<BatchListResult> DoListAsync(BatchOperationCall call, CancellationToken cancellationToken)
+        public Task<BatchListResult> DoListAsync(
+            BatchOperationCall call,
+            CancellationToken cancellationToken
+        )
         {
             Last = call;
-            return Task.FromResult(new BatchListResult(new[] { new ListedBatch { Id = "batch-1", Status = "in_progress" } }, "next"));
+            return Task.FromResult(
+                new BatchListResult(
+                    new[]
+                    {
+                        new ListedBatch { Id = "batch-1", Status = "in_progress" },
+                    },
+                    "next"
+                )
+            );
         }
     }
 }

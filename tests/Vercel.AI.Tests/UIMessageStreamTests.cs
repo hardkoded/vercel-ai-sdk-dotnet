@@ -19,7 +19,8 @@ public sealed class UIMessageStreamTests
     [UpstreamTest(
         "packages/ai/src/ui-message-stream/to-ui-message-stream.test.ts::toUIMessageStream::maps text and lifecycle parts to UI message chunks",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Writes text, tool, source, and finish SSE chunks, including [DONE].")]
+        Note = "Writes text, tool, source, and finish SSE chunks, including [DONE]."
+    )]
     public async Task Writes_text_tool_and_finish_chunks()
     {
         var model = new TestLanguageModel
@@ -29,16 +30,27 @@ public sealed class UIMessageStreamTests
                 new TextDeltaStreamPart("text", "Hi"),
                 new ToolCallStreamPart("call_1", "lookup", "{\"q\":1}"),
                 new SourceStreamPart("src_1", "https://example.test/doc", "Doc"),
-                new FinishStreamPart(FinishReason.ToolCalls, new LanguageModelUsage(1, 1, 2), "tool_calls"),
+                new FinishStreamPart(
+                    FinishReason.ToolCalls,
+                    new LanguageModelUsage(1, 1, 2),
+                    "tool_calls"
+                ),
             },
         };
         var client = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }));
-        var stream = client.StreamTextAsync(new StreamTextOptions
-        {
-            Model = model,
-            Prompt = "hi",
-            Tools = new[] { Tool.Function("lookup", "find", "{\"type\":\"object\"}", (_, _) => Task.FromResult("{\"n\":1}")) },
-        });
+        var stream = client.StreamTextAsync(
+            new StreamTextOptions
+            {
+                Model = model,
+                Prompt = "hi",
+                Tools = new[]
+                {
+                    Tool.Function("lookup", "find", "{\"type\":\"object\"}", (_, _) =>
+                        Task.FromResult("{\"n\":1}")
+                    ),
+                },
+            }
+        );
         using var buffer = new MemoryStream();
         await UIMessageStreamResult.WriteAsync(stream, buffer, sendSources: true);
         var text = System.Text.Encoding.UTF8.GetString(buffer.ToArray());
@@ -60,18 +72,24 @@ public sealed class UIMessageStreamTests
     public async Task WriteAsync_DoesNotUseSynchronousIo()
     {
         var client = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }));
-        var stream = client.StreamTextAsync(new StreamTextOptions
-        {
-            Model = new TestLanguageModel
+        var stream = client.StreamTextAsync(
+            new StreamTextOptions
             {
-                StreamParts = new LanguageModelStreamPart[]
+                Model = new TestLanguageModel
                 {
-                    new TextDeltaStreamPart("text", "Hi"),
-                    new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2), "stop"),
+                    StreamParts = new LanguageModelStreamPart[]
+                    {
+                        new TextDeltaStreamPart("text", "Hi"),
+                        new FinishStreamPart(
+                            FinishReason.Stop,
+                            new LanguageModelUsage(1, 1, 2),
+                            "stop"
+                        ),
+                    },
                 },
-            },
-            Prompt = "hi",
-        });
+                Prompt = "hi",
+            }
+        );
         using var destination = new AsyncOnlyStream();
         await UIMessageStreamResult.WriteAsync(stream, destination);
         Assert.Contains("data: [DONE]", Encoding.UTF8.GetString(destination.ToArray()));
@@ -79,7 +97,8 @@ public sealed class UIMessageStreamTests
 
     private sealed class AsyncOnlyStream : MemoryStream
     {
-        public override void Flush() => throw new InvalidOperationException("Synchronous operations are disallowed.");
+        public override void Flush() =>
+            throw new InvalidOperationException("Synchronous operations are disallowed.");
 
         public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
@@ -91,18 +110,24 @@ public sealed class UIMessageStreamTests
         Assert.Same(source, UIMessageStreamResult.CreateSseStreamWithKeepAlive(source, null));
 
         var client = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }));
-        var immediate = client.StreamTextAsync(new StreamTextOptions
-        {
-            Model = new TestLanguageModel
+        var immediate = client.StreamTextAsync(
+            new StreamTextOptions
             {
-                StreamParts = new LanguageModelStreamPart[]
+                Model = new TestLanguageModel
                 {
-                    new TextDeltaStreamPart("text", "Hi"),
-                    new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2), "stop"),
+                    StreamParts = new LanguageModelStreamPart[]
+                    {
+                        new TextDeltaStreamPart("text", "Hi"),
+                        new FinishStreamPart(
+                            FinishReason.Stop,
+                            new LanguageModelUsage(1, 1, 2),
+                            "stop"
+                        ),
+                    },
                 },
-            },
-            Prompt = "hi",
-        });
+                Prompt = "hi",
+            }
+        );
         using var plain = new MemoryStream();
         await UIMessageStreamResult.WriteAsync(immediate, plain);
         AssertNoCommentLines(Encoding.UTF8.GetString(plain.ToArray()));
@@ -111,13 +136,13 @@ public sealed class UIMessageStreamTests
     [Fact]
     public async Task ShouldSendAnOpeningCommentImmediatelyAndCommentsWhileTheSourceIsIdle()
     {
-        var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         var client = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }));
-        var idle = client.StreamTextAsync(new StreamTextOptions
-        {
-            Model = new IdleLanguageModel(release.Task),
-            Prompt = "hi",
-        });
+        var idle = client.StreamTextAsync(
+            new StreamTextOptions { Model = new IdleLanguageModel(release.Task), Prompt = "hi" }
+        );
         using var buffer = new SnapshotStream();
         var writing = UIMessageStreamResult.WriteAsync(idle, buffer, keepAliveMs: 40);
         try
@@ -153,7 +178,9 @@ public sealed class UIMessageStreamTests
     public async Task ShouldRetainOnePendingSourceReadAcrossManyIdleKeepAlives()
     {
         var source = new PendingSource();
-        var enumerator = UIMessageStreamResult.CreateSseStreamWithKeepAlive(source, 1).GetAsyncEnumerator();
+        var enumerator = UIMessageStreamResult
+            .CreateSseStreamWithKeepAlive(source, 1)
+            .GetAsyncEnumerator();
         try
         {
             Assert.Equal(": stream-open\n\n", await ReadChunk(enumerator));
@@ -176,7 +203,9 @@ public sealed class UIMessageStreamTests
     public async Task ShouldStopTheInFlightSourceReadBeforeDisposingTheSourceWhenTheConsumerStops()
     {
         var state = new IteratorState();
-        var enumerator = UIMessageStreamResult.CreateSseStreamWithKeepAlive(BlockedIterator(state), 1).GetAsyncEnumerator();
+        var enumerator = UIMessageStreamResult
+            .CreateSseStreamWithKeepAlive(BlockedIterator(state), 1)
+            .GetAsyncEnumerator();
         Assert.Equal(": stream-open\n\n", await ReadChunk(enumerator));
         Assert.Equal(": keep-alive\n\n", await ReadChunk(enumerator));
 
@@ -190,7 +219,11 @@ public sealed class UIMessageStreamTests
         public bool Finished { get; set; }
     }
 
-    private static async IAsyncEnumerable<string> BlockedIterator(IteratorState state, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    private static async IAsyncEnumerable<string> BlockedIterator(
+        IteratorState state,
+        [System.Runtime.CompilerServices.EnumeratorCancellation]
+            CancellationToken cancellationToken = default
+    )
     {
         try
         {
@@ -207,7 +240,9 @@ public sealed class UIMessageStreamTests
     public async Task ShouldResetTheKeepAliveTimerAfterSourceActivity()
     {
         var source = new GatedSource();
-        var enumerator = UIMessageStreamResult.CreateSseStreamWithKeepAlive(source, 1000).GetAsyncEnumerator();
+        var enumerator = UIMessageStreamResult
+            .CreateSseStreamWithKeepAlive(source, 1000)
+            .GetAsyncEnumerator();
         try
         {
             Assert.Equal(": stream-open\n\n", await ReadChunk(enumerator));
@@ -234,7 +269,12 @@ public sealed class UIMessageStreamTests
     public async Task ShouldPreserveSourceChunksAndCompletion()
     {
         var actual = new List<string>();
-        await foreach (var chunk in UIMessageStreamResult.CreateSseStreamWithKeepAlive(new ChunkList("data 1", "data 2"), 100))
+        await foreach (
+            var chunk in UIMessageStreamResult.CreateSseStreamWithKeepAlive(
+                new ChunkList("data 1", "data 2"),
+                100
+            )
+        )
         {
             actual.Add(chunk);
         }
@@ -242,18 +282,24 @@ public sealed class UIMessageStreamTests
         Assert.Equal(new[] { ": stream-open\n\n", "data 1", "data 2" }, actual);
 
         var client = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }));
-        var stream = client.StreamTextAsync(new StreamTextOptions
-        {
-            Model = new TestLanguageModel
+        var stream = client.StreamTextAsync(
+            new StreamTextOptions
             {
-                StreamParts = new LanguageModelStreamPart[]
+                Model = new TestLanguageModel
                 {
-                    new TextDeltaStreamPart("text", "Hi"),
-                    new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2), "stop"),
+                    StreamParts = new LanguageModelStreamPart[]
+                    {
+                        new TextDeltaStreamPart("text", "Hi"),
+                        new FinishStreamPart(
+                            FinishReason.Stop,
+                            new LanguageModelUsage(1, 1, 2),
+                            "stop"
+                        ),
+                    },
                 },
-            },
-            Prompt = "hi",
-        });
+                Prompt = "hi",
+            }
+        );
         var httpContext = new DefaultHttpContext();
         using var body = new MemoryStream();
         httpContext.Response.Body = body;
@@ -272,15 +318,17 @@ public sealed class UIMessageStreamTests
     public async Task Rejects_keep_alive_that_is_not_a_positive_duration(int keepAliveMs)
     {
         var client = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }));
-        var stream = client.StreamTextAsync(new StreamTextOptions
-        {
-            Model = new TestLanguageModel(),
-            Prompt = "hi",
-        });
-        var fromResult = Assert.Throws<ArgumentOutOfRangeException>(() => stream.ToUIMessageStreamResult(keepAliveMs));
+        var stream = client.StreamTextAsync(
+            new StreamTextOptions { Model = new TestLanguageModel(), Prompt = "hi" }
+        );
+        var fromResult = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            stream.ToUIMessageStreamResult(keepAliveMs)
+        );
         Assert.Equal("keepAliveMs", fromResult.ParamName);
         using var buffer = new MemoryStream();
-        var fromWrite = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => UIMessageStreamResult.WriteAsync(stream, buffer, keepAliveMs));
+        var fromWrite = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            UIMessageStreamResult.WriteAsync(stream, buffer, keepAliveMs)
+        );
         Assert.Equal("keepAliveMs", fromWrite.ParamName);
         Assert.NotNull(stream.ToUIMessageStreamResult(int.MaxValue));
     }
@@ -289,17 +337,22 @@ public sealed class UIMessageStreamTests
     public async Task ShouldCancelTheSourceStream()
     {
         var source = new PendingSource();
-        var enumerator = UIMessageStreamResult.CreateSseStreamWithKeepAlive(source, 100).GetAsyncEnumerator();
+        var enumerator = UIMessageStreamResult
+            .CreateSseStreamWithKeepAlive(source, 100)
+            .GetAsyncEnumerator();
         Assert.Equal(": stream-open\n\n", await ReadChunk(enumerator));
         await enumerator.DisposeAsync();
         Assert.Equal(1, source.Cancels);
         Assert.Equal(0, source.Pulls);
-        var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         var client = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }));
         using var cts = new CancellationTokenSource();
         var stream = client.StreamTextAsync(
             new StreamTextOptions { Model = new IdleLanguageModel(release.Task), Prompt = "hi" },
-            cts.Token);
+            cts.Token
+        );
         using var buffer = new MemoryStream();
         var writing = UIMessageStreamResult.WriteAsync(stream, buffer, keepAliveMs: 40, cts.Token);
         cts.CancelAfter(TimeSpan.FromMilliseconds(80));
@@ -340,7 +393,8 @@ public sealed class UIMessageStreamTests
             _release = release ?? throw new ArgumentNullException(nameof(release));
         }
 
-        public IReadOnlyDictionary<string, string> SupportedUrls => Vercel.AI.ProviderUtils.UrlSupport.None;
+        public IReadOnlyDictionary<string, string> SupportedUrls =>
+            Vercel.AI.ProviderUtils.UrlSupport.None;
 
         public string SpecificationVersion => "V4";
 
@@ -348,23 +402,36 @@ public sealed class UIMessageStreamTests
 
         public string ModelId => "idle";
 
-        public Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        public Task<LanguageModelGenerateResult> DoGenerateAsync(
+            LanguageModelCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
             return Task.FromResult(TestLanguageModel.Text("ok"));
         }
 
-        public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        public Task<LanguageModelStreamResult> DoStreamAsync(
+            LanguageModelCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
-            return Task.FromResult(new LanguageModelStreamResult(StreamAsync(options, cancellationToken)));
+            return Task.FromResult(
+                new LanguageModelStreamResult(StreamAsync(options, cancellationToken))
+            );
         }
 
         private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
             LanguageModelCallOptions options,
-            [EnumeratorCancellation] CancellationToken cancellationToken)
+            [EnumeratorCancellation] CancellationToken cancellationToken
+        )
         {
             await _release.WaitAsync(cancellationToken).ConfigureAwait(false);
             yield return new TextDeltaStreamPart("text", "Later");
-            yield return new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2), "stop");
+            yield return new FinishStreamPart(
+                FinishReason.Stop,
+                new LanguageModelUsage(1, 1, 2),
+                "stop"
+            );
         }
     }
 
@@ -398,9 +465,7 @@ public sealed class UIMessageStreamTests
             set => throw new NotSupportedException();
         }
 
-        public override void Flush()
-        {
-        }
+        public override void Flush() { }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
@@ -433,7 +498,10 @@ public sealed class UIMessageStreamTests
             }
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        public override ValueTask WriteAsync(
+            ReadOnlyMemory<byte> buffer,
+            CancellationToken cancellationToken = default
+        )
         {
             Write(buffer.Span);
             return ValueTask.CompletedTask;
@@ -449,7 +517,9 @@ public sealed class UIMessageStreamTests
             _chunks = chunks;
         }
 
-        public IAsyncEnumerator<string> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+        public IAsyncEnumerator<string> GetAsyncEnumerator(
+            CancellationToken cancellationToken = default
+        )
         {
             return new Enumerator(_chunks);
         }
@@ -481,7 +551,9 @@ public sealed class UIMessageStreamTests
 
     private sealed class PendingSource : IAsyncEnumerable<string>
     {
-        private readonly TaskCompletionSource<bool> _never = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<bool> _never = new(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         private int _pulls;
         private int _cancels;
 
@@ -489,7 +561,9 @@ public sealed class UIMessageStreamTests
 
         public int Cancels => Volatile.Read(ref _cancels);
 
-        public IAsyncEnumerator<string> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+        public IAsyncEnumerator<string> GetAsyncEnumerator(
+            CancellationToken cancellationToken = default
+        )
         {
             return new Enumerator(this);
         }
@@ -522,14 +596,18 @@ public sealed class UIMessageStreamTests
 
     private sealed class GatedSource : IAsyncEnumerable<string>
     {
-        private readonly TaskCompletionSource<string> _chunk = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<string> _chunk = new(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
 
         public void Enqueue(string value)
         {
             _chunk.TrySetResult(value);
         }
 
-        public IAsyncEnumerator<string> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+        public IAsyncEnumerator<string> GetAsyncEnumerator(
+            CancellationToken cancellationToken = default
+        )
         {
             return new Enumerator(this, cancellationToken);
         }
@@ -554,7 +632,8 @@ public sealed class UIMessageStreamTests
                 {
                     try
                     {
-                        await Task.Delay(Timeout.Infinite, _cancellation.Token).ConfigureAwait(false);
+                        await Task.Delay(Timeout.Infinite, _cancellation.Token)
+                            .ConfigureAwait(false);
                     }
                     catch (OperationCanceledException)
                     {
@@ -567,7 +646,9 @@ public sealed class UIMessageStreamTests
                 _stage = 1;
                 try
                 {
-                    Current = await _owner._chunk.Task.WaitAsync(_cancellation.Token).ConfigureAwait(false);
+                    Current = await _owner
+                        ._chunk.Task.WaitAsync(_cancellation.Token)
+                        .ConfigureAwait(false);
                     return true;
                 }
                 catch (OperationCanceledException)

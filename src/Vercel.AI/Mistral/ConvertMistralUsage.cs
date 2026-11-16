@@ -34,19 +34,24 @@ internal static class ConvertMistralUsage
             null,
             value.Clone(),
             promptTokens - cacheReadTokens,
-            completionTokens);
+            completionTokens
+        );
     }
 
     private static int? Details(JsonElement usage, string name)
     {
-        return usage.TryGetProperty(name, out var details) && details.ValueKind == JsonValueKind.Object
+        return
+            usage.TryGetProperty(name, out var details) && details.ValueKind == JsonValueKind.Object
             ? Count(details, "cached_tokens")
             : null;
     }
 
     private static int? Count(JsonElement owner, string name)
     {
-        return owner.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number)
+        return
+            owner.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Number
+            && value.TryGetInt32(out var number)
             ? number
             : null;
     }

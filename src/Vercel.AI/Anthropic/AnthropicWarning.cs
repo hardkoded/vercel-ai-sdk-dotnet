@@ -8,7 +8,12 @@ namespace Vercel.AI.Anthropic;
 public sealed class AnthropicWarning
 {
     /// <summary>Creates a warning.</summary>
-    public AnthropicWarning(string type, string? feature = null, string? details = null, string? message = null)
+    public AnthropicWarning(
+        string type,
+        string? feature = null,
+        string? details = null,
+        string? message = null
+    )
     {
         Type = type ?? throw new ArgumentNullException(nameof(type));
         Feature = feature;

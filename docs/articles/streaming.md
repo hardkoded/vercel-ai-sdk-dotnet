@@ -7,11 +7,9 @@
 ```cs
 var client = new AiClient(GatewayProvider.Create());
 
-var stream = client.StreamTextAsync(new StreamTextOptions
-{
-    ModelId = "openai/gpt-6-astra",
-    Prompt = "Draft a changelog entry.",
-});
+var stream = client.StreamTextAsync(
+    new StreamTextOptions { ModelId = "openai/gpt-6-astra", Prompt = "Draft a changelog entry." }
+);
 
 await foreach (var delta in stream.TextStream())
 {
@@ -21,7 +19,7 @@ await foreach (var delta in stream.TextStream())
 Console.WriteLine();
 Console.WriteLine(await stream.FinishReason);
 ```
-<sup><a href='/examples/StreamText/Program.cs#L14-L30' title='Snippet source file'>snippet source</a> | <a href='#snippet-streaming' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/examples/StreamText/Program.cs#L14-L28' title='Snippet source file'>snippet source</a> | <a href='#snippet-streaming' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## UI message stream

@@ -13,7 +13,11 @@ public sealed class DeepSeekLanguageModelResponsesOptions
 {
     private static readonly string[] ThinkingTypes = { "enabled", "disabled" };
     private static readonly string[] ReasoningEfforts = { "low", "high", "max" };
-    private static readonly Regex UserIdPattern = new Regex("^[a-zA-Z0-9_-]+\\z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex UserIdPattern = new Regex(
+        "^[a-zA-Z0-9_-]+\\z",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(100)
+    );
 
     /// <summary>Controls whether thinking mode is enabled. Thinking is enabled by default.</summary>
     public DeepSeekThinkingOptions? Thinking { get; set; }
@@ -38,7 +42,9 @@ public sealed class DeepSeekLanguageModelResponsesOptions
     /// (<c>deepseek</c> by default), ready for <c>LanguageModelCallOptions.ProviderOptions</c>.
     /// </summary>
     /// <exception cref="InvalidArgumentError">An option has the wrong value.</exception>
-    public IReadOnlyDictionary<string, JsonElement> ToProviderOptions(string providerOptionsName = DeepSeekProvider.ProviderId)
+    public IReadOnlyDictionary<string, JsonElement> ToProviderOptions(
+        string providerOptionsName = DeepSeekProvider.ProviderId
+    )
     {
         var json = new System.Text.Json.Nodes.JsonObject();
         if (Thinking?.Type is { } type)
@@ -69,10 +75,17 @@ public sealed class DeepSeekLanguageModelResponsesOptions
 
     /// <summary>Reads and validates the options under <paramref name="providerOptions"/>[<paramref name="providerOptionsName"/>].</summary>
     /// <exception cref="InvalidArgumentError">An option has the wrong type or value.</exception>
-    internal static DeepSeekLanguageModelResponsesOptions Parse(IReadOnlyDictionary<string, JsonElement>? providerOptions, string providerOptionsName)
+    internal static DeepSeekLanguageModelResponsesOptions Parse(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        string providerOptionsName
+    )
     {
         var options = new DeepSeekLanguageModelResponsesOptions();
-        if (providerOptions == null || !providerOptions.TryGetValue(providerOptionsName, out var source) || source.ValueKind == JsonValueKind.Null)
+        if (
+            providerOptions == null
+            || !providerOptions.TryGetValue(providerOptionsName, out var source)
+            || source.ValueKind == JsonValueKind.Null
+        )
         {
             return options;
         }
@@ -96,36 +109,75 @@ public sealed class DeepSeekLanguageModelResponsesOptions
                 case "thinking":
                     if (value.ValueKind != JsonValueKind.Object)
                     {
-                        throw new InvalidArgumentError(scope + ".thinking", null, "expected an object.");
+                        throw new InvalidArgumentError(
+                            scope + ".thinking",
+                            null,
+                            "expected an object."
+                        );
                     }
 
-                    if (value.TryGetProperty("type", out var type) && type.ValueKind != JsonValueKind.Null)
+                    if (
+                        value.TryGetProperty("type", out var type)
+                        && type.ValueKind != JsonValueKind.Null
+                    )
                     {
-                        (options.Thinking ??= new DeepSeekThinkingOptions()).Type = OneOf(scope + ".thinking.type", type, ThinkingTypes);
+                        (options.Thinking ??= new DeepSeekThinkingOptions()).Type = OneOf(
+                            scope + ".thinking.type",
+                            type,
+                            ThinkingTypes
+                        );
                     }
 
                     break;
                 case "reasoningEffort":
-                    options.ReasoningEffort = OneOf(scope + ".reasoningEffort", value, ReasoningEfforts);
+                    options.ReasoningEffort = OneOf(
+                        scope + ".reasoningEffort",
+                        value,
+                        ReasoningEfforts
+                    );
                     break;
                 case "topLogprobs":
-                    if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt32(out var top) || top < 0 || top > 20)
+                    if (
+                        value.ValueKind != JsonValueKind.Number
+                        || !value.TryGetInt32(out var top)
+                        || top < 0
+                        || top > 20
+                    )
                     {
-                        throw new InvalidArgumentError(scope + ".topLogprobs", null, "expected an integer between 0 and 20.");
+                        throw new InvalidArgumentError(
+                            scope + ".topLogprobs",
+                            null,
+                            "expected an integer between 0 and 20."
+                        );
                     }
 
                     options.TopLogprobs = top;
                     break;
                 case "userId":
-                    var userId = value.ValueKind == JsonValueKind.String ? value.GetString()! : throw new InvalidArgumentError(scope + ".userId", null, "expected a string.");
+                    var userId =
+                        value.ValueKind == JsonValueKind.String
+                            ? value.GetString()!
+                            : throw new InvalidArgumentError(
+                                scope + ".userId",
+                                null,
+                                "expected a string."
+                            );
                     if (!UserIdPattern.IsMatch(userId))
                     {
-                        throw new InvalidArgumentError(scope + ".userId", null, "userId must match /^[a-zA-Z0-9_-]+$/");
+                        throw new InvalidArgumentError(
+                            scope + ".userId",
+                            null,
+                            "userId must match /^[a-zA-Z0-9_-]+$/"
+                        );
                     }
 
                     if (userId.Length > 512)
                     {
-                        throw new InvalidArgumentError(scope + ".userId", null, "userId must be at most 512 characters long");
+                        throw new InvalidArgumentError(
+                            scope + ".userId",
+                            null,
+                            "userId must be at most 512 characters long"
+                        );
                     }
 
                     options.UserId = userId;
@@ -141,7 +193,11 @@ public sealed class DeepSeekLanguageModelResponsesOptions
         var text = value.ValueKind == JsonValueKind.String ? value.GetString()! : null;
         if (text == null || Array.IndexOf(allowed, text) < 0)
         {
-            throw new InvalidArgumentError(name, null, "expected one of " + string.Join(", ", allowed) + ".");
+            throw new InvalidArgumentError(
+                name,
+                null,
+                "expected one of " + string.Join(", ", allowed) + "."
+            );
         }
 
         return text;

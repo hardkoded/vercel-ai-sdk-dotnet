@@ -47,9 +47,11 @@ public sealed class AzureSpeechModelOptions
     /// <exception cref="InvalidArgumentError">An option is unknown or out of range.</exception>
     internal static AzureSpeechModelOptions? Parse(JsonElement? providerOptions)
     {
-        if (providerOptions is not { ValueKind: JsonValueKind.Object } root
+        if (
+            providerOptions is not { ValueKind: JsonValueKind.Object } root
             || !root.TryGetProperty("azure", out var azure)
-            || azure.ValueKind == JsonValueKind.Null)
+            || azure.ValueKind == JsonValueKind.Null
+        )
         {
             return null;
         }
@@ -66,9 +68,14 @@ public sealed class AzureSpeechModelOptions
             switch (property.Name)
             {
                 case "api":
-                    options.Api = value.ValueKind == JsonValueKind.String && value.GetString() is "openai" or "speech"
-                        ? value.GetString()
-                        : throw Invalid(azure, "api: Invalid option: expected one of \"openai\"|\"speech\".");
+                    options.Api =
+                        value.ValueKind == JsonValueKind.String
+                        && value.GetString() is "openai" or "speech"
+                            ? value.GetString()
+                            : throw Invalid(
+                                azure,
+                                "api: Invalid option: expected one of \"openai\"|\"speech\"."
+                            );
                     break;
                 case "instructions":
                     options.Instructions = value.ValueKind switch
@@ -79,12 +86,19 @@ public sealed class AzureSpeechModelOptions
                     };
                     break;
                 case "speed":
-                    options.Speed = value.ValueKind == JsonValueKind.Null ? null : Number(azure, value, "speed", 0.25, 4.0);
+                    options.Speed =
+                        value.ValueKind == JsonValueKind.Null
+                            ? null
+                            : Number(azure, value, "speed", 0.25, 4.0);
                     break;
                 case "style":
-                    options.Style = value.ValueKind == JsonValueKind.String && value.GetString()!.Length > 0
-                        ? value.GetString()
-                        : throw Invalid(azure, "style: Too small: expected string to have >=1 characters.");
+                    options.Style =
+                        value.ValueKind == JsonValueKind.String && value.GetString()!.Length > 0
+                            ? value.GetString()
+                            : throw Invalid(
+                                azure,
+                                "style: Too small: expected string to have >=1 characters."
+                            );
                     break;
                 case "styleDegree":
                     options.StyleDegree = Number(azure, value, "styleDegree", 0.01, 2.0);
@@ -97,7 +111,13 @@ public sealed class AzureSpeechModelOptions
         return options;
     }
 
-    private static double Number(JsonElement azure, JsonElement value, string name, double min, double max)
+    private static double Number(
+        JsonElement azure,
+        JsonElement value,
+        string name,
+        double min,
+        double max
+    )
     {
         if (value.ValueKind != JsonValueKind.Number || !value.TryGetDouble(out var number))
         {
@@ -106,7 +126,17 @@ public sealed class AzureSpeechModelOptions
 
         if (number < min || number > max)
         {
-            throw Invalid(azure, name + ": Too " + (number < min ? "small" : "big") + ": expected number to be in the range " + min.ToString(System.Globalization.CultureInfo.InvariantCulture) + " to " + max.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".");
+            throw Invalid(
+                azure,
+                name
+                    + ": Too "
+                    + (number < min ? "small" : "big")
+                    + ": expected number to be in the range "
+                    + min.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    + " to "
+                    + max.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    + "."
+            );
         }
 
         return number;

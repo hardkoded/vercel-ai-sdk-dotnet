@@ -1,0 +1,6 @@
+# Build output and generated files.
+**/bin/
+**/obj/
+artifacts/
+tests/parity/generated/
+docs-site/

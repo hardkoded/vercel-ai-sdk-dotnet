@@ -17,7 +17,8 @@ namespace Vercel.AI.Tests.Upstream.Registry.DecisionModel;
 [Collection("DecisionDefaultProvider")]
 public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixture
 {
-    private const string Prefix = "packages/ai/src/registry/decision-model.test.ts::decision model resolution::";
+    private const string Prefix =
+        "packages/ai/src/registry/decision-model.test.ts::decision model resolution::";
 
     private readonly DecisionMockModel _model = new();
 
@@ -25,16 +26,40 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
     {
         var cases = new (string Name, object State, string Sent)[]
         {
-            ("string", "The capital of France is Paris.", """[{"type":"text","text":"The capital of France is Paris."}]"""),
-            ("JSON object", new Dictionary<string, object?> { ["statement"] = "The capital of France is Paris." }, """[{"type":"json","value":{"statement":"The capital of France is Paris."}}]"""),
+            (
+                "string",
+                "The capital of France is Paris.",
+                """[{"type":"text","text":"The capital of France is Paris."}]"""
+            ),
+            (
+                "JSON object",
+                new Dictionary<string, object?>
+                {
+                    ["statement"] = "The capital of France is Paris.",
+                },
+                """[{"type":"json","value":{"statement":"The capital of France is Paris."}}]"""
+            ),
             (
                 "mixed parts",
                 new List<object?>
                 {
-                    new Dictionary<string, object?> { ["type"] = "text", ["text"] = "Check this statement." },
-                    new Dictionary<string, object?> { ["type"] = "json", ["value"] = new Dictionary<string, object?> { ["capital"] = "Paris", ["country"] = "France" } },
+                    new Dictionary<string, object?>
+                    {
+                        ["type"] = "text",
+                        ["text"] = "Check this statement.",
+                    },
+                    new Dictionary<string, object?>
+                    {
+                        ["type"] = "json",
+                        ["value"] = new Dictionary<string, object?>
+                        {
+                            ["capital"] = "Paris",
+                            ["country"] = "France",
+                        },
+                    },
                 },
-                """[{"type":"text","text":"Check this statement."},{"type":"json","value":{"capital":"Paris","country":"France"}}]"""),
+                """[{"type":"text","text":"Check this statement."},{"type":"json","value":{"capital":"Paris","country":"France"}}]"""
+            ),
             ("empty parts", new List<object?>(), "[]"),
         };
         foreach (var resolution in new[] { "string", "alias" })
@@ -47,7 +72,10 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "returns model instances unchanged", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "returns model instances unchanged",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Returns_model_instances_unchanged()
     {
         Assert.Same(_model, DecisionModels.Resolve(_model, null));
@@ -55,27 +83,47 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
 
     [Theory]
     [MemberData(nameof(GatewayCases))]
-    [UpstreamTest(Prefix + "decides through Gateway using a model $resolution with $name state when no default provider is configured", Coverage = UpstreamCoverage.Covered)]
-    public async Task Decides_through_Gateway_using_a_model_resolution_with_name_state_when_no_default_provider_is_configured(string resolution, string name, object state, string sent)
+    [UpstreamTest(
+        Prefix
+            + "decides through Gateway using a model $resolution with $name state when no default provider is configured",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Decides_through_Gateway_using_a_model_resolution_with_name_state_when_no_default_provider_is_configured(
+        string resolution,
+        string name,
+        object state,
+        string sent
+    )
     {
         Assert.NotEmpty(name);
         DecisionModels.DefaultProvider = null;
         Environment.SetEnvironmentVariable("AI_GATEWAY_API_KEY", "test-api-key");
         var capture = new OpenAICapture
         {
-            ResponseJson = """{"answers":{"correct":{"type":"boolean","probability":0.98}},"usage":{"inputTokens":10,"outputTokens":2},"warnings":[]}""",
+            ResponseJson =
+                """{"answers":{"correct":{"type":"boolean","probability":0.98}},"usage":{"inputTokens":10,"outputTokens":2},"warnings":[]}""",
         };
         DecisionModels.GatewayFactory = () => GatewayProvider.Create(handler: capture);
         const string modelId = "typesafe-ai/jev";
-        var questions = new Dictionary<string, DecisionQuestion> { ["correct"] = Q("boolean", "Is this correct?") };
-
-        var result = await DecideOperation.DecideAsync(new DecideRequest
+        var questions = new Dictionary<string, DecisionQuestion>
         {
-            Model = resolution == "string" ? null : new CustomProvider().AddDecisionModel("check", modelId).DecisionModel("check"),
-            ModelId = resolution == "string" ? modelId : null,
-            State = S(state),
-            Questions = questions,
-        });
+            ["correct"] = Q("boolean", "Is this correct?"),
+        };
+
+        var result = await DecideOperation.DecideAsync(
+            new DecideRequest
+            {
+                Model =
+                    resolution == "string"
+                        ? null
+                        : new CustomProvider()
+                            .AddDecisionModel("check", modelId)
+                            .DecisionModel("check"),
+                ModelId = resolution == "string" ? modelId : null,
+                State = S(state),
+                Questions = questions,
+            }
+        );
 
         Assert.Equal(0.98, result.Answers["correct"].Probability);
         Assert.Equal(12, result.Usage.TotalTokens);
@@ -84,12 +132,19 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
         Assert.Equal(modelId, capture.Headers["ai-model-id"]);
         Assert.Equal("4", capture.Headers["ai-decision-model-specification-version"]);
         var body = JsonNode.Parse(capture.Body)!;
-        var expected = JsonNode.Parse("{\"stateParts\":" + sent + ",\"questions\":{\"correct\":{\"type\":\"boolean\",\"instructions\":\"Is this correct?\"}},\"providerOptions\":{}}");
+        var expected = JsonNode.Parse(
+            "{\"stateParts\":"
+                + sent
+                + ",\"questions\":{\"correct\":{\"type\":\"boolean\",\"instructions\":\"Is this correct?\"}},\"providerOptions\":{}}"
+        );
         Assert.True(JsonNode.DeepEquals(expected, body), capture.Body);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "requires an explicitly configured default provider to support decision", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "requires an explicitly configured default provider to support decision",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Requires_an_explicitly_configured_default_provider_to_support_decision()
     {
         var gatewayCalls = 0;
@@ -99,13 +154,19 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
             return GatewayProvider.Create();
         };
         DecisionModels.DefaultProvider = new MockProvider();
-        var error = Assert.Throws<InvalidOperationException>(() => DecisionModels.Resolve(null, "typesafe-ai/jev"));
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            DecisionModels.Resolve(null, "typesafe-ai/jev")
+        );
         Assert.Equal("The default provider does not support decision models.", error.Message);
         Assert.Equal(0, gatewayCalls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "validates versions returned by model instances, aliases, registries, and defaults", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "validates versions returned by model instances, aliases, registries, and defaults",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Validates_versions_returned_by_model_instances_aliases_registries_and_defaults()
     {
         var invalid = new DecisionMockModel { SpecificationVersion = "v3" };
@@ -113,29 +174,40 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
         var registry = new ProviderRegistry();
         registry.Register("provider", provider);
         DecisionModels.DefaultProvider = provider;
-        foreach (var resolve in new Func<IDecisionCaller>[]
-        {
-            () => DecisionModels.Resolve(invalid, null),
-            () => provider.DecisionModel("invalid"),
-            () => registry.DecisionModel("provider:invalid"),
-            () => DecisionModels.Resolve(null, "invalid"),
-        })
+        foreach (
+            var resolve in new Func<IDecisionCaller>[]
+            {
+                () => DecisionModels.Resolve(invalid, null),
+                () => provider.DecisionModel("invalid"),
+                () => registry.DecisionModel("provider:invalid"),
+                () => DecisionModels.Resolve(null, "invalid"),
+            }
+        )
         {
             Assert.Throws<UnsupportedModelVersionException>(resolve);
         }
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves errors thrown by provider factories", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "preserves errors thrown by provider factories",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Preserves_errors_thrown_by_provider_factories()
     {
         var error = new NoSuchModelError("missing", "decisionModel");
         DecisionModels.DefaultProvider = new DecisionFactoryProvider(_ => throw error);
-        Assert.Same(error, Assert.Throws<NoSuchModelError>(() => DecisionModels.Resolve(null, "missing")));
+        Assert.Same(
+            error,
+            Assert.Throws<NoSuchModelError>(() => DecisionModels.Resolve(null, "missing"))
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "reports missing models returned by the default provider", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "reports missing models returned by the default provider",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Reports_missing_models_returned_by_the_default_provider()
     {
         DecisionModels.DefaultProvider = new DecisionFactoryProvider(_ => null);
@@ -147,8 +219,13 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
     [Theory]
     [InlineData("instance")]
     [InlineData("string")]
-    [UpstreamTest(Prefix + "decides with %s model resolution and forwards options in one call", Coverage = UpstreamCoverage.Covered)]
-    public async Task Decides_with_model_resolution_and_forwards_options_in_one_call(string resolution)
+    [UpstreamTest(
+        Prefix + "decides with %s model resolution and forwards options in one call",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Decides_with_model_resolution_and_forwards_options_in_one_call(
+        string resolution
+    )
     {
         var mock = new DecisionMockModel { OnDecide = _ => RouteResult() };
         var provider = new CustomProvider().AddDecisionModel("route", mock);
@@ -158,16 +235,18 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
         var registry = new ProviderRegistry();
         registry.Register("provider", provider);
 
-        var result = await DecideOperation.DecideAsync(new DecideRequest
-        {
-            Model = resolution == "string" ? null : registry.DecisionModel("provider:route"),
-            ModelId = resolution == "string" ? "route" : null,
-            State = S(new Dictionary<string, object?> { ["message"] = "Charged twice" }),
-            Questions = questions,
-            Headers = new Dictionary<string, string> { ["x-test"] = "header" },
-            ProviderOptions = Json("""{"test":{"flag":true}}"""),
-            CancellationToken = source.Token,
-        });
+        var result = await DecideOperation.DecideAsync(
+            new DecideRequest
+            {
+                Model = resolution == "string" ? null : registry.DecisionModel("provider:route"),
+                ModelId = resolution == "string" ? "route" : null,
+                State = S(new Dictionary<string, object?> { ["message"] = "Charged twice" }),
+                Questions = questions,
+                Headers = new Dictionary<string, string> { ["x-test"] = "header" },
+                ProviderOptions = Json("""{"test":{"flag":true}}"""),
+                CancellationToken = source.Token,
+            }
+        );
 
         Assert.Equal("billing", result.Answers["route"].Choice);
         Assert.Equal(12, result.Usage.TotalTokens);
@@ -179,17 +258,31 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects unsupported questions before I/O after resolving a string", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "rejects unsupported questions before I/O after resolving a string",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_unsupported_questions_before_IO_after_resolving_a_string()
     {
-        var mock = new DecisionMockModel { OnDecide = _ => throw new InvalidOperationException("unreachable"), SupportedQuestionTypes = new[] { "choice" } };
-        DecisionModels.DefaultProvider = new CustomProvider().AddDecisionModel("choice", mock);
-        await Assert.ThrowsAnyAsync<DecisionUnsupportedQuestionTypeException>(() => DecideOperation.DecideAsync(new DecideRequest
+        var mock = new DecisionMockModel
         {
-            ModelId = "choice",
-            State = "test",
-            Questions = new Dictionary<string, DecisionQuestion> { ["flag"] = Q("boolean", "Yes?") },
-        }));
+            OnDecide = _ => throw new InvalidOperationException("unreachable"),
+            SupportedQuestionTypes = new[] { "choice" },
+        };
+        DecisionModels.DefaultProvider = new CustomProvider().AddDecisionModel("choice", mock);
+        await Assert.ThrowsAnyAsync<DecisionUnsupportedQuestionTypeException>(() =>
+            DecideOperation.DecideAsync(
+                new DecideRequest
+                {
+                    ModelId = "choice",
+                    State = "test",
+                    Questions = new Dictionary<string, DecisionQuestion>
+                    {
+                        ["flag"] = Q("boolean", "Yes?"),
+                    },
+                }
+            )
+        );
         Assert.Empty(mock.Calls);
     }
 }

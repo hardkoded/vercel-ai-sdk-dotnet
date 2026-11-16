@@ -17,7 +17,8 @@ public sealed class ToolCallRepairTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/generate-text/parse-tool-call.test.ts::parseToolCall > tool call repair::should invoke repairTool when provided and use its result",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldInvokeRepairToolWhenProvidedAndUseItsResult()
     {
         var calls = new List<ToolCallRepairContext>();
@@ -29,10 +30,17 @@ public sealed class ToolCallRepairTests
             repairToolCall: context =>
             {
                 calls.Add(context);
-                return Task.FromResult<GeneratedToolCall?>(new GeneratedToolCall("123", "testTool", "{\"param1\": \"test\", \"param2\": 42}"));
+                return Task.FromResult<GeneratedToolCall?>(
+                    new GeneratedToolCall(
+                        "123",
+                        "testTool",
+                        "{\"param1\": \"test\", \"param2\": 42}"
+                    )
+                );
             },
             messages: messages,
-            instructions: "test instructions");
+            instructions: "test instructions"
+        );
 
         // Verify repair function was called
         var call = Assert.Single(calls);
@@ -59,7 +67,8 @@ public sealed class ToolCallRepairTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/generate-text/parse-tool-call.test.ts::parseToolCall > tool call repair::should pass instructions to repairToolCall",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldPassInstructionsToRepairToolCall()
     {
         ToolCallRepairContext? seen = null;
@@ -70,9 +79,16 @@ public sealed class ToolCallRepairTests
             repairToolCall: context =>
             {
                 seen = context;
-                return Task.FromResult<GeneratedToolCall?>(new GeneratedToolCall("123", "testTool", "{\"param1\": \"test\", \"param2\": 42}"));
+                return Task.FromResult<GeneratedToolCall?>(
+                    new GeneratedToolCall(
+                        "123",
+                        "testTool",
+                        "{\"param1\": \"test\", \"param2\": 42}"
+                    )
+                );
             },
-            instructions: "test instructions");
+            instructions: "test instructions"
+        );
 
         Assert.Equal("test instructions", seen!.Instructions!.Text);
         Assert.Equal("test instructions", seen.System!.Text);
@@ -83,13 +99,15 @@ public sealed class ToolCallRepairTests
     [UpstreamTest(
         "packages/ai/src/generate-text/parse-tool-call.test.ts::parseToolCall > tool call repair::should re-throw error if tool call repair returns null",
         Coverage = UpstreamCoverage.Partial,
-        Note = "The error message carries the .NET JSON parser text, not the Node SyntaxError text. See #604.")]
+        Note = "The error message carries the .NET JSON parser text, not the Node SyntaxError text. See #604."
+    )]
     public async Task ShouldReThrowErrorIfToolCallRepairReturnsNull()
     {
         var result = await ParseAsync(
             new GeneratedToolCall("123", "testTool", "invalid json"),
             new[] { TestTool(ParamsSchema) },
-            repairToolCall: _ => Task.FromResult<GeneratedToolCall?>(null));
+            repairToolCall: _ => Task.FromResult<GeneratedToolCall?>(null)
+        );
 
         Assert.True(result.Dynamic);
         Assert.True(result.Invalid);
@@ -107,12 +125,17 @@ public sealed class ToolCallRepairTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/generate-text/parse-tool-call.test.ts::parseToolCall > tool call repair::should stop waiting for repair when aborted",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldStopWaitingForRepairWhenAborted()
     {
         using var abortController = new CancellationTokenSource();
-        var repairStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var repair = new TaskCompletionSource<GeneratedToolCall?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var repairStarted = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var repair = new TaskCompletionSource<GeneratedToolCall?>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
 
         var result = ParseAsync(
             new GeneratedToolCall("123", "testTool", "invalid json"),
@@ -123,32 +146,55 @@ public sealed class ToolCallRepairTests
                 repairStarted.SetResult(true);
                 return repair.Task;
             },
-            cancellationToken: abortController.Token);
+            cancellationToken: abortController.Token
+        );
 
         await repairStarted.Task;
         abortController.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => result);
 
-        repair.SetResult(new GeneratedToolCall("123", "testTool", "{\"param1\": \"test\", \"param2\": 42}"));
+        repair.SetResult(
+            new GeneratedToolCall("123", "testTool", "{\"param1\": \"test\", \"param2\": 42}")
+        );
     }
 
     [Fact]
     [UpstreamTest(
         "packages/ai/src/generate-text/parse-tool-call.test.ts::parseToolCall > tool call repair::should reject when aborted during repaired input validation",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Schema validation is synchronous, so the test cancels while the repaired input is refined. See #604.")]
+        Note = "Schema validation is synchronous, so the test cancels while the repaired input is refined. See #604."
+    )]
     public async Task ShouldRejectWhenAbortedDuringRepairedInputValidation()
     {
         using var abortController = new CancellationTokenSource();
-        var validationStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var validationFinished = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var validationStarted = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var validationFinished = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
 
         var result = ParseAsync(
             new GeneratedToolCall("123", "testTool", "invalid json"),
-            new[] { TestTool("{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}") },
-            repairToolCall: context => Task.FromResult<GeneratedToolCall?>(new GeneratedToolCall(context.ToolCall.ToolCallId, context.ToolCall.ToolName, "{\"value\":\"repaired\"}")),
-            refineToolInput: new Dictionary<string, Func<JsonElement, CancellationToken, Task<JsonElement>>>
+            new[]
+            {
+                TestTool(
+                    "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}"
+                ),
+            },
+            repairToolCall: context =>
+                Task.FromResult<GeneratedToolCall?>(
+                    new GeneratedToolCall(
+                        context.ToolCall.ToolCallId,
+                        context.ToolCall.ToolName,
+                        "{\"value\":\"repaired\"}"
+                    )
+                ),
+            refineToolInput: new Dictionary<
+                string,
+                Func<JsonElement, CancellationToken, Task<JsonElement>>
+            >
             {
                 ["testTool"] = async (input, _) =>
                 {
@@ -157,7 +203,8 @@ public sealed class ToolCallRepairTests
                     return input;
                 },
             },
-            cancellationToken: abortController.Token);
+            cancellationToken: abortController.Token
+        );
 
         await validationStarted.Task;
         abortController.Cancel();
@@ -170,13 +217,15 @@ public sealed class ToolCallRepairTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/generate-text/parse-tool-call.test.ts::parseToolCall > tool call repair::should throw ToolCallRepairError if repairToolCall throws",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldThrowToolCallRepairErrorIfRepairToolCallThrows()
     {
         var result = await ParseAsync(
             new GeneratedToolCall("123", "testTool", "invalid json"),
             new[] { TestTool(ParamsSchema) },
-            repairToolCall: _ => Task.FromException<GeneratedToolCall?>(new JsError("test error")));
+            repairToolCall: _ => Task.FromException<GeneratedToolCall?>(new JsError("test error"))
+        );
 
         Assert.True(result.Dynamic);
         Assert.True(result.Invalid);

@@ -114,7 +114,9 @@ public static class ConnectToWebSocket
             var factory = WebSocketUtils.GetWebSocketConstructor(options.WebSocket);
             var headers = options.Headers is null
                 ? new Dictionary<string, string>()
-                : options.Headers.Where(pair => pair.Value is not null).ToDictionary(pair => pair.Key, pair => pair.Value!);
+                : options
+                    .Headers.Where(pair => pair.Value is not null)
+                    .ToDictionary(pair => pair.Key, pair => pair.Value!);
             socket = factory(options.Url, options.Protocols, headers);
         }
         catch (Exception error)
@@ -127,7 +129,9 @@ public static class ConnectToWebSocket
         {
             lock (gate)
             {
-                registration = signal.Register(() => options.OnAbort(abortReason ?? new OperationCanceledException(signal)));
+                registration = signal.Register(() =>
+                    options.OnAbort(abortReason ?? new OperationCanceledException(signal))
+                );
             }
         }
 
@@ -157,23 +161,38 @@ public static class ConnectToWebSocket
                 options.OnProcessingError(error);
             }
         };
-        socket.OnMessage = data => Chain(async () => await options.OnMessageText(await WebSocketUtils.ReadWebSocketMessageTextAsync(data).ConfigureAwait(false)).ConfigureAwait(false));
-        socket.OnError = _ => Chain(() =>
-        {
-            options.OnSocketError?.Invoke();
-            return Task.CompletedTask;
-        });
-        socket.OnClose = closeEvent => Chain(() =>
-        {
-            var info = closeEvent as WebSocketCloseEvent;
-            options.OnClose?.Invoke(info?.Code, info?.Reason);
-            return Task.CompletedTask;
-        });
+        socket.OnMessage = data =>
+            Chain(async () =>
+                await options
+                    .OnMessageText(
+                        await WebSocketUtils
+                            .ReadWebSocketMessageTextAsync(data)
+                            .ConfigureAwait(false)
+                    )
+                    .ConfigureAwait(false)
+            );
+        socket.OnError = _ =>
+            Chain(() =>
+            {
+                options.OnSocketError?.Invoke();
+                return Task.CompletedTask;
+            });
+        socket.OnClose = closeEvent =>
+            Chain(() =>
+            {
+                var info = closeEvent as WebSocketCloseEvent;
+                options.OnClose?.Invoke(info?.Code, info?.Reason);
+                return Task.CompletedTask;
+            });
 
         return new WebSocketConnection(socket, Close);
     }
 
-    private static async Task RunAfterAsync(Task previous, Func<Task> work, Action<Exception> onProcessingError)
+    private static async Task RunAfterAsync(
+        Task previous,
+        Func<Task> work,
+        Action<Exception> onProcessingError
+    )
     {
         await previous.ConfigureAwait(false);
         try

@@ -14,41 +14,45 @@ if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AI_GATEWAY_API_KEY"
 #region generate-structured-data
 var client = new AiClient(GatewayProvider.Create());
 
-var result = await client.GenerateTextAsync(new GenerateTextOptions
-{
-    ModelId = "openai/gpt-6-astra",
-    Output = OutputSpec.Object("""
-        {
-          "type": "object",
-          "properties": {
-            "recipe": {
+var result = await client.GenerateTextAsync(
+    new GenerateTextOptions
+    {
+        ModelId = "openai/gpt-6-astra",
+        Output = OutputSpec.Object(
+            """
+            {
               "type": "object",
               "properties": {
-                "name": { "type": "string" },
-                "ingredients": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "name": { "type": "string" },
-                      "amount": { "type": "string" }
+                "recipe": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "ingredients": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": { "type": "string" },
+                          "amount": { "type": "string" }
+                        },
+                        "required": ["name", "amount"],
+                        "additionalProperties": false
+                      }
                     },
-                    "required": ["name", "amount"],
-                    "additionalProperties": false
-                  }
-                },
-                "steps": { "type": "array", "items": { "type": "string" } }
+                    "steps": { "type": "array", "items": { "type": "string" } }
+                  },
+                  "required": ["name", "ingredients", "steps"],
+                  "additionalProperties": false
+                }
               },
-              "required": ["name", "ingredients", "steps"],
+              "required": ["recipe"],
               "additionalProperties": false
             }
-          },
-          "required": ["recipe"],
-          "additionalProperties": false
-        }
-        """),
-    Prompt = "Generate a lasagna recipe.",
-});
+            """
+        ),
+        Prompt = "Generate a lasagna recipe.",
+    }
+);
 
 Console.WriteLine(result.Output);
 #endregion

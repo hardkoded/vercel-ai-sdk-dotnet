@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <Description>Generates and streams text with the DeepSeek Responses API, with typed provider options and server-side web search.</Description>
-  </PropertyGroup>
+    <PropertyGroup>
+        <Description>Generates and streams text with the DeepSeek Responses API, with typed provider options and server-side web search.</Description>
+    </PropertyGroup>
 </Project>

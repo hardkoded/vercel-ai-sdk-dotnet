@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <Description>Edits an existing video with a text prompt.</Description>
-  </PropertyGroup>
+    <PropertyGroup>
+        <Description>Edits an existing video with a text prompt.</Description>
+    </PropertyGroup>
 </Project>

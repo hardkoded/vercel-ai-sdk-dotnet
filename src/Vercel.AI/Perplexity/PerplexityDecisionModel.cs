@@ -42,7 +42,8 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
     public string SpecificationVersion => "v4";
 
     /// <inheritdoc />
-    public IReadOnlyList<string> SupportedQuestionTypes { get; } = new[] { "choice", "score", "boolean" };
+    public IReadOnlyList<string> SupportedQuestionTypes { get; } =
+        new[] { "choice", "score", "boolean" };
 
     /// <summary>
     /// Serializes the model id, the endpoint, and the resolved request headers (including authentication) for a workflow boundary.
@@ -72,7 +73,10 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
     /// Restores a model from <see cref="Serialize"/>. Maps to <c>[WORKFLOW_DESERIALIZE]</c>. Pass <paramref name="httpClient"/> to
     /// send the requests through a custom handler.
     /// </summary>
-    public static PerplexityDecisionModel Deserialize(SerializedModelOptions options, HttpClient? httpClient = null)
+    public static PerplexityDecisionModel Deserialize(
+        SerializedModelOptions options,
+        HttpClient? httpClient = null
+    )
     {
         if (options == null)
         {
@@ -112,11 +116,17 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
             }
         }
 
-        return new PerplexityProvider(httpClient ?? new HttpClient(), providerOptions).DecisionModel(options.ModelId);
+        return new PerplexityProvider(
+            httpClient ?? new HttpClient(),
+            providerOptions
+        ).DecisionModel(options.ModelId);
     }
 
     /// <summary>Sends every question in one Decisions request.</summary>
-    public async Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken = default)
+    public async Task<DecisionModelResult> DoDecideAsync(
+        DecisionModelCall call,
+        CancellationToken cancellationToken = default
+    )
     {
         if (call == null)
         {
@@ -126,7 +136,11 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
         var (mode, maxStaleness) = ParseProviderOptions(call.ProviderOptions);
         if (call.Questions.Count == 0 || call.Questions.Count > MaxQuestions)
         {
-            throw new InvalidArgumentException("questions", call.Questions, "Perplexity Decisions supports 1 to 128 questions per request.");
+            throw new InvalidArgumentException(
+                "questions",
+                call.Questions,
+                "Perplexity Decisions supports 1 to 128 questions per request."
+            );
         }
 
         var questions = new JsonObject();
@@ -157,17 +171,26 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
             headers[pair.Key] = pair.Value;
         }
 
-        var response = await _provider.PostJsonAsync(
-            ApiKeys.Combine(_provider.Options.BaseUrl, "v1/decisions"),
-            body.ToJsonString(),
-            _provider.CreateHeaders(headers),
-            cancellationToken).ConfigureAwait(false);
+        var response = await _provider
+            .PostJsonAsync(
+                ApiKeys.Combine(_provider.Options.BaseUrl, "v1/decisions"),
+                body.ToJsonString(),
+                _provider.CreateHeaders(headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         using var document = ParseDocument(response.Body);
         var root = document.RootElement.Clone();
         var parsed = ParseAnswers(root, response.Body, out var modelId, out var usage);
-        if (parsed.Count != call.Questions.Count || parsed.Any(answer => !call.Questions.ContainsKey(answer.Name)))
+        if (
+            parsed.Count != call.Questions.Count
+            || parsed.Any(answer => !call.Questions.ContainsKey(answer.Name))
+        )
         {
-            throw new InvalidResponseDataException(root, "Perplexity Decisions must return exactly one answer for every question.");
+            throw new InvalidResponseDataException(
+                root,
+                "Perplexity Decisions must return exactly one answer for every question."
+            );
         }
 
         var answers = new Dictionary<string, DecisionAnswer>();
@@ -178,13 +201,24 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
             switch (answer.Type)
             {
                 case "noul":
-                    answers[answer.Name] = new DecisionAnswer("boolean", probability: answer.Probability);
+                    answers[answer.Name] = new DecisionAnswer(
+                        "boolean",
+                        probability: answer.Probability
+                    );
                     break;
                 case "choice":
-                    answers[answer.Name] = new DecisionAnswer("choice", choice: answer.Choice, probabilities: answer.Probabilities);
+                    answers[answer.Name] = new DecisionAnswer(
+                        "choice",
+                        choice: answer.Choice,
+                        probabilities: answer.Probabilities
+                    );
                     break;
                 default:
-                    answers[answer.Name] = new DecisionAnswer("score", score: answer.Score, probabilities: answer.Probabilities);
+                    answers[answer.Name] = new DecisionAnswer(
+                        "score",
+                        score: answer.Score,
+                        probabilities: answer.Probabilities
+                    );
                     break;
             }
 
@@ -209,9 +243,11 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
         {
             warnings.Add(new OperationWarning("unsupported", feature: "reasoning"));
         }
-        if (call.ProviderOptions.ValueKind == JsonValueKind.Object
+        if (
+            call.ProviderOptions.ValueKind == JsonValueKind.Object
             && call.ProviderOptions.TryGetProperty(PerplexityProvider.ProviderId, out var options)
-            && options.ValueKind == JsonValueKind.Object)
+            && options.ValueKind == JsonValueKind.Object
+        )
         {
             foreach (var option in options.EnumerateObject())
             {
@@ -220,19 +256,40 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
                     continue;
                 }
 
-                warnings.Add(new OperationWarning("unsupported", feature: "providerOptions.perplexity." + option.Name));
+                warnings.Add(
+                    new OperationWarning(
+                        "unsupported",
+                        feature: "providerOptions.perplexity." + option.Name
+                    )
+                );
             }
         }
 
         var perplexityMetadata = new JsonObject();
-        if (root.TryGetProperty("search_results", out var searchResults) && searchResults.ValueKind != JsonValueKind.Null)
+        if (
+            root.TryGetProperty("search_results", out var searchResults)
+            && searchResults.ValueKind != JsonValueKind.Null
+        )
         {
-            perplexityMetadata["searchResults"] = ValidateEvidence(searchResults, "search_results", true, response.Body);
+            perplexityMetadata["searchResults"] = ValidateEvidence(
+                searchResults,
+                "search_results",
+                true,
+                response.Body
+            );
         }
 
-        if (root.TryGetProperty("fetched_results", out var fetchedResults) && fetchedResults.ValueKind != JsonValueKind.Null)
+        if (
+            root.TryGetProperty("fetched_results", out var fetchedResults)
+            && fetchedResults.ValueKind != JsonValueKind.Null
+        )
         {
-            perplexityMetadata["fetchedResults"] = ValidateEvidence(fetchedResults, "fetched_results", false, response.Body);
+            perplexityMetadata["fetchedResults"] = ValidateEvidence(
+                fetchedResults,
+                "fetched_results",
+                false,
+                response.Body
+            );
         }
 
         if (ToolCalls(root, response.Body) is { } toolCalls)
@@ -242,7 +299,9 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
 
         perplexityMetadata["confidence"] = confidence;
         perplexityMetadata["legend"] = legend;
-        var metadata = JsonSerializer.SerializeToElement(new JsonObject { [PerplexityProvider.ProviderId] = perplexityMetadata });
+        var metadata = JsonSerializer.SerializeToElement(
+            new JsonObject { [PerplexityProvider.ProviderId] = perplexityMetadata }
+        );
         string? requestId = null;
         foreach (var header in response.Headers)
         {
@@ -253,28 +312,49 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
         }
 
         // Perplexity returns full-precision probabilities, so no rounding is declared.
-        return new DecisionModelResult(answers, warnings, usage, null, metadata, new ProviderResponse(response.Headers, root, id: requestId, modelId: modelId ?? ModelId));
+        return new DecisionModelResult(
+            answers,
+            warnings,
+            usage,
+            null,
+            metadata,
+            new ProviderResponse(response.Headers, root, id: requestId, modelId: modelId ?? ModelId)
+        );
     }
 
-    private static (string? Mode, long? MaxStaleness) ParseProviderOptions(JsonElement providerOptions)
+    private static (string? Mode, long? MaxStaleness) ParseProviderOptions(
+        JsonElement providerOptions
+    )
     {
-        if (providerOptions.ValueKind != JsonValueKind.Object
+        if (
+            providerOptions.ValueKind != JsonValueKind.Object
             || !providerOptions.TryGetProperty(PerplexityProvider.ProviderId, out var options)
-            || options.ValueKind != JsonValueKind.Object)
+            || options.ValueKind != JsonValueKind.Object
+        )
         {
             return (null, null);
         }
 
         InvalidArgumentException Invalid(string message)
         {
-            return new InvalidArgumentException("providerOptions", options.GetRawText(), "Invalid perplexity provider options: " + message);
+            return new InvalidArgumentException(
+                "providerOptions",
+                options.GetRawText(),
+                "Invalid perplexity provider options: " + message
+            );
         }
 
         string? mode = null;
         long? maxStaleness = null;
-        if (options.TryGetProperty("mode", out var modeElement) && modeElement.ValueKind != JsonValueKind.Null)
+        if (
+            options.TryGetProperty("mode", out var modeElement)
+            && modeElement.ValueKind != JsonValueKind.Null
+        )
         {
-            if (modeElement.ValueKind != JsonValueKind.String || modeElement.GetString() != "web_grounding")
+            if (
+                modeElement.ValueKind != JsonValueKind.String
+                || modeElement.GetString() != "web_grounding"
+            )
             {
                 throw Invalid("mode must be 'web_grounding'.");
             }
@@ -282,13 +362,18 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
             mode = "web_grounding";
         }
 
-        if (options.TryGetProperty("maxStaleness", out var staleness) && staleness.ValueKind != JsonValueKind.Null)
+        if (
+            options.TryGetProperty("maxStaleness", out var staleness)
+            && staleness.ValueKind != JsonValueKind.Null
+        )
         {
-            if (staleness.ValueKind != JsonValueKind.Number
+            if (
+                staleness.ValueKind != JsonValueKind.Number
                 || !staleness.TryGetDecimal(out var number)
                 || number != decimal.Truncate(number)
                 || number < 0
-                || number > long.MaxValue)
+                || number > long.MaxValue
+            )
             {
                 throw Invalid("maxStaleness must be a non-negative integer.");
             }
@@ -299,7 +384,12 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
         return (mode, maxStaleness);
     }
 
-    private static JsonNode? ValidateEvidence(JsonElement element, string name, bool search, string body)
+    private static JsonNode? ValidateEvidence(
+        JsonElement element,
+        string name,
+        bool search,
+        string body
+    )
     {
         bool Text(JsonElement item, string property, bool nullable)
         {
@@ -308,7 +398,8 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
                 return nullable;
             }
 
-            return value.ValueKind == JsonValueKind.String || (nullable && value.ValueKind == JsonValueKind.Null);
+            return value.ValueKind == JsonValueKind.String
+                || (nullable && value.ValueKind == JsonValueKind.Null);
         }
 
         var valid = element.ValueKind == JsonValueKind.Array;
@@ -316,11 +407,13 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
         {
             foreach (var item in element.EnumerateArray())
             {
-                if (item.ValueKind != JsonValueKind.Object
+                if (
+                    item.ValueKind != JsonValueKind.Object
                     || !Text(item, "title", false)
                     || !Text(item, "url", false)
                     || !Text(item, "snippet", false)
-                    || (search && (!Text(item, "date", true) || !Text(item, "last_updated", true))))
+                    || (search && (!Text(item, "date", true) || !Text(item, "last_updated", true)))
+                )
                 {
                     valid = false;
                     break;
@@ -338,17 +431,23 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
 
     private static JsonObject? ToolCalls(JsonElement root, string body)
     {
-        if (!root.TryGetProperty("usage", out var usage)
+        if (
+            !root.TryGetProperty("usage", out var usage)
             || usage.ValueKind != JsonValueKind.Object
             || !usage.TryGetProperty("tool_calls_details", out var details)
-            || details.ValueKind == JsonValueKind.Null)
+            || details.ValueKind == JsonValueKind.Null
+        )
         {
             return null;
         }
 
         if (details.ValueKind != JsonValueKind.Object)
         {
-            throw new ApiException("Type validation failed: tool_calls_details must be an object.", 200, body);
+            throw new ApiException(
+                "Type validation failed: tool_calls_details must be an object.",
+                200,
+                body
+            );
         }
 
         var result = new JsonObject();
@@ -356,15 +455,26 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
         {
             if (tool.Value.ValueKind != JsonValueKind.Object)
             {
-                throw new ApiException("Type validation failed: tool_calls_details entries must be objects.", 200, body);
+                throw new ApiException(
+                    "Type validation failed: tool_calls_details entries must be objects.",
+                    200,
+                    body
+                );
             }
 
             JsonNode? invocation = null;
-            if (tool.Value.TryGetProperty("invocation", out var count) && count.ValueKind != JsonValueKind.Null)
+            if (
+                tool.Value.TryGetProperty("invocation", out var count)
+                && count.ValueKind != JsonValueKind.Null
+            )
             {
                 if (count.ValueKind != JsonValueKind.Number)
                 {
-                    throw new ApiException("Type validation failed: invocation must be a number.", 200, body);
+                    throw new ApiException(
+                        "Type validation failed: invocation must be a number.",
+                        200,
+                        body
+                    );
                 }
 
                 invocation = JsonNode.Parse(count.GetRawText());
@@ -390,7 +500,11 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
     {
         if (name.Length == 0)
         {
-            throw new InvalidArgumentException("questions", name, "Perplexity Decisions requires non-empty question names.");
+            throw new InvalidArgumentException(
+                "questions",
+                name,
+                "Perplexity Decisions requires non-empty question names."
+            );
         }
 
         switch (question.Type)
@@ -401,20 +515,37 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
                 var count = question.Criteria?.Count ?? 0;
                 if (count == 0 || count > MaxChoices)
                 {
-                    throw new InvalidArgumentException("questions." + name + ".criteria", question.Criteria, "Perplexity Choice questions support 1 to 255 options.");
+                    throw new InvalidArgumentException(
+                        "questions." + name + ".criteria",
+                        question.Criteria,
+                        "Perplexity Choice questions support 1 to 255 options."
+                    );
                 }
 
                 return Native("choice", question);
             case "score":
                 var levels = ((DecisionScoreCriteria)question.Criteria!).Levels;
-                if (levels.Count == 0 || levels.Count > MaxScoreLevels || levels.Any(level => level == null))
+                if (
+                    levels.Count == 0
+                    || levels.Count > MaxScoreLevels
+                    || levels.Any(level => level == null)
+                )
                 {
-                    throw new InvalidArgumentException("questions." + name + ".criteria", question.Criteria, "Perplexity Score questions require 1 to 10 non-null levels.");
+                    throw new InvalidArgumentException(
+                        "questions." + name + ".criteria",
+                        question.Criteria,
+                        "Perplexity Score questions require 1 to 10 non-null levels."
+                    );
                 }
 
                 return Native("score", question);
             default:
-                throw new DecisionUnsupportedQuestionTypeException(name, question.Type, Provider, ModelId);
+                throw new DecisionUnsupportedQuestionTypeException(
+                    name,
+                    question.Type,
+                    Provider,
+                    ModelId
+                );
         }
     }
 
@@ -446,7 +577,12 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
         }
     }
 
-    private static List<ParsedAnswer> ParseAnswers(JsonElement root, string body, out string? modelId, out OperationUsage? usage)
+    private static List<ParsedAnswer> ParseAnswers(
+        JsonElement root,
+        string body,
+        out string? modelId,
+        out OperationUsage? usage
+    )
     {
         ApiException Malformed(string reason)
         {
@@ -455,7 +591,12 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
 
         double Probability(JsonElement element, string what)
         {
-            if (element.ValueKind != JsonValueKind.Number || !element.TryGetDouble(out var value) || value < 0 || value > 1)
+            if (
+                element.ValueKind != JsonValueKind.Number
+                || !element.TryGetDouble(out var value)
+                || value < 0
+                || value > 1
+            )
             {
                 throw Malformed(what + " must be a number from 0 to 1.");
             }
@@ -465,12 +606,19 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
 
         double? NullableProbability(JsonElement parent, string property)
         {
-            return parent.TryGetProperty(property, out var value) && value.ValueKind != JsonValueKind.Null ? Probability(value, property) : null;
+            return
+                parent.TryGetProperty(property, out var value)
+                && value.ValueKind != JsonValueKind.Null
+                ? Probability(value, property)
+                : null;
         }
 
         Dictionary<string, double> Distribution(JsonElement parent)
         {
-            if (!parent.TryGetProperty("probabilities", out var map) || map.ValueKind != JsonValueKind.Object)
+            if (
+                !parent.TryGetProperty("probabilities", out var map)
+                || map.ValueKind != JsonValueKind.Object
+            )
             {
                 throw Malformed("probabilities must be an object.");
             }
@@ -484,7 +632,11 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
             return result;
         }
 
-        if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("answers", out var list) || list.ValueKind != JsonValueKind.Object)
+        if (
+            root.ValueKind != JsonValueKind.Object
+            || !root.TryGetProperty("answers", out var list)
+            || list.ValueKind != JsonValueKind.Object
+        )
         {
             throw Malformed("answers must be an object.");
         }
@@ -493,7 +645,11 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
         foreach (var item in list.EnumerateObject())
         {
             var element = item.Value;
-            if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty("type", out var type) || type.ValueKind != JsonValueKind.String)
+            if (
+                element.ValueKind != JsonValueKind.Object
+                || !element.TryGetProperty("type", out var type)
+                || type.ValueKind != JsonValueKind.String
+            )
             {
                 throw Malformed("answer type must be noul, choice, or score.");
             }
@@ -502,10 +658,15 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
             switch (answer.Type)
             {
                 case "noul":
-                    answer.Probability = element.TryGetProperty("noul", out var noul) ? Probability(noul, "noul") : throw Malformed("noul is required.");
+                    answer.Probability = element.TryGetProperty("noul", out var noul)
+                        ? Probability(noul, "noul")
+                        : throw Malformed("noul is required.");
                     break;
                 case "choice":
-                    if (!element.TryGetProperty("choice", out var choice) || choice.ValueKind != JsonValueKind.String)
+                    if (
+                        !element.TryGetProperty("choice", out var choice)
+                        || choice.ValueKind != JsonValueKind.String
+                    )
                     {
                         throw Malformed("choice must be a string.");
                     }
@@ -515,7 +676,11 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
                     answer.Confidence = NullableProbability(element, "confidence");
                     break;
                 case "score":
-                    if (!element.TryGetProperty("score", out var score) || score.ValueKind != JsonValueKind.Number || !score.TryGetDouble(out var scoreValue))
+                    if (
+                        !element.TryGetProperty("score", out var score)
+                        || score.ValueKind != JsonValueKind.Number
+                        || !score.TryGetDouble(out var scoreValue)
+                    )
                     {
                         throw Malformed("score must be a number.");
                     }
@@ -523,7 +688,10 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
                     answer.Score = scoreValue;
                     answer.Probabilities = Distribution(element);
                     answer.Confidence = NullableProbability(element, "confidence");
-                    if (element.TryGetProperty("legend", out var legend) && legend.ValueKind != JsonValueKind.Null)
+                    if (
+                        element.TryGetProperty("legend", out var legend)
+                        && legend.ValueKind != JsonValueKind.Null
+                    )
                     {
                         if (legend.ValueKind != JsonValueKind.Object)
                         {
@@ -541,11 +709,20 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
             answers.Add(answer);
         }
 
-        modelId = root.TryGetProperty("model", out var model) && model.ValueKind == JsonValueKind.String ? model.GetString() : null;
+        modelId =
+            root.TryGetProperty("model", out var model) && model.ValueKind == JsonValueKind.String
+                ? model.GetString()
+                : null;
         usage = null;
-        if (root.TryGetProperty("usage", out var usageElement) && usageElement.ValueKind == JsonValueKind.Object)
+        if (
+            root.TryGetProperty("usage", out var usageElement)
+            && usageElement.ValueKind == JsonValueKind.Object
+        )
         {
-            usage = new OperationUsage(Count(usageElement, "input_tokens"), Count(usageElement, "output_tokens"));
+            usage = new OperationUsage(
+                Count(usageElement, "input_tokens"),
+                Count(usageElement, "output_tokens")
+            );
         }
 
         return answers;
@@ -553,7 +730,12 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
 
     private static int? Count(JsonElement usage, string name)
     {
-        return usage.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var count) ? count : null;
+        return
+            usage.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Number
+            && value.TryGetInt32(out var count)
+            ? count
+            : null;
     }
 
     private sealed class ParsedAnswer

@@ -30,47 +30,58 @@ public sealed class PruneMessagesReasoningTests
                 "weather",
                 "Get the weather in a location",
                 "{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}},\"required\":[\"location\"]}",
-                (_, _) => Task.FromResult("{\"temperature\":72}")),
+                (_, _) => Task.FromResult("{\"temperature\":72}")
+            ),
         };
         var messages = new List<ModelMessage>
         {
-            new UserModelMessage("Use the weather tool to get the weather in San Francisco and New York, then compare them."),
+            new UserModelMessage(
+                "Use the weather tool to get the weather in San Francisco and New York, then compare them."
+            ),
         };
 
         // step 1: reasoning + tool calls
-        var toolStep = await client.GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            ProviderOptions = providerOptions,
-            Tools = tools,
-            ToolChoice = ToolChoice.Required,
-            Messages = messages,
-        });
+        var toolStep = await client.GenerateTextAsync(
+            new GenerateTextOptions
+            {
+                Model = model,
+                ProviderOptions = providerOptions,
+                Tools = tools,
+                ToolChoice = ToolChoice.Required,
+                Messages = messages,
+            }
+        );
         messages.AddRange(toolStep.ResponseMessages);
 
         // step 2: reasoning + final answer
-        var answerStep = await client.GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            ProviderOptions = providerOptions,
-            Tools = tools,
-            ToolChoice = ToolChoice.None,
-            Messages = messages,
-        });
+        var answerStep = await client.GenerateTextAsync(
+            new GenerateTextOptions
+            {
+                Model = model,
+                ProviderOptions = providerOptions,
+                Tools = tools,
+                ToolChoice = ToolChoice.None,
+                Messages = messages,
+            }
+        );
         messages.AddRange(answerStep.ResponseMessages);
         messages.Add(new UserModelMessage("Which city should I visit this weekend?"));
 
         // remove the reasoning from the history.
         // the stored assistant messages can no longer be referenced by id,
         // because OpenAI requires their reasoning items to be sent with them.
-        var result = await client.GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            ProviderOptions = providerOptions,
-            Tools = tools,
-            ToolChoice = ToolChoice.None,
-            Messages = Ai.PruneMessages(new PruneMessagesOptions { Messages = messages, Reasoning = PruneReasoning.All }),
-        });
+        var result = await client.GenerateTextAsync(
+            new GenerateTextOptions
+            {
+                Model = model,
+                ProviderOptions = providerOptions,
+                Tools = tools,
+                ToolChoice = ToolChoice.None,
+                Messages = Ai.PruneMessages(
+                    new PruneMessagesOptions { Messages = messages, Reasoning = PruneReasoning.All }
+                ),
+            }
+        );
 
         Assert.False(string.IsNullOrEmpty(result.Text));
     }

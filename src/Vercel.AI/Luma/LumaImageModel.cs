@@ -53,7 +53,13 @@ public sealed class LumaImageRequest
 /// <summary>Luma image result with warnings and response metadata.</summary>
 public sealed class LumaImageGeneration : ImageGenerationResult
 {
-    internal LumaImageGeneration(IReadOnlyList<GeneratedImage> images, IReadOnlyList<ModelWarning> warnings, DateTimeOffset timestamp, string modelId, IReadOnlyDictionary<string, string> headers)
+    internal LumaImageGeneration(
+        IReadOnlyList<GeneratedImage> images,
+        IReadOnlyList<ModelWarning> warnings,
+        DateTimeOffset timestamp,
+        string modelId,
+        IReadOnlyDictionary<string, string> headers
+    )
         : base(images, warnings.Select(ToCallWarning).ToList())
     {
         Warnings = warnings;
@@ -66,8 +72,16 @@ public sealed class LumaImageGeneration : ImageGenerationResult
     {
         return warning switch
         {
-            UnsupportedWarning unsupported => new CallWarning(unsupported.Type, unsupported.Feature, unsupported.Details),
-            CompatibilityWarning compatibility => new CallWarning(compatibility.Type, compatibility.Feature, compatibility.Details),
+            UnsupportedWarning unsupported => new CallWarning(
+                unsupported.Type,
+                unsupported.Feature,
+                unsupported.Details
+            ),
+            CompatibilityWarning compatibility => new CallWarning(
+                compatibility.Type,
+                compatibility.Feature,
+                compatibility.Details
+            ),
             DeprecatedWarning deprecated => new CallWarning(deprecated.Type, deprecated.Message),
             OtherWarning other => new CallWarning(other.Type, other.Message),
             _ => new CallWarning(warning.Type, warning.Type),
@@ -114,39 +128,59 @@ public sealed class LumaImageModel : IImageModel
     public int MaxImagesPerCall => 1;
 
     /// <inheritdoc />
-    public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+    public async Task<ImageGenerationResult> DoGenerateAsync(
+        ImageCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
-        return await GenerateAsync(new LumaImageRequest(options.Prompt)
-        {
-            Size = options.Size,
-            AspectRatio = options.AspectRatio,
-            Seed = options.Seed,
-            Files = options.Files,
-            Mask = options.Mask,
-            ProviderOptions = options.ProviderOptionsElement,
-            Headers = options.Headers == null ? null : options.NonNullHeaders,
-        }, cancellationToken).ConfigureAwait(false);
+        return await GenerateAsync(
+                new LumaImageRequest(options.Prompt)
+                {
+                    Size = options.Size,
+                    AspectRatio = options.AspectRatio,
+                    Seed = options.Seed,
+                    Files = options.Files,
+                    Mask = options.Mask,
+                    ProviderOptions = options.ProviderOptionsElement,
+                    Headers = options.Headers == null ? null : options.NonNullHeaders,
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
     }
 
     /// <summary>Generates one image.</summary>
-    public async Task<LumaImageGeneration> GenerateAsync(LumaImageRequest request, CancellationToken cancellationToken)
+    public async Task<LumaImageGeneration> GenerateAsync(
+        LumaImageRequest request,
+        CancellationToken cancellationToken
+    )
     {
         request = request ?? throw new ArgumentNullException(nameof(request));
         var warnings = new List<ModelWarning>();
         if (request.Seed != null)
         {
-            warnings.Add(new UnsupportedWarning("seed", "This model does not support the `seed` option."));
+            warnings.Add(
+                new UnsupportedWarning("seed", "This model does not support the `seed` option.")
+            );
         }
 
         if (request.Size != null)
         {
-            warnings.Add(new UnsupportedWarning("size", "This model does not support the `size` option. Use `aspectRatio` instead."));
+            warnings.Add(
+                new UnsupportedWarning(
+                    "size",
+                    "This model does not support the `size` option. Use `aspectRatio` instead."
+                )
+            );
         }
 
-        var luma = request.ProviderOptions is { ValueKind: JsonValueKind.Object } bag && bag.TryGetProperty("luma", out var value) && value.ValueKind == JsonValueKind.Object
-            ? value
-            : (JsonElement?)null;
+        var luma =
+            request.ProviderOptions is { ValueKind: JsonValueKind.Object } bag
+            && bag.TryGetProperty("luma", out var value)
+            && value.ValueKind == JsonValueKind.Object
+                ? value
+                : (JsonElement?)null;
         var body = new JsonObject { ["prompt"] = request.Prompt };
         if (!string.IsNullOrEmpty(request.AspectRatio))
         {
@@ -181,68 +215,144 @@ public sealed class LumaImageModel : IImageModel
 
         var timestamp = _clock();
         var headers = ProviderExchange.Merge(_provider.CreateHeaders(), request.Headers);
-        var submitted = await ProviderExchange.SendAsync(_provider.HttpClient, HttpMethod.Post, GenerationsUri("image"), ProviderExchange.Json(body.ToJsonString()), headers, cancellationToken).ConfigureAwait(false);
+        var submitted = await ProviderExchange
+            .SendAsync(
+                _provider.HttpClient,
+                HttpMethod.Post,
+                GenerationsUri("image"),
+                ProviderExchange.Json(body.ToJsonString()),
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         string generationId;
         using (var document = JsonDocument.Parse(submitted.Body))
         {
-            generationId = document.RootElement.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String
-                ? id.GetString()!
-                : throw new Operations.InvalidResponseDataException(submitted.Body, "Luma generation response has no id.");
+            generationId =
+                document.RootElement.TryGetProperty("id", out var id)
+                && id.ValueKind == JsonValueKind.String
+                    ? id.GetString()!
+                    : throw new Operations.InvalidResponseDataException(
+                        submitted.Body,
+                        "Luma generation response has no id."
+                    );
         }
 
-        var imageUrl = await PollForImageUrlAsync(generationId, headers, pollIntervalMillis ?? DefaultPollIntervalMillis, maxPollAttempts ?? DefaultMaxPollAttempts, cancellationToken).ConfigureAwait(false);
-        var image = await ProviderExchange.GetResponseUrlAsync(_provider.HttpClient, imageUrl, _provider.Options.BaseUrl, DownloadUrls.ValidateDownloadUrl, null, cancellationToken, ProviderExchange.DownloadClient(_provider.Options), ProviderExchange.UserAgentOnly(headers)).ConfigureAwait(false);
+        var imageUrl = await PollForImageUrlAsync(
+                generationId,
+                headers,
+                pollIntervalMillis ?? DefaultPollIntervalMillis,
+                maxPollAttempts ?? DefaultMaxPollAttempts,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        var image = await ProviderExchange
+            .GetResponseUrlAsync(
+                _provider.HttpClient,
+                imageUrl,
+                _provider.Options.BaseUrl,
+                DownloadUrls.ValidateDownloadUrl,
+                null,
+                cancellationToken,
+                ProviderExchange.DownloadClient(_provider.Options),
+                ProviderExchange.UserAgentOnly(headers)
+            )
+            .ConfigureAwait(false);
         var mediaType = MediaTypes.DetectMediaType(image.Bytes, "image") ?? "image/png";
-        return new LumaImageGeneration(new[] { new GeneratedImage(mediaType, image.Bytes, null) }, warnings, timestamp, ModelId, submitted.Headers);
+        return new LumaImageGeneration(
+            new[] { new GeneratedImage(mediaType, image.Bytes, null) },
+            warnings,
+            timestamp,
+            ModelId,
+            submitted.Headers
+        );
     }
 
-    private async Task<string> PollForImageUrlAsync(string generationId, IReadOnlyDictionary<string, string?> headers, int pollIntervalMillis, int maxPollAttempts, CancellationToken cancellationToken)
+    private async Task<string> PollForImageUrlAsync(
+        string generationId,
+        IReadOnlyDictionary<string, string?> headers,
+        int pollIntervalMillis,
+        int maxPollAttempts,
+        CancellationToken cancellationToken
+    )
     {
         var uri = GenerationsUri(generationId);
         for (var attempt = 0; attempt < maxPollAttempts; attempt++)
         {
-            var status = await ProviderExchange.SendAsync(_provider.HttpClient, HttpMethod.Get, uri, null, headers, cancellationToken).ConfigureAwait(false);
+            var status = await ProviderExchange
+                .SendAsync(
+                    _provider.HttpClient,
+                    HttpMethod.Get,
+                    uri,
+                    null,
+                    headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             using (var document = JsonDocument.Parse(status.Body))
             {
                 var root = document.RootElement;
-                var state = root.TryGetProperty("state", out var stateElement) && stateElement.ValueKind == JsonValueKind.String ? stateElement.GetString() : null;
+                var state =
+                    root.TryGetProperty("state", out var stateElement)
+                    && stateElement.ValueKind == JsonValueKind.String
+                        ? stateElement.GetString()
+                        : null;
                 switch (state)
                 {
                     case "completed":
-                        if (root.TryGetProperty("assets", out var assets)
+                        if (
+                            root.TryGetProperty("assets", out var assets)
                             && assets.ValueKind == JsonValueKind.Object
                             && assets.TryGetProperty("image", out var image)
                             && image.ValueKind == JsonValueKind.String
-                            && !string.IsNullOrEmpty(image.GetString()))
+                            && !string.IsNullOrEmpty(image.GetString())
+                        )
                         {
                             return image.GetString()!;
                         }
 
-                        throw new Operations.InvalidResponseDataException(status.Body, "Image generation completed but no image was found.");
+                        throw new Operations.InvalidResponseDataException(
+                            status.Body,
+                            "Image generation completed but no image was found."
+                        );
                     case "failed":
-                        throw new Operations.InvalidResponseDataException(status.Body, "Image generation failed.");
+                        throw new Operations.InvalidResponseDataException(
+                            status.Body,
+                            "Image generation failed."
+                        );
                     case "queued":
                     case "dreaming":
                         break;
                     default:
-                        throw new Operations.InvalidResponseDataException(status.Body, "Unknown Luma generation state: " + (state ?? "null") + ".");
+                        throw new Operations.InvalidResponseDataException(
+                            status.Body,
+                            "Unknown Luma generation state: " + (state ?? "null") + "."
+                        );
                 }
             }
 
             await Task.Delay(pollIntervalMillis, cancellationToken).ConfigureAwait(false);
         }
 
-        throw new AiSdkException("Image generation timed out after " + maxPollAttempts + " attempts.");
+        throw new AiSdkException(
+            "Image generation timed out after " + maxPollAttempts + " attempts."
+        );
     }
 
-    private static void AddReferences(JsonObject body, IReadOnlyList<ImageModelFile>? files, ImageModelFile? mask, JsonElement? luma)
+    private static void AddReferences(
+        JsonObject body,
+        IReadOnlyList<ImageModelFile>? files,
+        ImageModelFile? mask,
+        JsonElement? luma
+    )
     {
         if (mask != null)
         {
             throw new AiSdkException(
                 "Luma AI does not support mask-based image editing. "
-                + "Use the prompt to describe the changes you want to make, along with "
-                + "`prompt.images` containing the source image URL.");
+                    + "Use the prompt to describe the changes you want to make, along with "
+                    + "`prompt.images` containing the source image URL."
+            );
         }
 
         if (files == null || files.Count == 0)
@@ -257,8 +367,9 @@ public sealed class LumaImageModel : IImageModel
             {
                 throw new AiSdkException(
                     "Luma AI only supports URL-based images. "
-                    + "Please provide image URLs using `prompt.images` with publicly accessible URLs. "
-                    + "Base64 and Uint8Array data are not supported.");
+                        + "Please provide image URLs using `prompt.images` with publicly accessible URLs. "
+                        + "Base64 and Uint8Array data are not supported."
+                );
             }
 
             urls.Add(file.Url!);
@@ -268,12 +379,19 @@ public sealed class LumaImageModel : IImageModel
         var configs = new List<JsonElement>();
         if (luma != null)
         {
-            if (luma.Value.TryGetProperty("referenceType", out var type) && type.ValueKind != JsonValueKind.Null)
+            if (
+                luma.Value.TryGetProperty("referenceType", out var type)
+                && type.ValueKind != JsonValueKind.Null
+            )
             {
-                referenceType = type.ValueKind == JsonValueKind.String ? type.GetString()! : string.Empty;
+                referenceType =
+                    type.ValueKind == JsonValueKind.String ? type.GetString()! : string.Empty;
             }
 
-            if (luma.Value.TryGetProperty("images", out var images) && images.ValueKind == JsonValueKind.Array)
+            if (
+                luma.Value.TryGetProperty("images", out var images)
+                && images.ValueKind == JsonValueKind.Array
+            )
             {
                 configs.AddRange(images.EnumerateArray());
             }
@@ -284,7 +402,11 @@ public sealed class LumaImageModel : IImageModel
             case "image":
                 if (urls.Count > 4)
                 {
-                    throw new AiSdkException("Luma AI image supports up to 4 reference images. You provided " + urls.Count + " images.");
+                    throw new AiSdkException(
+                        "Luma AI image supports up to 4 reference images. You provided "
+                            + urls.Count
+                            + " images."
+                    );
                 }
 
                 body["image"] = WeightedUrls(urls, configs, 0.85);
@@ -311,7 +433,13 @@ public sealed class LumaImageModel : IImageModel
                     var count = ((JsonArray)pair.Value!["images"]!).Count;
                     if (count > 4)
                     {
-                        throw new AiSdkException("Luma AI character supports up to 4 images per identity. Identity '" + pair.Key + "' has " + count + " images.");
+                        throw new AiSdkException(
+                            "Luma AI character supports up to 4 images per identity. Identity '"
+                                + pair.Key
+                                + "' has "
+                                + count
+                                + " images."
+                        );
                     }
                 }
 
@@ -320,22 +448,44 @@ public sealed class LumaImageModel : IImageModel
             case "modify_image":
                 if (urls.Count > 1)
                 {
-                    throw new AiSdkException("Luma AI modify_image only supports a single input image. You provided " + urls.Count + " images.");
+                    throw new AiSdkException(
+                        "Luma AI modify_image only supports a single input image. You provided "
+                            + urls.Count
+                            + " images."
+                    );
                 }
 
-                body["modify_image"] = new JsonObject { ["url"] = urls[0], ["weight"] = ConfigWeight(configs, 0) ?? 1.0 };
+                body["modify_image"] = new JsonObject
+                {
+                    ["url"] = urls[0],
+                    ["weight"] = ConfigWeight(configs, 0) ?? 1.0,
+                };
                 break;
             default:
-                throw new Operations.InvalidArgumentException("providerOptions.luma.referenceType", referenceType, "must be image, style, character, or modify_image.");
+                throw new Operations.InvalidArgumentException(
+                    "providerOptions.luma.referenceType",
+                    referenceType,
+                    "must be image, style, character, or modify_image."
+                );
         }
     }
 
-    private static JsonArray WeightedUrls(List<string> urls, List<JsonElement> configs, double defaultWeight)
+    private static JsonArray WeightedUrls(
+        List<string> urls,
+        List<JsonElement> configs,
+        double defaultWeight
+    )
     {
         var array = new JsonArray();
         for (var i = 0; i < urls.Count; i++)
         {
-            array.Add(new JsonObject { ["url"] = urls[i], ["weight"] = ConfigWeight(configs, i) ?? defaultWeight });
+            array.Add(
+                new JsonObject
+                {
+                    ["url"] = urls[i],
+                    ["weight"] = ConfigWeight(configs, i) ?? defaultWeight,
+                }
+            );
         }
 
         return array;
@@ -343,14 +493,27 @@ public sealed class LumaImageModel : IImageModel
 
     private static double? ConfigWeight(List<JsonElement> configs, int index)
     {
-        if (index >= configs.Count || configs[index].ValueKind != JsonValueKind.Object || !configs[index].TryGetProperty("weight", out var weight) || weight.ValueKind == JsonValueKind.Null)
+        if (
+            index >= configs.Count
+            || configs[index].ValueKind != JsonValueKind.Object
+            || !configs[index].TryGetProperty("weight", out var weight)
+            || weight.ValueKind == JsonValueKind.Null
+        )
         {
             return null;
         }
 
-        if (weight.ValueKind != JsonValueKind.Number || weight.GetDouble() < 0 || weight.GetDouble() > 1)
+        if (
+            weight.ValueKind != JsonValueKind.Number
+            || weight.GetDouble() < 0
+            || weight.GetDouble() > 1
+        )
         {
-            throw new Operations.InvalidArgumentException("providerOptions.luma.images", weight.GetRawText(), "weight must be a number from 0 to 1.");
+            throw new Operations.InvalidArgumentException(
+                "providerOptions.luma.images",
+                weight.GetRawText(),
+                "weight must be a number from 0 to 1."
+            );
         }
 
         return weight.GetDouble();
@@ -358,7 +521,11 @@ public sealed class LumaImageModel : IImageModel
 
     private static string? ConfigString(List<JsonElement> configs, int index, string name)
     {
-        return index < configs.Count && configs[index].ValueKind == JsonValueKind.Object && configs[index].TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+        return
+            index < configs.Count
+            && configs[index].ValueKind == JsonValueKind.Object
+            && configs[index].TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.String
             ? value.GetString()
             : null;
     }
@@ -372,7 +539,11 @@ public sealed class LumaImageModel : IImageModel
 
         if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt32(out var number))
         {
-            throw new Operations.InvalidArgumentException("providerOptions.luma." + name, value.GetRawText(), "must be an integer.");
+            throw new Operations.InvalidArgumentException(
+                "providerOptions.luma." + name,
+                value.GetRawText(),
+                "must be an integer."
+            );
         }
 
         return number;
@@ -380,6 +551,9 @@ public sealed class LumaImageModel : IImageModel
 
     private Uri GenerationsUri(string path)
     {
-        return ApiKeys.Combine(_provider.Options.BaseUrl, "/dream-machine/v1/generations/" + PathSegments.Encode(path));
+        return ApiKeys.Combine(
+            _provider.Options.BaseUrl,
+            "/dream-machine/v1/generations/" + PathSegments.Encode(path)
+        );
     }
 }

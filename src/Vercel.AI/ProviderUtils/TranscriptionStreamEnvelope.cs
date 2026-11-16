@@ -16,9 +16,14 @@ namespace Vercel.AI.ProviderUtils;
 public sealed class TranscriptionStreamStartFrame
 {
     /// <summary>Creates a start frame.</summary>
-    public TranscriptionStreamStartFrame(AudioFormat inputAudioFormat, JsonElement? providerOptions = null, bool? includeRawChunks = null)
+    public TranscriptionStreamStartFrame(
+        AudioFormat inputAudioFormat,
+        JsonElement? providerOptions = null,
+        bool? includeRawChunks = null
+    )
     {
-        InputAudioFormat = inputAudioFormat ?? throw new ArgumentNullException(nameof(inputAudioFormat));
+        InputAudioFormat = inputAudioFormat
+            ?? throw new ArgumentNullException(nameof(inputAudioFormat));
         ProviderOptions = providerOptions;
         IncludeRawChunks = includeRawChunks;
     }
@@ -44,11 +49,7 @@ public sealed class TranscriptionStreamStartFrame
             format["rate"] = rate;
         }
 
-        var frame = new JsonObject
-        {
-            ["type"] = Type,
-            ["inputAudioFormat"] = format,
-        };
+        var frame = new JsonObject { ["type"] = Type, ["inputAudioFormat"] = format };
         if (ProviderOptions is { } options)
         {
             frame["providerOptions"] = JsonNode.Parse(options.GetRawText());
@@ -66,7 +67,11 @@ public sealed class TranscriptionStreamStartFrame
 /// <summary>Server-side classification of a client text frame. Maps to <c>TranscriptionStreamClientFrame</c>.</summary>
 public sealed class TranscriptionStreamClientFrame
 {
-    internal TranscriptionStreamClientFrame(string type, TranscriptionStreamStartFrame? frame = null, string? message = null)
+    internal TranscriptionStreamClientFrame(
+        string type,
+        TranscriptionStreamStartFrame? frame = null,
+        string? message = null
+    )
     {
         Type = type;
         Frame = frame;
@@ -125,23 +130,34 @@ public static class TranscriptionStreamEnvelope
 
         if (frame.ValueKind != JsonValueKind.Object)
         {
-            return new TranscriptionStreamClientFrame("invalid", message: "frame must be a JSON object");
+            return new TranscriptionStreamClientFrame(
+                "invalid",
+                message: "frame must be a JSON object"
+            );
         }
 
         if (!frame.TryGetProperty("type", out var type) || type.ValueKind != JsonValueKind.String)
         {
-            return new TranscriptionStreamClientFrame("invalid", message: "frame type must be a string");
+            return new TranscriptionStreamClientFrame(
+                "invalid",
+                message: "frame type must be a string"
+            );
         }
 
         switch (type.GetString())
         {
             case TranscriptionStreamStartFrameType:
-                if (!frame.TryGetProperty("inputAudioFormat", out var format)
+                if (
+                    !frame.TryGetProperty("inputAudioFormat", out var format)
                     || format.ValueKind != JsonValueKind.Object
                     || !format.TryGetProperty("type", out var formatType)
-                    || formatType.ValueKind != JsonValueKind.String)
+                    || formatType.ValueKind != JsonValueKind.String
+                )
                 {
-                    return new TranscriptionStreamClientFrame("invalid", message: "start frame must have an inputAudioFormat object with a string type");
+                    return new TranscriptionStreamClientFrame(
+                        "invalid",
+                        message: "start frame must have an inputAudioFormat object with a string type"
+                    );
                 }
 
                 double? rate = null;
@@ -149,7 +165,10 @@ public static class TranscriptionStreamEnvelope
                 {
                     if (rateValue.ValueKind != JsonValueKind.Number)
                     {
-                        return new TranscriptionStreamClientFrame("invalid", message: "inputAudioFormat.rate must be a number when present");
+                        return new TranscriptionStreamClientFrame(
+                            "invalid",
+                            message: "inputAudioFormat.rate must be a number when present"
+                        );
                     }
 
                     rate = rateValue.GetDouble();
@@ -160,7 +179,10 @@ public static class TranscriptionStreamEnvelope
                 {
                     if (options.ValueKind != JsonValueKind.Object)
                     {
-                        return new TranscriptionStreamClientFrame("invalid", message: "providerOptions must be an object when present");
+                        return new TranscriptionStreamClientFrame(
+                            "invalid",
+                            message: "providerOptions must be an object when present"
+                        );
                     }
 
                     providerOptions = options;
@@ -171,7 +193,10 @@ public static class TranscriptionStreamEnvelope
                 {
                     if (include.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
                     {
-                        return new TranscriptionStreamClientFrame("invalid", message: "includeRawChunks must be a boolean when present");
+                        return new TranscriptionStreamClientFrame(
+                            "invalid",
+                            message: "includeRawChunks must be a boolean when present"
+                        );
                     }
 
                     includeRawChunks = include.GetBoolean();
@@ -179,7 +204,12 @@ public static class TranscriptionStreamEnvelope
 
                 return new TranscriptionStreamClientFrame(
                     "start",
-                    new TranscriptionStreamStartFrame(new AudioFormat(formatType.GetString()!, rate), providerOptions, includeRawChunks));
+                    new TranscriptionStreamStartFrame(
+                        new AudioFormat(formatType.GetString()!, rate),
+                        providerOptions,
+                        includeRawChunks
+                    )
+                );
             case TranscriptionStreamAudioDoneFrameType:
                 return new TranscriptionStreamClientFrame("audio-done");
             default:
@@ -198,7 +228,11 @@ public static class TranscriptionStreamEnvelope
         switch (part.Type)
         {
             case "stream-start":
-                frame["warnings"] = new JsonArray((part.Warnings ?? Array.Empty<OperationWarning>()).Select(WarningToJson).ToArray());
+                frame["warnings"] = new JsonArray(
+                    (part.Warnings ?? Array.Empty<OperationWarning>())
+                        .Select(WarningToJson)
+                        .ToArray()
+                );
                 break;
             case "transcript-delta":
                 SetIf(frame, "id", part.Id);
@@ -223,9 +257,19 @@ public static class TranscriptionStreamEnvelope
                 break;
             case "finish":
                 frame["text"] = part.Text;
-                frame["segments"] = new JsonArray((part.Segments ?? Array.Empty<TranscriptSegment>())
-                    .Select(segment => (JsonNode)new JsonObject { ["text"] = segment.Text, ["startSecond"] = segment.StartSecond, ["endSecond"] = segment.EndSecond })
-                    .ToArray());
+                frame["segments"] = new JsonArray(
+                    (part.Segments ?? Array.Empty<TranscriptSegment>())
+                        .Select(segment =>
+                            (JsonNode)
+                                new JsonObject
+                                {
+                                    ["text"] = segment.Text,
+                                    ["startSecond"] = segment.StartSecond,
+                                    ["endSecond"] = segment.EndSecond,
+                                }
+                        )
+                        .ToArray()
+                );
                 SetIf(frame, "language", part.Language);
                 SetIf(frame, "durationInSeconds", part.DurationInSeconds);
                 if (part.Usage is { } usage)
@@ -244,7 +288,9 @@ public static class TranscriptionStreamEnvelope
             case "response-metadata":
                 if (part.Timestamp is { } timestamp)
                 {
-                    frame["timestamp"] = timestamp.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
+                    frame["timestamp"] = timestamp
+                        .ToUniversalTime()
+                        .ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
                 }
 
                 SetIf(frame, "modelId", part.ModelId);
@@ -274,7 +320,10 @@ public static class TranscriptionStreamEnvelope
                     // `Error` properties are not serializable as-is, so they travel as { name, message }.
                     frame["error"] = new JsonObject
                     {
-                        ["name"] = part.Error is null || part.Error.GetType() == typeof(Exception) ? "Error" : part.Error.GetType().Name,
+                        ["name"] =
+                            part.Error is null || part.Error.GetType() == typeof(Exception)
+                                ? "Error"
+                                : part.Error.GetType().Name,
                         ["message"] = part.Error?.Message ?? string.Empty,
                     };
                 }
@@ -306,7 +355,11 @@ public static class TranscriptionStreamEnvelope
             return null;
         }
 
-        if (part.ValueKind != JsonValueKind.Object || !part.TryGetProperty("type", out var typeValue) || typeValue.ValueKind != JsonValueKind.String)
+        if (
+            part.ValueKind != JsonValueKind.Object
+            || !part.TryGetProperty("type", out var typeValue)
+            || typeValue.ValueKind != JsonValueKind.String
+        )
         {
             return null;
         }
@@ -315,47 +368,68 @@ public static class TranscriptionStreamEnvelope
         switch (type)
         {
             case "stream-start":
-                {
-                    if (!part.TryGetProperty("warnings", out var warnings) || warnings.ValueKind != JsonValueKind.Array)
-                    {
-                        return null;
-                    }
-
-                    var result = new List<OperationWarning>();
-                    foreach (var warning in warnings.EnumerateArray())
-                    {
-                        if (warning.ValueKind != JsonValueKind.Object || GetString(warning, "type") is not { } warningType)
-                        {
-                            return null;
-                        }
-
-                        result.Add(new OperationWarning(
-                            warningType,
-                            message: GetString(warning, "message"),
-                            feature: GetString(warning, "feature"),
-                            details: GetString(warning, "details"),
-                            setting: GetString(warning, "setting")));
-                    }
-
-                    return new ModelStreamPart { Type = type, Warnings = result };
-                }
-
-            case "transcript-delta":
-                if (GetString(part, "delta") is not { } delta
-                    || !IsOptional(part, "id", JsonValueKind.String)
-                    || !IsOptional(part, "providerMetadata", JsonValueKind.Object))
+            {
+                if (
+                    !part.TryGetProperty("warnings", out var warnings)
+                    || warnings.ValueKind != JsonValueKind.Array
+                )
                 {
                     return null;
                 }
 
-                return WithMetadata(new ModelStreamPart { Type = type, Delta = delta, Id = GetString(part, "id") }, part);
+                var result = new List<OperationWarning>();
+                foreach (var warning in warnings.EnumerateArray())
+                {
+                    if (
+                        warning.ValueKind != JsonValueKind.Object
+                        || GetString(warning, "type") is not { } warningType
+                    )
+                    {
+                        return null;
+                    }
+
+                    result.Add(
+                        new OperationWarning(
+                            warningType,
+                            message: GetString(warning, "message"),
+                            feature: GetString(warning, "feature"),
+                            details: GetString(warning, "details"),
+                            setting: GetString(warning, "setting")
+                        )
+                    );
+                }
+
+                return new ModelStreamPart { Type = type, Warnings = result };
+            }
+
+            case "transcript-delta":
+                if (
+                    GetString(part, "delta") is not { } delta
+                    || !IsOptional(part, "id", JsonValueKind.String)
+                    || !IsOptional(part, "providerMetadata", JsonValueKind.Object)
+                )
+                {
+                    return null;
+                }
+
+                return WithMetadata(
+                    new ModelStreamPart
+                    {
+                        Type = type,
+                        Delta = delta,
+                        Id = GetString(part, "id"),
+                    },
+                    part
+                );
             case "transcript-partial":
-                if (GetString(part, "text") is not { } partialText
+                if (
+                    GetString(part, "text") is not { } partialText
                     || !IsOptional(part, "id", JsonValueKind.String)
                     || !IsOptional(part, "startSecond", JsonValueKind.Number)
                     || !IsOptional(part, "durationInSeconds", JsonValueKind.Number)
                     || !IsOptional(part, "channelIndex", JsonValueKind.Number)
-                    || !IsOptional(part, "providerMetadata", JsonValueKind.Object))
+                    || !IsOptional(part, "providerMetadata", JsonValueKind.Object)
+                )
                 {
                     return null;
                 }
@@ -370,14 +444,17 @@ public static class TranscriptionStreamEnvelope
                         DurationInSeconds = GetNumber(part, "durationInSeconds"),
                         ChannelIndex = GetInt(part, "channelIndex"),
                     },
-                    part);
+                    part
+                );
             case "transcript-final":
-                if (GetString(part, "text") is not { } finalText
+                if (
+                    GetString(part, "text") is not { } finalText
                     || !IsOptional(part, "id", JsonValueKind.String)
                     || !IsOptional(part, "startSecond", JsonValueKind.Number)
                     || !IsOptional(part, "endSecond", JsonValueKind.Number)
                     || !IsOptional(part, "channelIndex", JsonValueKind.Number)
-                    || !IsOptional(part, "providerMetadata", JsonValueKind.Object))
+                    || !IsOptional(part, "providerMetadata", JsonValueKind.Object)
+                )
                 {
                     return null;
                 }
@@ -392,103 +469,143 @@ public static class TranscriptionStreamEnvelope
                         EndSecond = GetNumber(part, "endSecond"),
                         ChannelIndex = GetInt(part, "channelIndex"),
                     },
-                    part);
+                    part
+                );
             case "finish":
+            {
+                if (
+                    GetString(part, "text") is not { } text2
+                    || !part.TryGetProperty("segments", out var segments)
+                    || segments.ValueKind != JsonValueKind.Array
+                    || !IsOptional(part, "language", JsonValueKind.String)
+                    || !IsOptional(part, "durationInSeconds", JsonValueKind.Number)
+                    || !IsOptional(part, "usage", JsonValueKind.Object)
+                    || !IsOptional(part, "providerMetadata", JsonValueKind.Object)
+                )
                 {
-                    if (GetString(part, "text") is not { } text2
-                        || !part.TryGetProperty("segments", out var segments)
-                        || segments.ValueKind != JsonValueKind.Array
-                        || !IsOptional(part, "language", JsonValueKind.String)
-                        || !IsOptional(part, "durationInSeconds", JsonValueKind.Number)
-                        || !IsOptional(part, "usage", JsonValueKind.Object)
-                        || !IsOptional(part, "providerMetadata", JsonValueKind.Object))
+                    return null;
+                }
+
+                var parsed = new List<TranscriptSegment>();
+                foreach (var segment in segments.EnumerateArray())
+                {
+                    if (
+                        segment.ValueKind != JsonValueKind.Object
+                        || GetString(segment, "text") is not { } segmentText
+                        || GetNumber(segment, "startSecond") is not { } start
+                        || GetNumber(segment, "endSecond") is not { } end
+                    )
                     {
                         return null;
                     }
 
-                    var parsed = new List<TranscriptSegment>();
-                    foreach (var segment in segments.EnumerateArray())
-                    {
-                        if (segment.ValueKind != JsonValueKind.Object
-                            || GetString(segment, "text") is not { } segmentText
-                            || GetNumber(segment, "startSecond") is not { } start
-                            || GetNumber(segment, "endSecond") is not { } end)
-                        {
-                            return null;
-                        }
-
-                        parsed.Add(new TranscriptSegment(segmentText, start, end));
-                    }
-
-                    OperationUsage? usage = null;
-                    if (part.TryGetProperty("usage", out var usageValue) && usageValue.ValueKind == JsonValueKind.Object)
-                    {
-                        usage = new OperationUsage(
-                            GetInt(usageValue, "inputTokens"),
-                            GetInt(usageValue, "outputTokens"),
-                            GetInt(usageValue, "totalTokens"),
-                            GetNumber(usageValue, "tokens"),
-                            GetNumber(usageValue, "seconds"));
-                    }
-
-                    return WithMetadata(
-                        new ModelStreamPart
-                        {
-                            Type = type,
-                            Text = text2,
-                            Segments = parsed,
-                            Language = GetString(part, "language"),
-                            DurationInSeconds = GetNumber(part, "durationInSeconds"),
-                            Usage = usage,
-                        },
-                        part);
+                    parsed.Add(new TranscriptSegment(segmentText, start, end));
                 }
+
+                OperationUsage? usage = null;
+                if (
+                    part.TryGetProperty("usage", out var usageValue)
+                    && usageValue.ValueKind == JsonValueKind.Object
+                )
+                {
+                    usage = new OperationUsage(
+                        GetInt(usageValue, "inputTokens"),
+                        GetInt(usageValue, "outputTokens"),
+                        GetInt(usageValue, "totalTokens"),
+                        GetNumber(usageValue, "tokens"),
+                        GetNumber(usageValue, "seconds")
+                    );
+                }
+
+                return WithMetadata(
+                    new ModelStreamPart
+                    {
+                        Type = type,
+                        Text = text2,
+                        Segments = parsed,
+                        Language = GetString(part, "language"),
+                        DurationInSeconds = GetNumber(part, "durationInSeconds"),
+                        Usage = usage,
+                    },
+                    part
+                );
+            }
 
             case "response-metadata":
+            {
+                if (
+                    !IsOptional(part, "modelId", JsonValueKind.String)
+                    || !IsOptional(part, "headers", JsonValueKind.Object)
+                )
                 {
-                    if (!IsOptional(part, "modelId", JsonValueKind.String) || !IsOptional(part, "headers", JsonValueKind.Object))
+                    return null;
+                }
+
+                var result = new ModelStreamPart
+                {
+                    Type = type,
+                    ModelId = GetString(part, "modelId"),
+                };
+                if (
+                    part.TryGetProperty("headers", out var headers)
+                    && headers.ValueKind == JsonValueKind.Object
+                )
+                {
+                    var map = new Dictionary<string, string>();
+                    foreach (var header in headers.EnumerateObject())
+                    {
+                        map[header.Name] =
+                            header.Value.ValueKind == JsonValueKind.String
+                                ? header.Value.GetString()!
+                                : header.Value.GetRawText();
+                    }
+
+                    result.Headers = map;
+                }
+
+                // Envelope rule 4: timestamps ride as ISO 8601 strings.
+                if (
+                    part.TryGetProperty("timestamp", out var timestamp)
+                    && timestamp.ValueKind != JsonValueKind.Null
+                )
+                {
+                    if (
+                        timestamp.ValueKind != JsonValueKind.String
+                        || !DateTimeOffset.TryParse(
+                            timestamp.GetString(),
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.AssumeUniversal,
+                            out var revived
+                        )
+                    )
                     {
                         return null;
                     }
 
-                    var result = new ModelStreamPart { Type = type, ModelId = GetString(part, "modelId") };
-                    if (part.TryGetProperty("headers", out var headers) && headers.ValueKind == JsonValueKind.Object)
-                    {
-                        var map = new Dictionary<string, string>();
-                        foreach (var header in headers.EnumerateObject())
-                        {
-                            map[header.Name] = header.Value.ValueKind == JsonValueKind.String ? header.Value.GetString()! : header.Value.GetRawText();
-                        }
-
-                        result.Headers = map;
-                    }
-
-                    // Envelope rule 4: timestamps ride as ISO 8601 strings.
-                    if (part.TryGetProperty("timestamp", out var timestamp) && timestamp.ValueKind != JsonValueKind.Null)
-                    {
-                        if (timestamp.ValueKind != JsonValueKind.String
-                            || !DateTimeOffset.TryParse(timestamp.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var revived))
-                        {
-                            return null;
-                        }
-
-                        result.Timestamp = revived.UtcDateTime;
-                    }
-
-                    return result;
+                    result.Timestamp = revived.UtcDateTime;
                 }
+
+                return result;
+            }
 
             case "raw":
-                return part.TryGetProperty("rawValue", out var rawValue) ? new ModelStreamPart { Type = type, Raw = rawValue.Clone() } : null;
+                return part.TryGetProperty("rawValue", out var rawValue)
+                    ? new ModelStreamPart { Type = type, Raw = rawValue.Clone() }
+                    : null;
             case "error":
+            {
+                if (!part.TryGetProperty("error", out var error))
                 {
-                    if (!part.TryGetProperty("error", out var error))
-                    {
-                        return null;
-                    }
-
-                    return new ModelStreamPart { Type = type, ErrorValue = error.Clone(), Error = new AiSdkException(DescribeError(error)) };
+                    return null;
                 }
+
+                return new ModelStreamPart
+                {
+                    Type = type,
+                    ErrorValue = error.Clone(),
+                    Error = new AiSdkException(DescribeError(error)),
+                };
+            }
 
             default:
                 return null;
@@ -507,7 +624,10 @@ public static class TranscriptionStreamEnvelope
 
     private static ModelStreamPart WithMetadata(ModelStreamPart result, JsonElement part)
     {
-        if (part.TryGetProperty("providerMetadata", out var metadata) && metadata.ValueKind == JsonValueKind.Object)
+        if (
+            part.TryGetProperty("providerMetadata", out var metadata)
+            && metadata.ValueKind == JsonValueKind.Object
+        )
         {
             result.ProviderMetadata = metadata.Clone();
         }
@@ -517,25 +637,38 @@ public static class TranscriptionStreamEnvelope
 
     private static string? GetString(JsonElement value, string name)
     {
-        return value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.String ? property.GetString() : null;
+        return
+            value.TryGetProperty(name, out var property)
+            && property.ValueKind == JsonValueKind.String
+            ? property.GetString()
+            : null;
     }
 
     private static double? GetNumber(JsonElement value, string name)
     {
-        return value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.Number ? property.GetDouble() : null;
+        return
+            value.TryGetProperty(name, out var property)
+            && property.ValueKind == JsonValueKind.Number
+            ? property.GetDouble()
+            : null;
     }
 
     // A number that is not a 32-bit integer is dropped rather than wrapped or truncated.
     private static int? GetInt(JsonElement value, string name)
     {
-        if (!value.TryGetProperty(name, out var property) || property.ValueKind != JsonValueKind.Number)
+        if (
+            !value.TryGetProperty(name, out var property)
+            || property.ValueKind != JsonValueKind.Number
+        )
         {
             return null;
         }
 
         // Integer-valued numbers written as 1.0 or 3e0 count; fractional and out-of-range values do not.
         var number = property.GetDouble();
-        return number == Math.Floor(number) && number >= int.MinValue && number <= int.MaxValue ? (int)number : null;
+        return number == Math.Floor(number) && number >= int.MinValue && number <= int.MaxValue
+            ? (int)number
+            : null;
     }
 
     // An absent property is valid. Upstream treats `undefined` as absent, and JSON has no `undefined`, so null counts as mistyped.

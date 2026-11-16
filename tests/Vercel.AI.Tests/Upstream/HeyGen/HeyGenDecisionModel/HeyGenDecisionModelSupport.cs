@@ -39,15 +39,29 @@ internal static class HeyGenDecisionModelSupport
 
     internal static DecisionQuestion Team()
     {
-        return Q("choice", "Which team should handle this request?", new Dictionary<string, object?> { ["video"] = "Rendering", ["account"] = "Access", ["billing"] = "Payments" });
+        return Q(
+            "choice",
+            "Which team should handle this request?",
+            new Dictionary<string, object?>
+            {
+                ["video"] = "Rendering",
+                ["account"] = "Access",
+                ["billing"] = "Payments",
+            }
+        );
     }
 
     internal static DecisionQuestion Impact()
     {
-        return Q("score", "How much does this affect the customer?", new List<object?> { "Cosmetic", "Slower", "Blocked" });
+        return Q(
+            "score",
+            "How much does this affect the customer?",
+            new List<object?> { "Cosmetic", "Slower", "Blocked" }
+        );
     }
 
-    internal static IReadOnlyList<DecisionModelStatePart> DefaultState { get; } = [new DecisionModelTextPart("Video export fails for everyone.")];
+    internal static IReadOnlyList<DecisionModelStatePart> DefaultState { get; } =
+    [new DecisionModelTextPart("Video export fails for everyone.")];
 
     /// <summary>The upstream <c>options</c> plus overrides.</summary>
     internal static DecisionModelCall Call(
@@ -56,48 +70,88 @@ internal static class HeyGenDecisionModelSupport
         string providerOptions = "{}",
         IReadOnlyDictionary<string, string>? headers = null,
         double? maxOutputTokens = null,
-        string? reasoning = null)
+        string? reasoning = null
+    )
     {
         using var document = JsonDocument.Parse(providerOptions);
-        return new DecisionModelCall(state ?? DefaultState, questions ?? Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), CancellationToken.None, maxOutputTokens, reasoning);
+        return new DecisionModelCall(
+            state ?? DefaultState,
+            questions ?? Questions(),
+            document.RootElement.Clone(),
+            headers ?? new Dictionary<string, string>(),
+            CancellationToken.None,
+            maxOutputTokens,
+            reasoning
+        );
     }
 
     /// <summary>The upstream <c>setup</c>.</summary>
-    internal static (HeyGenProviderType Provider, DecisionHeyGenModel Model, OpenAICapture Capture) Setup(JsonNode? body = null, HttpStatusCode status = HttpStatusCode.OK)
+    internal static (
+        HeyGenProviderType Provider,
+        DecisionHeyGenModel Model,
+        OpenAICapture Capture
+    ) Setup(JsonNode? body = null, HttpStatusCode status = HttpStatusCode.OK)
     {
-        var capture = new OpenAICapture { ResponseJson = (body ?? Fixture()).ToJsonString(), Status = status };
+        var capture = new OpenAICapture
+        {
+            ResponseJson = (body ?? Fixture()).ToJsonString(),
+            Status = status,
+        };
         capture.ResponseHeaders["x-trace"] = "trace-1";
-        var options = new OpenAICompatibleOptions { ApiKey = "test-key", BaseUrl = "https://example.com/" };
+        var options = new OpenAICompatibleOptions
+        {
+            ApiKey = "test-key",
+            BaseUrl = "https://example.com/",
+        };
         options.Headers["x-provider"] = "custom";
         options.Headers["shared"] = "provider";
         var provider = HeyGenProviderType.Create(options, capture);
         return (provider, provider.DecisionModel("heygen-decision-1"), capture);
     }
 
-    internal static JsonObject RequestBody(OpenAICapture capture) => (JsonObject)JsonNode.Parse(capture.Body)!;
+    internal static JsonObject RequestBody(OpenAICapture capture) =>
+        (JsonObject)JsonNode.Parse(capture.Body)!;
 
     internal static DecisionModelFilePart Data(string mediaType, byte[] bytes)
     {
-        return new DecisionModelFilePart(mediaType, new LanguageModelFilePart("data", mediaType) { Bytes = bytes });
+        return new DecisionModelFilePart(
+            mediaType,
+            new LanguageModelFilePart("data", mediaType) { Bytes = bytes }
+        );
     }
 
     internal static DecisionModelFilePart Base64(string mediaType, string base64)
     {
-        return new DecisionModelFilePart(mediaType, new LanguageModelFilePart("data", mediaType) { Base64 = base64 });
+        return new DecisionModelFilePart(
+            mediaType,
+            new LanguageModelFilePart("data", mediaType) { Base64 = base64 }
+        );
     }
 
     internal static DecisionModelFilePart Url(string mediaType, string url)
     {
-        return new DecisionModelFilePart(mediaType, new LanguageModelFilePart("url", mediaType) { Url = new Uri(url) });
+        return new DecisionModelFilePart(
+            mediaType,
+            new LanguageModelFilePart("url", mediaType) { Url = new Uri(url) }
+        );
     }
 
     internal static DecisionModelFilePart Reference(string mediaType, string provider, string id)
     {
-        return new DecisionModelFilePart(mediaType, new LanguageModelFilePart("reference", mediaType) { Reference = new Dictionary<string, string> { [provider] = id } });
+        return new DecisionModelFilePart(
+            mediaType,
+            new LanguageModelFilePart("reference", mediaType)
+            {
+                Reference = new Dictionary<string, string> { [provider] = id },
+            }
+        );
     }
 
     internal static DecisionModelFilePart InlineText(string mediaType, string text)
     {
-        return new DecisionModelFilePart(mediaType, new LanguageModelFilePart("text", mediaType) { Text = text });
+        return new DecisionModelFilePart(
+            mediaType,
+            new LanguageModelFilePart("text", mediaType) { Text = text }
+        );
     }
 }

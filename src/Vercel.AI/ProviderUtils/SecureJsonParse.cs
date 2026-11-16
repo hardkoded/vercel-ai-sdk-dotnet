@@ -52,9 +52,11 @@ internal static class SecureJsonParse
                         throw new JsonException("Object contains forbidden prototype property");
                     }
 
-                    if (property.Name == "constructor"
+                    if (
+                        property.Name == "constructor"
                         && property.Value.ValueKind == JsonValueKind.Object
-                        && property.Value.TryGetProperty("prototype", out _))
+                        && property.Value.TryGetProperty("prototype", out _)
+                    )
                     {
                         throw new JsonException("Object contains forbidden prototype property");
                     }

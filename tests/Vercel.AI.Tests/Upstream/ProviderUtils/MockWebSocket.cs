@@ -14,7 +14,11 @@ internal sealed class MockWebSocket : IWebSocketLike
     private readonly List<object> _sent = new List<object>();
     private readonly List<int?> _closes = new List<int?>();
 
-    public MockWebSocket(Uri url, IReadOnlyList<string>? protocols, IReadOnlyDictionary<string, string>? headers)
+    public MockWebSocket(
+        Uri url,
+        IReadOnlyList<string>? protocols,
+        IReadOnlyDictionary<string, string>? headers
+    )
     {
         Url = url;
         Protocols = protocols;
