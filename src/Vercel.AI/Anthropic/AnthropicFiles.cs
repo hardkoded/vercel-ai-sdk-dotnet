@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
@@ -11,7 +13,7 @@ using Vercel.AI.Util;
 namespace Vercel.AI.Anthropic;
 
 /// <summary>Anthropic Files API upload.</summary>
-public sealed class AnthropicFiles : IFileStore
+public sealed class AnthropicFiles : Provider.IFileStore, Operations.IFileStore
 {
     private readonly ProviderHttp _http;
     private readonly Func<string> _baseUrl;
@@ -43,6 +45,53 @@ public sealed class AnthropicFiles : IFileStore
     {
         var result = await UploadAsync(string.IsNullOrEmpty(fileName) ? "blob" : fileName, data, mediaType, null, cancellationToken).ConfigureAwait(false);
         return new UploadedFile(result.Id, result.FileName);
+    }
+
+    /// <summary>
+    /// Uploads tagged inline data. Stream data is rejected with <see cref="UnsupportedFunctionalityException"/> and the stream is cancelled.
+    /// Maps to <c>uploadFile</c> with <c>convertInlineFileDataToUint8Array</c>.
+    /// </summary>
+    public async Task<UploadFileModelResult> UploadFileAsync(UploadFileCall call, CancellationToken cancellationToken)
+    {
+        if (call == null)
+        {
+            throw new ArgumentNullException(nameof(call));
+        }
+
+        byte[] bytes;
+        switch (call.Data.Type)
+        {
+            case "data":
+                bytes = call.Data.Data as byte[] ?? ByteEncoding.FromBase64(call.Data.Data as string ?? string.Empty);
+                break;
+            case "text":
+                bytes = Encoding.UTF8.GetBytes(call.Data.Data as string ?? string.Empty);
+                break;
+            default:
+                var error = new UnsupportedFunctionalityException("streaming file upload", "'streaming file upload' functionality not supported.");
+                (call.Data.Data as UploadStream)?.Cancel(error);
+                throw error;
+        }
+
+        Dictionary<string, string?>? callHeaders = null;
+        if (call.Headers != null)
+        {
+            callHeaders = new Dictionary<string, string?>();
+            foreach (var header in call.Headers)
+            {
+                callHeaders[header.Key] = header.Value;
+            }
+        }
+
+        var result = await UploadAsync(string.IsNullOrEmpty(call.Filename) ? "blob" : call.Filename!, bytes, call.MediaType, null, cancellationToken, callHeaders).ConfigureAwait(false);
+        return new UploadFileModelResult(
+            new ProviderFileReference(result.Id, "anthropic"),
+            result.MediaType,
+            result.FileName,
+            result.ByteSize,
+            result.CreatedAt?.UtcDateTime,
+            result.ExpiresAt?.UtcDateTime,
+            JsonSerializer.SerializeToElement(result.ProviderMetadata));
     }
 
     /// <summary>Uploads a file and returns the parsed Files API body.</summary>
