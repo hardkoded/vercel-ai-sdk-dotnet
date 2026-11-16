@@ -173,6 +173,80 @@ A tool that has no `Execute` is for the caller to run. Its call is streamed as a
 
 Providers that do not send citations leave `Citations` null. A null value does not mean `Sources` is a complete retrieval set.
 
+## Steering
+
+Steering is experimental. It adds a user message to a running loop. Use it when a user sends a correction or a follow-up while the agent is still working. The message is added at the next step boundary, after the current step and its tool calls are done, so running tools are never interrupted.
+
+Create a steering object with `Steering.ExperimentalCreateSteering()`, pass it as `ExperimentalSteering`, and call `SteerAsync` while the loop is running:
+
+```csharp
+var steering = Steering.ExperimentalCreateSteering();
+
+var result = client.StreamTextAsync(new StreamTextOptions
+{
+    Model = model,
+    Tools = [weather],
+    StopWhen = StopWhen.IsStepCount(10),
+    Prompt = "What is the weather in Paris?",
+    ExperimentalSteering = steering,
+});
+
+// e.g. when the user sends another message while the agent is running:
+var outcome = await steering.SteerAsync("I meant Paris, Texas.");
+```
+
+`GenerateTextAsync` takes the same option. `Agent.GenerateAsync` and `Agent.Stream` take it as the `experimentalSteering` parameter. It is not passed to `AgentOptions.PrepareCall`. The port has no `createAgentUIStream`, so there is no steering support for it.
+
+- Messages are added in the order they are sent. Each message is its own user message.
+- If the model finishes its answer while a message is waiting, the loop continues for another step.
+- Stop conditions still apply. `GenerateTextAsync` and `StreamTextAsync` stop after one step by default, so set `StopWhen` to steer them.
+- Messages that are sent before the loop starts are added to the first step.
+- `PrepareStepContext.Messages` already contains the steering messages of the step. `PrepareStepContext.ExperimentalSteeringMessages` lists them.
+- A steering object can only be used for one call. Create a new one with `Steering.ExperimentalCreateSteering()` for each call. A second call with the same object throws `InvalidArgumentError`.
+- A steering object that does not come from `Steering.ExperimentalCreateSteering()` throws `InvalidArgumentError`.
+
+If a `PrepareStep` returns a `Messages` override that is rebuilt from other fields, such as `InitialMessages` and `ResponseMessages`, the steering messages are dropped and `SteerAsync` reports them as not delivered with the reason `RemovedByPrepareStep`. Build overrides from `Messages`, or add the steering messages of every step back in order:
+
+```csharp
+PrepareStep = context => new PrepareStepUpdate
+{
+    Messages =
+    [
+        .. context.InitialMessages,
+        .. context.Steps.SelectMany(step => (step.ExperimentalSteeringMessages ?? []).Cast<ModelMessage>().Concat(step.Response.Messages)),
+        // steering messages for the current step:
+        .. context.ExperimentalSteeringMessages ?? [],
+    ],
+},
+```
+
+### Queueing messages
+
+`SteerAsync` changes what the agent is doing right now. Use `QueueAsync` for a follow-up that should wait until the agent has finished its current task. A queued message is added once the model finishes its current task, i.e. when it gives a final answer without tool calls. The loop then continues with the message, so the agent works through the queue one task at a time:
+
+- Queued messages are added one per task, in the order they are queued.
+- Waiting steering messages are added first. A queued message waits for the next task that finishes.
+- Messages that are queued before the loop starts wait until the model has answered the prompt.
+- A response that is cut off (`FinishReason.Length` or `FinishReason.ContentFilter`) does not finish the task, so the loop ends and the queued message is reported as not delivered.
+- Stop conditions still apply, and a queued message that the loop does not reach is reported as not delivered.
+
+### Handling the outcome
+
+`SteerAsync` and `QueueAsync` return a `Task<SteeringOutcome>` that never faults. It is a `DeliveredSteeringOutcome` (`Id`, `Message`, `StepNumber`) or a `NotDeliveredSteeringOutcome` (`Id`, `Message`, `Reason`). `SteeringOutcome.Type` is `delivered` or `not-delivered`. A message is delivered when it is part of the messages that are sent to the model, after `PrepareStep`. `Reason` is a `SteeringNotDeliveredReason`:
+
+- `Finished`: the loop ended before the message could be added.
+- `RemovedByPrepareStep`: `PrepareStep` returned messages without it.
+- `StopCondition`: a stop condition ended the loop.
+- `WaitingForToolResults`: the loop ended to wait for tool results, e.g. a tool approval.
+- `Aborted`: the loop was aborted.
+- `Error`: the loop failed.
+
+Pass `new SteerOptions { Id = id }` to make retries safe. Sending a message again with the same `Id` returns the outcome of the first message.
+
+### Saving and showing steering messages
+
+Steering messages are not part of `ResponseMessages`. Each `StepResult` lists the messages that were added to it in `ExperimentalSteeringMessages`, so you can rebuild the conversation in order. `StreamText` emits a `SteeringMessagePart` before the `StartStepPart` of the step that received the message. `ToUIMessageChunk` converts it to a `steering-message` chunk, `ReadUIMessageStream` shows it as a `SteeringMessageUIPart`, and `ConvertToModelMessages` turns it back into a user message between the steps of the assistant message.
+
 ## Smooth streaming
 
 `SmoothStream.Create(new SmoothStreamOptions { ... })` maps to `smoothStream`. Call the returned function with the tools to get a transform from one full stream to another: `SmoothStream.Create()(tools)(stream, cancellationToken)`. It buffers `TextDeltaPart` and `ReasoningDeltaPart` text and emits it word by word (`SmoothStreamChunking.Word`, the default) or line by line (`SmoothStreamChunking.Line`), waiting `DelayInMs` (default 10, `null` skips the wait) after each chunk. `ChunkingRegex` (a pattern that must not match the empty string) and `ChunkDetector` (a function that returns a non-empty prefix of the buffer, or `null`) chunk the text your way. Any other part flushes the buffered text first and then passes through. A `PingPart` passes through at once and does not flush a partial word. Deltas that carry provider metadata are flushed at the metadata boundary, so each output part keeps the metadata of its source delta. Upstream's `Intl.Segmenter` chunking and its hidden-document delay skip have no counterpart in the port (tracked in a follow-up issue).
