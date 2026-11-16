@@ -59,6 +59,17 @@ public sealed class GatewayTranscriptionModelDoGenerateTests
     }
 
     [Fact]
+    [UpstreamTest(Prefix + "should pass string audio through in request body", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_pass_string_audio_through_in_request_body()
+    {
+        var handler = PrepareJsonResponse();
+
+        await DoGenerate(CreateTestModel(handler), audioBase64: "base64-audio", mediaType: "audio/mpeg");
+
+        Assert.True(Equal("""{"audio":"base64-audio","mediaType":"audio/mpeg"}""", Body(handler)));
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "should warn about shared timestamp granularities without changing the request body", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public async Task Should_warn_about_shared_timestamp_granularities_without_changing_the_request_body()
     {

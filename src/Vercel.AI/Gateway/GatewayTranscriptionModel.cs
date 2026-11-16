@@ -55,7 +55,7 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
         call = call ?? throw new ArgumentNullException(nameof(call));
         var body = new JsonObject
         {
-            ["audio"] = ByteEncoding.ToBase64(call.Audio),
+            ["audio"] = call.AudioBase64 ?? ByteEncoding.ToBase64(call.Audio),
             ["mediaType"] = call.MediaType,
         };
         if (call.ProviderOptions.ValueKind == JsonValueKind.Object)

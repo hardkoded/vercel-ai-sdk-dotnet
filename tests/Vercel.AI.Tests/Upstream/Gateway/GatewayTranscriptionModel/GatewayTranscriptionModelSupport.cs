@@ -34,18 +34,18 @@ internal static class GatewayTranscriptionModelSupport
     public static Task<TranscriptionModelResult> DoGenerate(
         Vercel.AI.Gateway.GatewayTranscriptionModel model,
         byte[]? audio = null,
+        string? audioBase64 = null,
         string mediaType = "audio/wav",
         string? providerOptions = null,
         IReadOnlyList<string>? timestampGranularities = null,
         IReadOnlyDictionary<string, string>? headers = null)
     {
         var options = providerOptions is null ? default : JsonDocument.Parse(providerOptions).RootElement.Clone();
-        return model.DoGenerateAsync(
-            new TranscriptionModelCall(audio ?? Audio, mediaType, options, headers ?? new Dictionary<string, string>(), CancellationToken.None)
-            {
-                TimestampGranularities = timestampGranularities,
-            },
-            CancellationToken.None);
+        var callHeaders = headers ?? new Dictionary<string, string>();
+        var call = audioBase64 is null
+            ? new TranscriptionModelCall(audio ?? Audio, mediaType, options, callHeaders, CancellationToken.None) { TimestampGranularities = timestampGranularities }
+            : new TranscriptionModelCall(audioBase64, mediaType, options, callHeaders, CancellationToken.None) { TimestampGranularities = timestampGranularities };
+        return model.DoGenerateAsync(call, CancellationToken.None);
     }
 
     public static JsonNode? Body(UpstreamRecordingHandler handler) => JsonNode.Parse(handler.Body);
