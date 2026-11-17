@@ -210,7 +210,9 @@ var result = client.StreamTextAsync(new StreamTextOptions
 var outcome = await steering.SteerAsync("I meant Paris, Texas.");
 ```
 
-`GenerateTextAsync` takes the same option. `Agent.GenerateAsync` and `Agent.Stream` take it as the `experimentalSteering` parameter. It is not passed to `AgentOptions.PrepareCall`. The port has no `createAgentUIStream`, so there is no steering support for it.
+`GenerateTextAsync` takes the same option. `Agent.GenerateAsync` and `Agent.Stream` take it as the `experimentalSteering` parameter. It is not passed to `AgentOptions.PrepareCall`.
+
+`UIMessageStreamConverter.CreateAgentUIStreamAsync(new CreateAgentUIStreamOptions { Agent = agent, UIMessages = messages, ExperimentalSteering = steering })` (in `Vercel.AI.AspNetCore`) runs an agent on UI messages and returns the UI message chunks. It validates the messages, converts them, streams the agent, and accepts `ExperimentalSteering`. Steering is only supported by `Agent`. Another `IAgent` makes the call throw `InvalidArgumentException`.
 
 - Messages are added in the order they are sent. Each message is its own user message.
 - If the model finishes its answer while a message is waiting, the loop continues for another step.

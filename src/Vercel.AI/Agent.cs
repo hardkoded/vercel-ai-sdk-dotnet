@@ -10,8 +10,25 @@ using Vercel.AI.Util;
 
 namespace Vercel.AI;
 
-/// <summary>An agent that calls tools until <see cref="StopWhen"/> matches. Maps to <c>Agent</c>.</summary>
-public sealed class Agent
+/// <summary>An agent that streams a reply to model messages. Maps to the <c>Agent</c> interface.</summary>
+public interface IAgent
+{
+    /// <summary>The tools of the agent. Maps to <c>tools</c>.</summary>
+    IReadOnlyList<Tool>? Tools { get; }
+
+    /// <summary>Streams a reply to <paramref name="messages"/>. Maps to <c>stream</c>.</summary>
+    StreamTextResult Stream(
+        IReadOnlyList<ModelMessage> messages,
+        CancellationToken cancellationToken = default,
+        Vercel.AI.Util.AbortSignal? abortSignal = null,
+        TimeoutConfiguration? timeout = null,
+        ISteering? experimentalSteering = null,
+        Func<StepResult, CancellationToken, Task>? onStepEnd = null
+    );
+}
+
+/// <summary>An agent that calls tools until <see cref="StopWhen"/> matches. Maps to <c>ToolLoopAgent</c>.</summary>
+public sealed class Agent : IAgent
 {
     private readonly IAiClient _client;
 
@@ -29,6 +46,9 @@ public sealed class Agent
 
     /// <summary>Agent options.</summary>
     public AgentOptions Options { get; }
+
+    /// <inheritdoc />
+    public IReadOnlyList<Tool>? Tools => Options.Tools;
 
     /// <summary>
     /// Generates a reply to <paramref name="prompt"/>.
@@ -111,14 +131,16 @@ public sealed class Agent
 
     /// <summary>
     /// Streams a reply to <paramref name="messages"/>. System messages in <paramref name="messages"/> are rejected unless
-    /// <see cref="AgentOptions.AllowSystemInMessages"/> is set. Maps to <c>messages</c> of <c>stream</c>.
+    /// <see cref="AgentOptions.AllowSystemInMessages"/> is set. <paramref name="onStepEnd"/> replaces the callback that
+    /// <see cref="AgentOptions.PrepareCall"/> returns for this call. Maps to <c>messages</c> of <c>stream</c>.
     /// </summary>
     public StreamTextResult Stream(
         IReadOnlyList<ModelMessage> messages,
         CancellationToken cancellationToken = default,
         Vercel.AI.Util.AbortSignal? abortSignal = null,
         TimeoutConfiguration? timeout = null,
-        ISteering? experimentalSteering = null
+        ISteering? experimentalSteering = null,
+        Func<StepResult, CancellationToken, Task>? onStepEnd = null
     )
     {
         return Stream(
@@ -126,7 +148,8 @@ public sealed class Agent
             cancellationToken,
             abortSignal,
             timeout,
-            experimentalSteering
+            experimentalSteering,
+            onStepEnd
         );
     }
 
@@ -135,7 +158,8 @@ public sealed class Agent
         CancellationToken cancellationToken,
         Vercel.AI.Util.AbortSignal? abortSignal,
         TimeoutConfiguration? timeout,
-        ISteering? experimentalSteering
+        ISteering? experimentalSteering,
+        Func<StepResult, CancellationToken, Task>? onStepEnd = null
     )
     {
         var prepared = Prepare(call);
@@ -170,7 +194,7 @@ public sealed class Agent
                 ProviderOptions = prepared.ProviderOptions,
                 PrepareStep = prepared.PrepareStep,
                 ExperimentalSteering = experimentalSteering ?? prepared.ExperimentalSteering,
-                OnStepEnd = prepared.OnStepEnd,
+                OnStepEnd = onStepEnd ?? prepared.OnStepEnd,
                 OnFinish = prepared.OnFinish,
                 OnError = prepared.OnError,
                 ToolApproval = prepared.ToolApproval,
@@ -228,7 +252,7 @@ public sealed class AgentOptions
 
     /// <summary>
     /// Whether system messages are allowed in the messages passed to <see cref="Agent.GenerateAsync(IReadOnlyList{ModelMessage}, CancellationToken, TimeoutConfiguration?, ISteering?)"/>
-    /// and <see cref="Agent.Stream(IReadOnlyList{ModelMessage}, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?)"/>.
+    /// and <see cref="Agent.Stream(IReadOnlyList{ModelMessage}, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Func{StepResult, CancellationToken, Task}?)"/>.
     /// Defaults to false, which rejects them with an <see cref="InvalidPromptException"/>. Use <see cref="Instructions"/> for the system prompt instead.
     /// <see cref="PrepareCall"/> can replace it. Maps to <c>allowSystemInMessages</c>.
     /// </summary>
