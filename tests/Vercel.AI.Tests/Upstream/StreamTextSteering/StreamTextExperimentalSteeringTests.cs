@@ -503,7 +503,7 @@ public sealed class StreamTextExperimentalSteeringTests
         var steering = CreateSteering();
         var outcome = steering.SteerAsync("hello");
 
-        Assert.ThrowsAny<Exception>(() =>
+        Assert.Throws<Vercel.AI.Operations.InvalidArgumentException>(() =>
             Client()
                 .StreamTextAsync(
                     new StreamTextOptions
