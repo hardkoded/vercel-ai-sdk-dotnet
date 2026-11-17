@@ -428,9 +428,12 @@ public sealed class MiniMaxVideoModel : IVideoModel, IVideoCaller
             return null;
         }
 
-        return value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number)
+        return
+            value.ValueKind == JsonValueKind.Number
+            && value.TryGetInt32(out var number)
+            && number > 0
             ? number
-            : throw Invalid(name, value, "must be an integer.");
+            : throw Invalid(name, value, "must be a positive integer.");
     }
 
     private static InvalidArgumentException Invalid(string name, JsonElement value, string message)
@@ -896,6 +899,15 @@ public sealed class MiniMaxVideoModel : IVideoModel, IVideoCaller
         double duration = DefaultDurationSeconds;
         if (call.Duration is { } requested)
         {
+            if (double.IsNaN(requested))
+            {
+                throw new InvalidArgumentException(
+                    "duration",
+                    requested,
+                    "must be a number of seconds."
+                );
+            }
+
             duration = requested;
             if (Math.Floor(duration) != duration)
             {
@@ -1009,9 +1021,11 @@ public sealed class MiniMaxVideoModel : IVideoModel, IVideoCaller
             modelId: ModelId
         );
         using var document = JsonDocument.Parse(exchange.Body);
-        var task = document.RootElement.TryGetProperty("task", out var taskElement)
-            ? taskElement
-            : default;
+        var task =
+            document.RootElement.ValueKind == JsonValueKind.Object
+            && document.RootElement.TryGetProperty("task", out var taskElement)
+                ? taskElement
+                : default;
 
         switch (ReadString(task, "status"))
         {
