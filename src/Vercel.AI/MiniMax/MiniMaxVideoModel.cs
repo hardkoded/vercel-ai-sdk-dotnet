@@ -9,6 +9,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.MiniMax;
 
@@ -168,7 +169,8 @@ public sealed class MiniMaxVideoModel : IVideoModel, IVideoCaller
 
             if (stopwatch.ElapsedMilliseconds > pollTimeoutMs)
             {
-                throw new AiSdkException(
+                throw new MiniMaxVideoGenerationException(
+                    "MINIMAX_VIDEO_GENERATION_TIMEOUT",
                     "MiniMax video generation timed out after "
                         + pollTimeoutMs.ToString(CultureInfo.InvariantCulture)
                         + "ms. Task ID: "
@@ -176,16 +178,20 @@ public sealed class MiniMaxVideoModel : IVideoModel, IVideoCaller
                 );
             }
 
-            var result = await GetStatusAsync(operation, call.Headers, cancellationToken)
+            var (result, statusError) = await GetStatusAsync(
+                    operation,
+                    call.Headers,
+                    cancellationToken
+                )
                 .ConfigureAwait(false);
             if (result.Status == "pending")
             {
                 continue;
             }
 
-            if (result.Status == "error")
+            if (statusError != null)
             {
-                throw new AiSdkException(result.Error!);
+                throw statusError;
             }
 
             var references = new JsonArray();
@@ -245,21 +251,25 @@ public sealed class MiniMaxVideoModel : IVideoModel, IVideoCaller
             body["callback_url"] = call.WebhookUrl;
         }
 
+        var createUrl = ApiKeys.Combine(Config.BaseUrl, "/v2/video_generation");
         var exchange = await ProviderExchange
             .SendAsync(
                 Config.HttpClient,
                 HttpMethod.Post,
-                ApiKeys.Combine(Config.BaseUrl, "/v2/video_generation"),
+                createUrl,
                 ProviderExchange.Json(body.ToJsonString()),
                 RequestHeaders(call.Headers),
-                cancellationToken
+                cancellationToken,
+                (status, body) =>
+                    MiniMaxVideoError.FailedResponseHandler(status, body, createUrl.AbsoluteUri)
             )
             .ConfigureAwait(false);
         using var document = JsonDocument.Parse(exchange.Body);
         var taskId = ReadString(document.RootElement, "task_id");
         if (string.IsNullOrEmpty(taskId))
         {
-            throw new AiSdkException(
+            throw new MiniMaxVideoGenerationException(
+                "MINIMAX_VIDEO_GENERATION_ERROR",
                 "No task_id returned from the MiniMax API. Response: " + exchange.Body
             );
         }
@@ -288,7 +298,7 @@ public sealed class MiniMaxVideoModel : IVideoModel, IVideoCaller
             );
         }
 
-        return GetStatusAsync(operation, call.Headers, cancellationToken);
+        return DoStatusCoreAsync(operation, call.Headers, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -986,7 +996,21 @@ public sealed class MiniMaxVideoModel : IVideoModel, IVideoCaller
         );
     }
 
-    private async Task<VideoStatusResult> GetStatusAsync(
+    private async Task<VideoStatusResult> DoStatusCoreAsync(
+        JsonElement operation,
+        IReadOnlyDictionary<string, string> headers,
+        CancellationToken cancellationToken
+    )
+    {
+        var (result, _) = await GetStatusAsync(operation, headers, cancellationToken)
+            .ConfigureAwait(false);
+        return result;
+    }
+
+    private async Task<(
+        VideoStatusResult Result,
+        MiniMaxVideoGenerationException? Error
+    )> GetStatusAsync(
         JsonElement operation,
         IReadOnlyDictionary<string, string> headers,
         CancellationToken cancellationToken
@@ -1002,17 +1026,22 @@ public sealed class MiniMaxVideoModel : IVideoModel, IVideoCaller
         var resolvedInputs = operation.TryGetProperty("resolvedInputs", out var inputs)
             ? JsonNode.Parse(inputs.GetRawText())
             : null;
+        var statusUrl = ApiKeys.Combine(
+            Config.BaseUrl,
+            "/v2/query/video_generation/" + PathSegments.Encode(taskId)
+        );
+        var requestHeaders = RequestHeaders(headers);
         var exchange = await ProviderExchange
-            .SendAsync(
+            .GetResponseUrlAsync(
                 Config.HttpClient,
-                HttpMethod.Get,
-                ApiKeys.Combine(
-                    Config.BaseUrl,
-                    "/v2/query/video_generation/" + PathSegments.Encode(taskId)
-                ),
-                null,
-                RequestHeaders(headers),
-                cancellationToken
+                statusUrl.AbsoluteUri,
+                Config.BaseUrl,
+                Download.ValidateDownloadUrl,
+                requestHeaders,
+                cancellationToken,
+                untrustedHeaders: ProviderExchange.UserAgentOnly(requestHeaders),
+                failedResponseHandler: (status, body) =>
+                    MiniMaxVideoError.FailedResponseHandler(status, body, statusUrl.AbsoluteUri)
             )
             .ConfigureAwait(false);
         var response = new ProviderResponse(
@@ -1037,7 +1066,8 @@ public sealed class MiniMaxVideoModel : IVideoModel, IVideoCaller
                 var url = ReadString(content, "url");
                 if (string.IsNullOrEmpty(url))
                 {
-                    throw new AiSdkException(
+                    throw new MiniMaxVideoGenerationException(
+                        "MINIMAX_VIDEO_GENERATION_ERROR",
                         "MiniMax video generation completed but no video URL was returned. Task ID: "
                             + taskId
                     );
@@ -1072,13 +1102,16 @@ public sealed class MiniMaxVideoModel : IVideoModel, IVideoCaller
                     metadata["usage"] = usageMetadata;
                 }
 
-                return new VideoStatusResult(
-                    "completed",
-                    new[] { new VideoOutput("url", url, mediaType: "video/mp4") },
-                    providerMetadata: OperationJson.Parse(
-                        new JsonObject { ["minimax"] = metadata }.ToJsonString()
+                return (
+                    new VideoStatusResult(
+                        "completed",
+                        new[] { new VideoOutput("url", url, mediaType: "video/mp4") },
+                        providerMetadata: OperationJson.Parse(
+                            new JsonObject { ["minimax"] = metadata }.ToJsonString()
+                        ),
+                        response: response
                     ),
-                    response: response
+                    null
                 );
             }
 
@@ -1096,35 +1129,47 @@ public sealed class MiniMaxVideoModel : IVideoModel, IVideoCaller
                             ? codeElement.GetString()
                             : codeElement.GetRawText()
                         : null;
-                return new VideoStatusResult(
-                    "error",
-                    error: "MiniMax video generation failed"
+                return Failure(
+                    "MINIMAX_VIDEO_GENERATION_FAILED",
+                    "MiniMax video generation failed"
                         + (string.IsNullOrEmpty(message) ? string.Empty : ": " + message)
                         + (code != null ? " (" + code + ")" : string.Empty)
                         + ". Task ID: "
                         + taskId,
-                    response: response
+                    response
                 );
             }
 
             case "cancelled":
-                return new VideoStatusResult(
-                    "error",
-                    error: "MiniMax video generation was cancelled. Task ID: " + taskId,
-                    response: response
+                return Failure(
+                    "MINIMAX_VIDEO_GENERATION_CANCELLED",
+                    "MiniMax video generation was cancelled. Task ID: " + taskId,
+                    response
                 );
 
             case "expired":
-                return new VideoStatusResult(
-                    "error",
-                    error: "MiniMax video generation request expired. Task ID: " + taskId,
-                    response: response
+                return Failure(
+                    "MINIMAX_VIDEO_GENERATION_EXPIRED",
+                    "MiniMax video generation request expired. Task ID: " + taskId,
+                    response
                 );
 
             // queued, running, and unknown statuses keep polling.
             default:
-                return new VideoStatusResult("pending", response: response);
+                return (new VideoStatusResult("pending", response: response), null);
         }
+    }
+
+    private static (VideoStatusResult Result, MiniMaxVideoGenerationException? Error) Failure(
+        string name,
+        string message,
+        ProviderResponse response
+    )
+    {
+        return (
+            new VideoStatusResult("error", error: message, response: response),
+            new MiniMaxVideoGenerationException(name, message)
+        );
     }
 
     private static void CopyNumber(JsonElement source, string name, JsonObject target, string field)

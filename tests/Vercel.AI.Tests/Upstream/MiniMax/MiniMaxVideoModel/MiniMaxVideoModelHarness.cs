@@ -49,18 +49,62 @@ internal static class MiniMaxVideoModelHarness
         );
     }
 
+    /// <summary>A non-terminal status body, used to force another poll iteration (<c>pendingStatusResponse</c>).</summary>
+    public static string PendingStatusResponse(string status)
+    {
+        return "{\"task\":{\"id\":\"task-123\",\"status\":\"" + status + "\"}}";
+    }
+
+    /// <summary>The MiniMax error envelope (<c>errorEnvelope</c>).</summary>
+    public static string ErrorEnvelope(string message, int httpCode)
+    {
+        return JsonSerializer.Serialize(
+            new
+            {
+                type = "error",
+                error = new
+                {
+                    type = "invalid_request_error",
+                    message,
+                    http_code = httpCode,
+                },
+                request_id = "req-err-001",
+            }
+        );
+    }
+
+    /// <summary>A response of the test server's <c>type: 'error'</c>.</summary>
+    public static System.Net.Http.HttpResponseMessage ErrorResponse(int status, string body)
+    {
+        return new System.Net.Http.HttpResponseMessage((System.Net.HttpStatusCode)status)
+        {
+            Content = new System.Net.Http.StringContent(body),
+        };
+    }
+
+    /// <summary>The operation of the <c>doStart / doStatus</c> describe.</summary>
+    public static JsonElement StatusOperation(string taskId = TaskId)
+    {
+        return OperationJson.Parse(
+            "{\"taskId\":"
+                + JsonSerializer.Serialize(taskId)
+                + ",\"resolvedInputs\":{\"imageCount\":0,\"referenceVideoIndices\":[]}}"
+        );
+    }
+
     /// <summary>Maps to <c>createModel</c>.</summary>
     public static Model CreateModel(
         ParityHandler handler,
         string modelId = "MiniMax-H3",
-        Func<DateTime>? currentDate = null
+        Func<DateTime>? currentDate = null,
+        string baseUrl = BaseUrl
     )
     {
         return new Model(
             modelId,
             new MiniMaxVideoModelConfig(
                 "minimax.video",
-                BaseUrl,
+                baseUrl,
                 () => new Dictionary<string, string> { ["Authorization"] = "Bearer test-key" },
                 new HttpClient(handler),
                 currentDate
