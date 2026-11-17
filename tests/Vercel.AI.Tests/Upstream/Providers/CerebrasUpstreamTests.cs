@@ -308,6 +308,44 @@ public sealed class CerebrasUpstreamTests
         Assert.Equal("gpt-oss-120b", model.ModelId);
     }
 
+    [Fact]
+    [UpstreamTest(
+        "packages/cerebras/src/cerebras-chat-language-model.test.ts::doGenerate::exports the constrained Cerebras provider options type",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Exports_the_constrained_Cerebras_provider_options_type()
+    {
+        static string[] Wire<T>(Func<T, CerebrasLanguageModelChatOptions> make)
+            where T : struct, Enum =>
+            [
+                .. Enum.GetValues<T>()
+                    .Select(value =>
+                    {
+                        var options = make(value).ToProviderOptions()["cerebras"];
+                        return options.EnumerateObject().Single().Value.GetString()!;
+                    }),
+            ];
+
+        Assert.Equal(
+            ["auto", "default", "flex", "priority"],
+            Wire<CerebrasServiceTier>(v => new CerebrasLanguageModelChatOptions { ServiceTier = v })
+        );
+        Assert.Equal(
+            ["none", "low", "medium", "high"],
+            Wire<CerebrasReasoningEffort>(v => new CerebrasLanguageModelChatOptions
+            {
+                ReasoningEffort = v,
+            })
+        );
+        Assert.Equal(
+            ["none", "parsed", "text_parsed", "raw", "hidden"],
+            Wire<CerebrasReasoningFormat>(v => new CerebrasLanguageModelChatOptions
+            {
+                ReasoningFormat = v,
+            })
+        );
+    }
+
     private const string SecondStepReasoning =
         "The function returned 2026 as the magic number. Now I need to return this as a JSON object matching the specified schema. The schema requires a \"result\" property of type string. So I should wrap the magic number in a string.";
 
