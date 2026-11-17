@@ -494,6 +494,33 @@ public sealed class StreamTextExperimentalSteeringTests
 
     [Fact]
     [UpstreamTest(
+        Prefix + "should not deliver messages when the arguments are invalid",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
+    public async Task Should_not_deliver_messages_when_the_arguments_are_invalid()
+    {
+        var steering = CreateSteering();
+        var outcome = steering.SteerAsync("hello");
+
+        Assert.Throws<Vercel.AI.Operations.InvalidArgumentException>(() =>
+            Client()
+                .StreamTextAsync(
+                    new StreamTextOptions
+                    {
+                        Model = SteeringTestModel.Stream(() => TextStream("unused")),
+                        Prompt = "hello",
+                        MaxRetries = -1,
+                        ExperimentalSteering = steering,
+                    }
+                )
+        );
+
+        SteeringAssert.NotDelivered(await outcome, SteeringNotDeliveredReason.Error);
+    }
+
+    [Fact]
+    [UpstreamTest(
         Prefix + "should not deliver messages when the prompt is invalid",
         Coverage = UpstreamCoverage.Covered,
         Commit = Commit
