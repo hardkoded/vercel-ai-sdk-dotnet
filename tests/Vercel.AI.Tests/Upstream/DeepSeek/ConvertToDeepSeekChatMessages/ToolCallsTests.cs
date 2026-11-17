@@ -15,7 +15,8 @@ public sealed class ToolCallsTests
     [Fact]
     [UpstreamTest(
         Prefix + "should stringify arguments to tool calls",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Should_stringify_arguments_to_tool_calls()
     {
@@ -41,7 +42,8 @@ public sealed class ToolCallsTests
     [Fact]
     [UpstreamTest(
         Prefix + "should handle text output type in tool results",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Should_handle_text_output_type_in_tool_results()
     {
@@ -68,7 +70,8 @@ public sealed class ToolCallsTests
     [UpstreamTest(
         Prefix
             + "should convert inline, URL, and referenced images in tool results to content parts",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Should_convert_inline_URL_and_referenced_images_in_tool_results_to_content_parts()
     {
@@ -115,7 +118,8 @@ public sealed class ToolCallsTests
     [Fact]
     [UpstreamTest(
         Prefix + "should keep tool result content without images JSON-stringified",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Should_keep_tool_result_content_without_images_JSON_stringified()
     {
@@ -145,7 +149,8 @@ public sealed class ToolCallsTests
     [Fact]
     [UpstreamTest(
         Prefix + "should support reasoning content in tool calls",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Should_support_reasoning_content_in_tool_calls()
     {
@@ -176,7 +181,8 @@ public sealed class ToolCallsTests
     [Fact]
     [UpstreamTest(
         Prefix + "should filter out reasoning content from turns before the last user message",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Should_filter_out_reasoning_content_from_turns_before_the_last_user_message()
     {

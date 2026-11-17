@@ -15,7 +15,8 @@ public sealed class DeepseekV4ThinkingModeTests
     [Fact]
     [UpstreamTest(
         Prefix + "should preserve reasoning_content from prior turns for deepseek-v4",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Should_preserve_reasoning_content_from_prior_turns_for_deepseek_v4()
     {
@@ -48,7 +49,8 @@ public sealed class DeepseekV4ThinkingModeTests
     [Fact]
     [UpstreamTest(
         Prefix + "should preserve reasoning_content from prior turns for the deepseek-flash alias",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Should_preserve_reasoning_content_from_prior_turns_for_the_deepseek_flash_alias()
     {
@@ -74,7 +76,8 @@ public sealed class DeepseekV4ThinkingModeTests
     [UpstreamTest(
         Prefix
             + "should back-fill empty reasoning_content for deepseek-v4 assistant messages with no reasoning part",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Should_back_fill_empty_reasoning_content_for_deepseek_v4_assistant_messages_with_no_reasoning_part()
     {

@@ -16,7 +16,8 @@ public sealed class ConvertToDeepSeekChatMessagesTests
     [InlineData("deepseek-next")]
     [UpstreamTest(
         TestFile + "::preserves prior-turn reasoning and fills absent reasoning for %s",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Preserves_prior_turn_reasoning_and_fills_absent_reasoning_for(string modelId)
     {

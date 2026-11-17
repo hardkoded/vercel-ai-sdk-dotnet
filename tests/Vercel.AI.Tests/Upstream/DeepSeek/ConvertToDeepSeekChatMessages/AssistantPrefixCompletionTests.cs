@@ -24,7 +24,8 @@ public sealed class AssistantPrefixCompletionTests
     [Fact]
     [UpstreamTest(
         Prefix + "should serialize prefix true on the final assistant message",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Should_serialize_prefix_true_on_the_final_assistant_message()
     {
@@ -53,7 +54,8 @@ public sealed class AssistantPrefixCompletionTests
     [Fact]
     [UpstreamTest(
         Prefix + "should reject prefix completion on a non-assistant message",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Should_reject_prefix_completion_on_a_non_assistant_message()
     {
@@ -74,7 +76,8 @@ public sealed class AssistantPrefixCompletionTests
     [Fact]
     [UpstreamTest(
         Prefix + "should reject prefix completion on a non-final assistant message",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Should_reject_prefix_completion_on_a_non_final_assistant_message()
     {
@@ -96,7 +99,8 @@ public sealed class AssistantPrefixCompletionTests
     [Fact]
     [UpstreamTest(
         Prefix + "should reject prefix completion without a beta base URL capability",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Should_reject_prefix_completion_without_a_beta_base_URL_capability()
     {

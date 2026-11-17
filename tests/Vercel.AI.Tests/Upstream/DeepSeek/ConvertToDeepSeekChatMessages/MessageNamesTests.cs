@@ -16,7 +16,8 @@ public sealed class MessageNamesTests
     [Fact]
     [UpstreamTest(
         Prefix + "should serialize names for system, user, and assistant messages",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Should_serialize_names_for_system_user_and_assistant_messages()
     {
@@ -64,7 +65,8 @@ public sealed class MessageNamesTests
     [Fact]
     [UpstreamTest(
         Prefix + "should ignore a name on a tool message with an unsupported warning",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Should_ignore_a_name_on_a_tool_message_with_an_unsupported_warning()
     {
@@ -89,7 +91,11 @@ public sealed class MessageNamesTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should reject a non-string name", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should reject a non-string name",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
+    )]
     public void Should_reject_a_non_string_name()
     {
         var error = Assert.Throws<InvalidArgumentError>(() =>
@@ -110,7 +116,8 @@ public sealed class MessageNamesTests
     [Fact]
     [UpstreamTest(
         Prefix + "should serialize a name from a custom provider options namespace",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Should_serialize_a_name_from_a_custom_provider_options_namespace()
     {

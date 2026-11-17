@@ -17,7 +17,8 @@ public sealed class ToolArgumentAndOutputSerializationResilienceTests
     [Fact]
     [UpstreamTest(
         Prefix + "preserves string tool call arguments without double-stringifying",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Preserves_string_tool_call_arguments_without_double_stringifying()
     {
@@ -41,7 +42,8 @@ public sealed class ToolArgumentAndOutputSerializationResilienceTests
     [InlineData("unparseable")]
     [UpstreamTest(
         Prefix + "preserves malformed argument replay: %s",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Preserves_malformed_argument_replay(string input)
     {
@@ -76,6 +78,7 @@ public sealed class ToolArgumentAndOutputSerializationResilienceTests
     [UpstreamTest(
         Prefix + "preserves reused non-circular objects in tool outputs",
         Coverage = UpstreamCoverage.Partial,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f",
         Note = "The port's tool output is JSON text, so a shared object reference cannot be expressed. The text repeats the object."
     )]
     public void Preserves_reused_non_circular_objects_in_tool_outputs()
