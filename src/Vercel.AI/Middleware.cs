@@ -455,7 +455,8 @@ internal static class MiddlewareResults
             result.ResponseModelId,
             result.ResponseTimestamp,
             result.ResponseHeaders,
-            structuredOutputText
+            structuredOutputText,
+            result.Request
         );
     }
 }

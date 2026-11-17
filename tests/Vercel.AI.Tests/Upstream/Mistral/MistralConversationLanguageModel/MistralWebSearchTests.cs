@@ -49,7 +49,7 @@ public sealed class MistralWebSearchTests
     [UpstreamTest(
         Prefix + "%s forwards provider configuration and call options",
         Coverage = UpstreamCoverage.Partial,
-        Note = "A generate result has no request body, so the request body is only compared for doStream. The abort signal becomes the cancellation token, which is checked through the token the HTTP handler receives."
+        Note = "The abort signal becomes the cancellation token, which is checked through the token the HTTP handler receives."
     )]
     public async Task Forwards_provider_configuration_and_call_options(string method)
     {
@@ -85,6 +85,10 @@ public sealed class MistralWebSearchTests
             );
             Assert.Equal(FinishReason.Stop, result.FinishReason);
             Assert.Null(result.RawFinishReason);
+            AssertJson(
+                capture.Body,
+                result.Request!.Body is { } body ? JsonNode.Parse(body.GetRawText()) : null
+            );
             responseHeaders = result.ResponseHeaders;
         }
         else

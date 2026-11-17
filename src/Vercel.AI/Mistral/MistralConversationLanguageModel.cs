@@ -66,10 +66,11 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
     {
         options ??= new LanguageModelCallOptions();
         var (body, warnings) = GetArgs(options);
+        var requestJson = body.ToJsonString(CompactOptions);
         var response = await _provider
             .PostJsonAsync(
                 ConversationsUri,
-                body.ToJsonString(CompactOptions),
+                requestJson,
                 _provider.CreateHeaders(options.Headers),
                 cancellationToken
             )
@@ -149,7 +150,8 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
             response.Body,
             modelId,
             null,
-            response.Headers
+            response.Headers,
+            request: LanguageModelStreamRequest.FromJson(requestJson)
         );
     }
 
