@@ -290,7 +290,8 @@ public static partial class UIMessageStreamConverter
 
             var messageMetadata = messageMetadataSelector?.Invoke(part);
             var hasMessageMetadata =
-                messageMetadata is { ValueKind: not (JsonValueKind.Null or JsonValueKind.Undefined) };
+                messageMetadata is
+                { ValueKind: not (JsonValueKind.Null or JsonValueKind.Undefined) };
             var chunk = ToUIMessageChunkWithMetadata(part, chunkOptions, messageMetadata);
 
             if (
