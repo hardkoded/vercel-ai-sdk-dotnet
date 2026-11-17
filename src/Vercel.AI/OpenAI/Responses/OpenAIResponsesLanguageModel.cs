@@ -1006,7 +1006,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 // Mirrors openaiResponsesChunkSchema: an invalid chunk (including a non-object value) fails the stream,
                 // an unknown chunk (unknown_chunk) is ignored.
                 var node = JsonNode.Parse(data) as JsonObject;
-                if (node == null || !OpenAIResponsesSchema.IsValidChunk(chunkDocument.RootElement))
+                var typedChunk = OpenAIResponsesSchema.ParseChunk(chunkDocument.RootElement);
+                if (node == null || typedChunk == null)
                 {
                     state.MarkParseError();
                     yield return node != null && IsOpenAIChatCompletionChunk(node)
@@ -1027,7 +1028,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     continue;
                 }
 
-                if (OpenAIResponsesSchema.IsUnknownChunk(chunkDocument.RootElement))
+                if (typedChunk is OpenAIResponsesApi.UnknownChunk)
                 {
                     continue;
                 }

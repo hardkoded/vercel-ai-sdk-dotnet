@@ -999,6 +999,30 @@ internal static class OpenAIResponsesSchema
         bool isResponse
     ) => ((isResponse ? IsValidResponse(value) : IsValidChunk(value)), value);
 
+    /// <summary>
+    /// Validates a response body and reads it into the typed models. Mirrors <c>safeParse(openaiResponsesResponseSchema)</c>.
+    /// Returns <see langword="null"/> when the body is invalid.
+    /// </summary>
+    public static OpenAIResponsesApi.Response? ParseResponse(JsonElement body) =>
+        IsValidResponse(body) ? OpenAIResponsesApi.ReadResponse(body) : null;
+
+    /// <summary>
+    /// Validates a stream event and reads it into the typed models. Mirrors <c>safeParse(openaiResponsesChunkSchema)</c>.
+    /// An unknown chunk reads as <see cref="OpenAIResponsesApi.UnknownChunk"/>. Returns <see langword="null"/> when the event is invalid.
+    /// </summary>
+    public static OpenAIResponsesApi.Chunk? ParseChunk(JsonElement chunk)
+    {
+        if (Chunk(chunk))
+        {
+            return OpenAIResponsesApi.ReadChunk(chunk);
+        }
+
+        // The clone keeps the value usable after the caller disposes the document.
+        return chunk is { ValueKind: JsonValueKind.Object } && !IsModeledChunk(chunk)
+            ? new OpenAIResponsesApi.UnknownChunk(chunk.Clone())
+            : null;
+    }
+
     /// <summary>Checks one stream event: a modeled chunk, or an unknown chunk type that falls back to <c>unknown_chunk</c>.</summary>
     public static bool IsValidChunk(JsonElement chunk) => Chunk(chunk) || IsUnknownChunk(chunk);
 
