@@ -406,8 +406,8 @@ public sealed class DeepSeekChatLanguageModel : ILanguageModel
         if (!supportsPenaltySampling && options.FrequencyPenalty != null)
         {
             warnings.Add(
-                new CallWarning(
-                    "deprecated",
+                CallWarning.Deprecated(
+                    "frequencyPenalty",
                     "frequencyPenalty is deprecated by DeepSeek and has been omitted. Remove frequencyPenalty from the request."
                 )
             );
@@ -416,8 +416,8 @@ public sealed class DeepSeekChatLanguageModel : ILanguageModel
         if (!supportsPenaltySampling && options.PresencePenalty != null)
         {
             warnings.Add(
-                new CallWarning(
-                    "deprecated",
+                CallWarning.Deprecated(
+                    "presencePenalty",
                     "presencePenalty is deprecated by DeepSeek and has been omitted. Remove presencePenalty from the request."
                 )
             );

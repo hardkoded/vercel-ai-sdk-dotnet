@@ -157,8 +157,19 @@ public sealed class CallWarning
         Message = details ?? feature;
     }
 
+    /// <summary>Creates a <c>deprecated</c> warning about a setting. Maps to <c>{ type: 'deprecated', setting, message }</c>.</summary>
+    /// <param name="setting">The deprecated setting.</param>
+    /// <param name="message">Human-readable warning.</param>
+    public static CallWarning Deprecated(string setting, string message)
+    {
+        return new CallWarning("deprecated", message) { Setting = setting };
+    }
+
     /// <summary>Warning category, such as <c>unsupported</c>.</summary>
     public string Type { get; }
+
+    /// <summary>The deprecated setting of a <c>deprecated</c> warning, or <see langword="null"/> for other warnings.</summary>
+    public string? Setting { get; init; }
 
     /// <summary>The feature that is unsupported or used in compatibility mode, or <see langword="null"/> when the provider did not set one.</summary>
     public string? Feature { get; }
