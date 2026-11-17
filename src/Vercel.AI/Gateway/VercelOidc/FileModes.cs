@@ -58,10 +58,13 @@ internal static class FileModes
             SetMode(stagingDir, UserRead | UserWrite | UserExecute);
             temp = Path.Combine(stagingDir, "secret");
             // CreateNew fails if another user created the name first, so a planted file is rejected, never written to.
-            using (new FileStream(temp, FileMode.CreateNew, FileAccess.Write)) { }
-
-            SetMode(temp, mode);
-            File.WriteAllText(temp, content);
+            // The handle stays open through the write, so the file cannot be swapped between the mode change and the write.
+            using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write))
+            {
+                SetMode(temp, mode);
+                using var writer = new StreamWriter(stream);
+                writer.Write(content);
+            }
 #endif
 #if NET
             File.Move(temp, path, overwrite: true);
