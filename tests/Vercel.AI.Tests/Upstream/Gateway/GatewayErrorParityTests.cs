@@ -1180,7 +1180,8 @@ public sealed class GatewayAsErrorTests
     [InlineData("TimeoutError")]
     [UpstreamTest(
         AsErrorPrefix + "caller cancellation::should rethrow a %s DOMException unchanged",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Rethrows_a_cancellation_exception_unchanged(string name)
     {
@@ -1197,7 +1198,8 @@ public sealed class GatewayAsErrorTests
     [InlineData("TimeoutError")]
     [UpstreamTest(
         AsErrorPrefix + "caller cancellation::should rethrow an Error named %s unchanged",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
     )]
     public void Rethrows_a_cancellation_exception_subclass_unchanged(string name)
     {
