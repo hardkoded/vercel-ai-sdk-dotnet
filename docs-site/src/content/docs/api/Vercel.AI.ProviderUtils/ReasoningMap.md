@@ -48,7 +48,7 @@ True for every reasoning value except omitted and `provider-default`. Maps to `i
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ReasoningMap.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ReasoningMap.cs#L56)
 
 <a id="Vercel_AI_ProviderUtils_ReasoningMap_MapReasoningToProviderBudget_"></a>
 <a id="Vercel_AI_ProviderUtils_ReasoningMap_MapReasoningToProviderBudget_System_String_System_Int32_System_Int32_System_Collections_Generic_IList_Vercel_AI_Util_ModelWarning__System_Int32_System_Collections_Generic_IReadOnlyDictionary_System_String_System_Double__"></a>
@@ -76,7 +76,7 @@ Maps a reasoning level to a token budget. Maps to `mapReasoningToProviderBudget`
 
 **Returns:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ReasoningMap.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ReasoningMap.cs#L132)
 
 <a id="Vercel_AI_ProviderUtils_ReasoningMap_MapReasoningToProviderEffort_"></a>
 <a id="Vercel_AI_ProviderUtils_ReasoningMap_MapReasoningToProviderEffort_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Collections_Generic_IList_Vercel_AI_Util_ModelWarning__"></a>
@@ -89,7 +89,8 @@ public static string? MapReasoningToProviderEffort(string reasoning, IReadOnlyDi
 ```
 
 
-Maps a reasoning level through &lt;code class="paramref"&gt;effortMap&lt;/code&gt;. Maps to `mapReasoningToProviderEffort`.
+Maps a reasoning level through &lt;code class="paramref"&gt;effortMap&lt;/code&gt;. An unsupported level maps to the next lower supported
+level, or the next higher one. Maps to `mapReasoningToProviderEffort`.
 
 **Parameters**
 
@@ -101,4 +102,4 @@ Maps a reasoning level through &lt;code class="paramref"&gt;effortMap&lt;/code&g
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ReasoningMap.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ReasoningMap.cs#L65)

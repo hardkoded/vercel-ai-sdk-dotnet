@@ -23,7 +23,7 @@ Server-side classification of a client text frame. Maps to `TranscriptionStreamC
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L68)
 
 ## Properties
 
@@ -42,7 +42,7 @@ The start frame, when [Type](#Vercel_AI_ProviderUtils_TranscriptionStreamClientF
 
 **Value:** [TranscriptionStreamStartFrame](/api/Vercel.AI.ProviderUtils/TranscriptionStreamStartFrame/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L85)
 
 <a id="Vercel_AI_ProviderUtils_TranscriptionStreamClientFrame_Message_"></a>
 <a id="Vercel_AI_ProviderUtils_TranscriptionStreamClientFrame_Message"></a>
@@ -59,7 +59,7 @@ Why the frame is invalid, when [Type](#Vercel_AI_ProviderUtils_TranscriptionStre
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L88)
 
 <a id="Vercel_AI_ProviderUtils_TranscriptionStreamClientFrame_Type_"></a>
 <a id="Vercel_AI_ProviderUtils_TranscriptionStreamClientFrame_Type"></a>
@@ -76,4 +76,4 @@ public string Type { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L82)

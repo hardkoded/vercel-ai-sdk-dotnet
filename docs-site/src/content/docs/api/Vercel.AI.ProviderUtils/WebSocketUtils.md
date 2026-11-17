@@ -23,7 +23,7 @@ WebSocket helpers. Maps to `provider-utils/src/websocket.ts`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/WebSocket.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/WebSocket.cs#L69)
 
 ## Methods
 
@@ -48,7 +48,7 @@ Returns &lt;code class="paramref"&gt;webSocket&lt;/code&gt;, or the [ClientWebSo
 
 **Returns:** [WebSocketFactory](/api/Vercel.AI.ProviderUtils/WebSocketFactory/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/WebSocket.cs#L70)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/WebSocket.cs#L74)
 
 <a id="Vercel_AI_ProviderUtils_WebSocketUtils_ReadWebSocketMessageTextAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_WebSocketUtils_ReadWebSocketMessageTextAsync_System_Object_"></a>
@@ -71,7 +71,7 @@ Reads WebSocket message data as text, handling string and binary payloads.
 
 **Returns:** [Task&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/WebSocket.cs#L103)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/WebSocket.cs#L107)
 
 <a id="Vercel_AI_ProviderUtils_WebSocketUtils_ToWebSocketUrl_"></a>
 <a id="Vercel_AI_ProviderUtils_WebSocketUtils_ToWebSocketUrl_System_String_"></a>
@@ -94,7 +94,7 @@ Converts an http(s) URL to the corresponding ws(s) URL.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/WebSocket.cs#L76)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/WebSocket.cs#L80)
 
 <a id="Vercel_AI_ProviderUtils_WebSocketUtils_ToWebSocketUrl_System_Uri_"></a>
 
@@ -116,7 +116,7 @@ Converts an http(s) URL to the corresponding ws(s) URL.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/WebSocket.cs#L82)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/WebSocket.cs#L86)
 
 <a id="Vercel_AI_ProviderUtils_WebSocketUtils_WaitForWebSocketBufferDrainAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_WebSocketUtils_WaitForWebSocketBufferDrainAsync_Vercel_AI_ProviderUtils_IWebSocketLike_System_Int64_System_Int32_System_Threading_CancellationToken_"></a>
@@ -144,4 +144,4 @@ socket is no longer open or the token is cancelled.
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/WebSocket.cs#L125)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/WebSocket.cs#L131)

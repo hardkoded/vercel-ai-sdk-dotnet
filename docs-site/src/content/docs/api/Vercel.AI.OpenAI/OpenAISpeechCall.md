@@ -23,7 +23,7 @@ Speech synthesis settings.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L13)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L14)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates a speech call.
 | --- | --- | --- |
 | `text` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L16)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L17)
 
 ## Properties
 
@@ -65,7 +65,7 @@ Extra HTTP headers.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L44)
 
 <a id="Vercel_AI_OpenAI_OpenAISpeechCall_Instructions_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISpeechCall_Instructions"></a>
@@ -82,7 +82,7 @@ Speaking instructions.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L32)
 
 <a id="Vercel_AI_OpenAI_OpenAISpeechCall_Language_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISpeechCall_Language"></a>
@@ -99,7 +99,7 @@ Language. OpenAI speech models ignore it.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L38)
 
 <a id="Vercel_AI_OpenAI_OpenAISpeechCall_OutputFormat_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISpeechCall_OutputFormat"></a>
@@ -116,7 +116,7 @@ Audio format. Unsupported values fall back to `mp3`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L35)
 
 <a id="Vercel_AI_OpenAI_OpenAISpeechCall_ProviderOptions_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISpeechCall_ProviderOptions"></a>
@@ -133,7 +133,7 @@ Provider options. `openai.speed` and `openai.instructions` override the call.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L41)
 
 <a id="Vercel_AI_OpenAI_OpenAISpeechCall_Speed_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISpeechCall_Speed"></a>
@@ -150,7 +150,7 @@ Playback speed.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L29)
 
 <a id="Vercel_AI_OpenAI_OpenAISpeechCall_Text_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISpeechCall_Text"></a>
@@ -167,7 +167,7 @@ Text to speak.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L22)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L23)
 
 <a id="Vercel_AI_OpenAI_OpenAISpeechCall_Voice_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISpeechCall_Voice"></a>
@@ -184,4 +184,4 @@ Voice. Defaults to `alloy`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L25)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L26)

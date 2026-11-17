@@ -23,7 +23,7 @@ Environment passed to an MCP stdio child. The caller's dictionary is not modifie
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L767)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L900)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Copies &lt;code class="paramref"&gt;custom&lt;/code&gt; and fills inherited proc
 
 **Returns:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L776)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L927)
 
 <a id="Vercel_AI_Mcp_StdioEnvironment_ValidateCommand_"></a>
 <a id="Vercel_AI_Mcp_StdioEnvironment_ValidateCommand_System_String_System_Collections_Generic_IReadOnlyList_System_String__System_Boolean_"></a>
@@ -72,4 +72,4 @@ Rejects command and argument line breaks on Windows.
 | `arguments` | [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `windows` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L803)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L960)

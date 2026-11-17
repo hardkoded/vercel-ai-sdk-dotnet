@@ -23,9 +23,9 @@ A user content part.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-**Derived:** [FileContentPart](/api/Vercel.AI.Provider/FileContentPart/), [TextContentPart](/api/Vercel.AI.Provider/TextContentPart/)
+**Derived:** [CustomContentPart](/api/Vercel.AI.Provider/CustomContentPart/), [FileContentPart](/api/Vercel.AI.Provider/FileContentPart/), [FileUrlContentPart](/api/Vercel.AI.Provider/FileUrlContentPart/), [ImageUrlContentPart](/api/Vercel.AI.Provider/ImageUrlContentPart/), [TextContentPart](/api/Vercel.AI.Provider/TextContentPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L641)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L760)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a part.
 | --- | --- | --- |
 | `type` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L644)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L763)
 
 ## Properties
 
@@ -67,4 +67,4 @@ Part type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L650)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L769)

@@ -182,7 +182,7 @@ Generates images.
 
 **Returns:** [Task&lt;ImageModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L121)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L151)
 
 <a id="Vercel_AI_Azure_AzureImageModel_DoGenerateAsync_Vercel_AI_Provider_ImageCallOptions_System_Threading_CancellationToken_"></a>
 
@@ -205,7 +205,7 @@ Generates images. Maps to `doGenerate` on an image model.
 
 **Returns:** [Task&lt;ImageGenerationResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L89)
 
 <a id="Vercel_AI_Azure_AzureImageModel_ResolveMaxImagesPerCallAsync_"></a>
 <a id="Vercel_AI_Azure_AzureImageModel_ResolveMaxImagesPerCallAsync_System_Threading_CancellationToken_"></a>
@@ -228,7 +228,7 @@ Resolves a functional per-call limit. The default returns [MaxImagesPerCall](/ap
 
 **Returns:** [Task&lt;int?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L83)
 
 <a id="Vercel_AI_Azure_AzureImageModel_Serialize_"></a>
 <a id="Vercel_AI_Azure_AzureImageModel_Serialize"></a>

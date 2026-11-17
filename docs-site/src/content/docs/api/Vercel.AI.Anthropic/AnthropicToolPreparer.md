@@ -23,18 +23,18 @@ Builds the Anthropic `tools` and `tool_choice` fields.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicTools.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicTools.cs#L72)
 
 ## Methods
 
 <a id="Vercel_AI_Anthropic_AnthropicToolPreparer_Prepare_"></a>
-<a id="Vercel_AI_Anthropic_AnthropicToolPreparer_Prepare_System_Collections_Generic_IReadOnlyList_Vercel_AI_Anthropic_AnthropicToolDefinition__System_String_System_String_System_Nullable_System_Boolean__Vercel_AI_Anthropic_AnthropicCacheControlValidator_System_Boolean_System_Boolean_System_Boolean_System_Boolean_"></a>
+<a id="Vercel_AI_Anthropic_AnthropicToolPreparer_Prepare_System_Collections_Generic_IReadOnlyList_Vercel_AI_Anthropic_AnthropicToolDefinition__System_String_System_String_System_Nullable_System_Boolean__Vercel_AI_Anthropic_AnthropicCacheControlValidator_System_Boolean_System_Boolean_System_Boolean_System_Boolean_System_Boolean_"></a>
 
-### `Prepare(IReadOnlyList<AnthropicToolDefinition>?, string?, string?, bool?, AnthropicCacheControlValidator?, bool, bool, bool, bool)`
+### `Prepare(IReadOnlyList<AnthropicToolDefinition>?, string?, string?, bool?, AnthropicCacheControlValidator?, bool, bool, bool, bool, bool)`
 
 
 ```csharp
-public static AnthropicPreparedTools Prepare(IReadOnlyList<AnthropicToolDefinition>? tools, string? toolChoiceType, string? toolName, bool? disableParallelToolUse, AnthropicCacheControlValidator? cacheControl = null, bool supportsStructuredOutput = false, bool supportsStrictTools = false, bool defaultEagerInputStreaming = false, bool rejectsForcedToolUse = false)
+public static AnthropicPreparedTools Prepare(IReadOnlyList<AnthropicToolDefinition>? tools, string? toolChoiceType, string? toolName, bool? disableParallelToolUse, AnthropicCacheControlValidator? cacheControl = null, bool supportsStructuredOutput = false, bool supportsStrictTools = false, bool defaultEagerInputStreaming = false, bool rejectsForcedToolUse = false, bool hasInlineTools = false)
 ```
 
 
@@ -53,7 +53,8 @@ Prepares tools. An empty list omits both tools and tool choice.
 | `supportsStrictTools` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `defaultEagerInputStreaming` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `rejectsForcedToolUse` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
+| `hasInlineTools` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
 **Returns:** [AnthropicPreparedTools](/api/Vercel.AI.Anthropic/AnthropicPreparedTools/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicTools.cs#L70)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicTools.cs#L75)

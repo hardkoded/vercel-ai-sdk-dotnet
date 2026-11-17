@@ -54,7 +54,7 @@ Creates an Azure Speech model. &lt;code class="paramref"&gt;url&lt;/code&gt; and
 | `headers` | [Func&lt;Dictionary&lt;string, string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 | `currentDate` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechSpeechModel.cs#L73)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechSpeechModel.cs#L82)
 
 ## Properties
 
@@ -73,7 +73,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechSpeechModel.cs#L91)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechSpeechModel.cs#L101)
 
 <a id="Vercel_AI_Azure_AzureSpeechSpeechModel_Provider_"></a>
 <a id="Vercel_AI_Azure_AzureSpeechSpeechModel_Provider"></a>
@@ -90,7 +90,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechSpeechModel.cs#L88)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechSpeechModel.cs#L98)
 
 ## Methods
 
@@ -116,7 +116,7 @@ Synthesizes speech.
 
 **Returns:** [Task&lt;SpeechResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechSpeechModel.cs#L94)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechSpeechModel.cs#L104)
 
 <a id="Vercel_AI_Azure_AzureSpeechSpeechModel_GenerateAsync_"></a>
 <a id="Vercel_AI_Azure_AzureSpeechSpeechModel_GenerateAsync_Vercel_AI_OpenAI_OpenAISpeechCall_Vercel_AI_Azure_AzureSpeechSpeechModelOptions_System_Threading_CancellationToken_"></a>
@@ -141,4 +141,4 @@ Synthesizes speech with SSML. Maps to `doGenerate(options, azureOptions)`.
 
 **Returns:** [Task&lt;OpenAISpeechResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechSpeechModel.cs#L106)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechSpeechModel.cs#L124)

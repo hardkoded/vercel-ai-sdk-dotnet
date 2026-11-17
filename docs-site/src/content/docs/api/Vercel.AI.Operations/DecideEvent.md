@@ -25,7 +25,7 @@ Lifecycle event for decide.
 
 **Derived:** [EvaluateEvent](/api/Vercel.AI.Operations/EvaluateEvent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L228)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L265)
 
 ## Constructors
 
@@ -65,7 +65,7 @@ Creates an event.
 | `maxOutputTokens` | [double?](https://learn.microsoft.com/dotnet/api/system.double) |  |
 | `reasoning` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L231)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L268)
 
 ## Properties
 
@@ -84,7 +84,7 @@ Answers, once the call has finished.
 
 **Value:** [IReadOnlyDictionary&lt;string, DecisionAnswer&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L290)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L346)
 
 <a id="Vercel_AI_Operations_DecideEvent_CallId_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_CallId"></a>
@@ -101,7 +101,7 @@ Call id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L254)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L310)
 
 <a id="Vercel_AI_Operations_DecideEvent_FunctionId_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_FunctionId"></a>
@@ -118,7 +118,7 @@ Present only on telemetry events.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L305)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L361)
 
 <a id="Vercel_AI_Operations_DecideEvent_Headers_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_Headers"></a>
@@ -135,7 +135,7 @@ Caller headers, without the user-agent suffix.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L284)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L340)
 
 <a id="Vercel_AI_Operations_DecideEvent_MaxOutputTokens_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_MaxOutputTokens"></a>
@@ -152,7 +152,7 @@ Maximum output tokens requested for the decision.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L275)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L331)
 
 <a id="Vercel_AI_Operations_DecideEvent_MaxRetries_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_MaxRetries"></a>
@@ -169,7 +169,7 @@ Resolved retry limit.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L281)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L337)
 
 <a id="Vercel_AI_Operations_DecideEvent_ModelId_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_ModelId"></a>
@@ -186,7 +186,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L266)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L322)
 
 <a id="Vercel_AI_Operations_DecideEvent_OperationId_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_OperationId"></a>
@@ -203,7 +203,7 @@ public string OperationId { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L257)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L313)
 
 <a id="Vercel_AI_Operations_DecideEvent_Provider_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_Provider"></a>
@@ -220,7 +220,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L263)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L319)
 
 <a id="Vercel_AI_Operations_DecideEvent_ProviderOptions_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_ProviderOptions"></a>
@@ -237,7 +237,7 @@ Provider options.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L287)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L343)
 
 <a id="Vercel_AI_Operations_DecideEvent_Questions_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_Questions"></a>
@@ -254,7 +254,7 @@ Questions.
 
 **Value:** [IReadOnlyDictionary&lt;string, DecisionQuestion&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L272)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L328)
 
 <a id="Vercel_AI_Operations_DecideEvent_Reasoning_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_Reasoning"></a>
@@ -271,7 +271,7 @@ Reasoning effort requested for the decision.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L278)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L334)
 
 <a id="Vercel_AI_Operations_DecideEvent_RecordInputs_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_RecordInputs"></a>
@@ -288,7 +288,7 @@ Present only on telemetry events.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L299)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L355)
 
 <a id="Vercel_AI_Operations_DecideEvent_RecordOutputs_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_RecordOutputs"></a>
@@ -305,7 +305,7 @@ Present only on telemetry events.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L302)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L358)
 
 <a id="Vercel_AI_Operations_DecideEvent_RuntimeContext_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_RuntimeContext"></a>
@@ -322,7 +322,7 @@ Runtime context. Telemetry receives the filtered copy.
 
 **Value:** [IReadOnlyDictionary&lt;string, object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L260)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L316)
 
 <a id="Vercel_AI_Operations_DecideEvent_State_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_State"></a>
@@ -339,7 +339,7 @@ The public state, as the caller passed it.
 
 **Value:** [DecisionState](/api/Vercel.AI.Operations/DecisionState/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L269)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L325)
 
 <a id="Vercel_AI_Operations_DecideEvent_Usage_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_Usage"></a>
@@ -356,7 +356,7 @@ Usage, once the call has finished.
 
 **Value:** [OperationUsage](/api/Vercel.AI.Operations/OperationUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L293)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L349)
 
 <a id="Vercel_AI_Operations_DecideEvent_Warnings_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_Warnings"></a>
@@ -373,4 +373,4 @@ Warnings, once the call has finished.
 
 **Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L296)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L352)

@@ -31,7 +31,7 @@ A single-consumer stream with an explicit `Cancel`.
 
 **Implements:** [IAsyncEnumerable&lt;T&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L178)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L393)
 
 ## Constructors
 
@@ -55,7 +55,7 @@ Creates a stream.
 | `open` | [Func&lt;IAsyncEnumerator&lt;T&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 | `cancel` | [Action](https://learn.microsoft.com/dotnet/api/system.action) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L184)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L399)
 
 <a id="Vercel_AI_Operations_OperationFullStream_1__ctor_System_Func_System_Threading_CancellationToken_System_Collections_Generic_IAsyncEnumerator__0___System_Action_"></a>
 
@@ -76,7 +76,7 @@ Creates a stream whose enumerator observes the token passed to `CancellationToke
 | `open` | [Func&lt;CancellationToken, IAsyncEnumerator&lt;T&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2) |  |
 | `cancel` | [Action](https://learn.microsoft.com/dotnet/api/system.action) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L190)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L403)
 
 ## Methods
 
@@ -93,7 +93,7 @@ public void Cancel()
 
 Cancels the stream and aborts a pending model call.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L197)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L410)
 
 <a id="Vercel_AI_Operations_OperationFullStream_1_GetAsyncEnumerator_"></a>
 <a id="Vercel_AI_Operations_OperationFullStream_1_GetAsyncEnumerator_System_Threading_CancellationToken_"></a>
@@ -116,4 +116,4 @@ Returns the single enumerator.
 
 **Returns:** [IAsyncEnumerator&lt;T&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerator-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L203)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L416)

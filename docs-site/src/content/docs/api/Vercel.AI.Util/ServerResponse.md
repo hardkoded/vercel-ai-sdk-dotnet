@@ -41,7 +41,7 @@ public ServerResponse()
 
 Creates an empty response.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L21)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L23)
 
 ## Properties
 
@@ -60,7 +60,7 @@ How many times [SimulateDrain()](#Vercel_AI_Util_ServerResponse_SimulateDrain) r
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L48)
 
 <a id="Vercel_AI_Util_ServerResponse_EnableBackpressure_"></a>
 <a id="Vercel_AI_Util_ServerResponse_EnableBackpressure"></a>
@@ -77,7 +77,7 @@ When true, the first write succeeds and later writes return false until [Simulat
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L51)
 
 <a id="Vercel_AI_Util_ServerResponse_Ended_"></a>
 <a id="Vercel_AI_Util_ServerResponse_Ended"></a>
@@ -94,7 +94,7 @@ Whether [End()](#Vercel_AI_Util_ServerResponse_End) has run.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L45)
 
 <a id="Vercel_AI_Util_ServerResponse_Flush_"></a>
 <a id="Vercel_AI_Util_ServerResponse_Flush"></a>
@@ -111,7 +111,7 @@ Called after each successful `Byte%5b%5d)` with this response.
 
 **Value:** [Action&lt;ServerResponse&gt;](https://learn.microsoft.com/dotnet/api/system.action-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L54)
 
 <a id="Vercel_AI_Util_ServerResponse_Headers_"></a>
 <a id="Vercel_AI_Util_ServerResponse_Headers"></a>
@@ -128,7 +128,7 @@ Lowercased headers. Repeated names become a string array.
 
 **Value:** [Dictionary&lt;string, object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L36)
 
 <a id="Vercel_AI_Util_ServerResponse_StatusCode_"></a>
 <a id="Vercel_AI_Util_ServerResponse_StatusCode"></a>
@@ -145,7 +145,7 @@ Status code passed to `String)`.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L30)
 
 <a id="Vercel_AI_Util_ServerResponse_StatusMessage_"></a>
 <a id="Vercel_AI_Util_ServerResponse_StatusMessage"></a>
@@ -162,7 +162,7 @@ Status text passed to `String)`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L33)
 
 <a id="Vercel_AI_Util_ServerResponse_WriteCallCount_"></a>
 <a id="Vercel_AI_Util_ServerResponse_WriteCallCount"></a>
@@ -179,7 +179,7 @@ How many times `Byte%5b%5d)` was called.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L42)
 
 <a id="Vercel_AI_Util_ServerResponse_WrittenChunks_"></a>
 <a id="Vercel_AI_Util_ServerResponse_WrittenChunks"></a>
@@ -196,7 +196,7 @@ Chunks accepted by `Byte%5b%5d)`.
 
 **Value:** [List&lt;byte\[\]&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L39)
 
 ## Methods
 
@@ -213,7 +213,7 @@ public void End()
 
 Marks the response finished.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L161)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L197)
 
 <a id="Vercel_AI_Util_ServerResponse_GetDecodedChunks_"></a>
 <a id="Vercel_AI_Util_ServerResponse_GetDecodedChunks"></a>
@@ -230,7 +230,7 @@ Decodes each written chunk as UTF-8.
 
 **Returns:** [List&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L174)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L210)
 
 <a id="Vercel_AI_Util_ServerResponse_SetHeaders_"></a>
 <a id="Vercel_AI_Util_ServerResponse_SetHeaders_Vercel_AI_Util_HeaderCollection_"></a>
@@ -251,7 +251,7 @@ Stores headers, lowercasing names and grouping duplicates.
 | --- | --- | --- |
 | `headers` | [HeaderCollection](/api/Vercel.AI.Util/HeaderCollection/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L57)
 
 <a id="Vercel_AI_Util_ServerResponse_SimulateDrain_"></a>
 <a id="Vercel_AI_Util_ServerResponse_SimulateDrain"></a>
@@ -266,24 +266,30 @@ public void SimulateDrain()
 
 Releases a write that returned false.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L124)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L126)
 
 <a id="Vercel_AI_Util_ServerResponse_WaitForDrainAsync_"></a>
-<a id="Vercel_AI_Util_ServerResponse_WaitForDrainAsync"></a>
+<a id="Vercel_AI_Util_ServerResponse_WaitForDrainAsync_System_Threading_CancellationToken_"></a>
 
-### WaitForDrainAsync()
+### WaitForDrainAsync(CancellationToken)
 
 
 ```csharp
-public Task WaitForDrainAsync()
+public Task WaitForDrainAsync(CancellationToken cancellationToken = default)
 ```
 
 
 Completes when [SimulateDrain()](#Vercel_AI_Util_ServerResponse_SimulateDrain) runs, or at once when it already ran after the last held write.
 
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L142)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L144)
 
 <a id="Vercel_AI_Util_ServerResponse_WaitForEndAsync_"></a>
 <a id="Vercel_AI_Util_ServerResponse_WaitForEndAsync"></a>
@@ -300,7 +306,7 @@ Completes when [End()](#Vercel_AI_Util_ServerResponse_End) runs.
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L168)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L204)
 
 <a id="Vercel_AI_Util_ServerResponse_Write_"></a>
 <a id="Vercel_AI_Util_ServerResponse_Write_System_Byte___"></a>
@@ -323,7 +329,7 @@ Appends &lt;code class="paramref"&gt;chunk&lt;/code&gt;. Returns false when the 
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L96)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L98)
 
 <a id="Vercel_AI_Util_ServerResponse_WriteHead_"></a>
 <a id="Vercel_AI_Util_ServerResponse_WriteHead_System_Int32_System_String_"></a>
@@ -345,4 +351,4 @@ Sets the status code and, when provided, the status text.
 | `statusCode` | [int](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `statusText` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L86)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L88)

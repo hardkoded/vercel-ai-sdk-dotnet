@@ -21,6 +21,6 @@ public interface IFileStore
 
 Files API.
 
-**Derived:** [DeepSeekFileStore](/api/Vercel.AI.DeepSeek/DeepSeekFileStore/)
+**Derived:** [AnthropicFiles](/api/Vercel.AI.Anthropic/AnthropicFiles/), [DeepSeekFileStore](/api/Vercel.AI.DeepSeek/DeepSeekFileStore/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L135)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L151)

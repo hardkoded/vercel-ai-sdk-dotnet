@@ -73,7 +73,7 @@ Input tokens read from cache, when the provider reports them.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L76)
 
 <a id="Vercel_AI_Provider_LanguageModelUsage_CacheWriteTokens_"></a>
 <a id="Vercel_AI_Provider_LanguageModelUsage_CacheWriteTokens"></a>
@@ -90,7 +90,7 @@ Input tokens written to cache, when the provider reports them.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L79)
 
 <a id="Vercel_AI_Provider_LanguageModelUsage_Empty_"></a>
 <a id="Vercel_AI_Provider_LanguageModelUsage_Empty"></a>
@@ -107,7 +107,7 @@ Zero usage.
 
 **Value:** [LanguageModelUsage](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L110)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L112)
 
 <a id="Vercel_AI_Provider_LanguageModelUsage_InputTokens_"></a>
 <a id="Vercel_AI_Provider_LanguageModelUsage_InputTokens"></a>
@@ -124,7 +124,7 @@ Prompt tokens.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L67)
 
 <a id="Vercel_AI_Provider_LanguageModelUsage_NoCacheInputTokens_"></a>
 <a id="Vercel_AI_Provider_LanguageModelUsage_NoCacheInputTokens"></a>
@@ -141,7 +141,7 @@ Input tokens that were not served from cache, when the provider reports them.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L89)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L88)
 
 <a id="Vercel_AI_Provider_LanguageModelUsage_Null_"></a>
 <a id="Vercel_AI_Provider_LanguageModelUsage_Null"></a>
@@ -158,7 +158,7 @@ Usage with every count and [Raw](#Vercel_AI_Provider_LanguageModelUsage_Raw) uns
 
 **Value:** [LanguageModelUsage](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L113)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L115)
 
 <a id="Vercel_AI_Provider_LanguageModelUsage_OutputTokens_"></a>
 <a id="Vercel_AI_Provider_LanguageModelUsage_OutputTokens"></a>
@@ -175,7 +175,7 @@ Generated tokens.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L70)
 
 <a id="Vercel_AI_Provider_LanguageModelUsage_Raw_"></a>
 <a id="Vercel_AI_Provider_LanguageModelUsage_Raw"></a>
@@ -192,7 +192,7 @@ Provider usage object, unchanged.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L86)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L85)
 
 <a id="Vercel_AI_Provider_LanguageModelUsage_ReasoningTokens_"></a>
 <a id="Vercel_AI_Provider_LanguageModelUsage_ReasoningTokens"></a>
@@ -209,7 +209,7 @@ Output tokens spent on reasoning, when the provider reports them.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L82)
 
 <a id="Vercel_AI_Provider_LanguageModelUsage_TextTokens_"></a>
 <a id="Vercel_AI_Provider_LanguageModelUsage_TextTokens"></a>
@@ -226,7 +226,7 @@ Output tokens that were not reasoning tokens, when the provider reports them.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L92)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L91)
 
 <a id="Vercel_AI_Provider_LanguageModelUsage_TotalTokens_"></a>
 <a id="Vercel_AI_Provider_LanguageModelUsage_TotalTokens"></a>
@@ -243,7 +243,7 @@ Input plus output tokens.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L73)
 
 ## Methods
 
@@ -269,4 +269,4 @@ Adds two usage values. [Raw](#Vercel_AI_Provider_LanguageModelUsage_Raw) survive
 
 **Returns:** [LanguageModelUsage](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L95)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L94)

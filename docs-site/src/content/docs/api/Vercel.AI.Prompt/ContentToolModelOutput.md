@@ -23,7 +23,7 @@ Multi-part tool output.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ToolModelOutput](/api/Vercel.AI.Prompt/ToolModelOutput/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/CreateToolModelOutput.cs#L126)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/CreateToolModelOutput.cs#L148)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates content output.
 | --- | --- | --- |
 | `value` | [IReadOnlyList&lt;ToolModelContentPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/CreateToolModelOutput.cs#L129)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/CreateToolModelOutput.cs#L151)
 
 ## Properties
 
@@ -65,4 +65,4 @@ Content parts.
 
 **Value:** [IReadOnlyList&lt;ToolModelContentPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/CreateToolModelOutput.cs#L136)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/CreateToolModelOutput.cs#L158)

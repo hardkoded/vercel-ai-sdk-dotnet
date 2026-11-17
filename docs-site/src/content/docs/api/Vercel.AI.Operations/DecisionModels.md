@@ -61,7 +61,7 @@ implement [IDecisionProvider](/api/Vercel.AI.Operations/IDecisionProvider/) or t
 
 **Value:** [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionModels.cs#L23)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionModels.cs#L26)
 
 <a id="Vercel_AI_Operations_DecisionModels_GatewayFactory_"></a>
 <a id="Vercel_AI_Operations_DecisionModels_GatewayFactory"></a>
@@ -78,7 +78,7 @@ Creates the provider used when [DefaultProvider](#Vercel_AI_Operations_DecisionM
 
 **Value:** [Func&lt;GatewayProvider&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionModels.cs#L26)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionModels.cs#L29)
 
 ## Methods
 
@@ -105,7 +105,7 @@ Resolves a decision model. &lt;code class="paramref"&gt;model&lt;/code&gt; wins 
 
 **Returns:** [IDecisionCaller](/api/Vercel.AI.Operations/IDecisionCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionModels.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionModels.cs#L35)
 
 <a id="Vercel_AI_Operations_DecisionModels_ResolveExtractionModel_"></a>
 <a id="Vercel_AI_Operations_DecisionModels_ResolveExtractionModel_Vercel_AI_Operations_IExtractionCaller_"></a>
@@ -128,4 +128,4 @@ Maps to `resolveExtractionModel`. Only model instances are accepted. A model tha
 
 **Returns:** [IExtractionCaller](/api/Vercel.AI.Operations/IExtractionCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionModels.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionModels.cs#L100)

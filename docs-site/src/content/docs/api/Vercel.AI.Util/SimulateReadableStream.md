@@ -23,7 +23,7 @@ Emits scripted chunks, optionally delaying each pull.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StitchableStream.cs#L300)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StitchableStream.cs#L309)
 
 ## Methods
 
@@ -58,4 +58,4 @@ A null delay skips the wait. `0` still invokes the delay with zero.
 
 **Returns:** `ReadableStream&lt;T&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StitchableStream.cs#L306)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StitchableStream.cs#L315)

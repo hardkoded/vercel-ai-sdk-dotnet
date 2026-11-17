@@ -52,7 +52,7 @@ Creates a model. &lt;code class="paramref"&gt;clock&lt;/code&gt; sets the respon
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `clock` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L58)
 
 ## Properties
 
@@ -71,7 +71,7 @@ True when `doGenerate` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L82)
 
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_CanStart_"></a>
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_CanStart"></a>
@@ -88,7 +88,7 @@ True when `doStart` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L85)
 
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_CanStatus_"></a>
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_CanStatus"></a>
@@ -105,7 +105,7 @@ True when `doStatus` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L88)
 
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_CanWebhook_"></a>
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_CanWebhook"></a>
@@ -122,7 +122,7 @@ False. Progress notifications need a protocol-aware receiver, so a webhook URL i
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L91)
 
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_MaxVideosPerCall_"></a>
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_MaxVideosPerCall"></a>
@@ -139,7 +139,7 @@ KlingAI creates one video per task.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L79)
 
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_ModelId_"></a>
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_ModelId"></a>
@@ -156,7 +156,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L76)
 
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_Provider_"></a>
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_Provider"></a>
@@ -173,7 +173,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L73)
 
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_SpecificationVersion"></a>
@@ -190,7 +190,7 @@ Specification version. Always `v4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L70)
 
 ## Methods
 
@@ -216,7 +216,7 @@ Generates videos in one call.
 
 **Returns:** [Task&lt;VideoModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L88)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L121)
 
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_DoGenerateAsync_Vercel_AI_Provider_VideoCallOptions_System_Threading_CancellationToken_"></a>
 
@@ -239,7 +239,7 @@ Starts a task and polls it until the video is ready.
 
 **Returns:** [Task&lt;VideoResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L100)
 
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_DoStartAsync_"></a>
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_DoStartAsync_Vercel_AI_Operations_VideoModelCall_System_Threading_CancellationToken_"></a>
@@ -263,7 +263,7 @@ Starts an asynchronous generation.
 
 **Returns:** [Task&lt;VideoStartResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L100)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L141)
 
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_DoStatusAsync_"></a>
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_DoStatusAsync_Vercel_AI_Operations_VideoModelCall_System_Threading_CancellationToken_"></a>
@@ -287,7 +287,7 @@ Reads operation status.
 
 **Returns:** [Task&lt;VideoStatusResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L166)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L223)
 
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_HandleWebhookAsync_"></a>
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_HandleWebhookAsync_System_Func_System_Threading_Tasks_Task_Vercel_AI_Operations_VideoWebhook___System_Threading_CancellationToken_"></a>
@@ -311,7 +311,7 @@ Turns a webhook factory into a URL and a received task.
 
 **Returns:** [Task&lt;VideoWebhook&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L94)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L130)
 
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_ResolveMaxVideosPerCallAsync_"></a>
 <a id="Vercel_AI_KlingAI_KlingAIVideoModel_ResolveMaxVideosPerCallAsync_System_Threading_CancellationToken_"></a>
@@ -334,4 +334,4 @@ Resolves a functional limit. The default is [MaxVideosPerCall](/api/Vercel.AI.Op
 
 **Returns:** [Task&lt;int?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIVideoModel.cs#L94)

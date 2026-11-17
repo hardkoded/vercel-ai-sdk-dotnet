@@ -32,6 +32,7 @@ Generated from the XML documentation of `Vercel.AI`. Regenerate it with `npm run
 - [Vercel.AI.Fireworks](/api/Vercel.AI.Fireworks/) — Public types in the `Vercel.AI.Fireworks` namespace.
 - [Vercel.AI.FishAudio](/api/Vercel.AI.FishAudio/) — Public types in the `Vercel.AI.FishAudio` namespace.
 - [Vercel.AI.Gateway](/api/Vercel.AI.Gateway/) — Vercel AI Gateway provider.
+- [Vercel.AI.GenerateObject](/api/Vercel.AI.GenerateObject/) — Public types in the `Vercel.AI.GenerateObject` namespace.
 - [Vercel.AI.GenerateText](/api/Vercel.AI.GenerateText/) — Public types in the `Vercel.AI.GenerateText` namespace.
 - [Vercel.AI.Gladia](/api/Vercel.AI.Gladia/) — Public types in the `Vercel.AI.Gladia` namespace.
 - [Vercel.AI.GmiCloud](/api/Vercel.AI.GmiCloud/) — Public types in the `Vercel.AI.GmiCloud` namespace.
@@ -59,6 +60,7 @@ Generated from the XML documentation of `Vercel.AI`. Regenerate it with `npm run
 - [Vercel.AI.QuiverAI](/api/Vercel.AI.QuiverAI/) — Public types in the `Vercel.AI.QuiverAI` namespace.
 - [Vercel.AI.Replicate](/api/Vercel.AI.Replicate/) — Public types in the `Vercel.AI.Replicate` namespace.
 - [Vercel.AI.RevAI](/api/Vercel.AI.RevAI/) — Public types in the `Vercel.AI.RevAI` namespace.
+- [Vercel.AI.ScaleDown](/api/Vercel.AI.ScaleDown/) — Public types in the `Vercel.AI.ScaleDown` namespace.
 - [Vercel.AI.Tencent](/api/Vercel.AI.Tencent/) — Public types in the `Vercel.AI.Tencent` namespace.
 - [Vercel.AI.Testing](/api/Vercel.AI.Testing/) — Test doubles for language models.
 - [Vercel.AI.TogetherAI](/api/Vercel.AI.TogetherAI/) — Public types in the `Vercel.AI.TogetherAI` namespace.

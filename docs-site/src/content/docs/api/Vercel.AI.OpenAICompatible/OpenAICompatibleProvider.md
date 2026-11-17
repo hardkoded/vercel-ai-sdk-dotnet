@@ -23,7 +23,7 @@ Provider that speaks the OpenAI Chat Completions, embeddings, and images APIs.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/)
 
-**Derived:** [AlibabaProvider](/api/Vercel.AI.Alibaba/AlibabaProvider/), [AssemblyAIProvider](/api/Vercel.AI.AssemblyAI/AssemblyAIProvider/), [AzureOpenAIProvider](/api/Vercel.AI.Azure/AzureOpenAIProvider/), [BasetenProvider](/api/Vercel.AI.Baseten/BasetenProvider/), [BlackForestLabsProvider](/api/Vercel.AI.BlackForestLabs/BlackForestLabsProvider/), [ByteDanceProvider](/api/Vercel.AI.ByteDance/ByteDanceProvider/), [CartesiaProvider](/api/Vercel.AI.Cartesia/CartesiaProvider/), [CerebrasProvider](/api/Vercel.AI.Cerebras/CerebrasProvider/), [DeepInfraProvider](/api/Vercel.AI.DeepInfra/DeepInfraProvider/), [DeepSeekProvider](/api/Vercel.AI.DeepSeek/DeepSeekProvider/), [DeepgramProvider](/api/Vercel.AI.Deepgram/DeepgramProvider/), [ElevenLabsProvider](/api/Vercel.AI.ElevenLabs/ElevenLabsProvider/), [FalProvider](/api/Vercel.AI.Fal/FalProvider/), [FireworksProvider](/api/Vercel.AI.Fireworks/FireworksProvider/), [FishAudioProvider](/api/Vercel.AI.FishAudio/FishAudioProvider/), [GladiaProvider](/api/Vercel.AI.Gladia/GladiaProvider/), [GmiCloudProvider](/api/Vercel.AI.GmiCloud/GmiCloudProvider/), [GroqProvider](/api/Vercel.AI.Groq/GroqProvider/), [HeyGenProvider](/api/Vercel.AI.HeyGen/HeyGenProvider/), [HuggingFaceProvider](/api/Vercel.AI.HuggingFace/HuggingFaceProvider/), [HumeProvider](/api/Vercel.AI.Hume/HumeProvider/), [KlingAIProvider](/api/Vercel.AI.KlingAI/KlingAIProvider/), [LumaProvider](/api/Vercel.AI.Luma/LumaProvider/), [MistralProvider](/api/Vercel.AI.Mistral/MistralProvider/), [MoonshotProvider](/api/Vercel.AI.Moonshot/MoonshotProvider/), [OpenAIProvider](/api/Vercel.AI.OpenAI/OpenAIProvider/), [PerplexityProvider](/api/Vercel.AI.Perplexity/PerplexityProvider/), [ProdiaProvider](/api/Vercel.AI.Prodia/ProdiaProvider/), [QuiverAIProvider](/api/Vercel.AI.QuiverAI/QuiverAIProvider/), [ReplicateProvider](/api/Vercel.AI.Replicate/ReplicateProvider/), [RevAIProvider](/api/Vercel.AI.RevAI/RevAIProvider/), [TogetherAIProvider](/api/Vercel.AI.TogetherAI/TogetherAIProvider/), [VoyageProvider](/api/Vercel.AI.Voyage/VoyageProvider/), [XaiProvider](/api/Vercel.AI.Xai/XaiProvider/), [ZaiProvider](/api/Vercel.AI.Zai/ZaiProvider/)
+**Derived:** [AlibabaProvider](/api/Vercel.AI.Alibaba/AlibabaProvider/), [AssemblyAIProvider](/api/Vercel.AI.AssemblyAI/AssemblyAIProvider/), [AzureOpenAIProvider](/api/Vercel.AI.Azure/AzureOpenAIProvider/), [BasetenProvider](/api/Vercel.AI.Baseten/BasetenProvider/), [BlackForestLabsProvider](/api/Vercel.AI.BlackForestLabs/BlackForestLabsProvider/), [ByteDanceProvider](/api/Vercel.AI.ByteDance/ByteDanceProvider/), [CartesiaProvider](/api/Vercel.AI.Cartesia/CartesiaProvider/), [CerebrasProvider](/api/Vercel.AI.Cerebras/CerebrasProvider/), [DeepInfraProvider](/api/Vercel.AI.DeepInfra/DeepInfraProvider/), [DeepSeekProvider](/api/Vercel.AI.DeepSeek/DeepSeekProvider/), [DeepgramProvider](/api/Vercel.AI.Deepgram/DeepgramProvider/), [ElevenLabsProvider](/api/Vercel.AI.ElevenLabs/ElevenLabsProvider/), [FalProvider](/api/Vercel.AI.Fal/FalProvider/), [FireworksProvider](/api/Vercel.AI.Fireworks/FireworksProvider/), [FishAudioProvider](/api/Vercel.AI.FishAudio/FishAudioProvider/), [GladiaProvider](/api/Vercel.AI.Gladia/GladiaProvider/), [GmiCloudProvider](/api/Vercel.AI.GmiCloud/GmiCloudProvider/), [GroqProvider](/api/Vercel.AI.Groq/GroqProvider/), [HeyGenProvider](/api/Vercel.AI.HeyGen/HeyGenProvider/), [HuggingFaceProvider](/api/Vercel.AI.HuggingFace/HuggingFaceProvider/), [HumeProvider](/api/Vercel.AI.Hume/HumeProvider/), [KlingAIProvider](/api/Vercel.AI.KlingAI/KlingAIProvider/), [LumaProvider](/api/Vercel.AI.Luma/LumaProvider/), [MistralProvider](/api/Vercel.AI.Mistral/MistralProvider/), [MoonshotProvider](/api/Vercel.AI.Moonshot/MoonshotProvider/), [OpenAIProvider](/api/Vercel.AI.OpenAI/OpenAIProvider/), [PerplexityProvider](/api/Vercel.AI.Perplexity/PerplexityProvider/), [ProdiaProvider](/api/Vercel.AI.Prodia/ProdiaProvider/), [QuiverAIProvider](/api/Vercel.AI.QuiverAI/QuiverAIProvider/), [ReplicateProvider](/api/Vercel.AI.Replicate/ReplicateProvider/), [RevAIProvider](/api/Vercel.AI.RevAI/RevAIProvider/), [TencentProvider](/api/Vercel.AI.Tencent/TencentProvider/), [TogetherAIProvider](/api/Vercel.AI.TogetherAI/TogetherAIProvider/), [VoyageProvider](/api/Vercel.AI.Voyage/VoyageProvider/), [XaiProvider](/api/Vercel.AI.Xai/XaiProvider/), [ZaiProvider](/api/Vercel.AI.Zai/ZaiProvider/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L17)
 
@@ -110,7 +110,7 @@ Chat Completions URL for a model. Azure deployment routes include the model id.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L406)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L484)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_CompletionModel_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_CompletionModel_System_String_"></a>
@@ -156,7 +156,7 @@ Completions URL.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L417)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L495)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_Create_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_Create_Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_System_Net_Http_HttpMessageHandler_"></a>
@@ -220,7 +220,7 @@ Resolves the API key and builds request headers.
 
 **Returns:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L86)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L98)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_CreateHeaders_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__"></a>
 
@@ -242,7 +242,7 @@ Builds headers and lets &lt;code class="paramref"&gt;callHeaders&lt;/code&gt; ov
 
 **Returns:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L92)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L104)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_EmbeddingModel_System_String_"></a>
@@ -288,7 +288,7 @@ Embeddings URL.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L428)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L506)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_GetBinaryAsync_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_GetBinaryAsync_System_Uri_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -313,7 +313,7 @@ Downloads raw bytes.
 
 **Returns:** [Task&lt;OpenAICompatibleBinaryResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L273)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L307)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_ImageModel_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_ImageModel_System_String_"></a>
@@ -353,7 +353,7 @@ Image edits URL.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L446)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L526)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_ImagesUri_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_ImagesUri"></a>
@@ -370,7 +370,7 @@ Images URL.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L439)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L517)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_LanguageModel_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_LanguageModel_System_String_"></a>
@@ -419,7 +419,7 @@ Posts JSON and returns the raw response bytes.
 
 **Returns:** [Task&lt;OpenAICompatibleBinaryResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L284)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L319)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_PostJsonAsync_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_PostJsonAsync_System_Uri_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -445,7 +445,7 @@ Posts JSON and rewrites the provider error message when one is available.
 
 **Returns:** [Task&lt;ProviderTextResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L187)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L204)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_PostMultipartAsync_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_PostMultipartAsync_System_Uri_System_Net_Http_MultipartFormDataContent_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -471,7 +471,7 @@ Posts multipart form data and rewrites the provider error message when one is av
 
 **Returns:** [Task&lt;ProviderTextResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L261)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L294)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_PostSseAsync_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_PostSseAsync_System_Uri_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -497,7 +497,7 @@ Posts JSON and opens an SSE response. The caller disposes the result.
 
 **Returns:** [Task&lt;OpenAICompatibleSseResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L210)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L236)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_RerankUri_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_RerankUri"></a>
@@ -514,7 +514,7 @@ Rerank URL.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L453)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L535)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_ResolveApiKey_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_ResolveApiKey"></a>
@@ -531,4 +531,4 @@ Resolves the API key. A missing key is omitted unless [RequireApiKey](/api/Verce
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L152)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L166)

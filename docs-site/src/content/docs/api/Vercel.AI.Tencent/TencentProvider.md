@@ -123,7 +123,7 @@ Creates a TokenHub model for text generation.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentProvider.cs#L103)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentProvider.cs#L115)
 
 <a id="Vercel_AI_Tencent_TencentProvider_Create_"></a>
 <a id="Vercel_AI_Tencent_TencentProvider_Create_Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_System_Net_Http_HttpMessageHandler_"></a>
@@ -147,7 +147,30 @@ Creates a provider.
 
 **Returns:** [TencentProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentProvider.cs#L88)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentProvider.cs#L91)
+
+<a id="Vercel_AI_Tencent_TencentProvider_CreateChatModel_"></a>
+<a id="Vercel_AI_Tencent_TencentProvider_CreateChatModel_System_String_"></a>
+
+### CreateChatModel(string)
+
+
+```csharp
+public override OpenAICompatibleLanguageModel CreateChatModel(string modelId)
+```
+
+
+Creates a chat model. Providers override this when support differs by model id.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [OpenAICompatibleLanguageModel](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleLanguageModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentProvider.cs#L111)
 
 <a id="Vercel_AI_Tencent_TencentProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_Tencent_TencentProvider_EmbeddingModel_System_String_"></a>
@@ -170,7 +193,7 @@ Returns an embedding model.
 
 **Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentProvider.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentProvider.cs#L74)
 
 <a id="Vercel_AI_Tencent_TencentProvider_ImageModel_"></a>
 <a id="Vercel_AI_Tencent_TencentProvider_ImageModel_System_String_"></a>
@@ -193,7 +216,7 @@ Returns an image model.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentProvider.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentProvider.cs#L80)
 
 <a id="Vercel_AI_Tencent_TencentProvider_Video_"></a>
 <a id="Vercel_AI_Tencent_TencentProvider_Video_System_String_"></a>
@@ -216,7 +239,7 @@ Creates a model for video generation. Same as [VideoModel(string)](#Vercel_AI_Te
 
 **Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentProvider.cs#L109)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentProvider.cs#L121)
 
 <a id="Vercel_AI_Tencent_TencentProvider_VideoModel_"></a>
 <a id="Vercel_AI_Tencent_TencentProvider_VideoModel_System_String_"></a>
@@ -239,4 +262,4 @@ Creates a model for video generation. TokenHub Kling models use their TokenHub i
 
 **Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentProvider.cs#L106)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentProvider.cs#L118)

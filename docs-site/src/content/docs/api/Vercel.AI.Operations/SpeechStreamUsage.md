@@ -23,7 +23,7 @@ Usage of a speech stream call. Every field is optional because providers bill sp
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L115)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L120)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Number of input text characters (Unicode code points) sent for synthesis, if kno
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L118)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L123)
 
 <a id="Vercel_AI_Operations_SpeechStreamUsage_InputTokens_"></a>
 <a id="Vercel_AI_Operations_SpeechStreamUsage_InputTokens"></a>
@@ -59,7 +59,7 @@ Number of input text tokens, if reported.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L121)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L126)
 
 <a id="Vercel_AI_Operations_SpeechStreamUsage_OutputTokens_"></a>
 <a id="Vercel_AI_Operations_SpeechStreamUsage_OutputTokens"></a>
@@ -76,7 +76,7 @@ Number of output audio tokens, if reported.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L124)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L129)
 
 <a id="Vercel_AI_Operations_SpeechStreamUsage_Raw_"></a>
 <a id="Vercel_AI_Operations_SpeechStreamUsage_Raw"></a>
@@ -93,4 +93,4 @@ Raw usage information from the provider, in the shape the provider returns it.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L127)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L132)

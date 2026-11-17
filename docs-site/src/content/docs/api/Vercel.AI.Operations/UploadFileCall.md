@@ -70,7 +70,7 @@ Cancellation token.
 
 **Value:** [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L84)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L91)
 
 <a id="Vercel_AI_Operations_UploadFileCall_Data_"></a>
 <a id="Vercel_AI_Operations_UploadFileCall_Data"></a>
@@ -87,7 +87,7 @@ Tagged data.
 
 **Value:** [UploadData](/api/Vercel.AI.Operations/UploadData/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L75)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L82)
 
 <a id="Vercel_AI_Operations_UploadFileCall_Filename_"></a>
 <a id="Vercel_AI_Operations_UploadFileCall_Filename"></a>
@@ -104,7 +104,7 @@ Optional filename.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L81)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L88)
 
 <a id="Vercel_AI_Operations_UploadFileCall_Headers_"></a>
 <a id="Vercel_AI_Operations_UploadFileCall_Headers"></a>
@@ -121,7 +121,7 @@ Request headers.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L87)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L94)
 
 <a id="Vercel_AI_Operations_UploadFileCall_MediaType_"></a>
 <a id="Vercel_AI_Operations_UploadFileCall_MediaType"></a>
@@ -138,7 +138,7 @@ Media type sent to the provider.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L78)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L85)
 
 <a id="Vercel_AI_Operations_UploadFileCall_ProviderOptions_"></a>
 <a id="Vercel_AI_Operations_UploadFileCall_ProviderOptions"></a>
@@ -155,4 +155,4 @@ Provider options. Null when the caller omitted them.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L90)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L97)

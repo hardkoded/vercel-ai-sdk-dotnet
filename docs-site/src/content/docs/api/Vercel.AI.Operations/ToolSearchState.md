@@ -23,7 +23,7 @@ Per-generation discovery state. Maps to `createToolSearchState`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L142)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L150)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Creates a prepare function. An empty routing map does not inherit keys such as `
 
 **Returns:** [Func&lt;IReadOnlyDictionary&lt;string, SearchableTool&gt;, IReadOnlyDictionary&lt;string, object&gt;, IReadOnlyDictionary&lt;string, SearchableTool&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L145)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L153)
 
 <a id="Vercel_AI_Operations_ToolSearchState_Tokenize_"></a>
 <a id="Vercel_AI_Operations_ToolSearchState_Tokenize_System_String_"></a>
@@ -72,4 +72,4 @@ Splits camel case, then keeps letters and numbers.
 
 **Returns:** [List&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L271)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L311)

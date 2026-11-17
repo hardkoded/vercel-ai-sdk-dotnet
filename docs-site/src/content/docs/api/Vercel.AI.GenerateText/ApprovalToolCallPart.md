@@ -69,6 +69,23 @@ Tool input.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L42)
 
+<a id="Vercel_AI_GenerateText_ApprovalToolCallPart_ProviderExecuted_"></a>
+<a id="Vercel_AI_GenerateText_ApprovalToolCallPart_ProviderExecuted"></a>
+
+### ProviderExecuted
+
+
+```csharp
+public bool ProviderExecuted { get; init; }
+```
+
+
+True when the provider runs the tool. Maps to the call's `providerExecuted`.
+
+**Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L45)
+
 <a id="Vercel_AI_GenerateText_ApprovalToolCallPart_ToolCallId_"></a>
 <a id="Vercel_AI_GenerateText_ApprovalToolCallPart_ToolCallId"></a>
 

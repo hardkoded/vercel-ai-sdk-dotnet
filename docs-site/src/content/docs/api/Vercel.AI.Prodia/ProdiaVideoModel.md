@@ -70,7 +70,7 @@ True when `doGenerate` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L47)
 
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_CanStart_"></a>
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_CanStart"></a>
@@ -87,7 +87,7 @@ True when `doStart` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L50)
 
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_CanStatus_"></a>
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_CanStatus"></a>
@@ -104,7 +104,7 @@ True when `doStatus` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L53)
 
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_CanWebhook_"></a>
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_CanWebhook"></a>
@@ -121,7 +121,7 @@ True when `handleWebhookOption` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L56)
 
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_MaxVideosPerCall_"></a>
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_MaxVideosPerCall"></a>
@@ -138,7 +138,7 @@ Prodia returns one video per job.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L44)
 
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_ModelId_"></a>
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_ModelId"></a>
@@ -155,7 +155,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L41)
 
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_Provider_"></a>
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_Provider"></a>
@@ -172,7 +172,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L38)
 
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_SpecificationVersion"></a>
@@ -189,7 +189,7 @@ Specification version. Always `v4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L35)
 
 ## Methods
 
@@ -215,7 +215,7 @@ Generates videos in one call.
 
 **Returns:** [Task&lt;VideoModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L70)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L94)
 
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_DoGenerateAsync_Vercel_AI_Provider_VideoCallOptions_System_Threading_CancellationToken_"></a>
 
@@ -238,7 +238,7 @@ Generates a video.
 
 **Returns:** [Task&lt;VideoResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L65)
 
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_DoStartAsync_"></a>
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_DoStartAsync_Vercel_AI_Operations_VideoModelCall_System_Threading_CancellationToken_"></a>
@@ -262,7 +262,7 @@ Starts an asynchronous generation.
 
 **Returns:** [Task&lt;VideoStartResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L144)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L200)
 
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_DoStatusAsync_"></a>
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_DoStatusAsync_Vercel_AI_Operations_VideoModelCall_System_Threading_CancellationToken_"></a>
@@ -286,7 +286,7 @@ Reads operation status.
 
 **Returns:** [Task&lt;VideoStatusResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L150)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L209)
 
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_HandleWebhookAsync_"></a>
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_HandleWebhookAsync_System_Func_System_Threading_Tasks_Task_Vercel_AI_Operations_VideoWebhook___System_Threading_CancellationToken_"></a>
@@ -310,7 +310,7 @@ Turns a webhook factory into a URL and a received task.
 
 **Returns:** [Task&lt;VideoWebhook&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L156)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L218)
 
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_ResolveMaxVideosPerCallAsync_"></a>
 <a id="Vercel_AI_Prodia_ProdiaVideoModel_ResolveMaxVideosPerCallAsync_System_Threading_CancellationToken_"></a>
@@ -333,4 +333,4 @@ Resolves a functional limit. The default is [MaxVideosPerCall](/api/Vercel.AI.Op
 
 **Returns:** [Task&lt;int?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaVideoModel.cs#L59)

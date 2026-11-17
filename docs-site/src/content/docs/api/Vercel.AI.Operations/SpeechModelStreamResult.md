@@ -23,7 +23,7 @@ The result of a speech model `doStream` call. Maps to `SpeechModelV4StreamResult
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L273)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L289)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a stream result.
 | `response` | [SpeechModelStreamResponse](/api/Vercel.AI.Operations/SpeechModelStreamResponse/) |  |
 | `requestBody` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L276)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L292)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Request body or setup payload sent to the provider API.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L290)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L310)
 
 <a id="Vercel_AI_Operations_SpeechModelStreamResult_Response_"></a>
 <a id="Vercel_AI_Operations_SpeechModelStreamResult_Response"></a>
@@ -84,7 +84,7 @@ Optional response data.
 
 **Value:** [SpeechModelStreamResponse](/api/Vercel.AI.Operations/SpeechModelStreamResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L287)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L307)
 
 <a id="Vercel_AI_Operations_SpeechModelStreamResult_Stream_"></a>
 <a id="Vercel_AI_Operations_SpeechModelStreamResult_Stream"></a>
@@ -101,4 +101,4 @@ The stream.
 
 **Value:** [IAsyncEnumerable&lt;SpeechModelStreamPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L284)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L304)

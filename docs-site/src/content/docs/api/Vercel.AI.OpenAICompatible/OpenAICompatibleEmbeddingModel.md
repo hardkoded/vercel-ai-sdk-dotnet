@@ -25,7 +25,7 @@ OpenAI-compatible embeddings model.
 
 **Implements:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L544)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L634)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates an embedding model.
 | `provider` | [OpenAICompatibleProvider](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L549)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L639)
 
 ## Properties
 
@@ -68,7 +68,7 @@ When set, the embedding call uses this URL instead of the provider embeddings ro
 
 **Value:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L569)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L660)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleEmbeddingModel_MaxEmbeddingsPerCall_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleEmbeddingModel_MaxEmbeddingsPerCall"></a>
@@ -85,7 +85,7 @@ Maximum inputs accepted by one request.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L566)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L657)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleEmbeddingModel_ModelId_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleEmbeddingModel_ModelId"></a>
@@ -102,7 +102,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L563)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L654)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleEmbeddingModel_Provider_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleEmbeddingModel_Provider"></a>
@@ -119,7 +119,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L560)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L650)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleEmbeddingModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleEmbeddingModel_SpecificationVersion"></a>
@@ -136,7 +136,7 @@ Specification version. Always `V4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L557)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L647)
 
 ## Methods
 
@@ -165,7 +165,7 @@ Embeds each value. Maps to `doEmbed`. &lt;code class="paramref"&gt;providerOptio
 
 **Returns:** [Task&lt;EmbeddingResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L572)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L663)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleEmbeddingModel_DoEmbedAsync_System_Collections_Generic_IReadOnlyList_System_String__System_Nullable_System_Int32__System_String_System_Threading_CancellationToken_"></a>
 
@@ -190,7 +190,7 @@ Embeds values, sending &lt;code class="paramref"&gt;dimensions&lt;/code&gt; and 
 
 **Returns:** [Task&lt;EmbeddingResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L584)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L695)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleEmbeddingModel_DoEmbedAsync_Vercel_AI_Provider_EmbeddingCallOptions_System_Threading_CancellationToken_"></a>
 
@@ -213,4 +213,4 @@ Embeds values with per-call options. Nothing is kept on the model, so concurrent
 
 **Returns:** [Task&lt;EmbeddingResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L578)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L683)

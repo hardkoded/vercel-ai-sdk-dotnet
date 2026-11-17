@@ -26,7 +26,7 @@ asks for URL output, and downloads each image.
 
 **Implements:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/), [IImageCaller](/api/Vercel.AI.Operations/IImageCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L54)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a model.
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `config` | [MiniMaxImageModelConfig](/api/Vercel.AI.MiniMax/MiniMaxImageModelConfig/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L59)
 
 ## Properties
 
@@ -69,7 +69,7 @@ The configuration the provider passed in.
 
 **Value:** [MiniMaxImageModelConfig](/api/Vercel.AI.MiniMax/MiniMaxImageModelConfig/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L78)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L84)
 
 <a id="Vercel_AI_MiniMax_MiniMaxImageModel_MaxImagesPerCall_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxImageModel_MaxImagesPerCall"></a>
@@ -86,7 +86,7 @@ MiniMax creates up to 10 images per call.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L69)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L75)
 
 <a id="Vercel_AI_MiniMax_MiniMaxImageModel_ModelId_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxImageModel_ModelId"></a>
@@ -103,7 +103,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L72)
 
 <a id="Vercel_AI_MiniMax_MiniMaxImageModel_Provider_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxImageModel_Provider"></a>
@@ -120,7 +120,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L69)
 
 <a id="Vercel_AI_MiniMax_MiniMaxImageModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxImageModel_SpecificationVersion"></a>
@@ -137,7 +137,7 @@ Specification version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L66)
 
 <a id="Vercel_AI_MiniMax_MiniMaxImageModel_SupportsFileInputs_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxImageModel_SupportsFileInputs"></a>
@@ -154,7 +154,7 @@ MiniMax image models accept input images. Maps to `supportsFileInputs`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L72)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L78)
 
 <a id="Vercel_AI_MiniMax_MiniMaxImageModel_SupportsMaskInputs_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxImageModel_SupportsMaskInputs"></a>
@@ -171,7 +171,7 @@ MiniMax image models do not accept masks. Maps to `supportsMaskInputs`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L75)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L81)
 
 ## Methods
 
@@ -197,7 +197,7 @@ Generates images.
 
 **Returns:** [Task&lt;ImageModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L111)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L146)
 
 <a id="Vercel_AI_MiniMax_MiniMaxImageModel_DoGenerateAsync_Vercel_AI_Provider_ImageCallOptions_System_Threading_CancellationToken_"></a>
 
@@ -220,7 +220,7 @@ Generates images. Maps to `doGenerate` on an image model.
 
 **Returns:** [Task&lt;ImageGenerationResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L87)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L93)
 
 <a id="Vercel_AI_MiniMax_MiniMaxImageModel_ResolveMaxImagesPerCallAsync_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxImageModel_ResolveMaxImagesPerCallAsync_System_Threading_CancellationToken_"></a>
@@ -243,4 +243,4 @@ Resolves a functional per-call limit. The default returns [MaxImagesPerCall](/ap
 
 **Returns:** [Task&lt;int?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L81)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L87)

@@ -23,7 +23,7 @@ Static entry points. String model ids use the AI Gateway and `AI_GATEWAY_API_KEY
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L460)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L810)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Converts UI messages from a chat UI into model messages. Maps to `convertToModel
 
 **Returns:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L495)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L859)
 
 <a id="Vercel_AI_Ai_CosineSimilarity_"></a>
 <a id="Vercel_AI_Ai_CosineSimilarity_System_Collections_Generic_IReadOnlyList_System_Single__System_Collections_Generic_IReadOnlyList_System_Single__"></a>
@@ -73,7 +73,7 @@ Cosine similarity of two vectors.
 
 **Returns:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L501)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L887)
 
 <a id="Vercel_AI_Ai_EmbedAsync_"></a>
 <a id="Vercel_AI_Ai_EmbedAsync_Vercel_AI_EmbedOptions_System_Threading_CancellationToken_"></a>
@@ -97,7 +97,7 @@ Embeds one value.
 
 **Returns:** [Task&lt;float\[\]&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L477)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L835)
 
 <a id="Vercel_AI_Ai_EmbedManyAsync_"></a>
 <a id="Vercel_AI_Ai_EmbedManyAsync_Vercel_AI_EmbedOptions_System_Threading_CancellationToken_"></a>
@@ -121,7 +121,7 @@ Embeds many values.
 
 **Returns:** [Task&lt;EmbeddingResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L483)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L844)
 
 <a id="Vercel_AI_Ai_GenerateTextAsync_"></a>
 <a id="Vercel_AI_Ai_GenerateTextAsync_Vercel_AI_GenerateTextOptions_System_Threading_CancellationToken_"></a>
@@ -145,7 +145,7 @@ Generates text.
 
 **Returns:** [Task&lt;GenerateTextResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L465)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L817)
 
 <a id="Vercel_AI_Ai_PruneMessages_"></a>
 <a id="Vercel_AI_Ai_PruneMessages_Vercel_AI_GenerateText_PruneMessagesOptions_"></a>
@@ -168,7 +168,30 @@ Prunes reasoning, tool calls, results, errors, and approvals from messages. Maps
 
 **Returns:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L489)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L853)
+
+<a id="Vercel_AI_Ai_SafeValidateUIMessagesAsync_"></a>
+<a id="Vercel_AI_Ai_SafeValidateUIMessagesAsync_Vercel_AI_Ui_ValidateUIMessagesOptions_"></a>
+
+### SafeValidateUIMessagesAsync(ValidateUIMessagesOptions)
+
+
+```csharp
+public static Task<SafeValidateUIMessagesResult> SafeValidateUIMessagesAsync(ValidateUIMessagesOptions options)
+```
+
+
+Validates UI messages like [ValidateUIMessagesAsync(ValidateUIMessagesOptions)](#Vercel_AI_Ai_ValidateUIMessagesAsync_Vercel_AI_Ui_ValidateUIMessagesOptions_), but returns the error instead of throwing. Maps to `safeValidateUIMessages`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `options` | [ValidateUIMessagesOptions](/api/Vercel.AI.Ui/ValidateUIMessagesOptions/) |  |
+
+**Returns:** [Task&lt;SafeValidateUIMessagesResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L879)
 
 <a id="Vercel_AI_Ai_StreamTextAsync_"></a>
 <a id="Vercel_AI_Ai_StreamTextAsync_Vercel_AI_StreamTextOptions_System_Threading_CancellationToken_"></a>
@@ -192,4 +215,28 @@ Streams text.
 
 **Returns:** [StreamTextResult](/api/Vercel.AI/StreamTextResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L471)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L826)
+
+<a id="Vercel_AI_Ai_ValidateUIMessagesAsync_"></a>
+<a id="Vercel_AI_Ai_ValidateUIMessagesAsync_Vercel_AI_Ui_ValidateUIMessagesOptions_"></a>
+
+### ValidateUIMessagesAsync(ValidateUIMessagesOptions)
+
+
+```csharp
+public static Task<IReadOnlyList<UIMessage>> ValidateUIMessagesAsync(ValidateUIMessagesOptions options)
+```
+
+
+Validates a list of UI messages. Metadata, data parts, and tool parts are only validated if the corresponding schemas are
+provided. Maps to `validateUIMessages`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `options` | [ValidateUIMessagesOptions](/api/Vercel.AI.Ui/ValidateUIMessagesOptions/) |  |
+
+**Returns:** [Task&lt;IReadOnlyList&lt;UIMessage&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L871)

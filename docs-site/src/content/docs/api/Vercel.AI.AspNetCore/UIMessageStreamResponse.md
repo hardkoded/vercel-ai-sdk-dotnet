@@ -68,7 +68,7 @@ UTF-8 encoded SSE body chunks.
 
 **Value:** `ReadableStream&lt;byte\[\]&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateUIMessageStreamResponse.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateUIMessageStreamResponse.cs#L64)
 
 <a id="Vercel_AI_AspNetCore_UIMessageStreamResponse_Headers_"></a>
 <a id="Vercel_AI_AspNetCore_UIMessageStreamResponse_Headers"></a>
@@ -85,7 +85,7 @@ Response headers, including the protocol headers the caller did not set.
 
 **Value:** [HeaderCollection](/api/Vercel.AI.Util/HeaderCollection/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateUIMessageStreamResponse.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateUIMessageStreamResponse.cs#L61)
 
 <a id="Vercel_AI_AspNetCore_UIMessageStreamResponse_Status_"></a>
 <a id="Vercel_AI_AspNetCore_UIMessageStreamResponse_Status"></a>
@@ -102,7 +102,7 @@ HTTP status. Defaults to 200.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateUIMessageStreamResponse.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateUIMessageStreamResponse.cs#L55)
 
 <a id="Vercel_AI_AspNetCore_UIMessageStreamResponse_StatusText_"></a>
 <a id="Vercel_AI_AspNetCore_UIMessageStreamResponse_StatusText"></a>
@@ -119,4 +119,4 @@ HTTP status text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateUIMessageStreamResponse.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateUIMessageStreamResponse.cs#L58)

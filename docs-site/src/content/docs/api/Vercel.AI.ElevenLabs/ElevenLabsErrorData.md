@@ -1,6 +1,6 @@
 ---
 title: "ElevenLabsErrorData"
-description: "Parsed ElevenLabs error object."
+description: "Parsed ElevenLabs error body."
 editUrl: false
 prev: false
 next: false
@@ -19,11 +19,11 @@ public sealed class ElevenLabsErrorData
 ```
 
 
-Parsed ElevenLabs `error` object.
+Parsed ElevenLabs error body.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L26)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L144)
 
 ## Constructors
 
@@ -38,7 +38,7 @@ public ElevenLabsErrorData(string message, int code)
 ```
 
 
-Creates parsed error data.
+Creates legacy parsed error data.
 
 **Parameters**
 
@@ -47,7 +47,7 @@ Creates parsed error data.
 | `message` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `code` | [int](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L147)
 
 ## Properties
 
@@ -58,15 +58,88 @@ Creates parsed error data.
 
 
 ```csharp
+[Obsolete("Use Error.Code.")]
 public int Code { get; }
 ```
 
 
-Provider error code.
+Legacy integral provider code. Use [Error](#Vercel_AI_ElevenLabs_ElevenLabsErrorData_Error) for the upstream numeric code.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L39)
+:::caution[Obsolete]
+This API is obsolete.
+:::
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L180)
+
+<a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_Detail_"></a>
+<a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_Detail"></a>
+
+### Detail
+
+
+```csharp
+public ElevenLabsErrorDetail? Detail { get; }
+```
+
+
+Object-valued `detail`, when present.
+
+**Value:** [ElevenLabsErrorDetail](/api/Vercel.AI.ElevenLabs/ElevenLabsErrorDetail/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L164)
+
+<a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_DetailMessage_"></a>
+<a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_DetailMessage"></a>
+
+### DetailMessage
+
+
+```csharp
+public string? DetailMessage { get; }
+```
+
+
+String-valued `detail`, when present.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L170)
+
+<a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_Error_"></a>
+<a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_Error"></a>
+
+### Error
+
+
+```csharp
+public ElevenLabsLegacyError? Error { get; }
+```
+
+
+Legacy `error` object, when present.
+
+**Value:** [ElevenLabsLegacyError](/api/Vercel.AI.ElevenLabs/ElevenLabsLegacyError/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L173)
+
+<a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_Issues_"></a>
+<a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_Issues"></a>
+
+### Issues
+
+
+```csharp
+public IReadOnlyList<ElevenLabsValidationIssue>? Issues { get; }
+```
+
+
+Array-valued `detail`, when present.
+
+**Value:** [IReadOnlyList&lt;ElevenLabsValidationIssue&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L167)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_Message_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_Message"></a>
@@ -75,12 +148,17 @@ Provider error code.
 
 
 ```csharp
+[Obsolete("Use Error.Message.")]
 public string Message { get; }
 ```
 
 
-Provider message. Nested JSON is left as text.
+Legacy provider message. Use [Error](#Vercel_AI_ElevenLabs_ElevenLabsErrorData_Error) for parsed legacy bodies.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L36)
+:::caution[Obsolete]
+This API is obsolete.
+:::
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L176)

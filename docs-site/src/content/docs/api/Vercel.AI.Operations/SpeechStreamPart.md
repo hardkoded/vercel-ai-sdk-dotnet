@@ -23,7 +23,7 @@ A part of [FullStream](/api/Vercel.AI.Operations/StreamSpeechResult/#Vercel_AI_O
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L177)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L182)
 
 ## Properties
 
@@ -43,7 +43,7 @@ A chunk is empty only when it carries [ProviderMetadata](#Vercel_AI_Operations_S
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L189)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L194)
 
 <a id="Vercel_AI_Operations_SpeechStreamPart_AudioFormat_"></a>
 <a id="Vercel_AI_Operations_SpeechStreamPart_AudioFormat"></a>
@@ -60,7 +60,7 @@ Format of an `audio` chunk.
 
 **Value:** [SpeechAudioFormat](/api/Vercel.AI.Operations/SpeechAudioFormat/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L192)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L197)
 
 <a id="Vercel_AI_Operations_SpeechStreamPart_Error_"></a>
 <a id="Vercel_AI_Operations_SpeechStreamPart_Error"></a>
@@ -77,7 +77,7 @@ Provider error of an `error` part.
 
 **Value:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L201)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L206)
 
 <a id="Vercel_AI_Operations_SpeechStreamPart_Id_"></a>
 <a id="Vercel_AI_Operations_SpeechStreamPart_Id"></a>
@@ -94,7 +94,7 @@ Provider identifier of an `audio` chunk.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L183)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L188)
 
 <a id="Vercel_AI_Operations_SpeechStreamPart_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_SpeechStreamPart_ProviderMetadata"></a>
@@ -111,7 +111,7 @@ Provider metadata of an `audio` chunk.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L195)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L200)
 
 <a id="Vercel_AI_Operations_SpeechStreamPart_RawValue_"></a>
 <a id="Vercel_AI_Operations_SpeechStreamPart_RawValue"></a>
@@ -128,7 +128,7 @@ Raw provider chunk of a `raw` part.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L198)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L203)
 
 <a id="Vercel_AI_Operations_SpeechStreamPart_Type_"></a>
 <a id="Vercel_AI_Operations_SpeechStreamPart_Type"></a>
@@ -145,4 +145,4 @@ Part type: `audio`, `raw`, or `error`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L180)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L185)

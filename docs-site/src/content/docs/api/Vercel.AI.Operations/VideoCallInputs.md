@@ -23,7 +23,7 @@ Normalized prompt, frames, and references.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L398)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L458)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates normalized inputs.
 | `inputReferences` | [IReadOnlyList&lt;VideoModelFile&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `warnings` | [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L401)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L461)
 
 ## Properties
 
@@ -69,7 +69,7 @@ Frames.
 
 **Value:** [IReadOnlyList&lt;VideoFrameFile&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L417)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L483)
 
 <a id="Vercel_AI_Operations_VideoCallInputs_Image_"></a>
 <a id="Vercel_AI_Operations_VideoCallInputs_Image"></a>
@@ -86,7 +86,7 @@ Start image. A `first_frame` wins over the prompt image.
 
 **Value:** [VideoModelFile](/api/Vercel.AI.Operations/VideoModelFile/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L414)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L480)
 
 <a id="Vercel_AI_Operations_VideoCallInputs_InputReferences_"></a>
 <a id="Vercel_AI_Operations_VideoCallInputs_InputReferences"></a>
@@ -103,7 +103,7 @@ References. Null when frames are present.
 
 **Value:** [IReadOnlyList&lt;VideoModelFile&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L420)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L486)
 
 <a id="Vercel_AI_Operations_VideoCallInputs_Prompt_"></a>
 <a id="Vercel_AI_Operations_VideoCallInputs_Prompt"></a>
@@ -120,7 +120,7 @@ Prompt text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L411)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L477)
 
 <a id="Vercel_AI_Operations_VideoCallInputs_Warnings_"></a>
 <a id="Vercel_AI_Operations_VideoCallInputs_Warnings"></a>
@@ -137,4 +137,4 @@ Normalization warnings.
 
 **Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L423)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L489)

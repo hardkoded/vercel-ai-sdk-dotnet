@@ -24,7 +24,7 @@ Warning logger. [Observer](#Vercel_AI_Operations_WarningLog_Observer) sees every
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L97)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L110)
 
 ## Properties
 
@@ -43,7 +43,7 @@ Custom logger. `false` suppresses logging. A delegate receives nonempty warnings
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L105)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L118)
 
 <a id="Vercel_AI_Operations_WarningLog_Observer_"></a>
 <a id="Vercel_AI_Operations_WarningLog_Observer"></a>
@@ -60,7 +60,7 @@ Receives every log attempt, including an empty warning list.
 
 **Value:** [Action&lt;WarningLogContext&gt;](https://learn.microsoft.com/dotnet/api/system.action-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L100)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L113)
 
 ## Methods
 
@@ -85,4 +85,4 @@ Records warnings for one model call.
 | `provider` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `model` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L121)

@@ -24,7 +24,7 @@ when the delay is between 0 and 60 seconds, or shorter than the backoff delay.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L43)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a retry strategy.
 | --- | --- | --- |
 | `options` | [RetryOptions](/api/Vercel.AI.Util/RetryOptions/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L48)
 
 ## Methods
 
@@ -78,7 +78,7 @@ Runs &lt;code class="paramref"&gt;operation&lt;/code&gt; until it succeeds or re
 
 **Returns:** [Task&lt;T&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L54)
 
 <a id="Vercel_AI_Util_RetryWithExponentialBackoffRespectingRetryHeaders_GetRetryDelayInMs_"></a>
 <a id="Vercel_AI_Util_RetryWithExponentialBackoffRespectingRetryHeaders_GetRetryDelayInMs_System_Object_System_Double_System_Nullable_System_DateTimeOffset__"></a>
@@ -104,4 +104,4 @@ Header delays are used when they are at least 0 and either under 60 seconds or s
 
 **Returns:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L68)

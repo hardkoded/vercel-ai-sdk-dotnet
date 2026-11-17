@@ -47,7 +47,7 @@ Creates a provider.
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `options` | [OpenAICompatibleOptions](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleOptions/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L45)
 
 ## Fields
 
@@ -132,7 +132,7 @@ Set when the key was read from [ApiKeyVariable](#Vercel_AI_TogetherAI_TogetherAI
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L42)
 
 ## Methods
 
@@ -158,7 +158,7 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [TogetherAIProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L99)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L113)
 
 <a id="Vercel_AI_TogetherAI_TogetherAIProvider_CreateChatModel_"></a>
 <a id="Vercel_AI_TogetherAI_TogetherAIProvider_CreateChatModel_System_String_"></a>
@@ -181,7 +181,7 @@ Creates a chat model. Providers override this when support differs by model id.
 
 **Returns:** [OpenAICompatibleLanguageModel](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L55)
 
 <a id="Vercel_AI_TogetherAI_TogetherAIProvider_ImageModel_"></a>
 <a id="Vercel_AI_TogetherAI_TogetherAIProvider_ImageModel_System_String_"></a>
@@ -204,7 +204,7 @@ Returns an image model.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L63)
 
 <a id="Vercel_AI_TogetherAI_TogetherAIProvider_RerankingModel_"></a>
 <a id="Vercel_AI_TogetherAI_TogetherAIProvider_RerankingModel_System_String_"></a>
@@ -227,7 +227,7 @@ Returns a reranking model.
 
 **Returns:** [IRerankingModel](/api/Vercel.AI.Provider/IRerankingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L69)
 
 <a id="Vercel_AI_TogetherAI_TogetherAIProvider_ResolveApiKey_"></a>
 <a id="Vercel_AI_TogetherAI_TogetherAIProvider_ResolveApiKey"></a>
@@ -244,7 +244,7 @@ Resolves the API key. A missing key is omitted unless [RequireApiKey](/api/Verce
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L75)
 
 <a id="Vercel_AI_TogetherAI_TogetherAIProvider_SupportsStructuredOutputs_"></a>
 <a id="Vercel_AI_TogetherAI_TogetherAIProvider_SupportsStructuredOutputs_System_String_"></a>
@@ -267,4 +267,4 @@ Whether &lt;code class="paramref"&gt;modelId&lt;/code&gt; should send JSON schem
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L49)

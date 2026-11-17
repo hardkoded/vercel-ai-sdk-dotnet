@@ -23,7 +23,7 @@ One document in the reranked order.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L115)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L130)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a ranked document.
 | `score` | [double](https://learn.microsoft.com/dotnet/api/system.double) |  |
 | `document` | [object](https://learn.microsoft.com/dotnet/api/system.object) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L118)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L133)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Original document.
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L132)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L147)
 
 <a id="Vercel_AI_Operations_RankedDocument_OriginalIndex_"></a>
 <a id="Vercel_AI_Operations_RankedDocument_OriginalIndex"></a>
@@ -84,7 +84,7 @@ Index in [OriginalDocuments](/api/Vercel.AI.Operations/RerankResult/#Vercel_AI_O
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L126)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L141)
 
 <a id="Vercel_AI_Operations_RankedDocument_Score_"></a>
 <a id="Vercel_AI_Operations_RankedDocument_Score"></a>
@@ -101,4 +101,4 @@ Relevance score.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L129)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L144)

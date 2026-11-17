@@ -23,7 +23,7 @@ Event passed to telemetry when `CancellationToken)` completes. Raw audio is not 
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L364)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L469)
 
 ## Constructors
 
@@ -61,7 +61,7 @@ Creates the event.
 | `recordOutputs` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `functionId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L367)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L472)
 
 ## Properties
 
@@ -80,7 +80,7 @@ Input audio metadata. Byte length and media type are unknown for native URL tran
 
 **Value:** [TranscriptionAudioInfo](/api/Vercel.AI.Operations/TranscriptionAudioInfo/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L400)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L522)
 
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_CallId_"></a>
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_CallId"></a>
@@ -97,7 +97,7 @@ Unique identifier for this call.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L388)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L510)
 
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_DurationInSeconds_"></a>
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_DurationInSeconds"></a>
@@ -114,7 +114,7 @@ Duration of the input audio, when available.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L415)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L537)
 
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_FunctionId_"></a>
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_FunctionId"></a>
@@ -131,7 +131,7 @@ Copied from [FunctionId](/api/Vercel.AI.Operations/TranscribeTelemetry/#Vercel_A
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L436)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L558)
 
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_Language_"></a>
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_Language"></a>
@@ -148,7 +148,7 @@ Detected language.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L412)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L534)
 
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_ModelId_"></a>
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_ModelId"></a>
@@ -165,7 +165,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L397)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L519)
 
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_OperationId_"></a>
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_OperationId"></a>
@@ -182,7 +182,7 @@ public string OperationId { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L391)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L513)
 
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_Provider_"></a>
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_Provider"></a>
@@ -199,7 +199,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L394)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L516)
 
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_ProviderMetadata"></a>
@@ -216,7 +216,7 @@ Provider metadata. Hidden when inputs or outputs are not recorded.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L424)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L546)
 
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_RecordInputs_"></a>
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_RecordInputs"></a>
@@ -233,7 +233,7 @@ Copied from [RecordInputs](/api/Vercel.AI.Operations/TranscribeTelemetry/#Vercel
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L430)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L552)
 
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_RecordOutputs_"></a>
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_RecordOutputs"></a>
@@ -250,7 +250,7 @@ Copied from [RecordOutputs](/api/Vercel.AI.Operations/TranscribeTelemetry/#Verce
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L433)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L555)
 
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_Response_"></a>
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_Response"></a>
@@ -267,7 +267,7 @@ Response metadata.
 
 **Value:** [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L427)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L549)
 
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_Segments_"></a>
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_Segments"></a>
@@ -284,7 +284,7 @@ Segments with timing information.
 
 **Value:** [IReadOnlyList&lt;TranscriptSegment&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L406)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L528)
 
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_Text_"></a>
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_Text"></a>
@@ -301,7 +301,7 @@ The complete transcript.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L403)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L525)
 
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_Usage_"></a>
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_Usage"></a>
@@ -318,7 +318,7 @@ Usage reported by the provider, when available.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L418)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L540)
 
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_Warnings_"></a>
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_Warnings"></a>
@@ -335,7 +335,7 @@ Warnings from the transcription model.
 
 **Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L421)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L543)
 
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_Words_"></a>
 <a id="Vercel_AI_Operations_TranscriptionEndEvent_Words"></a>
@@ -352,4 +352,4 @@ Word timings returned by the provider, whether requested or returned by default.
 
 **Value:** [IReadOnlyList&lt;TranscriptSegment&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L409)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L531)

@@ -23,7 +23,7 @@ Options of [WebSearchPreview(OpenAIWebSearchPreviewToolOptions)](/api/Vercel.AI.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L233)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L305)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Search context size: `low`, `medium`, or `high`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L236)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L308)
 
 <a id="Vercel_AI_OpenAI_OpenAIWebSearchPreviewToolOptions_UserLocation_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIWebSearchPreviewToolOptions_UserLocation"></a>
@@ -59,4 +59,4 @@ Approximate user location.
 
 **Value:** [OpenAIApproximateLocation](/api/Vercel.AI.OpenAI/OpenAIApproximateLocation/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L239)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L311)

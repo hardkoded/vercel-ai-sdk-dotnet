@@ -20,13 +20,14 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
 
 
 Answers questions through the Perplexity Decisions API (`POST {base}/v1/decisions`). Boolean questions are sent as
-native `noul` questions. Probabilities and scores keep full precision. Provider options are not supported.
+native `noul` questions. Probabilities and scores keep full precision. Provider options `mode` (`web_grounding`)
+and `maxStaleness` enable web-grounded decisions.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
 **Implements:** [IDecisionCaller](/api/Vercel.AI.Operations/IDecisionCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityDecisionModel.cs#L19)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityDecisionModel.cs#L20)
 
 ## Constructors
 
@@ -50,7 +51,7 @@ Creates a decision model.
 | `provider` | [PerplexityProvider](/api/Vercel.AI.Perplexity/PerplexityProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityDecisionModel.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityDecisionModel.cs#L29)
 
 ## Properties
 
@@ -69,7 +70,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityDecisionModel.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityDecisionModel.cs#L39)
 
 <a id="Vercel_AI_Perplexity_PerplexityDecisionModel_Provider_"></a>
 <a id="Vercel_AI_Perplexity_PerplexityDecisionModel_Provider"></a>
@@ -86,7 +87,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityDecisionModel.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityDecisionModel.cs#L36)
 
 <a id="Vercel_AI_Perplexity_PerplexityDecisionModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Perplexity_PerplexityDecisionModel_SpecificationVersion"></a>
@@ -103,7 +104,7 @@ Specification version. Only `v4` is accepted.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityDecisionModel.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityDecisionModel.cs#L42)
 
 <a id="Vercel_AI_Perplexity_PerplexityDecisionModel_SupportedQuestionTypes_"></a>
 <a id="Vercel_AI_Perplexity_PerplexityDecisionModel_SupportedQuestionTypes"></a>
@@ -120,7 +121,7 @@ Question types this model can answer.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityDecisionModel.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityDecisionModel.cs#L45)
 
 ## Methods
 
@@ -147,7 +148,7 @@ send the requests through a custom handler.
 
 **Returns:** [PerplexityDecisionModel](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityDecisionModel.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityDecisionModel.cs#L76)
 
 <a id="Vercel_AI_Perplexity_PerplexityDecisionModel_DoDecideAsync_"></a>
 <a id="Vercel_AI_Perplexity_PerplexityDecisionModel_DoDecideAsync_Vercel_AI_Operations_DecisionModelCall_System_Threading_CancellationToken_"></a>
@@ -171,7 +172,7 @@ Sends every question in one Decisions request.
 
 **Returns:** [Task&lt;DecisionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityDecisionModel.cs#L118)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityDecisionModel.cs#L126)
 
 <a id="Vercel_AI_Perplexity_PerplexityDecisionModel_Serialize_"></a>
 <a id="Vercel_AI_Perplexity_PerplexityDecisionModel_Serialize"></a>
@@ -189,4 +190,4 @@ Maps to `[WORKFLOW_SERIALIZE]`. The HTTP client is not serialized.
 
 **Returns:** [SerializedModelOptions](/api/Vercel.AI.ProviderUtils/SerializedModelOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityDecisionModel.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityDecisionModel.cs#L52)

@@ -23,7 +23,7 @@ Generates videos. Maps to `experimental_generateVideo`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L557)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L653)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Generates videos, polling or waiting on a webhook when the model requires it.
 
 **Returns:** [Task&lt;GenerateVideoResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L560)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L656)
 
 <a id="Vercel_AI_Operations_GenerateVideo_Normalize_"></a>
 <a id="Vercel_AI_Operations_GenerateVideo_Normalize_Vercel_AI_Operations_VideoPrompt_System_Collections_Generic_IReadOnlyList_Vercel_AI_Operations_VideoFrameImage__System_Collections_Generic_IReadOnlyList_Vercel_AI_Operations_VideoReference__"></a>
@@ -74,4 +74,4 @@ Normalizes prompt, frames, and references.
 
 **Returns:** [VideoCallInputs](/api/Vercel.AI.Operations/VideoCallInputs/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L628)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L795)

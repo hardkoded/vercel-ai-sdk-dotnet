@@ -25,7 +25,7 @@ OpenAI Realtime session URI builder and WebSocket client.
 
 **Implements:** [IServerWebSocketRealtimeModel](/api/Vercel.AI.Provider/IServerWebSocketRealtimeModel/), [IRealtimeModel](/api/Vercel.AI.Provider/IRealtimeModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L83)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a realtime model.
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `config` | [OpenAIRealtimeModelConfig](/api/Vercel.AI.OpenAI/OpenAIRealtimeModelConfig/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L108)
 
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel__ctor_Vercel_AI_OpenAI_OpenAIProvider_System_String_"></a>
 
@@ -70,7 +70,7 @@ Creates a realtime model from a provider.
 | `provider` | [OpenAIProvider](/api/Vercel.AI.OpenAI/OpenAIProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L91)
 
 ## Properties
 
@@ -89,7 +89,7 @@ The conversation mode and the connection kinds this model supports. Maps to `cap
 
 **Value:** [RealtimeCapabilities](/api/Vercel.AI/RealtimeCapabilities/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L102)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L130)
 
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_ModelId_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_ModelId"></a>
@@ -106,7 +106,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L97)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L125)
 
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_Provider_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_Provider"></a>
@@ -123,7 +123,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L94)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L122)
 
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_SpecificationVersion"></a>
@@ -140,7 +140,7 @@ The realtime model specification version. Maps to `specificationVersion`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L91)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L119)
 
 ## Methods
 
@@ -166,7 +166,7 @@ Builds the provider session configuration from a normalized config. Maps to `bui
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L185)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L258)
 
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_BuildUri_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_BuildUri"></a>
@@ -183,7 +183,7 @@ WebSocket URI for this model.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L110)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L139)
 
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_ConnectAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_ConnectAsync_System_Threading_CancellationToken_"></a>
@@ -206,7 +206,7 @@ Opens a realtime session.
 
 **Returns:** [Task&lt;IRealtimeSession&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L191)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L271)
 
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_CreateClientSecretAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_CreateClientSecretAsync_System_Nullable_System_Int32__System_Threading_CancellationToken_"></a>
@@ -230,7 +230,7 @@ Requests a realtime client secret. &lt;code class="paramref"&gt;expiresAfterSeco
 
 **Returns:** [Task&lt;OpenAIRealtimeClientSecret&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L118)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L151)
 
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_CreateClientSecretAsync_Vercel_AI_Provider_RealtimeModelV4SessionConfig_System_Nullable_System_Int32__System_Threading_CancellationToken_"></a>
 
@@ -255,7 +255,7 @@ Maps to `doCreateClientSecret`.
 
 **Returns:** [Task&lt;OpenAIRealtimeClientSecret&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L127)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L164)
 
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_GetServerWebSocketConfigAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_GetServerWebSocketConfigAsync_System_Nullable_Vercel_AI_Provider_RealtimeModelV4SessionIntent__System_Threading_CancellationToken_"></a>
@@ -280,7 +280,31 @@ credential the model was constructed with. Unsupported intents throw before any 
 
 **Returns:** [Task&lt;RealtimeModelV4ServerConnection&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L165)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L224)
+
+<a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_GetWebSocketConfig_"></a>
+<a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_GetWebSocketConfig_System_String_System_String_"></a>
+
+### GetWebSocketConfig(string, string)
+
+
+```csharp
+public OpenAIRealtimeWebSocketConfig GetWebSocketConfig(string token, string url)
+```
+
+
+Returns the URL and the subprotocols that carry the token (a browser has no header channel). Maps to `getWebSocketConfig`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `token` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `url` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [OpenAIRealtimeWebSocketConfig](/api/Vercel.AI.OpenAI/OpenAIRealtimeWebSocketConfig/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L215)
 
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_ParseServerEvent_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_ParseServerEvent_System_Text_Json_JsonElement_"></a>
@@ -303,7 +327,7 @@ Parses a raw provider event into a normalized event. Maps to `parseServerEvent`.
 
 **Returns:** [RealtimeModelV4ServerEvent](/api/Vercel.AI.Provider/RealtimeModelV4ServerEvent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L173)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L239)
 
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_SerializeClientEvent_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModel_SerializeClientEvent_Vercel_AI_Provider_RealtimeModelV4ClientEvent_System_Nullable_Vercel_AI_Provider_RealtimeModelV4SessionIntent__"></a>
@@ -327,4 +351,4 @@ Serializes a normalized client event into the provider wire format. Maps to `ser
 
 **Returns:** [JsonNode](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonnode)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L179)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L245)

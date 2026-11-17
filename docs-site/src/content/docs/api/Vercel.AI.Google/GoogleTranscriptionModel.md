@@ -144,7 +144,7 @@ Builds the Live API setup message. Live models reject a unary call.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTranscriptionModel.cs#L169)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTranscriptionModel.cs#L232)
 
 <a id="Vercel_AI_Google_GoogleTranscriptionModel_BuildRequest_"></a>
 <a id="Vercel_AI_Google_GoogleTranscriptionModel_BuildRequest_System_String_Vercel_AI_Provider_AudioInput_System_Text_Json_Nodes_JsonObject_"></a>
@@ -169,7 +169,7 @@ Builds the Interactions transcription body.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTranscriptionModel.cs#L145)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTranscriptionModel.cs#L201)
 
 <a id="Vercel_AI_Google_GoogleTranscriptionModel_DoGenerateAsync_"></a>
 <a id="Vercel_AI_Google_GoogleTranscriptionModel_DoGenerateAsync_Vercel_AI_Operations_TranscriptionModelCall_System_Threading_CancellationToken_"></a>
@@ -194,7 +194,7 @@ Transcribes audio through the Interactions API. `google` provider options become
 
 **Returns:** [Task&lt;TranscriptionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTranscriptionModel.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTranscriptionModel.cs#L73)
 
 <a id="Vercel_AI_Google_GoogleTranscriptionModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_Google_GoogleTranscriptionModel_DoStreamAsync_Vercel_AI_Operations_TranscriptionStreamCall_System_Threading_CancellationToken_"></a>
@@ -218,7 +218,7 @@ Returns null. The Gemini Live WebSocket is not opened by this port.
 
 **Returns:** [Task&lt;TranscriptionStreamStart&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTranscriptionModel.cs#L139)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTranscriptionModel.cs#L192)
 
 <a id="Vercel_AI_Google_GoogleTranscriptionModel_DoTranscribeAsync_"></a>
 <a id="Vercel_AI_Google_GoogleTranscriptionModel_DoTranscribeAsync_Vercel_AI_Provider_AudioInput_System_Threading_CancellationToken_"></a>

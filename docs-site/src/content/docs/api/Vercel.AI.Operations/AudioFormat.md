@@ -28,13 +28,13 @@ The format of raw input audio. Maps to `SharedV4AudioFormat`.
 ## Constructors
 
 <a id="Vercel_AI_Operations_AudioFormat__ctor_"></a>
-<a id="Vercel_AI_Operations_AudioFormat__ctor_System_String_System_Nullable_System_Int32__"></a>
+<a id="Vercel_AI_Operations_AudioFormat__ctor_System_String_System_Nullable_System_Double__"></a>
 
-### AudioFormat(string, int?)
+### AudioFormat(string, double?)
 
 
 ```csharp
-public AudioFormat(string type, int? rate = null)
+public AudioFormat(string type, double? rate = null)
 ```
 
 
@@ -45,7 +45,7 @@ Creates an audio format.
 | Name | Type | Description |
 | --- | --- | --- |
 | `type` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
-| `rate` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
+| `rate` | [double?](https://learn.microsoft.com/dotnet/api/system.double) |  |
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L34)
 
@@ -58,13 +58,13 @@ Creates an audio format.
 
 
 ```csharp
-public int? Rate { get; }
+public double? Rate { get; }
 ```
 
 
 Sample rate in Hz, when the format needs one.
 
-**Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
+**Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L44)
 

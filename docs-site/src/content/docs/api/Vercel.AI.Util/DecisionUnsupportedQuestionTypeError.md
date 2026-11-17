@@ -91,7 +91,7 @@ Decision model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionUnsupportedQuestionTypeError.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionUnsupportedQuestionTypeError.cs#L54)
 
 <a id="Vercel_AI_Util_DecisionUnsupportedQuestionTypeError_Provider_"></a>
 <a id="Vercel_AI_Util_DecisionUnsupportedQuestionTypeError_Provider"></a>
@@ -108,7 +108,7 @@ Decision provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionUnsupportedQuestionTypeError.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionUnsupportedQuestionTypeError.cs#L51)
 
 <a id="Vercel_AI_Util_DecisionUnsupportedQuestionTypeError_QuestionId_"></a>
 <a id="Vercel_AI_Util_DecisionUnsupportedQuestionTypeError_QuestionId"></a>
@@ -125,7 +125,7 @@ Question identifier.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionUnsupportedQuestionTypeError.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionUnsupportedQuestionTypeError.cs#L45)
 
 <a id="Vercel_AI_Util_DecisionUnsupportedQuestionTypeError_QuestionType_"></a>
 <a id="Vercel_AI_Util_DecisionUnsupportedQuestionTypeError_QuestionType"></a>
@@ -142,7 +142,7 @@ Question type the model rejected.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionUnsupportedQuestionTypeError.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionUnsupportedQuestionTypeError.cs#L48)
 
 ## Methods
 
@@ -167,4 +167,4 @@ Returns whether &lt;code class="paramref"&gt;error&lt;/code&gt; carries this err
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionUnsupportedQuestionTypeError.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionUnsupportedQuestionTypeError.cs#L57)

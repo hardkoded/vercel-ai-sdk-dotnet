@@ -25,7 +25,7 @@ all fit a function that returns a task.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L53)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a config.
 | `baseUrl` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `headers` | [Func&lt;CancellationToken, Task&lt;IReadOnlyDictionary&lt;string, string&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L56)
 
 ## Properties
 
@@ -69,7 +69,7 @@ API base URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L71)
 
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModelConfig_Headers_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModelConfig_Headers"></a>
@@ -86,7 +86,7 @@ Resolves the request headers, including the credential.
 
 **Value:** [Func&lt;CancellationToken, Task&lt;IReadOnlyDictionary&lt;string, string&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L74)
 
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModelConfig_HttpClient_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModelConfig_HttpClient"></a>
@@ -103,7 +103,7 @@ Maps `fetch`: the HTTP client used to mint client secrets. Defaults to a shared 
 
 **Value:** [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L77)
 
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModelConfig_Provider_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModelConfig_Provider"></a>
@@ -120,4 +120,4 @@ Provider id, for example `openai.realtime`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Realtime/OpenAIRealtimeModel.cs#L68)

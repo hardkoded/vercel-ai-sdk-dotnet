@@ -44,6 +44,23 @@ API key. Defaults to the `SCALEDOWN_API_KEY` environment variable, read when a r
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L16)
 
+<a id="Vercel_AI_ScaleDown_ScaleDownProviderSettings_ApiKeyProvider_"></a>
+<a id="Vercel_AI_ScaleDown_ScaleDownProviderSettings_ApiKeyProvider"></a>
+
+### ApiKeyProvider
+
+
+```csharp
+public Func<CancellationToken, Task<string>>? ApiKeyProvider { get; set; }
+```
+
+
+Resolves the API key on every request. Takes precedence over [ApiKey](#Vercel_AI_ScaleDown_ScaleDownProviderSettings_ApiKey). Maps to an async `apiKey` function.
+
+**Value:** [Func&lt;CancellationToken, Task&lt;string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L19)
+
 <a id="Vercel_AI_ScaleDown_ScaleDownProviderSettings_BaseUrl_"></a>
 <a id="Vercel_AI_ScaleDown_ScaleDownProviderSettings_BaseUrl"></a>
 
@@ -59,7 +76,7 @@ API base URL. Defaults to `https://api.scaledown.xyz`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L19)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L22)
 
 <a id="Vercel_AI_ScaleDown_ScaleDownProviderSettings_Headers_"></a>
 <a id="Vercel_AI_ScaleDown_ScaleDownProviderSettings_Headers"></a>
@@ -76,4 +93,4 @@ Headers sent with every request.
 
 **Value:** [IDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.idictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L22)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L25)

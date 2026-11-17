@@ -23,7 +23,7 @@ Base64 conversions for inline file bytes.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L483)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L512)
 
 ## Methods
 
@@ -48,7 +48,7 @@ Encodes bytes as base64.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L526)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L555)
 
 <a id="Vercel_AI_ProviderUtils_ByteEncoding_ConvertToBase64_System_String_"></a>
 
@@ -70,7 +70,7 @@ Returns base64 text unchanged, or encodes bytes.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L520)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L549)
 
 <a id="Vercel_AI_ProviderUtils_ByteEncoding_FromBase64_"></a>
 <a id="Vercel_AI_ProviderUtils_ByteEncoding_FromBase64_System_String_"></a>
@@ -93,7 +93,7 @@ Decodes standard or base64url text. An empty string decodes to an empty array.
 
 **Returns:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L497)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L526)
 
 <a id="Vercel_AI_ProviderUtils_ByteEncoding_ToBase64_"></a>
 <a id="Vercel_AI_ProviderUtils_ByteEncoding_ToBase64_System_Byte___"></a>
@@ -116,4 +116,4 @@ Encodes bytes as standard base64.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L486)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L515)

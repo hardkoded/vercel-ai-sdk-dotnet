@@ -68,7 +68,7 @@ Raw response body.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L69)
 
 <a id="Vercel_AI_Voyage_VoyageEmbeddingResult_Embeddings_"></a>
 <a id="Vercel_AI_Voyage_VoyageEmbeddingResult_Embeddings"></a>
@@ -85,7 +85,7 @@ Vectors in input order.
 
 **Value:** [IReadOnlyList&lt;float\[\]&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L60)
 
 <a id="Vercel_AI_Voyage_VoyageEmbeddingResult_Headers_"></a>
 <a id="Vercel_AI_Voyage_VoyageEmbeddingResult_Headers"></a>
@@ -102,7 +102,7 @@ Response headers.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L66)
 
 <a id="Vercel_AI_Voyage_VoyageEmbeddingResult_Tokens_"></a>
 <a id="Vercel_AI_Voyage_VoyageEmbeddingResult_Tokens"></a>
@@ -119,4 +119,4 @@ Token count. Zero when the provider omits usage.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L63)

@@ -123,7 +123,7 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [HuggingFaceProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HuggingFace/HuggingFaceProvider.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HuggingFace/HuggingFaceProvider.cs#L50)
 
 <a id="Vercel_AI_HuggingFace_HuggingFaceProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_HuggingFace_HuggingFaceProvider_EmbeddingModel_System_String_"></a>
@@ -146,7 +146,7 @@ Returns an embedding model.
 
 **Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HuggingFace/HuggingFaceProvider.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HuggingFace/HuggingFaceProvider.cs#L34)
 
 <a id="Vercel_AI_HuggingFace_HuggingFaceProvider_ImageModel_"></a>
 <a id="Vercel_AI_HuggingFace_HuggingFaceProvider_ImageModel_System_String_"></a>
@@ -192,4 +192,4 @@ Creates a Responses API model. [LanguageModel(string)](/api/Vercel.AI.OpenAIComp
 
 **Returns:** [HuggingFaceResponsesLanguageModel](/api/Vercel.AI.HuggingFace/HuggingFaceResponsesLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HuggingFace/HuggingFaceProvider.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HuggingFace/HuggingFaceProvider.cs#L28)

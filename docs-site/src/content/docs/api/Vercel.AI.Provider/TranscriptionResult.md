@@ -23,7 +23,7 @@ Transcription result.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L319)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L384)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates a transcription with no usage.
 | --- | --- | --- |
 | `text` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L322)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L387)
 
 <a id="Vercel_AI_Provider_TranscriptionResult__ctor_System_String_Vercel_AI_Provider_AudioUsage_"></a>
 
@@ -67,7 +67,7 @@ Creates a transcription.
 | `text` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `usage` | [AudioUsage](/api/Vercel.AI.Provider/AudioUsage/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L328)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L391)
 
 ## Properties
 
@@ -86,7 +86,7 @@ Transcript text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L335)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L398)
 
 <a id="Vercel_AI_Provider_TranscriptionResult_Usage_"></a>
 <a id="Vercel_AI_Provider_TranscriptionResult_Usage"></a>
@@ -103,4 +103,4 @@ Usage reported by the call. Absent unless the caller supplies it.
 
 **Value:** [AudioUsage](/api/Vercel.AI.Provider/AudioUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L338)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L401)

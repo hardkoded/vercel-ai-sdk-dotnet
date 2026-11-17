@@ -23,4 +23,4 @@ Reranking model used by [Rerank](/api/Vercel.AI.Operations/Rerank/).
 
 **Derived:** [AmazonBedrockRerankingModel](/api/Vercel.AI.AmazonBedrock/AmazonBedrockRerankingModel/), [TogetherAIRerankingModel](/api/Vercel.AI.TogetherAI/TogetherAIRerankingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L102)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L114)

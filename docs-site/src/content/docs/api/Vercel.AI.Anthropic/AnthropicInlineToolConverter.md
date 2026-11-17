@@ -30,4 +30,4 @@ tool object) into its Anthropic definition. Maps to `AnthropicInlineToolConverte
 
 **Returns:** [AnthropicInlineToolResult](/api/Vercel.AI.Anthropic/AnthropicInlineToolResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L76)

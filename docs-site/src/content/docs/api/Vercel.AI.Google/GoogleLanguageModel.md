@@ -49,7 +49,7 @@ Creates a model.
 | `provider` | [GoogleProvider](/api/Vercel.AI.Google/GoogleProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleLanguageModel.cs#L26)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleLanguageModel.cs#L29)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleLanguageModel.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleLanguageModel.cs#L48)
 
 <a id="Vercel_AI_Google_GoogleLanguageModel_Provider_"></a>
 <a id="Vercel_AI_Google_GoogleLanguageModel_Provider"></a>
@@ -85,7 +85,7 @@ Provider id, such as `openai`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleLanguageModel.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleLanguageModel.cs#L42)
 
 <a id="Vercel_AI_Google_GoogleLanguageModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Google_GoogleLanguageModel_SpecificationVersion"></a>
@@ -102,7 +102,25 @@ Always `V4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleLanguageModel.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleLanguageModel.cs#L36)
+
+<a id="Vercel_AI_Google_GoogleLanguageModel_SupportedUrls_"></a>
+<a id="Vercel_AI_Google_GoogleLanguageModel_SupportedUrls"></a>
+
+### SupportedUrls
+
+
+```csharp
+public IReadOnlyDictionary<string, string> SupportedUrls { get; }
+```
+
+
+URLs the model can read itself, keyed by media type pattern (such as `image/*`). Each value is a regular expression that a URL
+must match. Prompt file URLs that match are passed through. All others are downloaded before the call. Maps to `supportedUrls`.
+
+**Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleLanguageModel.cs#L51)
 
 ## Methods
 
@@ -128,7 +146,7 @@ Generates a complete result.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleLanguageModel.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleLanguageModel.cs#L101)
 
 <a id="Vercel_AI_Google_GoogleLanguageModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_Google_GoogleLanguageModel_DoStreamAsync_Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_"></a>
@@ -152,7 +170,7 @@ Streams partial results. The result carries the stream with the request and resp
 
 **Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleLanguageModel.cs#L148)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleLanguageModel.cs#L242)
 
 <a id="Vercel_AI_Google_GoogleLanguageModel_Prepare_"></a>
 <a id="Vercel_AI_Google_GoogleLanguageModel_Prepare_Vercel_AI_Provider_LanguageModelCallOptions_System_Boolean_"></a>
@@ -176,4 +194,4 @@ Builds the generateContent body without sending it.
 
 **Returns:** [GooglePreparedRequest](/api/Vercel.AI.Google/GooglePreparedRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleLanguageModel.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleLanguageModel.cs#L54)

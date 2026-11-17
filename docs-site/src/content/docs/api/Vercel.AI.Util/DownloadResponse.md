@@ -23,7 +23,7 @@ One HTTP response seen by [Download](/api/Vercel.AI.Util/Download/).
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L110)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L126)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a response.
 | `body` | [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte) |  |
 | `type` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L113)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L129)
 
 ## Properties
 
@@ -69,7 +69,7 @@ Response body. May be null.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L132)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L154)
 
 <a id="Vercel_AI_Util_DownloadResponse_Cancelled_"></a>
 <a id="Vercel_AI_Util_DownloadResponse_Cancelled"></a>
@@ -86,7 +86,7 @@ Whether [Cancel()](#Vercel_AI_Util_DownloadResponse_Cancel) has run.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L147)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L169)
 
 <a id="Vercel_AI_Util_DownloadResponse_Headers_"></a>
 <a id="Vercel_AI_Util_DownloadResponse_Headers"></a>
@@ -103,7 +103,7 @@ Response headers.
 
 **Value:** [HeaderCollection](/api/Vercel.AI.Util/HeaderCollection/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L129)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L151)
 
 <a id="Vercel_AI_Util_DownloadResponse_Ok_"></a>
 <a id="Vercel_AI_Util_DownloadResponse_Ok"></a>
@@ -120,7 +120,7 @@ Whether the status is 200-299.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L138)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L160)
 
 <a id="Vercel_AI_Util_DownloadResponse_OnCancel_"></a>
 <a id="Vercel_AI_Util_DownloadResponse_OnCancel"></a>
@@ -137,7 +137,7 @@ Called when the body is cancelled.
 
 **Value:** [Action](https://learn.microsoft.com/dotnet/api/system.action)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L144)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L166)
 
 <a id="Vercel_AI_Util_DownloadResponse_Status_"></a>
 <a id="Vercel_AI_Util_DownloadResponse_Status"></a>
@@ -154,7 +154,7 @@ HTTP status.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L123)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L145)
 
 <a id="Vercel_AI_Util_DownloadResponse_StatusText_"></a>
 <a id="Vercel_AI_Util_DownloadResponse_StatusText"></a>
@@ -171,7 +171,7 @@ HTTP status text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L126)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L148)
 
 <a id="Vercel_AI_Util_DownloadResponse_Type_"></a>
 <a id="Vercel_AI_Util_DownloadResponse_Type"></a>
@@ -188,7 +188,7 @@ public string Type { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L135)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L157)
 
 ## Methods
 
@@ -215,7 +215,7 @@ A successful body response.
 
 **Returns:** [DownloadResponse](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L167)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L187)
 
 <a id="Vercel_AI_Util_DownloadResponse_Cancel_"></a>
 <a id="Vercel_AI_Util_DownloadResponse_Cancel"></a>
@@ -230,7 +230,7 @@ public void Cancel()
 
 Releases the body. Failures are ignored.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L150)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L172)
 
 <a id="Vercel_AI_Util_DownloadResponse_Text_"></a>
 <a id="Vercel_AI_Util_DownloadResponse_Text_System_String_System_String_"></a>
@@ -254,4 +254,4 @@ A successful UTF-8 text response.
 
 **Returns:** [DownloadResponse](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L179)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L199)

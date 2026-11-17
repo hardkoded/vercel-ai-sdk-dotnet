@@ -23,7 +23,7 @@ Mantle URL rules. Some model ids are served under `/openai/v1`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L63)
 
 ## Methods
 
@@ -51,7 +51,7 @@ Joins the Mantle origin and &lt;code class="paramref"&gt;path&lt;/code&gt; for &
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L84)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L93)
 
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleRoutes_UsesOpenAiRoute_"></a>
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleRoutes_UsesOpenAiRoute_System_String_"></a>
@@ -74,4 +74,4 @@ True for Mantle models served on the OpenAI route, excluding `openai.gpt-oss-`.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L66)

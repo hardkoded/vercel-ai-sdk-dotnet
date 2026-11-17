@@ -123,4 +123,4 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [ZaiProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Zai/ZaiProvider.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Zai/ZaiProvider.cs#L27)

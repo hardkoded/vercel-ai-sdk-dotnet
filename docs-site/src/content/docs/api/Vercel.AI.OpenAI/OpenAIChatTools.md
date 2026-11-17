@@ -23,7 +23,7 @@ Prepares Chat Completions function tools.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatTools.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatTools.cs#L52)
 
 ## Methods
 
@@ -50,7 +50,7 @@ Prepares function tools and records unsupported tool types.
 
 **Returns:** [OpenAIChatToolPreparation](/api/Vercel.AI.OpenAI/OpenAIChatToolPreparation/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatTools.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatTools.cs#L64)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatTools_Prepare_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_LanguageModelTool__Vercel_AI_Provider_ToolChoice_"></a>
 
@@ -73,4 +73,4 @@ Prepares function tools. Strict is omitted when [Strict](/api/Vercel.AI.Provider
 
 **Returns:** [OpenAIChatToolPreparation](/api/Vercel.AI.OpenAI/OpenAIChatToolPreparation/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatTools.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatTools.cs#L55)

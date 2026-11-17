@@ -28,7 +28,7 @@ Deprecated alias of [DecisionRounding](/api/Vercel.AI.Operations/DecisionRoundin
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L39)
 
 ## Constructors
 
@@ -52,4 +52,4 @@ Creates rounding limits.
 | `probabilityDecimals` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `scoreDecimals` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L43)

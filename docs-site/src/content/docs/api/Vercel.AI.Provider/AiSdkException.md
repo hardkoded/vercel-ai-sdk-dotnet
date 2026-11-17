@@ -27,7 +27,7 @@ Base exception for the community .NET port of the Vercel AI SDK.
 
 **Derived:** [GatewayError](/api/Vercel.AI.Gateway/GatewayError/), [DownloadException](/api/Vercel.AI.GenerateText/DownloadException/), [InvalidToolApprovalException](/api/Vercel.AI.GenerateText/InvalidToolApprovalException/), [NoOutputGeneratedException](/api/Vercel.AI.GenerateText/NoOutputGeneratedException/), [ToolCallNotFoundForApprovalException](/api/Vercel.AI.GenerateText/ToolCallNotFoundForApprovalException/), [ToolChoiceViolationException](/api/Vercel.AI.GenerateText/ToolChoiceViolationException/), [TypeValidationException](/api/Vercel.AI.GenerateText/TypeValidationException/), [MCPClientError](/api/Vercel.AI.Mcp/MCPClientError/), [DecisionUnsupportedQuestionTypeException](/api/Vercel.AI.Operations/DecisionUnsupportedQuestionTypeException/), [DownloadException](/api/Vercel.AI.Operations/DownloadException/), [InvalidArgumentException](/api/Vercel.AI.Operations/InvalidArgumentException/), [InvalidResponseDataException](/api/Vercel.AI.Operations/InvalidResponseDataException/), [NoImageGeneratedException](/api/Vercel.AI.Operations/NoImageGeneratedException/), [NoSpeechGeneratedException](/api/Vercel.AI.Operations/NoSpeechGeneratedException/), [NoTranscriptGeneratedException](/api/Vercel.AI.Operations/NoTranscriptGeneratedException/), [NoTranslationGeneratedException](/api/Vercel.AI.Operations/NoTranslationGeneratedException/), [NoVideoGeneratedException](/api/Vercel.AI.Operations/NoVideoGeneratedException/), [OperationRetryException](/api/Vercel.AI.Operations/OperationRetryException/), [RetryableCallException](/api/Vercel.AI.Operations/RetryableCallException/), [UnsupportedFunctionalityException](/api/Vercel.AI.Operations/UnsupportedFunctionalityException/), [UnsupportedModelVersionException](/api/Vercel.AI.Operations/UnsupportedModelVersionException/), [InvalidDataContentException](/api/Vercel.AI.Prompt/InvalidDataContentException/), [InvalidPromptException](/api/Vercel.AI.Prompt/InvalidPromptException/), [ApiConnectionException](/api/Vercel.AI.Provider/ApiConnectionException/), [ApiException](/api/Vercel.AI.Provider/ApiException/), [MessageConversionException](/api/Vercel.AI.Provider/MessageConversionException/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/Errors.cs#L8)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/Errors.cs#L10)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates an exception with a message.
 | --- | --- | --- |
 | `message` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/Errors.cs#L11)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/Errors.cs#L13)
 
 <a id="Vercel_AI_Provider_AiSdkException__ctor_System_String_System_Exception_"></a>
 

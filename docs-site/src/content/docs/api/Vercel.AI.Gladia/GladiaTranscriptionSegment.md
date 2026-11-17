@@ -23,7 +23,7 @@ One Gladia utterance mapped to a segment.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L89)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L143)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a segment.
 | `startSecond` | [double](https://learn.microsoft.com/dotnet/api/system.double) |  |
 | `endSecond` | [double](https://learn.microsoft.com/dotnet/api/system.double) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L92)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L146)
 
 ## Properties
 
@@ -67,7 +67,7 @@ End time in seconds.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L106)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L160)
 
 <a id="Vercel_AI_Gladia_GladiaTranscriptionSegment_StartSecond_"></a>
 <a id="Vercel_AI_Gladia_GladiaTranscriptionSegment_StartSecond"></a>
@@ -84,7 +84,7 @@ Start time in seconds.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L103)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L157)
 
 <a id="Vercel_AI_Gladia_GladiaTranscriptionSegment_Text_"></a>
 <a id="Vercel_AI_Gladia_GladiaTranscriptionSegment_Text"></a>
@@ -101,4 +101,4 @@ Utterance text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L100)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L154)

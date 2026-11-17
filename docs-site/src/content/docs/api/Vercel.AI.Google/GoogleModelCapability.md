@@ -23,7 +23,7 @@ Classifies Gemini model ids. Unknown future Gemini ids inherit the newest behavi
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleModelCapabilities.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleModelCapabilities.cs#L35)
 
 ## Methods
 
@@ -48,7 +48,7 @@ Classifies &lt;code class="paramref"&gt;modelId&lt;/code&gt;.
 
 **Returns:** [GoogleModelCapabilities](/api/Vercel.AI.Google/GoogleModelCapabilities/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleModelCapabilities.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleModelCapabilities.cs#L69)
 
 <a id="Vercel_AI_Google_GoogleModelCapability_IsGemma_"></a>
 <a id="Vercel_AI_Google_GoogleModelCapability_IsGemma_System_String_"></a>
@@ -71,4 +71,4 @@ True when the id is a Gemma model.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleModelCapabilities.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleModelCapabilities.cs#L87)

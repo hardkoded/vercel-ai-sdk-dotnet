@@ -25,7 +25,7 @@ xAI realtime voice model. Maps to `XaiRealtimeModel`.
 
 **Implements:** [IServerWebSocketRealtimeModel](/api/Vercel.AI.Provider/IServerWebSocketRealtimeModel/), [IRealtimeModel](/api/Vercel.AI.Provider/IRealtimeModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L66)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a realtime model.
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `config` | [XaiRealtimeModelConfig](/api/Vercel.AI.Xai/XaiRealtimeModelConfig/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L69)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L73)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L82)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L86)
 
 <a id="Vercel_AI_Xai_XaiRealtimeModel_Provider_"></a>
 <a id="Vercel_AI_Xai_XaiRealtimeModel_Provider"></a>
@@ -85,7 +85,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L76)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L80)
 
 ## Methods
 
@@ -111,7 +111,7 @@ Builds the xAI `session` object for a normalized session config.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L167)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L198)
 
 <a id="Vercel_AI_Xai_XaiRealtimeModel_BuildUri_"></a>
 <a id="Vercel_AI_Xai_XaiRealtimeModel_BuildUri"></a>
@@ -128,7 +128,7 @@ WebSocket URI for this model.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L85)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L89)
 
 <a id="Vercel_AI_Xai_XaiRealtimeModel_ConnectAsync_"></a>
 <a id="Vercel_AI_Xai_XaiRealtimeModel_ConnectAsync_System_Threading_CancellationToken_"></a>
@@ -151,7 +151,7 @@ WebSocket sessions are opened by the caller with [Url](/api/Vercel.AI.Xai/XaiCli
 
 **Returns:** [Task&lt;IRealtimeSession&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L91)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L95)
 
 <a id="Vercel_AI_Xai_XaiRealtimeModel_CreateClientSecretAsync_"></a>
 <a id="Vercel_AI_Xai_XaiRealtimeModel_CreateClientSecretAsync_System_Nullable_System_Int32__System_Threading_CancellationToken_"></a>
@@ -175,7 +175,7 @@ Posts to `/realtime/client_secrets` and returns a WebSocket URL that includes th
 
 **Returns:** [Task&lt;XaiClientSecret&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L97)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L101)
 
 <a id="Vercel_AI_Xai_XaiRealtimeModel_GetServerWebSocketConfigAsync_"></a>
 <a id="Vercel_AI_Xai_XaiRealtimeModel_GetServerWebSocketConfigAsync_System_Nullable_Vercel_AI_Provider_RealtimeModelV4SessionIntent__System_Threading_CancellationToken_"></a>
@@ -200,7 +200,7 @@ credential the model was constructed with. Unsupported intents throw before any 
 
 **Returns:** [Task&lt;RealtimeModelV4ServerConnection&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L138)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L157)
 
 <a id="Vercel_AI_Xai_XaiRealtimeModel_GetWebSocketConfig_"></a>
 <a id="Vercel_AI_Xai_XaiRealtimeModel_GetWebSocketConfig_System_String_System_String_"></a>
@@ -225,7 +225,7 @@ The URL and subprotocol a client opens with a client secret: the token travels a
 
 **Returns:** [RealtimeModelV4WebSocketConfig](/api/Vercel.AI.Provider/RealtimeModelV4WebSocketConfig/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L132)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L151)
 
 <a id="Vercel_AI_Xai_XaiRealtimeModel_ParseServerEvent_"></a>
 <a id="Vercel_AI_Xai_XaiRealtimeModel_ParseServerEvent_System_Text_Json_JsonElement_"></a>
@@ -248,7 +248,7 @@ Maps one xAI server event.
 
 **Returns:** [RealtimeModelV4ServerEvent](/api/Vercel.AI.Provider/RealtimeModelV4ServerEvent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L151)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L179)
 
 <a id="Vercel_AI_Xai_XaiRealtimeModel_SerializeClientEvent_"></a>
 <a id="Vercel_AI_Xai_XaiRealtimeModel_SerializeClientEvent_Vercel_AI_Provider_RealtimeModelV4ClientEvent_System_Nullable_Vercel_AI_Provider_RealtimeModelV4SessionIntent__"></a>
@@ -273,4 +273,4 @@ WebSocket.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L160)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L188)

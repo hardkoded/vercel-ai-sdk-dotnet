@@ -23,7 +23,7 @@ xAI Grok models hosted on Vertex.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L312)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L432)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a provider.
 | `baseUrl` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `handler` | [HttpMessageHandler](https://learn.microsoft.com/dotnet/api/system.net.http.httpmessagehandler) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L317)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L437)
 
 <a id="Vercel_AI_Google_GoogleVertexXaiProvider__ctor_Vercel_AI_Google_GoogleVertexPartnerOptions_System_Net_Http_HttpMessageHandler_"></a>
 
@@ -70,7 +70,7 @@ Creates a provider. &lt;code class="paramref"&gt;handler&lt;/code&gt; sends the 
 | `options` | [GoogleVertexPartnerOptions](/api/Vercel.AI.Google/GoogleVertexPartnerOptions/) |  |
 | `handler` | [HttpMessageHandler](https://learn.microsoft.com/dotnet/api/system.net.http.httpmessagehandler) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L323)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L454)
 
 ## Properties
 
@@ -89,7 +89,7 @@ OpenAI-compatible base URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L339)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L474)
 
 <a id="Vercel_AI_Google_GoogleVertexXaiProvider_ClientCreated_"></a>
 <a id="Vercel_AI_Google_GoogleVertexXaiProvider_ClientCreated"></a>
@@ -106,7 +106,7 @@ True after the inner provider has been created.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L342)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L477)
 
 <a id="Vercel_AI_Google_GoogleVertexXaiProvider_Location_"></a>
 <a id="Vercel_AI_Google_GoogleVertexXaiProvider_Location"></a>
@@ -123,7 +123,7 @@ Location.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L336)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L471)
 
 <a id="Vercel_AI_Google_GoogleVertexXaiProvider_Project_"></a>
 <a id="Vercel_AI_Google_GoogleVertexXaiProvider_Project"></a>
@@ -140,7 +140,7 @@ Project id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L333)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L468)
 
 ## Methods
 
@@ -168,7 +168,7 @@ Counts Grok reasoning tokens separately. Output total is completion tokens plus 
 
 **Returns:** [GoogleTokenUsage](/api/Vercel.AI.Google/GoogleTokenUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L382)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L525)
 
 <a id="Vercel_AI_Google_GoogleVertexXaiProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_Google_GoogleVertexXaiProvider_EmbeddingModel_System_String_"></a>
@@ -191,7 +191,7 @@ Embedding and image models are not available.
 
 **Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L392)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L548)
 
 <a id="Vercel_AI_Google_GoogleVertexXaiProvider_LanguageModel_"></a>
 <a id="Vercel_AI_Google_GoogleVertexXaiProvider_LanguageModel_System_String_"></a>
@@ -214,7 +214,7 @@ Returns a chat model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L351)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L486)
 
 <a id="Vercel_AI_Google_GoogleVertexXaiProvider_TransformBody_"></a>
 <a id="Vercel_AI_Google_GoogleVertexXaiProvider_TransformBody_System_Text_Json_Nodes_JsonObject_"></a>
@@ -237,4 +237,4 @@ Removes `reasoning_effort`. Vertex Grok does not accept it.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L372)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L515)

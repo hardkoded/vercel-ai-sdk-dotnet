@@ -23,7 +23,7 @@ Maps SDK reasoning levels onto Anthropic thinking and effort.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L38)
 
 ## Methods
 
@@ -48,7 +48,7 @@ True when reasoning asks for a concrete mode rather than the provider default.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L41)
 
 <a id="Vercel_AI_Anthropic_AnthropicReasoning_MapBudget_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicReasoning_MapBudget_System_String_System_Int32_System_Collections_Generic_IList_Vercel_AI_Anthropic_AnthropicWarning__"></a>
@@ -73,7 +73,7 @@ Token budget for budget-based thinking. Clamped to at least 1024.
 
 **Returns:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L127)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L155)
 
 <a id="Vercel_AI_Anthropic_AnthropicReasoning_Resolve_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicReasoning_Resolve_System_String_System_String_Vercel_AI_Anthropic_AnthropicModelCapabilities_System_Collections_Generic_IList_Vercel_AI_Anthropic_AnthropicWarning__"></a>
@@ -99,4 +99,4 @@ Maps a reasoning level. Returns null for `provider-default`.
 
 **Returns:** [AnthropicReasoningConfig](/api/Vercel.AI.Anthropic/AnthropicReasoningConfig/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L47)

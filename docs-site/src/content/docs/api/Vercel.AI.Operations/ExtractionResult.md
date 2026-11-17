@@ -69,7 +69,7 @@ One answer per field, under the field ids. A value is null when the state has no
 
 **Value:** [IReadOnlyDictionary&lt;string, ExtractionAnswer&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L24)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L30)
 
 <a id="Vercel_AI_Operations_ExtractionResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_ExtractionResult_ProviderMetadata"></a>
@@ -86,7 +86,7 @@ Provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L39)
 
 <a id="Vercel_AI_Operations_ExtractionResult_Response_"></a>
 <a id="Vercel_AI_Operations_ExtractionResult_Response"></a>
@@ -103,7 +103,7 @@ Response. Timestamp and model id are filled when the provider omitted them.
 
 **Value:** [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L42)
 
 <a id="Vercel_AI_Operations_ExtractionResult_Usage_"></a>
 <a id="Vercel_AI_Operations_ExtractionResult_Usage"></a>
@@ -120,7 +120,7 @@ Usage. [TotalTokens](/api/Vercel.AI.Operations/OperationUsage/#Vercel_AI_Operati
 
 **Value:** [OperationUsage](/api/Vercel.AI.Operations/OperationUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L33)
 
 <a id="Vercel_AI_Operations_ExtractionResult_Warnings_"></a>
 <a id="Vercel_AI_Operations_ExtractionResult_Warnings"></a>
@@ -137,4 +137,4 @@ Warnings.
 
 **Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L36)

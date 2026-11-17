@@ -21,6 +21,7 @@ Public types in the `Vercel.AI.Gladia` namespace.
 | [GladiaProvider](/api/Vercel.AI.Gladia/GladiaProvider/) | Gladia pre-recorded transcription provider. |
 | [GladiaProvider.GladiaTranscriptionModel](/api/Vercel.AI.Gladia/GladiaProvider.GladiaTranscriptionModel/) | Uploads audio, starts a pre-recorded job, and reads the result. |
 | [GladiaServiceCollectionExtensions](/api/Vercel.AI.Gladia/GladiaServiceCollectionExtensions/) | Registers Gladia. |
+| [GladiaTranscriptionJobResultException](/api/Vercel.AI.Gladia/GladiaTranscriptionJobResultException/) | Cause of the TranscriptionJobFailed error. Carries the Gladia result that upstream passes as cause. .NET-only: a JavaScript cause can be any value, but an Exception cause must be an exception. |
 | [GladiaTranscriptionRequest](/api/Vercel.AI.Gladia/GladiaTranscriptionRequest/) | Headers and extra pre-recorded fields for one Gladia transcription. |
 | [GladiaTranscriptionResponse](/api/Vercel.AI.Gladia/GladiaTranscriptionResponse/) | Gladia response metadata. |
 | [GladiaTranscriptionResult](/api/Vercel.AI.Gladia/GladiaTranscriptionResult/) | Gladia transcription, including utterance metadata. |

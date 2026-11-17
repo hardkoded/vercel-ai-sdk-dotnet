@@ -25,7 +25,7 @@ Extracts text fields and lists through the ScaleDown `/v1/chat/completions` rout
 
 **Implements:** [IExtractionCaller](/api/Vercel.AI.Operations/IExtractionCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L42)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates an extraction model. &lt;code class="paramref"&gt;modelId&lt;/code&gt; m
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `config` | [ScaleDownExtractionModelConfig](/api/Vercel.AI.ScaleDown/ScaleDownExtractionModelConfig/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L49)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L59)
 
 <a id="Vercel_AI_ScaleDown_ScaleDownExtractionModel_Provider_"></a>
 <a id="Vercel_AI_ScaleDown_ScaleDownExtractionModel_Provider"></a>
@@ -85,7 +85,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L56)
 
 <a id="Vercel_AI_ScaleDown_ScaleDownExtractionModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_ScaleDown_ScaleDownExtractionModel_SpecificationVersion"></a>
@@ -102,7 +102,7 @@ Specification version. Only `v4` is accepted.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L62)
 
 <a id="Vercel_AI_ScaleDown_ScaleDownExtractionModel_SupportedFieldTypes_"></a>
 <a id="Vercel_AI_ScaleDown_ScaleDownExtractionModel_SupportedFieldTypes"></a>
@@ -119,7 +119,7 @@ Field types this model can extract. Unsupported types are rejected before any pr
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L65)
 
 ## Methods
 
@@ -146,7 +146,7 @@ Restores a model from [Serialize()](#Vercel_AI_ScaleDown_ScaleDownExtractionMode
 
 **Returns:** [ScaleDownExtractionModel](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L78)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L94)
 
 <a id="Vercel_AI_ScaleDown_ScaleDownExtractionModel_DoExtractAsync_"></a>
 <a id="Vercel_AI_ScaleDown_ScaleDownExtractionModel_DoExtractAsync_Vercel_AI_Operations_ExtractionModelCall_System_Threading_CancellationToken_"></a>
@@ -170,7 +170,7 @@ Extracts every field from the same state. No partial results.
 
 **Returns:** [Task&lt;ExtractionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L106)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L132)
 
 <a id="Vercel_AI_ScaleDown_ScaleDownExtractionModel_Serialize_"></a>
 <a id="Vercel_AI_ScaleDown_ScaleDownExtractionModel_Serialize"></a>
@@ -187,4 +187,4 @@ Serializes the model id and the JSON-serializable part of the config for a workf
 
 **Returns:** [SerializedModelOptions](/api/Vercel.AI.ProviderUtils/SerializedModelOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L68)

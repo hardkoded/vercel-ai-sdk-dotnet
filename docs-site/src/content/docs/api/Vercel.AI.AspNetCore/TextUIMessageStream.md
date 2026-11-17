@@ -50,7 +50,7 @@ Decodes UTF-8 chunks and passes each decoded piece to &lt;code class="paramref"&
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/TextUIMessageStream.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/TextUIMessageStream.cs#L52)
 
 <a id="Vercel_AI_AspNetCore_TextUIMessageStream_TransformAsync_"></a>
 <a id="Vercel_AI_AspNetCore_TextUIMessageStream_TransformAsync_System_Collections_Generic_IAsyncEnumerable_System_String__System_Threading_CancellationToken_"></a>

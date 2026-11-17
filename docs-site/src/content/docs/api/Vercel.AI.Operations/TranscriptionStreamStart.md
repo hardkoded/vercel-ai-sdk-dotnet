@@ -23,7 +23,7 @@ A started transcription stream.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L126)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L248)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a start payload.
 | `response` | [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/) |  |
 | `request` | [ProviderRequest](/api/Vercel.AI.Operations/ProviderRequest/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L129)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L251)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Request metadata. [Body](/api/Vercel.AI.Operations/ProviderRequest/#Vercel_AI_Op
 
 **Value:** [ProviderRequest](/api/Vercel.AI.Operations/ProviderRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L137)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L263)
 
 <a id="Vercel_AI_Operations_TranscriptionStreamStart_Response_"></a>
 <a id="Vercel_AI_Operations_TranscriptionStreamStart_Response"></a>
@@ -84,7 +84,7 @@ Initial response metadata.
 
 **Value:** [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L143)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L269)
 
 <a id="Vercel_AI_Operations_TranscriptionStreamStart_Stream_"></a>
 <a id="Vercel_AI_Operations_TranscriptionStreamStart_Stream"></a>
@@ -101,4 +101,4 @@ Model parts.
 
 **Value:** [ModelPartStream](/api/Vercel.AI.Operations/ModelPartStream/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L140)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L266)

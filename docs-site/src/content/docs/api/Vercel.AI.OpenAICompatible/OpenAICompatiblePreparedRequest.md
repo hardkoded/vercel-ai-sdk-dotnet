@@ -23,7 +23,7 @@ The request body and warnings [PrepareRequest(LanguageModelCallOptions)](/api/Ve
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleLanguageModel.cs#L1212)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleLanguageModel.cs#L1479)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a prepared request.
 | `body` | [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject) |  |
 | `warnings` | [IReadOnlyList&lt;CallWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleLanguageModel.cs#L1215)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleLanguageModel.cs#L1482)
 
 ## Properties
 
@@ -66,7 +66,7 @@ The Chat Completions body, with the request body transform applied.
 
 **Value:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleLanguageModel.cs#L1222)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleLanguageModel.cs#L1489)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatiblePreparedRequest_Warnings_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatiblePreparedRequest_Warnings"></a>
@@ -83,4 +83,4 @@ Warnings raised while building the body.
 
 **Value:** [IReadOnlyList&lt;CallWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleLanguageModel.cs#L1225)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleLanguageModel.cs#L1492)

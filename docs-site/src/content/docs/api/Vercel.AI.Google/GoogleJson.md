@@ -42,7 +42,7 @@ Serializes metadata and keeps explicit nulls.
 
 **Value:** [JsonSerializerOptions](https://learn.microsoft.com/dotnet/api/system.text.json.jsonserializeroptions)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L25)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L26)
 
 <a id="Vercel_AI_Google_GoogleJson_Options_"></a>
 <a id="Vercel_AI_Google_GoogleJson_Options"></a>
@@ -84,7 +84,7 @@ Clones a JSON element into a node.
 
 **Returns:** [JsonNode](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonnode)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L93)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L92)
 
 <a id="Vercel_AI_Google_GoogleJson_ParseObject_"></a>
 <a id="Vercel_AI_Google_GoogleJson_ParseObject_System_String_"></a>
@@ -107,7 +107,7 @@ Parses a JSON object, or returns an empty object.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L36)
 
 <a id="Vercel_AI_Google_GoogleJson_Set_"></a>
 <a id="Vercel_AI_Google_GoogleJson_Set_System_Text_Json_Nodes_JsonObject_System_String_System_Nullable_System_Boolean__"></a>
@@ -130,7 +130,7 @@ Assigns a boolean when it is present.
 | `name` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `value` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L84)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L83)
 
 <a id="Vercel_AI_Google_GoogleJson_Set_System_Text_Json_Nodes_JsonObject_System_String_System_Nullable_System_Double__"></a>
 
@@ -152,7 +152,7 @@ Assigns a number when it is present.
 | `name` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `value` | [double?](https://learn.microsoft.com/dotnet/api/system.double) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L65)
 
 <a id="Vercel_AI_Google_GoogleJson_Set_System_Text_Json_Nodes_JsonObject_System_String_System_Nullable_System_Int32__"></a>
 
@@ -174,7 +174,7 @@ Assigns an integer when it is present.
 | `name` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `value` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L75)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L74)
 
 <a id="Vercel_AI_Google_GoogleJson_Set_System_Text_Json_Nodes_JsonObject_System_String_System_String_"></a>
 
@@ -196,7 +196,7 @@ Assigns a string when it is non-null.
 | `name` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `value` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L56)
 
 <a id="Vercel_AI_Google_GoogleJson_Set_System_Text_Json_Nodes_JsonObject_System_String_System_Text_Json_Nodes_JsonNode_"></a>
 
@@ -218,7 +218,7 @@ Assigns a property when the value is present.
 | `name` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `value` | [JsonNode](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonnode) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L47)
 
 <a id="Vercel_AI_Google_GoogleJson_String_"></a>
 <a id="Vercel_AI_Google_GoogleJson_String_System_Text_Json_JsonElement_System_String_"></a>
@@ -242,7 +242,7 @@ Reads a string property.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L106)
 
 <a id="Vercel_AI_Google_GoogleJson_TryObject_"></a>
 <a id="Vercel_AI_Google_GoogleJson_TryObject_System_Text_Json_JsonElement_System_String_System_Text_Json_JsonElement__"></a>
@@ -267,7 +267,7 @@ Reads an object property.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L115)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L122)
 
 <a id="Vercel_AI_Google_GoogleJson_Write_"></a>
 <a id="Vercel_AI_Google_GoogleJson_Write_System_Text_Json_Nodes_JsonNode_"></a>
@@ -290,4 +290,4 @@ Writes a node with [Options](#Vercel_AI_Google_GoogleJson_Options).
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleJson.cs#L30)

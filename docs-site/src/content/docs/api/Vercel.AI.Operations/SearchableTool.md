@@ -65,7 +65,7 @@ Local or provider caller bound to this tool.
 
 **Value:** [ToolCallerBinding](/api/Vercel.AI.Operations/ToolCallerBinding/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L45)
 
 <a id="Vercel_AI_Operations_SearchableTool_DeferLoading_"></a>
 <a id="Vercel_AI_Operations_SearchableTool_DeferLoading"></a>
@@ -150,7 +150,7 @@ Input schema JSON, kept stable across steps.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L48)
 
 <a id="Vercel_AI_Operations_SearchableTool_Invoke_"></a>
 <a id="Vercel_AI_Operations_SearchableTool_Invoke"></a>
@@ -167,7 +167,7 @@ Executes a discovered tool.
 
 **Value:** [Func&lt;string, CancellationToken, Task&lt;string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L51)
 
 <a id="Vercel_AI_Operations_SearchableTool_IsSearch_"></a>
 <a id="Vercel_AI_Operations_SearchableTool_IsSearch"></a>
@@ -203,4 +203,4 @@ Copies the search marker and the other fields.
 
 **Returns:** [SearchableTool](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L54)

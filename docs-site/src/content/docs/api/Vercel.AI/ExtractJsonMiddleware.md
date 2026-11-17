@@ -25,7 +25,7 @@ Strips markdown JSON fences. Maps to `extractJsonMiddleware`.
 
 **Implements:** [ILanguageModelMiddleware](/api/Vercel.AI/ILanguageModelMiddleware/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L349)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L386)
 
 ## Methods
 
@@ -52,4 +52,4 @@ Wraps a generate call.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L352)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L389)

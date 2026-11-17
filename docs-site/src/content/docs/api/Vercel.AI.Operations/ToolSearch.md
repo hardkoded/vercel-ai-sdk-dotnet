@@ -23,7 +23,7 @@ Creates the search tool. Maps to `toolSearch`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L119)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L123)
 
 ## Fields
 
@@ -41,7 +41,7 @@ Description copied onto the search tool.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L122)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L126)
 
 ## Methods
 
@@ -60,7 +60,7 @@ Creates an unbound search tool. Its execute method throws until a generation bin
 
 **Returns:** [SearchableTool](/api/Vercel.AI.Operations/SearchableTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L125)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L130)
 
 <a id="Vercel_AI_Operations_ToolSearch_IsSearch_"></a>
 <a id="Vercel_AI_Operations_ToolSearch_IsSearch_Vercel_AI_Operations_SearchableTool_"></a>
@@ -83,4 +83,4 @@ True when the tool carries the search marker.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L135)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L143)

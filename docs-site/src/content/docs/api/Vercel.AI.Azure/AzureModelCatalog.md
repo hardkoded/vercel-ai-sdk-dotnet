@@ -23,7 +23,7 @@ Azure-owned models. Maps to `azureModelCatalog` in `azure-model-catalog.ts`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureModelCatalog.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureModelCatalog.cs#L42)
 
 ## Methods
 
@@ -48,4 +48,4 @@ Returns the entry for &lt;code class="paramref"&gt;modelId&lt;/code&gt;, case-in
 
 **Returns:** [AzureModelRequestConfig](/api/Vercel.AI.Azure/AzureModelRequestConfig/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureModelCatalog.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureModelCatalog.cs#L81)

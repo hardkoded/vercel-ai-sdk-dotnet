@@ -49,7 +49,7 @@ Returns a schema Anthropic's constrained decoder accepts.
 
 **Returns:** [JsonNode](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonnode)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicJsonSchema.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicJsonSchema.cs#L51)
 
 <a id="Vercel_AI_Anthropic_AnthropicJsonSchema_Sanitize_System_Text_Json_Nodes_JsonNode_"></a>
 
@@ -71,4 +71,4 @@ Returns a schema Anthropic's constrained decoder accepts.
 
 **Returns:** [JsonNode](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonnode)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicJsonSchema.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicJsonSchema.cs#L57)

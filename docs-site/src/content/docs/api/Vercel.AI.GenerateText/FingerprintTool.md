@@ -68,7 +68,7 @@ String description. Ignored when [DescriptionIsFunction](#Vercel_AI_GenerateText
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolFingerprint.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolFingerprint.cs#L32)
 
 <a id="Vercel_AI_GenerateText_FingerprintTool_DescriptionIsFunction_"></a>
 <a id="Vercel_AI_GenerateText_FingerprintTool_DescriptionIsFunction"></a>
@@ -85,7 +85,7 @@ True when the description is a function. Only the presence of a function is pinn
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolFingerprint.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolFingerprint.cs#L35)
 
 <a id="Vercel_AI_GenerateText_FingerprintTool_InputSchema_"></a>
 <a id="Vercel_AI_GenerateText_FingerprintTool_InputSchema"></a>
@@ -102,7 +102,7 @@ JSON Schema for the tool input.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolFingerprint.cs#L24)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolFingerprint.cs#L29)
 
 <a id="Vercel_AI_GenerateText_FingerprintTool_Title_"></a>
 <a id="Vercel_AI_GenerateText_FingerprintTool_Title"></a>
@@ -119,4 +119,4 @@ Tool title.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolFingerprint.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolFingerprint.cs#L38)

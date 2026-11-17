@@ -23,7 +23,7 @@ Synthesized Hume audio.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L147)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L151)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a speech result.
 | `warnings` | [IReadOnlyList&lt;HumeWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `response` | [HumeSpeechResponse](/api/Vercel.AI.Hume/HumeSpeechResponse/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L150)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L154)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Audio bytes.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L159)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L168)
 
 <a id="Vercel_AI_Hume_HumeSpeechResult_MediaType_"></a>
 <a id="Vercel_AI_Hume_HumeSpeechResult_MediaType"></a>
@@ -85,7 +85,7 @@ Response media type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L162)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L171)
 
 <a id="Vercel_AI_Hume_HumeSpeechResult_Response_"></a>
 <a id="Vercel_AI_Hume_HumeSpeechResult_Response"></a>
@@ -102,7 +102,7 @@ Response metadata.
 
 **Value:** [HumeSpeechResponse](/api/Vercel.AI.Hume/HumeSpeechResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L168)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L177)
 
 <a id="Vercel_AI_Hume_HumeSpeechResult_Warnings_"></a>
 <a id="Vercel_AI_Hume_HumeSpeechResult_Warnings"></a>
@@ -119,4 +119,4 @@ Warnings for ignored settings.
 
 **Value:** [IReadOnlyList&lt;HumeWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L165)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L174)

@@ -23,4 +23,4 @@ Embedding model specification.
 
 **Derived:** [AlibabaProvider.AlibabaEmbeddingModel](/api/Vercel.AI.Alibaba/AlibabaProvider.AlibabaEmbeddingModel/), [AmazonBedrockEmbeddingModel](/api/Vercel.AI.AmazonBedrock/AmazonBedrockEmbeddingModel/), [CohereEmbeddingModel](/api/Vercel.AI.Cohere/CohereEmbeddingModel/), [GatewayEmbeddingModel](/api/Vercel.AI.Gateway/GatewayEmbeddingModel/), [GoogleEmbeddingModel](/api/Vercel.AI.Google/GoogleEmbeddingModel/), [OpenAIEmbeddingModel](/api/Vercel.AI.OpenAI/OpenAIEmbeddingModel/), [OpenAICompatibleEmbeddingModel](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleEmbeddingModel/), [PerplexityEmbeddingModel](/api/Vercel.AI.Perplexity/PerplexityEmbeddingModel/), [VoyageProvider.VoyageEmbeddingModel](/api/Vercel.AI.Voyage/VoyageProvider.VoyageEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L79)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L84)

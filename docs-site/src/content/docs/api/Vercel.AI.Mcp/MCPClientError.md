@@ -73,7 +73,7 @@ JSON-RPC `error.code`. This is not the HTTP status.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/MCPClientError.cs#L25)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/MCPClientError.cs#L33)
 
 <a id="Vercel_AI_Mcp_MCPClientError_Data_"></a>
 <a id="Vercel_AI_Mcp_MCPClientError_Data"></a>
@@ -90,7 +90,7 @@ JSON-RPC `error.data`, when the server sent it.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/MCPClientError.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/MCPClientError.cs#L45)
 
 <a id="Vercel_AI_Mcp_MCPClientError_ResponseBody_"></a>
 <a id="Vercel_AI_Mcp_MCPClientError_ResponseBody"></a>
@@ -107,7 +107,7 @@ Raw response text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/MCPClientError.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/MCPClientError.cs#L42)
 
 <a id="Vercel_AI_Mcp_MCPClientError_StatusCode_"></a>
 <a id="Vercel_AI_Mcp_MCPClientError_StatusCode"></a>
@@ -124,7 +124,7 @@ HTTP status, when the failure came from an HTTP transport.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/MCPClientError.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/MCPClientError.cs#L36)
 
 <a id="Vercel_AI_Mcp_MCPClientError_Url_"></a>
 <a id="Vercel_AI_Mcp_MCPClientError_Url"></a>
@@ -141,7 +141,7 @@ MCP endpoint URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/MCPClientError.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/MCPClientError.cs#L39)
 
 ## Methods
 
@@ -166,4 +166,4 @@ Returns whether &lt;code class="paramref"&gt;error&lt;/code&gt; is an [MCPClient
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/MCPClientError.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/MCPClientError.cs#L48)

@@ -23,7 +23,7 @@ Provider option descriptions. Upstream `tencentProviderOptions`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L205)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L321)
 
 ## Fields
 
@@ -41,7 +41,7 @@ Language model options (upstream `tencentProviderOptions.language`), keyed by op
 
 **Value:** [IReadOnlyDictionary&lt;string, ProviderOptionDefinition&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L208)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L324)
 
 <a id="Vercel_AI_Tencent_TencentProviderOptions_Video"></a>
 
@@ -57,4 +57,4 @@ Video model options (upstream `tencentProviderOptions.video`), keyed by option n
 
 **Value:** [IReadOnlyDictionary&lt;string, ProviderOptionDefinition&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L217)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L336)

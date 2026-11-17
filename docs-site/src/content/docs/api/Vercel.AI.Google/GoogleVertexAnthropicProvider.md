@@ -1,6 +1,6 @@
 ---
 title: "GoogleVertexAnthropicProvider"
-description: "Anthropic on Vertex. Sends the Anthropic Messages body to rawPredict with anthropicversion in the body. Vertex does not accept URL sources, the native output..."
+description: "Anthropic on Vertex. Sends the Anthropic Messages body to rawPredict with anthropicversion in the body. Vertex does not accept URL sources or strict tools. N..."
 editUrl: false
 prev: false
 next: false
@@ -20,13 +20,13 @@ public sealed class GoogleVertexAnthropicProvider : AnthropicProvider, IBatchPro
 
 
 Anthropic on Vertex. Sends the Anthropic Messages body to `rawPredict` with `anthropic_version` in the body.
-Vertex does not accept URL sources, the native output format, or strict tools.
+Vertex does not accept URL sources or strict tools. Native output is opt-in.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/) → [AnthropicProvider](/api/Vercel.AI.Anthropic/AnthropicProvider/)
 
 **Implements:** [IBatchProvider](/api/Vercel.AI.Operations/IBatchProvider/), [IDecisionProvider](/api/Vercel.AI.Operations/IDecisionProvider/), [IEvaluationProvider](/api/Vercel.AI.Operations/IEvaluationProvider/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L73)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a provider.
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `options` | [GoogleVertexAnthropicOptions](/api/Vercel.AI.Google/GoogleVertexAnthropicOptions/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L69)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L86)
 
 ## Fields
 
@@ -68,7 +68,7 @@ Provider id reported by language models.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L76)
 
 ## Properties
 
@@ -87,7 +87,7 @@ Publisher base URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L97)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L118)
 
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_Location_"></a>
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_Location"></a>
@@ -104,7 +104,7 @@ Location.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L94)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L115)
 
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_Project_"></a>
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_Project"></a>
@@ -121,7 +121,7 @@ Project id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L91)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L112)
 
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_SupportedUrls_"></a>
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_SupportedUrls"></a>
@@ -138,7 +138,7 @@ URL patterns that models of this provider accept for images and PDFs.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L106)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L136)
 
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_SupportsNativeStructuredOutput_"></a>
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_SupportsNativeStructuredOutput"></a>
@@ -155,7 +155,7 @@ False when the host does not accept the native output format. Structured output 
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L100)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L121)
 
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_SupportsStrictTools_"></a>
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_SupportsStrictTools"></a>
@@ -172,7 +172,7 @@ False when the host does not accept `strict` on tool definitions.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L103)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L133)
 
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_Tools_"></a>
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_Tools"></a>
@@ -189,7 +189,7 @@ Provider tool ids that Vertex accepts. A subset of the Anthropic tools.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L76)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L96)
 
 ## Methods
 
@@ -215,7 +215,7 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [GoogleVertexAnthropicProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L109)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L139)
 
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_CreateHeadersAsync_"></a>
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_CreateHeadersAsync_System_Collections_Generic_IReadOnlyList_System_String__System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_String_System_Threading_CancellationToken_"></a>
@@ -241,7 +241,7 @@ Generated bearer token, then configured headers, call headers, and beta flags.
 
 **Returns:** [Task&lt;Dictionary&lt;string, string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L176)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L236)
 
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_EmbeddingModel_System_String_"></a>
@@ -264,7 +264,7 @@ Embedding models are not available on this provider.
 
 **Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L206)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L273)
 
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_PredictUrl_"></a>
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_PredictUrl_System_String_System_Boolean_"></a>
@@ -288,7 +288,7 @@ public string PredictUrl(string modelId, bool streaming)
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L116)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L151)
 
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_RequestUri_"></a>
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_RequestUri_System_String_System_Boolean_"></a>
@@ -312,7 +312,30 @@ URL for one model call. Defaults to [MessagesUri()](/api/Vercel.AI.Anthropic/Ant
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L212)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L281)
+
+<a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_SupportsNativeStructuredOutputFor_"></a>
+<a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_SupportsNativeStructuredOutputFor_System_String_"></a>
+
+### SupportsNativeStructuredOutputFor(string)
+
+
+```csharp
+protected override bool SupportsNativeStructuredOutputFor(string modelId)
+```
+
+
+Per-model form of [SupportsNativeStructuredOutput](/api/Vercel.AI.Anthropic/AnthropicProvider/#Vercel_AI_Anthropic_AnthropicProvider_SupportsNativeStructuredOutput). Hosts that decide by model id override it.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L126)
 
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_TransformBody_"></a>
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_TransformBody_System_Text_Json_Nodes_JsonObject_"></a>
@@ -335,7 +358,7 @@ Removes `model` and sets `anthropic_version`.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L122)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L161)
 
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_TransformHeaders_"></a>
 <a id="Vercel_AI_Google_GoogleVertexAnthropicProvider_TransformHeaders_System_Collections_Generic_Dictionary_System_String_System_String__System_Collections_Generic_IReadOnlyDictionary_System_String_System_Text_Json_JsonElement__"></a>
@@ -359,4 +382,4 @@ Sends `providerOptions.vertex.labels` as the `x-vertex-ai-labels` header. An exp
 
 **Returns:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L131)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L170)

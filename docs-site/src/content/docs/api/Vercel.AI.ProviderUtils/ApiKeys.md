@@ -49,7 +49,7 @@ Joins a base URL and a relative path.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ApiKeys.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ApiKeys.cs#L50)
 
 <a id="Vercel_AI_ProviderUtils_ApiKeys_Require_"></a>
 <a id="Vercel_AI_ProviderUtils_ApiKeys_Require_System_String_System_String_System_String___"></a>

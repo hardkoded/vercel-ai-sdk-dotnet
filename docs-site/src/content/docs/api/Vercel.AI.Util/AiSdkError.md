@@ -25,9 +25,9 @@ Base error for upstream AI SDK error types. Marker checks work without a shared 
 
 **Implements:** [ISerializable](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.iserializable), [IErrorMarkers](/api/Vercel.AI.Util/IErrorMarkers/)
 
-**Derived:** [NoSuchProviderReferenceError](/api/Vercel.AI.ProviderUtils/NoSuchProviderReferenceError/), [SerializationError](/api/Vercel.AI.ProviderUtils/SerializationError/), [ApiCallError](/api/Vercel.AI.Util/ApiCallError/), [DecisionRefusalError](/api/Vercel.AI.Util/DecisionRefusalError/), [DecisionUnsupportedQuestionTypeError](/api/Vercel.AI.Util/DecisionUnsupportedQuestionTypeError/), [DownloadError](/api/Vercel.AI.Util/DownloadError/), [InvalidArgumentError](/api/Vercel.AI.Util/InvalidArgumentError/), [InvalidToolInputError](/api/Vercel.AI.Util/InvalidToolInputError/), [NoSuchModelError](/api/Vercel.AI.Util/NoSuchModelError/), [NoSuchToolError](/api/Vercel.AI.Util/NoSuchToolError/), [RetryError](/api/Vercel.AI.Util/RetryError/), [StreamProviderError](/api/Vercel.AI.Util/StreamProviderError/), [ToolCallRepairError](/api/Vercel.AI.Util/ToolCallRepairError/)
+**Derived:** [NoObjectGeneratedException](/api/Vercel.AI.GenerateObject/NoObjectGeneratedException/), [NoSuchProviderReferenceError](/api/Vercel.AI.ProviderUtils/NoSuchProviderReferenceError/), [SerializationError](/api/Vercel.AI.ProviderUtils/SerializationError/), [ApiCallError](/api/Vercel.AI.Util/ApiCallError/), [DecisionRefusalError](/api/Vercel.AI.Util/DecisionRefusalError/), [DecisionUnsupportedQuestionTypeError](/api/Vercel.AI.Util/DecisionUnsupportedQuestionTypeError/), [DownloadError](/api/Vercel.AI.Util/DownloadError/), [ExtractionRefusalError](/api/Vercel.AI.Util/ExtractionRefusalError/), [ExtractionUnsupportedFieldTypeError](/api/Vercel.AI.Util/ExtractionUnsupportedFieldTypeError/), [InvalidArgumentError](/api/Vercel.AI.Util/InvalidArgumentError/), [InvalidToolApprovalSignatureError](/api/Vercel.AI.Util/InvalidToolApprovalSignatureError/), [InvalidToolInputError](/api/Vercel.AI.Util/InvalidToolInputError/), [NoSuchModelError](/api/Vercel.AI.Util/NoSuchModelError/), [NoSuchToolError](/api/Vercel.AI.Util/NoSuchToolError/), [RetryError](/api/Vercel.AI.Util/RetryError/), [StreamProviderError](/api/Vercel.AI.Util/StreamProviderError/), [ToolCallRepairError](/api/Vercel.AI.Util/ToolCallRepairError/), [UIMessageStreamError](/api/Vercel.AI.Util/UIMessageStreamError/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AiSdkError.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AiSdkError.cs#L50)
 
 ## Constructors
 
@@ -70,7 +70,7 @@ Marker present on every AI SDK error.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AiSdkError.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AiSdkError.cs#L53)
 
 ## Properties
 

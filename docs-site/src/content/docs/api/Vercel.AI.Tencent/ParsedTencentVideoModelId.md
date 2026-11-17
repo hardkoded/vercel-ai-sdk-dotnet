@@ -42,7 +42,7 @@ True for a VOD AIGC model (`vod/<ModelName>/<ModelVersion>`), false for a TokenH
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L37)
 
 <a id="Vercel_AI_Tencent_ParsedTencentVideoModelId_Kind_"></a>
 <a id="Vercel_AI_Tencent_ParsedTencentVideoModelId_Kind"></a>
@@ -59,7 +59,7 @@ The Kling kind. Only meaningful when [IsVod](#Vercel_AI_Tencent_ParsedTencentVid
 
 **Value:** [TencentKlingVideoKind](/api/Vercel.AI.Tencent/TencentKlingVideoKind/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L40)
 
 <a id="Vercel_AI_Tencent_ParsedTencentVideoModelId_ModelName_"></a>
 <a id="Vercel_AI_Tencent_ParsedTencentVideoModelId_ModelName"></a>
@@ -76,7 +76,7 @@ The VOD model name. Null for TokenHub.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L43)
 
 <a id="Vercel_AI_Tencent_ParsedTencentVideoModelId_ModelVersion_"></a>
 <a id="Vercel_AI_Tencent_ParsedTencentVideoModelId_ModelVersion"></a>
@@ -93,4 +93,4 @@ The VOD model version. Null for TokenHub.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L46)

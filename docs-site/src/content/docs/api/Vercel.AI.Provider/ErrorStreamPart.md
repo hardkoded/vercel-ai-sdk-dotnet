@@ -23,11 +23,31 @@ A stream error from the provider.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [LanguageModelStreamPart](/api/Vercel.AI.Provider/LanguageModelStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1966)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2546)
 
 ## Constructors
 
 <a id="Vercel_AI_Provider_ErrorStreamPart__ctor_"></a>
+<a id="Vercel_AI_Provider_ErrorStreamPart__ctor_System_Exception_"></a>
+
+### ErrorStreamPart(Exception)
+
+
+```csharp
+public ErrorStreamPart(Exception exception)
+```
+
+
+Creates an error part that carries the error object itself (upstream `error: unknown`).
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `exception` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2564)
+
 <a id="Vercel_AI_Provider_ErrorStreamPart__ctor_System_String_"></a>
 
 ### ErrorStreamPart(string)
@@ -46,7 +66,7 @@ Creates an error part.
 | --- | --- | --- |
 | `message` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1969)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2549)
 
 <a id="Vercel_AI_Provider_ErrorStreamPart__ctor_Vercel_AI_Prompt_ProviderStreamError_"></a>
 
@@ -66,7 +86,7 @@ Creates an error part that carries the provider's structured error.
 | --- | --- | --- |
 | `error` | [ProviderStreamError](/api/Vercel.AI.Prompt/ProviderStreamError/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1976)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2556)
 
 ## Properties
 
@@ -86,7 +106,24 @@ Null when the provider reported only a message.
 
 **Value:** [ProviderStreamError](/api/Vercel.AI.Prompt/ProviderStreamError/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1990)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2581)
+
+<a id="Vercel_AI_Provider_ErrorStreamPart_Exception_"></a>
+<a id="Vercel_AI_Provider_ErrorStreamPart_Exception"></a>
+
+### Exception
+
+
+```csharp
+public Exception? Exception { get; }
+```
+
+
+The error object, such as an [ApiCallError](/api/Vercel.AI.Util/ApiCallError/) or a [TypeValidationException](/api/Vercel.AI.ProviderUtils/TypeValidationException/). Null when the provider reported a message or a [Error](#Vercel_AI_Provider_ErrorStreamPart_Error).
+
+**Value:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2575)
 
 <a id="Vercel_AI_Provider_ErrorStreamPart_Message_"></a>
 <a id="Vercel_AI_Provider_ErrorStreamPart_Message"></a>
@@ -103,4 +140,4 @@ Error message.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1984)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2572)

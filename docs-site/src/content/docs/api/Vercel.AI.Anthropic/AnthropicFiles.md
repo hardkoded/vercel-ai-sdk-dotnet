@@ -15,7 +15,7 @@ Namespace: [Vercel.AI.Anthropic](/api/Vercel.AI.Anthropic/)
 
 
 ```csharp
-public sealed class AnthropicFiles : IFileStore
+public sealed class AnthropicFiles : IFileStore, IFileStore
 ```
 
 
@@ -23,9 +23,9 @@ Anthropic Files API upload.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-**Implements:** [IFileStore](/api/Vercel.AI.Provider/IFileStore/)
+**Implements:** [IFileStore](/api/Vercel.AI.Provider/IFileStore/), [IFileStore](/api/Vercel.AI.Operations/IFileStore/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L14)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L16)
 
 ## Constructors
 
@@ -51,7 +51,7 @@ Creates a files client.
 | `headers` | [Func&lt;IReadOnlyDictionary&lt;string, string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 | `provider` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L21)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L23)
 
 <a id="Vercel_AI_Anthropic_AnthropicFiles__ctor_Vercel_AI_ProviderUtils_ProviderHttp_System_Func_System_String__System_Func_System_Threading_CancellationToken_System_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String____System_String_"></a>
 
@@ -74,7 +74,7 @@ Creates a files client whose provider headers resolve asynchronously on every ca
 | `headers` | [Func&lt;CancellationToken, Task&lt;IReadOnlyDictionary&lt;string, string&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2) |  |
 | `provider` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L32)
 
 ## Properties
 
@@ -93,7 +93,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L49)
 
 <a id="Vercel_AI_Anthropic_AnthropicFiles_SpecificationVersion_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicFiles_SpecificationVersion"></a>
@@ -110,7 +110,7 @@ Specification version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L46)
 
 ## Methods
 
@@ -137,7 +137,7 @@ Deletes a file with `DELETE /files/{id}`.
 
 **Returns:** [Task&lt;AnthropicFileDeleteResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L92)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L226)
 
 <a id="Vercel_AI_Anthropic_AnthropicFiles_DownloadFileAsync_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicFiles_DownloadFileAsync_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__"></a>
@@ -162,7 +162,7 @@ Downloads file bytes from `GET /files/{id}/content`.
 
 **Returns:** [Task&lt;AnthropicFileDownload&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L73)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L193)
 
 <a id="Vercel_AI_Anthropic_AnthropicFiles_GetFileMetadataAsync_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicFiles_GetFileMetadataAsync_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__"></a>
@@ -187,7 +187,7 @@ Reads file metadata from `GET /files/{id}`.
 
 **Returns:** [Task&lt;AnthropicUploadedFile&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L173)
 
 <a id="Vercel_AI_Anthropic_AnthropicFiles_UploadAsync_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicFiles_UploadAsync_System_String_System_Byte___System_String_System_Nullable_System_Boolean__System_Threading_CancellationToken_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__"></a>
@@ -215,7 +215,7 @@ Uploads a file and returns the parsed Files API body.
 
 **Returns:** [Task&lt;AnthropicUploadedFile&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L135)
 
 <a id="Vercel_AI_Anthropic_AnthropicFiles_UploadFileAsync_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicFiles_UploadFileAsync_System_String_System_Byte___System_String_System_Threading_CancellationToken_"></a>
@@ -241,4 +241,28 @@ Uploads a file.
 
 **Returns:** [Task&lt;UploadedFile&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L52)
+
+<a id="Vercel_AI_Anthropic_AnthropicFiles_UploadFileAsync_Vercel_AI_Operations_UploadFileCall_System_Threading_CancellationToken_"></a>
+
+### UploadFileAsync(UploadFileCall, CancellationToken)
+
+
+```csharp
+public Task<UploadFileModelResult> UploadFileAsync(UploadFileCall call, CancellationToken cancellationToken)
+```
+
+
+Uploads tagged inline data. Stream data is rejected with [UnsupportedFunctionalityException](/api/Vercel.AI.Operations/UnsupportedFunctionalityException/) and the stream is cancelled.
+Maps to `uploadFile` with `convertInlineFileDataToUint8Array`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `call` | [UploadFileCall](/api/Vercel.AI.Operations/UploadFileCall/) |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;UploadFileModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicFiles.cs#L74)

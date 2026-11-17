@@ -23,7 +23,7 @@ Indexes extensions by id and by wire type.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L124)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L151)
 
 ## Constructors
 
@@ -40,7 +40,7 @@ public OpenResponsesExtensionRegistry()
 
 Creates an empty registry.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L127)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L154)
 
 ## Properties
 
@@ -59,7 +59,7 @@ Event type to the extension that decodes it.
 
 **Value:** [IDictionary&lt;string, OpenResponsesExtension&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.idictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L137)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L164)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtensionRegistry_ByExtensionId_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtensionRegistry_ByExtensionId"></a>
@@ -76,7 +76,7 @@ Extension id to the extension.
 
 **Value:** [IDictionary&lt;string, OpenResponsesExtension&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.idictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L140)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L167)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtensionRegistry_ByItemType_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtensionRegistry_ByItemType"></a>
@@ -93,7 +93,7 @@ Item type to the extension that decodes it.
 
 **Value:** [IDictionary&lt;string, OpenResponsesExtension&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.idictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L143)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L170)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtensionRegistry_ByProviderToolId_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtensionRegistry_ByProviderToolId"></a>
@@ -110,7 +110,7 @@ Provider-tool id to the extension that encodes it.
 
 **Value:** [IDictionary&lt;string, OpenResponsesExtension&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.idictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L146)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L173)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtensionRegistry_ByToolType_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtensionRegistry_ByToolType"></a>
@@ -127,4 +127,4 @@ Tool type to the extension that encodes it.
 
 **Value:** [IDictionary&lt;string, OpenResponsesExtension&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.idictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L149)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L176)

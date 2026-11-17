@@ -25,7 +25,7 @@ Telemetry callbacks. Generic `onStart` and `onEnd` are not invoked.
 
 **Derived:** [EvaluateTelemetry](/api/Vercel.AI.Operations/EvaluateTelemetry/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L363)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L431)
 
 ## Properties
 
@@ -44,7 +44,7 @@ Copied onto telemetry events.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L414)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L482)
 
 <a id="Vercel_AI_Operations_DecideTelemetry_IncludeRuntimeContext_"></a>
 <a id="Vercel_AI_Operations_DecideTelemetry_IncludeRuntimeContext"></a>
@@ -61,7 +61,7 @@ Keys copied into telemetry runtime context. Null yields an empty context.
 
 **Value:** [IReadOnlyDictionary&lt;string, bool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L405)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L473)
 
 <a id="Vercel_AI_Operations_DecideTelemetry_IsEnabled_"></a>
 <a id="Vercel_AI_Operations_DecideTelemetry_IsEnabled"></a>
@@ -78,7 +78,7 @@ When false, telemetry callbacks are skipped.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L417)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L485)
 
 <a id="Vercel_AI_Operations_DecideTelemetry_OnDecideEnd_"></a>
 <a id="Vercel_AI_Operations_DecideTelemetry_OnDecideEnd"></a>
@@ -95,7 +95,7 @@ public Func<DecideEvent, Task>? OnDecideEnd { get; set; }
 
 **Value:** [Func&lt;DecideEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L369)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L437)
 
 <a id="Vercel_AI_Operations_DecideTelemetry_OnDecideStart_"></a>
 <a id="Vercel_AI_Operations_DecideTelemetry_OnDecideStart"></a>
@@ -112,7 +112,7 @@ public Func<DecideEvent, Task>? OnDecideStart { get; set; }
 
 **Value:** [Func&lt;DecideEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L366)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L434)
 
 <a id="Vercel_AI_Operations_DecideTelemetry_OnDecisionModelCallEnd_"></a>
 <a id="Vercel_AI_Operations_DecideTelemetry_OnDecisionModelCallEnd"></a>
@@ -129,7 +129,7 @@ public Func<DecisionModelEvent, Task>? OnDecisionModelCallEnd { get; set; }
 
 **Value:** [Func&lt;DecisionModelEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L375)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L443)
 
 <a id="Vercel_AI_Operations_DecideTelemetry_OnDecisionModelCallStart_"></a>
 <a id="Vercel_AI_Operations_DecideTelemetry_OnDecisionModelCallStart"></a>
@@ -146,7 +146,7 @@ public Func<DecisionModelEvent, Task>? OnDecisionModelCallStart { get; set; }
 
 **Value:** [Func&lt;DecisionModelEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L372)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L440)
 
 <a id="Vercel_AI_Operations_DecideTelemetry_OnError_"></a>
 <a id="Vercel_AI_Operations_DecideTelemetry_OnError"></a>
@@ -163,7 +163,7 @@ public Func<string, Exception, Task>? OnError { get; set; }
 
 **Value:** [Func&lt;string, Exception, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L402)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L470)
 
 <a id="Vercel_AI_Operations_DecideTelemetry_OnEvaluateEnd_"></a>
 <a id="Vercel_AI_Operations_DecideTelemetry_OnEvaluateEnd"></a>
@@ -185,7 +185,7 @@ Deprecated alias of [OnDecideEnd](#Vercel_AI_Operations_DecideTelemetry_OnDecide
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L382)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L450)
 
 <a id="Vercel_AI_Operations_DecideTelemetry_OnEvaluateStart_"></a>
 <a id="Vercel_AI_Operations_DecideTelemetry_OnEvaluateStart"></a>
@@ -207,7 +207,7 @@ Deprecated alias of [OnDecideStart](#Vercel_AI_Operations_DecideTelemetry_OnDeci
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L378)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L446)
 
 <a id="Vercel_AI_Operations_DecideTelemetry_OnModelEnd_"></a>
 <a id="Vercel_AI_Operations_DecideTelemetry_OnModelEnd"></a>
@@ -229,7 +229,7 @@ Deprecated alias of [OnDecisionModelCallEnd](#Vercel_AI_Operations_DecideTelemet
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L390)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L458)
 
 <a id="Vercel_AI_Operations_DecideTelemetry_OnModelStart_"></a>
 <a id="Vercel_AI_Operations_DecideTelemetry_OnModelStart"></a>
@@ -251,7 +251,7 @@ Deprecated alias of [OnDecisionModelCallStart](#Vercel_AI_Operations_DecideTelem
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L386)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L454)
 
 <a id="Vercel_AI_Operations_DecideTelemetry_RecordInputs_"></a>
 <a id="Vercel_AI_Operations_DecideTelemetry_RecordInputs"></a>
@@ -268,7 +268,7 @@ Copied onto telemetry events.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L408)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L476)
 
 <a id="Vercel_AI_Operations_DecideTelemetry_RecordOutputs_"></a>
 <a id="Vercel_AI_Operations_DecideTelemetry_RecordOutputs"></a>
@@ -285,4 +285,4 @@ Copied onto telemetry events.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L411)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L479)

@@ -23,9 +23,60 @@ Speech options.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L387)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L716)
 
 ## Properties
+
+<a id="Vercel_AI_GenerateSpeechOptions_Headers_"></a>
+<a id="Vercel_AI_GenerateSpeechOptions_Headers"></a>
+
+### Headers
+
+
+```csharp
+public IReadOnlyDictionary<string, string?>? Headers { get; set; }
+```
+
+
+Headers for this call. They override the provider headers.
+
+**Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L743)
+
+<a id="Vercel_AI_GenerateSpeechOptions_Instructions_"></a>
+<a id="Vercel_AI_GenerateSpeechOptions_Instructions"></a>
+
+### Instructions
+
+
+```csharp
+public string? Instructions { get; set; }
+```
+
+
+Instructions for the speech generation.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L731)
+
+<a id="Vercel_AI_GenerateSpeechOptions_Language_"></a>
+<a id="Vercel_AI_GenerateSpeechOptions_Language"></a>
+
+### Language
+
+
+```csharp
+public string? Language { get; set; }
+```
+
+
+ISO 639-1 language code, or `auto`. Provider support varies.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L737)
 
 <a id="Vercel_AI_GenerateSpeechOptions_Model_"></a>
 <a id="Vercel_AI_GenerateSpeechOptions_Model"></a>
@@ -42,7 +93,58 @@ Speech model.
 
 **Value:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L390)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L719)
+
+<a id="Vercel_AI_GenerateSpeechOptions_OutputFormat_"></a>
+<a id="Vercel_AI_GenerateSpeechOptions_OutputFormat"></a>
+
+### OutputFormat
+
+
+```csharp
+public string? OutputFormat { get; set; }
+```
+
+
+Desired output format such as `mp3` or `wav`.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L728)
+
+<a id="Vercel_AI_GenerateSpeechOptions_ProviderOptions_"></a>
+<a id="Vercel_AI_GenerateSpeechOptions_ProviderOptions"></a>
+
+### ProviderOptions
+
+
+```csharp
+public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
+```
+
+
+Additional provider-specific options, keyed by provider name.
+
+**Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L740)
+
+<a id="Vercel_AI_GenerateSpeechOptions_Speed_"></a>
+<a id="Vercel_AI_GenerateSpeechOptions_Speed"></a>
+
+### Speed
+
+
+```csharp
+public double? Speed { get; set; }
+```
+
+
+Speed of the speech generation.
+
+**Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L734)
 
 <a id="Vercel_AI_GenerateSpeechOptions_Text_"></a>
 <a id="Vercel_AI_GenerateSpeechOptions_Text"></a>
@@ -59,7 +161,7 @@ Text to speak.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L393)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L722)
 
 <a id="Vercel_AI_GenerateSpeechOptions_Voice_"></a>
 <a id="Vercel_AI_GenerateSpeechOptions_Voice"></a>
@@ -76,4 +178,4 @@ Voice id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L396)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L725)

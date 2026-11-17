@@ -76,4 +76,4 @@ filter and private addresses are blocked.
 | --- | --- |
 | [InvalidArgumentError](/api/Vercel.AI.Util/InvalidArgumentError/) | An option is invalid. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/WebFetch/WebFetchTools.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/WebFetch/WebFetchTools.cs#L86)

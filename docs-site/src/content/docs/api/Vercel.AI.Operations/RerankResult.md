@@ -23,7 +23,7 @@ Result of `CancellationToken)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L165)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L186)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a rerank result. The ranking list is copied.
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 | `response` | [RerankResponseInfo](/api/Vercel.AI.Operations/RerankResponseInfo/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L170)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L191)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Documents that were submitted.
 
 **Value:** [IReadOnlyList&lt;object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L185)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L211)
 
 <a id="Vercel_AI_Operations_RerankResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_RerankResult_ProviderMetadata"></a>
@@ -85,7 +85,7 @@ Provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L206)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L232)
 
 <a id="Vercel_AI_Operations_RerankResult_Ranking_"></a>
 <a id="Vercel_AI_Operations_RerankResult_Ranking"></a>
@@ -102,7 +102,7 @@ Ranking. Mutations of the list passed to `onEnd` do not change this copy.
 
 **Value:** [IReadOnlyList&lt;RankedDocument&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L188)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L214)
 
 <a id="Vercel_AI_Operations_RerankResult_RerankedDocuments_"></a>
 <a id="Vercel_AI_Operations_RerankResult_RerankedDocuments"></a>
@@ -119,7 +119,7 @@ Documents in ranking order.
 
 **Value:** [IReadOnlyList&lt;object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L191)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L217)
 
 <a id="Vercel_AI_Operations_RerankResult_Response_"></a>
 <a id="Vercel_AI_Operations_RerankResult_Response"></a>
@@ -136,4 +136,4 @@ Response metadata.
 
 **Value:** [RerankResponseInfo](/api/Vercel.AI.Operations/RerankResponseInfo/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L209)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L235)

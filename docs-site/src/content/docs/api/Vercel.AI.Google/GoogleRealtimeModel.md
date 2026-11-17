@@ -26,7 +26,7 @@ socket is left to the caller, which uses `CancellationToken)` or a client secret
 
 **Implements:** [IServerWebSocketRealtimeModel](/api/Vercel.AI.Provider/IServerWebSocketRealtimeModel/), [IRealtimeModel](/api/Vercel.AI.Provider/IRealtimeModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L307)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L354)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a realtime model.
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `config` | [GoogleRealtimeModelConfig](/api/Vercel.AI.Google/GoogleRealtimeModelConfig/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L323)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L374)
 
 <a id="Vercel_AI_Google_GoogleRealtimeModel__ctor_Vercel_AI_Google_GoogleProvider_System_String_"></a>
 
@@ -71,7 +71,7 @@ Creates a realtime model that takes its base URL, headers and HTTP client from &
 | `provider` | [GoogleProvider](/api/Vercel.AI.Google/GoogleProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L330)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L381)
 
 ## Properties
 
@@ -90,7 +90,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L351)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L403)
 
 <a id="Vercel_AI_Google_GoogleRealtimeModel_Provider_"></a>
 <a id="Vercel_AI_Google_GoogleRealtimeModel_Provider"></a>
@@ -107,7 +107,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L345)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L397)
 
 ## Methods
 
@@ -133,7 +133,7 @@ Builds the Live `setup` object for a normalized session config.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L454)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L538)
 
 <a id="Vercel_AI_Google_GoogleRealtimeModel_BuildUri_"></a>
 <a id="Vercel_AI_Google_GoogleRealtimeModel_BuildUri"></a>
@@ -150,7 +150,7 @@ WebSocket URI for this model.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L354)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L406)
 
 <a id="Vercel_AI_Google_GoogleRealtimeModel_ConnectAsync_"></a>
 <a id="Vercel_AI_Google_GoogleRealtimeModel_ConnectAsync_System_Threading_CancellationToken_"></a>
@@ -173,7 +173,7 @@ Opens a realtime session.
 
 **Returns:** [Task&lt;IRealtimeSession&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L360)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L412)
 
 <a id="Vercel_AI_Google_GoogleRealtimeModel_CreateClientSecretAsync_"></a>
 <a id="Vercel_AI_Google_GoogleRealtimeModel_CreateClientSecretAsync_Vercel_AI_Provider_RealtimeModelV4SessionConfig_System_Nullable_System_Int32__System_Threading_CancellationToken_"></a>
@@ -201,7 +201,7 @@ Maps to `doCreateClientSecret`.
 
 **Returns:** [Task&lt;GoogleRealtimeClientSecret&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L371)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L425)
 
 <a id="Vercel_AI_Google_GoogleRealtimeModel_CreateServerEventParser_"></a>
 <a id="Vercel_AI_Google_GoogleRealtimeModel_CreateServerEventParser"></a>
@@ -219,7 +219,7 @@ Maps to `createServerEventParser`.
 
 **Returns:** [Func&lt;JsonElement, IReadOnlyList&lt;RealtimeModelV4ServerEvent&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L440)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L521)
 
 <a id="Vercel_AI_Google_GoogleRealtimeModel_GetServerWebSocketConfigAsync_"></a>
 <a id="Vercel_AI_Google_GoogleRealtimeModel_GetServerWebSocketConfigAsync_System_Nullable_Vercel_AI_Provider_RealtimeModelV4SessionIntent__System_Threading_CancellationToken_"></a>
@@ -244,7 +244,7 @@ credential the model was constructed with. Unsupported intents throw before any 
 
 **Returns:** [Task&lt;RealtimeModelV4ServerConnection&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L422)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L500)
 
 <a id="Vercel_AI_Google_GoogleRealtimeModel_GetWebSocketConfig_"></a>
 <a id="Vercel_AI_Google_GoogleRealtimeModel_GetWebSocketConfig_System_String_System_String_"></a>
@@ -269,7 +269,7 @@ string, so there are no subprotocols. Maps to `getWebSocketConfig`.
 
 **Returns:** [RealtimeModelV4WebSocketConfig](/api/Vercel.AI.Provider/RealtimeModelV4WebSocketConfig/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L416)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L492)
 
 <a id="Vercel_AI_Google_GoogleRealtimeModel_ParseServerEvent_"></a>
 <a id="Vercel_AI_Google_GoogleRealtimeModel_ParseServerEvent_System_Text_Json_JsonElement_"></a>
@@ -292,7 +292,7 @@ Maps one server message with this model's shared event mapper.
 
 **Returns:** [IReadOnlyList&lt;RealtimeModelV4ServerEvent&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L431)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L512)
 
 <a id="Vercel_AI_Google_GoogleRealtimeModel_SerializeClientEvent_"></a>
 <a id="Vercel_AI_Google_GoogleRealtimeModel_SerializeClientEvent_Vercel_AI_Provider_RealtimeModelV4ClientEvent_System_Nullable_Vercel_AI_Provider_RealtimeModelV4SessionIntent__"></a>
@@ -316,4 +316,4 @@ Serializes a client event with this model's event mapper.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L447)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L528)

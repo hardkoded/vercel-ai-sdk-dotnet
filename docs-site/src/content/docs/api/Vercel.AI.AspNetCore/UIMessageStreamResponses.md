@@ -23,7 +23,7 @@ Builds UI message stream responses. Maps to `createUIMessageStreamResponse`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateUIMessageStreamResponse.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateUIMessageStreamResponse.cs#L68)
 
 ## Methods
 
@@ -49,4 +49,4 @@ Creates a response from a UI message stream. The stream is transformed to Server
 
 **Returns:** [UIMessageStreamResponse](/api/Vercel.AI.AspNetCore/UIMessageStreamResponse/) — A response with the UI message stream as the body.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateUIMessageStreamResponse.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateUIMessageStreamResponse.cs#L76)

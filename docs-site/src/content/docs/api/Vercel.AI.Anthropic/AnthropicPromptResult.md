@@ -68,7 +68,7 @@ Betas required by the prompt.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L37)
 
 <a id="Vercel_AI_Anthropic_AnthropicPromptResult_Messages_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicPromptResult_Messages"></a>
@@ -85,7 +85,7 @@ Conversation messages.
 
 **Value:** [JsonArray](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonarray)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L34)
 
 <a id="Vercel_AI_Anthropic_AnthropicPromptResult_System_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicPromptResult_System"></a>
@@ -102,7 +102,7 @@ Top-level system blocks. Null when the prompt has no system text.
 
 **Value:** [JsonArray](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonarray)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L26)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L31)
 
 <a id="Vercel_AI_Anthropic_AnthropicPromptResult_Warnings_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicPromptResult_Warnings"></a>
@@ -119,4 +119,4 @@ Warnings produced while converting.
 
 **Value:** [IReadOnlyList&lt;AnthropicWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L40)

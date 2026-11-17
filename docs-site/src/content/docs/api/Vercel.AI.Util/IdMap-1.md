@@ -29,7 +29,7 @@ String-keyed map with no inherited members. Missing keys, including `__proto__`,
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Collections.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Collections.cs#L108)
 
 ## Properties
 
@@ -48,7 +48,7 @@ Own keys in insertion order.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Collections.cs#L116)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Collections.cs#L122)
 
 <a id="Vercel_AI_Util_IdMap_1_Prototype_"></a>
 <a id="Vercel_AI_Util_IdMap_1_Prototype"></a>
@@ -65,7 +65,7 @@ No prototype object is consulted. Always `null`.
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Collections.cs#L110)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Collections.cs#L116)
 
 ## Methods
 
@@ -90,7 +90,7 @@ Returns the own value, or `default` when &lt;code class="paramref"&gt;key&lt;/co
 
 **Returns:** `T`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Collections.cs#L133)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Collections.cs#L139)
 
 <a id="Vercel_AI_Util_IdMap_1_Has_"></a>
 <a id="Vercel_AI_Util_IdMap_1_Has_System_String_"></a>
@@ -113,7 +113,7 @@ Returns whether &lt;code class="paramref"&gt;key&lt;/code&gt; is an own key.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Collections.cs#L144)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Collections.cs#L150)
 
 <a id="Vercel_AI_Util_IdMap_1_Set_"></a>
 <a id="Vercel_AI_Util_IdMap_1_Set_System_String__0_"></a>
@@ -135,4 +135,4 @@ Stores &lt;code class="paramref"&gt;value&lt;/code&gt; under &lt;code class="par
 | `key` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `value` | `T` |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Collections.cs#L122)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Collections.cs#L128)

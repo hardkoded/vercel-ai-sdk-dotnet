@@ -68,7 +68,7 @@ Extra detail.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicWarning.cs#L26)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicWarning.cs#L31)
 
 <a id="Vercel_AI_Anthropic_AnthropicWarning_Feature_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicWarning_Feature"></a>
@@ -85,7 +85,7 @@ Feature the warning refers to.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicWarning.cs#L23)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicWarning.cs#L28)
 
 <a id="Vercel_AI_Anthropic_AnthropicWarning_Message_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicWarning_Message"></a>
@@ -102,7 +102,7 @@ Free-form message used by `other` warnings.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicWarning.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicWarning.cs#L34)
 
 <a id="Vercel_AI_Anthropic_AnthropicWarning_Type_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicWarning_Type"></a>
@@ -119,4 +119,4 @@ Warning category, such as `unsupported` or `compatibility`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicWarning.cs#L20)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicWarning.cs#L25)

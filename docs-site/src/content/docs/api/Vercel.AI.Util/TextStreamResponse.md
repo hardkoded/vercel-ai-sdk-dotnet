@@ -68,7 +68,7 @@ UTF-8 encoded body chunks.
 
 **Value:** `ReadableStream&lt;byte\[\]&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/TextStream.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/TextStream.cs#L61)
 
 <a id="Vercel_AI_Util_TextStreamResponse_Headers_"></a>
 <a id="Vercel_AI_Util_TextStreamResponse_Headers"></a>
@@ -85,7 +85,7 @@ Response headers, including the default content type when the caller did not set
 
 **Value:** [HeaderCollection](/api/Vercel.AI.Util/HeaderCollection/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/TextStream.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/TextStream.cs#L58)
 
 <a id="Vercel_AI_Util_TextStreamResponse_Status_"></a>
 <a id="Vercel_AI_Util_TextStreamResponse_Status"></a>
@@ -102,7 +102,7 @@ HTTP status. Defaults to 200.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/TextStream.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/TextStream.cs#L52)
 
 <a id="Vercel_AI_Util_TextStreamResponse_StatusText_"></a>
 <a id="Vercel_AI_Util_TextStreamResponse_StatusText"></a>
@@ -119,4 +119,4 @@ HTTP status text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/TextStream.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/TextStream.cs#L55)

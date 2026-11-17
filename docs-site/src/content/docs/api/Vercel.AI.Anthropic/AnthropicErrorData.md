@@ -1,6 +1,6 @@
 ---
 title: "AnthropicErrorData"
-description: "Parsed Anthropic error body. Extra fields such as details are dropped."
+description: "Parsed Anthropic error body. Unknown fields are dropped. details keeps errorcode and unsupported."
 editUrl: false
 prev: false
 next: false
@@ -19,7 +19,7 @@ public sealed class AnthropicErrorData
 ```
 
 
-Parsed Anthropic error body. Extra fields such as `details` are dropped.
+Parsed Anthropic error body. Unknown fields are dropped. `details` keeps `error_code` and `unsupported`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
@@ -28,13 +28,13 @@ Parsed Anthropic error body. Extra fields such as `details` are dropped.
 ## Constructors
 
 <a id="Vercel_AI_Anthropic_AnthropicErrorData__ctor_"></a>
-<a id="Vercel_AI_Anthropic_AnthropicErrorData__ctor_System_Boolean_System_String_System_String_System_String_System_String_"></a>
+<a id="Vercel_AI_Anthropic_AnthropicErrorData__ctor_System_Boolean_System_String_System_String_System_String_System_String_System_Text_Json_Nodes_JsonObject_System_Boolean_"></a>
 
-### AnthropicErrorData(bool, string?, string?, string?, string)
+### AnthropicErrorData(bool, string?, string?, string?, string, JsonObject?, bool)
 
 
 ```csharp
-public AnthropicErrorData(bool success, string? type, string? errorType, string? message, string rawValue)
+public AnthropicErrorData(bool success, string? type, string? errorType, string? message, string rawValue, JsonObject? details = null, bool hasDetails = false)
 ```
 
 
@@ -49,10 +49,47 @@ Creates a parsed error.
 | `errorType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `message` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `rawValue` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `details` | [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject) |  |
+| `hasDetails` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L14)
 
 ## Properties
+
+<a id="Vercel_AI_Anthropic_AnthropicErrorData_Details_"></a>
+<a id="Vercel_AI_Anthropic_AnthropicErrorData_Details"></a>
+
+### Details
+
+
+```csharp
+public JsonObject? Details { get; }
+```
+
+
+The `error.details` object with only `error_code` and `unsupported`, for example
+`thread_not_found`. &lt;a href="https://learn.microsoft.com/dotnet/csharp/language-reference/keywords/null"&gt;null&lt;/a&gt; when the body has no details or they have an unknown shape.
+
+**Value:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L49)
+
+<a id="Vercel_AI_Anthropic_AnthropicErrorData_ErrorCode_"></a>
+<a id="Vercel_AI_Anthropic_AnthropicErrorData_ErrorCode"></a>
+
+### ErrorCode
+
+
+```csharp
+public string? ErrorCode { get; }
+```
+
+
+The `error.details.error_code` value, such as `thread_not_found`.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L55)
 
 <a id="Vercel_AI_Anthropic_AnthropicErrorData_ErrorType_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicErrorData_ErrorType"></a>
@@ -69,7 +106,24 @@ Error type, such as `overloaded_error`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L40)
+
+<a id="Vercel_AI_Anthropic_AnthropicErrorData_HasDetails_"></a>
+<a id="Vercel_AI_Anthropic_AnthropicErrorData_HasDetails"></a>
+
+### HasDetails
+
+
+```csharp
+public bool HasDetails { get; }
+```
+
+
+True when `error.details` is present as an object or as `null`.
+
+**Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L52)
 
 <a id="Vercel_AI_Anthropic_AnthropicErrorData_Message_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicErrorData_Message"></a>
@@ -86,7 +140,7 @@ Error message.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L43)
 
 <a id="Vercel_AI_Anthropic_AnthropicErrorData_RawValue_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicErrorData_RawValue"></a>
@@ -103,7 +157,7 @@ Original JSON.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L69)
 
 <a id="Vercel_AI_Anthropic_AnthropicErrorData_Success_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicErrorData_Success"></a>
@@ -120,7 +174,7 @@ True when the body matches `{ type: error, error: { type, message } }`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L24)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L34)
 
 <a id="Vercel_AI_Anthropic_AnthropicErrorData_Type_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicErrorData_Type"></a>
@@ -137,7 +191,7 @@ Top-level type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L37)
 
 ## Methods
 
@@ -162,7 +216,7 @@ Parses an error payload. A matching object succeeds even when extra properties a
 
 **Returns:** [AnthropicErrorData](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L72)
 
 <a id="Vercel_AI_Anthropic_AnthropicErrorData_Value_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicErrorData_Value"></a>
@@ -175,8 +229,8 @@ public JsonObject? Value()
 ```
 
 
-The validated value with only `type` and `error.type`/`error.message`.
+The validated value with `type`, `error.type`, `error.message`, and `error.details` when present.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L156)

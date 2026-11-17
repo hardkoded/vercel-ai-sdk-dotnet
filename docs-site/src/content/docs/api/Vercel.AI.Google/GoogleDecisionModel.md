@@ -50,7 +50,7 @@ Creates a decision model. &lt;code class="paramref"&gt;providerId&lt;/code&gt; i
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `providerId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleDecisionModel.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleDecisionModel.cs#L30)
 
 ## Properties
 
@@ -69,7 +69,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleDecisionModel.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleDecisionModel.cs#L41)
 
 <a id="Vercel_AI_Google_GoogleDecisionModel_Provider_"></a>
 <a id="Vercel_AI_Google_GoogleDecisionModel_Provider"></a>
@@ -86,7 +86,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleDecisionModel.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleDecisionModel.cs#L38)
 
 <a id="Vercel_AI_Google_GoogleDecisionModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Google_GoogleDecisionModel_SpecificationVersion"></a>
@@ -103,7 +103,7 @@ Specification version. Only `v4` is accepted.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleDecisionModel.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleDecisionModel.cs#L44)
 
 <a id="Vercel_AI_Google_GoogleDecisionModel_SupportedQuestionTypes_"></a>
 <a id="Vercel_AI_Google_GoogleDecisionModel_SupportedQuestionTypes"></a>
@@ -120,7 +120,7 @@ Question types this model can answer.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleDecisionModel.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleDecisionModel.cs#L47)
 
 ## Methods
 
@@ -147,7 +147,7 @@ send the requests through a custom handler.
 
 **Returns:** [GoogleDecisionModel](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleDecisionModel.cs#L90)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleDecisionModel.cs#L84)
 
 <a id="Vercel_AI_Google_GoogleDecisionModel_DoDecideAsync_"></a>
 <a id="Vercel_AI_Google_GoogleDecisionModel_DoDecideAsync_Vercel_AI_Operations_DecisionModelCall_System_Threading_CancellationToken_"></a>
@@ -171,7 +171,7 @@ Sends every question in one Decisions request.
 
 **Returns:** [Task&lt;DecisionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleDecisionModel.cs#L155)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleDecisionModel.cs#L166)
 
 <a id="Vercel_AI_Google_GoogleDecisionModel_DoEvaluateAsync_"></a>
 <a id="Vercel_AI_Google_GoogleDecisionModel_DoEvaluateAsync_Vercel_AI_Operations_EvaluationModelCall_System_Threading_CancellationToken_"></a>
@@ -200,7 +200,7 @@ Deprecated. Use `CancellationToken)`.
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleDecisionModel.cs#L148)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleDecisionModel.cs#L154)
 
 <a id="Vercel_AI_Google_GoogleDecisionModel_Serialize_"></a>
 <a id="Vercel_AI_Google_GoogleDecisionModel_Serialize"></a>
@@ -218,4 +218,4 @@ Maps to `[WORKFLOW_SERIALIZE]`. The HTTP client is not serialized. Headers that 
 
 **Returns:** [SerializedModelOptions](/api/Vercel.AI.ProviderUtils/SerializedModelOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleDecisionModel.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleDecisionModel.cs#L54)

@@ -25,7 +25,7 @@ Declared rounding precision.
 
 **Derived:** [EvaluationRounding](/api/Vercel.AI.Operations/EvaluationRounding/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L109)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L128)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates rounding limits.
 | `probabilityDecimals` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `scoreDecimals` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L112)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L131)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Probability decimal places, from 0 through 15.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L119)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L138)
 
 <a id="Vercel_AI_Operations_DecisionRounding_ScoreDecimals_"></a>
 <a id="Vercel_AI_Operations_DecisionRounding_ScoreDecimals"></a>
@@ -85,4 +85,4 @@ Score decimal places, from 0 through 15.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L122)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L141)

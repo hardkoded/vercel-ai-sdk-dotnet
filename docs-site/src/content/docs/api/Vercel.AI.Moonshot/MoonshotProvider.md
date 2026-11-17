@@ -123,7 +123,7 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [MoonshotProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Moonshot/MoonshotProvider.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Moonshot/MoonshotProvider.cs#L46)
 
 <a id="Vercel_AI_Moonshot_MoonshotProvider_CreateChatModel_"></a>
 <a id="Vercel_AI_Moonshot_MoonshotProvider_CreateChatModel_System_String_"></a>
@@ -146,7 +146,7 @@ Creates a chat model. Providers override this when support differs by model id.
 
 **Returns:** [OpenAICompatibleLanguageModel](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Moonshot/MoonshotProvider.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Moonshot/MoonshotProvider.cs#L38)
 
 <a id="Vercel_AI_Moonshot_MoonshotProvider_SupportsStructuredOutputs_"></a>
 <a id="Vercel_AI_Moonshot_MoonshotProvider_SupportsStructuredOutputs_System_String_"></a>
@@ -169,4 +169,4 @@ Whether &lt;code class="paramref"&gt;modelId&lt;/code&gt; accepts JSON schema re
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Moonshot/MoonshotProvider.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Moonshot/MoonshotProvider.cs#L27)

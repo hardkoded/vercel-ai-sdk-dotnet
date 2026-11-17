@@ -25,7 +25,7 @@ OpenAI image generation and edit model.
 
 **Implements:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L142)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L143)
 
 ## Constructors
 
@@ -51,7 +51,7 @@ Azure routes and headers of &lt;code class="paramref"&gt;provider&lt;/code&gt;, 
 | `deploymentId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `clock` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L171)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L180)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageModel__ctor_Vercel_AI_OpenAI_OpenAIProvider_System_String_System_Func_System_DateTimeOffset__"></a>
 
@@ -73,7 +73,7 @@ Creates an image model.
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `clock` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L157)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L162)
 
 ## Properties
 
@@ -92,7 +92,7 @@ Maximum images accepted by one call for this model id.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L188)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L201)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageModel_ModelId_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageModel_ModelId"></a>
@@ -109,7 +109,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L185)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L198)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageModel_Provider_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageModel_Provider"></a>
@@ -126,7 +126,43 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L182)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L195)
+
+<a id="Vercel_AI_OpenAI_OpenAIImageModel_SupportsFileInputs_"></a>
+<a id="Vercel_AI_OpenAI_OpenAIImageModel_SupportsFileInputs"></a>
+
+### SupportsFileInputs
+
+
+```csharp
+public bool? SupportsFileInputs { get; }
+```
+
+
+True when the model takes input images, false for `dall-e-3`, null when the model id is unknown. Maps to
+`fileInput` of the image capabilities in `openai-model-catalog.ts`.
+
+**Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L207)
+
+<a id="Vercel_AI_OpenAI_OpenAIImageModel_SupportsMaskInputs_"></a>
+<a id="Vercel_AI_OpenAI_OpenAIImageModel_SupportsMaskInputs"></a>
+
+### SupportsMaskInputs
+
+
+```csharp
+public bool? SupportsMaskInputs { get; }
+```
+
+
+True when the model takes a mask, false for `dall-e-3`, null when the model id is unknown. Maps to `maskInput`
+of the image capabilities in `openai-model-catalog.ts`.
+
+**Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L213)
 
 ## Methods
 
@@ -152,7 +188,7 @@ Generates images. Maps to `doGenerate` on an image model.
 
 **Returns:** [Task&lt;ImageGenerationResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L219)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L247)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageModel_GenerateAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageModel_GenerateAsync_Vercel_AI_OpenAI_OpenAIImageCall_System_Threading_CancellationToken_"></a>
@@ -176,7 +212,7 @@ Generates or edits images.
 
 **Returns:** [Task&lt;OpenAIImageGeneration&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L261)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L357)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageModel_MaxImages_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageModel_MaxImages_System_String_"></a>
@@ -199,7 +235,7 @@ Maximum images for &lt;code class="paramref"&gt;modelId&lt;/code&gt;.
 
 **Returns:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L191)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L216)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageModel_OmitsResponseFormat_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageModel_OmitsResponseFormat_System_String_"></a>
@@ -222,4 +258,4 @@ True when the model rejects an explicit `response_format`.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L212)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L240)

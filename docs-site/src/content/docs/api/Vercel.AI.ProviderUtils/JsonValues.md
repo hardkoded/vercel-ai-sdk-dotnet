@@ -61,7 +61,7 @@ An empty JSON object.
 
 **Returns:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonValues.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonValues.cs#L38)
 
 <a id="Vercel_AI_ProviderUtils_JsonValues_ExtractErrorMessage_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonValues_ExtractErrorMessage_System_String_System_Int32_"></a>
@@ -85,7 +85,7 @@ Best-effort error message from a provider JSON body.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonValues.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonValues.cs#L78)
 
 <a id="Vercel_AI_ProviderUtils_JsonValues_GenerateId_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonValues_GenerateId_System_String_"></a>
@@ -108,7 +108,7 @@ Creates a new id. Maps to `generateId`.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonValues.cs#L144)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonValues.cs#L159)
 
 <a id="Vercel_AI_ProviderUtils_JsonValues_GetInt_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonValues_GetInt_System_Text_Json_JsonElement_System_String_"></a>
@@ -132,7 +132,7 @@ Reads an integer property, or null.
 
 **Returns:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonValues.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonValues.cs#L59)
 
 <a id="Vercel_AI_ProviderUtils_JsonValues_GetString_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonValues_GetString_System_Text_Json_JsonElement_System_String_"></a>
@@ -156,7 +156,7 @@ Reads a string property, or null.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonValues.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonValues.cs#L45)
 
 <a id="Vercel_AI_ProviderUtils_JsonValues_ParseOrEmpty_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonValues_ParseOrEmpty_System_String_"></a>
@@ -179,4 +179,4 @@ Parses a JSON object or returns an empty object.
 
 **Returns:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonValues.cs#L20)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonValues.cs#L26)

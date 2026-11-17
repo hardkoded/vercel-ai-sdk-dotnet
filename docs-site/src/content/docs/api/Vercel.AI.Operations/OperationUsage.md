@@ -23,7 +23,7 @@ Token counts for an image or evaluation call.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L412)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L474)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates usage. Unset counts stay null.
 | `tokens` | [double?](https://learn.microsoft.com/dotnet/api/system.double) |  |
 | `seconds` | [double?](https://learn.microsoft.com/dotnet/api/system.double) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L415)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L477)
 
 ## Properties
 
@@ -69,7 +69,7 @@ Prompt tokens.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L425)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L493)
 
 <a id="Vercel_AI_Operations_OperationUsage_OutputTokens_"></a>
 <a id="Vercel_AI_Operations_OperationUsage_OutputTokens"></a>
@@ -86,7 +86,7 @@ Generated tokens.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L428)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L496)
 
 <a id="Vercel_AI_Operations_OperationUsage_Seconds_"></a>
 <a id="Vercel_AI_Operations_OperationUsage_Seconds"></a>
@@ -103,7 +103,7 @@ Seconds of audio processed. Reported by streaming transcription.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L437)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L505)
 
 <a id="Vercel_AI_Operations_OperationUsage_Tokens_"></a>
 <a id="Vercel_AI_Operations_OperationUsage_Tokens"></a>
@@ -120,7 +120,7 @@ Embedding token count. [NaN](https://learn.microsoft.com/dotnet/api/system.doubl
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L434)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L502)
 
 <a id="Vercel_AI_Operations_OperationUsage_TotalTokens_"></a>
 <a id="Vercel_AI_Operations_OperationUsage_TotalTokens"></a>
@@ -137,7 +137,7 @@ Input plus output, when both are known.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L431)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L499)
 
 ## Methods
 
@@ -163,4 +163,4 @@ Adds two image usage values. A missing count stays missing until one side report
 
 **Returns:** [OperationUsage](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L440)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L508)

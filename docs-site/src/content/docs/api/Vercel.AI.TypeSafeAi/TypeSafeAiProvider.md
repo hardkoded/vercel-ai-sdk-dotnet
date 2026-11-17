@@ -220,7 +220,7 @@ Returns a decision model. The id may be one this library does not know yet.
 
 **Returns:** [TypeSafeAiDecisionModel](/api/Vercel.AI.TypeSafeAi/TypeSafeAiDecisionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiProvider.cs#L84)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiProvider.cs#L90)
 
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiProvider_EmbeddingModel_System_String_"></a>
@@ -243,7 +243,7 @@ TypeSafe has no embedding models.
 
 **Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiProvider.cs#L114)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiProvider.cs#L120)
 
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiProvider_EvaluationModel_"></a>
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiProvider_EvaluationModel_System_String_"></a>
@@ -271,7 +271,7 @@ Deprecated alias of [DecisionModel(string)](#Vercel_AI_TypeSafeAi_TypeSafeAiProv
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiProvider.cs#L90)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiProvider.cs#L96)
 
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiProvider_ImageModel_"></a>
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiProvider_ImageModel_System_String_"></a>
@@ -294,7 +294,7 @@ TypeSafe has no image models.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiProvider.cs#L120)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiProvider.cs#L126)
 
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiProvider_LanguageModel_"></a>
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiProvider_LanguageModel_System_String_"></a>
@@ -317,4 +317,4 @@ TypeSafe has no language models.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiProvider.cs#L108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiProvider.cs#L114)

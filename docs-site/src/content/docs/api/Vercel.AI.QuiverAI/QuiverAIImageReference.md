@@ -45,7 +45,7 @@ Base64-encoded image data without a data URL prefix, or &lt;a href="https://lear
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIImageReference.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIImageReference.cs#L71)
 
 <a id="Vercel_AI_QuiverAI_QuiverAIImageReference_Url_"></a>
 <a id="Vercel_AI_QuiverAI_QuiverAIImageReference_Url"></a>
@@ -64,7 +64,7 @@ HTTP or HTTPS image URL, or &lt;a href="https://learn.microsoft.com/dotnet/cshar
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIImageReference.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIImageReference.cs#L66)
 
 ## Methods
 
@@ -89,7 +89,7 @@ Returns a base64 reference for PNG, JPEG, WebP, GIF, or SVG bytes.
 
 **Returns:** [QuiverAIImageReference](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIImageReference.cs#L87)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIImageReference.cs#L113)
 
 <a id="Vercel_AI_QuiverAI_QuiverAIImageReference_Prepare_System_String_"></a>
 
@@ -112,7 +112,7 @@ Throws [InvalidArgumentException](/api/Vercel.AI.Operations/InvalidArgumentExcep
 
 **Returns:** [QuiverAIImageReference](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIImageReference.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIImageReference.cs#L85)
 
 <a id="Vercel_AI_QuiverAI_QuiverAIImageReference_Prepare_System_Uri_"></a>
 
@@ -134,4 +134,4 @@ Returns a URL reference for an HTTP or HTTPS URL.
 
 **Returns:** [QuiverAIImageReference](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIImageReference.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIImageReference.cs#L76)

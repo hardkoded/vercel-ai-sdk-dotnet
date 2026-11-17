@@ -23,18 +23,18 @@ Parses ElevenLabs error JSON.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L219)
 
 ## Methods
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsError_Parse_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsError_Parse_System_String_"></a>
 
-### Parse(string)
+### Parse(string?)
 
 
 ```csharp
-public static ElevenLabsErrorParseResult Parse(string json)
+public static ElevenLabsErrorParseResult Parse(string? json)
 ```
 
 
@@ -48,4 +48,4 @@ Parses an error body.
 
 **Returns:** [ElevenLabsErrorParseResult](/api/Vercel.AI.ElevenLabs/ElevenLabsErrorParseResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L222)

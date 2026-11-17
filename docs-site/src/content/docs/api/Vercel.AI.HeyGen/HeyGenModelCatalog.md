@@ -23,7 +23,7 @@ Known HeyGen model ids, the adapter limits and the capability catalog. Upstream 
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L24)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L33)
 
 ## Fields
 
@@ -41,7 +41,7 @@ Most options of a choice question. Upstream `heyGenDecisionModelLimits.maxChoice
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L57)
 
 <a id="Vercel_AI_HeyGen_HeyGenModelCatalog_DecisionMaxImages"></a>
 
@@ -57,7 +57,7 @@ Most images per request. Upstream `heyGenDecisionModelLimits.maxImages`.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L63)
 
 <a id="Vercel_AI_HeyGen_HeyGenModelCatalog_DecisionMaxQuestions"></a>
 
@@ -73,7 +73,7 @@ Most questions per request. Upstream `heyGenDecisionModelLimits.maxQuestions`.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L54)
 
 <a id="Vercel_AI_HeyGen_HeyGenModelCatalog_DecisionMaxScoreLevels"></a>
 
@@ -89,7 +89,7 @@ Most levels of a score question. Upstream `heyGenDecisionModelLimits.maxScoreLev
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L60)
 
 <a id="Vercel_AI_HeyGen_HeyGenModelCatalog_DecisionMaxVideos"></a>
 
@@ -105,7 +105,7 @@ Most videos per request. Upstream `heyGenDecisionModelLimits.maxVideos`.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L66)
 
 <a id="Vercel_AI_HeyGen_HeyGenModelCatalog_DecisionModelIds"></a>
 
@@ -121,7 +121,7 @@ Known decision model ids. Other ids are passed through unchanged.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L39)
 
 <a id="Vercel_AI_HeyGen_HeyGenModelCatalog_DecisionSupportedQuestionTypes"></a>
 
@@ -137,7 +137,7 @@ Question types HeyGen Decision supports. Upstream `heyGenDecisionModelLimits.sup
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L46)
 
 <a id="Vercel_AI_HeyGen_HeyGenModelCatalog_Entries"></a>
 
@@ -153,7 +153,7 @@ Entries of every known model id. Upstream `heyGenModelCatalog`; renamed because 
 
 **Value:** [IReadOnlyDictionary&lt;string, ModelEntry&lt;object&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L71)
 
 <a id="Vercel_AI_HeyGen_HeyGenModelCatalog_VideoModelIds"></a>
 
@@ -169,7 +169,7 @@ Known video model ids.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L36)
 
 ## Methods
 
@@ -194,7 +194,7 @@ Returns the catalog entry of a decision model. Upstream `getHeyGenDecisionModelE
 
 **Returns:** `ModelEntry&lt;object&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L93)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L115)
 
 <a id="Vercel_AI_HeyGen_HeyGenModelCatalog_GetHeyGenVideoModelEntry_"></a>
 <a id="Vercel_AI_HeyGen_HeyGenModelCatalog_GetHeyGenVideoModelEntry_System_String_"></a>
@@ -217,4 +217,4 @@ Returns the catalog entry of a video model. Upstream `getHeyGenVideoModelEntry`.
 
 **Returns:** `ModelEntry&lt;object&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenModelCatalog.cs#L74)

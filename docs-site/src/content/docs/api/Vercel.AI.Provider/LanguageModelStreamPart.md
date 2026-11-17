@@ -23,9 +23,9 @@ One part of a language-model stream.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-**Derived:** [FileStreamPart](/api/Vercel.AI.Google/FileStreamPart/), [CustomStreamPart](/api/Vercel.AI.Provider/CustomStreamPart/), [DocumentSourceStreamPart](/api/Vercel.AI.Provider/DocumentSourceStreamPart/), [ErrorStreamPart](/api/Vercel.AI.Provider/ErrorStreamPart/), [FinishStreamPart](/api/Vercel.AI.Provider/FinishStreamPart/), [RawStreamPart](/api/Vercel.AI.Provider/RawStreamPart/), [ReasoningDeltaStreamPart](/api/Vercel.AI.Provider/ReasoningDeltaStreamPart/), [ReasoningEndStreamPart](/api/Vercel.AI.Provider/ReasoningEndStreamPart/), [ReasoningStartStreamPart](/api/Vercel.AI.Provider/ReasoningStartStreamPart/), [ResponseMetadataStreamPart](/api/Vercel.AI.Provider/ResponseMetadataStreamPart/), [SourceStreamPart](/api/Vercel.AI.Provider/SourceStreamPart/), [StreamStartStreamPart](/api/Vercel.AI.Provider/StreamStartStreamPart/), [TextDeltaStreamPart](/api/Vercel.AI.Provider/TextDeltaStreamPart/), [TextEndStreamPart](/api/Vercel.AI.Provider/TextEndStreamPart/), [TextStartStreamPart](/api/Vercel.AI.Provider/TextStartStreamPart/), [ToolApprovalRequestStreamPart](/api/Vercel.AI.Provider/ToolApprovalRequestStreamPart/), [ToolCallStreamPart](/api/Vercel.AI.Provider/ToolCallStreamPart/), [ToolInputDeltaStreamPart](/api/Vercel.AI.Provider/ToolInputDeltaStreamPart/), [ToolInputEndStreamPart](/api/Vercel.AI.Provider/ToolInputEndStreamPart/), [ToolInputStartStreamPart](/api/Vercel.AI.Provider/ToolInputStartStreamPart/), [ToolResultStreamPart](/api/Vercel.AI.Provider/ToolResultStreamPart/)
+**Derived:** [CustomStreamPart](/api/Vercel.AI.Provider/CustomStreamPart/), [DocumentSourceStreamPart](/api/Vercel.AI.Provider/DocumentSourceStreamPart/), [ErrorStreamPart](/api/Vercel.AI.Provider/ErrorStreamPart/), [FileStreamPart](/api/Vercel.AI.Provider/FileStreamPart/), [FinishStreamPart](/api/Vercel.AI.Provider/FinishStreamPart/), [PingStreamPart](/api/Vercel.AI.Provider/PingStreamPart/), [RawStreamPart](/api/Vercel.AI.Provider/RawStreamPart/), [ReasoningDeltaStreamPart](/api/Vercel.AI.Provider/ReasoningDeltaStreamPart/), [ReasoningEndStreamPart](/api/Vercel.AI.Provider/ReasoningEndStreamPart/), [ReasoningFileStreamPart](/api/Vercel.AI.Provider/ReasoningFileStreamPart/), [ReasoningStartStreamPart](/api/Vercel.AI.Provider/ReasoningStartStreamPart/), [ResponseMetadataStreamPart](/api/Vercel.AI.Provider/ResponseMetadataStreamPart/), [SourceStreamPart](/api/Vercel.AI.Provider/SourceStreamPart/), [StreamStartStreamPart](/api/Vercel.AI.Provider/StreamStartStreamPart/), [TextDeltaStreamPart](/api/Vercel.AI.Provider/TextDeltaStreamPart/), [TextEndStreamPart](/api/Vercel.AI.Provider/TextEndStreamPart/), [TextStartStreamPart](/api/Vercel.AI.Provider/TextStartStreamPart/), [ToolApprovalRequestStreamPart](/api/Vercel.AI.Provider/ToolApprovalRequestStreamPart/), [ToolCallStreamPart](/api/Vercel.AI.Provider/ToolCallStreamPart/), [ToolInputDeltaStreamPart](/api/Vercel.AI.Provider/ToolInputDeltaStreamPart/), [ToolInputEndStreamPart](/api/Vercel.AI.Provider/ToolInputEndStreamPart/), [ToolInputStartStreamPart](/api/Vercel.AI.Provider/ToolInputStartStreamPart/), [ToolResultStreamPart](/api/Vercel.AI.Provider/ToolResultStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1641)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2126)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a stream part.
 | --- | --- | --- |
 | `type` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1644)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2129)
 
 ## Properties
 
@@ -68,7 +68,7 @@ It is set only by providers that pass chunks through unchanged, such as the Gate
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1656)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2141)
 
 <a id="Vercel_AI_Provider_LanguageModelStreamPart_Type_"></a>
 <a id="Vercel_AI_Provider_LanguageModelStreamPart_Type"></a>
@@ -85,4 +85,4 @@ Part type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1650)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2135)

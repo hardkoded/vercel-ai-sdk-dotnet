@@ -78,4 +78,4 @@ It does not dispatch a data event.
 | `onComment` | [Action&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.action-1) |  |
 | `onError` | [Action&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.action-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/EventSourceParser.cs#L109)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/EventSourceParser.cs#L115)

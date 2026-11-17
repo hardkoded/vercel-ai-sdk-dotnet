@@ -57,7 +57,7 @@ Environment variable that overrides every AWS service endpoint.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEndpoints.cs#L19)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEndpoints.cs#L20)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockEndpoints_RegionEnvironmentVariable"></a>
 
@@ -73,7 +73,7 @@ Environment variable that supplies the AWS region.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEndpoints.cs#L22)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEndpoints.cs#L23)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockEndpoints_RuntimeEndpointEnvironmentVariable"></a>
 
@@ -114,7 +114,7 @@ DNS suffix for an AWS partition. The first matching prefix wins, matching the up
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEndpoints.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEndpoints.cs#L70)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockEndpoints_Resolve_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockEndpoints_Resolve_System_String_System_Func_System_String__System_String_"></a>
@@ -140,7 +140,7 @@ explicit endpoint is configured.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEndpoints.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEndpoints.cs#L41)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockEndpoints_Resolve_System_String_System_String_System_String_"></a>
 
@@ -165,4 +165,4 @@ Returns &lt;code class="paramref"&gt;baseUrl&lt;/code&gt; when it is set, then t
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEndpoints.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEndpoints.cs#L32)

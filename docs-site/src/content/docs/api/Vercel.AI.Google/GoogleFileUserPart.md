@@ -23,7 +23,7 @@ A user file. [Kind](#Vercel_AI_Google_GoogleFileUserPart_Kind) is `url`, `data`,
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [GoogleUserPart](/api/Vercel.AI.Google/GoogleUserPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L105)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L129)
 
 ## Constructors
 
@@ -47,9 +47,26 @@ Creates a file part.
 | `mediaType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `kind` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L132)
 
 ## Properties
+
+<a id="Vercel_AI_Google_GoogleFileUserPart_Base64_"></a>
+<a id="Vercel_AI_Google_GoogleFileUserPart_Base64"></a>
+
+### Base64
+
+
+```csharp
+public string? Base64 { get; set; }
+```
+
+
+Inline base64 data.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L154)
 
 <a id="Vercel_AI_Google_GoogleFileUserPart_Data_"></a>
 <a id="Vercel_AI_Google_GoogleFileUserPart_Data"></a>
@@ -66,7 +83,7 @@ Inline bytes.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L127)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L151)
 
 <a id="Vercel_AI_Google_GoogleFileUserPart_Kind_"></a>
 <a id="Vercel_AI_Google_GoogleFileUserPart_Kind"></a>
@@ -83,7 +100,7 @@ public string Kind { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L118)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L142)
 
 <a id="Vercel_AI_Google_GoogleFileUserPart_MediaType_"></a>
 <a id="Vercel_AI_Google_GoogleFileUserPart_MediaType"></a>
@@ -100,7 +117,7 @@ Declared media type. A top-level type such as `image` is completed from the byte
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L115)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L139)
 
 <a id="Vercel_AI_Google_GoogleFileUserPart_OriginalUrl_"></a>
 <a id="Vercel_AI_Google_GoogleFileUserPart_OriginalUrl"></a>
@@ -117,7 +134,24 @@ Original URI preserved when a `gs:` URL was normalized.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L124)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L148)
+
+<a id="Vercel_AI_Google_GoogleFileUserPart_ProviderOptions_"></a>
+<a id="Vercel_AI_Google_GoogleFileUserPart_ProviderOptions"></a>
+
+### ProviderOptions
+
+
+```csharp
+public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
+```
+
+
+Provider-specific options for this file part, including `videoMetadata`.
+
+**Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L163)
 
 <a id="Vercel_AI_Google_GoogleFileUserPart_Reference_"></a>
 <a id="Vercel_AI_Google_GoogleFileUserPart_Reference"></a>
@@ -134,7 +168,7 @@ Map from provider name to an uploaded file id. The `google` entry is the file UR
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L133)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L160)
 
 <a id="Vercel_AI_Google_GoogleFileUserPart_Text_"></a>
 <a id="Vercel_AI_Google_GoogleFileUserPart_Text"></a>
@@ -151,7 +185,7 @@ Inline text source.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L130)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L157)
 
 <a id="Vercel_AI_Google_GoogleFileUserPart_Url_"></a>
 <a id="Vercel_AI_Google_GoogleFileUserPart_Url"></a>
@@ -168,4 +202,4 @@ Remote URL, including `gs://` and `data:` URLs.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L121)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L145)

@@ -87,7 +87,7 @@ Id of the approval whose signature failed.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/InvalidToolApprovalSignatureError.cs#L25)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/InvalidToolApprovalSignatureError.cs#L31)
 
 <a id="Vercel_AI_Util_InvalidToolApprovalSignatureError_ToolCallId_"></a>
 <a id="Vercel_AI_Util_InvalidToolApprovalSignatureError_ToolCallId"></a>
@@ -104,7 +104,7 @@ Id of the tool call of the approval.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/InvalidToolApprovalSignatureError.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/InvalidToolApprovalSignatureError.cs#L34)
 
 ## Methods
 
@@ -129,4 +129,4 @@ Returns whether &lt;code class="paramref"&gt;error&lt;/code&gt; carries this err
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/InvalidToolApprovalSignatureError.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/InvalidToolApprovalSignatureError.cs#L37)

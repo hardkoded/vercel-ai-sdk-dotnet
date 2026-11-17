@@ -67,7 +67,7 @@ Calls observed by generate and stream.
 
 **Value:** [List&lt;LanguageModelCallOptions&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/TestLanguageModel.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/TestLanguageModel.cs#L33)
 
 <a id="Vercel_AI_Testing_TestLanguageModel_ModelId_"></a>
 <a id="Vercel_AI_Testing_TestLanguageModel_ModelId"></a>
@@ -101,7 +101,7 @@ When set, generate returns this function's result.
 
 **Value:** [Func&lt;LanguageModelCallOptions, LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/TestLanguageModel.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/TestLanguageModel.cs#L36)
 
 <a id="Vercel_AI_Testing_TestLanguageModel_Provider_"></a>
 <a id="Vercel_AI_Testing_TestLanguageModel_Provider"></a>
@@ -152,7 +152,7 @@ When set, stream yields these parts instead of a single text delta.
 
 **Value:** [IReadOnlyList&lt;LanguageModelStreamPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/TestLanguageModel.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/TestLanguageModel.cs#L39)
 
 <a id="Vercel_AI_Testing_TestLanguageModel_StreamRequest_"></a>
 <a id="Vercel_AI_Testing_TestLanguageModel_StreamRequest"></a>
@@ -169,7 +169,7 @@ The request info stream calls report.
 
 **Value:** [LanguageModelStreamRequest](/api/Vercel.AI.Provider/LanguageModelStreamRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/TestLanguageModel.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/TestLanguageModel.cs#L42)
 
 <a id="Vercel_AI_Testing_TestLanguageModel_StreamResponse_"></a>
 <a id="Vercel_AI_Testing_TestLanguageModel_StreamResponse"></a>
@@ -186,7 +186,25 @@ The response info stream calls report.
 
 **Value:** [LanguageModelStreamResponse](/api/Vercel.AI.Provider/LanguageModelStreamResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/TestLanguageModel.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/TestLanguageModel.cs#L45)
+
+<a id="Vercel_AI_Testing_TestLanguageModel_SupportedUrls_"></a>
+<a id="Vercel_AI_Testing_TestLanguageModel_SupportedUrls"></a>
+
+### SupportedUrls
+
+
+```csharp
+public IReadOnlyDictionary<string, string> SupportedUrls { get; set; }
+```
+
+
+URLs the model can read itself, keyed by media type pattern (such as `image/*`). Each value is a regular expression that a URL
+must match. Prompt file URLs that match are passed through. All others are downloaded before the call. Maps to `supportedUrls`.
+
+**Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/TestLanguageModel.cs#L29)
 
 ## Methods
 
@@ -212,7 +230,7 @@ Generates a complete result.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/TestLanguageModel.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/TestLanguageModel.cs#L59)
 
 <a id="Vercel_AI_Testing_TestLanguageModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_Testing_TestLanguageModel_DoStreamAsync_Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_"></a>
@@ -236,7 +254,7 @@ Streams partial results. The result carries the stream with the request and resp
 
 **Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/TestLanguageModel.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/TestLanguageModel.cs#L71)
 
 <a id="Vercel_AI_Testing_TestLanguageModel_Text_"></a>
 <a id="Vercel_AI_Testing_TestLanguageModel_Text_System_String_"></a>
@@ -259,4 +277,4 @@ A generate result whose only content is &lt;code class="paramref"&gt;text&lt;/co
 
 **Returns:** [LanguageModelGenerateResult](/api/Vercel.AI.Provider/LanguageModelGenerateResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/TestLanguageModel.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/TestLanguageModel.cs#L48)

@@ -23,7 +23,7 @@ Registers Anthropic.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L660)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L1008)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Adds [AnthropicProvider](/api/Vercel.AI.Anthropic/AnthropicProvider/).
 
 **Returns:** [IServiceCollection](https://learn.microsoft.com/dotnet/api/microsoft.extensions.dependencyinjection.iservicecollection)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L663)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L1011)
 
 <a id="Vercel_AI_Anthropic_AnthropicServiceCollectionExtensions_AddAnthropicAws_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicServiceCollectionExtensions_AddAnthropicAws_Microsoft_Extensions_DependencyInjection_IServiceCollection_System_Action_Vercel_AI_Anthropic_AnthropicOptions__"></a>
@@ -73,4 +73,4 @@ Adds [AnthropicAwsProvider](/api/Vercel.AI.Anthropic/AnthropicAwsProvider/).
 
 **Returns:** [IServiceCollection](https://learn.microsoft.com/dotnet/api/microsoft.extensions.dependencyinjection.iservicecollection)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L676)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L1031)

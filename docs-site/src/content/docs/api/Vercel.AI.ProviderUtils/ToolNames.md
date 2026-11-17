@@ -23,7 +23,7 @@ Builds tool name maps. Maps to `createToolNameMapping`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ToolNameMapping.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ToolNameMapping.cs#L59)
 
 ## Methods
 
@@ -49,4 +49,4 @@ Creates a mapping from provider-defined tools whose ids are listed in &lt;code c
 
 **Returns:** [ToolNameMapping](/api/Vercel.AI.ProviderUtils/ToolNameMapping/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ToolNameMapping.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ToolNameMapping.cs#L62)

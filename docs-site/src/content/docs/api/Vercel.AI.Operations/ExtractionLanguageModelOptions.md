@@ -67,7 +67,7 @@ Most fields per language-model call. [PositiveInfinity](https://learn.microsoft.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L39)
 
 <a id="Vercel_AI_Operations_ExtractionLanguageModelOptions_Model_"></a>
 <a id="Vercel_AI_Operations_ExtractionLanguageModelOptions_Model"></a>
@@ -84,7 +84,7 @@ The wrapped language model.
 
 **Value:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L33)
 
 <a id="Vercel_AI_Operations_ExtractionLanguageModelOptions_Provider_"></a>
 <a id="Vercel_AI_Operations_ExtractionLanguageModelOptions_Provider"></a>
@@ -101,4 +101,4 @@ The extraction provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L36)

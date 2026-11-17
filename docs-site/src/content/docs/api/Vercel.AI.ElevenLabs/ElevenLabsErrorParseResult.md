@@ -23,7 +23,7 @@ Result of parsing an ElevenLabs error body.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L198)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a parse result.
 | `success` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `value` | [ElevenLabsErrorData](/api/Vercel.AI.ElevenLabs/ElevenLabsErrorData/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L201)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Same payload as [Value](#Vercel_AI_ElevenLabs_ElevenLabsErrorParseResult_Value).
 
 **Value:** [ElevenLabsErrorData](/api/Vercel.AI.ElevenLabs/ElevenLabsErrorData/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L215)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorParseResult_Success_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorParseResult_Success"></a>
@@ -79,11 +79,11 @@ public bool Success { get; }
 ```
 
 
-True when `error.message` and `error.code` were present.
+True when the body matched an ElevenLabs error shape.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L209)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorParseResult_Value_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorParseResult_Value"></a>
@@ -100,4 +100,4 @@ Parsed error.
 
 **Value:** [ElevenLabsErrorData](/api/Vercel.AI.ElevenLabs/ElevenLabsErrorData/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L212)

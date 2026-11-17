@@ -23,7 +23,7 @@ Input for [StandardizePrompt(StandardizePromptInput)](/api/Vercel.AI.Prompt/Prom
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L145)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L148)
 
 ## Properties
 
@@ -42,7 +42,7 @@ When true, system messages may appear in [Prompt](#Vercel_AI_Prompt_StandardizeP
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L148)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L151)
 
 <a id="Vercel_AI_Prompt_StandardizePromptInput_Instructions_"></a>
 <a id="Vercel_AI_Prompt_StandardizePromptInput_Instructions"></a>
@@ -59,7 +59,7 @@ Instructions. They win over [System](#Vercel_AI_Prompt_StandardizePromptInput_Sy
 
 **Value:** [Instructions](/api/Vercel.AI.Prompt/Instructions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L154)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L157)
 
 <a id="Vercel_AI_Prompt_StandardizePromptInput_Messages_"></a>
 <a id="Vercel_AI_Prompt_StandardizePromptInput_Messages"></a>
@@ -76,7 +76,7 @@ Message list. Cannot be combined with [Prompt](#Vercel_AI_Prompt_StandardizeProm
 
 **Value:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L160)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L163)
 
 <a id="Vercel_AI_Prompt_StandardizePromptInput_Prompt_"></a>
 <a id="Vercel_AI_Prompt_StandardizePromptInput_Prompt"></a>
@@ -93,7 +93,7 @@ A user string or a message list. Cannot be combined with [Messages](#Vercel_AI_P
 
 **Value:** [PromptInput](/api/Vercel.AI.Prompt/PromptInput/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L157)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L160)
 
 <a id="Vercel_AI_Prompt_StandardizePromptInput_System_"></a>
 <a id="Vercel_AI_Prompt_StandardizePromptInput_System"></a>
@@ -110,4 +110,4 @@ Legacy system string. Used when [Instructions](#Vercel_AI_Prompt_StandardizeProm
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L151)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L154)

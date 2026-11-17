@@ -83,7 +83,7 @@ True when &lt;code class="paramref"&gt;pattern&lt;/code&gt; contains an unescape
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIJsonSchema.cs#L116)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIJsonSchema.cs#L141)
 
 <a id="Vercel_AI_OpenAI_OpenAIJsonSchema_Normalize_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIJsonSchema_Normalize_System_Text_Json_JsonElement_"></a>

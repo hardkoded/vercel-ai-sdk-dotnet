@@ -29,7 +29,7 @@ The decision model does not support a question type. It carries the
 
 **Derived:** [EvaluationUnsupportedQuestionTypeException](/api/Vercel.AI.Operations/EvaluationUnsupportedQuestionTypeException/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L331)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L380)
 
 ## Constructors
 
@@ -55,7 +55,7 @@ Creates the exception.
 | `provider` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L334)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L383)
 
 ## Properties
 
@@ -74,7 +74,7 @@ Upstream error name, `AI_DecisionUnsupportedQuestionTypeError`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L356)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L410)
 
 <a id="Vercel_AI_Operations_DecisionUnsupportedQuestionTypeException_ModelId_"></a>
 <a id="Vercel_AI_Operations_DecisionUnsupportedQuestionTypeException_ModelId"></a>
@@ -91,7 +91,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L353)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L407)
 
 <a id="Vercel_AI_Operations_DecisionUnsupportedQuestionTypeException_Provider_"></a>
 <a id="Vercel_AI_Operations_DecisionUnsupportedQuestionTypeException_Provider"></a>
@@ -108,7 +108,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L350)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L404)
 
 <a id="Vercel_AI_Operations_DecisionUnsupportedQuestionTypeException_QuestionId_"></a>
 <a id="Vercel_AI_Operations_DecisionUnsupportedQuestionTypeException_QuestionId"></a>
@@ -125,7 +125,7 @@ Question id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L344)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L398)
 
 <a id="Vercel_AI_Operations_DecisionUnsupportedQuestionTypeException_QuestionType_"></a>
 <a id="Vercel_AI_Operations_DecisionUnsupportedQuestionTypeException_QuestionType"></a>
@@ -142,7 +142,7 @@ Rejected question type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L347)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L401)
 
 ## Methods
 
@@ -167,4 +167,4 @@ Returns whether &lt;code class="paramref"&gt;marker&lt;/code&gt; is set to `true
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L359)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L413)

@@ -23,7 +23,7 @@ Cohere rerank request.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L320)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L412)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Headers merged over the provider headers.
 
 **Value:** [IDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.idictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L341)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L433)
 
 <a id="Vercel_AI_Cohere_CohereRerankRequest_MaxTokensPerDoc_"></a>
 <a id="Vercel_AI_Cohere_CohereRerankRequest_MaxTokensPerDoc"></a>
@@ -59,7 +59,7 @@ public int? MaxTokensPerDoc { get; set; }
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L335)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L427)
 
 <a id="Vercel_AI_Cohere_CohereRerankRequest_ObjectDocuments_"></a>
 <a id="Vercel_AI_Cohere_CohereRerankRequest_ObjectDocuments"></a>
@@ -76,7 +76,7 @@ JSON documents. They are stringified before they are sent.
 
 **Value:** [IReadOnlyList&lt;JsonObject&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L329)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L421)
 
 <a id="Vercel_AI_Cohere_CohereRerankRequest_Priority_"></a>
 <a id="Vercel_AI_Cohere_CohereRerankRequest_Priority"></a>
@@ -93,7 +93,7 @@ public int? Priority { get; set; }
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L338)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L430)
 
 <a id="Vercel_AI_Cohere_CohereRerankRequest_Query_"></a>
 <a id="Vercel_AI_Cohere_CohereRerankRequest_Query"></a>
@@ -110,7 +110,7 @@ Query text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L323)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L415)
 
 <a id="Vercel_AI_Cohere_CohereRerankRequest_TextDocuments_"></a>
 <a id="Vercel_AI_Cohere_CohereRerankRequest_TextDocuments"></a>
@@ -127,7 +127,7 @@ Plain-text documents.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L326)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L418)
 
 <a id="Vercel_AI_Cohere_CohereRerankRequest_TopN_"></a>
 <a id="Vercel_AI_Cohere_CohereRerankRequest_TopN"></a>
@@ -144,4 +144,4 @@ public int? TopN { get; set; }
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L332)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L424)

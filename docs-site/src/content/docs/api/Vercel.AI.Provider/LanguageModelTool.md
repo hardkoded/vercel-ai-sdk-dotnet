@@ -23,7 +23,7 @@ A function tool definition sent to the model.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L543)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L656)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a function tool.
 | `inputSchema` | [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 | `strict` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L546)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L659)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Arguments of a provider-defined tool. Undefined for a function tool.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L580)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L698)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_Description_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_Description"></a>
@@ -85,7 +85,7 @@ Tool description.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L583)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L701)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_InputSchema_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_InputSchema"></a>
@@ -102,7 +102,7 @@ JSON Schema for the arguments.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L586)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L704)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_IsProviderDefined_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_IsProviderDefined"></a>
@@ -119,7 +119,7 @@ Whether this is a provider-defined tool rather than a function tool.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L577)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L695)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_Name_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_Name"></a>
@@ -136,7 +136,7 @@ Tool name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L571)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L689)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_OutputSchema_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_OutputSchema"></a>
@@ -153,7 +153,7 @@ JSON Schema for the tool result. OpenAI Responses parses the result as JSON, so 
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L594)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L712)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_ProviderOptions_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_ProviderOptions"></a>
@@ -171,7 +171,7 @@ Maps to the tool's `providerOptions`.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L600)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L718)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_ProviderToolId_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_ProviderToolId"></a>
@@ -188,7 +188,7 @@ Provider-defined tool id, or null for a function tool.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L574)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L692)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_Strict_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_Strict"></a>
@@ -205,7 +205,7 @@ Responses strict mode. Null means unset, which Responses sends as false.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L589)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L707)
 
 ## Methods
 
@@ -233,4 +233,4 @@ Creates a provider-defined tool. Maps to `{ type: 'provider', id, name, args }`.
 
 **Returns:** [LanguageModelTool](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L565)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L683)

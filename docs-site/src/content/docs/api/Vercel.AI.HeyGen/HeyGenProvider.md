@@ -132,7 +132,7 @@ Creates an experimental decision model using the HeyGen Decision API. The provid
 
 **Returns:** [DecisionHeyGenModel](/api/Vercel.AI.HeyGen/DecisionHeyGenModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenProvider.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenProvider.cs#L56)
 
 <a id="Vercel_AI_HeyGen_HeyGenProvider_LanguageModel_"></a>
 <a id="Vercel_AI_HeyGen_HeyGenProvider_LanguageModel_System_String_"></a>
@@ -155,7 +155,7 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenProvider.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenProvider.cs#L42)
 
 <a id="Vercel_AI_HeyGen_HeyGenProvider_Video_"></a>
 <a id="Vercel_AI_HeyGen_HeyGenProvider_Video_System_String_"></a>
@@ -178,7 +178,7 @@ Creates a video model. Same as [VideoModel(string)](#Vercel_AI_HeyGen_HeyGenProv
 
 **Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenProvider.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenProvider.cs#L53)
 
 <a id="Vercel_AI_HeyGen_HeyGenProvider_VideoModel_"></a>
 <a id="Vercel_AI_HeyGen_HeyGenProvider_VideoModel_System_String_"></a>
@@ -201,4 +201,4 @@ Returns a video model.
 
 **Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenProvider.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenProvider.cs#L50)

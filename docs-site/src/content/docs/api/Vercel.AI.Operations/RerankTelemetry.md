@@ -23,7 +23,7 @@ Telemetry callbacks for rerank.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L319)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L369)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Runtime context keys included in telemetry.
 
 **Value:** [IReadOnlyDictionary&lt;string, bool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L337)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L387)
 
 <a id="Vercel_AI_Operations_RerankTelemetry_OnEnd_"></a>
 <a id="Vercel_AI_Operations_RerankTelemetry_OnEnd"></a>
@@ -59,7 +59,7 @@ Operation end.
 
 **Value:** [Func&lt;RerankEndEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L325)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L375)
 
 <a id="Vercel_AI_Operations_RerankTelemetry_OnError_"></a>
 <a id="Vercel_AI_Operations_RerankTelemetry_OnError"></a>
@@ -76,7 +76,7 @@ Failure callback.
 
 **Value:** [Func&lt;string, Exception, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L334)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L384)
 
 <a id="Vercel_AI_Operations_RerankTelemetry_OnRerankEnd_"></a>
 <a id="Vercel_AI_Operations_RerankTelemetry_OnRerankEnd"></a>
@@ -93,7 +93,7 @@ Inner `doRerank` end.
 
 **Value:** [Func&lt;RerankModelCallEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L331)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L381)
 
 <a id="Vercel_AI_Operations_RerankTelemetry_OnRerankStart_"></a>
 <a id="Vercel_AI_Operations_RerankTelemetry_OnRerankStart"></a>
@@ -110,7 +110,7 @@ Inner `doRerank` start.
 
 **Value:** [Func&lt;RerankModelCallEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L328)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L378)
 
 <a id="Vercel_AI_Operations_RerankTelemetry_OnStart_"></a>
 <a id="Vercel_AI_Operations_RerankTelemetry_OnStart"></a>
@@ -127,4 +127,4 @@ Operation start.
 
 **Value:** [Func&lt;RerankStartEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L322)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L372)

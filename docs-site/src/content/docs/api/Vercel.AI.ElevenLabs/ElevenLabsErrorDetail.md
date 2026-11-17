@@ -23,7 +23,7 @@ ElevenLabs API error details.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L84)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Loose fields ElevenLabs included in the detail object.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L122)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L124)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorDetail_Code_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorDetail_Code"></a>
@@ -59,7 +59,7 @@ Provider error code.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L107)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L109)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorDetail_Message_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorDetail_Message"></a>
@@ -76,7 +76,7 @@ Provider error message.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L106)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorDetail_Parameter_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorDetail_Parameter"></a>
@@ -93,7 +93,7 @@ Invalid parameter name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L119)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L121)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorDetail_RequestId_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorDetail_RequestId"></a>
@@ -110,7 +110,7 @@ ElevenLabs request id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L116)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L118)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorDetail_Status_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorDetail_Status"></a>
@@ -127,7 +127,7 @@ Provider error status.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L110)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L112)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorDetail_Type_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorDetail_Type"></a>
@@ -144,4 +144,4 @@ Provider error type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L113)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L115)

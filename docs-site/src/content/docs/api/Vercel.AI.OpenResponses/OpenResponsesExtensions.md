@@ -23,7 +23,7 @@ Builds an [OpenResponsesExtensionRegistry](/api/Vercel.AI.OpenResponses/OpenResp
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L153)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L180)
 
 ## Methods
 
@@ -48,4 +48,4 @@ Indexes &lt;code class="paramref"&gt;extensions&lt;/code&gt; and rejects incompl
 
 **Returns:** [OpenResponsesExtensionRegistry](/api/Vercel.AI.OpenResponses/OpenResponsesExtensionRegistry/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L156)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L229)

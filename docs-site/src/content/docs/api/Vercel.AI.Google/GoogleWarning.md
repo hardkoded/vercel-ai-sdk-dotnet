@@ -68,7 +68,7 @@ Extra detail.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleWarning.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleWarning.cs#L36)
 
 <a id="Vercel_AI_Google_GoogleWarning_Feature_"></a>
 <a id="Vercel_AI_Google_GoogleWarning_Feature"></a>
@@ -85,7 +85,7 @@ Unsupported feature name, when the warning is about one.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleWarning.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleWarning.cs#L33)
 
 <a id="Vercel_AI_Google_GoogleWarning_Message_"></a>
 <a id="Vercel_AI_Google_GoogleWarning_Message"></a>
@@ -102,7 +102,7 @@ Human-readable warning.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleWarning.cs#L25)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleWarning.cs#L30)
 
 <a id="Vercel_AI_Google_GoogleWarning_Type_"></a>
 <a id="Vercel_AI_Google_GoogleWarning_Type"></a>
@@ -119,7 +119,7 @@ Warning category: `unsupported`, `compatibility`, or `other`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleWarning.cs#L22)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleWarning.cs#L27)
 
 ## Methods
 
@@ -145,7 +145,7 @@ Compatibility mapping warning.
 
 **Returns:** [GoogleWarning](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleWarning.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleWarning.cs#L64)
 
 <a id="Vercel_AI_Google_GoogleWarning_ToCallWarning_"></a>
 <a id="Vercel_AI_Google_GoogleWarning_ToCallWarning"></a>
@@ -162,7 +162,7 @@ Maps this warning onto the shared call-warning type.
 
 **Returns:** [CallWarning](/api/Vercel.AI.Provider/CallWarning/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleWarning.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleWarning.cs#L39)
 
 <a id="Vercel_AI_Google_GoogleWarning_Unsupported_"></a>
 <a id="Vercel_AI_Google_GoogleWarning_Unsupported_System_String_System_String_"></a>
@@ -186,4 +186,4 @@ Unsupported feature warning.
 
 **Returns:** [GoogleWarning](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleWarning.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleWarning.cs#L57)

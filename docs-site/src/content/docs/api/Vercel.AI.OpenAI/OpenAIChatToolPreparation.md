@@ -42,7 +42,7 @@ OpenAI `tool_choice`. Null when the caller did not set one.
 
 **Value:** [JsonNode](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonnode)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatTools.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatTools.cs#L45)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatToolPreparation_Tools_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatToolPreparation_Tools"></a>
@@ -59,7 +59,7 @@ Tool objects. Null when the caller passed no tools.
 
 **Value:** [JsonArray](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonarray)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatTools.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatTools.cs#L42)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatToolPreparation_Warnings_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatToolPreparation_Warnings"></a>
@@ -76,4 +76,4 @@ Warnings produced while preparing tools.
 
 **Value:** [IReadOnlyList&lt;OpenAICallWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatTools.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatTools.cs#L48)

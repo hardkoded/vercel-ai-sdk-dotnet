@@ -23,7 +23,7 @@ A provider text generation inside a batch item.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L275)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L331)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Content parts.
 
 **Value:** [IReadOnlyList&lt;BatchContentPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L278)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L334)
 
 <a id="Vercel_AI_Operations_BatchTextGeneration_FinishReason_"></a>
 <a id="Vercel_AI_Operations_BatchTextGeneration_FinishReason"></a>
@@ -59,7 +59,7 @@ Unified finish reason.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L281)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L337)
 
 <a id="Vercel_AI_Operations_BatchTextGeneration_ModelId_"></a>
 <a id="Vercel_AI_Operations_BatchTextGeneration_ModelId"></a>
@@ -76,7 +76,7 @@ Response model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L296)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L352)
 
 <a id="Vercel_AI_Operations_BatchTextGeneration_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_BatchTextGeneration_ProviderMetadata"></a>
@@ -93,7 +93,7 @@ Provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L299)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L355)
 
 <a id="Vercel_AI_Operations_BatchTextGeneration_RawFinishReason_"></a>
 <a id="Vercel_AI_Operations_BatchTextGeneration_RawFinishReason"></a>
@@ -110,7 +110,7 @@ Raw finish reason.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L284)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L340)
 
 <a id="Vercel_AI_Operations_BatchTextGeneration_ResponseId_"></a>
 <a id="Vercel_AI_Operations_BatchTextGeneration_ResponseId"></a>
@@ -127,7 +127,7 @@ Response id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L290)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L346)
 
 <a id="Vercel_AI_Operations_BatchTextGeneration_Timestamp_"></a>
 <a id="Vercel_AI_Operations_BatchTextGeneration_Timestamp"></a>
@@ -144,7 +144,7 @@ Response timestamp.
 
 **Value:** [DateTime?](https://learn.microsoft.com/dotnet/api/system.datetime)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L293)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L349)
 
 <a id="Vercel_AI_Operations_BatchTextGeneration_Usage_"></a>
 <a id="Vercel_AI_Operations_BatchTextGeneration_Usage"></a>
@@ -161,4 +161,4 @@ Provider usage.
 
 **Value:** [BatchModelUsage](/api/Vercel.AI.Operations/BatchModelUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L287)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L343)

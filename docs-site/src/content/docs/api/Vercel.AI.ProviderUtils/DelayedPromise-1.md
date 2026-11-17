@@ -48,7 +48,7 @@ The task that completes on `Resolve(%600)` or faults on `Exception)`.
 
 **Value:** [Task&lt;T&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DelayedPromise.cs#L13)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DelayedPromise.cs#L15)
 
 ## Methods
 
@@ -67,7 +67,7 @@ True before resolve or reject.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DelayedPromise.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DelayedPromise.cs#L45)
 
 <a id="Vercel_AI_ProviderUtils_DelayedPromise_1_IsRejected_"></a>
 <a id="Vercel_AI_ProviderUtils_DelayedPromise_1_IsRejected"></a>
@@ -84,7 +84,7 @@ True after `Exception)`.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DelayedPromise.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DelayedPromise.cs#L39)
 
 <a id="Vercel_AI_ProviderUtils_DelayedPromise_1_IsResolved_"></a>
 <a id="Vercel_AI_ProviderUtils_DelayedPromise_1_IsResolved"></a>
@@ -101,7 +101,7 @@ True after `Resolve(%600)`.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DelayedPromise.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DelayedPromise.cs#L33)
 
 <a id="Vercel_AI_ProviderUtils_DelayedPromise_1_Reject_"></a>
 <a id="Vercel_AI_ProviderUtils_DelayedPromise_1_Reject_System_Exception_"></a>
@@ -122,7 +122,7 @@ Faults `Promise` with &lt;code class="paramref"&gt;error&lt;/code&gt;.
 | --- | --- | --- |
 | `error` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DelayedPromise.cs#L25)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DelayedPromise.cs#L27)
 
 <a id="Vercel_AI_ProviderUtils_DelayedPromise_1_Resolve_"></a>
 <a id="Vercel_AI_ProviderUtils_DelayedPromise_1_Resolve__0_"></a>
@@ -143,4 +143,4 @@ Completes `Promise` with &lt;code class="paramref"&gt;value&lt;/code&gt;.
 | --- | --- | --- |
 | `value` | `T` |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DelayedPromise.cs#L19)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DelayedPromise.cs#L21)

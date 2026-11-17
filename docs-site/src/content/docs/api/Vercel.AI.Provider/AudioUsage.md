@@ -24,7 +24,7 @@ A count stays unset when the provider does not report that unit.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L234)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L274)
 
 ## Constructors
 
@@ -51,7 +51,7 @@ Creates usage. Counts that the provider did not report stay null.
 | `outputTokens` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `totalTokens` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L237)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L277)
 
 ## Properties
 
@@ -70,7 +70,7 @@ Character count, when the provider reports one.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L247)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L293)
 
 <a id="Vercel_AI_Provider_AudioUsage_InputTokens_"></a>
 <a id="Vercel_AI_Provider_AudioUsage_InputTokens"></a>
@@ -87,7 +87,7 @@ Prompt tokens, when the provider reports them.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L253)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L299)
 
 <a id="Vercel_AI_Provider_AudioUsage_OutputTokens_"></a>
 <a id="Vercel_AI_Provider_AudioUsage_OutputTokens"></a>
@@ -104,7 +104,7 @@ Generated tokens, when the provider reports them.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L256)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L302)
 
 <a id="Vercel_AI_Provider_AudioUsage_Seconds_"></a>
 <a id="Vercel_AI_Provider_AudioUsage_Seconds"></a>
@@ -121,7 +121,7 @@ Duration in seconds, when the provider reports one.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L250)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L296)
 
 <a id="Vercel_AI_Provider_AudioUsage_TotalTokens_"></a>
 <a id="Vercel_AI_Provider_AudioUsage_TotalTokens"></a>
@@ -138,4 +138,4 @@ Input plus output tokens, when the provider reports them.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L259)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L305)

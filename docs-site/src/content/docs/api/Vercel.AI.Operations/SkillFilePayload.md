@@ -23,7 +23,7 @@ Normalized skill file passed to the provider.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L361)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L425)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a payload.
 | `data` | [UploadData](/api/Vercel.AI.Operations/UploadData/) |  |
 | `mediaType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L364)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L428)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Tagged data.
 
 **Value:** [UploadData](/api/Vercel.AI.Operations/UploadData/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L375)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L439)
 
 <a id="Vercel_AI_Operations_SkillFilePayload_MediaType_"></a>
 <a id="Vercel_AI_Operations_SkillFilePayload_MediaType"></a>
@@ -84,7 +84,7 @@ Media type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L378)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L442)
 
 <a id="Vercel_AI_Operations_SkillFilePayload_Path_"></a>
 <a id="Vercel_AI_Operations_SkillFilePayload_Path"></a>
@@ -101,4 +101,4 @@ Path inside the skill.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L372)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L436)

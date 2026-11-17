@@ -46,7 +46,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L40)
 
 <a id="Vercel_AI_Azure_AzureSpeechModel_Provider_"></a>
 <a id="Vercel_AI_Azure_AzureSpeechModel_Provider"></a>
@@ -63,7 +63,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L37)
 
 ## Methods
 
@@ -90,7 +90,7 @@ Restores a model from [Serialize()](#Vercel_AI_Azure_AzureSpeechModel_Serialize)
 
 **Returns:** [AzureSpeechModel](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L56)
 
 <a id="Vercel_AI_Azure_AzureSpeechModel_DoGenerateAsync_"></a>
 <a id="Vercel_AI_Azure_AzureSpeechModel_DoGenerateAsync_Vercel_AI_Provider_SpeechCallOptions_System_Threading_CancellationToken_"></a>
@@ -114,7 +114,7 @@ Synthesizes speech.
 
 **Returns:** [Task&lt;SpeechResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L68)
 
 <a id="Vercel_AI_Azure_AzureSpeechModel_GenerateAsync_"></a>
 <a id="Vercel_AI_Azure_AzureSpeechModel_GenerateAsync_Vercel_AI_OpenAI_OpenAISpeechCall_System_Threading_CancellationToken_"></a>
@@ -145,7 +145,7 @@ Maps to `doGenerate`.
 | --- | --- |
 | [InvalidArgumentError](/api/Vercel.AI.Util/InvalidArgumentError/) | An `azure` provider option is unknown or out of range. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L73)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L91)
 
 <a id="Vercel_AI_Azure_AzureSpeechModel_Serialize_"></a>
 <a id="Vercel_AI_Azure_AzureSpeechModel_Serialize"></a>
@@ -164,4 +164,4 @@ to `HttpMessageHandler)`.
 
 **Returns:** [SerializedModelOptions](/api/Vercel.AI.ProviderUtils/SerializedModelOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L47)

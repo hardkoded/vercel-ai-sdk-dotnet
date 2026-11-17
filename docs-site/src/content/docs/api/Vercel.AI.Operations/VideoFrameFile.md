@@ -23,7 +23,7 @@ A normalized frame image.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L81)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a normalized frame.
 | `image` | [VideoModelFile](/api/Vercel.AI.Operations/VideoModelFile/) |  |
 | `frameType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L69)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L84)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Frame role.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L79)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L94)
 
 <a id="Vercel_AI_Operations_VideoFrameFile_Image_"></a>
 <a id="Vercel_AI_Operations_VideoFrameFile_Image"></a>
@@ -83,4 +83,4 @@ Normalized image.
 
 **Value:** [VideoModelFile](/api/Vercel.AI.Operations/VideoModelFile/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L76)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L91)

@@ -62,6 +62,24 @@ Provider headers, resolved on every call. When null, the model sends the `x-api-
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L26)
 
+<a id="Vercel_AI_ScaleDown_ScaleDownExtractionModelConfig_HeadersAsync_"></a>
+<a id="Vercel_AI_ScaleDown_ScaleDownExtractionModelConfig_HeadersAsync"></a>
+
+### HeadersAsync
+
+
+```csharp
+public Func<CancellationToken, Task<IReadOnlyDictionary<string, string>>>? HeadersAsync { get; set; }
+```
+
+
+Provider headers that need an asynchronous step, such as an async API key. Used when [Headers](#Vercel_AI_ScaleDown_ScaleDownExtractionModelConfig_Headers) is null.
+Not serializable: `Serialize` throws [SerializationError](/api/Vercel.AI.ProviderUtils/SerializationError/), as upstream does for an async `headers`.
+
+**Value:** [Func&lt;CancellationToken, Task&lt;IReadOnlyDictionary&lt;string, string&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L32)
+
 <a id="Vercel_AI_ScaleDown_ScaleDownExtractionModelConfig_HttpClient_"></a>
 <a id="Vercel_AI_ScaleDown_ScaleDownExtractionModelConfig_HttpClient"></a>
 
@@ -77,7 +95,7 @@ HTTP client. Not serialized.
 
 **Value:** [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownExtractionModel.cs#L38)
 
 <a id="Vercel_AI_ScaleDown_ScaleDownExtractionModelConfig_Provider_"></a>
 <a id="Vercel_AI_ScaleDown_ScaleDownExtractionModelConfig_Provider"></a>

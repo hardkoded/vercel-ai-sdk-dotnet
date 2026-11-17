@@ -23,7 +23,7 @@ Abort signal that records the first reason.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L24)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L22)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Whether [Abort(object)](#Vercel_AI_Util_AbortSignal_Abort_System_Object_) has be
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L38)
 
 <a id="Vercel_AI_Util_AbortSignal_Reason_"></a>
 <a id="Vercel_AI_Util_AbortSignal_Reason"></a>
@@ -59,7 +59,7 @@ Reason passed to the abort that won.
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L41)
 
 ## Methods
 
@@ -83,7 +83,7 @@ The first handler exception is rethrown after the last handler ran.
 | --- | --- | --- |
 | `reason` | [object](https://learn.microsoft.com/dotnet/api/system.object) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L47)
 
 <a id="Vercel_AI_Util_AbortSignal_AddAbortHandler_"></a>
 <a id="Vercel_AI_Util_AbortSignal_AddAbortHandler_System_Action_"></a>
@@ -104,7 +104,7 @@ Runs &lt;code class="paramref"&gt;handler&lt;/code&gt; when aborted. Runs immedi
 | --- | --- | --- |
 | `handler` | [Action](https://learn.microsoft.com/dotnet/api/system.action) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L85)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L83)
 
 <a id="Vercel_AI_Util_AbortSignal_RemoveAbortHandler_"></a>
 <a id="Vercel_AI_Util_AbortSignal_RemoveAbortHandler_System_Action_"></a>
@@ -125,7 +125,7 @@ Removes a handler added by [AddAbortHandler(Action)](#Vercel_AI_Util_AbortSignal
 | --- | --- | --- |
 | `handler` | [Action](https://learn.microsoft.com/dotnet/api/system.action) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L112)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L110)
 
 <a id="Vercel_AI_Util_AbortSignal_Timeout_"></a>
 <a id="Vercel_AI_Util_AbortSignal_Timeout_System_Int32_System_Action_System_Action_System_Int32__"></a>
@@ -149,4 +149,4 @@ Signal that aborts with [TimeoutError](/api/Vercel.AI.Util/TimeoutError/) after 
 
 **Returns:** [AbortSignal](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L121)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L119)

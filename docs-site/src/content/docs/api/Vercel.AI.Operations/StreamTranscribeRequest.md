@@ -23,7 +23,7 @@ Options for `CancellationToken)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [OperationRequest](/api/Vercel.AI.Operations/OperationRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L232)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L612)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Audio stream.
 
 **Value:** [AudioChunkStream](/api/Vercel.AI.Operations/AudioChunkStream/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L241)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L621)
 
 <a id="Vercel_AI_Operations_StreamTranscribeRequest_IncludeRawChunks_"></a>
 <a id="Vercel_AI_Operations_StreamTranscribeRequest_IncludeRawChunks"></a>
@@ -59,7 +59,7 @@ Requests raw provider chunks.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L247)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L627)
 
 <a id="Vercel_AI_Operations_StreamTranscribeRequest_InputAudioFormat_"></a>
 <a id="Vercel_AI_Operations_StreamTranscribeRequest_InputAudioFormat"></a>
@@ -76,7 +76,7 @@ Input audio format.
 
 **Value:** [AudioFormat](/api/Vercel.AI.Operations/AudioFormat/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L244)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L624)
 
 <a id="Vercel_AI_Operations_StreamTranscribeRequest_Model_"></a>
 <a id="Vercel_AI_Operations_StreamTranscribeRequest_Model"></a>
@@ -93,7 +93,7 @@ Model instance. Takes precedence over [ModelId](#Vercel_AI_Operations_StreamTran
 
 **Value:** [ITranscriptionCaller](/api/Vercel.AI.Operations/ITranscriptionCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L235)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L615)
 
 <a id="Vercel_AI_Operations_StreamTranscribeRequest_ModelId_"></a>
 <a id="Vercel_AI_Operations_StreamTranscribeRequest_ModelId"></a>
@@ -110,7 +110,7 @@ Model id resolved through [Default](/api/Vercel.AI.Operations/TranscriptionModel
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L238)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L618)
 
 <a id="Vercel_AI_Operations_StreamTranscribeRequest_ModelWasString_"></a>
 <a id="Vercel_AI_Operations_StreamTranscribeRequest_ModelWasString"></a>
@@ -127,4 +127,4 @@ True when the model was resolved from [ModelId](#Vercel_AI_Operations_StreamTran
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L250)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L630)

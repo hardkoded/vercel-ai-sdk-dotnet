@@ -132,7 +132,7 @@ Generates one image with Dream Machine.
 
 **Returns:** [Task&lt;LumaImageGeneration&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L75)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L83)
 
 <a id="Vercel_AI_Luma_LumaProvider_ImageModel_"></a>
 <a id="Vercel_AI_Luma_LumaProvider_ImageModel_System_String_"></a>
@@ -155,7 +155,7 @@ Returns an image model.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L72)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L80)
 
 <a id="Vercel_AI_Luma_LumaProvider_LanguageModel_"></a>
 <a id="Vercel_AI_Luma_LumaProvider_LanguageModel_System_String_"></a>

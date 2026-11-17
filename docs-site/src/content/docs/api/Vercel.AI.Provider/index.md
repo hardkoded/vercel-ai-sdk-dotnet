@@ -36,6 +36,7 @@ Language model, embedding, image, and other model contracts.
 | [BatchJob](/api/Vercel.AI.Provider/BatchJob/) | A submitted batch job. |
 | [CallWarning](/api/Vercel.AI.Provider/CallWarning/) | A warning produced while calling a model. |
 | [Citation](/api/Vercel.AI.Provider/Citation/) | A reference that supports generated text: the source it points at, plus the optional range of the text it supports and the cited passage. It is not a second copy of the retrieved sources. |
+| [CustomContentPart](/api/Vercel.AI.Provider/CustomContentPart/) | A custom content part inside a tool result, used to carry provider-specific content. Maps to { type: 'custom', providerOptions } in the tool result content of LanguageModelV4Prompt. |
 | [CustomStreamPart](/api/Vercel.AI.Provider/CustomStreamPart/) | A provider-specific part, identified by Kind. |
 | [DocumentSourceStreamPart](/api/Vercel.AI.Provider/DocumentSourceStreamPart/) | A retrieved document, such as a file a search tool returned. |
 | [EmbeddingCallOptions](/api/Vercel.AI.Provider/EmbeddingCallOptions/) | Per-call embedding settings. Maps to the options of doEmbed. |
@@ -45,6 +46,8 @@ Language model, embedding, image, and other model contracts.
 | [ErrorStreamPart](/api/Vercel.AI.Provider/ErrorStreamPart/) | A stream error from the provider. |
 | [EvaluationResult](/api/Vercel.AI.Provider/EvaluationResult/) | Deprecated name of RubricResult. |
 | [FileContentPart](/api/Vercel.AI.Provider/FileContentPart/) | A file or image in a user message. |
+| [FileStreamPart](/api/Vercel.AI.Provider/FileStreamPart/) | A file in a model stream. The data is inline bytes or a URL the SDK downloads before it emits the file. Maps to the file stream part. |
+| [FileUrlContentPart](/api/Vercel.AI.Provider/FileUrlContentPart/) | A deprecated file-url part inside a tool result. Use FileContentPart with a URL instead. Maps to { type: 'file-url', url, mediaType?, providerOptions } in the tool result content. |
 | [FinishReasons](/api/Vercel.AI.Provider/FinishReasons/) | Maps provider finish-reason strings onto FinishReason. |
 | [FinishStreamPart](/api/Vercel.AI.Provider/FinishStreamPart/) | The stream finished. |
 | [GeneratedContent](/api/Vercel.AI.Provider/GeneratedContent/) | Content the model generated. |
@@ -53,14 +56,17 @@ Language model, embedding, image, and other model contracts.
 | [GeneratedFile](/api/Vercel.AI.Provider/GeneratedFile/) | A generated file. |
 | [GeneratedImage](/api/Vercel.AI.Provider/GeneratedImage/) | One generated image. |
 | [GeneratedReasoning](/api/Vercel.AI.Provider/GeneratedReasoning/) | Reasoning text kept separate from the answer. |
+| [GeneratedReasoningFile](/api/Vercel.AI.Provider/GeneratedReasoningFile/) | A file the model produced as part of its reasoning. Maps to the reasoning-file content part. |
 | [GeneratedSource](/api/Vercel.AI.Provider/GeneratedSource/) | A URL source cited by the model. |
 | [GeneratedText](/api/Vercel.AI.Provider/GeneratedText/) | Generated text. |
 | [GeneratedToolApprovalRequest](/api/Vercel.AI.Provider/GeneratedToolApprovalRequest/) | A request to approve a tool call, such as one a provider-executed MCP tool needs. A model returns it with ToolCallId only; the generation loop fills in ToolCall. |
+| [GeneratedToolApprovalResponse](/api/Vercel.AI.Provider/GeneratedToolApprovalResponse/) | The answer to a tool approval request that the generation loop produced itself, such as an automatic approval or denial. Maps to the tool-approval-response output part. |
 | [GeneratedToolCall](/api/Vercel.AI.Provider/GeneratedToolCall/) | A function tool call. |
 | [GeneratedToolResult](/api/Vercel.AI.Provider/GeneratedToolResult/) | A tool result: one the provider produced itself, such as a web or file search, or one the generation loop produced by running a client tool. |
 | [ImageCallOptions](/api/Vercel.AI.Provider/ImageCallOptions/) | Image call settings. |
 | [ImageGenerationResult](/api/Vercel.AI.Provider/ImageGenerationResult/) | Image generation result. |
 | [ImageResponseInfo](/api/Vercel.AI.Provider/ImageResponseInfo/) | Response metadata of an image call. Maps to response of doGenerate on an image model. |
+| [ImageUrlContentPart](/api/Vercel.AI.Provider/ImageUrlContentPart/) | A deprecated image-url part inside a tool result. Use FileContentPart with the image media type and a URL instead. Maps to { type: 'image-url', url, providerOptions } in the tool result content. |
 | [InternalServerException](/api/Vercel.AI.Provider/InternalServerException/) | HTTP 500-599. |
 | [JsError](/api/Vercel.AI.Provider/JsError/) | JavaScript Error analog whose ToString() omits the stack. |
 | [JsRangeError](/api/Vercel.AI.Provider/JsRangeError/) | JavaScript RangeError analog. |
@@ -77,11 +83,24 @@ Language model, embedding, image, and other model contracts.
 | [ModelMessage](/api/Vercel.AI.Provider/ModelMessage/) | A prompt message. |
 | [NotFoundException](/api/Vercel.AI.Provider/NotFoundException/) | HTTP 404. |
 | [PermissionDeniedException](/api/Vercel.AI.Provider/PermissionDeniedException/) | HTTP 403. |
+| [PingStreamPart](/api/Vercel.AI.Provider/PingStreamPart/) | A transient provider heartbeat that keeps the stream connection alive. It carries no generated content or usage. Maps to ping. |
 | [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/) | Provider factory. Maps to ProviderV4. Modalities a provider does not implement throw AiSdkException. |
 | [RateLimitException](/api/Vercel.AI.Provider/RateLimitException/) | HTTP 429. |
 | [RawStreamPart](/api/Vercel.AI.Provider/RawStreamPart/) | One raw provider stream event. |
+| [RealtimeModelV4AudioTranscription](/api/Vercel.AI.Provider/RealtimeModelV4AudioTranscription/) | Audio transcription options of a realtime session config. |
+| [RealtimeModelV4ClientEvent](/api/Vercel.AI.Provider/RealtimeModelV4ClientEvent/) | A normalized event sent by the client. Maps to the RealtimeModelV4ClientEvent union: Type is the tag (session-update, session-start, session-close, input-audio-mute, input-audio-unmute, context-append, input-audio-append, input-audio-commit, input-audio-clear, conversation-item-create, conversation-item-truncate, response-create, response-cancel). |
+| [RealtimeModelV4ConversationItem](/api/Vercel.AI.Provider/RealtimeModelV4ConversationItem/) | A conversation item created by the client. Maps to RealtimeModelV4ConversationItem; Type is text-message, audio-message or function-call-output. |
+| [RealtimeModelV4ResponseOptions](/api/Vercel.AI.Provider/RealtimeModelV4ResponseOptions/) | Options of a response-create client event. |
+| [RealtimeModelV4ServerConnection](/api/Vercel.AI.Provider/RealtimeModelV4ServerConnection/) | Descriptor for a server-initiated upstream WebSocket connection. Maps to RealtimeModelV4ServerConnection: the URL to dial plus the headers (and optional subprotocols) to send on the handshake. It carries the long-lived provider credential in Headers and is meant for a trusted server that owns the socket. |
+| [RealtimeModelV4ServerEvent](/api/Vercel.AI.Provider/RealtimeModelV4ServerEvent/) | A normalized event emitted by a realtime model (model to client). Maps to the RealtimeModelV4ServerEvent union: Type is the union tag (for example response-done) and the other members are the fields that tag carries; fields a tag does not define stay null. Raw holds the original provider event. |
+| [RealtimeModelV4SessionConfig](/api/Vercel.AI.Provider/RealtimeModelV4SessionConfig/) | Maps to RealtimeModelV4SessionConfig. |
+| [RealtimeModelV4ToolDefinition](/api/Vercel.AI.Provider/RealtimeModelV4ToolDefinition/) | A tool definition in a realtime session config. Maps to RealtimeModelV4ToolDefinition. |
+| [RealtimeModelV4TurnDetection](/api/Vercel.AI.Provider/RealtimeModelV4TurnDetection/) | Turn detection options. Maps to RealtimeModelV4SessionConfig.turnDetection. |
+| [RealtimeModelV4Usage](/api/Vercel.AI.Provider/RealtimeModelV4Usage/) | Normalized realtime usage on completion events or provider custom snapshots. Maps to RealtimeModelV4Usage. Snapshots without a response association must not be summed as increments. Counts are the provider's raw counts: input buckets include cached tokens, and the cached portions are reported separately. Every field is optional; the whole usage is omitted when nothing is observable. |
+| [RealtimeModelV4WebSocketConfig](/api/Vercel.AI.Provider/RealtimeModelV4WebSocketConfig/) | URL and optional subprotocols a client opens a realtime WebSocket with. Maps to the result of RealtimeModelV4.getWebSocketConfig. |
 | [ReasoningDeltaStreamPart](/api/Vercel.AI.Provider/ReasoningDeltaStreamPart/) | A reasoning delta. |
 | [ReasoningEndStreamPart](/api/Vercel.AI.Provider/ReasoningEndStreamPart/) | Marks the end of one reasoning block. |
+| [ReasoningFileStreamPart](/api/Vercel.AI.Provider/ReasoningFileStreamPart/) | A file the model produced as part of its reasoning, in a model stream. The data is inline bytes or a URL the SDK downloads before it emits the file. Maps to the reasoning-file stream part. |
 | [ReasoningStartStreamPart](/api/Vercel.AI.Provider/ReasoningStartStreamPart/) | Marks the start of one reasoning block. |
 | [RerankItem](/api/Vercel.AI.Provider/RerankItem/) | One reranked document. |
 | [RerankResult](/api/Vercel.AI.Provider/RerankResult/) | Rerank result. |
@@ -130,6 +149,7 @@ Language model, embedding, image, and other model contracts.
 | [IRealtimeSession](/api/Vercel.AI.Provider/IRealtimeSession/) | A realtime session. |
 | [IRerankingModel](/api/Vercel.AI.Provider/IRerankingModel/) | Reranking model specification. |
 | [IRubricModel](/api/Vercel.AI.Provider/IRubricModel/) | A model that scores a candidate against a rubric. Used by CancellationToken). |
+| [IServerWebSocketRealtimeModel](/api/Vercel.AI.Provider/IServerWebSocketRealtimeModel/) | A realtime model that can open a server-owned WebSocket. Maps to the optional RealtimeModelV4.getServerWebSocketConfig. It is a separate interface because netstandard2.0 has no default interface members. |
 | [ISkillStore](/api/Vercel.AI.Provider/ISkillStore/) | Skill store used by uploadSkill. |
 | [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/) | Speech model specification. |
 | [ISpeechTranslationModel](/api/Vercel.AI.Provider/ISpeechTranslationModel/) | Speech translation model specification. |
@@ -141,4 +161,5 @@ Language model, embedding, image, and other model contracts.
 | Type | Summary |
 | --- | --- |
 | [FinishReason](/api/Vercel.AI.Provider/FinishReason/) | Why a language-model call stopped. |
+| [RealtimeModelV4SessionIntent](/api/Vercel.AI.Provider/RealtimeModelV4SessionIntent/) | The realtime endpoint variant to open. Maps to RealtimeModelV4SessionIntent. Conversation is the conversational voice endpoint; Transcription is a dedicated transcription endpoint. Providers fail fast when an intent is not supported by their endpoint and codec. |
 | [ToolInputEncoding](/api/Vercel.AI.Provider/ToolInputEncoding/) | Encoding of the deltas that follow a tool-input-start part. |

@@ -23,7 +23,7 @@ Header construction for Vertex. Live Application Default Credentials are not con
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L142)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L179)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Bearer header for an access token that the caller already obtained.
 
 **Returns:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L145)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L182)
 
 <a id="Vercel_AI_Google_GoogleVertexAuth_Express_"></a>
 <a id="Vercel_AI_Google_GoogleVertexAuth_Express_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__"></a>
@@ -73,4 +73,4 @@ Express Mode sends the API key and does not add a bearer token.
 
 **Returns:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L165)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L205)

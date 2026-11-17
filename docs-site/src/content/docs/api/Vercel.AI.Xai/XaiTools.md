@@ -97,7 +97,7 @@ The `xai.image_generation` tool. Maps to `imageGeneration`.
 
 **Returns:** [Tool](/api/Vercel.AI/Tool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTools.cs#L138)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTools.cs#L143)
 
 <a id="Vercel_AI_Xai_XaiTools_McpServer_"></a>
 <a id="Vercel_AI_Xai_XaiTools_McpServer_Vercel_AI_Xai_XaiMcpServerOptions_System_String_"></a>
@@ -121,7 +121,7 @@ The `xai.mcp` tool. Maps to `mcpServer`.
 
 **Returns:** [Tool](/api/Vercel.AI/Tool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTools.cs#L151)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTools.cs#L167)
 
 <a id="Vercel_AI_Xai_XaiTools_ViewImage_"></a>
 <a id="Vercel_AI_Xai_XaiTools_ViewImage_System_String_"></a>
@@ -144,7 +144,7 @@ The `xai.view_image` tool. Maps to `viewImage`.
 
 **Returns:** [Tool](/api/Vercel.AI/Tool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTools.cs#L180)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTools.cs#L201)
 
 <a id="Vercel_AI_Xai_XaiTools_ViewXVideo_"></a>
 <a id="Vercel_AI_Xai_XaiTools_ViewXVideo_System_String_"></a>
@@ -167,7 +167,7 @@ The `xai.view_x_video` tool. Maps to `viewXVideo`.
 
 **Returns:** [Tool](/api/Vercel.AI/Tool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTools.cs#L186)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTools.cs#L207)
 
 <a id="Vercel_AI_Xai_XaiTools_WebSearch_"></a>
 <a id="Vercel_AI_Xai_XaiTools_WebSearch_Vercel_AI_Xai_XaiWebSearchOptions_System_String_"></a>
@@ -191,7 +191,7 @@ The `xai.web_search` tool. Maps to `webSearch`.
 
 **Returns:** [Tool](/api/Vercel.AI/Tool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTools.cs#L192)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTools.cs#L213)
 
 <a id="Vercel_AI_Xai_XaiTools_XSearch_"></a>
 <a id="Vercel_AI_Xai_XaiTools_XSearch_Vercel_AI_Xai_XaiXSearchOptions_System_String_"></a>
@@ -215,4 +215,4 @@ The `xai.x_search` tool. Maps to `xSearch`.
 
 **Returns:** [Tool](/api/Vercel.AI/Tool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTools.cs#L202)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTools.cs#L228)

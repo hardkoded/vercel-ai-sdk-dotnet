@@ -23,7 +23,7 @@ Options of [WebSearch(OpenAIWebSearchToolOptions)](/api/Vercel.AI.OpenAI/OpenAIT
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L53)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Domains the search may use.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L59)
 
 <a id="Vercel_AI_OpenAI_OpenAIWebSearchToolOptions_BlockedDomains_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIWebSearchToolOptions_BlockedDomains"></a>
@@ -59,7 +59,7 @@ Domains the search must not use.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L62)
 
 <a id="Vercel_AI_OpenAI_OpenAIWebSearchToolOptions_ExternalWebAccess_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIWebSearchToolOptions_ExternalWebAccess"></a>
@@ -76,7 +76,7 @@ Whether the tool may reach the live web.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L56)
 
 <a id="Vercel_AI_OpenAI_OpenAIWebSearchToolOptions_SearchContextSize_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIWebSearchToolOptions_SearchContextSize"></a>
@@ -93,7 +93,7 @@ Search context size: `low`, `medium`, or `high`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L65)
 
 <a id="Vercel_AI_OpenAI_OpenAIWebSearchToolOptions_UserLocation_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIWebSearchToolOptions_UserLocation"></a>
@@ -110,4 +110,4 @@ Approximate user location.
 
 **Value:** [OpenAIApproximateLocation](/api/Vercel.AI.OpenAI/OpenAIApproximateLocation/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L68)

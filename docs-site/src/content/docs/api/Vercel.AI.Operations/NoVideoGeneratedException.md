@@ -25,7 +25,7 @@ No video was produced.
 
 **Implements:** [ISerializable](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.iserializable)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L295)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L333)
 
 ## Constructors
 
@@ -48,7 +48,28 @@ Creates the exception.
 | --- | --- | --- |
 | `responses` | [IReadOnlyList&lt;ProviderResponse&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L298)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L336)
+
+<a id="Vercel_AI_Operations_NoVideoGeneratedException__ctor_System_Collections_Generic_IReadOnlyList_Vercel_AI_Operations_ProviderResponse__System_String_"></a>
+
+### `NoVideoGeneratedException(IReadOnlyList<ProviderResponse>, string?)`
+
+
+```csharp
+public NoVideoGeneratedException(IReadOnlyList<ProviderResponse> responses, string? message)
+```
+
+
+Creates the exception with a custom message.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `responses` | [IReadOnlyList&lt;ProviderResponse&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
+| `message` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L340)
 
 ## Properties
 
@@ -67,4 +88,4 @@ Provider responses included with the failure.
 
 **Value:** [IReadOnlyList&lt;ProviderResponse&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L305)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L347)

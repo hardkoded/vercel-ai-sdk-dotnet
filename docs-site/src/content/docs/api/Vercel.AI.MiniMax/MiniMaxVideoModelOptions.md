@@ -43,7 +43,7 @@ Whether to embed an AIGC watermark in the output. Defaults to `false`.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModelOptions.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModelOptions.cs#L33)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelOptions_MiniMaxVideoRatios_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelOptions_MiniMaxVideoRatios"></a>
@@ -77,7 +77,7 @@ Output resolutions supported by MiniMax video models (`minimaxVideoResolutions`)
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModelOptions.cs#L16)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModelOptions.cs#L17)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelOptions_PollIntervalMs_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelOptions_PollIntervalMs"></a>
@@ -95,7 +95,7 @@ Interval in milliseconds between task status polls. Default: 10000.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModelOptions.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModelOptions.cs#L37)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelOptions_PollTimeoutMs_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelOptions_PollTimeoutMs"></a>
@@ -113,7 +113,7 @@ Maximum time in milliseconds to poll before timing out. Default: 600000.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModelOptions.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModelOptions.cs#L41)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelOptions_Ratio_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelOptions_Ratio"></a>
@@ -131,7 +131,7 @@ Aspect ratio of the generated video. One of [MiniMaxVideoRatios](#Vercel_AI_Mini
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModelOptions.cs#L23)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModelOptions.cs#L25)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelOptions_ReferenceAudioUrls_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelOptions_ReferenceAudioUrls"></a>
@@ -149,7 +149,7 @@ Reference audio URLs for reference-to-video generation.
 
 **Value:** [IList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ilist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModelOptions.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModelOptions.cs#L29)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelOptions_Resolution_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelOptions_Resolution"></a>
@@ -167,4 +167,4 @@ Output resolution. One of [MiniMaxVideoResolutions](#Vercel_AI_MiniMax_MiniMaxVi
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModelOptions.cs#L19)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModelOptions.cs#L21)

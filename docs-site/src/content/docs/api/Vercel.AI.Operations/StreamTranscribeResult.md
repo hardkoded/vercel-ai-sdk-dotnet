@@ -23,7 +23,7 @@ Streaming transcription result.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L250)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L634)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Duration. Accessing it claims the stream.
 
 **Value:** [Task&lt;double?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L295)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L704)
 
 <a id="Vercel_AI_Operations_StreamTranscribeResult_FullStream_"></a>
 <a id="Vercel_AI_Operations_StreamTranscribeResult_FullStream"></a>
@@ -59,7 +59,7 @@ Single-consumer part stream.
 
 **Value:** `OperationFullStream&lt;ModelStreamPart&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L319)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L744)
 
 <a id="Vercel_AI_Operations_StreamTranscribeResult_Language_"></a>
 <a id="Vercel_AI_Operations_StreamTranscribeResult_Language"></a>
@@ -76,7 +76,7 @@ Language. Accessing it claims the stream.
 
 **Value:** [Task&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L289)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L694)
 
 <a id="Vercel_AI_Operations_StreamTranscribeResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_StreamTranscribeResult_ProviderMetadata"></a>
@@ -93,7 +93,7 @@ Provider metadata. Accessing it claims the stream.
 
 **Value:** [Task&lt;JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L313)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L734)
 
 <a id="Vercel_AI_Operations_StreamTranscribeResult_Responses_"></a>
 <a id="Vercel_AI_Operations_StreamTranscribeResult_Responses"></a>
@@ -110,7 +110,7 @@ Responses. Accessing it claims the stream.
 
 **Value:** [Task&lt;IReadOnlyList&lt;ProviderResponse&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L307)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L724)
 
 <a id="Vercel_AI_Operations_StreamTranscribeResult_Segments_"></a>
 <a id="Vercel_AI_Operations_StreamTranscribeResult_Segments"></a>
@@ -127,7 +127,7 @@ Segments. Accessing it claims the stream.
 
 **Value:** [Task&lt;IReadOnlyList&lt;TranscriptSegment&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L283)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L684)
 
 <a id="Vercel_AI_Operations_StreamTranscribeResult_Text_"></a>
 <a id="Vercel_AI_Operations_StreamTranscribeResult_Text"></a>
@@ -144,7 +144,7 @@ Final transcript. Accessing it claims the stream.
 
 **Value:** [Task&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L277)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L674)
 
 <a id="Vercel_AI_Operations_StreamTranscribeResult_Warnings_"></a>
 <a id="Vercel_AI_Operations_StreamTranscribeResult_Warnings"></a>
@@ -161,4 +161,4 @@ Warnings. Accessing it claims the stream.
 
 **Value:** [Task&lt;IReadOnlyList&lt;OperationWarning&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L301)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L714)

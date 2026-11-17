@@ -71,7 +71,7 @@ Creates a completion model with an explicit provider id.
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `providerId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleCompletionLanguageModel.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleCompletionLanguageModel.cs#L31)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleCompletionLanguageModel__ctor_Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_System_String_System_String_System_String_"></a>
 
@@ -95,7 +95,7 @@ Creates a completion model whose reported [ModelId](#Vercel_AI_OpenAICompatible_
 | `providerId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `requestModelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleCompletionLanguageModel.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleCompletionLanguageModel.cs#L42)
 
 ## Properties
 
@@ -114,7 +114,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleCompletionLanguageModel.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleCompletionLanguageModel.cs#L69)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleCompletionLanguageModel_Provider_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleCompletionLanguageModel_Provider"></a>
@@ -131,7 +131,7 @@ Provider id, such as `openai`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleCompletionLanguageModel.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleCompletionLanguageModel.cs#L63)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleCompletionLanguageModel_ProviderOptionsName_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleCompletionLanguageModel_ProviderOptionsName"></a>
@@ -148,7 +148,7 @@ Provider-options key. The segment before the first dot of [Provider](#Vercel_AI_
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleCompletionLanguageModel.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleCompletionLanguageModel.cs#L66)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleCompletionLanguageModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleCompletionLanguageModel_SpecificationVersion"></a>
@@ -165,7 +165,25 @@ Always `V4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleCompletionLanguageModel.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleCompletionLanguageModel.cs#L57)
+
+<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleCompletionLanguageModel_SupportedUrls_"></a>
+<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleCompletionLanguageModel_SupportedUrls"></a>
+
+### SupportedUrls
+
+
+```csharp
+public IReadOnlyDictionary<string, string> SupportedUrls { get; }
+```
+
+
+URLs the model can read itself, keyed by media type pattern (such as `image/*`). Each value is a regular expression that a URL
+must match. Prompt file URLs that match are passed through. All others are downloaded before the call. Maps to `supportedUrls`.
+
+**Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleCompletionLanguageModel.cs#L60)
 
 ## Methods
 
@@ -191,7 +209,7 @@ Generates a complete result.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleCompletionLanguageModel.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleCompletionLanguageModel.cs#L72)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleCompletionLanguageModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleCompletionLanguageModel_DoStreamAsync_Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_"></a>
@@ -215,4 +233,4 @@ Streams partial results. The result carries the stream with the request and resp
 
 **Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleCompletionLanguageModel.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleCompletionLanguageModel.cs#L135)

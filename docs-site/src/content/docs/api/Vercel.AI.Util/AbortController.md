@@ -23,7 +23,7 @@ Controller for an [AbortSignal](/api/Vercel.AI.Util/AbortSignal/).
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L138)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L155)
 
 ## Constructors
 
@@ -40,7 +40,7 @@ public AbortController()
 
 Creates a controller whose signal is not aborted.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L141)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L158)
 
 ## Properties
 
@@ -59,7 +59,7 @@ Signal aborted by [Abort(object)](#Vercel_AI_Util_AbortController_Abort_System_O
 
 **Value:** [AbortSignal](/api/Vercel.AI.Util/AbortSignal/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L147)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L164)
 
 ## Methods
 
@@ -82,4 +82,4 @@ Aborts [Signal](#Vercel_AI_Util_AbortController_Signal) with &lt;code class="par
 | --- | --- | --- |
 | `reason` | [object](https://learn.microsoft.com/dotnet/api/system.object) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L150)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AbortSignals.cs#L167)

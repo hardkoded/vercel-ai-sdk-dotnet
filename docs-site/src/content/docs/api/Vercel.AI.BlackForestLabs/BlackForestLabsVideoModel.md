@@ -52,7 +52,7 @@ Creates a model. &lt;code class="paramref"&gt;clock&lt;/code&gt; sets the respon
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `clock` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L57)
 
 ## Properties
 
@@ -71,7 +71,7 @@ True when `doGenerate` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L81)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_CanStart_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_CanStart"></a>
@@ -88,7 +88,7 @@ True when `doStart` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L84)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_CanStatus_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_CanStatus"></a>
@@ -105,7 +105,7 @@ True when `doStatus` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L69)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L87)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_CanWebhook_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_CanWebhook"></a>
@@ -122,7 +122,7 @@ True when `handleWebhookOption` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L72)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L90)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_MaxVideosPerCall_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_MaxVideosPerCall"></a>
@@ -139,7 +139,7 @@ Black Forest Labs returns one video per call.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L78)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_ModelId_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_ModelId"></a>
@@ -156,7 +156,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L75)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_Provider_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_Provider"></a>
@@ -173,7 +173,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L72)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_SpecificationVersion"></a>
@@ -190,7 +190,7 @@ Specification version. Always `v4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L69)
 
 ## Methods
 
@@ -216,7 +216,7 @@ Starts a job and polls it until the video is ready.
 
 **Returns:** [Task&lt;VideoModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L90)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L128)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_DoGenerateAsync_Vercel_AI_Provider_VideoCallOptions_System_Threading_CancellationToken_"></a>
 
@@ -239,7 +239,7 @@ Generates a video.
 
 **Returns:** [Task&lt;VideoResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L81)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L99)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_DoStartAsync_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_DoStartAsync_Vercel_AI_Operations_VideoModelCall_System_Threading_CancellationToken_"></a>
@@ -263,7 +263,7 @@ Starts an asynchronous generation.
 
 **Returns:** [Task&lt;VideoStartResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L127)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L193)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_DoStatusAsync_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_DoStatusAsync_Vercel_AI_Operations_VideoModelCall_System_Threading_CancellationToken_"></a>
@@ -287,7 +287,7 @@ Reads operation status.
 
 **Returns:** [Task&lt;VideoStatusResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L162)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L247)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_HandleWebhookAsync_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_HandleWebhookAsync_System_Func_System_Threading_Tasks_Task_Vercel_AI_Operations_VideoWebhook___System_Threading_CancellationToken_"></a>
@@ -311,7 +311,7 @@ Turns a webhook factory into a URL and a received task.
 
 **Returns:** [Task&lt;VideoWebhook&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L242)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L351)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_ResolveMaxVideosPerCallAsync_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_ResolveMaxVideosPerCallAsync_System_Threading_CancellationToken_"></a>
@@ -334,4 +334,4 @@ Resolves a functional limit. The default is [MaxVideosPerCall](/api/Vercel.AI.Op
 
 **Returns:** [Task&lt;int?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L75)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L93)

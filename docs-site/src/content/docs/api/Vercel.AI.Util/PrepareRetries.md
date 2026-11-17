@@ -23,7 +23,7 @@ Validates `maxRetries` and builds the default retry strategy.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L232)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L289)
 
 ## Methods
 
@@ -51,4 +51,4 @@ Validates &lt;code class="paramref"&gt;maxRetries&lt;/code&gt; and returns the d
 
 **Returns:** [PrepareRetries.Result](/api/Vercel.AI.Util/PrepareRetries.Result/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L254)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L311)

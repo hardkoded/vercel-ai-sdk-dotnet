@@ -21,11 +21,13 @@ Public types in the `Vercel.AI.Prompt` namespace.
 | [ErrorTextToolModelOutput](/api/Vercel.AI.Prompt/ErrorTextToolModelOutput/) | Error text tool output. |
 | [FilePartInput](/api/Vercel.AI.Prompt/FilePartInput/) | A file-part value before it is converted to the v4 provider shape. |
 | [FileParts](/api/Vercel.AI.Prompt/FileParts/) | File-part conversion. Maps to convertToLanguageModelV4FilePart. |
+| [FileToolModelContentPart](/api/Vercel.AI.Prompt/FileToolModelContentPart/) | An inline base64 file part inside a content tool output. |
 | [Instructions](/api/Vercel.AI.Prompt/Instructions/) | Instructions for a call: a string, one system message, or a list of system messages. Maps to Instructions. A single system message is kept as a one-item Messages list. |
 | [InvalidDataContentException](/api/Vercel.AI.Prompt/InvalidDataContentException/) | File content could not be converted. Maps to InvalidDataContentError. |
 | [InvalidPromptException](/api/Vercel.AI.Prompt/InvalidPromptException/) | The prompt input is invalid. Maps to InvalidPromptError. |
 | [JsonToolModelOutput](/api/Vercel.AI.Prompt/JsonToolModelOutput/) | JSON tool output. |
 | [LanguageModelFilePart](/api/Vercel.AI.Prompt/LanguageModelFilePart/) | A file part in the v4 provider prompt. Maps to the result of convertToLanguageModelV4FilePart. |
+| [LanguageModelPrompts](/api/Vercel.AI.Prompt/LanguageModelPrompts/) | Prompt conversion before a model call. Maps to convert-to-language-model-prompt.ts. |
 | [PreparedTool](/api/Vercel.AI.Prompt/PreparedTool/) | A tool after String). |
 | [PreparedToolChoice](/api/Vercel.AI.Prompt/PreparedToolChoice/) | A tool choice sent to a language model. Maps to the result of prepareToolChoice. |
 | [PreservedStreamError](/api/Vercel.AI.Prompt/PreservedStreamError/) | An error-shaped value that must be returned unchanged. |

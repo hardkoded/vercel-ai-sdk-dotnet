@@ -42,7 +42,7 @@ Inline bytes.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L20)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L18)
 
 <a id="Vercel_AI_Prompt_FilePartInput_IsArrayBuffer_"></a>
 <a id="Vercel_AI_Prompt_FilePartInput_IsArrayBuffer"></a>
@@ -59,7 +59,7 @@ True when [Bytes](#Vercel_AI_Prompt_FilePartInput_Bytes) came from an ArrayBuffe
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L23)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L21)
 
 <a id="Vercel_AI_Prompt_FilePartInput_Reference_"></a>
 <a id="Vercel_AI_Prompt_FilePartInput_Reference"></a>
@@ -76,7 +76,7 @@ Provider reference.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L33)
 
 <a id="Vercel_AI_Prompt_FilePartInput_Text_"></a>
 <a id="Vercel_AI_Prompt_FilePartInput_Text"></a>
@@ -93,7 +93,7 @@ Text payload.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L36)
 
 <a id="Vercel_AI_Prompt_FilePartInput_TextData_"></a>
 <a id="Vercel_AI_Prompt_FilePartInput_TextData"></a>
@@ -110,7 +110,7 @@ Inline base64 or any non-URL string.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L26)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L24)
 
 <a id="Vercel_AI_Prompt_FilePartInput_Type_"></a>
 <a id="Vercel_AI_Prompt_FilePartInput_Type"></a>
@@ -127,7 +127,7 @@ Tagged type, when this value is already tagged.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L17)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L15)
 
 <a id="Vercel_AI_Prompt_FilePartInput_Url_"></a>
 <a id="Vercel_AI_Prompt_FilePartInput_Url"></a>
@@ -144,7 +144,7 @@ URL instance.
 
 **Value:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L27)
 
 <a id="Vercel_AI_Prompt_FilePartInput_UrlText_"></a>
 <a id="Vercel_AI_Prompt_FilePartInput_UrlText"></a>
@@ -161,7 +161,7 @@ URL string that has not been parsed yet.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L30)
 
 ## Methods
 
@@ -186,7 +186,7 @@ Creates an ArrayBuffer payload. The bytes are copied during conversion.
 
 **Returns:** [FilePartInput](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L48)
 
 <a id="Vercel_AI_Prompt_FilePartInput_FromBytes_"></a>
 <a id="Vercel_AI_Prompt_FilePartInput_FromBytes_System_Byte___"></a>
@@ -209,7 +209,7 @@ Creates inline bytes.
 
 **Returns:** [FilePartInput](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L39)
 
 <a id="Vercel_AI_Prompt_FilePartInput_FromReference_"></a>
 <a id="Vercel_AI_Prompt_FilePartInput_FromReference_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__"></a>
@@ -232,7 +232,7 @@ Creates a provider reference.
 
 **Returns:** [FilePartInput](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L73)
 
 <a id="Vercel_AI_Prompt_FilePartInput_FromString_"></a>
 <a id="Vercel_AI_Prompt_FilePartInput_FromString_System_String_"></a>
@@ -255,7 +255,7 @@ Creates a string payload. URLs and data URLs are detected during conversion.
 
 **Returns:** [FilePartInput](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L58)
 
 <a id="Vercel_AI_Prompt_FilePartInput_FromUrl_"></a>
 <a id="Vercel_AI_Prompt_FilePartInput_FromUrl_System_Uri_"></a>
@@ -278,7 +278,7 @@ Creates a URL payload.
 
 **Returns:** [FilePartInput](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L67)
 
 <a id="Vercel_AI_Prompt_FilePartInput_TaggedData_"></a>
 <a id="Vercel_AI_Prompt_FilePartInput_TaggedData_System_Byte___"></a>
@@ -301,7 +301,7 @@ Creates tagged inline bytes.
 
 **Returns:** [FilePartInput](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L82)
 
 <a id="Vercel_AI_Prompt_FilePartInput_TaggedData_System_String_"></a>
 
@@ -323,7 +323,7 @@ Creates tagged inline text. A data URL is rejected.
 
 **Returns:** [FilePartInput](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L103)
 
 <a id="Vercel_AI_Prompt_FilePartInput_TaggedDataBuffer_"></a>
 <a id="Vercel_AI_Prompt_FilePartInput_TaggedDataBuffer_System_Byte___"></a>
@@ -346,7 +346,7 @@ Creates tagged inline bytes copied from an ArrayBuffer.
 
 **Returns:** [FilePartInput](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L92)
 
 <a id="Vercel_AI_Prompt_FilePartInput_TaggedReference_"></a>
 <a id="Vercel_AI_Prompt_FilePartInput_TaggedReference_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__"></a>
@@ -369,7 +369,7 @@ Creates a tagged provider reference.
 
 **Returns:** [FilePartInput](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L95)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L123)
 
 <a id="Vercel_AI_Prompt_FilePartInput_TaggedText_"></a>
 <a id="Vercel_AI_Prompt_FilePartInput_TaggedText_System_String_"></a>
@@ -392,7 +392,7 @@ Creates a tagged text part.
 
 **Returns:** [FilePartInput](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L101)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L133)
 
 <a id="Vercel_AI_Prompt_FilePartInput_TaggedUrl_"></a>
 <a id="Vercel_AI_Prompt_FilePartInput_TaggedUrl_System_Uri_"></a>
@@ -415,4 +415,4 @@ Creates a tagged URL.
 
 **Returns:** [FilePartInput](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L89)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L113)

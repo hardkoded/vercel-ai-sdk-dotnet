@@ -24,7 +24,7 @@ and the cited passage. It is not a second copy of the retrieved sources.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L361)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L443)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a citation for a document source.
 | `endIndex` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `citedText` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L370)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L455)
 
 <a id="Vercel_AI_Provider_Citation__ctor_Vercel_AI_Provider_GeneratedSource_System_Nullable_System_Int32__System_Nullable_System_Int32__System_String_"></a>
 
@@ -73,7 +73,7 @@ Creates a citation for a URL source.
 | `endIndex` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `citedText` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L364)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L446)
 
 ## Properties
 
@@ -92,7 +92,7 @@ The supporting passage from the source, when the provider supplied one.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L393)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L481)
 
 <a id="Vercel_AI_Provider_Citation_EndIndex_"></a>
 <a id="Vercel_AI_Provider_Citation_EndIndex"></a>
@@ -109,7 +109,7 @@ Exclusive end offset in the containing generated text, when the provider supplie
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L390)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L478)
 
 <a id="Vercel_AI_Provider_Citation_Source_"></a>
 <a id="Vercel_AI_Provider_Citation_Source"></a>
@@ -126,7 +126,7 @@ The referenced source: a [GeneratedSource](/api/Vercel.AI.Provider/GeneratedSour
 
 **Value:** [GeneratedContent](/api/Vercel.AI.Provider/GeneratedContent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L384)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L472)
 
 <a id="Vercel_AI_Provider_Citation_StartIndex_"></a>
 <a id="Vercel_AI_Provider_Citation_StartIndex"></a>
@@ -143,4 +143,4 @@ Start offset in the containing generated text, when the provider supplied one.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L387)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L475)

@@ -25,7 +25,7 @@ An assistant content part.
 
 **Derived:** [GoogleFileAssistantPart](/api/Vercel.AI.Google/GoogleFileAssistantPart/), [GoogleReasoningAssistantPart](/api/Vercel.AI.Google/GoogleReasoningAssistantPart/), [GoogleTextAssistantPart](/api/Vercel.AI.Google/GoogleTextAssistantPart/), [GoogleToolCallAssistantPart](/api/Vercel.AI.Google/GoogleToolCallAssistantPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L150)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L180)
 
 ## Properties
 
@@ -44,4 +44,4 @@ Provider options keyed by namespace.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L153)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L183)

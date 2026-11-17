@@ -24,7 +24,7 @@ signatures are `DownloadRequestItem%7d)` and [InvokeAsync(DownloadRequestItem)](
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L193)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L212)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Downloads a batch. A URL the model supports is passed through as a null result.
 
 **Returns:** [Task&lt;IReadOnlyList&lt;DownloadResult&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L216)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L235)
 
 <a id="Vercel_AI_Util_CreatedDownload_InvokeAsync_Vercel_AI_Util_DownloadRequestItem_"></a>
 
@@ -71,7 +71,7 @@ Downloads one request. This is the shape of the `Download` option of transcribe 
 
 **Returns:** [Task&lt;DownloadResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L205)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L224)
 
 ## Operators
 
@@ -96,7 +96,7 @@ Converts to the batch shape of `ExperimentalDownload`.
 
 **Returns:** [Func&lt;IReadOnlyList&lt;DownloadRequestItem&gt;, Task&lt;IReadOnlyList&lt;DownloadResult&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L234)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L257)
 
 <a id="Vercel_AI_Util_CreatedDownload_op_Implicit_Vercel_AI_Util_CreatedDownload__System_Func_System_String_System_Threading_CancellationToken_System_Threading_Tasks_Task_Vercel_AI_Operations_DownloadedMedia__"></a>
 
@@ -118,4 +118,4 @@ Converts to the single-request shape of the `Download` option of transcribe and 
 
 **Returns:** [Func&lt;string, CancellationToken, Task&lt;DownloadedMedia&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L240)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L266)

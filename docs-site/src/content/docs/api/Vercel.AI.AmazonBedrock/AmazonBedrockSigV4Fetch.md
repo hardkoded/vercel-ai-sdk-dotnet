@@ -23,7 +23,7 @@ SigV4 fetch wrapper. The credentials are read when each call is sent.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L181)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L223)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a wrapper that signs for &lt;code class="paramref"&gt;service&lt;/code&g
 | `getCredentials` | [Func&lt;CancellationToken, Task&lt;AmazonBedrockCredentials&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2) |  |
 | `service` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L187)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L229)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Optional transport. When unset, the prepared call is returned directly.
 
 **Value:** [Func&lt;AmazonBedrockPreparedCall, AmazonBedrockPreparedCall&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L194)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L239)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockSigV4Fetch_UtcNow_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockSigV4Fetch_UtcNow"></a>
@@ -83,7 +83,7 @@ Clock used for signing. Tests can pin this.
 
 **Value:** [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L197)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L242)
 
 ## Methods
 
@@ -113,4 +113,4 @@ Calls that are not signed never read the credentials. A credential failure propa
 
 **Returns:** [Task&lt;AmazonBedrockPreparedCall&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L203)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L248)

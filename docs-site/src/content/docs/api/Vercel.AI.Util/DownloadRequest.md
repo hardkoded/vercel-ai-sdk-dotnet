@@ -23,7 +23,7 @@ Options passed to a download fetch implementation.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L86)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates the request.
 | `abortSignal` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
 | `redirect` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L89)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Cancellation signal for the attempt.
 
 **Value:** [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L88)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L104)
 
 <a id="Vercel_AI_Util_DownloadRequest_Body_"></a>
 <a id="Vercel_AI_Util_DownloadRequest_Body"></a>
@@ -84,7 +84,7 @@ Request body, or `null` for none.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L97)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L113)
 
 <a id="Vercel_AI_Util_DownloadRequest_Headers_"></a>
 <a id="Vercel_AI_Util_DownloadRequest_Headers"></a>
@@ -101,7 +101,7 @@ Request headers.
 
 **Value:** [HeaderCollection](/api/Vercel.AI.Util/HeaderCollection/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L85)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L101)
 
 <a id="Vercel_AI_Util_DownloadRequest_MaxBytes_"></a>
 <a id="Vercel_AI_Util_DownloadRequest_MaxBytes"></a>
@@ -118,7 +118,7 @@ Largest body the fetch may read. The default fetch stops reading past it.
 
 **Value:** [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L100)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L116)
 
 <a id="Vercel_AI_Util_DownloadRequest_Method_"></a>
 <a id="Vercel_AI_Util_DownloadRequest_Method"></a>
@@ -135,7 +135,7 @@ HTTP method. Defaults to `GET`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L94)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L110)
 
 <a id="Vercel_AI_Util_DownloadRequest_Redirect_"></a>
 <a id="Vercel_AI_Util_DownloadRequest_Redirect"></a>
@@ -152,4 +152,4 @@ public string Redirect { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L91)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L107)

@@ -19,18 +19,18 @@ public sealed class GoogleGeneratedFile : GeneratedFile
 ```
 
 
-A generated file. Files the model marks as thoughts are GeneratedReasoningFile instead.
+A generated file. Files the model marks as thoughts are [GeneratedReasoningFile](/api/Vercel.AI.Provider/GeneratedReasoningFile/) instead.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [GeneratedContent](/api/Vercel.AI.Provider/GeneratedContent/) → [GeneratedFile](/api/Vercel.AI.Provider/GeneratedFile/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L506)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L723)
 
 ## Constructors
 
 <a id="Vercel_AI_Google_GoogleGeneratedFile__ctor_"></a>
-<a id="Vercel_AI_Google_GoogleGeneratedFile__ctor_System_Byte___System_String_System_Boolean_System_Nullable_System_Text_Json_JsonElement__"></a>
+<a id="Vercel_AI_Google_GoogleGeneratedFile__ctor_System_Byte___System_String_System_Nullable_System_Text_Json_JsonElement__"></a>
 
-### GoogleGeneratedFile(byte[], string, bool, JsonElement?)
+### GoogleGeneratedFile(byte[], string, JsonElement?)
 
 
 ```csharp
@@ -48,7 +48,7 @@ Creates a file.
 | `mediaType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L509)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L726)
 
 ## Properties
 
@@ -67,4 +67,4 @@ Provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L520)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L733)

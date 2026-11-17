@@ -25,7 +25,7 @@ One model answer. Numbers are returned unchanged.
 
 **Derived:** [EvaluationAnswer](/api/Vercel.AI.Operations/EvaluationAnswer/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L63)
 
 ## Constructors
 
@@ -53,7 +53,7 @@ Creates an answer.
 | `probabilities` | [IReadOnlyDictionary&lt;string, double&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 | `box` | [DecisionBox](/api/Vercel.AI.Operations/DecisionBox/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L66)
 
 ## Properties
 
@@ -72,7 +72,7 @@ Normalized box for a box question.
 
 **Value:** [DecisionBox](/api/Vercel.AI.Operations/DecisionBox/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L99)
 
 <a id="Vercel_AI_Operations_DecisionAnswer_Choice_"></a>
 <a id="Vercel_AI_Operations_DecisionAnswer_Choice"></a>
@@ -89,7 +89,7 @@ Selected choice.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L87)
 
 <a id="Vercel_AI_Operations_DecisionAnswer_Probabilities_"></a>
 <a id="Vercel_AI_Operations_DecisionAnswer_Probabilities"></a>
@@ -106,7 +106,7 @@ Distribution. Keys are option ids or score indexes.
 
 **Value:** [IReadOnlyDictionary&lt;string, double&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L96)
 
 <a id="Vercel_AI_Operations_DecisionAnswer_Probability_"></a>
 <a id="Vercel_AI_Operations_DecisionAnswer_Probability"></a>
@@ -123,7 +123,7 @@ P(true) for a boolean question.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L93)
 
 <a id="Vercel_AI_Operations_DecisionAnswer_Score_"></a>
 <a id="Vercel_AI_Operations_DecisionAnswer_Score"></a>
@@ -140,7 +140,7 @@ Score.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L90)
 
 <a id="Vercel_AI_Operations_DecisionAnswer_Type_"></a>
 <a id="Vercel_AI_Operations_DecisionAnswer_Type"></a>
@@ -157,4 +157,4 @@ Answer type. It is the question type, or `refusal` when the model declined the q
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L84)

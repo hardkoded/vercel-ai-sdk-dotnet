@@ -25,7 +25,7 @@ Generated text.
 
 **Derived:** [AnthropicText](/api/Vercel.AI.Anthropic/AnthropicText/), [GoogleText](/api/Vercel.AI.Google/GoogleText/), [HuggingFaceText](/api/Vercel.AI.HuggingFace/HuggingFaceText/), [OpenAIText](/api/Vercel.AI.OpenAI/OpenAIText/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L182)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L195)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates text content.
 | `citations` | [IReadOnlyList&lt;Citation&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L185)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L198)
 
 ## Properties
 
@@ -70,7 +70,7 @@ References supporting this text, or null when the provider sent none. They are s
 
 **Value:** [IReadOnlyList&lt;Citation&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L200)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L217)
 
 <a id="Vercel_AI_Provider_GeneratedText_ProviderMetadata_"></a>
 <a id="Vercel_AI_Provider_GeneratedText_ProviderMetadata"></a>
@@ -87,7 +87,7 @@ Provider metadata for this text, keyed by provider name, such as the message `it
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L203)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L220)
 
 <a id="Vercel_AI_Provider_GeneratedText_Text_"></a>
 <a id="Vercel_AI_Provider_GeneratedText_Text"></a>
@@ -104,4 +104,4 @@ Generated text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L194)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L211)

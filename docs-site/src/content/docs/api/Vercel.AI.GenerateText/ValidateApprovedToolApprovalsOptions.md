@@ -65,7 +65,7 @@ The approvals that the history reports as approved.
 
 **Value:** [IReadOnlyList&lt;CollectedToolApproval&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L42)
 
 <a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_Messages_"></a>
 <a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_Messages"></a>
@@ -82,7 +82,7 @@ Messages that were sent to the language model, without the instructions.
 
 **Value:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L51)
 
 <a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_RefineToolInput_"></a>
 <a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_RefineToolInput"></a>
@@ -99,7 +99,7 @@ Refines the parsed input of a tool, keyed by tool name. Maps to `refineToolInput
 
 **Value:** [IReadOnlyDictionary&lt;string, Func&lt;JsonElement, CancellationToken, Task&lt;JsonElement&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L60)
 
 <a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_ToolApproval_"></a>
 <a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_ToolApproval"></a>
@@ -116,7 +116,7 @@ User-defined approval configuration. The approval policy is evaluated again on t
 
 **Value:** [ToolApprovalConfiguration](/api/Vercel.AI.GenerateText/ToolApprovalConfiguration/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L48)
 
 <a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_ToolApprovalSecret_"></a>
 <a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_ToolApprovalSecret"></a>
@@ -133,7 +133,7 @@ Secret for the HMAC signature of the approval requests. Maps to `toolApprovalSec
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L54)
 
 <a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_ToolApprovalSecretBytes_"></a>
 <a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_ToolApprovalSecretBytes"></a>
@@ -150,7 +150,7 @@ The same secret given as bytes. It is used when [ToolApprovalSecret](#Vercel_AI_
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L57)
 
 <a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_Tools_"></a>
 <a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_Tools"></a>
@@ -167,4 +167,4 @@ The available tools.
 
 **Value:** [IReadOnlyList&lt;Tool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L45)

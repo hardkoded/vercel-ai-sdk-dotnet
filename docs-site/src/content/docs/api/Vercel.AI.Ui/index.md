@@ -20,8 +20,10 @@ UI message conversion.
 | [FileUIPart](/api/Vercel.AI.Ui/FileUIPart/) | A file part. Maps to FileUIPart. |
 | [ReasoningFileUIPart](/api/Vercel.AI.Ui/ReasoningFileUIPart/) | A file produced as reasoning. Maps to ReasoningFileUIPart. |
 | [ReasoningUIPart](/api/Vercel.AI.Ui/ReasoningUIPart/) | A reasoning part. Maps to ReasoningUIPart. |
+| [SafeValidateUIMessagesResult](/api/Vercel.AI.Ui/SafeValidateUIMessagesResult/) | The result of SafeValidateUIMessagesAsync(ValidateUIMessagesOptions). Maps to SafeValidateUIMessagesResult. |
 | [SourceDocumentUIPart](/api/Vercel.AI.Ui/SourceDocumentUIPart/) | A source that is a document. Maps to SourceDocumentUIPart. |
 | [SourceUrlUIPart](/api/Vercel.AI.Ui/SourceUrlUIPart/) | A source that is a URL. Maps to SourceUrlUIPart. |
+| [SteeringMessageUIPart](/api/Vercel.AI.Ui/SteeringMessageUIPart/) | A user message that steered the run, shown at the step that received it. Maps to SteeringMessageUIPart. |
 | [StepStartUIPart](/api/Vercel.AI.Ui/StepStartUIPart/) | Marks the start of a step. Maps to StepStartUIPart. |
 | [TextUIPart](/api/Vercel.AI.Ui/TextUIPart/) | A text part. Maps to TextUIPart. |
 | [ToolUIApproval](/api/Vercel.AI.Ui/ToolUIApproval/) | The approval of a tool call in a ToolUIPart. |
@@ -29,6 +31,7 @@ UI message conversion.
 | [UIMessage](/api/Vercel.AI.Ui/UIMessage/) | A message shown in a chat UI, made of parts. Maps to UIMessage. |
 | [UIMessageConversion](/api/Vercel.AI.Ui/UIMessageConversion/) | Conversion of UI messages to model messages. Maps to convertToModelMessages. |
 | [UIMessagePart](/api/Vercel.AI.Ui/UIMessagePart/) | A part of a UIMessage. Maps to UIMessagePart. |
+| [ValidateUIMessagesOptions](/api/Vercel.AI.Ui/ValidateUIMessagesOptions/) | Options of ValidateUIMessagesAsync(ValidateUIMessagesOptions). Maps to ValidateUIMessagesOptions. |
 
 ## Enums
 

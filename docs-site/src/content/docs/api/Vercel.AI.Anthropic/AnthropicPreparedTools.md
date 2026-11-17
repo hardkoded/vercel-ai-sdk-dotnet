@@ -68,7 +68,7 @@ Beta headers required by the tools.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicTools.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicTools.cs#L68)
 
 <a id="Vercel_AI_Anthropic_AnthropicPreparedTools_ToolChoice_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicPreparedTools_ToolChoice"></a>
@@ -85,7 +85,7 @@ Anthropic `tool_choice`. Null when omitted.
 
 **Value:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicTools.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicTools.cs#L62)
 
 <a id="Vercel_AI_Anthropic_AnthropicPreparedTools_Tools_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicPreparedTools_Tools"></a>
@@ -102,7 +102,7 @@ Anthropic `tools` array. Null when tools are omitted.
 
 **Value:** [JsonArray](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonarray)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicTools.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicTools.cs#L59)
 
 <a id="Vercel_AI_Anthropic_AnthropicPreparedTools_Warnings_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicPreparedTools_Warnings"></a>
@@ -119,4 +119,4 @@ Warnings from unsupported tools or strict mode.
 
 **Value:** [IReadOnlyList&lt;AnthropicWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicTools.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicTools.cs#L65)

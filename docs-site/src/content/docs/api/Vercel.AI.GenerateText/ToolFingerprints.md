@@ -23,7 +23,7 @@ Tool-definition fingerprints. Maps to `fingerprintTools` and `detectToolDrift`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolFingerprint.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolFingerprint.cs#L67)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Diffs two fingerprint maps. Names are compared as own keys.
 
 **Returns:** [ToolDrift](/api/Vercel.AI.GenerateText/ToolDrift/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolFingerprint.cs#L78)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolFingerprint.cs#L89)
 
 <a id="Vercel_AI_GenerateText_ToolFingerprints_FingerprintTools_"></a>
 <a id="Vercel_AI_GenerateText_ToolFingerprints_FingerprintTools_System_Collections_Generic_IReadOnlyDictionary_System_String_Vercel_AI_GenerateText_FingerprintTool__"></a>
@@ -72,4 +72,4 @@ Returns a stable digest for each tool. Function descriptions hash as a single pl
 
 **Returns:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolFingerprint.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolFingerprint.cs#L70)

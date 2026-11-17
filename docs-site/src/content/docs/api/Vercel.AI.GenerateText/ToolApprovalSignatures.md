@@ -52,7 +52,7 @@ Returns a signature when &lt;code class="paramref"&gt;secret&lt;/code&gt; is set
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalSignature.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalSignature.cs#L51)
 
 <a id="Vercel_AI_GenerateText_ToolApprovalSignatures_SignToolApproval_"></a>
 <a id="Vercel_AI_GenerateText_ToolApprovalSignatures_SignToolApproval_System_Byte___System_String_System_String_System_String_System_Text_Json_JsonElement_"></a>
@@ -79,7 +79,7 @@ Signs a tool approval with a raw secret.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalSignature.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalSignature.cs#L34)
 
 <a id="Vercel_AI_GenerateText_ToolApprovalSignatures_SignToolApproval_System_String_System_String_System_String_System_String_System_Text_Json_JsonElement_"></a>
 
@@ -133,7 +133,7 @@ Verifies a signature with a raw secret.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalSignature.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalSignature.cs#L96)
 
 <a id="Vercel_AI_GenerateText_ToolApprovalSignatures_VerifyToolApprovalSignature_System_String_System_String_System_String_System_String_System_String_System_Text_Json_JsonElement_"></a>
 
@@ -161,4 +161,4 @@ a legacy newline-joined payload.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalSignature.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalSignature.cs#L71)

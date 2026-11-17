@@ -23,7 +23,7 @@ Image call settings.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L183)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L208)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates image call options.
 | --- | --- | --- |
 | `prompt` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L186)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L211)
 
 ## Properties
 
@@ -65,7 +65,7 @@ Aspect ratio such as `16:9`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L201)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L226)
 
 <a id="Vercel_AI_Provider_ImageCallOptions_Count_"></a>
 <a id="Vercel_AI_Provider_ImageCallOptions_Count"></a>
@@ -82,7 +82,7 @@ How many images to generate.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L195)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L220)
 
 <a id="Vercel_AI_Provider_ImageCallOptions_Files_"></a>
 <a id="Vercel_AI_Provider_ImageCallOptions_Files"></a>
@@ -99,7 +99,7 @@ Input images for an edit. Maps to `files`.
 
 **Value:** [IReadOnlyList&lt;ImageModelFile&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L207)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L232)
 
 <a id="Vercel_AI_Provider_ImageCallOptions_Headers_"></a>
 <a id="Vercel_AI_Provider_ImageCallOptions_Headers"></a>
@@ -116,7 +116,7 @@ Headers for this call. They override the provider headers.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L216)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L241)
 
 <a id="Vercel_AI_Provider_ImageCallOptions_Mask_"></a>
 <a id="Vercel_AI_Provider_ImageCallOptions_Mask"></a>
@@ -133,7 +133,7 @@ Edit mask.
 
 **Value:** [ImageModelFile](/api/Vercel.AI.Operations/ImageModelFile/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L210)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L235)
 
 <a id="Vercel_AI_Provider_ImageCallOptions_Prompt_"></a>
 <a id="Vercel_AI_Provider_ImageCallOptions_Prompt"></a>
@@ -150,7 +150,7 @@ Image prompt.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L192)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L217)
 
 <a id="Vercel_AI_Provider_ImageCallOptions_ProviderOptions_"></a>
 <a id="Vercel_AI_Provider_ImageCallOptions_ProviderOptions"></a>
@@ -167,7 +167,7 @@ Provider options, keyed by provider id.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L213)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L238)
 
 <a id="Vercel_AI_Provider_ImageCallOptions_Seed_"></a>
 <a id="Vercel_AI_Provider_ImageCallOptions_Seed"></a>
@@ -184,7 +184,7 @@ Seed. Models that do not support it add a warning.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L204)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L229)
 
 <a id="Vercel_AI_Provider_ImageCallOptions_Size_"></a>
 <a id="Vercel_AI_Provider_ImageCallOptions_Size"></a>
@@ -201,4 +201,4 @@ Size string such as `1024x1024`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L198)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L223)

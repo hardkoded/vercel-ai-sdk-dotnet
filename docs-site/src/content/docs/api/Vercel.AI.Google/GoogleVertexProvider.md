@@ -25,7 +25,7 @@ Google Vertex AI provider.
 
 **Implements:** [IBatchProvider](/api/Vercel.AI.Operations/IBatchProvider/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L240)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L303)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a Vertex provider.
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `options` | [VertexOptions](/api/Vercel.AI.Google/VertexOptions/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L243)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L306)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Vertex options.
 
 **Value:** [VertexOptions](/api/Vercel.AI.Google/VertexOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L250)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L313)
 
 ## Methods
 
@@ -94,7 +94,7 @@ Creates a provider.
 
 **Returns:** [GoogleVertexProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L253)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L333)
 
 <a id="Vercel_AI_Google_GoogleVertexProvider_Interactions_"></a>
 <a id="Vercel_AI_Google_GoogleVertexProvider_Interactions_System_String_"></a>
@@ -117,7 +117,7 @@ Interactions use the location resource and reject Express Mode.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L271)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L362)
 
 <a id="Vercel_AI_Google_GoogleVertexProvider_Interactions_Vercel_AI_Google_GoogleInteractionsAgent_"></a>
 
@@ -139,7 +139,7 @@ Interactions use the location resource and reject Express Mode.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L282)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L375)
 
 <a id="Vercel_AI_Google_GoogleVertexProvider_LanguageModel_"></a>
 <a id="Vercel_AI_Google_GoogleVertexProvider_LanguageModel_System_String_"></a>
@@ -162,7 +162,7 @@ Tuned `endpoints/` models reject Express Mode and omit `/publishers/google`.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L260)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L345)
 
 <a id="Vercel_AI_Google_GoogleVertexProvider_SpeechModel_"></a>
 <a id="Vercel_AI_Google_GoogleVertexProvider_SpeechModel_System_String_"></a>
@@ -185,7 +185,7 @@ Chirp speech models use Cloud Text-to-Speech. Gemini speech models use generateC
 
 **Returns:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L293)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L388)
 
 <a id="Vercel_AI_Google_GoogleVertexProvider_TranscriptionModel_"></a>
 <a id="Vercel_AI_Google_GoogleVertexProvider_TranscriptionModel_System_String_"></a>
@@ -208,4 +208,4 @@ Gemini transcription ids use generateContent. Other ids use Cloud Speech-to-Text
 
 **Returns:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L309)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L406)

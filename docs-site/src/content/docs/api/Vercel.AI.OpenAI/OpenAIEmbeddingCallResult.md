@@ -23,7 +23,7 @@ Embedding vectors plus the raw response.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Embedding/OpenAIEmbeddingModel.cs#L146)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Embedding/OpenAIEmbeddingModel.cs#L180)
 
 ## Properties
 
@@ -42,7 +42,7 @@ HTTP response headers.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Embedding/OpenAIEmbeddingModel.cs#L159)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Embedding/OpenAIEmbeddingModel.cs#L197)
 
 <a id="Vercel_AI_OpenAI_OpenAIEmbeddingCallResult_RawBody_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIEmbeddingCallResult_RawBody"></a>
@@ -59,7 +59,7 @@ Raw response body.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Embedding/OpenAIEmbeddingModel.cs#L162)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Embedding/OpenAIEmbeddingModel.cs#L200)
 
 <a id="Vercel_AI_OpenAI_OpenAIEmbeddingCallResult_Result_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIEmbeddingCallResult_Result"></a>
@@ -76,4 +76,4 @@ Embedding vectors and token count.
 
 **Value:** [EmbeddingResult](/api/Vercel.AI.Provider/EmbeddingResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Embedding/OpenAIEmbeddingModel.cs#L156)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Embedding/OpenAIEmbeddingModel.cs#L194)

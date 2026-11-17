@@ -29,7 +29,7 @@ Pull-based readable stream. Supports enqueue, close, error, backpressure via pul
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L146)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L144)
 
 ## Constructors
 
@@ -54,7 +54,7 @@ Creates a stream. &lt;code class="paramref"&gt;start&lt;/code&gt; runs before th
 | `pull` | [Func&lt;ReadableStreamController&lt;T&gt;, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2) |  |
 | `cancel` | [Func&lt;Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L163)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L162)
 
 ## Properties
 
@@ -73,7 +73,7 @@ Whether a reader currently holds the lock.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L175)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L178)
 
 ## Methods
 
@@ -92,7 +92,7 @@ Cancels the stream. Throws when a reader holds the lock.
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L202)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L205)
 
 <a id="Vercel_AI_Util_ReadableStream_1_From_"></a>
 <a id="Vercel_AI_Util_ReadableStream_1_From_System_Collections_Generic_IAsyncEnumerable__0__"></a>
@@ -116,7 +116,7 @@ Mirrors `ReadableStream.from`.
 
 **Returns:** [ReadableStream&lt;T&gt;](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L308)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L323)
 
 <a id="Vercel_AI_Util_ReadableStream_1_FromArray_"></a>
 <a id="Vercel_AI_Util_ReadableStream_1_FromArray_System_Collections_Generic_IReadOnlyList__0__"></a>
@@ -139,7 +139,7 @@ A stream that emits &lt;code class="paramref"&gt;values&lt;/code&gt; and then cl
 
 **Returns:** [ReadableStream&lt;T&gt;](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L380)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L398)
 
 <a id="Vercel_AI_Util_ReadableStream_1_GetReader_"></a>
 <a id="Vercel_AI_Util_ReadableStream_1_GetReader"></a>
@@ -156,7 +156,7 @@ Locks the stream and returns its reader.
 
 **Returns:** `ReadableStreamReader&lt;T&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L187)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L190)
 
 <a id="Vercel_AI_Util_ReadableStream_1_Tee_"></a>
 <a id="Vercel_AI_Util_ReadableStream_1_Tee"></a>
@@ -174,7 +174,7 @@ Mirrors `ReadableStream.tee()`.
 
 **Returns:** `(ReadableStream&lt;T&gt; First, ReadableStream&lt;T&gt; Second)`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L249)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L252)
 
 <a id="Vercel_AI_Util_ReadableStream_1_ToArrayAsync_"></a>
 <a id="Vercel_AI_Util_ReadableStream_1_ToArrayAsync"></a>
@@ -191,4 +191,4 @@ Reads every chunk into a list.
 
 **Returns:** [Task&lt;List&lt;T&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L216)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L219)

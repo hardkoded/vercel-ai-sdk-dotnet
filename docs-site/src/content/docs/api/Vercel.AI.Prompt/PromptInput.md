@@ -23,7 +23,7 @@ The prompt of a call: a user string or a list of messages. Maps to `prompt: stri
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L75)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L80)
 
 ## Properties
 
@@ -42,7 +42,7 @@ The messages, when the prompt is a message list.
 
 **Value:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L87)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L92)
 
 <a id="Vercel_AI_Prompt_PromptInput_Text_"></a>
 <a id="Vercel_AI_Prompt_PromptInput_Text"></a>
@@ -59,7 +59,7 @@ The user text, when the prompt is a string.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L84)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L89)
 
 ## Methods
 
@@ -84,7 +84,7 @@ Creates a prompt from a message list.
 
 **Returns:** [PromptInput](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L96)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L101)
 
 <a id="Vercel_AI_Prompt_PromptInput_From_System_String_"></a>
 
@@ -106,7 +106,7 @@ Creates a prompt from a user string.
 
 **Returns:** [PromptInput](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L90)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L95)
 
 ## Operators
 
@@ -131,7 +131,7 @@ Converts a string to a prompt.
 
 **Returns:** [PromptInput](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L102)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L107)
 
 <a id="Vercel_AI_Prompt_PromptInput_op_Implicit_Vercel_AI_Provider_ModelMessage____Vercel_AI_Prompt_PromptInput"></a>
 
@@ -153,4 +153,4 @@ Converts an array of messages to a prompt.
 
 **Returns:** [PromptInput](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L113)

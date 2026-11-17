@@ -27,6 +27,76 @@ One Open Responses extension. Tool, item, and event capabilities are registered 
 
 ## Properties
 
+<a id="Vercel_AI_OpenResponses_OpenResponsesExtension_AllowBareTypes_"></a>
+<a id="Vercel_AI_OpenResponses_OpenResponsesExtension_AllowBareTypes"></a>
+
+### AllowBareTypes
+
+
+```csharp
+public bool AllowBareTypes { get; set; }
+```
+
+
+Explicitly enables non-portable bare discriminator registration for this extension. It must be true exactly when
+[BareToolType](#Vercel_AI_OpenResponses_OpenResponsesExtension_BareToolType), [BareItemTypes](#Vercel_AI_OpenResponses_OpenResponsesExtension_BareItemTypes), or [BareEventTypes](#Vercel_AI_OpenResponses_OpenResponsesExtension_BareEventTypes) is set.
+
+**Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L105)
+
+<a id="Vercel_AI_OpenResponses_OpenResponsesExtension_BareEventTypes_"></a>
+<a id="Vercel_AI_OpenResponses_OpenResponsesExtension_BareEventTypes"></a>
+
+### BareEventTypes
+
+
+```csharp
+public IReadOnlyList<string>? BareEventTypes { get; set; }
+```
+
+
+Exact non-namespaced streaming event types decoded by this extension. Must be provided together with [DecodeEvent](#Vercel_AI_OpenResponses_OpenResponsesExtension_DecodeEvent).
+
+**Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L117)
+
+<a id="Vercel_AI_OpenResponses_OpenResponsesExtension_BareItemTypes_"></a>
+<a id="Vercel_AI_OpenResponses_OpenResponsesExtension_BareItemTypes"></a>
+
+### BareItemTypes
+
+
+```csharp
+public IReadOnlyList<string>? BareItemTypes { get; set; }
+```
+
+
+Exact non-namespaced item types decoded by a documented implementation extension. Must be provided together with [DecodeItem](#Vercel_AI_OpenResponses_OpenResponsesExtension_DecodeItem).
+
+**Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L114)
+
+<a id="Vercel_AI_OpenResponses_OpenResponsesExtension_BareToolType_"></a>
+<a id="Vercel_AI_OpenResponses_OpenResponsesExtension_BareToolType"></a>
+
+### BareToolType
+
+
+```csharp
+public string? BareToolType { get; set; }
+```
+
+
+Exact non-namespaced tool type used by a documented implementation extension. Must be provided together with
+[EncodeTool](#Vercel_AI_OpenResponses_OpenResponsesExtension_EncodeTool) and cannot be used together with [ToolType](#Vercel_AI_OpenResponses_OpenResponsesExtension_ToolType).
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L111)
+
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtension_DecodeEvent_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtension_DecodeEvent"></a>
 
@@ -42,7 +112,7 @@ Decodes a streaming event into stream parts. Present or absent together with [Ev
 
 **Value:** [Func&lt;OpenResponsesDecodeEventContext, IReadOnlyList&lt;LanguageModelStreamPart&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L120)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L144)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtension_DecodeItem_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtension_DecodeItem"></a>
@@ -59,7 +129,7 @@ Decodes a completed item into content parts. The model adds a `open-responses.ex
 
 **Value:** [Func&lt;OpenResponsesDecodeItemContext, IReadOnlyList&lt;GeneratedContent&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L114)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L132)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtension_EncodeInputItem_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtension_EncodeInputItem"></a>
@@ -76,7 +146,7 @@ Encodes a history part when no original wire item is available. Every returned i
 
 **Value:** [Func&lt;OpenResponsesEncodeInputItemContext, IReadOnlyList&lt;JsonObject&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L117)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L138)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtension_EncodeTool_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtension_EncodeTool"></a>
@@ -93,7 +163,7 @@ Encodes a provider tool. Return null when its arguments cannot be encoded. The m
 
 **Value:** [Func&lt;OpenResponsesToolContext, JsonObject&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L126)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtension_EncodeToolChoice_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtension_EncodeToolChoice"></a>
@@ -110,7 +180,7 @@ Encodes a specific tool choice. The model adds [ToolType](#Vercel_AI_OpenRespons
 
 **Value:** [Func&lt;OpenResponsesToolContext, JsonObject&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L111)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L129)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtension_EventTypes_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtension_EventTypes"></a>
@@ -123,11 +193,11 @@ public IReadOnlyList<string>? EventTypes { get; set; }
 ```
 
 
-Namespaced event types. Required together with [DecodeEvent](#Vercel_AI_OpenResponses_OpenResponsesExtension_DecodeEvent).
+Namespaced event types. Required together with [DecodeEvent](#Vercel_AI_OpenResponses_OpenResponsesExtension_DecodeEvent), unless [BareEventTypes](#Vercel_AI_OpenResponses_OpenResponsesExtension_BareEventTypes) is used.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L105)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L123)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtension_Id_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtension_Id"></a>
@@ -157,11 +227,11 @@ public IReadOnlyList<string>? ItemTypes { get; set; }
 ```
 
 
-Namespaced item types. Required together with [DecodeItem](#Vercel_AI_OpenResponses_OpenResponsesExtension_DecodeItem).
+Namespaced item types. Required together with [DecodeItem](#Vercel_AI_OpenResponses_OpenResponsesExtension_DecodeItem), unless [BareItemTypes](#Vercel_AI_OpenResponses_OpenResponsesExtension_BareItemTypes) is used.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L102)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesExtension.cs#L120)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtension_ToolType_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesExtension_ToolType"></a>
@@ -174,7 +244,7 @@ public string? ToolType { get; set; }
 ```
 
 
-Namespaced tool type. Required together with [EncodeTool](#Vercel_AI_OpenResponses_OpenResponsesExtension_EncodeTool).
+Namespaced tool type. Required together with [EncodeTool](#Vercel_AI_OpenResponses_OpenResponsesExtension_EncodeTool), unless [BareToolType](#Vercel_AI_OpenResponses_OpenResponsesExtension_BareToolType) is used.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 

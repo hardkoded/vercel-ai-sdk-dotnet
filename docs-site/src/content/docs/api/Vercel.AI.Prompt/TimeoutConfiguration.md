@@ -189,4 +189,4 @@ A configuration whose total timeout is &lt;code class="paramref"&gt;timeout&lt;/
 
 **Returns:** [TimeoutConfiguration](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/TimeoutConfiguration.cs#L118)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/TimeoutConfiguration.cs#L121)

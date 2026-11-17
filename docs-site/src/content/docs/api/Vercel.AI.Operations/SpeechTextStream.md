@@ -87,7 +87,7 @@ Releases a stream no model took. A locked stream stays with the model.
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L91)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L93)
 
 <a id="Vercel_AI_Operations_SpeechTextStream_GetAsyncEnumerator_"></a>
 <a id="Vercel_AI_Operations_SpeechTextStream_GetAsyncEnumerator_System_Threading_CancellationToken_"></a>

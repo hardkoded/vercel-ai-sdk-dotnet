@@ -23,7 +23,7 @@ One listed batch.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [BatchStatus](/api/Vercel.AI.Operations/BatchStatus/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L532)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L589)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Batch id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L538)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L595)
 
 <a id="Vercel_AI_Operations_ListedBatch_Provider_"></a>
 <a id="Vercel_AI_Operations_ListedBatch_Provider"></a>
@@ -59,7 +59,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L541)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L598)
 
 <a id="Vercel_AI_Operations_ListedBatch_Version_"></a>
 <a id="Vercel_AI_Operations_ListedBatch_Version"></a>
@@ -76,4 +76,4 @@ Reference version.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L535)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L592)

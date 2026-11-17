@@ -71,7 +71,7 @@ Cached content tokens.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L41)
 
 <a id="Vercel_AI_Google_GoogleTokenUsage_CacheWrite_"></a>
 <a id="Vercel_AI_Google_GoogleTokenUsage_CacheWrite"></a>
@@ -88,7 +88,7 @@ Always null. Gemini does not report cache writes.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L44)
 
 <a id="Vercel_AI_Google_GoogleTokenUsage_InputTotal_"></a>
 <a id="Vercel_AI_Google_GoogleTokenUsage_InputTotal"></a>
@@ -105,7 +105,7 @@ Prompt tokens plus tool-use prompt tokens.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L35)
 
 <a id="Vercel_AI_Google_GoogleTokenUsage_NoCache_"></a>
 <a id="Vercel_AI_Google_GoogleTokenUsage_NoCache"></a>
@@ -122,7 +122,7 @@ Input tokens that were not served from cache.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L38)
 
 <a id="Vercel_AI_Google_GoogleTokenUsage_OutputTotal_"></a>
 <a id="Vercel_AI_Google_GoogleTokenUsage_OutputTotal"></a>
@@ -139,7 +139,7 @@ Candidate tokens plus thought tokens.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L50)
 
 <a id="Vercel_AI_Google_GoogleTokenUsage_Raw_"></a>
 <a id="Vercel_AI_Google_GoogleTokenUsage_Raw"></a>
@@ -156,7 +156,7 @@ The original usage object.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L59)
 
 <a id="Vercel_AI_Google_GoogleTokenUsage_Reasoning_"></a>
 <a id="Vercel_AI_Google_GoogleTokenUsage_Reasoning"></a>
@@ -173,7 +173,7 @@ Thought tokens.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L56)
 
 <a id="Vercel_AI_Google_GoogleTokenUsage_Text_"></a>
 <a id="Vercel_AI_Google_GoogleTokenUsage_Text"></a>
@@ -190,7 +190,7 @@ Candidate tokens.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L53)
 
 ## Methods
 
@@ -209,4 +209,4 @@ Maps onto the shared usage type. Cache writes stay unset.
 
 **Returns:** [LanguageModelUsage](/api/Vercel.AI.Provider/LanguageModelUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L62)

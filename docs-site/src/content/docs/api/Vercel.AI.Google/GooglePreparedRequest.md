@@ -69,7 +69,7 @@ Request JSON.
 
 **Value:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleRequest.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleRequest.cs#L33)
 
 <a id="Vercel_AI_Google_GooglePreparedRequest_ExtraHeaders_"></a>
 <a id="Vercel_AI_Google_GooglePreparedRequest_ExtraHeaders"></a>
@@ -86,7 +86,7 @@ Headers added for this call, such as Vertex pay-as-you-go request types.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleRequest.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleRequest.cs#L39)
 
 <a id="Vercel_AI_Google_GooglePreparedRequest_JsonResponseToolName_"></a>
 <a id="Vercel_AI_Google_GooglePreparedRequest_JsonResponseToolName"></a>
@@ -103,7 +103,7 @@ Name of the internal tool that carries structured output, or null when the reque
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleRequest.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleRequest.cs#L45)
 
 <a id="Vercel_AI_Google_GooglePreparedRequest_Tools_"></a>
 <a id="Vercel_AI_Google_GooglePreparedRequest_Tools"></a>
@@ -120,7 +120,7 @@ Prepared tools, including built-in name mapping.
 
 **Value:** [GoogleToolPreparation](/api/Vercel.AI.Google/GoogleToolPreparation/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleRequest.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleRequest.cs#L42)
 
 <a id="Vercel_AI_Google_GooglePreparedRequest_Warnings_"></a>
 <a id="Vercel_AI_Google_GooglePreparedRequest_Warnings"></a>
@@ -137,4 +137,4 @@ Preparation warnings.
 
 **Value:** [IReadOnlyList&lt;GoogleWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleRequest.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleRequest.cs#L36)

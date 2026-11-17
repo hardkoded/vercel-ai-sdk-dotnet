@@ -23,7 +23,7 @@ File-part conversion. Maps to `convertToLanguageModelV4FilePart`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L153)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L183)
 
 ## Methods
 
@@ -48,4 +48,4 @@ Converts a legacy or tagged file value into the v4 provider shape.
 
 **Returns:** [LanguageModelFilePart](/api/Vercel.AI.Prompt/LanguageModelFilePart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L156)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L186)

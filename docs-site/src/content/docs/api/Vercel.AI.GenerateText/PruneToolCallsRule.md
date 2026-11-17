@@ -43,7 +43,7 @@ Number of trailing messages to keep, or null for none (`all`).
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/PruneMessages.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/PruneMessages.cs#L71)
 
 <a id="Vercel_AI_GenerateText_PruneToolCallsRule_Tools_"></a>
 <a id="Vercel_AI_GenerateText_PruneToolCallsRule_Tools"></a>
@@ -60,7 +60,7 @@ Names of the tools to prune, or null for every tool.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/PruneMessages.cs#L69)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/PruneMessages.cs#L74)
 
 ## Methods
 
@@ -108,7 +108,7 @@ Prunes before the last message. Maps to `type: 'before-last-message'`.
 
 **Returns:** [PruneToolCallsRule](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/PruneMessages.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/PruneMessages.cs#L51)
 
 <a id="Vercel_AI_GenerateText_PruneToolCallsRule_BeforeLastMessages_"></a>
 <a id="Vercel_AI_GenerateText_PruneToolCallsRule_BeforeLastMessages_System_Int32_System_Collections_Generic_IReadOnlyList_System_String__"></a>
@@ -132,4 +132,4 @@ Prunes before the last &lt;code class="paramref"&gt;count&lt;/code&gt; messages.
 
 **Returns:** [PruneToolCallsRule](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/PruneMessages.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/PruneMessages.cs#L57)

@@ -23,7 +23,7 @@ Telemetry callbacks for `CancellationToken)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L440)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L562)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Identifies the call in telemetry.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L458)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L580)
 
 <a id="Vercel_AI_Operations_TranscribeTelemetry_IsEnabled_"></a>
 <a id="Vercel_AI_Operations_TranscribeTelemetry_IsEnabled"></a>
@@ -59,7 +59,7 @@ When false, telemetry callbacks are skipped.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L461)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L583)
 
 <a id="Vercel_AI_Operations_TranscribeTelemetry_OnEnd_"></a>
 <a id="Vercel_AI_Operations_TranscribeTelemetry_OnEnd"></a>
@@ -76,7 +76,7 @@ Called when the operation ends.
 
 **Value:** [Func&lt;TranscriptionEndEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L446)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L568)
 
 <a id="Vercel_AI_Operations_TranscribeTelemetry_OnError_"></a>
 <a id="Vercel_AI_Operations_TranscribeTelemetry_OnError"></a>
@@ -93,7 +93,7 @@ Called with the call id when the operation fails.
 
 **Value:** [Func&lt;string, Exception, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L449)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L571)
 
 <a id="Vercel_AI_Operations_TranscribeTelemetry_OnStart_"></a>
 <a id="Vercel_AI_Operations_TranscribeTelemetry_OnStart"></a>
@@ -110,7 +110,7 @@ Called when the operation starts.
 
 **Value:** [Func&lt;TranscriptionStartEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L443)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L565)
 
 <a id="Vercel_AI_Operations_TranscribeTelemetry_RecordInputs_"></a>
 <a id="Vercel_AI_Operations_TranscribeTelemetry_RecordInputs"></a>
@@ -127,7 +127,7 @@ When false, input fields such as provider options are hidden from events.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L452)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L574)
 
 <a id="Vercel_AI_Operations_TranscribeTelemetry_RecordOutputs_"></a>
 <a id="Vercel_AI_Operations_TranscribeTelemetry_RecordOutputs"></a>
@@ -144,4 +144,4 @@ When false, `text`, `segments` and `words` are hidden from events.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L455)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L577)

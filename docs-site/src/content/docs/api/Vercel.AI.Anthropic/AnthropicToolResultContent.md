@@ -23,7 +23,7 @@ A provider-executed tool result returned inside a Messages response.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [GeneratedContent](/api/Vercel.AI.Provider/GeneratedContent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicContent.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicContent.cs#L59)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a tool result.
 | `isError` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicContent.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicContent.cs#L62)
 
 ## Properties
 
@@ -69,7 +69,7 @@ Whether the tool failed.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicContent.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicContent.cs#L88)
 
 <a id="Vercel_AI_Anthropic_AnthropicToolResultContent_ProviderMetadata_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicToolResultContent_ProviderMetadata"></a>
@@ -86,7 +86,7 @@ Provider metadata, including caller information.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicContent.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicContent.cs#L91)
 
 <a id="Vercel_AI_Anthropic_AnthropicToolResultContent_ResultJson_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicToolResultContent_ResultJson"></a>
@@ -103,7 +103,7 @@ JSON result.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicContent.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicContent.cs#L85)
 
 <a id="Vercel_AI_Anthropic_AnthropicToolResultContent_ToolCallId_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicToolResultContent_ToolCallId"></a>
@@ -120,7 +120,7 @@ Matching tool call id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicContent.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicContent.cs#L79)
 
 <a id="Vercel_AI_Anthropic_AnthropicToolResultContent_ToolName_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicToolResultContent_ToolName"></a>
@@ -137,4 +137,4 @@ Tool name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicContent.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicContent.cs#L82)

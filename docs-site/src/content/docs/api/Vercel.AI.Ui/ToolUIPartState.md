@@ -21,7 +21,7 @@ public enum ToolUIPartState
 
 The state of a [ToolUIPart](/api/Vercel.AI.Ui/ToolUIPart/).
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L253)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L254)
 
 ## Fields
 
@@ -39,7 +39,7 @@ The call waits for an approval. Maps to `'approval-requested'`.
 
 **Value:** [ToolUIPartState](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L262)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L263)
 
 <a id="Vercel_AI_Ui_ToolUIPartState_ApprovalResponded"></a>
 
@@ -55,7 +55,7 @@ The approval was answered. Maps to `'approval-responded'`.
 
 **Value:** [ToolUIPartState](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L265)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L266)
 
 <a id="Vercel_AI_Ui_ToolUIPartState_InputAvailable"></a>
 
@@ -71,7 +71,7 @@ The input is complete. Maps to `'input-available'`.
 
 **Value:** [ToolUIPartState](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L259)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L260)
 
 <a id="Vercel_AI_Ui_ToolUIPartState_InputStreaming"></a>
 
@@ -87,7 +87,7 @@ The input is still streaming. Maps to `'input-streaming'`.
 
 **Value:** [ToolUIPartState](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L256)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L257)
 
 <a id="Vercel_AI_Ui_ToolUIPartState_OutputAvailable"></a>
 
@@ -103,7 +103,7 @@ The output is available. Maps to `'output-available'`.
 
 **Value:** [ToolUIPartState](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L268)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L269)
 
 <a id="Vercel_AI_Ui_ToolUIPartState_OutputDenied"></a>
 
@@ -119,7 +119,7 @@ The approval was denied. Maps to `'output-denied'`.
 
 **Value:** [ToolUIPartState](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L274)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L275)
 
 <a id="Vercel_AI_Ui_ToolUIPartState_OutputError"></a>
 
@@ -135,4 +135,4 @@ The call failed. Maps to `'output-error'`.
 
 **Value:** [ToolUIPartState](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L271)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L272)

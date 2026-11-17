@@ -23,7 +23,7 @@ Configuration of a [MiniMaxVideoModel](/api/Vercel.AI.MiniMax/MiniMaxVideoModel/
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L16)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L17)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a configuration.
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `currentDate` | [Func&lt;DateTime&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L19)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L20)
 
 ## Properties
 
@@ -69,7 +69,7 @@ API origin with no version suffix.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L39)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelConfig_CurrentDate_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelConfig_CurrentDate"></a>
@@ -86,7 +86,7 @@ Sets the response timestamp (upstream `_internal.currentDate`).
 
 **Value:** [Func&lt;DateTime&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L48)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelConfig_Headers_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelConfig_Headers"></a>
@@ -103,7 +103,7 @@ Resolves the request headers on every call (bearer token and user agent).
 
 **Value:** [Func&lt;Dictionary&lt;string, string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L42)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelConfig_HttpClient_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelConfig_HttpClient"></a>
@@ -120,7 +120,7 @@ The client every request goes through (upstream `fetch`).
 
 **Value:** [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L45)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelConfig_Provider_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModelConfig_Provider"></a>
@@ -137,4 +137,4 @@ Provider id, `minimax.video`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L36)

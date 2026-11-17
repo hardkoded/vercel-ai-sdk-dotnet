@@ -42,7 +42,7 @@ AWS access key. Used when no Anthropic API key is configured.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L65)
 
 <a id="Vercel_AI_Anthropic_AnthropicOptions_ApiKey_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicOptions_ApiKey"></a>
@@ -161,7 +161,7 @@ Supplies SigV4 credentials for one request.
 
 **Value:** [Func&lt;CancellationToken, Task&lt;AnthropicAwsCredentials&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L69)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L74)
 
 <a id="Vercel_AI_Anthropic_AnthropicOptions_GenerateId_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicOptions_GenerateId"></a>
@@ -229,7 +229,7 @@ AWS region. Used when the AWS base URL is not set explicitly.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L59)
 
 <a id="Vercel_AI_Anthropic_AnthropicOptions_SecretAccessKey_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicOptions_SecretAccessKey"></a>
@@ -246,7 +246,7 @@ AWS secret key.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L68)
 
 <a id="Vercel_AI_Anthropic_AnthropicOptions_SessionToken_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicOptions_SessionToken"></a>
@@ -263,7 +263,7 @@ AWS session token.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L71)
 
 <a id="Vercel_AI_Anthropic_AnthropicOptions_TransformRequestBody_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicOptions_TransformRequestBody"></a>
@@ -280,7 +280,7 @@ Optional rewrite of the JSON body before it is sent.
 
 **Value:** [Func&lt;JsonObject, JsonObject&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L49)
 
 <a id="Vercel_AI_Anthropic_AnthropicOptions_TransformRequestHeaders_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicOptions_TransformRequestHeaders"></a>
@@ -297,7 +297,7 @@ Optional rewrite of the combined request headers. Receives the call's provider o
 
 **Value:** [Func&lt;Dictionary&lt;string, string&gt;, IReadOnlyDictionary&lt;string, JsonElement&gt;, Dictionary&lt;string, string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L52)
 
 <a id="Vercel_AI_Anthropic_AnthropicOptions_UtcNow_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicOptions_UtcNow"></a>
@@ -314,7 +314,7 @@ Clock used when signing. Tests pin this.
 
 **Value:** [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L72)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L77)
 
 <a id="Vercel_AI_Anthropic_AnthropicOptions_Version_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicOptions_Version"></a>
@@ -348,4 +348,4 @@ Claude Platform workspace id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L62)

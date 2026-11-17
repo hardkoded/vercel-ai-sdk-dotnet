@@ -23,7 +23,7 @@ Arguments for one image model call.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L74)
 
 ## Constructors
 
@@ -55,7 +55,7 @@ Creates a call.
 | `headers` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 | `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L70)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L77)
 
 ## Properties
 
@@ -74,7 +74,7 @@ Aspect ratio such as `16:9`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L100)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L118)
 
 <a id="Vercel_AI_Operations_ImageModelCall_CancellationToken_"></a>
 <a id="Vercel_AI_Operations_ImageModelCall_CancellationToken"></a>
@@ -91,7 +91,7 @@ Cancellation token.
 
 **Value:** [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L112)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L130)
 
 <a id="Vercel_AI_Operations_ImageModelCall_Files_"></a>
 <a id="Vercel_AI_Operations_ImageModelCall_Files"></a>
@@ -108,7 +108,7 @@ Reference images.
 
 **Value:** [IReadOnlyList&lt;ImageModelFile&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L88)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L106)
 
 <a id="Vercel_AI_Operations_ImageModelCall_Headers_"></a>
 <a id="Vercel_AI_Operations_ImageModelCall_Headers"></a>
@@ -125,7 +125,7 @@ Headers including the user-agent suffix.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L109)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L127)
 
 <a id="Vercel_AI_Operations_ImageModelCall_Mask_"></a>
 <a id="Vercel_AI_Operations_ImageModelCall_Mask"></a>
@@ -142,7 +142,7 @@ Mask image.
 
 **Value:** [ImageModelFile](/api/Vercel.AI.Operations/ImageModelFile/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L91)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L109)
 
 <a id="Vercel_AI_Operations_ImageModelCall_N_"></a>
 <a id="Vercel_AI_Operations_ImageModelCall_N"></a>
@@ -159,7 +159,7 @@ Images requested from this call.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L94)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L112)
 
 <a id="Vercel_AI_Operations_ImageModelCall_Prompt_"></a>
 <a id="Vercel_AI_Operations_ImageModelCall_Prompt"></a>
@@ -176,7 +176,7 @@ Prompt text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L85)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L103)
 
 <a id="Vercel_AI_Operations_ImageModelCall_ProviderOptions_"></a>
 <a id="Vercel_AI_Operations_ImageModelCall_ProviderOptions"></a>
@@ -193,7 +193,7 @@ Provider options. Empty object when the caller omitted them.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L106)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L124)
 
 <a id="Vercel_AI_Operations_ImageModelCall_Seed_"></a>
 <a id="Vercel_AI_Operations_ImageModelCall_Seed"></a>
@@ -210,7 +210,7 @@ Seed.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L103)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L121)
 
 <a id="Vercel_AI_Operations_ImageModelCall_Size_"></a>
 <a id="Vercel_AI_Operations_ImageModelCall_Size"></a>
@@ -227,4 +227,4 @@ Size such as `1024x1024`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L97)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L115)

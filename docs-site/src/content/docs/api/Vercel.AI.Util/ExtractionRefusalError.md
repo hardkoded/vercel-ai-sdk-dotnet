@@ -51,7 +51,7 @@ Creates the error for the refused fields.
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `message` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionRefusalError.cs#L19)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionRefusalError.cs#L22)
 
 ## Fields
 
@@ -88,7 +88,7 @@ Refused field ids, in field order.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionRefusalError.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionRefusalError.cs#L50)
 
 <a id="Vercel_AI_Util_ExtractionRefusalError_ModelId_"></a>
 <a id="Vercel_AI_Util_ExtractionRefusalError_ModelId"></a>
@@ -105,7 +105,7 @@ Extraction model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionRefusalError.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionRefusalError.cs#L56)
 
 <a id="Vercel_AI_Util_ExtractionRefusalError_Provider_"></a>
 <a id="Vercel_AI_Util_ExtractionRefusalError_Provider"></a>
@@ -122,7 +122,7 @@ Extraction provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionRefusalError.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionRefusalError.cs#L53)
 
 ## Methods
 
@@ -147,4 +147,4 @@ Returns whether &lt;code class="paramref"&gt;error&lt;/code&gt; carries this err
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionRefusalError.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionRefusalError.cs#L59)

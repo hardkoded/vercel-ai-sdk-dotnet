@@ -23,7 +23,7 @@ A message in the approval history.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L116)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L134)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a message. &lt;code class="paramref"&gt;parts&lt;/code&gt; is null when 
 | `text` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `parts` | [IReadOnlyList&lt;ApprovalHistoryPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L119)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L137)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Structured content. Null means the message is not a part list.
 
 **Value:** [IReadOnlyList&lt;ApprovalHistoryPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L133)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L155)
 
 <a id="Vercel_AI_GenerateText_ApprovalHistoryMessage_Role_"></a>
 <a id="Vercel_AI_GenerateText_ApprovalHistoryMessage_Role"></a>
@@ -84,7 +84,7 @@ Message role.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L127)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L149)
 
 <a id="Vercel_AI_GenerateText_ApprovalHistoryMessage_Text_"></a>
 <a id="Vercel_AI_GenerateText_ApprovalHistoryMessage_Text"></a>
@@ -101,4 +101,4 @@ String content.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L130)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L152)
