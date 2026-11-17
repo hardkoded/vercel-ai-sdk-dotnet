@@ -23,7 +23,7 @@ Result of parsing a Gladia error body.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L79)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a parse result.
 | `success` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `value` | [GladiaErrorData](/api/Vercel.AI.Gladia/GladiaErrorData/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L82)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Same payload as [Value](#Vercel_AI_Gladia_GladiaErrorParseResult_Value).
 
 **Value:** [GladiaErrorData](/api/Vercel.AI.Gladia/GladiaErrorData/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L96)
 
 <a id="Vercel_AI_Gladia_GladiaErrorParseResult_Success_"></a>
 <a id="Vercel_AI_Gladia_GladiaErrorParseResult_Success"></a>
@@ -83,7 +83,7 @@ True when the error object was present.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L90)
 
 <a id="Vercel_AI_Gladia_GladiaErrorParseResult_Value_"></a>
 <a id="Vercel_AI_Gladia_GladiaErrorParseResult_Value"></a>
@@ -100,4 +100,4 @@ Parsed error.
 
 **Value:** [GladiaErrorData](/api/Vercel.AI.Gladia/GladiaErrorData/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L93)

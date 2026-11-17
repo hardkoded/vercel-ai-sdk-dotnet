@@ -23,7 +23,7 @@ Text-stream helpers: keep text deltas, build a response, and write it to a serve
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/TextStream.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/TextStream.cs#L65)
 
 ## Methods
 
@@ -52,7 +52,7 @@ Each string chunk is encoded as its own UTF-8 body chunk.
 
 **Returns:** [TextStreamResponse](/api/Vercel.AI.Util/TextStreamResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/TextStream.cs#L96)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/TextStream.cs#L103)
 
 <a id="Vercel_AI_Util_TextStreams_PipeTextStreamToResponseAsync_"></a>
 <a id="Vercel_AI_Util_TextStreams_PipeTextStreamToResponseAsync_Vercel_AI_Util_ServerResponse_Vercel_AI_Util_ReadableStream_System_String__System_Nullable_System_Int32__System_String_Vercel_AI_Util_HeaderCollection_"></a>
@@ -79,7 +79,7 @@ Encodes &lt;code class="paramref"&gt;stream&lt;/code&gt; as UTF-8 and writes it 
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/TextStream.cs#L106)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/TextStream.cs#L118)
 
 <a id="Vercel_AI_Util_TextStreams_ToTextStream_"></a>
 <a id="Vercel_AI_Util_TextStreams_ToTextStream_Vercel_AI_Util_ReadableStream_Vercel_AI_Util_TextStreamPart__"></a>
@@ -102,4 +102,4 @@ Yields only `text-delta` text from &lt;code class="paramref"&gt;stream&lt;/code&
 
 **Returns:** `ReadableStream&lt;string&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/TextStream.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/TextStream.cs#L68)

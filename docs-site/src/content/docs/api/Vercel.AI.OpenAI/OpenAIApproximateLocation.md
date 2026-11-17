@@ -23,7 +23,7 @@ An approximate user location for the OpenAI web search tools.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L72)
 
 ## Properties
 
@@ -42,7 +42,7 @@ City.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L78)
 
 <a id="Vercel_AI_OpenAI_OpenAIApproximateLocation_Country_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIApproximateLocation_Country"></a>
@@ -59,7 +59,7 @@ Country.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L75)
 
 <a id="Vercel_AI_OpenAI_OpenAIApproximateLocation_Region_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIApproximateLocation_Region"></a>
@@ -76,7 +76,7 @@ Region.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L81)
 
 <a id="Vercel_AI_OpenAI_OpenAIApproximateLocation_Timezone_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIApproximateLocation_Timezone"></a>
@@ -93,4 +93,4 @@ IANA timezone.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L84)

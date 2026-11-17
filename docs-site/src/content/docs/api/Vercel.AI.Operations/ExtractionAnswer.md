@@ -25,7 +25,7 @@ One model answer. Maps to `ExtractionModelV4Answer`. The `value` member is split
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L101)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L111)
 
 ## Constructors
 
@@ -58,7 +58,7 @@ Creates an answer.
 | `source` | [ExtractionSource](/api/Vercel.AI.Operations/ExtractionSource/) |  |
 | `items` | [IReadOnlyList&lt;ExtractionItem&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L114)
 
 ## Properties
 
@@ -77,7 +77,7 @@ Confidence in [0, 1] that the value is correct.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L155)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L166)
 
 <a id="Vercel_AI_Operations_ExtractionAnswer_GuessNumber_"></a>
 <a id="Vercel_AI_Operations_ExtractionAnswer_GuessNumber"></a>
@@ -94,7 +94,7 @@ Most likely value for a `number` or `duration` field, also when the value is nul
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L149)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L160)
 
 <a id="Vercel_AI_Operations_ExtractionAnswer_GuessText_"></a>
 <a id="Vercel_AI_Operations_ExtractionAnswer_GuessText"></a>
@@ -111,7 +111,7 @@ Most likely value for a text-like field, also when the value is null.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L146)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L157)
 
 <a id="Vercel_AI_Operations_ExtractionAnswer_Items_"></a>
 <a id="Vercel_AI_Operations_ExtractionAnswer_Items"></a>
@@ -128,7 +128,7 @@ One entry per list item, when available. Only list answers use it.
 
 **Value:** [IReadOnlyList&lt;ExtractionItem&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L161)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L172)
 
 <a id="Vercel_AI_Operations_ExtractionAnswer_Number_"></a>
 <a id="Vercel_AI_Operations_ExtractionAnswer_Number"></a>
@@ -145,7 +145,7 @@ Value of a `number` or `duration` field. Null when the state has none.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L137)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L148)
 
 <a id="Vercel_AI_Operations_ExtractionAnswer_NumberItems_"></a>
 <a id="Vercel_AI_Operations_ExtractionAnswer_NumberItems"></a>
@@ -162,7 +162,7 @@ Value of a `list` field of number items. Null when the state has none.
 
 **Value:** [IReadOnlyList&lt;double&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L143)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L154)
 
 <a id="Vercel_AI_Operations_ExtractionAnswer_PNull_"></a>
 <a id="Vercel_AI_Operations_ExtractionAnswer_PNull"></a>
@@ -179,7 +179,7 @@ Probability in [0, 1] that the state does not contain a value.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L152)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L163)
 
 <a id="Vercel_AI_Operations_ExtractionAnswer_Source_"></a>
 <a id="Vercel_AI_Operations_ExtractionAnswer_Source"></a>
@@ -196,7 +196,7 @@ Where the value was found. Not used by list answers.
 
 **Value:** [ExtractionSource](/api/Vercel.AI.Operations/ExtractionSource/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L158)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L169)
 
 <a id="Vercel_AI_Operations_ExtractionAnswer_Text_"></a>
 <a id="Vercel_AI_Operations_ExtractionAnswer_Text"></a>
@@ -213,7 +213,7 @@ Value of a `text`, `date`, `time`, or `datetime` field. Null when the state has 
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L134)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L145)
 
 <a id="Vercel_AI_Operations_ExtractionAnswer_TextItems_"></a>
 <a id="Vercel_AI_Operations_ExtractionAnswer_TextItems"></a>
@@ -230,7 +230,7 @@ Value of a `list` field of text or date items. Null when the state has none.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L140)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L151)
 
 <a id="Vercel_AI_Operations_ExtractionAnswer_Type_"></a>
 <a id="Vercel_AI_Operations_ExtractionAnswer_Type"></a>
@@ -247,4 +247,4 @@ Answer type. It is the field type, or `refusal` when the model declined the fiel
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L131)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L142)

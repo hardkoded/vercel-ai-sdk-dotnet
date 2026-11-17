@@ -89,7 +89,7 @@ Field identifier.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionUnsupportedFieldTypeError.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionUnsupportedFieldTypeError.cs#L45)
 
 <a id="Vercel_AI_Util_ExtractionUnsupportedFieldTypeError_FieldType_"></a>
 <a id="Vercel_AI_Util_ExtractionUnsupportedFieldTypeError_FieldType"></a>
@@ -106,7 +106,7 @@ Field type the model rejected.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionUnsupportedFieldTypeError.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionUnsupportedFieldTypeError.cs#L48)
 
 <a id="Vercel_AI_Util_ExtractionUnsupportedFieldTypeError_ModelId_"></a>
 <a id="Vercel_AI_Util_ExtractionUnsupportedFieldTypeError_ModelId"></a>
@@ -123,7 +123,7 @@ Extraction model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionUnsupportedFieldTypeError.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionUnsupportedFieldTypeError.cs#L54)
 
 <a id="Vercel_AI_Util_ExtractionUnsupportedFieldTypeError_Provider_"></a>
 <a id="Vercel_AI_Util_ExtractionUnsupportedFieldTypeError_Provider"></a>
@@ -140,7 +140,7 @@ Extraction provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionUnsupportedFieldTypeError.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionUnsupportedFieldTypeError.cs#L51)
 
 ## Methods
 
@@ -165,4 +165,4 @@ Returns whether &lt;code class="paramref"&gt;error&lt;/code&gt; carries this err
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionUnsupportedFieldTypeError.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ExtractionUnsupportedFieldTypeError.cs#L57)

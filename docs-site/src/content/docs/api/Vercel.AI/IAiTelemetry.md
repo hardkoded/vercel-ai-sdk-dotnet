@@ -23,4 +23,4 @@ Telemetry hook invoked around generate and stream calls.
 
 **Derived:** [OpenTelemetryAiTelemetry](/api/Vercel.AI.OpenTelemetry/OpenTelemetryAiTelemetry/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L15)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L17)

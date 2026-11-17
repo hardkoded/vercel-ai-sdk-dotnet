@@ -48,4 +48,4 @@ Decodes a `text/*` data URL. Without a charset the decoded bytes are returned as
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DataUrl.cs#L20)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DataUrl.cs#L21)

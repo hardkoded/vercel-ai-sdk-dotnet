@@ -93,7 +93,7 @@ Parsed provider payload.
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L56)
 
 <a id="Vercel_AI_Util_ApiCallError_IsRetryable_"></a>
 <a id="Vercel_AI_Util_ApiCallError_IsRetryable"></a>
@@ -110,7 +110,7 @@ Whether the call may be retried.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L53)
 
 <a id="Vercel_AI_Util_ApiCallError_RequestBodyValues_"></a>
 <a id="Vercel_AI_Util_ApiCallError_RequestBodyValues"></a>
@@ -127,7 +127,7 @@ Request body that was sent.
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L41)
 
 <a id="Vercel_AI_Util_ApiCallError_ResponseBody_"></a>
 <a id="Vercel_AI_Util_ApiCallError_ResponseBody"></a>
@@ -144,7 +144,7 @@ Raw response body.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L50)
 
 <a id="Vercel_AI_Util_ApiCallError_ResponseHeaders_"></a>
 <a id="Vercel_AI_Util_ApiCallError_ResponseHeaders"></a>
@@ -161,7 +161,7 @@ Response headers. Lookup is case-insensitive.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L47)
 
 <a id="Vercel_AI_Util_ApiCallError_StatusCode_"></a>
 <a id="Vercel_AI_Util_ApiCallError_StatusCode"></a>
@@ -178,7 +178,7 @@ HTTP status, when the provider responded.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L44)
 
 <a id="Vercel_AI_Util_ApiCallError_Url_"></a>
 <a id="Vercel_AI_Util_ApiCallError_Url"></a>
@@ -195,7 +195,7 @@ Request URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L38)
 
 ## Methods
 
@@ -220,7 +220,7 @@ Reads a response header, ignoring case.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L65)
 
 <a id="Vercel_AI_Util_ApiCallError_IsInstance_"></a>
 <a id="Vercel_AI_Util_ApiCallError_IsInstance_System_Object_"></a>
@@ -243,4 +243,4 @@ Returns whether &lt;code class="paramref"&gt;error&lt;/code&gt; carries this err
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L59)

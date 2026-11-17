@@ -103,7 +103,7 @@ Creates state from ordered parts.
 
 **Returns:** [DecisionState](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionState.cs#L187)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionState.cs#L191)
 
 <a id="Vercel_AI_Operations_DecisionState_From_System_String_"></a>
 
@@ -176,7 +176,7 @@ File media types are resolved to a full type.
 
 **Returns:** [Task&lt;IReadOnlyList&lt;DecisionModelStatePart&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionState.cs#L212)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionState.cs#L221)
 
 ## Operators
 
@@ -201,7 +201,7 @@ Converts text to state.
 
 **Returns:** [DecisionState](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionState.cs#L193)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionState.cs#L201)
 
 <a id="Vercel_AI_Operations_DecisionState_op_Implicit_Vercel_AI_Operations_DecisionStatePart____Vercel_AI_Operations_DecisionState"></a>
 
@@ -223,4 +223,4 @@ Converts an array of parts to state.
 
 **Returns:** [DecisionState](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionState.cs#L199)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionState.cs#L207)

@@ -243,4 +243,4 @@ Embeds &lt;code class="paramref"&gt;values&lt;/code&gt;, sending &lt;code class=
 
 **Returns:** [Task&lt;OpenAIEmbeddingCallResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Embedding/OpenAIEmbeddingModel.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Embedding/OpenAIEmbeddingModel.cs#L84)

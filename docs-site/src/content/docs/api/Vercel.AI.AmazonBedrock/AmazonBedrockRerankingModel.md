@@ -115,7 +115,7 @@ Reranks text documents. &lt;code class="paramref"&gt;providerOptions&lt;/code&gt
 
 **Returns:** [Task&lt;RerankResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockRerankingModel.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockRerankingModel.cs#L55)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockRerankingModel_DoRerankAsync_System_String_System_Collections_Generic_IReadOnlyList_System_String__System_Nullable_System_Int32__System_Threading_CancellationToken_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__"></a>
 
@@ -165,7 +165,7 @@ The response carries the headers and raw body, with no warnings or provider meta
 
 **Returns:** [Task&lt;RerankModelResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockRerankingModel.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockRerankingModel.cs#L98)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockRerankingModel_DoRerankObjectsAsync_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockRerankingModel_DoRerankObjectsAsync_System_String_System_Collections_Generic_IReadOnlyList_System_Text_Json_JsonElement__System_Nullable_System_Int32__System_Nullable_System_Text_Json_JsonElement__System_Threading_CancellationToken_"></a>
@@ -192,4 +192,4 @@ Reranks JSON documents. Each value is sent as an inline JSON document.
 
 **Returns:** [Task&lt;RerankResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockRerankingModel.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockRerankingModel.cs#L75)

@@ -101,7 +101,7 @@ A missing key falls back to its environment variable.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIAuth.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIAuth.cs#L74)
 
 <a id="Vercel_AI_KlingAI_KlingAIAuth_ResolveAuthToken_"></a>
 <a id="Vercel_AI_KlingAI_KlingAIAuth_ResolveAuthToken_System_String_System_String_System_String_"></a>

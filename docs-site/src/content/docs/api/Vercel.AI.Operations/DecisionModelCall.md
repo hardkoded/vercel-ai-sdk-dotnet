@@ -25,7 +25,7 @@ Arguments for `doDecide`.
 
 **Derived:** [EvaluationModelCall](/api/Vercel.AI.Operations/EvaluationModelCall/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L159)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L185)
 
 ## Constructors
 
@@ -54,7 +54,7 @@ Creates a call.
 | `maxOutputTokens` | [double?](https://learn.microsoft.com/dotnet/api/system.double) |  |
 | `reasoning` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L162)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L188)
 
 ## Properties
 
@@ -73,7 +73,7 @@ Cancellation token.
 
 **Value:** [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L186)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L220)
 
 <a id="Vercel_AI_Operations_DecisionModelCall_Headers_"></a>
 <a id="Vercel_AI_Operations_DecisionModelCall_Headers"></a>
@@ -90,7 +90,7 @@ Headers including the user-agent suffix.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L183)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L217)
 
 <a id="Vercel_AI_Operations_DecisionModelCall_MaxOutputTokens_"></a>
 <a id="Vercel_AI_Operations_DecisionModelCall_MaxOutputTokens"></a>
@@ -107,7 +107,7 @@ Maximum output tokens, an integer of at least 1. Null when the caller set none.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L189)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L223)
 
 <a id="Vercel_AI_Operations_DecisionModelCall_ProviderOptions_"></a>
 <a id="Vercel_AI_Operations_DecisionModelCall_ProviderOptions"></a>
@@ -124,7 +124,7 @@ Provider options.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L180)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L214)
 
 <a id="Vercel_AI_Operations_DecisionModelCall_Questions_"></a>
 <a id="Vercel_AI_Operations_DecisionModelCall_Questions"></a>
@@ -141,7 +141,7 @@ Questions.
 
 **Value:** [IReadOnlyDictionary&lt;string, DecisionQuestion&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L177)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L211)
 
 <a id="Vercel_AI_Operations_DecisionModelCall_Reasoning_"></a>
 <a id="Vercel_AI_Operations_DecisionModelCall_Reasoning"></a>
@@ -159,7 +159,7 @@ Language-model adapters default to `none` when it is null. Native decision provi
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L195)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L229)
 
 <a id="Vercel_AI_Operations_DecisionModelCall_State_"></a>
 <a id="Vercel_AI_Operations_DecisionModelCall_State"></a>
@@ -172,8 +172,8 @@ public IReadOnlyList<DecisionModelStatePart> State { get; }
 ```
 
 
-Shared state as an ordered list of text, JSON, and file parts. See `CancellationToken)`.
+Shared state as an ordered list of text, JSON, and file parts. See `DownloadResult%7d%7d%7d)`.
 
 **Value:** [IReadOnlyList&lt;DecisionModelStatePart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L174)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L208)

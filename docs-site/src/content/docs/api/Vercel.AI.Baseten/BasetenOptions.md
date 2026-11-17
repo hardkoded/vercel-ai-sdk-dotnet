@@ -23,7 +23,7 @@ Baseten settings, including an optional dedicated deployment URL.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [OpenAICompatibleOptions](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Baseten/BasetenProvider.cs#L117)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Baseten/BasetenProvider.cs#L211)
 
 ## Properties
 
@@ -42,4 +42,4 @@ Dedicated deployment URL. Chat requires `/sync/v1`. Embeddings require `/sync`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Baseten/BasetenProvider.cs#L120)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Baseten/BasetenProvider.cs#L214)

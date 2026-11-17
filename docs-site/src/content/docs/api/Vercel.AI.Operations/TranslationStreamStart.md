@@ -23,18 +23,18 @@ A started translation stream.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L70)
 
 ## Constructors
 
 <a id="Vercel_AI_Operations_TranslationStreamStart__ctor_"></a>
-<a id="Vercel_AI_Operations_TranslationStreamStart__ctor_Vercel_AI_Operations_ModelPartStream_Vercel_AI_Operations_ProviderResponse_"></a>
+<a id="Vercel_AI_Operations_TranslationStreamStart__ctor_Vercel_AI_Operations_ModelPartStream_Vercel_AI_Operations_ProviderResponse_Vercel_AI_Operations_ProviderRequest_"></a>
 
-### TranslationStreamStart(ModelPartStream, ProviderResponse?)
+### TranslationStreamStart(ModelPartStream, ProviderResponse?, ProviderRequest?)
 
 
 ```csharp
-public TranslationStreamStart(ModelPartStream stream, ProviderResponse? response = null)
+public TranslationStreamStart(ModelPartStream stream, ProviderResponse? response = null, ProviderRequest? request = null)
 ```
 
 
@@ -46,10 +46,28 @@ Creates a start payload.
 | --- | --- | --- |
 | `stream` | [ModelPartStream](/api/Vercel.AI.Operations/ModelPartStream/) |  |
 | `response` | [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/) |  |
+| `request` | [ProviderRequest](/api/Vercel.AI.Operations/ProviderRequest/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L73)
 
 ## Properties
+
+<a id="Vercel_AI_Operations_TranslationStreamStart_Request_"></a>
+<a id="Vercel_AI_Operations_TranslationStreamStart_Request"></a>
+
+### Request
+
+
+```csharp
+public ProviderRequest? Request { get; }
+```
+
+
+Request information: the setup payload sent to the provider.
+
+**Value:** [ProviderRequest](/api/Vercel.AI.Operations/ProviderRequest/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L85)
 
 <a id="Vercel_AI_Operations_TranslationStreamStart_Response_"></a>
 <a id="Vercel_AI_Operations_TranslationStreamStart_Response"></a>
@@ -66,7 +84,7 @@ Initial response metadata.
 
 **Value:** [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L91)
 
 <a id="Vercel_AI_Operations_TranslationStreamStart_Stream_"></a>
 <a id="Vercel_AI_Operations_TranslationStreamStart_Stream"></a>
@@ -83,4 +101,4 @@ Model parts.
 
 **Value:** [ModelPartStream](/api/Vercel.AI.Operations/ModelPartStream/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L88)

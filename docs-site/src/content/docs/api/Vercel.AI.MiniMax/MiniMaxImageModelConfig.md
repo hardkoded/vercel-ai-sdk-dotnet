@@ -69,7 +69,7 @@ Image API origin including the version suffix.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L38)
 
 <a id="Vercel_AI_MiniMax_MiniMaxImageModelConfig_CurrentDate_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxImageModelConfig_CurrentDate"></a>
@@ -86,7 +86,7 @@ Sets the response timestamp (upstream `_internal.currentDate`).
 
 **Value:** [Func&lt;DateTime&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L47)
 
 <a id="Vercel_AI_MiniMax_MiniMaxImageModelConfig_Headers_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxImageModelConfig_Headers"></a>
@@ -103,7 +103,7 @@ Resolves the request headers on every call (bearer token and user agent).
 
 **Value:** [Func&lt;Dictionary&lt;string, string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L41)
 
 <a id="Vercel_AI_MiniMax_MiniMaxImageModelConfig_HttpClient_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxImageModelConfig_HttpClient"></a>
@@ -120,7 +120,7 @@ The client every request goes through (upstream `fetch`).
 
 **Value:** [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L44)
 
 <a id="Vercel_AI_MiniMax_MiniMaxImageModelConfig_Provider_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxImageModelConfig_Provider"></a>
@@ -137,4 +137,4 @@ Provider id, `minimax.image`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModel.cs#L35)

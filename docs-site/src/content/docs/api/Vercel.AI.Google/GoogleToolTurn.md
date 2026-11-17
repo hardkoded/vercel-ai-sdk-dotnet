@@ -23,7 +23,7 @@ A tool-result turn.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [GoogleTurn](/api/Vercel.AI.Google/GoogleTurn/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L236)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L266)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates a tool turn.
 | --- | --- | --- |
 | `results` | [IReadOnlyList&lt;GoogleToolResultPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L239)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L269)
 
 ## Properties
 
@@ -65,4 +65,4 @@ Tool results.
 
 **Value:** [IReadOnlyList&lt;GoogleToolResultPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L245)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L275)

@@ -23,7 +23,7 @@ A file produced as reasoning. Maps to `ReasoningFileUIPart`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [UIMessagePart](/api/Vercel.AI.Ui/UIMessagePart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L201)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L204)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a reasoning file part.
 | `mediaType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `url` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L204)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L207)
 
 ## Properties
 
@@ -66,7 +66,7 @@ IANA media type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L212)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L215)
 
 <a id="Vercel_AI_Ui_ReasoningFileUIPart_ProviderMetadata_"></a>
 <a id="Vercel_AI_Ui_ReasoningFileUIPart_ProviderMetadata"></a>
@@ -83,7 +83,7 @@ The provider metadata.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L218)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L221)
 
 <a id="Vercel_AI_Ui_ReasoningFileUIPart_Url_"></a>
 <a id="Vercel_AI_Ui_ReasoningFileUIPart_Url"></a>
@@ -100,4 +100,4 @@ The URL, which can be a data URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L215)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L218)

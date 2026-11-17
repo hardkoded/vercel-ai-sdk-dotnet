@@ -28,23 +28,24 @@ Reads `cache_control` and enforces Anthropic's four-breakpoint limit.
 ## Constructors
 
 <a id="Vercel_AI_Anthropic_AnthropicCacheControlValidator__ctor_"></a>
-<a id="Vercel_AI_Anthropic_AnthropicCacheControlValidator__ctor_System_String_"></a>
+<a id="Vercel_AI_Anthropic_AnthropicCacheControlValidator__ctor_System_String_System_Int32_"></a>
 
-### AnthropicCacheControlValidator(string)
+### AnthropicCacheControlValidator(string, int)
 
 
 ```csharp
-public AnthropicCacheControlValidator(string providerOptionsName = "anthropic")
+public AnthropicCacheControlValidator(string providerOptionsName = "anthropic", int initialBreakpointCount = 0)
 ```
 
 
-Creates a validator. &lt;code class="paramref"&gt;providerOptionsName&lt;/code&gt; is read before `anthropic`.
+Creates a validator. &lt;code class="paramref"&gt;providerOptionsName&lt;/code&gt; is read before `anthropic`. &lt;code class="paramref"&gt;initialBreakpointCount&lt;/code&gt; counts breakpoints already used, such as a top-level cache control.
 
 **Parameters**
 
 | Name | Type | Description |
 | --- | --- | --- |
 | `providerOptionsName` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `initialBreakpointCount` | [int](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicCacheControl.cs#L19)
 
@@ -65,7 +66,7 @@ Warnings collected while reading cache controls.
 
 **Value:** [IReadOnlyList&lt;AnthropicWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicCacheControl.cs#L25)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicCacheControl.cs#L29)
 
 ## Methods
 
@@ -92,7 +93,7 @@ Returns the cache control object when this context may cache it.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicCacheControl.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicCacheControl.cs#L35)
 
 <a id="Vercel_AI_Anthropic_AnthropicCacheControlValidator_Read_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicCacheControlValidator_Read_System_Nullable_System_Text_Json_JsonElement__"></a>
@@ -115,7 +116,7 @@ Reads `cacheControl` or `cache_control` from Anthropic provider metadata.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicCacheControl.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicCacheControl.cs#L76)
 
 <a id="Vercel_AI_Anthropic_AnthropicCacheControlValidator_Read_System_Nullable_System_Text_Json_JsonElement__System_String_"></a>
 
@@ -138,4 +139,4 @@ Reads the cache control from &lt;code class="paramref"&gt;providerOptionsName&lt
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicCacheControl.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicCacheControl.cs#L82)

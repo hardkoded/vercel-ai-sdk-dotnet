@@ -23,7 +23,7 @@ Rev.ai transcription, including segments and response metadata.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L136)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L141)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a transcription result.
 | `durationInSeconds` | [double](https://learn.microsoft.com/dotnet/api/system.double) |  |
 | `response` | [RevAITranscriptionResponse](/api/Vercel.AI.RevAI/RevAITranscriptionResponse/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L139)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L144)
 
 ## Properties
 
@@ -69,7 +69,7 @@ Latest word end time, in seconds.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L163)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L169)
 
 <a id="Vercel_AI_RevAI_RevAITranscriptionResult_Language_"></a>
 <a id="Vercel_AI_RevAI_RevAITranscriptionResult_Language"></a>
@@ -86,7 +86,7 @@ Language reported on the job, when present.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L160)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L166)
 
 <a id="Vercel_AI_RevAI_RevAITranscriptionResult_Response_"></a>
 <a id="Vercel_AI_RevAI_RevAITranscriptionResult_Response"></a>
@@ -103,7 +103,7 @@ Response metadata.
 
 **Value:** [RevAITranscriptionResponse](/api/Vercel.AI.RevAI/RevAITranscriptionResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L166)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L172)
 
 <a id="Vercel_AI_RevAI_RevAITranscriptionResult_Segments_"></a>
 <a id="Vercel_AI_RevAI_RevAITranscriptionResult_Segments"></a>
@@ -120,7 +120,7 @@ Timed fragments.
 
 **Value:** [IReadOnlyList&lt;RevAITranscriptionSegment&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L157)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L163)
 
 <a id="Vercel_AI_RevAI_RevAITranscriptionResult_Text_"></a>
 <a id="Vercel_AI_RevAI_RevAITranscriptionResult_Text"></a>
@@ -137,4 +137,4 @@ Full transcript.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L154)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L160)

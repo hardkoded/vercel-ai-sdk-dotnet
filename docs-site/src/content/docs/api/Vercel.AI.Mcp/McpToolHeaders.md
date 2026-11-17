@@ -23,7 +23,7 @@ Reads `x-mcp-header` annotations and encodes `Mcp-Param-*` headers.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L334)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L383)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Builds `Mcp-Param-*` headers from tool arguments.
 
 **Returns:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L435)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L494)
 
 <a id="Vercel_AI_Mcp_McpToolHeaders_EncodeValue_"></a>
 <a id="Vercel_AI_Mcp_McpToolHeaders_EncodeValue_System_String_"></a>
@@ -72,7 +72,7 @@ Encodes a header value, using the base64 sentinel when the text is not plain ASC
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L393)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L450)
 
 <a id="Vercel_AI_Mcp_McpToolHeaders_GetBindings_"></a>
 <a id="Vercel_AI_Mcp_McpToolHeaders_GetBindings_System_Text_Json_JsonElement_"></a>
@@ -95,4 +95,4 @@ Collects statically reachable `x-mcp-header` annotations.
 
 **Returns:** [McpToolHeaders.BindingResult](/api/Vercel.AI.Mcp/McpToolHeaders.BindingResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L420)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L479)

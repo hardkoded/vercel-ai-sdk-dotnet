@@ -23,7 +23,7 @@ Structured output selector. Maps to `Output`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L485)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L547)
 
 ## Methods
 
@@ -50,7 +50,7 @@ JSON object output validated against a schema string.
 
 **Returns:** [OutputSpec](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L500)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L566)
 
 <a id="Vercel_AI_OutputSpec_Object_System_Text_Json_JsonElement_System_String_System_String_"></a>
 
@@ -74,7 +74,7 @@ JSON object output validated against &lt;code class="paramref"&gt;schema&lt;/cod
 
 **Returns:** [OutputSpec](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L494)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L556)
 
 <a id="Vercel_AI_OutputSpec_Text_"></a>
 <a id="Vercel_AI_OutputSpec_Text"></a>
@@ -91,4 +91,4 @@ Plain text output.
 
 **Returns:** [OutputSpec](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L488)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L550)

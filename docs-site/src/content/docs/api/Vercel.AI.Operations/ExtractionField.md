@@ -47,7 +47,7 @@ Creates a field.
 | `type` | [string](https://learn.microsoft.com/dotnet/api/system.string) | `text`, `number`, `date`, `time`, `datetime`, `duration`, or `list`. |
 | `instructions` | [DecisionInput](/api/Vercel.AI.Operations/DecisionInput/) | Instructions as a string, JSON object, or JSON array. Optional. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L19)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L28)
 
 ## Fields
 
@@ -84,7 +84,7 @@ Maximum decimal places, an integer from 0 to 6. A fractional value is rejected b
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L47)
 
 <a id="Vercel_AI_Operations_ExtractionField_DurationUnits_"></a>
 <a id="Vercel_AI_Operations_ExtractionField_DurationUnits"></a>
@@ -101,7 +101,7 @@ Valid duration units. Maps to `ExtractionModelV4DurationUnit`.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L53)
 
 <a id="Vercel_AI_Operations_ExtractionField_Instructions_"></a>
 <a id="Vercel_AI_Operations_ExtractionField_Instructions"></a>
@@ -118,7 +118,7 @@ Instructions. A string, JSON object, or JSON array.
 
 **Value:** [DecisionInput](/api/Vercel.AI.Operations/DecisionInput/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L38)
 
 <a id="Vercel_AI_Operations_ExtractionField_Integer_"></a>
 <a id="Vercel_AI_Operations_ExtractionField_Integer"></a>
@@ -135,7 +135,7 @@ Require an integer value. Applies to `number`, `duration`, and `list` of numbers
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L44)
 
 <a id="Vercel_AI_Operations_ExtractionField_Items_"></a>
 <a id="Vercel_AI_Operations_ExtractionField_Items"></a>
@@ -152,7 +152,7 @@ Item type of a `list` field: `text`, `number`, or `date`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L50)
 
 <a id="Vercel_AI_Operations_ExtractionField_ListItems_"></a>
 <a id="Vercel_AI_Operations_ExtractionField_ListItems"></a>
@@ -169,7 +169,7 @@ Valid item types of a list field.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L57)
 
 <a id="Vercel_AI_Operations_ExtractionField_Type_"></a>
 <a id="Vercel_AI_Operations_ExtractionField_Type"></a>
@@ -186,7 +186,7 @@ public string Type { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L26)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L35)
 
 <a id="Vercel_AI_Operations_ExtractionField_Unit_"></a>
 <a id="Vercel_AI_Operations_ExtractionField_Unit"></a>
@@ -203,4 +203,4 @@ Unit the value should be expressed in. A free string for `number`. For `duration
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L41)

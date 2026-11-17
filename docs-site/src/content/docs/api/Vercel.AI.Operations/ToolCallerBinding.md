@@ -23,7 +23,7 @@ How a tool may be called.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L70)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a binding.
 | `type` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `hasPrepareModelMessage` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L69)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L73)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Records the tools bound for one step and returns the bound tool.
 
 **Value:** [Action&lt;IReadOnlyList&lt;string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.action-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L85)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L89)
 
 <a id="Vercel_AI_Operations_ToolCallerBinding_HasPrepareModelMessage_"></a>
 <a id="Vercel_AI_Operations_ToolCallerBinding_HasPrepareModelMessage"></a>
@@ -83,7 +83,7 @@ True when code mode can publish a catalog message.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L79)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L83)
 
 <a id="Vercel_AI_Operations_ToolCallerBinding_PrepareModelMessage_"></a>
 <a id="Vercel_AI_Operations_ToolCallerBinding_PrepareModelMessage"></a>
@@ -100,7 +100,7 @@ Builds the catalog message from the tools visible to this caller.
 
 **Value:** [Func&lt;IReadOnlyList&lt;string&gt;, string&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L82)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L86)
 
 <a id="Vercel_AI_Operations_ToolCallerBinding_Type_"></a>
 <a id="Vercel_AI_Operations_ToolCallerBinding_Type"></a>
@@ -117,4 +117,4 @@ public string Type { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L76)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L80)

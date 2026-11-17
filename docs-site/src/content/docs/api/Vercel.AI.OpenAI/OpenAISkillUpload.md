@@ -42,7 +42,7 @@ Creation time as unix seconds.
 
 **Value:** [long?](https://learn.microsoft.com/dotnet/api/system.int64)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L72)
 
 <a id="Vercel_AI_OpenAI_OpenAISkillUpload_DefaultVersion_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISkillUpload_DefaultVersion"></a>
@@ -59,7 +59,7 @@ Default version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L69)
 
 <a id="Vercel_AI_OpenAI_OpenAISkillUpload_Description_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISkillUpload_Description"></a>
@@ -76,7 +76,7 @@ Skill description.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L63)
 
 <a id="Vercel_AI_OpenAI_OpenAISkillUpload_Id_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISkillUpload_Id"></a>
@@ -93,7 +93,7 @@ Skill id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L57)
 
 <a id="Vercel_AI_OpenAI_OpenAISkillUpload_LatestVersion_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISkillUpload_LatestVersion"></a>
@@ -110,7 +110,7 @@ Latest version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L66)
 
 <a id="Vercel_AI_OpenAI_OpenAISkillUpload_Name_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISkillUpload_Name"></a>
@@ -127,7 +127,7 @@ Skill name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L60)
 
 <a id="Vercel_AI_OpenAI_OpenAISkillUpload_Warnings_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISkillUpload_Warnings"></a>
@@ -144,4 +144,4 @@ Warnings produced while preparing the upload.
 
 **Value:** [IReadOnlyList&lt;OpenAICallWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L75)

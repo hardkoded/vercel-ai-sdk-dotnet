@@ -23,7 +23,7 @@ Options for `CancellationToken)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [OperationRequest](/api/Vercel.AI.Operations/OperationRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L95)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L121)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Audio stream.
 
 **Value:** [AudioChunkStream](/api/Vercel.AI.Operations/AudioChunkStream/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L130)
 
 <a id="Vercel_AI_Operations_StreamTranslateRequest_IncludeRawChunks_"></a>
 <a id="Vercel_AI_Operations_StreamTranslateRequest_IncludeRawChunks"></a>
@@ -59,7 +59,7 @@ Requests raw provider chunks.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L119)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L145)
 
 <a id="Vercel_AI_Operations_StreamTranslateRequest_InputAudioFormat_"></a>
 <a id="Vercel_AI_Operations_StreamTranslateRequest_InputAudioFormat"></a>
@@ -76,7 +76,7 @@ Input audio format.
 
 **Value:** [AudioFormat](/api/Vercel.AI.Operations/AudioFormat/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L107)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L133)
 
 <a id="Vercel_AI_Operations_StreamTranslateRequest_Model_"></a>
 <a id="Vercel_AI_Operations_StreamTranslateRequest_Model"></a>
@@ -93,7 +93,7 @@ Model instance. Takes precedence over [ModelId](#Vercel_AI_Operations_StreamTran
 
 **Value:** [ISpeechTranslationCaller](/api/Vercel.AI.Operations/ISpeechTranslationCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L98)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L124)
 
 <a id="Vercel_AI_Operations_StreamTranslateRequest_ModelId_"></a>
 <a id="Vercel_AI_Operations_StreamTranslateRequest_ModelId"></a>
@@ -110,7 +110,7 @@ Model id resolved through [Default](/api/Vercel.AI.Operations/SpeechTranslationM
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L101)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L127)
 
 <a id="Vercel_AI_Operations_StreamTranslateRequest_OutputAudioFormat_"></a>
 <a id="Vercel_AI_Operations_StreamTranslateRequest_OutputAudioFormat"></a>
@@ -127,7 +127,7 @@ Output audio format.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L116)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L142)
 
 <a id="Vercel_AI_Operations_StreamTranslateRequest_SourceLanguage_"></a>
 <a id="Vercel_AI_Operations_StreamTranslateRequest_SourceLanguage"></a>
@@ -144,7 +144,7 @@ Source language.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L113)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L139)
 
 <a id="Vercel_AI_Operations_StreamTranslateRequest_TargetLanguage_"></a>
 <a id="Vercel_AI_Operations_StreamTranslateRequest_TargetLanguage"></a>
@@ -161,4 +161,4 @@ Target language.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L110)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L136)

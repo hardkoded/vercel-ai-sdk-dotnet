@@ -23,18 +23,18 @@ Arguments for streaming transcription.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L93)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L184)
 
 ## Constructors
 
 <a id="Vercel_AI_Operations_TranscriptionStreamCall__ctor_"></a>
 <a id="Vercel_AI_Operations_TranscriptionStreamCall__ctor_Vercel_AI_Operations_AudioChunkStream_Vercel_AI_Operations_AudioFormat_System_Text_Json_JsonElement_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Nullable_System_Boolean__System_Threading_CancellationToken_"></a>
 
-### `TranscriptionStreamCall(AudioChunkStream, AudioFormat, JsonElement, IReadOnlyDictionary<string, string>, bool?, CancellationToken)`
+### `TranscriptionStreamCall(AudioChunkStream, AudioFormat, JsonElement, IReadOnlyDictionary<string, string?>, bool?, CancellationToken)`
 
 
 ```csharp
-public TranscriptionStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken)
+public TranscriptionStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string?> headers, bool? includeRawChunks, CancellationToken cancellationToken)
 ```
 
 
@@ -51,9 +51,52 @@ Creates a stream call.
 | `includeRawChunks` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L96)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L187)
+
+<a id="Vercel_AI_Operations_TranscriptionStreamCall__ctor_Vercel_AI_Operations_AudioChunkStream_Vercel_AI_Operations_AudioFormat_System_Text_Json_JsonElement_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Nullable_System_Boolean__System_Threading_CancellationToken_System_Exception_"></a>
+
+### `TranscriptionStreamCall(AudioChunkStream, AudioFormat, JsonElement, IReadOnlyDictionary<string, string?>, bool?, CancellationToken, Exception?)`
+
+
+```csharp
+public TranscriptionStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string?> headers, bool? includeRawChunks, CancellationToken cancellationToken, Exception? abortReason)
+```
+
+
+Creates a stream call that fails with &lt;code class="paramref"&gt;abortReason&lt;/code&gt; when cancelled.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `audio` | [AudioChunkStream](/api/Vercel.AI.Operations/AudioChunkStream/) |  |
+| `inputAudioFormat` | [AudioFormat](/api/Vercel.AI.Operations/AudioFormat/) |  |
+| `providerOptions` | [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
+| `headers` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
+| `includeRawChunks` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+| `abortReason` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L206)
 
 ## Properties
+
+<a id="Vercel_AI_Operations_TranscriptionStreamCall_AbortReason_"></a>
+<a id="Vercel_AI_Operations_TranscriptionStreamCall_AbortReason"></a>
+
+### AbortReason
+
+
+```csharp
+public Exception? AbortReason { get; }
+```
+
+
+Error the stream fails with when [CancellationToken](#Vercel_AI_Operations_TranscriptionStreamCall_CancellationToken) is cancelled. Maps to `abortSignal.reason`.
+
+**Value:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L244)
 
 <a id="Vercel_AI_Operations_TranscriptionStreamCall_Audio_"></a>
 <a id="Vercel_AI_Operations_TranscriptionStreamCall_Audio"></a>
@@ -70,7 +113,7 @@ Audio stream.
 
 **Value:** [AudioChunkStream](/api/Vercel.AI.Operations/AudioChunkStream/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L107)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L226)
 
 <a id="Vercel_AI_Operations_TranscriptionStreamCall_CancellationToken_"></a>
 <a id="Vercel_AI_Operations_TranscriptionStreamCall_CancellationToken"></a>
@@ -87,7 +130,7 @@ Cancellation token shared with `fullStream` cancellation.
 
 **Value:** [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L122)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L241)
 
 <a id="Vercel_AI_Operations_TranscriptionStreamCall_Headers_"></a>
 <a id="Vercel_AI_Operations_TranscriptionStreamCall_Headers"></a>
@@ -96,7 +139,7 @@ Cancellation token shared with `fullStream` cancellation.
 
 
 ```csharp
-public IReadOnlyDictionary<string, string> Headers { get; }
+public IReadOnlyDictionary<string, string?> Headers { get; }
 ```
 
 
@@ -104,7 +147,7 @@ Headers including the user-agent suffix.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L116)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L235)
 
 <a id="Vercel_AI_Operations_TranscriptionStreamCall_IncludeRawChunks_"></a>
 <a id="Vercel_AI_Operations_TranscriptionStreamCall_IncludeRawChunks"></a>
@@ -121,7 +164,7 @@ When true, raw parts are requested.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L119)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L238)
 
 <a id="Vercel_AI_Operations_TranscriptionStreamCall_InputAudioFormat_"></a>
 <a id="Vercel_AI_Operations_TranscriptionStreamCall_InputAudioFormat"></a>
@@ -138,7 +181,7 @@ Input audio format.
 
 **Value:** [AudioFormat](/api/Vercel.AI.Operations/AudioFormat/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L110)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L229)
 
 <a id="Vercel_AI_Operations_TranscriptionStreamCall_ProviderOptions_"></a>
 <a id="Vercel_AI_Operations_TranscriptionStreamCall_ProviderOptions"></a>
@@ -155,4 +198,4 @@ Provider options.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L113)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L232)

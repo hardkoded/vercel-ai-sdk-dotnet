@@ -23,7 +23,7 @@ Appends a JSON schema instruction to a prompt or to the first system message.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L515)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L528)
 
 ## Methods
 
@@ -53,7 +53,7 @@ Joins an optional prompt with a JSON schema instruction.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L522)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L536)
 
 <a id="Vercel_AI_ProviderUtils_JsonInstructions_InjectIntoMessages_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonInstructions_InjectIntoMessages_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_ModelMessage__System_Text_Json_Nodes_JsonNode_System_String_System_String_System_Boolean_System_Boolean_"></a>
@@ -81,4 +81,4 @@ Writes the instruction into the first system message, or inserts one.
 
 **Returns:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L552)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L579)

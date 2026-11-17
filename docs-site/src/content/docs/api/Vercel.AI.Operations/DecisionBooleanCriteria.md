@@ -24,7 +24,7 @@ request. A side set to null is sent as null.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [DecisionCriteria](/api/Vercel.AI.Operations/DecisionCriteria/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L148)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L153)
 
 ## Properties
 
@@ -43,7 +43,7 @@ Description of the false outcome.
 
 **Value:** [DecisionInput](/api/Vercel.AI.Operations/DecisionInput/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L165)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L170)
 
 <a id="Vercel_AI_Operations_DecisionBooleanCriteria_HasFalse_"></a>
 <a id="Vercel_AI_Operations_DecisionBooleanCriteria_HasFalse"></a>
@@ -60,7 +60,7 @@ True when [False](#Vercel_AI_Operations_DecisionBooleanCriteria_False) was set, 
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L179)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L184)
 
 <a id="Vercel_AI_Operations_DecisionBooleanCriteria_HasTrue_"></a>
 <a id="Vercel_AI_Operations_DecisionBooleanCriteria_HasTrue"></a>
@@ -77,7 +77,7 @@ True when [True](#Vercel_AI_Operations_DecisionBooleanCriteria_True) was set, in
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L176)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L181)
 
 <a id="Vercel_AI_Operations_DecisionBooleanCriteria_True_"></a>
 <a id="Vercel_AI_Operations_DecisionBooleanCriteria_True"></a>
@@ -94,4 +94,4 @@ Description of the true outcome.
 
 **Value:** [DecisionInput](/api/Vercel.AI.Operations/DecisionInput/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L154)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L159)

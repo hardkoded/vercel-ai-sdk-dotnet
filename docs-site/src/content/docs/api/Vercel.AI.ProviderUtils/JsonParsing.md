@@ -23,7 +23,7 @@ Parses JSON text, optionally checking it against a JSON Schema document.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L149)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L231)
 
 ## Methods
 
@@ -48,7 +48,7 @@ True when [Parse(string)](/api/Vercel.AI.ProviderUtils/SecureJson/#Vercel_AI_Pro
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L152)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L234)
 
 <a id="Vercel_AI_ProviderUtils_JsonParsing_Parse_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonParsing_Parse_System_String_System_Text_Json_Nodes_JsonNode_"></a>
@@ -72,7 +72,7 @@ Parses &lt;code class="paramref"&gt;text&lt;/code&gt;. Schema failures throw [Ty
 
 **Returns:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L166)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L248)
 
 <a id="Vercel_AI_ProviderUtils_JsonParsing_SafeParse_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonParsing_SafeParse_System_String_System_Text_Json_Nodes_JsonNode_"></a>
@@ -96,7 +96,7 @@ Parses &lt;code class="paramref"&gt;text&lt;/code&gt; without throwing for inval
 
 **Returns:** [JsonParseResult](/api/Vercel.AI.ProviderUtils/JsonParseResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L182)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L264)
 
 <a id="Vercel_AI_ProviderUtils_JsonParsing_SafeValidateTypes_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonParsing_SafeValidateTypes_System_Text_Json_JsonElement_System_Text_Json_Nodes_JsonNode_"></a>
@@ -120,7 +120,7 @@ Validates &lt;code class="paramref"&gt;value&lt;/code&gt; without throwing. Maps
 
 **Returns:** [JsonParseResult](/api/Vercel.AI.ProviderUtils/JsonParseResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L211)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L313)
 
 <a id="Vercel_AI_ProviderUtils_JsonParsing_ValidateTypes_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonParsing_ValidateTypes_System_Text_Json_JsonElement_System_Text_Json_Nodes_JsonNode_"></a>
@@ -150,4 +150,34 @@ Returns &lt;code class="paramref"&gt;value&lt;/code&gt; projected through &lt;co
 | --- | --- |
 | [TypeValidationException](/api/Vercel.AI.ProviderUtils/TypeValidationException/) | The value does not match the schema. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L200)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L282)
+
+<a id="Vercel_AI_ProviderUtils_JsonParsing_ValidateTypes_System_Text_Json_JsonElement_System_Text_Json_Nodes_JsonNode_Vercel_AI_ProviderUtils_TypeValidationContext_"></a>
+
+### ValidateTypes(JsonElement, JsonNode, TypeValidationContext)
+
+
+```csharp
+public static JsonElement ValidateTypes(JsonElement value, JsonNode schema, TypeValidationContext context)
+```
+
+
+Returns &lt;code class="paramref"&gt;value&lt;/code&gt; projected through &lt;code class="paramref"&gt;schema&lt;/code&gt; and reports a failure with &lt;code class="paramref"&gt;context&lt;/code&gt;. Maps to `validateTypes` with a context.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `value` | [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
+| `schema` | [JsonNode](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonnode) |  |
+| `context` | [TypeValidationContext](/api/Vercel.AI.ProviderUtils/TypeValidationContext/) |  |
+
+**Returns:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+
+**Exceptions**
+
+| Type | Condition |
+| --- | --- |
+| [TypeValidationException](/api/Vercel.AI.ProviderUtils/TypeValidationException/) | The value does not match the schema. |
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L294)

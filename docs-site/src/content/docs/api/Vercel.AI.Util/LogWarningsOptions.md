@@ -67,7 +67,7 @@ Model id, when the call was scoped to one.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L122)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L126)
 
 <a id="Vercel_AI_Util_LogWarningsOptions_Provider_"></a>
 <a id="Vercel_AI_Util_LogWarningsOptions_Provider"></a>
@@ -84,7 +84,7 @@ Provider id, when the call was scoped to one.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L119)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L123)
 
 <a id="Vercel_AI_Util_LogWarningsOptions_Warnings_"></a>
 <a id="Vercel_AI_Util_LogWarningsOptions_Warnings"></a>
@@ -101,4 +101,4 @@ Warnings returned by the provider.
 
 **Value:** [IReadOnlyList&lt;ModelWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L116)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L120)

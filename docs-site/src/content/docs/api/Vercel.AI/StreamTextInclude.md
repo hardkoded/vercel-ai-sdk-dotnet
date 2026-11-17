@@ -23,7 +23,7 @@ What `streamText` keeps of the request and the provider stream. Maps to `StreamT
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1093)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1248)
 
 ## Properties
 
@@ -43,7 +43,7 @@ Maps to `rawChunks`. The default is &lt;a href="https://learn.microsoft.com/dotn
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1111)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1266)
 
 <a id="Vercel_AI_StreamTextInclude_RequestBody_"></a>
 <a id="Vercel_AI_StreamTextInclude_RequestBody"></a>
@@ -61,7 +61,7 @@ Maps to `requestBody`. The default is &lt;a href="https://learn.microsoft.com/do
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1099)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1254)
 
 <a id="Vercel_AI_StreamTextInclude_RequestMessages_"></a>
 <a id="Vercel_AI_StreamTextInclude_RequestMessages"></a>
@@ -79,4 +79,4 @@ Maps to `requestMessages`. The default is &lt;a href="https://learn.microsoft.co
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1105)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1260)

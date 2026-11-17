@@ -23,7 +23,7 @@ Newline-delimited JSON used by the upstream stdio transport.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L566)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L664)
 
 ## Methods
 
@@ -48,7 +48,7 @@ Serializes one message and appends a newline.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L569)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L667)
 
 <a id="Vercel_AI_Mcp_McpNdjson_Write_"></a>
 <a id="Vercel_AI_Mcp_McpNdjson_Write_System_IO_Stream_System_Text_Json_JsonElement_"></a>
@@ -70,7 +70,7 @@ Writes one newline-delimited message. A null stream means the transport is not c
 | `output` | [Stream](https://learn.microsoft.com/dotnet/api/system.io.stream) |  |
 | `message` | [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L575)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L673)
 
 <a id="Vercel_AI_Mcp_McpNdjson_WriteAsync_"></a>
 <a id="Vercel_AI_Mcp_McpNdjson_WriteAsync_System_IO_Stream_System_Text_Json_JsonElement_System_Threading_CancellationToken_"></a>
@@ -95,4 +95,4 @@ Writes one newline-delimited message without blocking a thread when the pipe is 
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L587)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L685)

@@ -24,7 +24,7 @@ abort wiring, and message decoding. Maps to `connectToWebSocket`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ConnectToWebSocket.cs#L69)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ConnectToWebSocket.cs#L72)
 
 ## Methods
 
@@ -49,4 +49,4 @@ Opens the socket.
 
 **Returns:** [WebSocketConnection](/api/Vercel.AI.ProviderUtils/WebSocketConnection/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ConnectToWebSocket.cs#L72)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ConnectToWebSocket.cs#L75)

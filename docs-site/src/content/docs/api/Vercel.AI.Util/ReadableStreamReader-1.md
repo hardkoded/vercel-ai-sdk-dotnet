@@ -29,7 +29,7 @@ Default reader for a `ReadableStream%601`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L115)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L113)
 
 ## Methods
 
@@ -48,7 +48,7 @@ Cancels the stream and releases this reader.
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L131)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L129)
 
 <a id="Vercel_AI_Util_ReadableStreamReader_1_ReadAsync_"></a>
 <a id="Vercel_AI_Util_ReadableStreamReader_1_ReadAsync"></a>
@@ -65,7 +65,7 @@ Reads the next chunk, a completion, or a failure.
 
 **Returns:** [Task&lt;StreamRead&lt;T&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L125)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L123)
 
 <a id="Vercel_AI_Util_ReadableStreamReader_1_ReleaseLock_"></a>
 <a id="Vercel_AI_Util_ReadableStreamReader_1_ReleaseLock"></a>
@@ -80,4 +80,4 @@ public void ReleaseLock()
 
 Releases the lock without cancelling.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L137)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L135)

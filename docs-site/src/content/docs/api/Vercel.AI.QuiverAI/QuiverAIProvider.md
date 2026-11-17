@@ -107,7 +107,7 @@ Creates a provider.
 
 **Returns:** [QuiverAIProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L32)
 
 <a id="Vercel_AI_QuiverAI_QuiverAIProvider_ImageModel_"></a>
 <a id="Vercel_AI_QuiverAI_QuiverAIProvider_ImageModel_System_String_"></a>
@@ -130,7 +130,7 @@ Returns an image model.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L44)
 
 <a id="Vercel_AI_QuiverAI_QuiverAIProvider_LanguageModel_"></a>
 <a id="Vercel_AI_QuiverAI_QuiverAIProvider_LanguageModel_System_String_"></a>
@@ -153,7 +153,7 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L26)
 
 <a id="Vercel_AI_QuiverAI_QuiverAIProvider_ResolveApiKey_"></a>
 <a id="Vercel_AI_QuiverAI_QuiverAIProvider_ResolveApiKey"></a>
@@ -170,4 +170,4 @@ Throws when neither the option nor `QUIVERAI_API_KEY` holds a key.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L47)

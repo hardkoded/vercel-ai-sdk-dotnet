@@ -23,7 +23,7 @@ Streaming translation result.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L123)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L149)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Duration. Accessing it claims the stream.
 
 **Value:** [Task&lt;double?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L163)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L209)
 
 <a id="Vercel_AI_Operations_StreamTranslateResult_FullStream_"></a>
 <a id="Vercel_AI_Operations_StreamTranslateResult_FullStream"></a>
@@ -59,7 +59,7 @@ Single-consumer part stream.
 
 **Value:** `OperationFullStream&lt;ModelStreamPart&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L193)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L259)
 
 <a id="Vercel_AI_Operations_StreamTranslateResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_StreamTranslateResult_ProviderMetadata"></a>
@@ -76,7 +76,7 @@ Provider metadata. Accessing it claims the stream.
 
 **Value:** [Task&lt;JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L187)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L249)
 
 <a id="Vercel_AI_Operations_StreamTranslateResult_Response_"></a>
 <a id="Vercel_AI_Operations_StreamTranslateResult_Response"></a>
@@ -93,7 +93,7 @@ Response. Accessing it claims the stream.
 
 **Value:** [Task&lt;ProviderResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L181)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L239)
 
 <a id="Vercel_AI_Operations_StreamTranslateResult_SourceText_"></a>
 <a id="Vercel_AI_Operations_StreamTranslateResult_SourceText"></a>
@@ -110,7 +110,7 @@ Source transcript. Accessing it claims the stream.
 
 **Value:** [Task&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L151)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L189)
 
 <a id="Vercel_AI_Operations_StreamTranslateResult_TranslationText_"></a>
 <a id="Vercel_AI_Operations_StreamTranslateResult_TranslationText"></a>
@@ -127,7 +127,7 @@ Translated text. Accessing it claims the stream.
 
 **Value:** [Task&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L157)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L199)
 
 <a id="Vercel_AI_Operations_StreamTranslateResult_Usage_"></a>
 <a id="Vercel_AI_Operations_StreamTranslateResult_Usage"></a>
@@ -144,7 +144,7 @@ Usage. Accessing it claims the stream.
 
 **Value:** [Task&lt;OperationUsage&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L169)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L219)
 
 <a id="Vercel_AI_Operations_StreamTranslateResult_Warnings_"></a>
 <a id="Vercel_AI_Operations_StreamTranslateResult_Warnings"></a>
@@ -161,4 +161,4 @@ Warnings. Accessing it claims the stream.
 
 **Value:** [Task&lt;IReadOnlyList&lt;OperationWarning&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L175)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L229)

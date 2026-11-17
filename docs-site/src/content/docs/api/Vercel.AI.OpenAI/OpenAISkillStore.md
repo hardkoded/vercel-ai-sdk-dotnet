@@ -25,7 +25,7 @@ OpenAI skill store.
 
 **Implements:** [ISkillStore](/api/Vercel.AI.Provider/ISkillStore/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L79)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a skill store.
 | --- | --- | --- |
 | `provider` | [OpenAIProvider](/api/Vercel.AI.OpenAI/OpenAIProvider/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L76)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L84)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L82)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L90)
 
 ## Methods
 
@@ -94,7 +94,7 @@ Uploads skill files as `files[]`. &lt;code class="paramref"&gt;displayTitle&lt;/
 
 **Returns:** [Task&lt;OpenAISkillUpload&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L93)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L110)
 
 <a id="Vercel_AI_OpenAI_OpenAISkillStore_UploadSkillAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISkillStore_UploadSkillAsync_System_String_System_String_System_Threading_CancellationToken_"></a>
@@ -119,4 +119,4 @@ Uploads a skill document.
 
 **Returns:** [Task&lt;UploadedSkill&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L85)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Skills/OpenAISkillStore.cs#L93)

@@ -27,6 +27,23 @@ Options for [Connect(ConnectToWebSocketOptions)](/api/Vercel.AI.ProviderUtils/Co
 
 ## Properties
 
+<a id="Vercel_AI_ProviderUtils_ConnectToWebSocketOptions_AbortReason_"></a>
+<a id="Vercel_AI_ProviderUtils_ConnectToWebSocketOptions_AbortReason"></a>
+
+### AbortReason
+
+
+```csharp
+public Exception? AbortReason { get; set; }
+```
+
+
+The error [OnAbort](#Vercel_AI_ProviderUtils_ConnectToWebSocketOptions_OnAbort) receives. Maps to `abortSignal.reason`. Defaults to an [OperationCanceledException](https://learn.microsoft.com/dotnet/api/system.operationcanceledexception).
+
+**Value:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ConnectToWebSocket.cs#L47)
+
 <a id="Vercel_AI_ProviderUtils_ConnectToWebSocketOptions_AbortSignal_"></a>
 <a id="Vercel_AI_ProviderUtils_ConnectToWebSocketOptions_AbortSignal"></a>
 
@@ -76,7 +93,7 @@ Also called, without opening a socket, when the token is already cancelled.
 
 **Value:** [Action&lt;Exception&gt;](https://learn.microsoft.com/dotnet/api/system.action-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ConnectToWebSocket.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ConnectToWebSocket.cs#L65)
 
 <a id="Vercel_AI_ProviderUtils_ConnectToWebSocketOptions_OnClose_"></a>
 <a id="Vercel_AI_ProviderUtils_ConnectToWebSocketOptions_OnClose"></a>
@@ -93,7 +110,7 @@ Receives the close code and reason when the transport provides them.
 
 **Value:** [Action&lt;int?, string&gt;](https://learn.microsoft.com/dotnet/api/system.action-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ConnectToWebSocket.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ConnectToWebSocket.cs#L62)
 
 <a id="Vercel_AI_ProviderUtils_ConnectToWebSocketOptions_OnMessageText_"></a>
 <a id="Vercel_AI_ProviderUtils_ConnectToWebSocketOptions_OnMessageText"></a>
@@ -110,7 +127,7 @@ One decoded message. A throw goes to [OnProcessingError](#Vercel_AI_ProviderUtil
 
 **Value:** [Func&lt;string, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ConnectToWebSocket.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ConnectToWebSocket.cs#L53)
 
 <a id="Vercel_AI_ProviderUtils_ConnectToWebSocketOptions_OnOpen_"></a>
 <a id="Vercel_AI_ProviderUtils_ConnectToWebSocketOptions_OnOpen"></a>
@@ -127,7 +144,7 @@ Called when the socket opens.
 
 **Value:** [Action&lt;IWebSocketLike&gt;](https://learn.microsoft.com/dotnet/api/system.action-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ConnectToWebSocket.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ConnectToWebSocket.cs#L50)
 
 <a id="Vercel_AI_ProviderUtils_ConnectToWebSocketOptions_OnProcessingError_"></a>
 <a id="Vercel_AI_ProviderUtils_ConnectToWebSocketOptions_OnProcessingError"></a>
@@ -144,7 +161,7 @@ Factory throws and message decoding or processing failures.
 
 **Value:** [Action&lt;Exception&gt;](https://learn.microsoft.com/dotnet/api/system.action-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ConnectToWebSocket.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ConnectToWebSocket.cs#L56)
 
 <a id="Vercel_AI_ProviderUtils_ConnectToWebSocketOptions_OnSocketError_"></a>
 <a id="Vercel_AI_ProviderUtils_ConnectToWebSocketOptions_OnSocketError"></a>
@@ -161,7 +178,7 @@ Called on a socket error.
 
 **Value:** [Action](https://learn.microsoft.com/dotnet/api/system.action)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ConnectToWebSocket.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ConnectToWebSocket.cs#L59)
 
 <a id="Vercel_AI_ProviderUtils_ConnectToWebSocketOptions_Protocols_"></a>
 <a id="Vercel_AI_ProviderUtils_ConnectToWebSocketOptions_Protocols"></a>

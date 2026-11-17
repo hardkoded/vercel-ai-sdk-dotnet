@@ -68,7 +68,7 @@ Anthropic on Vertex publisher URL.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L83)
 
 <a id="Vercel_AI_Google_GoogleVertexEndpoints_GeminiBaseUrl_"></a>
 <a id="Vercel_AI_Google_GoogleVertexEndpoints_GeminiBaseUrl_System_String_System_String_System_String_System_Boolean_System_Boolean_"></a>
@@ -95,7 +95,7 @@ Publisher base URL for Gemini on Vertex. Tuned `endpoints/` ids omit `/publisher
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L45)
 
 <a id="Vercel_AI_Google_GoogleVertexEndpoints_Host_"></a>
 <a id="Vercel_AI_Google_GoogleVertexEndpoints_Host_System_String_"></a>
@@ -119,7 +119,7 @@ Returns the Vertex AI host for &lt;code class="paramref"&gt;location&lt;/code&gt
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L20)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L21)
 
 <a id="Vercel_AI_Google_GoogleVertexEndpoints_IsEndpointModel_"></a>
 <a id="Vercel_AI_Google_GoogleVertexEndpoints_IsEndpointModel_System_String_"></a>
@@ -142,7 +142,7 @@ True when the model id addresses a deployed endpoint.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L114)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L151)
 
 <a id="Vercel_AI_Google_GoogleVertexEndpoints_MaasBaseUrl_"></a>
 <a id="Vercel_AI_Google_GoogleVertexEndpoints_MaasBaseUrl_System_String_System_String_System_String_"></a>
@@ -167,7 +167,7 @@ OpenAI-compatible MaaS URL. An empty base URL is rebuilt from the project and lo
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L81)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L102)
 
 <a id="Vercel_AI_Google_GoogleVertexEndpoints_RecognizeUrl_"></a>
 <a id="Vercel_AI_Google_GoogleVertexEndpoints_RecognizeUrl_System_String_System_String_"></a>
@@ -191,7 +191,7 @@ Cloud Speech-to-Text recognize URL.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L107)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L138)
 
 <a id="Vercel_AI_Google_GoogleVertexEndpoints_RequireLabel_"></a>
 <a id="Vercel_AI_Google_GoogleVertexEndpoints_RequireLabel_System_String_System_String_"></a>
@@ -215,7 +215,7 @@ Rejects a location that is not one DNS label.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L120)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L157)
 
 <a id="Vercel_AI_Google_GoogleVertexEndpoints_SpeechHost_"></a>
 <a id="Vercel_AI_Google_GoogleVertexEndpoints_SpeechHost_System_String_"></a>
@@ -238,7 +238,7 @@ Speech-to-Text host. `global` is `speech.googleapis.com`.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L38)
 
 <a id="Vercel_AI_Google_GoogleVertexEndpoints_XaiBaseUrl_"></a>
 <a id="Vercel_AI_Google_GoogleVertexEndpoints_XaiBaseUrl_System_String_System_String_System_String_"></a>
@@ -263,4 +263,4 @@ xAI on Vertex always uses the global AI Platform host.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L94)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L121)

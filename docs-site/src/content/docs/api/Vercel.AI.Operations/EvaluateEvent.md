@@ -28,7 +28,7 @@ Deprecated alias of [DecideEvent](/api/Vercel.AI.Operations/DecideEvent/).
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L138)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L208)
 
 ## Constructors
 
@@ -68,4 +68,4 @@ Creates an event.
 | `maxOutputTokens` | [double?](https://learn.microsoft.com/dotnet/api/system.double) |  |
 | `reasoning` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L142)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L212)

@@ -51,7 +51,7 @@ Creates the error for the refused questions.
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `message` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionRefusalError.cs#L19)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionRefusalError.cs#L22)
 
 ## Fields
 
@@ -88,7 +88,7 @@ Decision model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionRefusalError.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionRefusalError.cs#L59)
 
 <a id="Vercel_AI_Util_DecisionRefusalError_Provider_"></a>
 <a id="Vercel_AI_Util_DecisionRefusalError_Provider"></a>
@@ -105,7 +105,7 @@ Decision provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionRefusalError.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionRefusalError.cs#L56)
 
 <a id="Vercel_AI_Util_DecisionRefusalError_QuestionIds_"></a>
 <a id="Vercel_AI_Util_DecisionRefusalError_QuestionIds"></a>
@@ -122,7 +122,7 @@ Refused question ids, in question order.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionRefusalError.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionRefusalError.cs#L53)
 
 ## Methods
 
@@ -147,4 +147,4 @@ Returns whether &lt;code class="paramref"&gt;error&lt;/code&gt; carries this err
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionRefusalError.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionRefusalError.cs#L62)

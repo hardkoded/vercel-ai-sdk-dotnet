@@ -23,7 +23,7 @@ Embedding model v4 test double. Array-backed results are returned in order, star
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L372)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L376)
 
 ## Constructors
 
@@ -51,7 +51,7 @@ Creates a model. List results are consumed from the first entry.
 | `supportsParallelCalls` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `doEmbed` | [IReadOnlyList&lt;MockEmbedResult&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L377)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L381)
 
 ## Properties
 
@@ -70,7 +70,7 @@ Embed calls in order.
 
 **Value:** [List&lt;MockEmbedOptions&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L423)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L434)
 
 <a id="Vercel_AI_Testing_MockEmbeddingModelV4_MaxEmbeddingsPerCall_"></a>
 <a id="Vercel_AI_Testing_MockEmbeddingModelV4_MaxEmbeddingsPerCall"></a>
@@ -87,7 +87,7 @@ Maximum embeddings per call.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L408)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L419)
 
 <a id="Vercel_AI_Testing_MockEmbeddingModelV4_MaxInputBytesPerCall_"></a>
 <a id="Vercel_AI_Testing_MockEmbeddingModelV4_MaxInputBytesPerCall"></a>
@@ -104,7 +104,7 @@ Maximum input bytes per call.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L414)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L425)
 
 <a id="Vercel_AI_Testing_MockEmbeddingModelV4_ModelId_"></a>
 <a id="Vercel_AI_Testing_MockEmbeddingModelV4_ModelId"></a>
@@ -121,7 +121,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L402)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L413)
 
 <a id="Vercel_AI_Testing_MockEmbeddingModelV4_Provider_"></a>
 <a id="Vercel_AI_Testing_MockEmbeddingModelV4_Provider"></a>
@@ -138,7 +138,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L396)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L407)
 
 <a id="Vercel_AI_Testing_MockEmbeddingModelV4_SpecificationVersion_"></a>
 <a id="Vercel_AI_Testing_MockEmbeddingModelV4_SpecificationVersion"></a>
@@ -155,7 +155,7 @@ Specification version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L390)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L401)
 
 <a id="Vercel_AI_Testing_MockEmbeddingModelV4_SupportsParallelCalls_"></a>
 <a id="Vercel_AI_Testing_MockEmbeddingModelV4_SupportsParallelCalls"></a>
@@ -172,7 +172,7 @@ Whether calls may run in parallel.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L417)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L428)
 
 ## Methods
 
@@ -197,4 +197,4 @@ Returns the next scripted embed result.
 
 **Returns:** [Task&lt;MockEmbedResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L429)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L440)

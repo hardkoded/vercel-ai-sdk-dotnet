@@ -23,7 +23,7 @@ A part of a [UIMessage](/api/Vercel.AI.Ui/UIMessage/). Maps to `UIMessagePart`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-**Derived:** [CustomContentUIPart](/api/Vercel.AI.Ui/CustomContentUIPart/), [DataUIPart](/api/Vercel.AI.Ui/DataUIPart/), [FileUIPart](/api/Vercel.AI.Ui/FileUIPart/), [ReasoningFileUIPart](/api/Vercel.AI.Ui/ReasoningFileUIPart/), [ReasoningUIPart](/api/Vercel.AI.Ui/ReasoningUIPart/), [SourceDocumentUIPart](/api/Vercel.AI.Ui/SourceDocumentUIPart/), [SourceUrlUIPart](/api/Vercel.AI.Ui/SourceUrlUIPart/), [StepStartUIPart](/api/Vercel.AI.Ui/StepStartUIPart/), [TextUIPart](/api/Vercel.AI.Ui/TextUIPart/), [ToolUIPart](/api/Vercel.AI.Ui/ToolUIPart/)
+**Derived:** [CustomContentUIPart](/api/Vercel.AI.Ui/CustomContentUIPart/), [DataUIPart](/api/Vercel.AI.Ui/DataUIPart/), [FileUIPart](/api/Vercel.AI.Ui/FileUIPart/), [ReasoningFileUIPart](/api/Vercel.AI.Ui/ReasoningFileUIPart/), [ReasoningUIPart](/api/Vercel.AI.Ui/ReasoningUIPart/), [SourceDocumentUIPart](/api/Vercel.AI.Ui/SourceDocumentUIPart/), [SourceUrlUIPart](/api/Vercel.AI.Ui/SourceUrlUIPart/), [SteeringMessageUIPart](/api/Vercel.AI.Ui/SteeringMessageUIPart/), [StepStartUIPart](/api/Vercel.AI.Ui/StepStartUIPart/), [TextUIPart](/api/Vercel.AI.Ui/TextUIPart/), [ToolUIPart](/api/Vercel.AI.Ui/ToolUIPart/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L49)
 

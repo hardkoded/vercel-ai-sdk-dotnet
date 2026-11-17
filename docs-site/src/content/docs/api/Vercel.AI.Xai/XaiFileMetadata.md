@@ -70,7 +70,7 @@ public long? Bytes { get; }
 
 **Value:** [long?](https://learn.microsoft.com/dotnet/api/system.int64)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L73)
 
 <a id="Vercel_AI_Xai_XaiFileMetadata_CreatedAt_"></a>
 <a id="Vercel_AI_Xai_XaiFileMetadata_CreatedAt"></a>
@@ -87,7 +87,7 @@ public long? CreatedAt { get; }
 
 **Value:** [long?](https://learn.microsoft.com/dotnet/api/system.int64)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L69)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L76)
 
 <a id="Vercel_AI_Xai_XaiFileMetadata_ExpiresAt_"></a>
 <a id="Vercel_AI_Xai_XaiFileMetadata_ExpiresAt"></a>
@@ -104,7 +104,7 @@ public long? ExpiresAt { get; }
 
 **Value:** [long?](https://learn.microsoft.com/dotnet/api/system.int64)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L75)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L82)
 
 <a id="Vercel_AI_Xai_XaiFileMetadata_FileName_"></a>
 <a id="Vercel_AI_Xai_XaiFileMetadata_FileName"></a>
@@ -121,7 +121,7 @@ public string? FileName { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L67)
 
 <a id="Vercel_AI_Xai_XaiFileMetadata_Purpose_"></a>
 <a id="Vercel_AI_Xai_XaiFileMetadata_Purpose"></a>
@@ -138,7 +138,7 @@ public string? Purpose { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L70)
 
 <a id="Vercel_AI_Xai_XaiFileMetadata_Status_"></a>
 <a id="Vercel_AI_Xai_XaiFileMetadata_Status"></a>
@@ -155,4 +155,4 @@ public string? Status { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L72)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L79)

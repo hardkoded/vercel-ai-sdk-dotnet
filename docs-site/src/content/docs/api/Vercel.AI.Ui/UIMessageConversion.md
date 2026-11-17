@@ -40,7 +40,6 @@ public static IReadOnlyList<ModelMessage> ConvertToModelMessages(IReadOnlyList<U
 
 Converts UI messages from a chat UI into model messages that can be used with the AI functions.
 A tool message upstream holds several parts. Here its parts are consecutive tool messages.
-Assistant file and reasoning-file parts are dropped, as assistant messages here cannot hold files.
 
 **Parameters**
 
@@ -51,4 +50,4 @@ Assistant file and reasoning-file parts are dropped, as assistant messages here 
 
 **Returns:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) — The model messages.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/ConvertToModelMessages.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/ConvertToModelMessages.cs#L34)

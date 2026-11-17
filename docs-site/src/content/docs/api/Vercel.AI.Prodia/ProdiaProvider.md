@@ -149,7 +149,7 @@ Returns an image model.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaProvider.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaProvider.cs#L54)
 
 <a id="Vercel_AI_Prodia_ProdiaProvider_LanguageModel_"></a>
 <a id="Vercel_AI_Prodia_ProdiaProvider_LanguageModel_System_String_"></a>
@@ -172,7 +172,7 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaProvider.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaProvider.cs#L50)
 
 <a id="Vercel_AI_Prodia_ProdiaProvider_VideoModel_"></a>
 <a id="Vercel_AI_Prodia_ProdiaProvider_VideoModel_System_String_"></a>
@@ -195,4 +195,4 @@ Returns a video model.
 
 **Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaProvider.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaProvider.cs#L57)

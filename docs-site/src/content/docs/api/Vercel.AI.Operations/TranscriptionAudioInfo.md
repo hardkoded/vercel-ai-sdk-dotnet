@@ -23,7 +23,7 @@ Metadata about the input audio on a transcription telemetry event.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L287)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L379)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates the metadata.
 | `byteLength` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `mediaType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L290)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L382)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Byte length. Unknown for native URL transcription and for inputs that fail to pr
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L297)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L389)
 
 <a id="Vercel_AI_Operations_TranscriptionAudioInfo_MediaType_"></a>
 <a id="Vercel_AI_Operations_TranscriptionAudioInfo_MediaType"></a>
@@ -83,4 +83,4 @@ Media type, when it is known before input preparation completes.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L300)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L392)

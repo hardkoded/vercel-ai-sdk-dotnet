@@ -23,7 +23,7 @@ The outcome of `CancellationToken)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L67)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates the outcome.
 | `deniedToolApprovals` | [IReadOnlyList&lt;CollectedToolApproval&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `invalidToolApprovals` | [IReadOnlyList&lt;InvalidToolApproval&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L70)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Approvals that may run.
 
 **Value:** [IReadOnlyList&lt;CollectedToolApproval&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L75)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L82)
 
 <a id="Vercel_AI_GenerateText_ValidatedToolApprovals_DeniedToolApprovals_"></a>
 <a id="Vercel_AI_GenerateText_ValidatedToolApprovals_DeniedToolApprovals"></a>
@@ -84,7 +84,7 @@ Approvals that the approval policy denies now, with the denial in their response
 
 **Value:** [IReadOnlyList&lt;CollectedToolApproval&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L78)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L85)
 
 <a id="Vercel_AI_GenerateText_ValidatedToolApprovals_InvalidToolApprovals_"></a>
 <a id="Vercel_AI_GenerateText_ValidatedToolApprovals_InvalidToolApprovals"></a>
@@ -101,4 +101,4 @@ Approvals whose input does not match the tool's input schema.
 
 **Value:** [IReadOnlyList&lt;InvalidToolApproval&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L81)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L88)

@@ -29,7 +29,7 @@ Async iterator over a `ReadableStream%601`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L478)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L647)
 
 ## Methods
 
@@ -48,7 +48,7 @@ Reads the next chunk.
 
 **Returns:** [Task&lt;IteratorResult&lt;T&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L489)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L658)
 
 <a id="Vercel_AI_Util_StreamIterator_1_ReturnAsync_"></a>
 <a id="Vercel_AI_Util_StreamIterator_1_ReturnAsync"></a>
@@ -65,7 +65,7 @@ Stops iteration and cancels the stream.
 
 **Returns:** [Task&lt;IteratorResult&lt;T&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L519)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L688)
 
 <a id="Vercel_AI_Util_StreamIterator_1_ThrowAsync_"></a>
 <a id="Vercel_AI_Util_StreamIterator_1_ThrowAsync_System_Exception_"></a>
@@ -88,4 +88,4 @@ Stops iteration, cancels the stream, and throws &lt;code class="paramref"&gt;err
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L526)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L695)

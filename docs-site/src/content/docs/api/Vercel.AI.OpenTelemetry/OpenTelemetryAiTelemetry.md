@@ -107,7 +107,7 @@ Records the final finish reason on the span opened by `String)`.
 | `span` | [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable) |  |
 | `finishReason` | [FinishReason](/api/Vercel.AI.Provider/FinishReason/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetryAiTelemetry.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetryAiTelemetry.cs#L38)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryAiTelemetry_OnUsage_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryAiTelemetry_OnUsage_System_IDisposable_Vercel_AI_Provider_AudioUsage_"></a>
@@ -129,7 +129,7 @@ Records speech or transcription usage on the span opened by `String)`.
 | `span` | [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable) |  |
 | `usage` | [AudioUsage](/api/Vercel.AI.Provider/AudioUsage/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetryAiTelemetry.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetryAiTelemetry.cs#L71)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryAiTelemetry_OnUsage_System_IDisposable_Vercel_AI_Provider_LanguageModelUsage_"></a>
 
@@ -150,4 +150,4 @@ Records token usage on the span opened by `String)`.
 | `span` | [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable) |  |
 | `usage` | [LanguageModelUsage](/api/Vercel.AI.Provider/LanguageModelUsage/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetryAiTelemetry.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetryAiTelemetry.cs#L56)

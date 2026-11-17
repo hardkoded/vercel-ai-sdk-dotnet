@@ -23,7 +23,7 @@ A warning returned by a model call.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L28)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a warning.
 | `details` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `setting` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L31)
 
 ## Properties
 
@@ -69,7 +69,7 @@ Extra detail for unsupported or compatibility warnings.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L63)
 
 <a id="Vercel_AI_Operations_OperationWarning_Feature_"></a>
 <a id="Vercel_AI_Operations_OperationWarning_Feature"></a>
@@ -86,7 +86,7 @@ Feature name for unsupported or compatibility warnings.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L60)
 
 <a id="Vercel_AI_Operations_OperationWarning_Message_"></a>
 <a id="Vercel_AI_Operations_OperationWarning_Message"></a>
@@ -103,7 +103,7 @@ Human-readable message for `other` warnings.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L57)
 
 <a id="Vercel_AI_Operations_OperationWarning_Setting_"></a>
 <a id="Vercel_AI_Operations_OperationWarning_Setting"></a>
@@ -120,7 +120,7 @@ Setting name for deprecated warnings.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L66)
 
 <a id="Vercel_AI_Operations_OperationWarning_Type_"></a>
 <a id="Vercel_AI_Operations_OperationWarning_Type"></a>
@@ -137,7 +137,7 @@ Warning type: `unsupported`, `compatibility`, `deprecated`, or `other`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L54)
 
 ## Methods
 
@@ -162,7 +162,7 @@ Creates an `other` warning.
 
 **Returns:** [OperationWarning](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L69)
 
 <a id="Vercel_AI_Operations_OperationWarning_Unsupported_"></a>
 <a id="Vercel_AI_Operations_OperationWarning_Unsupported_System_String_System_String_"></a>
@@ -186,4 +186,4 @@ Creates an `unsupported` warning.
 
 **Returns:** [OperationWarning](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L75)

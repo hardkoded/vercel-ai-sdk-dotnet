@@ -23,7 +23,7 @@ An assistant function or server tool call.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [GoogleAssistantPart](/api/Vercel.AI.Google/GoogleAssistantPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L183)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L213)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a tool call.
 | `toolName` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `argumentsJson` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L186)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L216)
 
 ## Properties
 
@@ -66,7 +66,7 @@ JSON arguments.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L196)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L226)
 
 <a id="Vercel_AI_Google_GoogleToolCallAssistantPart_ToolCallId_"></a>
 <a id="Vercel_AI_Google_GoogleToolCallAssistantPart_ToolCallId"></a>
@@ -83,7 +83,7 @@ Client tool-call id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L199)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L229)
 
 <a id="Vercel_AI_Google_GoogleToolCallAssistantPart_ToolName_"></a>
 <a id="Vercel_AI_Google_GoogleToolCallAssistantPart_ToolName"></a>
@@ -100,4 +100,4 @@ Tool name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L193)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L223)

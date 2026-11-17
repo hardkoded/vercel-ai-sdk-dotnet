@@ -23,4 +23,4 @@ Skill store used by `uploadSkill`.
 
 **Derived:** [OpenAISkillStore](/api/Vercel.AI.OpenAI/OpenAISkillStore/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L659)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L760)

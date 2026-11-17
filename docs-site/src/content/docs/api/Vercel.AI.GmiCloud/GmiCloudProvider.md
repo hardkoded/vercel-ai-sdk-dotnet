@@ -123,4 +123,4 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [GmiCloudProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GmiCloud/GmiCloudProvider.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GmiCloud/GmiCloudProvider.cs#L27)

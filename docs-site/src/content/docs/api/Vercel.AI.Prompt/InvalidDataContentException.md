@@ -25,7 +25,7 @@ File content could not be converted. Maps to `InvalidDataContentError`.
 
 **Implements:** [ISerializable](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.iserializable)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L143)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L175)
 
 ## Constructors
 
@@ -48,4 +48,4 @@ Creates the exception.
 | --- | --- | --- |
 | `message` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L146)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L178)

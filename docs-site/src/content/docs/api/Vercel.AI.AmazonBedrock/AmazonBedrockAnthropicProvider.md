@@ -23,7 +23,7 @@ Anthropic Messages provider hosted on Amazon Bedrock.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L260)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L254)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a provider.
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `options` | [AmazonBedrockAnthropicOptions](/api/Vercel.AI.AmazonBedrock/AmazonBedrockAnthropicOptions/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L266)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L260)
 
 ## Fields
 
@@ -65,7 +65,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L263)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L257)
 
 ## Properties
 
@@ -84,7 +84,7 @@ HTTP client that receives the signed request.
 
 **Value:** [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L277)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L274)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockAnthropicProvider_Options_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockAnthropicProvider_Options"></a>
@@ -101,7 +101,7 @@ Options.
 
 **Value:** [AmazonBedrockAnthropicOptions](/api/Vercel.AI.AmazonBedrock/AmazonBedrockAnthropicOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L274)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L271)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockAnthropicProvider_Tools_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockAnthropicProvider_Tools"></a>
@@ -118,7 +118,7 @@ The Anthropic provider tool ids. The same list as [Tools](/api/Vercel.AI.Anthrop
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L287)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L289)
 
 ## Methods
 
@@ -144,7 +144,7 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [AmazonBedrockAnthropicProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L280)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L277)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockAnthropicProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockAnthropicProvider_EmbeddingModel_System_String_"></a>
@@ -167,7 +167,7 @@ Bedrock Anthropic has no embedding models.
 
 **Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L308)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L312)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockAnthropicProvider_ImageModel_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockAnthropicProvider_ImageModel_System_String_"></a>
@@ -190,7 +190,7 @@ Bedrock Anthropic has no image models.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L314)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L318)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockAnthropicProvider_LanguageModel_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockAnthropicProvider_LanguageModel_System_String_"></a>
@@ -213,7 +213,7 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L296)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L298)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockAnthropicProvider_New_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockAnthropicProvider_New_System_String_"></a>
@@ -236,7 +236,7 @@ Throws because the JavaScript provider function rejects `new`.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L302)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L304)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockAnthropicProvider_ResolveBaseUrl_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockAnthropicProvider_ResolveBaseUrl"></a>
@@ -253,4 +253,4 @@ Bedrock Runtime origin for these options.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L290)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L292)

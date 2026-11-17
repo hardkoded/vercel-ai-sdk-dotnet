@@ -68,7 +68,7 @@ Provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L67)
 
 <a id="Vercel_AI_Operations_RerankModelResponse_Ranking_"></a>
 <a id="Vercel_AI_Operations_RerankModelResponse_Ranking"></a>
@@ -85,7 +85,7 @@ Ranked indexes.
 
 **Value:** [IReadOnlyList&lt;RerankModelRank&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L61)
 
 <a id="Vercel_AI_Operations_RerankModelResponse_Response_"></a>
 <a id="Vercel_AI_Operations_RerankModelResponse_Response"></a>
@@ -102,7 +102,7 @@ Raw response.
 
 **Value:** [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L70)
 
 <a id="Vercel_AI_Operations_RerankModelResponse_Warnings_"></a>
 <a id="Vercel_AI_Operations_RerankModelResponse_Warnings"></a>
@@ -119,4 +119,4 @@ Warnings.
 
 **Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L64)

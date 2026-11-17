@@ -23,7 +23,7 @@ Maps an Anthropic Messages JSON body onto a generate result.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L65)
 
 ## Methods
 
@@ -50,7 +50,7 @@ Parses a Messages response body.
 
 **Returns:** [LanguageModelGenerateResult](/api/Vercel.AI.Provider/LanguageModelGenerateResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L68)
 
 <a id="Vercel_AI_Anthropic_AnthropicResponse_Parse_System_Text_Json_JsonElement_Vercel_AI_Anthropic_AnthropicParseContext_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__"></a>
 
@@ -75,4 +75,4 @@ Parses a Messages response object.
 
 **Returns:** [LanguageModelGenerateResult](/api/Vercel.AI.Provider/LanguageModelGenerateResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L79)

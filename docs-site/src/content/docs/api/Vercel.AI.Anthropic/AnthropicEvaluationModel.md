@@ -25,7 +25,7 @@ Builds and scores Anthropic evaluation requests on the Messages API.
 
 **Implements:** [IRubricModel](/api/Vercel.AI.Provider/IRubricModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L85)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L95)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates an evaluation model.
 | `provider` | [AnthropicProvider](/api/Vercel.AI.Anthropic/AnthropicProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L91)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L101)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L101)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L111)
 
 <a id="Vercel_AI_Anthropic_AnthropicEvaluationModel_Provider_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicEvaluationModel_Provider"></a>
@@ -85,7 +85,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L98)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L108)
 
 <a id="Vercel_AI_Anthropic_AnthropicEvaluationModel_SupportedQuestionTypes_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicEvaluationModel_SupportedQuestionTypes"></a>
@@ -102,7 +102,7 @@ Question types this model accepts.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L114)
 
 ## Methods
 
@@ -127,7 +127,7 @@ Builds the json schema. Choice values are `c0`, `c1`, …. Number bounds are omi
 
 **Returns:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L196)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L243)
 
 <a id="Vercel_AI_Anthropic_AnthropicEvaluationModel_DoEvaluateAsync_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicEvaluationModel_DoEvaluateAsync_System_String_System_String_System_Threading_CancellationToken_"></a>
@@ -152,7 +152,7 @@ Scores a candidate against a rubric.
 
 **Returns:** [Task&lt;RubricResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L107)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L118)
 
 <a id="Vercel_AI_Anthropic_AnthropicEvaluationModel_EvaluateAsync_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicEvaluationModel_EvaluateAsync_System_Collections_Generic_IReadOnlyList_Vercel_AI_Anthropic_AnthropicEvaluationQuestion__Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_"></a>
@@ -177,7 +177,7 @@ Evaluates questions and maps `q0`, `q1`, … back onto the question names.
 
 **Returns:** [Task&lt;AnthropicEvaluationResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L121)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L143)
 
 <a id="Vercel_AI_Anthropic_AnthropicEvaluationModel_ParseAnswers_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicEvaluationModel_ParseAnswers_System_Collections_Generic_IReadOnlyList_Vercel_AI_Anthropic_AnthropicEvaluationQuestion__System_String_"></a>
@@ -201,4 +201,4 @@ Maps encoded answers back to criteria labels and checks score and probability bo
 
 **Returns:** [IReadOnlyDictionary&lt;string, AnthropicEvaluationAnswer&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L233)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L280)

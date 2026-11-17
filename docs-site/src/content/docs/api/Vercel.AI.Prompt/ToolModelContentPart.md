@@ -15,13 +15,15 @@ Namespace: [Vercel.AI.Prompt](/api/Vercel.AI.Prompt/)
 
 
 ```csharp
-public sealed class ToolModelContentPart
+public class ToolModelContentPart
 ```
 
 
 One content part inside a content tool output.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
+
+**Derived:** [FileToolModelContentPart](/api/Vercel.AI.Prompt/FileToolModelContentPart/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/CreateToolModelOutput.cs#L109)
 

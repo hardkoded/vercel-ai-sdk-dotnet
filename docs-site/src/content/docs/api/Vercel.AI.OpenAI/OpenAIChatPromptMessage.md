@@ -23,7 +23,7 @@ One prompt message converted into an OpenAI chat message.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L14)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L15)
 
 ## Constructors
 
@@ -46,9 +46,27 @@ Creates a message.
 | --- | --- | --- |
 | `role` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L17)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L18)
 
 ## Properties
+
+<a id="Vercel_AI_OpenAI_OpenAIChatPromptMessage_MessageProviderOptions_"></a>
+<a id="Vercel_AI_OpenAI_OpenAIChatPromptMessage_MessageProviderOptions"></a>
+
+### MessageProviderOptions
+
+
+```csharp
+public IReadOnlyDictionary<string, JsonElement>? MessageProviderOptions { get; set; }
+```
+
+
+Message-level provider options of a tool message, where `openai.name` is read and then dropped with a warning.
+Other roles read [ProviderOptions](#Vercel_AI_OpenAI_OpenAIChatPromptMessage_ProviderOptions).
+
+**Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L54)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptMessage_Parts_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptMessage_Parts"></a>
@@ -65,7 +83,7 @@ User or assistant parts.
 
 **Value:** [IReadOnlyList&lt;OpenAIChatPromptPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L30)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptMessage_ProviderOptions_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptMessage_ProviderOptions"></a>
@@ -82,7 +100,7 @@ Provider options for this message. The `openai` object is read.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L48)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptMessage_Role_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptMessage_Role"></a>
@@ -99,7 +117,7 @@ public string Role { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L23)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L24)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptMessage_Text_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptMessage_Text"></a>
@@ -116,7 +134,7 @@ System text, or assistant text when there are no parts.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L26)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L27)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptMessage_ToolCallId_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptMessage_ToolCallId"></a>
@@ -133,7 +151,7 @@ Tool result id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L36)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptMessage_ToolCalls_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptMessage_ToolCalls"></a>
@@ -150,7 +168,7 @@ Assistant tool calls.
 
 **Value:** [IReadOnlyList&lt;GeneratedToolCall&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L33)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptMessage_ToolOutput_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptMessage_ToolOutput"></a>
@@ -167,7 +185,7 @@ Tool result text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L39)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptMessage_ToolOutputType_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptMessage_ToolOutputType"></a>
@@ -185,4 +203,4 @@ Error types are sent as `{"error": value}`. When it is null, [ToolOutput](#Verce
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L45)

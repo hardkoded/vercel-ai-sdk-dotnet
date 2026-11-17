@@ -66,10 +66,15 @@ Public types in the `Vercel.AI.ProviderUtils` namespace.
 | [SerializationError](/api/Vercel.AI.ProviderUtils/SerializationError/) | A value could not be serialized. Maps to SerializationError. |
 | [SerializedModelOptions](/api/Vercel.AI.ProviderUtils/SerializedModelOptions/) | A serialized model id and config. Maps to the result of serializeModelOptions. |
 | [SseParser](/api/Vercel.AI.ProviderUtils/SseParser/) | Reads Server-Sent Events data: lines. |
+| [StringifyWithBigIntAndCyclesUtil](/api/Vercel.AI.ProviderUtils/StringifyWithBigIntAndCyclesUtil/) | Maps to stringify-with-bigint-and-cycles.ts. |
 | [ToolExecution](/api/Vercel.AI.ProviderUtils/ToolExecution/) | Runs a tool delegate and reports preliminary and final outputs. |
 | [ToolExecution.ToolStep&lt;T&gt;](/api/Vercel.AI.ProviderUtils/ToolExecution.ToolStep-1/) | One tool output. |
 | [ToolNameMapping](/api/Vercel.AI.ProviderUtils/ToolNameMapping/) | Maps client tool names to provider tool names. Maps to ToolNameMapping. |
 | [ToolNames](/api/Vercel.AI.ProviderUtils/ToolNames/) | Builds tool name maps. Maps to createToolNameMapping. |
+| [TranscriptionStreamClientFrame](/api/Vercel.AI.ProviderUtils/TranscriptionStreamClientFrame/) | Server-side classification of a client text frame. Maps to TranscriptionStreamClientFrame. |
+| [TranscriptionStreamEnvelope](/api/Vercel.AI.ProviderUtils/TranscriptionStreamEnvelope/) | Experimental transcription-stream WebSocket envelope (v1): the standard serialization of the transcription model doStream over a WebSocket. Maps to transcription-stream-envelope.ts. |
+| [TranscriptionStreamStartFrame](/api/Vercel.AI.ProviderUtils/TranscriptionStreamStartFrame/) | The client's session start frame. Maps to TranscriptionStreamStartFrame. Optional keys are omitted when null. |
+| [TypeValidationContext](/api/Vercel.AI.ProviderUtils/TypeValidationContext/) | Where a value failed type validation. Maps to TypeValidationContext. |
 | [TypeValidationException](/api/Vercel.AI.ProviderUtils/TypeValidationException/) | A value did not match a JSON Schema. |
 | [UrlSupport](/api/Vercel.AI.ProviderUtils/UrlSupport/) | Checks whether a model can read a URL natively. Maps to isUrlSupported. |
 | [WebSocketCloseEvent](/api/Vercel.AI.ProviderUtils/WebSocketCloseEvent/) | Close diagnostics carried by OnClose. |

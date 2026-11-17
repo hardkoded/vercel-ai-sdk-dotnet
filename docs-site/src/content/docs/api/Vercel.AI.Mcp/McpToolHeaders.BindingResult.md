@@ -23,7 +23,7 @@ Result of reading header bindings.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L361)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L418)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Bindings in visit order.
 
 **Value:** [IReadOnlyList&lt;McpToolHeaders.Binding&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L374)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L431)
 
 <a id="Vercel_AI_Mcp_McpToolHeaders_BindingResult_Error_"></a>
 <a id="Vercel_AI_Mcp_McpToolHeaders_BindingResult_Error"></a>
@@ -59,7 +59,7 @@ Error text when [Success](#Vercel_AI_Mcp_McpToolHeaders_BindingResult_Success) i
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L377)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L434)
 
 <a id="Vercel_AI_Mcp_McpToolHeaders_BindingResult_Success_"></a>
 <a id="Vercel_AI_Mcp_McpToolHeaders_BindingResult_Success"></a>
@@ -76,7 +76,7 @@ True when every annotation was valid.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L371)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L428)
 
 ## Methods
 
@@ -101,7 +101,7 @@ Creates a failure result.
 
 **Returns:** [McpToolHeaders.BindingResult](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L386)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L443)
 
 <a id="Vercel_AI_Mcp_McpToolHeaders_BindingResult_Ok_"></a>
 <a id="Vercel_AI_Mcp_McpToolHeaders_BindingResult_Ok_System_Collections_Generic_IReadOnlyList_Vercel_AI_Mcp_McpToolHeaders_Binding__"></a>
@@ -124,4 +124,4 @@ Creates a success result.
 
 **Returns:** [McpToolHeaders.BindingResult](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L380)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L437)

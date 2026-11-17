@@ -91,7 +91,7 @@ Provider-defined error code.
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StreamProviderError.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StreamProviderError.cs#L37)
 
 <a id="Vercel_AI_Util_StreamProviderError_Data_"></a>
 <a id="Vercel_AI_Util_StreamProviderError_Data"></a>
@@ -108,7 +108,7 @@ Original provider error payload.
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StreamProviderError.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StreamProviderError.cs#L46)
 
 <a id="Vercel_AI_Util_StreamProviderError_IsRetryable_"></a>
 <a id="Vercel_AI_Util_StreamProviderError_IsRetryable"></a>
@@ -125,7 +125,7 @@ Whether retrying the model call may succeed.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StreamProviderError.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StreamProviderError.cs#L43)
 
 <a id="Vercel_AI_Util_StreamProviderError_StatusCode_"></a>
 <a id="Vercel_AI_Util_StreamProviderError_StatusCode"></a>
@@ -142,7 +142,7 @@ HTTP-equivalent status code.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StreamProviderError.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StreamProviderError.cs#L40)
 
 <a id="Vercel_AI_Util_StreamProviderError_Type_"></a>
 <a id="Vercel_AI_Util_StreamProviderError_Type"></a>
@@ -159,7 +159,7 @@ Provider-defined error type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StreamProviderError.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StreamProviderError.cs#L34)
 
 ## Methods
 
@@ -184,7 +184,7 @@ Returns whether &lt;code class="paramref"&gt;error&lt;/code&gt; carries this err
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StreamProviderError.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StreamProviderError.cs#L49)
 
 <a id="Vercel_AI_Util_StreamProviderError_IsRetryableStatusCode_"></a>
 <a id="Vercel_AI_Util_StreamProviderError_IsRetryableStatusCode_System_Nullable_System_Int32__"></a>
@@ -207,4 +207,4 @@ Retryable statuses are 408, 409, 429, and 500 and above.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StreamProviderError.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StreamProviderError.cs#L55)

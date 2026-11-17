@@ -23,4 +23,4 @@ Core AI SDK client. Maps to the `ai` package functions.
 
 **Derived:** [AiClient](/api/Vercel.AI/AiClient/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L33)

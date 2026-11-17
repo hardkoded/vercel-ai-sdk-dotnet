@@ -122,7 +122,7 @@ Creates a model that uses the Conversations API, with support for web search. Ma
 
 **Returns:** [MistralConversationLanguageModel](/api/Vercel.AI.Mistral/MistralConversationLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L42)
 
 <a id="Vercel_AI_Mistral_MistralProvider_Create_"></a>
 <a id="Vercel_AI_Mistral_MistralProvider_Create_Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_System_Net_Http_HttpMessageHandler_"></a>
@@ -146,4 +146,4 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [MistralProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L30)

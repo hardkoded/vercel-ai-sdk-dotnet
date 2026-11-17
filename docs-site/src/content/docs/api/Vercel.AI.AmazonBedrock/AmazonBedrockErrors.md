@@ -49,7 +49,7 @@ Creates the status exception, using the Bedrock `type` prefix when the body has 
 
 **Returns:** [ApiException](/api/Vercel.AI.Provider/ApiException/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockErrors.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockErrors.cs#L64)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockErrors_FormatMessage_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockErrors_FormatMessage_System_String_"></a>

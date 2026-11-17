@@ -23,7 +23,7 @@ Converts Gemini `usageMetadata`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L79)
 
 ## Methods
 
@@ -50,7 +50,7 @@ Numeric counts add, a missing count is the other side, and other fields come fro
 
 **Returns:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L87)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L116)
 
 <a id="Vercel_AI_Google_GoogleUsage_Convert_"></a>
 <a id="Vercel_AI_Google_GoogleUsage_Convert_System_Nullable_System_Text_Json_JsonElement__"></a>
@@ -74,4 +74,4 @@ Returns null when &lt;code class="paramref"&gt;usage&lt;/code&gt; is missing.
 
 **Returns:** [GoogleTokenUsage](/api/Vercel.AI.Google/GoogleTokenUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleUsage.cs#L85)

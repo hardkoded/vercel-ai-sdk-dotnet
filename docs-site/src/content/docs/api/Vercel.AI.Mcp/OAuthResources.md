@@ -23,7 +23,7 @@ OAuth resource URL checks from the MCP authorization helper.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L719)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L835)
 
 ## Methods
 
@@ -50,7 +50,7 @@ A path matches itself and its children, not a different prefix such as `/mcpxxxx
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L736)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L855)
 
 <a id="Vercel_AI_Mcp_OAuthResources_ResourceUrlFromServerUrl_"></a>
 <a id="Vercel_AI_Mcp_OAuthResources_ResourceUrlFromServerUrl_System_String_"></a>
@@ -73,4 +73,4 @@ Removes the fragment. The result uses the absolute URI form.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L722)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L838)

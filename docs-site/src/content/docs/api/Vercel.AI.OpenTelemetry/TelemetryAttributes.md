@@ -23,7 +23,7 @@ Selects and sanitizes OpenTelemetry attribute values.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L112)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L116)
 
 ## Methods
 
@@ -48,7 +48,7 @@ Drops entries that [SanitizeValue(object)](#Vercel_AI_OpenTelemetry_TelemetryAtt
 
 **Returns:** [IReadOnlyDictionary&lt;string, object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L175)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L179)
 
 <a id="Vercel_AI_OpenTelemetry_TelemetryAttributes_SanitizeValue_"></a>
 <a id="Vercel_AI_OpenTelemetry_TelemetryAttributes_SanitizeValue_System_Object_"></a>
@@ -72,7 +72,7 @@ Non-finite numbers and mixed or empty arrays are dropped.
 
 **Returns:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L119)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L123)
 
 <a id="Vercel_AI_OpenTelemetry_TelemetryAttributes_SelectAttributes_"></a>
 <a id="Vercel_AI_OpenTelemetry_TelemetryAttributes_SelectAttributes_Vercel_AI_OpenTelemetry_TelemetrySelection_System_Collections_Generic_IReadOnlyDictionary_System_String_System_Object__"></a>
@@ -96,7 +96,7 @@ Selects attributes, resolving input and output callbacks and dropping values tha
 
 **Returns:** [IReadOnlyDictionary&lt;string, object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L205)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L211)
 
 <a id="Vercel_AI_OpenTelemetry_TelemetryAttributes_SelectTelemetryAttributesAsync_"></a>
 <a id="Vercel_AI_OpenTelemetry_TelemetryAttributes_SelectTelemetryAttributesAsync_Vercel_AI_OpenTelemetry_TelemetrySelection_System_Collections_Generic_IReadOnlyDictionary_System_String_System_Object__System_Threading_CancellationToken_"></a>
@@ -122,4 +122,4 @@ Disabled telemetry returns an empty map. Null resolver results are omitted.
 
 **Returns:** [Task&lt;IReadOnlyDictionary&lt;string, object&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L239)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L246)

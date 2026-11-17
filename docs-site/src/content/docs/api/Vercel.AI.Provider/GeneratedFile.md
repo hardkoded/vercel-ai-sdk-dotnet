@@ -25,7 +25,7 @@ A generated file.
 
 **Derived:** [GoogleGeneratedFile](/api/Vercel.AI.Google/GoogleGeneratedFile/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L456)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L549)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates file content.
 | `data` | [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte) |  |
 | `mediaType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L459)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L552)
 
 ## Properties
 
@@ -68,7 +68,7 @@ File bytes.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L467)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L560)
 
 <a id="Vercel_AI_Provider_GeneratedFile_MediaType_"></a>
 <a id="Vercel_AI_Provider_GeneratedFile_MediaType"></a>
@@ -85,4 +85,4 @@ IANA media type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L470)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L563)

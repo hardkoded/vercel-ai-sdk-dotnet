@@ -23,7 +23,7 @@ Arguments shared by generate, start, and status.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L185)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L205)
 
 ## Constructors
 
@@ -61,7 +61,7 @@ Creates a call.
 | `webhookUrl` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `operation` | [object](https://learn.microsoft.com/dotnet/api/system.object) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L188)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L208)
 
 ## Properties
 
@@ -80,7 +80,7 @@ Aspect ratio.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L215)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L252)
 
 <a id="Vercel_AI_Operations_VideoModelCall_CancellationToken_"></a>
 <a id="Vercel_AI_Operations_VideoModelCall_CancellationToken"></a>
@@ -97,7 +97,7 @@ Cancellation token.
 
 **Value:** [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L248)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L285)
 
 <a id="Vercel_AI_Operations_VideoModelCall_Duration_"></a>
 <a id="Vercel_AI_Operations_VideoModelCall_Duration"></a>
@@ -114,7 +114,7 @@ Duration in seconds.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L221)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L258)
 
 <a id="Vercel_AI_Operations_VideoModelCall_Fps_"></a>
 <a id="Vercel_AI_Operations_VideoModelCall_Fps"></a>
@@ -131,7 +131,7 @@ Frames per second.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L224)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L261)
 
 <a id="Vercel_AI_Operations_VideoModelCall_FrameImages_"></a>
 <a id="Vercel_AI_Operations_VideoModelCall_FrameImages"></a>
@@ -148,7 +148,7 @@ Normalized frames.
 
 **Value:** [IReadOnlyList&lt;VideoFrameFile&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L233)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L270)
 
 <a id="Vercel_AI_Operations_VideoModelCall_GenerateAudio_"></a>
 <a id="Vercel_AI_Operations_VideoModelCall_GenerateAudio"></a>
@@ -165,7 +165,7 @@ Whether to generate audio.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L239)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L276)
 
 <a id="Vercel_AI_Operations_VideoModelCall_Headers_"></a>
 <a id="Vercel_AI_Operations_VideoModelCall_Headers"></a>
@@ -182,7 +182,7 @@ Headers.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L245)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L282)
 
 <a id="Vercel_AI_Operations_VideoModelCall_Image_"></a>
 <a id="Vercel_AI_Operations_VideoModelCall_Image"></a>
@@ -199,7 +199,7 @@ Resolved start image.
 
 **Value:** [VideoModelFile](/api/Vercel.AI.Operations/VideoModelFile/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L230)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L267)
 
 <a id="Vercel_AI_Operations_VideoModelCall_InputReferences_"></a>
 <a id="Vercel_AI_Operations_VideoModelCall_InputReferences"></a>
@@ -216,7 +216,7 @@ Normalized references. Null when frames were provided.
 
 **Value:** [IReadOnlyList&lt;VideoModelFile&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L236)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L273)
 
 <a id="Vercel_AI_Operations_VideoModelCall_N_"></a>
 <a id="Vercel_AI_Operations_VideoModelCall_N"></a>
@@ -233,7 +233,7 @@ Video count for this call.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L212)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L249)
 
 <a id="Vercel_AI_Operations_VideoModelCall_Operation_"></a>
 <a id="Vercel_AI_Operations_VideoModelCall_Operation"></a>
@@ -250,7 +250,7 @@ Opaque operation for a status call.
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L254)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L291)
 
 <a id="Vercel_AI_Operations_VideoModelCall_Prompt_"></a>
 <a id="Vercel_AI_Operations_VideoModelCall_Prompt"></a>
@@ -267,7 +267,7 @@ Prompt text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L209)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L246)
 
 <a id="Vercel_AI_Operations_VideoModelCall_ProviderOptions_"></a>
 <a id="Vercel_AI_Operations_VideoModelCall_ProviderOptions"></a>
@@ -284,7 +284,7 @@ Provider options.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L242)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L279)
 
 <a id="Vercel_AI_Operations_VideoModelCall_Resolution_"></a>
 <a id="Vercel_AI_Operations_VideoModelCall_Resolution"></a>
@@ -301,7 +301,7 @@ Resolution.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L218)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L255)
 
 <a id="Vercel_AI_Operations_VideoModelCall_Seed_"></a>
 <a id="Vercel_AI_Operations_VideoModelCall_Seed"></a>
@@ -318,7 +318,7 @@ Seed.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L227)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L264)
 
 <a id="Vercel_AI_Operations_VideoModelCall_WebhookUrl_"></a>
 <a id="Vercel_AI_Operations_VideoModelCall_WebhookUrl"></a>
@@ -335,4 +335,4 @@ Webhook URL for a start call.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L251)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L288)

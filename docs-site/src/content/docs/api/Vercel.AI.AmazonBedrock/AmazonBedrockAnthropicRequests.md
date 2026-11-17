@@ -23,7 +23,7 @@ Builds InvokeModel URLs and the Bedrock Anthropic request body.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L67)
 
 ## Methods
 
@@ -50,7 +50,7 @@ InvokeModel URL. Streaming uses `invoke-with-response-stream`.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L70)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockAnthropicRequests_ToAnthropicErrorBody_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockAnthropicRequests_ToAnthropicErrorBody_System_String_"></a>
@@ -73,7 +73,7 @@ Rewrites a Bedrock error body into the Anthropic `{ type: error, error }` shape.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L226)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L224)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockAnthropicRequests_Transform_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockAnthropicRequests_Transform_System_Text_Json_Nodes_JsonObject_System_Collections_Generic_IReadOnlyList_System_String__"></a>
@@ -99,4 +99,4 @@ block binding field, upgrades computer-use tool versions, moves the betas into
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L107)

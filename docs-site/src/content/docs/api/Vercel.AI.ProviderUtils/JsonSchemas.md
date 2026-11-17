@@ -49,7 +49,7 @@ combinators, items, and definitions. A schema-valued `additionalProperties` is k
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L381)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L390)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_AnyOf_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_AnyOf_System_Text_Json_Nodes_JsonNode___"></a>
@@ -72,7 +72,7 @@ public static JsonObject AnyOf(params JsonNode[] schemas)
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L209)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L210)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_Anything_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_Anything"></a>
@@ -115,7 +115,7 @@ Array schema. &lt;code class="paramref"&gt;items&lt;/code&gt; may be a schema or
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L117)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L120)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_Boolean_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_Boolean"></a>
@@ -132,7 +132,7 @@ Boolean schema.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L105)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L108)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_DateTimeString_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_DateTimeString"></a>
@@ -149,7 +149,7 @@ Date-time string.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L249)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L250)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_EmptyObject_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_EmptyObject"></a>
@@ -189,7 +189,7 @@ Pattern that anchors &lt;code class="paramref"&gt;literal&lt;/code&gt; at the en
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L286)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L287)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_Enum_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_Enum_System_Text_Json_Nodes_JsonNode_System_Text_Json_Nodes_JsonArray_"></a>
@@ -213,7 +213,7 @@ Enum schema. &lt;code class="paramref"&gt;type&lt;/code&gt; may be a string or a
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L187)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L196)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_EscapePattern_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_EscapePattern_System_String_"></a>
@@ -236,7 +236,7 @@ Escapes a literal for a JSON Schema pattern.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L263)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L264)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_IncludesPattern_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_IncludesPattern_System_String_"></a>
@@ -259,7 +259,7 @@ Pattern that contains &lt;code class="paramref"&gt;literal&lt;/code&gt;.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L292)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L293)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_Integer_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_Integer_System_Nullable_System_Double__System_Nullable_System_Double__System_String_"></a>
@@ -284,7 +284,7 @@ Integer schema.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L95)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L94)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_Literal_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_Literal_System_String_System_Text_Json_Nodes_JsonNode_System_String_"></a>
@@ -309,7 +309,7 @@ A single literal.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L197)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L202)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_NotEmpty_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_NotEmpty"></a>
@@ -343,7 +343,7 @@ Null schema.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L111)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L114)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_Number_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_Number_System_Nullable_System_Double__System_Nullable_System_Double__System_Nullable_System_Double__System_Nullable_System_Double__System_Nullable_System_Double__"></a>
@@ -370,7 +370,7 @@ Number schema.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L78)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L76)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_Object_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_Object_System_Collections_Generic_IReadOnlyList_System_Collections_Generic_KeyValuePair_System_String_System_Text_Json_Nodes_JsonNode___System_Collections_Generic_IReadOnlyList_System_String__System_Text_Json_Nodes_JsonNode_System_Nullable_System_Boolean__System_Text_Json_Nodes_JsonNode_"></a>
@@ -398,7 +398,7 @@ Object schema. Pass &lt;code class="paramref"&gt;additionalProperties&lt;/code&g
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L139)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L147)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_PrimitiveUnion_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_PrimitiveUnion_System_String___"></a>
@@ -421,7 +421,7 @@ Union of primitive type names.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L221)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L222)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_Record_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_Record_System_Text_Json_Nodes_JsonNode_System_Text_Json_Nodes_JsonNode_"></a>
@@ -445,7 +445,7 @@ Object whose values match &lt;code class="paramref"&gt;additionalProperties&lt;/
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L233)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L234)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_StartsWithPattern_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_StartsWithPattern_System_String_"></a>
@@ -468,7 +468,7 @@ Pattern that anchors &lt;code class="paramref"&gt;literal&lt;/code&gt; at the st
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L280)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L281)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_String_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_String_System_Nullable_System_Int32__System_Nullable_System_Int32__System_String_System_String_System_String_System_Text_Json_Nodes_JsonArray_System_Text_Json_Nodes_JsonArray_"></a>
@@ -497,7 +497,7 @@ String schema.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L46)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_Stringify_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_Stringify_System_Text_Json_Nodes_JsonNode_"></a>
@@ -520,7 +520,7 @@ Serializes a schema the way `JSON.stringify` does: no extra whitespace, insertio
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L298)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L299)
 
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_WithDefault_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonSchemas_WithDefault_System_Text_Json_Nodes_JsonObject_System_Text_Json_Nodes_JsonNode_"></a>
@@ -544,4 +544,4 @@ Copies &lt;code class="paramref"&gt;schema&lt;/code&gt; and sets `default`.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L255)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L256)

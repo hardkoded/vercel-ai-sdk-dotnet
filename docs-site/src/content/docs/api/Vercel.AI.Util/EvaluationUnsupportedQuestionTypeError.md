@@ -30,7 +30,7 @@ Deprecated alias of [DecisionUnsupportedQuestionTypeError](/api/Vercel.AI.Util/D
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionUnsupportedQuestionTypeError.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionUnsupportedQuestionTypeError.cs#L64)
 
 ## Constructors
 
@@ -57,7 +57,7 @@ Creates the error for the unsupported question.
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `message` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionUnsupportedQuestionTypeError.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionUnsupportedQuestionTypeError.cs#L71)
 
 ## Fields
 
@@ -75,4 +75,4 @@ Marker. It equals [ErrorMarker](/api/Vercel.AI.Util/DecisionUnsupportedQuestionT
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionUnsupportedQuestionTypeError.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/DecisionUnsupportedQuestionTypeError.cs#L68)

@@ -23,7 +23,7 @@ Small collection, header, text, and media helpers shared by providers.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L12)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L13)
 
 ## Methods
 
@@ -54,7 +54,7 @@ Returns an empty list for null, or the same list.
 
 **Returns:** [IReadOnlyList&lt;T&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L22)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L23)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_AsArray__1___0_"></a>
 
@@ -82,7 +82,7 @@ Returns an empty list for null, or a one-item list.
 
 **Returns:** [IReadOnlyList&lt;T&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L15)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L16)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_ExtractLines_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderValues_ExtractLines_System_String_System_Nullable_System_Int32__System_Nullable_System_Int32__"></a>
@@ -108,7 +108,7 @@ When both bounds are null the text is returned unchanged.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L403)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L432)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_FilterNullable_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderValues_FilterNullable__1___0___"></a>
@@ -137,7 +137,7 @@ Drops null entries and keeps other values, including false, zero, and empty stri
 
 **Returns:** [IReadOnlyList&lt;T&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L29)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_GetRuntimeEnvironmentUserAgent_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderValues_GetRuntimeEnvironmentUserAgent_Vercel_AI_ProviderUtils_ProviderValues_RuntimeProbe_"></a>
@@ -162,7 +162,7 @@ Returns an empty string when the runtime is unknown, so callers can omit it.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L294)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L316)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_IsBrowserRuntime_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderValues_IsBrowserRuntime_Vercel_AI_ProviderUtils_ProviderValues_RuntimeProbe_"></a>
@@ -185,7 +185,7 @@ True when the probe reports a browser `window`. Maps to `isBrowserRuntime`.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L325)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L347)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_IsJsonSerializable_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderValues_IsJsonSerializable_System_Object_"></a>
@@ -208,7 +208,7 @@ True when a value can be written as JSON: null, primitives, arrays, and string-k
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L79)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L82)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_IsRecord_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderValues_IsRecord_System_Object_"></a>
@@ -231,7 +231,7 @@ True for a non-null object that is not a string, primitive, or list.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L71)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_IsSameOrigin_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderValues_IsSameOrigin_System_String_System_String_"></a>
@@ -255,7 +255,7 @@ True when both absolute URLs have the same scheme, host, and port.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L239)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L256)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_MediaTypeToExtension_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderValues_MediaTypeToExtension_System_String_"></a>
@@ -278,7 +278,7 @@ Maps an audio media type to a file extension. Unknown types use the subtype, or 
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L264)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L286)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_NormalizeBatchRequestCounts_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderValues_NormalizeBatchRequestCounts_System_Nullable_System_Double__System_Nullable_System_Double__System_Nullable_System_Double__System_Nullable_System_Double__"></a>
@@ -304,7 +304,7 @@ Returns counts when every value is a non-negative safe integer and the parts add
 
 **Returns:** [ProviderValues.BatchRequestCounts](/api/Vercel.AI.ProviderUtils/ProviderValues.BatchRequestCounts/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L377)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L399)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_NormalizeHeaders_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderValues_NormalizeHeaders_System_Collections_Generic_IEnumerable_System_Collections_Generic_KeyValuePair_System_String_System_String___"></a>
@@ -327,7 +327,7 @@ Lower-cases header names and drops null values.
 
 **Returns:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L165)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L177)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_RemoveUndefinedEntries_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderValues_RemoveUndefinedEntries__1_System_Collections_Generic_IReadOnlyDictionary_System_String___0__"></a>
@@ -356,7 +356,7 @@ Copies entries whose values are not null.
 
 **Returns:** [Dictionary&lt;string, T&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L49)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_StripFileExtension_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderValues_StripFileExtension_System_String_"></a>
@@ -379,7 +379,7 @@ Returns the substring before the first dot. A trailing dot is removed with the e
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L252)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L274)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_ValidateBaseUrl_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderValues_ValidateBaseUrl_System_String_"></a>
@@ -402,7 +402,7 @@ Returns &lt;code class="paramref"&gt;baseUrl&lt;/code&gt;, or throws when it is 
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L228)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L245)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_WithUserAgentSuffix_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderValues_WithUserAgentSuffix_System_Collections_Generic_IEnumerable_System_Collections_Generic_KeyValuePair_System_String_System_String___System_String___"></a>
@@ -426,7 +426,7 @@ Appends &lt;code class="paramref"&gt;suffixParts&lt;/code&gt; to the user-agent 
 
 **Returns:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L185)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L199)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_WithoutTrailingSlash_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderValues_WithoutTrailingSlash_System_String_"></a>
@@ -449,4 +449,4 @@ Removes one trailing slash.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L212)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L229)

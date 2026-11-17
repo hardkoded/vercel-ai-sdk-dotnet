@@ -23,7 +23,7 @@ Settings for the OpenAI-compatible MaaS and xAI endpoints on Vertex.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L44)
 
 ## Properties
 
@@ -42,7 +42,7 @@ OpenAI-compatible base URL. When empty, it is built from the project and locatio
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L53)
 
 <a id="Vercel_AI_Google_GoogleVertexPartnerOptions_DownloadHttpClient_"></a>
 <a id="Vercel_AI_Google_GoogleVertexPartnerOptions_DownloadHttpClient"></a>
@@ -61,7 +61,7 @@ Upstream sends these downloads through the configured `fetch`.
 
 **Value:** [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L66)
 
 <a id="Vercel_AI_Google_GoogleVertexPartnerOptions_GenerateAuthToken_"></a>
 <a id="Vercel_AI_Google_GoogleVertexPartnerOptions_GenerateAuthToken"></a>
@@ -78,7 +78,7 @@ Returns a bearer token. Called once per request. The token replaces any Authoriz
 
 **Value:** [Func&lt;CancellationToken, Task&lt;string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L59)
 
 <a id="Vercel_AI_Google_GoogleVertexPartnerOptions_Headers_"></a>
 <a id="Vercel_AI_Google_GoogleVertexPartnerOptions_Headers"></a>
@@ -95,7 +95,7 @@ Headers set on every request. They replace request headers with the same name.
 
 **Value:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L56)
 
 <a id="Vercel_AI_Google_GoogleVertexPartnerOptions_Location_"></a>
 <a id="Vercel_AI_Google_GoogleVertexPartnerOptions_Location"></a>
@@ -112,7 +112,7 @@ Location. One DNS label. Defaults to `global`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L50)
 
 <a id="Vercel_AI_Google_GoogleVertexPartnerOptions_Project_"></a>
 <a id="Vercel_AI_Google_GoogleVertexPartnerOptions_Project"></a>
@@ -129,4 +129,4 @@ Project id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L47)

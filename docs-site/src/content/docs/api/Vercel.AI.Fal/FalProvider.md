@@ -133,7 +133,7 @@ Posts &lt;code class="paramref"&gt;options&lt;/code&gt; to `{base}/{modelId}`. &
 
 **Returns:** [Task&lt;ImageGenerationResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalProvider.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalProvider.cs#L83)
 
 <a id="Vercel_AI_Fal_FalProvider_ImageModel_"></a>
 <a id="Vercel_AI_Fal_FalProvider_ImageModel_System_String_"></a>
@@ -156,7 +156,7 @@ Returns an image model.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalProvider.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalProvider.cs#L73)
 
 <a id="Vercel_AI_Fal_FalProvider_LanguageModel_"></a>
 <a id="Vercel_AI_Fal_FalProvider_LanguageModel_System_String_"></a>
@@ -202,7 +202,7 @@ Returns a speech model.
 
 **Returns:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalProvider.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalProvider.cs#L76)
 
 <a id="Vercel_AI_Fal_FalProvider_TranscriptionModel_"></a>
 <a id="Vercel_AI_Fal_FalProvider_TranscriptionModel_System_String_"></a>
@@ -225,4 +225,4 @@ Returns a transcription model.
 
 **Returns:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalProvider.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalProvider.cs#L79)

@@ -23,7 +23,7 @@ The Anthropic form of a tool that a mid-conversation tool change defines by valu
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L48)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a converted inline tool.
 | `warnings` | [IReadOnlyList&lt;AnthropicWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `betas` | [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L51)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Betas the tool requires.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L69)
 
 <a id="Vercel_AI_Anthropic_AnthropicInlineToolResult_Definition_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicInlineToolResult_Definition"></a>
@@ -84,7 +84,7 @@ The tool definition. Null when the tool is dropped.
 
 **Value:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L63)
 
 <a id="Vercel_AI_Anthropic_AnthropicInlineToolResult_Warnings_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicInlineToolResult_Warnings"></a>
@@ -101,4 +101,4 @@ Warnings from converting the tool.
 
 **Value:** [IReadOnlyList&lt;AnthropicWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicPrompt.cs#L66)

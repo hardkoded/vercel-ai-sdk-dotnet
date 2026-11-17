@@ -25,7 +25,7 @@ Image generation result.
 
 **Derived:** [LumaImageGeneration](/api/Vercel.AI.Luma/LumaImageGeneration/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L137)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L152)
 
 ## Constructors
 
@@ -53,7 +53,7 @@ Creates an image result.
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 | `isRetryable` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L140)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L155)
 
 ## Properties
 
@@ -72,7 +72,7 @@ Warnings of this call. Maps to `warnings`.
 
 **Value:** [IReadOnlyList&lt;CallWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L154)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L176)
 
 <a id="Vercel_AI_Provider_ImageGenerationResult_Images_"></a>
 <a id="Vercel_AI_Provider_ImageGenerationResult_Images"></a>
@@ -89,7 +89,7 @@ Generated images.
 
 **Value:** [IReadOnlyList&lt;GeneratedImage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L151)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L173)
 
 <a id="Vercel_AI_Provider_ImageGenerationResult_IsRetryable_"></a>
 <a id="Vercel_AI_Provider_ImageGenerationResult_IsRetryable"></a>
@@ -106,7 +106,7 @@ public bool? IsRetryable { get; }
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L166)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L188)
 
 <a id="Vercel_AI_Provider_ImageGenerationResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Provider_ImageGenerationResult_ProviderMetadata"></a>
@@ -123,7 +123,7 @@ Provider metadata of this call, keyed by provider name. Maps to `providerMetadat
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L163)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L185)
 
 <a id="Vercel_AI_Provider_ImageGenerationResult_Response_"></a>
 <a id="Vercel_AI_Provider_ImageGenerationResult_Response"></a>
@@ -140,7 +140,7 @@ Response metadata of this call, when the model reports it.
 
 **Value:** [ImageResponseInfo](/api/Vercel.AI.Provider/ImageResponseInfo/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L157)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L179)
 
 <a id="Vercel_AI_Provider_ImageGenerationResult_Usage_"></a>
 <a id="Vercel_AI_Provider_ImageGenerationResult_Usage"></a>
@@ -157,4 +157,4 @@ Token usage, when the response included it.
 
 **Value:** [LanguageModelUsage](/api/Vercel.AI.Provider/LanguageModelUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L160)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L182)

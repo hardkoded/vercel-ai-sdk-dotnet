@@ -49,7 +49,7 @@ Returns an own dictionary entry, or `null` when the key is absent.
 
 **Returns:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Collections.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Collections.cs#L59)
 
 <a id="Vercel_AI_Util_Collections_GetOwn_Vercel_AI_Util_DataObject_System_String_"></a>
 
@@ -73,7 +73,7 @@ Null and undefined objects return `null`.
 
 **Returns:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Collections.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Collections.cs#L47)
 
 <a id="Vercel_AI_Util_Collections_GetPotentialStartIndex_"></a>
 <a id="Vercel_AI_Util_Collections_GetPotentialStartIndex_System_String_System_String_"></a>
@@ -98,7 +98,7 @@ Largest index where &lt;code class="paramref"&gt;searchedText&lt;/code&gt; occur
 
 **Returns:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Collections.cs#L70)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Collections.cs#L74)
 
 <a id="Vercel_AI_Util_Collections_SplitArray_"></a>
 <a id="Vercel_AI_Util_Collections_SplitArray__1_System_Collections_Generic_IReadOnlyList___0__System_Int32_"></a>

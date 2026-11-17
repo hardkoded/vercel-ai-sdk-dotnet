@@ -71,7 +71,7 @@ Parses a V4 generate result.
 
 **Returns:** [LanguageModelGenerateResult](/api/Vercel.AI.Provider/LanguageModelGenerateResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/V4Json.cs#L134)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/V4Json.cs#L138)
 
 <a id="Vercel_AI_Gateway_V4Json_ParseStreamPart_"></a>
 <a id="Vercel_AI_Gateway_V4Json_ParseStreamPart_System_String_"></a>
@@ -94,4 +94,4 @@ Parses one SSE JSON object into a stream part.
 
 **Returns:** [LanguageModelStreamPart](/api/Vercel.AI.Provider/LanguageModelStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/V4Json.cs#L158)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/V4Json.cs#L172)

@@ -25,7 +25,7 @@ MCP over Streamable HTTP. Posts JSON-RPC and accepts a JSON body or an SSE `data
 
 **Implements:** [IMcpTransport](/api/Vercel.AI.Mcp/IMcpTransport/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L427)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L517)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a transport that posts to &lt;code class="paramref"&gt;endpoint&lt;/code
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `endpoint` | [Uri](https://learn.microsoft.com/dotnet/api/system.uri) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L434)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L524)
 
 ## Methods
 
@@ -76,4 +76,4 @@ Calls &lt;code class="paramref"&gt;method&lt;/code&gt; and returns the JSON-RPC 
 
 **Returns:** [Task&lt;JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L441)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L531)

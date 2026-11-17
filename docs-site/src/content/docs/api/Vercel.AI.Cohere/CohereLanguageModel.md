@@ -68,7 +68,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereLanguageModel.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereLanguageModel.cs#L41)
 
 <a id="Vercel_AI_Cohere_CohereLanguageModel_Provider_"></a>
 <a id="Vercel_AI_Cohere_CohereLanguageModel_Provider"></a>
@@ -85,7 +85,7 @@ Provider id, such as `openai`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereLanguageModel.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereLanguageModel.cs#L38)
 
 <a id="Vercel_AI_Cohere_CohereLanguageModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Cohere_CohereLanguageModel_SpecificationVersion"></a>
@@ -103,6 +103,24 @@ Always `V4`.
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereLanguageModel.cs#L31)
+
+<a id="Vercel_AI_Cohere_CohereLanguageModel_SupportedUrls_"></a>
+<a id="Vercel_AI_Cohere_CohereLanguageModel_SupportedUrls"></a>
+
+### SupportedUrls
+
+
+```csharp
+public IReadOnlyDictionary<string, string> SupportedUrls { get; }
+```
+
+
+URLs the model can read itself, keyed by media type pattern (such as `image/*`). Each value is a regular expression that a URL
+must match. Prompt file URLs that match are passed through. All others are downloaded before the call. Maps to `supportedUrls`.
+
+**Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereLanguageModel.cs#L34)
 
 ## Methods
 
@@ -128,7 +146,7 @@ Generates a complete result.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereLanguageModel.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereLanguageModel.cs#L49)
 
 <a id="Vercel_AI_Cohere_CohereLanguageModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_Cohere_CohereLanguageModel_DoStreamAsync_Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_"></a>
@@ -152,4 +170,4 @@ Streams partial results. The result carries the stream with the request and resp
 
 **Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereLanguageModel.cs#L95)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereLanguageModel.cs#L159)

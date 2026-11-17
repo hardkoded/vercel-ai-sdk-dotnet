@@ -25,7 +25,7 @@ A value could not be serialized. Maps to `SerializationError`.
 
 **Implements:** [ISerializable](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.iserializable), [IErrorMarkers](/api/Vercel.AI.Util/IErrorMarkers/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/SerializeModelOptions.cs#L100)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/SerializeModelOptions.cs#L107)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates the error.
 | `message` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `cause` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/SerializeModelOptions.cs#L106)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/SerializeModelOptions.cs#L113)
 
 ## Fields
 
@@ -67,7 +67,7 @@ Marker for [IsInstance(object)](#Vercel_AI_ProviderUtils_SerializationError_IsIn
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/SerializeModelOptions.cs#L103)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/SerializeModelOptions.cs#L110)
 
 ## Methods
 
@@ -92,4 +92,4 @@ Returns whether &lt;code class="paramref"&gt;error&lt;/code&gt; carries this err
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/SerializeModelOptions.cs#L113)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/SerializeModelOptions.cs#L120)

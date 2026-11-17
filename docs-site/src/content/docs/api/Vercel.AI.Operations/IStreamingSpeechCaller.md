@@ -22,4 +22,4 @@ public interface IStreamingSpeechCaller : ISpeechCaller
 A speech model that can also stream speech audio for streamed text input.
 Maps to `Experimental_StreamingSpeechModelV4`.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L297)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L317)

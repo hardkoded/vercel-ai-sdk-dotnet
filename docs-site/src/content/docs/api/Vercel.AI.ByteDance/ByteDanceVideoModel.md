@@ -51,7 +51,7 @@ Creates a model. &lt;code class="paramref"&gt;clock&lt;/code&gt; sets the respon
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `clock` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L75)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L93)
 
 ## Properties
 
@@ -70,7 +70,7 @@ True when `doGenerate` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L95)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L117)
 
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_CanStart_"></a>
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_CanStart"></a>
@@ -87,7 +87,7 @@ True when `doStart` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L98)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L120)
 
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_CanStatus_"></a>
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_CanStatus"></a>
@@ -104,7 +104,7 @@ True when `doStatus` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L101)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L123)
 
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_CanWebhook_"></a>
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_CanWebhook"></a>
@@ -121,7 +121,7 @@ False. Progress notifications need a protocol-aware receiver, so a webhook URL i
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L126)
 
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_MaxVideosPerCall_"></a>
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_MaxVideosPerCall"></a>
@@ -138,7 +138,7 @@ ByteDance creates one video per task.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L92)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L114)
 
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_ModelId_"></a>
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_ModelId"></a>
@@ -155,7 +155,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L89)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L111)
 
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_Provider_"></a>
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_Provider"></a>
@@ -172,7 +172,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L86)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L108)
 
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_SpecificationVersion"></a>
@@ -189,7 +189,7 @@ Specification version. Always `v4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L105)
 
 ## Methods
 
@@ -215,7 +215,7 @@ Generates videos in one call.
 
 **Returns:** [Task&lt;VideoModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L121)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L156)
 
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_DoGenerateAsync_Vercel_AI_Provider_VideoCallOptions_System_Threading_CancellationToken_"></a>
 
@@ -238,7 +238,7 @@ Starts a task and polls it until the video is ready.
 
 **Returns:** [Task&lt;VideoResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L113)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L135)
 
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_DoStartAsync_"></a>
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_DoStartAsync_Vercel_AI_Operations_VideoModelCall_System_Threading_CancellationToken_"></a>
@@ -262,7 +262,7 @@ Starts an asynchronous generation.
 
 **Returns:** [Task&lt;VideoStartResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L127)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L165)
 
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_DoStatusAsync_"></a>
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_DoStatusAsync_Vercel_AI_Operations_VideoModelCall_System_Threading_CancellationToken_"></a>
@@ -286,7 +286,7 @@ Reads operation status.
 
 **Returns:** [Task&lt;VideoStatusResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L157)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L201)
 
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_HandleWebhookAsync_"></a>
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_HandleWebhookAsync_System_Func_System_Threading_Tasks_Task_Vercel_AI_Operations_VideoWebhook___System_Threading_CancellationToken_"></a>
@@ -310,7 +310,7 @@ Turns a webhook factory into a URL and a received task.
 
 **Returns:** [Task&lt;VideoWebhook&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L216)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L289)
 
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_ResolveMaxVideosPerCallAsync_"></a>
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_ResolveMaxVideosPerCallAsync_System_Threading_CancellationToken_"></a>
@@ -333,4 +333,4 @@ Resolves a functional limit. The default is [MaxVideosPerCall](/api/Vercel.AI.Op
 
 **Returns:** [Task&lt;int?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L107)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L129)

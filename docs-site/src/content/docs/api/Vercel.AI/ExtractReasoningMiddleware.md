@@ -25,7 +25,7 @@ Splits delimited reasoning, such as `<think>...</think>`, out of text. Maps to `
 
 **Implements:** [ILanguageModelMiddleware](/api/Vercel.AI/ILanguageModelMiddleware/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L76)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L83)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates middleware for the XML tags `<tagName>` and `</tagName>`.
 | `separator` | [string](https://learn.microsoft.com/dotnet/api/system.string) | Joins reasoning blocks, and the text around them. |
 | `startWithReasoning` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) | Prepends the opening tag when the model omits it. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L88)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L95)
 
 <a id="Vercel_AI_ExtractReasoningMiddleware__ctor_System_ValueTuple_System_String_System_String__System_String_System_Boolean_"></a>
 
@@ -72,7 +72,7 @@ Creates middleware for literal delimiters, such as Gemma's thought channel.
 | `separator` | [string](https://learn.microsoft.com/dotnet/api/system.string) | Joins reasoning blocks, and the text around them. |
 | `startWithReasoning` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) | Prepends the opening delimiter when the model omits it. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L97)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L106)
 
 ## Methods
 
@@ -99,7 +99,7 @@ Wraps a generate call.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L128)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L149)
 
 <a id="Vercel_AI_ExtractReasoningMiddleware_WrapStreamAsync_"></a>
 <a id="Vercel_AI_ExtractReasoningMiddleware_WrapStreamAsync_Vercel_AI_Provider_LanguageModelCallOptions_System_Func_Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_System_Threading_Tasks_Task_Vercel_AI_Provider_LanguageModelStreamResult___System_Threading_CancellationToken_"></a>
@@ -124,4 +124,4 @@ Wraps a stream call.
 
 **Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L182)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L210)

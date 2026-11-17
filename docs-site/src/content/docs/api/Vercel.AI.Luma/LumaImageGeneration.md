@@ -42,7 +42,7 @@ Headers of the generation response.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L87)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L101)
 
 <a id="Vercel_AI_Luma_LumaImageGeneration_ModelId_"></a>
 <a id="Vercel_AI_Luma_LumaImageGeneration_ModelId"></a>
@@ -59,7 +59,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L84)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L98)
 
 <a id="Vercel_AI_Luma_LumaImageGeneration_Timestamp_"></a>
 <a id="Vercel_AI_Luma_LumaImageGeneration_Timestamp"></a>
@@ -76,7 +76,7 @@ Time the call started.
 
 **Value:** [DateTimeOffset](https://learn.microsoft.com/dotnet/api/system.datetimeoffset)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L81)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L95)
 
 <a id="Vercel_AI_Luma_LumaImageGeneration_Warnings_"></a>
 <a id="Vercel_AI_Luma_LumaImageGeneration_Warnings"></a>
@@ -93,4 +93,4 @@ Warnings for settings Luma does not support.
 
 **Value:** [IReadOnlyList&lt;ModelWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L78)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L92)

@@ -23,7 +23,7 @@ SHA-256 fingerprint of an MCP app resource.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L646)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L748)
 
 ## Methods
 
@@ -49,7 +49,7 @@ True when the current fingerprint differs from the baseline.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L660)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L762)
 
 <a id="Vercel_AI_Mcp_McpAppFingerprint_Fingerprint_"></a>
 <a id="Vercel_AI_Mcp_McpAppFingerprint_Fingerprint_System_String_System_Nullable_System_Text_Json_JsonElement__System_Nullable_System_Text_Json_JsonElement__"></a>
@@ -74,4 +74,4 @@ Stable base64url SHA-256 of html, csp, and permissions. Object keys are sorted.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L649)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L751)

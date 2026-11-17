@@ -24,7 +24,7 @@ Maps to `ToolUIPart` and `DynamicToolUIPart`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [UIMessagePart](/api/Vercel.AI.Ui/UIMessagePart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L306)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L316)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a tool part for the tool &lt;code class="paramref"&gt;toolName&lt;/code&
 | `state` | [ToolUIPartState](/api/Vercel.AI.Ui/ToolUIPartState/) |  |
 | `isDynamic` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L309)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L319)
 
 ## Properties
 
@@ -69,7 +69,7 @@ The approval of the call.
 
 **Value:** [ToolUIApproval](/api/Vercel.AI.Ui/ToolUIApproval/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L364)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L392)
 
 <a id="Vercel_AI_Ui_ToolUIPart_CallProviderMetadata_"></a>
 <a id="Vercel_AI_Ui_ToolUIPart_CallProviderMetadata"></a>
@@ -86,7 +86,7 @@ The provider metadata of the call.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L358)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L386)
 
 <a id="Vercel_AI_Ui_ToolUIPart_Dynamic_"></a>
 <a id="Vercel_AI_Ui_ToolUIPart_Dynamic"></a>
@@ -104,7 +104,7 @@ Maps to `dynamic: false`.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L334)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L353)
 
 <a id="Vercel_AI_Ui_ToolUIPart_ErrorText_"></a>
 <a id="Vercel_AI_Ui_ToolUIPart_ErrorText"></a>
@@ -121,7 +121,7 @@ The error text of a failed call.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L352)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L380)
 
 <a id="Vercel_AI_Ui_ToolUIPart_Input_"></a>
 <a id="Vercel_AI_Ui_ToolUIPart_Input"></a>
@@ -138,7 +138,25 @@ The tool input. Null when it is undefined.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L343)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L371)
+
+<a id="Vercel_AI_Ui_ToolUIPart_InputEncoding_"></a>
+<a id="Vercel_AI_Ui_ToolUIPart_InputEncoding"></a>
+
+### InputEncoding
+
+
+```csharp
+public ToolInputEncoding? InputEncoding { get; init; }
+```
+
+
+Encoding of [RawInput](#Vercel_AI_Ui_ToolUIPart_RawInput) while the state is [InputStreaming](/api/Vercel.AI.Ui/ToolUIPartState/#Vercel_AI_Ui_ToolUIPartState_InputStreaming).
+Null means JSON.
+
+**Value:** `ToolInputEncoding?`
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L365)
 
 <a id="Vercel_AI_Ui_ToolUIPart_IsDynamic_"></a>
 <a id="Vercel_AI_Ui_ToolUIPart_IsDynamic"></a>
@@ -155,7 +173,7 @@ True for a `dynamic-tool` part.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L328)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L347)
 
 <a id="Vercel_AI_Ui_ToolUIPart_Output_"></a>
 <a id="Vercel_AI_Ui_ToolUIPart_Output"></a>
@@ -172,7 +190,7 @@ The tool output. Null when it is undefined.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L349)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L377)
 
 <a id="Vercel_AI_Ui_ToolUIPart_Preliminary_"></a>
 <a id="Vercel_AI_Ui_ToolUIPart_Preliminary"></a>
@@ -189,7 +207,7 @@ True when the output is a preliminary result.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L355)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L383)
 
 <a id="Vercel_AI_Ui_ToolUIPart_ProviderExecuted_"></a>
 <a id="Vercel_AI_Ui_ToolUIPart_ProviderExecuted"></a>
@@ -206,7 +224,7 @@ Whether the provider executed the tool.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L340)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L368)
 
 <a id="Vercel_AI_Ui_ToolUIPart_RawInput_"></a>
 <a id="Vercel_AI_Ui_ToolUIPart_RawInput"></a>
@@ -223,7 +241,7 @@ The raw input of a failed or streaming call.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L346)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L374)
 
 <a id="Vercel_AI_Ui_ToolUIPart_ResultProviderMetadata_"></a>
 <a id="Vercel_AI_Ui_ToolUIPart_ResultProviderMetadata"></a>
@@ -240,7 +258,7 @@ The provider metadata of the result.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L361)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L389)
 
 <a id="Vercel_AI_Ui_ToolUIPart_State_"></a>
 <a id="Vercel_AI_Ui_ToolUIPart_State"></a>
@@ -257,7 +275,7 @@ The state of the invocation.
 
 **Value:** [ToolUIPartState](/api/Vercel.AI.Ui/ToolUIPartState/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L325)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L344)
 
 <a id="Vercel_AI_Ui_ToolUIPart_Title_"></a>
 <a id="Vercel_AI_Ui_ToolUIPart_Title"></a>
@@ -274,7 +292,7 @@ The title of the tool.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L337)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L356)
 
 <a id="Vercel_AI_Ui_ToolUIPart_ToolCallId_"></a>
 <a id="Vercel_AI_Ui_ToolUIPart_ToolCallId"></a>
@@ -291,7 +309,24 @@ The tool call id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L322)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L341)
+
+<a id="Vercel_AI_Ui_ToolUIPart_ToolMetadata_"></a>
+<a id="Vercel_AI_Ui_ToolUIPart_ToolMetadata"></a>
+
+### ToolMetadata
+
+
+```csharp
+public IReadOnlyDictionary<string, JsonElement>? ToolMetadata { get; init; }
+```
+
+
+The metadata of the tool. Maps to `toolMetadata`.
+
+**Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L359)
 
 <a id="Vercel_AI_Ui_ToolUIPart_ToolName_"></a>
 <a id="Vercel_AI_Ui_ToolUIPart_ToolName"></a>
@@ -308,4 +343,4 @@ The tool name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L319)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L338)

@@ -23,7 +23,7 @@ One user or assistant content part.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L58)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates a part. &lt;code class="paramref"&gt;type&lt;/code&gt; is `text` or `fil
 | --- | --- | --- |
 | `type` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L61)
 
 ## Properties
 
@@ -65,7 +65,7 @@ Base64 payload used as-is when [Data](#Vercel_AI_OpenAI_OpenAIChatPromptPart_Dat
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L75)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L82)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptPart_Data_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptPart_Data"></a>
@@ -82,7 +82,7 @@ Inline file bytes.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L72)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L79)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptPart_FileId_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptPart_FileId"></a>
@@ -99,7 +99,7 @@ OpenAI file id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L78)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L85)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptPart_FileName_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptPart_FileName"></a>
@@ -116,7 +116,7 @@ File name for PDF data.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L84)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L91)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptPart_MediaType_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptPart_MediaType"></a>
@@ -133,7 +133,7 @@ IANA media type for a file part.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L73)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptPart_ProviderOptions_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptPart_ProviderOptions"></a>
@@ -150,7 +150,7 @@ Provider options for this part.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L87)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L94)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptPart_ProviderReference_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptPart_ProviderReference"></a>
@@ -167,7 +167,7 @@ File ids by provider. The `openai` entry is sent as the file id; a missing entry
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L81)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L88)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptPart_Text_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptPart_Text"></a>
@@ -184,7 +184,7 @@ Text, when [Type](#Vercel_AI_OpenAI_OpenAIChatPromptPart_Type) is `text`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L70)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptPart_Type_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptPart_Type"></a>
@@ -201,7 +201,7 @@ Part type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L67)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptPart_Url_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatPromptPart_Url"></a>
@@ -218,4 +218,4 @@ Remote URL for a file part.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L69)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L76)

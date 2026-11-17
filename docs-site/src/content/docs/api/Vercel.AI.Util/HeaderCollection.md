@@ -40,7 +40,7 @@ public HeaderCollection()
 
 Creates an empty collection.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/HeaderCollection.cs#L13)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/HeaderCollection.cs#L14)
 
 <a id="Vercel_AI_Util_HeaderCollection__ctor_System_Collections_Generic_IEnumerable_System_Collections_Generic_KeyValuePair_System_String_System_String___"></a>
 
@@ -60,7 +60,7 @@ Copies &lt;code class="paramref"&gt;headers&lt;/code&gt;.
 | --- | --- | --- |
 | `headers` | [IEnumerable&lt;KeyValuePair&lt;string, string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/HeaderCollection.cs#L18)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/HeaderCollection.cs#L17)
 
 ## Methods
 
@@ -84,7 +84,7 @@ Appends one header value.
 | `name` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `value` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/HeaderCollection.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/HeaderCollection.cs#L31)
 
 <a id="Vercel_AI_Util_HeaderCollection_Contains_"></a>
 <a id="Vercel_AI_Util_HeaderCollection_Contains_System_String_"></a>
@@ -107,7 +107,7 @@ Returns whether a header with &lt;code class="paramref"&gt;name&lt;/code&gt; is 
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/HeaderCollection.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/HeaderCollection.cs#L37)
 
 <a id="Vercel_AI_Util_HeaderCollection_Entries_"></a>
 <a id="Vercel_AI_Util_HeaderCollection_Entries"></a>
@@ -124,7 +124,7 @@ Header entries in insertion order.
 
 **Returns:** [IReadOnlyList&lt;KeyValuePair&lt;string, string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/HeaderCollection.cs#L81)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/HeaderCollection.cs#L80)
 
 <a id="Vercel_AI_Util_HeaderCollection_Get_"></a>
 <a id="Vercel_AI_Util_HeaderCollection_Get_System_String_"></a>
@@ -147,7 +147,7 @@ First value for &lt;code class="paramref"&gt;name&lt;/code&gt;, or `null`.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/HeaderCollection.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/HeaderCollection.cs#L51)
 
 <a id="Vercel_AI_Util_HeaderCollection_GetAll_"></a>
 <a id="Vercel_AI_Util_HeaderCollection_GetAll_System_String_"></a>
@@ -170,4 +170,4 @@ Every value for &lt;code class="paramref"&gt;name&lt;/code&gt;.
 
 **Returns:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/HeaderCollection.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/HeaderCollection.cs#L65)

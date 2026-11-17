@@ -50,7 +50,7 @@ Creates a model. &lt;code class="paramref"&gt;clock&lt;/code&gt; sets the respon
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `clock` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaImageModel.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaImageModel.cs#L43)
 
 ## Properties
 
@@ -69,7 +69,7 @@ Prodia returns one image per job.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaImageModel.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaImageModel.cs#L61)
 
 <a id="Vercel_AI_Prodia_ProdiaImageModel_ModelId_"></a>
 <a id="Vercel_AI_Prodia_ProdiaImageModel_ModelId"></a>
@@ -86,7 +86,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaImageModel.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaImageModel.cs#L58)
 
 <a id="Vercel_AI_Prodia_ProdiaImageModel_Provider_"></a>
 <a id="Vercel_AI_Prodia_ProdiaImageModel_Provider"></a>
@@ -103,7 +103,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaImageModel.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaImageModel.cs#L55)
 
 ## Methods
 
@@ -129,7 +129,7 @@ Generates images.
 
 **Returns:** [Task&lt;ImageModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaImageModel.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaImageModel.cs#L93)
 
 <a id="Vercel_AI_Prodia_ProdiaImageModel_DoGenerateAsync_Vercel_AI_Provider_ImageCallOptions_System_Threading_CancellationToken_"></a>
 
@@ -152,7 +152,7 @@ Generates images. Maps to `doGenerate` on an image model.
 
 **Returns:** [Task&lt;ImageGenerationResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaImageModel.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaImageModel.cs#L70)
 
 <a id="Vercel_AI_Prodia_ProdiaImageModel_ResolveMaxImagesPerCallAsync_"></a>
 <a id="Vercel_AI_Prodia_ProdiaImageModel_ResolveMaxImagesPerCallAsync_System_Threading_CancellationToken_"></a>
@@ -175,4 +175,4 @@ Resolves a functional per-call limit. The default returns [MaxImagesPerCall](/ap
 
 **Returns:** [Task&lt;int?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaImageModel.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prodia/ProdiaImageModel.cs#L64)

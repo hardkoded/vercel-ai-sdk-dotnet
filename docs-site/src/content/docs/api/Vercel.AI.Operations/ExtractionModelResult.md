@@ -23,7 +23,7 @@ Model response for `doExtract`. Maps to `ExtractionModelV4Result`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L165)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L176)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a model result.
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 | `response` | [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L168)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L179)
 
 ## Properties
 
@@ -69,7 +69,7 @@ Exactly one answer per field, under the original field ids.
 
 **Value:** [IReadOnlyDictionary&lt;string, ExtractionAnswer&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L178)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L195)
 
 <a id="Vercel_AI_Operations_ExtractionModelResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelResult_ProviderMetadata"></a>
@@ -86,7 +86,7 @@ Provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L187)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L204)
 
 <a id="Vercel_AI_Operations_ExtractionModelResult_Response_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelResult_Response"></a>
@@ -103,7 +103,7 @@ Response metadata. Timestamp and model id are filled when omitted.
 
 **Value:** [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L190)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L207)
 
 <a id="Vercel_AI_Operations_ExtractionModelResult_Usage_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelResult_Usage"></a>
@@ -120,7 +120,7 @@ Token usage.
 
 **Value:** [OperationUsage](/api/Vercel.AI.Operations/OperationUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L184)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L201)
 
 <a id="Vercel_AI_Operations_ExtractionModelResult_Warnings_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelResult_Warnings"></a>
@@ -137,4 +137,4 @@ Warnings.
 
 **Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L181)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L198)

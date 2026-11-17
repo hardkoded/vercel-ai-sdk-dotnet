@@ -23,7 +23,7 @@ Options of [PruneMessages(PruneMessagesOptions)](/api/Vercel.AI.GenerateText/Mes
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/PruneMessages.cs#L73)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/PruneMessages.cs#L78)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Whether to keep or remove messages whose content is empty after pruning. Default
 
 **Value:** [PruneEmptyMessages](/api/Vercel.AI.GenerateText/PruneEmptyMessages/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/PruneMessages.cs#L85)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/PruneMessages.cs#L91)
 
 <a id="Vercel_AI_GenerateText_PruneMessagesOptions_Messages_"></a>
 <a id="Vercel_AI_GenerateText_PruneMessagesOptions_Messages"></a>
@@ -59,7 +59,7 @@ The messages to prune.
 
 **Value:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/PruneMessages.cs#L76)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/PruneMessages.cs#L81)
 
 <a id="Vercel_AI_GenerateText_PruneMessagesOptions_Reasoning_"></a>
 <a id="Vercel_AI_GenerateText_PruneMessagesOptions_Reasoning"></a>
@@ -76,7 +76,7 @@ How to remove reasoning from assistant messages. Default is [None](/api/Vercel.A
 
 **Value:** [PruneReasoning](/api/Vercel.AI.GenerateText/PruneReasoning/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/PruneMessages.cs#L79)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/PruneMessages.cs#L84)
 
 <a id="Vercel_AI_GenerateText_PruneMessagesOptions_ToolCalls_"></a>
 <a id="Vercel_AI_GenerateText_PruneMessagesOptions_ToolCalls"></a>
@@ -93,4 +93,4 @@ How to prune tool calls, results, errors, and approvals. Default is no rules.
 
 **Value:** [IReadOnlyList&lt;PruneToolCallsRule&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/PruneMessages.cs#L82)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/PruneMessages.cs#L87)

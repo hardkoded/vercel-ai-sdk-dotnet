@@ -46,7 +46,7 @@ True when `CancellationToken)` is implemented.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L59)
 
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_ModelId_"></a>
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_ModelId"></a>
@@ -63,7 +63,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L53)
 
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_Provider_"></a>
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_Provider"></a>
@@ -80,7 +80,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L50)
 
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_SpecificationVersion"></a>
@@ -97,7 +97,7 @@ Specification version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L56)
 
 ## Methods
 
@@ -124,7 +124,7 @@ Restores a model from [Serialize()](#Vercel_AI_Azure_AzureTranscriptionModel_Ser
 
 **Returns:** [AzureTranscriptionModel](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L75)
 
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_DoGenerateAsync_"></a>
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_DoGenerateAsync_Vercel_AI_Operations_TranscriptionModelCall_System_Threading_CancellationToken_"></a>
@@ -148,7 +148,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L82)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L104)
 
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_DoStreamAsync_Vercel_AI_Operations_TranscriptionStreamCall_System_Threading_CancellationToken_"></a>
@@ -172,7 +172,7 @@ Starts a stream, or null when streaming is unsupported.
 
 **Returns:** [Task&lt;TranscriptionStreamStart&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L119)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L171)
 
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_DoTranscribeAsync_"></a>
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_DoTranscribeAsync_Vercel_AI_Provider_AudioInput_System_Threading_CancellationToken_"></a>
@@ -196,7 +196,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L69)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L87)
 
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_Serialize_"></a>
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_Serialize"></a>
@@ -215,4 +215,4 @@ to `HttpMessageHandler)`.
 
 **Returns:** [SerializedModelOptions](/api/Vercel.AI.ProviderUtils/SerializedModelOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L66)

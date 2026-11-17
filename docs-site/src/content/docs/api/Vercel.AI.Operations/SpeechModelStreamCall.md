@@ -23,7 +23,7 @@ Arguments for `doStream` on a speech model. Maps to `SpeechModelV4StreamOptions`
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L205)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L210)
 
 ## Constructors
 
@@ -55,7 +55,7 @@ Creates a speech stream call.
 | `includeRawChunks` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L208)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L213)
 
 ## Properties
 
@@ -74,7 +74,7 @@ Cancels the operation. Also fires when the consumer cancels the result stream.
 
 **Value:** [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L253)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L269)
 
 <a id="Vercel_AI_Operations_SpeechModelStreamCall_Headers_"></a>
 <a id="Vercel_AI_Operations_SpeechModelStreamCall_Headers"></a>
@@ -91,7 +91,7 @@ Headers including the user-agent suffix.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L247)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L263)
 
 <a id="Vercel_AI_Operations_SpeechModelStreamCall_IncludeRawChunks_"></a>
 <a id="Vercel_AI_Operations_SpeechModelStreamCall_IncludeRawChunks"></a>
@@ -108,7 +108,7 @@ When true, providers include raw provider chunks in the stream.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L250)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L266)
 
 <a id="Vercel_AI_Operations_SpeechModelStreamCall_Instructions_"></a>
 <a id="Vercel_AI_Operations_SpeechModelStreamCall_Instructions"></a>
@@ -125,7 +125,7 @@ Speaking instructions.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L235)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L251)
 
 <a id="Vercel_AI_Operations_SpeechModelStreamCall_Language_"></a>
 <a id="Vercel_AI_Operations_SpeechModelStreamCall_Language"></a>
@@ -142,7 +142,7 @@ ISO 639-1 language code or `auto`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L241)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L257)
 
 <a id="Vercel_AI_Operations_SpeechModelStreamCall_OutputFormat_"></a>
 <a id="Vercel_AI_Operations_SpeechModelStreamCall_OutputFormat"></a>
@@ -159,7 +159,7 @@ Desired format of the output audio chunks. The provider default applies when nul
 
 **Value:** [SpeechAudioFormat](/api/Vercel.AI.Operations/SpeechAudioFormat/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L232)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L248)
 
 <a id="Vercel_AI_Operations_SpeechModelStreamCall_ProviderOptions_"></a>
 <a id="Vercel_AI_Operations_SpeechModelStreamCall_ProviderOptions"></a>
@@ -176,7 +176,7 @@ Provider options. Empty object when omitted.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L244)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L260)
 
 <a id="Vercel_AI_Operations_SpeechModelStreamCall_Speed_"></a>
 <a id="Vercel_AI_Operations_SpeechModelStreamCall_Speed"></a>
@@ -193,7 +193,7 @@ Playback speed.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L238)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L254)
 
 <a id="Vercel_AI_Operations_SpeechModelStreamCall_Text_"></a>
 <a id="Vercel_AI_Operations_SpeechModelStreamCall_Text"></a>
@@ -211,7 +211,7 @@ releases it on every terminal path.
 
 **Value:** [SpeechTextStream](/api/Vercel.AI.Operations/SpeechTextStream/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L226)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L242)
 
 <a id="Vercel_AI_Operations_SpeechModelStreamCall_Voice_"></a>
 <a id="Vercel_AI_Operations_SpeechModelStreamCall_Voice"></a>
@@ -228,4 +228,4 @@ Voice to use. Provider-specific.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L229)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L245)

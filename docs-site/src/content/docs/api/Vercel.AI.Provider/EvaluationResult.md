@@ -28,7 +28,7 @@ Deprecated name of [RubricResult](/api/Vercel.AI.Provider/RubricResult/).
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L515)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L597)
 
 ## Constructors
 
@@ -52,7 +52,7 @@ Creates an evaluation result.
 | `score` | [double](https://learn.microsoft.com/dotnet/api/system.double) |  |
 | `reason` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L519)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L601)
 
 ## Properties
 
@@ -71,7 +71,7 @@ Explanation.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L529)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L611)
 
 <a id="Vercel_AI_Provider_EvaluationResult_Score_"></a>
 <a id="Vercel_AI_Provider_EvaluationResult_Score"></a>
@@ -88,4 +88,4 @@ Score assigned by the evaluator.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L526)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L608)

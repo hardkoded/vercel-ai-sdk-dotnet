@@ -23,7 +23,7 @@ One generated video payload from the model.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L137)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L152)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates an output.
 | `data` | [object](https://learn.microsoft.com/dotnet/api/system.object) |  |
 | `mediaType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L140)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L155)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Base64 string or bytes.
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L155)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L175)
 
 <a id="Vercel_AI_Operations_VideoOutput_MediaType_"></a>
 <a id="Vercel_AI_Operations_VideoOutput_MediaType"></a>
@@ -85,7 +85,7 @@ Provider media type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L158)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L178)
 
 <a id="Vercel_AI_Operations_VideoOutput_Type_"></a>
 <a id="Vercel_AI_Operations_VideoOutput_Type"></a>
@@ -98,11 +98,11 @@ public string Type { get; }
 ```
 
 
-`url`, `base64`, or `binary`.
+`url`, `base64`, `binary`, or `uploaded`. An `uploaded` output confirms the provider delivered the video to caller-managed storage. It has no URL or bytes, and its URL must never contain a signed upload URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L149)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L169)
 
 <a id="Vercel_AI_Operations_VideoOutput_Url_"></a>
 <a id="Vercel_AI_Operations_VideoOutput_Url"></a>
@@ -119,4 +119,4 @@ URL for `url` outputs.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L152)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L172)

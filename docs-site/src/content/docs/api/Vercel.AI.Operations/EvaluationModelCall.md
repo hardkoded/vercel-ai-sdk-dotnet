@@ -28,7 +28,7 @@ Deprecated alias of [DecisionModelCall](/api/Vercel.AI.Operations/DecisionModelC
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L48)
 
 ## Constructors
 
@@ -57,4 +57,4 @@ Creates a call.
 | `maxOutputTokens` | [double?](https://learn.microsoft.com/dotnet/api/system.double) |  |
 | `reasoning` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L52)

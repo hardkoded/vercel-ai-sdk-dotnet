@@ -90,7 +90,7 @@ Why the model finished generating.
 
 **Value:** [FinishReason](/api/Vercel.AI.Provider/FinishReason/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L47)
 
 <a id="Vercel_AI_GenerateObject_NoObjectGeneratedException_Response_"></a>
 <a id="Vercel_AI_GenerateObject_NoObjectGeneratedException_Response"></a>
@@ -107,7 +107,7 @@ Response metadata from the model call.
 
 **Value:** [StepResponse](/api/Vercel.AI/StepResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L41)
 
 <a id="Vercel_AI_GenerateObject_NoObjectGeneratedException_Text_"></a>
 <a id="Vercel_AI_GenerateObject_NoObjectGeneratedException_Text"></a>
@@ -124,7 +124,7 @@ The selected text that failed to parse or validate.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L38)
 
 <a id="Vercel_AI_GenerateObject_NoObjectGeneratedException_Usage_"></a>
 <a id="Vercel_AI_GenerateObject_NoObjectGeneratedException_Usage"></a>
@@ -141,7 +141,7 @@ Token usage from the model call.
 
 **Value:** [LanguageModelUsage](/api/Vercel.AI.Provider/LanguageModelUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L44)
 
 ## Methods
 
@@ -166,4 +166,4 @@ Returns whether &lt;code class="paramref"&gt;error&lt;/code&gt; carries this err
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L50)

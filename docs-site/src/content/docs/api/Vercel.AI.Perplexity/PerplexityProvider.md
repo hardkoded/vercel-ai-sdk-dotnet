@@ -170,7 +170,7 @@ Agent API URL. A custom base URL is prefixed to `v1/agent`.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityProvider.cs#L76)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityProvider.cs#L79)
 
 <a id="Vercel_AI_Perplexity_PerplexityProvider_Create_"></a>
 <a id="Vercel_AI_Perplexity_PerplexityProvider_Create_Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_System_Net_Http_HttpMessageHandler_"></a>
@@ -194,7 +194,7 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [PerplexityProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityProvider.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityProvider.cs#L44)
 
 <a id="Vercel_AI_Perplexity_PerplexityProvider_DecisionModel_"></a>
 <a id="Vercel_AI_Perplexity_PerplexityProvider_DecisionModel_System_String_"></a>
@@ -217,7 +217,7 @@ Decision model. Uses the Decisions API at `{base}/v1/decisions`. The provider id
 
 **Returns:** [PerplexityDecisionModel](/api/Vercel.AI.Perplexity/PerplexityDecisionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityProvider.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityProvider.cs#L68)
 
 <a id="Vercel_AI_Perplexity_PerplexityProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_Perplexity_PerplexityProvider_EmbeddingModel_System_String_"></a>
@@ -240,7 +240,7 @@ Returns an embedding model.
 
 **Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityProvider.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityProvider.cs#L62)
 
 <a id="Vercel_AI_Perplexity_PerplexityProvider_LanguageModel_"></a>
 <a id="Vercel_AI_Perplexity_PerplexityProvider_LanguageModel_System_String_"></a>
@@ -263,4 +263,4 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityProvider.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityProvider.cs#L56)

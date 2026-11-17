@@ -23,7 +23,7 @@ A file part. Maps to `FileUIPart`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [UIMessagePart](/api/Vercel.AI.Ui/UIMessagePart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L174)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L177)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a file part.
 | `mediaType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `url` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L177)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L180)
 
 ## Properties
 
@@ -66,7 +66,7 @@ The file name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L188)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L191)
 
 <a id="Vercel_AI_Ui_FileUIPart_MediaType_"></a>
 <a id="Vercel_AI_Ui_FileUIPart_MediaType"></a>
@@ -83,7 +83,7 @@ IANA media type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L185)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L188)
 
 <a id="Vercel_AI_Ui_FileUIPart_ProviderMetadata_"></a>
 <a id="Vercel_AI_Ui_FileUIPart_ProviderMetadata"></a>
@@ -100,7 +100,7 @@ The provider metadata.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L197)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L200)
 
 <a id="Vercel_AI_Ui_FileUIPart_ProviderReference_"></a>
 <a id="Vercel_AI_Ui_FileUIPart_ProviderReference"></a>
@@ -117,7 +117,7 @@ Map from provider name to an uploaded file id. It takes precedence over [Url](#V
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L194)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L197)
 
 <a id="Vercel_AI_Ui_FileUIPart_Url_"></a>
 <a id="Vercel_AI_Ui_FileUIPart_Url"></a>
@@ -134,4 +134,4 @@ The URL, which can be a data URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L191)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L194)

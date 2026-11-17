@@ -61,6 +61,23 @@ API origin.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L17)
 
+<a id="Vercel_AI_Cohere_CohereOptions_GenerateId_"></a>
+<a id="Vercel_AI_Cohere_CohereOptions_GenerateId"></a>
+
+### GenerateId
+
+
+```csharp
+public Func<string>? GenerateId { get; set; }
+```
+
+
+Creates the ids of citation sources. Maps to upstream `generateId`. Defaults to a random id.
+
+**Value:** [Func&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L26)
+
 <a id="Vercel_AI_Cohere_CohereOptions_Headers_"></a>
 <a id="Vercel_AI_Cohere_CohereOptions_Headers"></a>
 

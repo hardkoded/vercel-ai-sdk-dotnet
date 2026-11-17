@@ -23,7 +23,7 @@ Result of `CancellationToken)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L242)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L279)
 
 ## Constructors
 
@@ -51,7 +51,7 @@ Creates a result.
 | `providerMetadata` | [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 | `usage` | [OperationUsage](/api/Vercel.AI.Operations/OperationUsage/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L245)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L282)
 
 ## Properties
 
@@ -70,7 +70,7 @@ Underlying calls, including empty retries that were later replaced.
 
 **Value:** [IReadOnlyList&lt;ImageCallResult&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L265)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L309)
 
 <a id="Vercel_AI_Operations_GenerateImageResult_Image_"></a>
 <a id="Vercel_AI_Operations_GenerateImageResult_Image"></a>
@@ -87,7 +87,7 @@ First image.
 
 **Value:** [GeneratedImage](/api/Vercel.AI.Operations/GeneratedImage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L256)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L300)
 
 <a id="Vercel_AI_Operations_GenerateImageResult_Images_"></a>
 <a id="Vercel_AI_Operations_GenerateImageResult_Images"></a>
@@ -104,7 +104,7 @@ All images.
 
 **Value:** [IReadOnlyList&lt;GeneratedImage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L262)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L306)
 
 <a id="Vercel_AI_Operations_GenerateImageResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_GenerateImageResult_ProviderMetadata"></a>
@@ -121,7 +121,7 @@ Merged provider metadata.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L274)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L318)
 
 <a id="Vercel_AI_Operations_GenerateImageResult_Responses_"></a>
 <a id="Vercel_AI_Operations_GenerateImageResult_Responses"></a>
@@ -138,7 +138,7 @@ One response per collected call.
 
 **Value:** [IReadOnlyList&lt;ProviderResponse&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L271)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L315)
 
 <a id="Vercel_AI_Operations_GenerateImageResult_Usage_"></a>
 <a id="Vercel_AI_Operations_GenerateImageResult_Usage"></a>
@@ -155,7 +155,7 @@ Summed usage. Counts stay null until a provider reports them.
 
 **Value:** [OperationUsage](/api/Vercel.AI.Operations/OperationUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L277)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L321)
 
 <a id="Vercel_AI_Operations_GenerateImageResult_Warnings_"></a>
 <a id="Vercel_AI_Operations_GenerateImageResult_Warnings"></a>
@@ -172,4 +172,4 @@ Aggregated warnings.
 
 **Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L268)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L312)

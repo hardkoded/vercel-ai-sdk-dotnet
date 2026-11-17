@@ -42,7 +42,7 @@ Base64 text when the file was created with `String)`; otherwise null.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L61)
 
 <a id="Vercel_AI_Operations_ImageModelFile_Data_"></a>
 <a id="Vercel_AI_Operations_ImageModelFile_Data"></a>
@@ -59,7 +59,7 @@ Bytes when [Type](#Vercel_AI_Operations_ImageModelFile_Type) is `file`. Decoded 
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L58)
 
 <a id="Vercel_AI_Operations_ImageModelFile_FileName_"></a>
 <a id="Vercel_AI_Operations_ImageModelFile_FileName"></a>
@@ -76,7 +76,7 @@ File name used when a provider uploads the file as multipart form data.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L67)
 
 <a id="Vercel_AI_Operations_ImageModelFile_MediaType_"></a>
 <a id="Vercel_AI_Operations_ImageModelFile_MediaType"></a>
@@ -93,7 +93,7 @@ Media type of a file image.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L64)
 
 <a id="Vercel_AI_Operations_ImageModelFile_ProviderOptions_"></a>
 <a id="Vercel_AI_Operations_ImageModelFile_ProviderOptions"></a>
@@ -110,7 +110,7 @@ Provider options for this file, keyed by provider id.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L70)
 
 <a id="Vercel_AI_Operations_ImageModelFile_Type_"></a>
 <a id="Vercel_AI_Operations_ImageModelFile_Type"></a>
@@ -127,7 +127,7 @@ public string Type { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L52)
 
 <a id="Vercel_AI_Operations_ImageModelFile_Url_"></a>
 <a id="Vercel_AI_Operations_ImageModelFile_Url"></a>
@@ -144,7 +144,7 @@ URL when [Type](#Vercel_AI_Operations_ImageModelFile_Type) is `url`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L55)
 
 ## Methods
 
@@ -171,7 +171,7 @@ Creates an image from base64 text. Providers that send base64 pass the text unch
 
 **Returns:** [ImageModelFile](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L32)
 
 <a id="Vercel_AI_Operations_ImageModelFile_FromFile_"></a>
 <a id="Vercel_AI_Operations_ImageModelFile_FromFile_System_Byte___System_String_System_String_"></a>

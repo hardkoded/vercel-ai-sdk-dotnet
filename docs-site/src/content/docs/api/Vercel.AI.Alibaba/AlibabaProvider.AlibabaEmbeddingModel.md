@@ -25,7 +25,7 @@ DashScope text-embedding model.
 
 **Implements:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L90)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L106)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates an embedding model.
 | `provider` | [AlibabaProvider](/api/Vercel.AI.Alibaba/AlibabaProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L95)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L111)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Maximum values in one call.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L102)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L118)
 
 <a id="Vercel_AI_Alibaba_AlibabaProvider_AlibabaEmbeddingModel_ModelId_"></a>
 <a id="Vercel_AI_Alibaba_AlibabaProvider_AlibabaEmbeddingModel_ModelId"></a>
@@ -85,7 +85,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L120)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L136)
 
 <a id="Vercel_AI_Alibaba_AlibabaProvider_AlibabaEmbeddingModel_Provider_"></a>
 <a id="Vercel_AI_Alibaba_AlibabaProvider_AlibabaEmbeddingModel_Provider"></a>
@@ -102,7 +102,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L114)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L130)
 
 <a id="Vercel_AI_Alibaba_AlibabaProvider_AlibabaEmbeddingModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Alibaba_AlibabaProvider_AlibabaEmbeddingModel_SpecificationVersion"></a>
@@ -119,7 +119,7 @@ Specification version. Always `V4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L124)
 
 ## Methods
 
@@ -148,7 +148,7 @@ Embeds each value. Maps to `doEmbed`. &lt;code class="paramref"&gt;providerOptio
 
 **Returns:** [Task&lt;EmbeddingResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L123)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L139)
 
 <a id="Vercel_AI_Alibaba_AlibabaProvider_AlibabaEmbeddingModel_EmbedAsync_"></a>
 <a id="Vercel_AI_Alibaba_AlibabaProvider_AlibabaEmbeddingModel_EmbedAsync_Vercel_AI_Alibaba_AlibabaEmbeddingRequest_System_Threading_CancellationToken_"></a>
@@ -172,4 +172,4 @@ Embeds texts with the native DashScope embedding route.
 
 **Returns:** [Task&lt;AlibabaEmbeddingResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L138)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L169)

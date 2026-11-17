@@ -23,7 +23,7 @@ Webhook notification.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L341)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L395)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a webhook.
 | `url` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `received` | [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L344)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L398)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Completes when the notification arrives.
 
 **Value:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L354)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L408)
 
 <a id="Vercel_AI_Operations_VideoWebhook_Url_"></a>
 <a id="Vercel_AI_Operations_VideoWebhook_Url"></a>
@@ -83,4 +83,4 @@ URL the provider should call.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L351)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateVideo.cs#L405)

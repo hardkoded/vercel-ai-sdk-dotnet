@@ -23,7 +23,7 @@ Header and retry helpers shared by the operation types.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L471)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L557)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Reads a header, ignoring case and parameters after `;`.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L501)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L590)
 
 <a id="Vercel_AI_Operations_OperationHeaders_WithUserAgent_"></a>
 <a id="Vercel_AI_Operations_OperationHeaders_WithUserAgent_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_String_"></a>
@@ -73,4 +73,4 @@ Lowercases header names and appends the AI SDK user-agent.
 
 **Returns:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L474)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L560)

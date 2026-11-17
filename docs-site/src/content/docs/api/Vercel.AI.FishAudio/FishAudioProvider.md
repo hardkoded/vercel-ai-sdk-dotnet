@@ -142,7 +142,7 @@ Creates a provider.
 
 **Returns:** [FishAudioProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L68)
 
 <a id="Vercel_AI_FishAudio_FishAudioProvider_LanguageModel_"></a>
 <a id="Vercel_AI_FishAudio_FishAudioProvider_LanguageModel_System_String_"></a>
@@ -165,7 +165,7 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L50)
 
 <a id="Vercel_AI_FishAudio_FishAudioProvider_Speech_"></a>
 <a id="Vercel_AI_FishAudio_FishAudioProvider_Speech_System_String_"></a>
@@ -188,7 +188,7 @@ Creates a speech model.
 
 **Returns:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L56)
 
 <a id="Vercel_AI_FishAudio_FishAudioProvider_SpeechModel_"></a>
 <a id="Vercel_AI_FishAudio_FishAudioProvider_SpeechModel_System_String_"></a>
@@ -211,7 +211,7 @@ Returns a speech model.
 
 **Returns:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L87)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L96)
 
 <a id="Vercel_AI_FishAudio_FishAudioProvider_Transcription_"></a>
 <a id="Vercel_AI_FishAudio_FishAudioProvider_Transcription"></a>
@@ -228,7 +228,7 @@ Creates the default transcription model `transcribe-1`.
 
 **Returns:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L62)
 
 <a id="Vercel_AI_FishAudio_FishAudioProvider_TranscriptionModel_"></a>
 <a id="Vercel_AI_FishAudio_FishAudioProvider_TranscriptionModel_System_String_"></a>
@@ -251,4 +251,4 @@ Returns a transcription model.
 
 **Returns:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L90)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L99)

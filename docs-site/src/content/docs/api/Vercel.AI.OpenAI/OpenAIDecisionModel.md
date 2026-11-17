@@ -25,7 +25,7 @@ Answers questions through the OpenAI Decisions API (`POST /decisions`).
 
 **Implements:** [IEvaluationDecisionCaller](/api/Vercel.AI.Operations/IEvaluationDecisionCaller/), [IDecisionCaller](/api/Vercel.AI.Operations/IDecisionCaller/), [IEvaluationCaller](/api/Vercel.AI.Operations/IEvaluationCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Decision/OpenAIDecisionModel.cs#L17)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Decision/OpenAIDecisionModel.cs#L18)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a decision model.
 | `provider` | [OpenAIProvider](/api/Vercel.AI.OpenAI/OpenAIProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Decision/OpenAIDecisionModel.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Decision/OpenAIDecisionModel.cs#L34)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Decision/OpenAIDecisionModel.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Decision/OpenAIDecisionModel.cs#L44)
 
 <a id="Vercel_AI_OpenAI_OpenAIDecisionModel_Provider_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIDecisionModel_Provider"></a>
@@ -85,7 +85,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Decision/OpenAIDecisionModel.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Decision/OpenAIDecisionModel.cs#L41)
 
 <a id="Vercel_AI_OpenAI_OpenAIDecisionModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIDecisionModel_SpecificationVersion"></a>
@@ -102,7 +102,7 @@ Specification version. Only `v4` is accepted.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Decision/OpenAIDecisionModel.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Decision/OpenAIDecisionModel.cs#L47)
 
 <a id="Vercel_AI_OpenAI_OpenAIDecisionModel_SupportedQuestionTypes_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIDecisionModel_SupportedQuestionTypes"></a>
@@ -119,7 +119,7 @@ Question types this model can answer.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Decision/OpenAIDecisionModel.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Decision/OpenAIDecisionModel.cs#L50)
 
 ## Methods
 
@@ -145,7 +145,7 @@ Sends every question in one Decisions request.
 
 **Returns:** [Task&lt;DecisionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Decision/OpenAIDecisionModel.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Decision/OpenAIDecisionModel.cs#L66)
 
 <a id="Vercel_AI_OpenAI_OpenAIDecisionModel_DoEvaluateAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIDecisionModel_DoEvaluateAsync_Vercel_AI_Operations_EvaluationModelCall_System_Threading_CancellationToken_"></a>
@@ -174,4 +174,4 @@ Deprecated. Use `CancellationToken)`.
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Decision/OpenAIDecisionModel.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Decision/OpenAIDecisionModel.cs#L54)

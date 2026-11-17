@@ -30,7 +30,7 @@ A single item for `embed` or a list for `embedMany`, as carried by embed events.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationUnions.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationUnions.cs#L48)
 
 ## Properties
 
@@ -49,7 +49,7 @@ True for `embedMany`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationUnions.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationUnions.cs#L58)
 
 <a id="Vercel_AI_EmbedEventValue_2_Many_"></a>
 <a id="Vercel_AI_EmbedEventValue_2_Many"></a>
@@ -66,7 +66,7 @@ The list. Default when `IsMany` is false.
 
 **Value:** `TMany`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationUnions.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationUnions.cs#L64)
 
 <a id="Vercel_AI_EmbedEventValue_2_One_"></a>
 <a id="Vercel_AI_EmbedEventValue_2_One"></a>
@@ -83,7 +83,7 @@ The single item. Default when `IsMany` is true.
 
 **Value:** `TOne`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationUnions.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationUnions.cs#L61)
 
 ## Methods
 
@@ -108,7 +108,7 @@ Wraps the `embedMany` list.
 
 **Returns:** [EmbedEventValue&lt;TOne, TMany&gt;](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationUnions.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationUnions.cs#L73)
 
 <a id="Vercel_AI_EmbedEventValue_2_FromOne_"></a>
 <a id="Vercel_AI_EmbedEventValue_2_FromOne__0_"></a>
@@ -131,4 +131,4 @@ Wraps the single `embed` item.
 
 **Returns:** [EmbedEventValue&lt;TOne, TMany&gt;](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationUnions.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationUnions.cs#L67)

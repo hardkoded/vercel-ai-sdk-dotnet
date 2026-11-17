@@ -26,4 +26,4 @@ Deprecated name of [IRubricModel](/api/Vercel.AI.Provider/IRubricModel/). Pass i
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L533)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L615)

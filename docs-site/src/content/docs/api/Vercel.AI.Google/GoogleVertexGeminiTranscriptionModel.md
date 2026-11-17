@@ -25,7 +25,7 @@ Vertex Gemini transcription through generateContent.
 
 **Implements:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/), [ITranscriptionCaller](/api/Vercel.AI.Operations/ITranscriptionCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L214)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L278)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a Gemini transcription model.
 | `provider` | [GoogleVertexProvider](/api/Vercel.AI.Google/GoogleVertexProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L222)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L299)
 
 ## Properties
 
@@ -64,11 +64,11 @@ public bool CanStream { get; }
 ```
 
 
-False. The Vertex Live WebSocket is not opened by this port.
+True. Live model ids stream over the Vertex Live API WebSocket.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L244)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L321)
 
 <a id="Vercel_AI_Google_GoogleVertexGeminiTranscriptionModel_ModelId_"></a>
 <a id="Vercel_AI_Google_GoogleVertexGeminiTranscriptionModel_ModelId"></a>
@@ -85,7 +85,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L235)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L312)
 
 <a id="Vercel_AI_Google_GoogleVertexGeminiTranscriptionModel_Provider_"></a>
 <a id="Vercel_AI_Google_GoogleVertexGeminiTranscriptionModel_Provider"></a>
@@ -102,7 +102,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L229)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L306)
 
 <a id="Vercel_AI_Google_GoogleVertexGeminiTranscriptionModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Google_GoogleVertexGeminiTranscriptionModel_SpecificationVersion"></a>
@@ -119,7 +119,7 @@ Specification version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L238)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L315)
 
 ## Methods
 
@@ -146,7 +146,7 @@ Text parts win over the `audioTranscription` text, which also carries the langua
 
 **Returns:** [Task&lt;TranscriptionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L261)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L347)
 
 <a id="Vercel_AI_Google_GoogleVertexGeminiTranscriptionModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_Google_GoogleVertexGeminiTranscriptionModel_DoStreamAsync_Vercel_AI_Operations_TranscriptionStreamCall_System_Threading_CancellationToken_"></a>
@@ -159,7 +159,7 @@ public Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall cal
 ```
 
 
-Returns null. The Vertex Live WebSocket is not opened by this port.
+Streams transcription over the Vertex Live API WebSocket (`LlmBidiService/BidiGenerateContent`).
 
 **Parameters**
 
@@ -170,7 +170,7 @@ Returns null. The Vertex Live WebSocket is not opened by this port.
 
 **Returns:** [Task&lt;TranscriptionStreamStart&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L358)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L525)
 
 <a id="Vercel_AI_Google_GoogleVertexGeminiTranscriptionModel_DoTranscribeAsync_"></a>
 <a id="Vercel_AI_Google_GoogleVertexGeminiTranscriptionModel_DoTranscribeAsync_Vercel_AI_Provider_AudioInput_System_Threading_CancellationToken_"></a>
@@ -194,4 +194,4 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L250)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L327)

@@ -23,7 +23,7 @@ Generates images. Maps to `generateImage`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L340)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L384)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Generates images and merges parallel calls.
 
 **Returns:** [Task&lt;GenerateImageResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L348)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L398)
 
 <a id="Vercel_AI_Operations_GenerateImage_NormalizePrompt_"></a>
 <a id="Vercel_AI_Operations_GenerateImage_NormalizePrompt_Vercel_AI_Operations_ImagePrompt_System_String_"></a>
@@ -73,4 +73,4 @@ Normalizes a prompt the way `normalizePrompt` does.
 
 **Returns:** [ImagePromptParts](/api/Vercel.AI.Operations/ImagePromptParts/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L410)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L496)

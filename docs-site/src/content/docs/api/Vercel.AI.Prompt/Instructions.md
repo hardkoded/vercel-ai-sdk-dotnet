@@ -85,7 +85,7 @@ Creates instructions from a list of system messages.
 
 **Returns:** [Instructions](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L43)
 
 <a id="Vercel_AI_Prompt_Instructions_From_System_String_"></a>
 
@@ -154,7 +154,7 @@ Converts a string to instructions.
 
 **Returns:** [Instructions](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L61)
 
 <a id="Vercel_AI_Prompt_Instructions_op_Implicit_Vercel_AI_Provider_SystemModelMessage__Vercel_AI_Prompt_Instructions"></a>
 
@@ -176,7 +176,7 @@ Converts a system message to instructions.
 
 **Returns:** [Instructions](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L67)
 
 <a id="Vercel_AI_Prompt_Instructions_op_Implicit_Vercel_AI_Provider_SystemModelMessage____Vercel_AI_Prompt_Instructions"></a>
 
@@ -198,4 +198,4 @@ Converts an array of system messages to instructions.
 
 **Returns:** [Instructions](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/StandardizePrompt.cs#L73)

@@ -30,4 +30,4 @@ Fetches one URL for [Download](/api/Vercel.AI.Util/Download/).
 
 **Returns:** [Task&lt;DownloadResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L186)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L206)

@@ -43,7 +43,7 @@ Output area when a pixel size is not supplied: `1K`, `2K`, or `4K`. Defaults to 
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModelOptions.cs#L19)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModelOptions.cs#L20)
 
 <a id="Vercel_AI_MiniMax_MiniMaxImageModelOptions_DisablePromptEnhanced_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxImageModelOptions_DisablePromptEnhanced"></a>
@@ -61,7 +61,7 @@ Disable prompt enhancement for text-to-image requests.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModelOptions.cs#L23)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModelOptions.cs#L24)
 
 <a id="Vercel_AI_MiniMax_MiniMaxImageModelOptions_MiniMaxImageAreas_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxImageModelOptions_MiniMaxImageAreas"></a>
@@ -113,7 +113,7 @@ Compression quality for JPEG and WebP output, from 0 to 100.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModelOptions.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModelOptions.cs#L28)
 
 <a id="Vercel_AI_MiniMax_MiniMaxImageModelOptions_OutputFormat_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxImageModelOptions_OutputFormat"></a>
@@ -131,4 +131,4 @@ Generated image format: `jpeg`, `jpg`, `png`, or `webp`. Defaults to JPEG.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModelOptions.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxImageModelOptions.cs#L32)

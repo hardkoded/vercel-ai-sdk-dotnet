@@ -26,7 +26,7 @@ so `catch (OperationCanceledException)` handles every caller cancel. It is not a
 
 **Implements:** [ISerializable](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.iserializable)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/Errors.cs#L167)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/Errors.cs#L152)
 
 ## Constructors
 
@@ -43,7 +43,7 @@ public ApiUserAbortException()
 
 Creates the exception.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/Errors.cs#L170)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/Errors.cs#L155)
 
 <a id="Vercel_AI_Provider_ApiUserAbortException__ctor_System_Exception_System_Threading_CancellationToken_"></a>
 
@@ -64,4 +64,4 @@ Creates the exception for a cancelled &lt;code class="paramref"&gt;cancellationT
 | `innerException` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
 | `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/Errors.cs#L176)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/Errors.cs#L159)

@@ -23,7 +23,7 @@ Fills default headers without replacing headers the caller already set.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/HeaderCollection.cs#L88)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/HeaderCollection.cs#L87)
 
 ## Methods
 
@@ -50,4 +50,4 @@ Header names are compared case-insensitively.
 
 **Returns:** [HeaderCollection](/api/Vercel.AI.Util/HeaderCollection/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/HeaderCollection.cs#L94)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/HeaderCollection.cs#L93)

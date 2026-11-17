@@ -23,7 +23,7 @@ Ids and metadata keys used while parsing a Gemini response.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L406)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L602)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a parse context.
 | `warnings` | [IReadOnlyList&lt;GoogleWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `jsonResponseToolName` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L411)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L607)
 
 ## Properties
 
@@ -69,7 +69,7 @@ Id factory. The default uses an increasing counter.
 
 **Value:** [Func&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L425)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L634)
 
 <a id="Vercel_AI_Google_GoogleParseContext_JsonResponseToolName_"></a>
 <a id="Vercel_AI_Google_GoogleParseContext_JsonResponseToolName"></a>
@@ -86,7 +86,7 @@ Name of the internal tool that carries structured output. Its calls become text 
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L434)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L643)
 
 <a id="Vercel_AI_Google_GoogleParseContext_MetadataNames_"></a>
 <a id="Vercel_AI_Google_GoogleParseContext_MetadataNames"></a>
@@ -103,7 +103,7 @@ Metadata namespaces written onto the result.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L422)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L631)
 
 <a id="Vercel_AI_Google_GoogleParseContext_Tools_"></a>
 <a id="Vercel_AI_Google_GoogleParseContext_Tools"></a>
@@ -120,7 +120,7 @@ Tool name mapping.
 
 **Value:** [GoogleToolPreparation](/api/Vercel.AI.Google/GoogleToolPreparation/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L428)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L637)
 
 <a id="Vercel_AI_Google_GoogleParseContext_Warnings_"></a>
 <a id="Vercel_AI_Google_GoogleParseContext_Warnings"></a>
@@ -137,7 +137,7 @@ Warnings copied onto the result.
 
 **Value:** [IReadOnlyList&lt;GoogleWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L431)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L640)
 
 ## Methods
 
@@ -156,4 +156,4 @@ Returns the next synthetic id.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L437)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L646)

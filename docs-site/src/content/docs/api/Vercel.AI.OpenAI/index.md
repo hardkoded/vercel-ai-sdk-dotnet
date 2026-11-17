@@ -14,6 +14,10 @@ OpenAI Chat Completions, Responses, images, speech, and transcription.
 
 | Type | Summary |
 | --- | --- |
+| [OpenAIApplyPatchInput](/api/Vercel.AI.OpenAI/OpenAIApplyPatchInput/) | The input the model sends to the applypatch tool. |
+| [OpenAIApplyPatchOperation](/api/Vercel.AI.OpenAI/OpenAIApplyPatchOperation/) | A patch operation of the applypatch tool: createfile, deletefile, or updatefile. |
+| [OpenAIApplyPatchOutput](/api/Vercel.AI.OpenAI/OpenAIApplyPatchOutput/) | The output of the applypatch tool, what the application sends back. |
+| [OpenAIApplyPatchToolOptions](/api/Vercel.AI.OpenAI/OpenAIApplyPatchToolOptions/) | Options of ApplyPatch(OpenAIApplyPatchToolOptions). |
 | [OpenAIApproximateLocation](/api/Vercel.AI.OpenAI/OpenAIApproximateLocation/) | An approximate user location for the OpenAI web search tools. |
 | [OpenAIBatchApi](/api/Vercel.AI.OpenAI/OpenAIBatchApi/) | OpenAI Batch API. Starts, reads, cancels, and lists Responses batches, and downloads their results. |
 | [OpenAICallWarning](/api/Vercel.AI.OpenAI/OpenAICallWarning/) | A warning produced while preparing an OpenAI request. |
@@ -51,22 +55,40 @@ OpenAI Chat Completions, Responses, images, speech, and transcription.
 | [OpenAIProvider](/api/Vercel.AI.OpenAI/OpenAIProvider/) | OpenAI provider: Chat Completions, Responses, embeddings, images, speech, transcription, files, and batches. |
 | [OpenAIRealtimeClientSecret](/api/Vercel.AI.OpenAI/OpenAIRealtimeClientSecret/) | A realtime client secret. |
 | [OpenAIRealtimeModel](/api/Vercel.AI.OpenAI/OpenAIRealtimeModel/) | OpenAI Realtime session URI builder and WebSocket client. |
+| [OpenAIRealtimeModelConfig](/api/Vercel.AI.OpenAI/OpenAIRealtimeModelConfig/) | Settings of OpenAIRealtimeModel. Maps to OpenAIRealtimeModelConfig. Headers maps the upstream Resolvable: an object, a promise, a callback or an async callback all fit a function that returns a task. |
+| [OpenAIRealtimeModelLive](/api/Vercel.AI.OpenAI/OpenAIRealtimeModelLive/) | OpenAI Live realtime model: a continuous conversation over a server WebSocket or WebRTC. Maps to OpenAIRealtimeModelLive. |
+| [OpenAIRealtimeModelLiveDataChannel](/api/Vercel.AI.OpenAI/OpenAIRealtimeModelLiveDataChannel/) | Data channel permissions of a Live WebRTC client. |
+| [OpenAIRealtimeModelLiveOptions](/api/Vercel.AI.OpenAI/OpenAIRealtimeModelLiveOptions/) | Experimental Live options under sessionConfig.providerOptions.openai. Maps to OpenAIRealtimeModelLiveOptions. ToJsonObject() builds the provider options value. |
+| [OpenAIRealtimeModelLiveServerEventSelector](/api/Vercel.AI.OpenAI/OpenAIRealtimeModelLiveServerEventSelector/) | A server event the Live data channel forwards to the client. |
+| [OpenAIRealtimeModelLiveWebRTCConfig](/api/Vercel.AI.OpenAI/OpenAIRealtimeModelLiveWebRTCConfig/) | The data channel a Live WebRTC client opens. Maps to the result of getWebRTCConfig. |
+| [OpenAIRealtimeModelLiveWebRTCSession](/api/Vercel.AI.OpenAI/OpenAIRealtimeModelLiveWebRTCSession/) | The answer of a Live WebRTC session creation. Maps to the result of doCreateWebRTCSession. |
+| [OpenAIRealtimeOptions](/api/Vercel.AI.OpenAI/OpenAIRealtimeOptions/) | Options of OpenAIRealtimeOptions). Maps to OpenAIRealtimeOptions. |
+| [OpenAIRealtimeWebSocketConfig](/api/Vercel.AI.OpenAI/OpenAIRealtimeWebSocketConfig/) | URL and subprotocols a client opens a WebSocket with. Maps to the result of getWebSocketConfig. |
 | [OpenAIResponsesAllowedTools](/api/Vercel.AI.OpenAI/OpenAIResponsesAllowedTools/) | The tools a request may call, sent as toolchoice: { type: "allowedtools" }. Maps to the allowedTools option of the OpenAI Responses provider options. |
 | [OpenAIResponsesLanguageModel](/api/Vercel.AI.OpenAI/OpenAIResponsesLanguageModel/) | OpenAI Responses API language model. |
 | [OpenAIResponsesPreparedRequest](/api/Vercel.AI.OpenAI/OpenAIResponsesPreparedRequest/) | Responses API request body and the warnings produced while building it. |
 | [OpenAIServiceCollectionExtensions](/api/Vercel.AI.OpenAI/OpenAIServiceCollectionExtensions/) | Registers OpenAIProvider. |
+| [OpenAIShellAction](/api/Vercel.AI.OpenAI/OpenAIShellAction/) | The shell action of a OpenAIShellInput. Maps to the action of the upstream shell input. |
+| [OpenAIShellContainerSkill](/api/Vercel.AI.OpenAI/OpenAIShellContainerSkill/) | A skill of a containerAuto shell environment: OpenAIShellSkillReference or OpenAIShellInlineSkill. |
 | [OpenAIShellDomainSecret](/api/Vercel.AI.OpenAI/OpenAIShellDomainSecret/) | A domain secret of an allowlist network policy. |
 | [OpenAIShellEnvironment](/api/Vercel.AI.OpenAI/OpenAIShellEnvironment/) | Environment of Shell(OpenAIShellToolOptions): containerAuto, containerReference, or local. |
+| [OpenAIShellInlineSkill](/api/Vercel.AI.OpenAI/OpenAIShellInlineSkill/) | An inline skill of a containerAuto shell environment: a base64 encoded zip archive. |
+| [OpenAIShellInput](/api/Vercel.AI.OpenAI/OpenAIShellInput/) | The input the model sends to the shell tool. |
 | [OpenAIShellLocalSkill](/api/Vercel.AI.OpenAI/OpenAIShellLocalSkill/) | A skill available in a local shell environment. |
+| [OpenAIShellOutcome](/api/Vercel.AI.OpenAI/OpenAIShellOutcome/) | The outcome of one shell command: timeout, or exit with ExitCode. |
+| [OpenAIShellOutput](/api/Vercel.AI.OpenAI/OpenAIShellOutput/) | The output of the shell tool, what the application sends back. |
+| [OpenAIShellOutputItem](/api/Vercel.AI.OpenAI/OpenAIShellOutputItem/) | The output of one shell command. |
+| [OpenAIShellSkillReference](/api/Vercel.AI.OpenAI/OpenAIShellSkillReference/) | A skillReference skill of a containerAuto shell environment. |
 | [OpenAIShellToolOptions](/api/Vercel.AI.OpenAI/OpenAIShellToolOptions/) | Options of Shell(OpenAIShellToolOptions). |
 | [OpenAISkillFile](/api/Vercel.AI.OpenAI/OpenAISkillFile/) | One file uploaded as part of a skill. |
 | [OpenAISkillStore](/api/Vercel.AI.OpenAI/OpenAISkillStore/) | OpenAI skill store. |
 | [OpenAISkillUpload](/api/Vercel.AI.OpenAI/OpenAISkillUpload/) | Skill upload result. |
 | [OpenAISpeechCall](/api/Vercel.AI.OpenAI/OpenAISpeechCall/) | Speech synthesis settings. |
 | [OpenAISpeechModel](/api/Vercel.AI.OpenAI/OpenAISpeechModel/) | OpenAI speech model. |
+| [OpenAISpeechModelOptions](/api/Vercel.AI.OpenAI/OpenAISpeechModelOptions/) | OpenAI speech model options, read from the openai provider options. Routers that also call the OpenAI speech API (Azure) accept the same options under their own key. Maps to OpenAISpeechModelOptions. |
 | [OpenAISpeechPreparation](/api/Vercel.AI.OpenAI/OpenAISpeechPreparation/) | Speech request body and warnings. |
 | [OpenAISpeechResult](/api/Vercel.AI.OpenAI/OpenAISpeechResult/) | Speech audio plus the response metadata recorded for the call. |
-| [OpenAISpeechTranslationModel](/api/Vercel.AI.OpenAI/OpenAISpeechTranslationModel/) | OpenAI speech translation model. REST calls use /audio/translations. |
+| [OpenAISpeechTranslationModel](/api/Vercel.AI.OpenAI/OpenAISpeechTranslationModel/) | OpenAI speech translation model. REST calls use /audio/translations. Realtime streaming uses the /realtime/translations WebSocket. |
 | [OpenAIText](/api/Vercel.AI.OpenAI/OpenAIText/) | Generated text that carries the Responses output item id and its annotations. |
 | [OpenAITools](/api/Vercel.AI.OpenAI/OpenAITools/) | Factories for the OpenAI provider-defined tools, the port of upstream openaiTools. Each builds the LanguageModelTool that OpenAI Responses maps to a hosted tool. |
 | [OpenAIToolSearchToolOptions](/api/Vercel.AI.OpenAI/OpenAIToolSearchToolOptions/) | Options of ToolSearch(OpenAIToolSearchToolOptions). |

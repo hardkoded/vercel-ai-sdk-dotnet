@@ -27,7 +27,7 @@ Anthropic Messages language model.
 
 **Derived:** [MiniMaxChatLanguageModel](/api/Vercel.AI.MiniMax/MiniMaxChatLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L474)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L619)
 
 ## Constructors
 
@@ -51,7 +51,7 @@ Creates a model.
 | `provider` | [AnthropicProvider](/api/Vercel.AI.Anthropic/AnthropicProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L480)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L625)
 
 <a id="Vercel_AI_Anthropic_AnthropicLanguageModel__ctor_Vercel_AI_Anthropic_AnthropicProvider_System_String_Vercel_AI_Anthropic_AnthropicModelSettings_"></a>
 
@@ -73,7 +73,7 @@ Creates a model for a Messages-compatible provider that adjusts the adapter with
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `settings` | [AnthropicModelSettings](/api/Vercel.AI.Anthropic/AnthropicModelSettings/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L486)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L629)
 
 ## Properties
 
@@ -92,7 +92,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L500)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L647)
 
 <a id="Vercel_AI_Anthropic_AnthropicLanguageModel_Provider_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicLanguageModel_Provider"></a>
@@ -109,7 +109,7 @@ Provider id, such as `openai`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L497)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L644)
 
 <a id="Vercel_AI_Anthropic_AnthropicLanguageModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicLanguageModel_SpecificationVersion"></a>
@@ -126,7 +126,7 @@ Always `V4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L494)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L641)
 
 <a id="Vercel_AI_Anthropic_AnthropicLanguageModel_SupportedUrls_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicLanguageModel_SupportedUrls"></a>
@@ -143,7 +143,7 @@ URL patterns the model accepts for images and PDFs.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L503)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L650)
 
 ## Methods
 
@@ -169,7 +169,7 @@ Generates a complete result.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L513)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L663)
 
 <a id="Vercel_AI_Anthropic_AnthropicLanguageModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicLanguageModel_DoStreamAsync_Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_"></a>
@@ -193,7 +193,7 @@ Streams partial results. The result carries the stream with the request and resp
 
 **Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L524)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L702)
 
 <a id="Vercel_AI_Anthropic_AnthropicLanguageModel_PrepareCallOptions_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicLanguageModel_PrepareCallOptions_Vercel_AI_Provider_LanguageModelCallOptions_System_Collections_Generic_IList_Vercel_AI_Anthropic_AnthropicWarning__"></a>
@@ -218,7 +218,7 @@ Warnings added to &lt;code class="paramref"&gt;warnings&lt;/code&gt; are reporte
 
 **Returns:** [LanguageModelCallOptions](/api/Vercel.AI.Provider/LanguageModelCallOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L566)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L893)
 
 <a id="Vercel_AI_Anthropic_AnthropicLanguageModel_SupportsUrl_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicLanguageModel_SupportsUrl_System_String_System_String_"></a>
@@ -242,4 +242,4 @@ True when &lt;code class="paramref"&gt;url&lt;/code&gt; is an http or https URL 
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L506)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L653)

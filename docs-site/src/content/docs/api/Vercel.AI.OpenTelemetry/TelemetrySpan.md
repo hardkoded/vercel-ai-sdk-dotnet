@@ -82,4 +82,4 @@ Exceptions also record an exception event and, for [ApiException](/api/Vercel.AI
 | `activity` | [Activity](https://learn.microsoft.com/dotnet/api/system.diagnostics.activity) | Span to update. |
 | `error` | [object](https://learn.microsoft.com/dotnet/api/system.object) | Exception or other error value. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetrySpan.cs#L86)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetrySpan.cs#L90)

@@ -23,7 +23,7 @@ Buffer that reassembles newline-delimited messages split across chunks.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L599)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L701)
 
 ## Methods
 
@@ -46,7 +46,7 @@ Appends the next stdout chunk.
 | --- | --- | --- |
 | `chunk` | [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L604)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L706)
 
 <a id="Vercel_AI_Mcp_McpNdjson_Buffer_Clear_"></a>
 <a id="Vercel_AI_Mcp_McpNdjson_Buffer_Clear"></a>
@@ -61,7 +61,7 @@ public void Clear()
 
 Drops buffered bytes.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L638)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L740)
 
 <a id="Vercel_AI_Mcp_McpNdjson_Buffer_ReadLine_"></a>
 <a id="Vercel_AI_Mcp_McpNdjson_Buffer_ReadLine"></a>
@@ -78,4 +78,4 @@ Returns the next line without its newline, or null when the line is incomplete.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L615)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpProtocol.cs#L717)

@@ -27,7 +27,7 @@ Base class for AI Gateway errors. The message includes `[generationId]` when one
 
 **Derived:** [GatewayAuthenticationError](/api/Vercel.AI.Gateway/GatewayAuthenticationError/), [GatewayFailedDependencyError](/api/Vercel.AI.Gateway/GatewayFailedDependencyError/), [GatewayForbiddenError](/api/Vercel.AI.Gateway/GatewayForbiddenError/), [GatewayInternalServerError](/api/Vercel.AI.Gateway/GatewayInternalServerError/), [GatewayInvalidRequestError](/api/Vercel.AI.Gateway/GatewayInvalidRequestError/), [GatewayModelNotFoundError](/api/Vercel.AI.Gateway/GatewayModelNotFoundError/), [GatewayNotFoundError](/api/Vercel.AI.Gateway/GatewayNotFoundError/), [GatewayRateLimitError](/api/Vercel.AI.Gateway/GatewayRateLimitError/), [GatewayResponseError](/api/Vercel.AI.Gateway/GatewayResponseError/), [GatewayTimeoutError](/api/Vercel.AI.Gateway/GatewayTimeoutError/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L12)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L13)
 
 ## Constructors
 
@@ -54,7 +54,7 @@ Creates a Gateway error.
 | `generationId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `isRetryable` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L15)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L16)
 
 ## Properties
 
@@ -73,7 +73,7 @@ Underlying failure, when one was supplied.
 
 **Value:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L42)
 
 <a id="Vercel_AI_Gateway_GatewayError_GenerationId_"></a>
 <a id="Vercel_AI_Gateway_GatewayError_GenerationId"></a>
@@ -90,7 +90,7 @@ Gateway generation id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L45)
 
 <a id="Vercel_AI_Gateway_GatewayError_IsRetryable_"></a>
 <a id="Vercel_AI_Gateway_GatewayError_IsRetryable"></a>
@@ -107,7 +107,7 @@ Whether the caller should retry this status.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L48)
 
 <a id="Vercel_AI_Gateway_GatewayError_StatusCode_"></a>
 <a id="Vercel_AI_Gateway_GatewayError_StatusCode"></a>
@@ -124,7 +124,7 @@ HTTP status.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L39)
 
 <a id="Vercel_AI_Gateway_GatewayError_Type_"></a>
 <a id="Vercel_AI_Gateway_GatewayError_Type"></a>
@@ -141,7 +141,7 @@ Gateway error type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L25)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L36)
 
 ## Methods
 
@@ -166,4 +166,4 @@ True when &lt;code class="paramref"&gt;error&lt;/code&gt; is a Gateway error.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L51)

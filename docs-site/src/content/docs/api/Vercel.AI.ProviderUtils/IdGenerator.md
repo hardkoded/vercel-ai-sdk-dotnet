@@ -70,7 +70,7 @@ Creates a generator. &lt;code class="paramref"&gt;size&lt;/code&gt; is the lengt
 
 **Returns:** [Func&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/IdGenerator.cs#L21)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/IdGenerator.cs#L22)
 
 <a id="Vercel_AI_ProviderUtils_IdGenerator_Generate_"></a>
 <a id="Vercel_AI_ProviderUtils_IdGenerator_Generate"></a>
@@ -87,4 +87,4 @@ Generates a 16-character id from the default alphabet.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/IdGenerator.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/IdGenerator.cs#L76)

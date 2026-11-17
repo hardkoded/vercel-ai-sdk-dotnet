@@ -23,9 +23,12 @@ OpenAI-compatible chat and completion providers.
 | [OpenAICompatibleImages](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleImages/) | Shared image request helpers. |
 | [OpenAICompatibleInfo](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleInfo/) | Version token used in the OpenAI-compatible user-agent suffix. |
 | [OpenAICompatibleLanguageModel](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleLanguageModel/) | Chat Completions language model. |
+| [OpenAICompatibleMetadataExtractor](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleMetadataExtractor/) | Extracts provider-specific metadata from a chat response. Maps to MetadataExtractor. |
 | [OpenAICompatibleOptions](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleOptions/) | Settings for an OpenAI Chat Completions compatible provider. |
+| [OpenAICompatiblePreparedRequest](/api/Vercel.AI.OpenAICompatible/OpenAICompatiblePreparedRequest/) | The request body and warnings PrepareRequest(LanguageModelCallOptions) builds. |
 | [OpenAICompatibleProvider](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleProvider/) | Provider that speaks the OpenAI Chat Completions, embeddings, and images APIs. |
 | [OpenAICompatibleSseResponse](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleSseResponse/) | An open SSE response. The caller disposes it. |
+| [OpenAICompatibleStreamMetadataExtractor](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleStreamMetadataExtractor/) | Accumulates provider-specific metadata from stream chunks. |
 | [OpenAICompatibleTransforms](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleTransforms/) | Request-body transforms used by thin OpenAI-compatible providers. |
 | [OpenAICompatibleUsage](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleUsage/) | Chat usage plus prediction-token counts stored as provider metadata. |
 

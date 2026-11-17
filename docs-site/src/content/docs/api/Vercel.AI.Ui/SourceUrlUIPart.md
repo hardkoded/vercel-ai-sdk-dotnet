@@ -23,7 +23,7 @@ A source that is a URL. Maps to `SourceUrlUIPart`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [UIMessagePart](/api/Vercel.AI.Ui/UIMessagePart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L122)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L125)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a source URL part.
 | `sourceId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `url` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L125)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L128)
 
 ## Properties
 
@@ -66,7 +66,7 @@ The provider metadata.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L142)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L145)
 
 <a id="Vercel_AI_Ui_SourceUrlUIPart_SourceId_"></a>
 <a id="Vercel_AI_Ui_SourceUrlUIPart_SourceId"></a>
@@ -83,7 +83,7 @@ The source id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L133)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L136)
 
 <a id="Vercel_AI_Ui_SourceUrlUIPart_Title_"></a>
 <a id="Vercel_AI_Ui_SourceUrlUIPart_Title"></a>
@@ -100,7 +100,7 @@ The title.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L139)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L142)
 
 <a id="Vercel_AI_Ui_SourceUrlUIPart_Url_"></a>
 <a id="Vercel_AI_Ui_SourceUrlUIPart_Url"></a>
@@ -117,4 +117,4 @@ The URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L136)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L139)

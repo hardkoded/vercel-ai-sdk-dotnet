@@ -23,7 +23,7 @@ One model step produced by [ToolSearchGeneration](/api/Vercel.AI.Operations/Tool
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L286)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L328)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Tool results and tool errors.
 
 **Value:** [List&lt;ToolSearchStepItem&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L295)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L337)
 
 <a id="Vercel_AI_Operations_ToolSearchStepRecord_ToolNames_"></a>
 <a id="Vercel_AI_Operations_ToolSearchStepRecord_ToolNames"></a>
@@ -59,7 +59,7 @@ Tool names sent to the model.
 
 **Value:** [List&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L289)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L331)
 
 <a id="Vercel_AI_Operations_ToolSearchStepRecord_UserMessages_"></a>
 <a id="Vercel_AI_Operations_ToolSearchStepRecord_UserMessages"></a>
@@ -76,4 +76,4 @@ User messages, including a catalog message when code mode publishes one.
 
 **Value:** [List&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L292)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L334)

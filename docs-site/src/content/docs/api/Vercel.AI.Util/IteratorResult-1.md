@@ -27,7 +27,7 @@ Result of one async-iterator step.
 | --- | --- |
 | `T` |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L59)
 
 ## Properties
 
@@ -46,7 +46,7 @@ Whether iteration is finished.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L62)
 
 <a id="Vercel_AI_Util_IteratorResult_1_HasValue_"></a>
 <a id="Vercel_AI_Util_IteratorResult_1_HasValue"></a>
@@ -63,7 +63,7 @@ Whether `Value` is present.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L65)
 
 <a id="Vercel_AI_Util_IteratorResult_1_Value_"></a>
 <a id="Vercel_AI_Util_IteratorResult_1_Value"></a>
@@ -80,7 +80,7 @@ Yielded value.
 
 **Value:** `T`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L70)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L68)
 
 ## Methods
 
@@ -99,7 +99,7 @@ A finished step.
 
 **Returns:** [IteratorResult&lt;T&gt;](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L73)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L71)
 
 <a id="Vercel_AI_Util_IteratorResult_1_Of_"></a>
 <a id="Vercel_AI_Util_IteratorResult_1_Of__0_"></a>
@@ -122,4 +122,4 @@ A value step.
 
 **Returns:** [IteratorResult&lt;T&gt;](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L79)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L77)

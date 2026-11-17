@@ -23,7 +23,7 @@ Arguments for `doExtract`. Maps to `ExtractionModelV4CallOptions`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L194)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L211)
 
 ## Constructors
 
@@ -53,7 +53,7 @@ Creates a call.
 | `maxOutputTokens` | [double?](https://learn.microsoft.com/dotnet/api/system.double) |  |
 | `reasoning` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L197)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L214)
 
 ## Properties
 
@@ -72,7 +72,7 @@ Cancellation token.
 
 **Value:** [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L225)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L251)
 
 <a id="Vercel_AI_Operations_ExtractionModelCall_Fields_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelCall_Fields"></a>
@@ -89,7 +89,7 @@ Fields to extract.
 
 **Value:** [IReadOnlyDictionary&lt;string, ExtractionField&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L213)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L239)
 
 <a id="Vercel_AI_Operations_ExtractionModelCall_Headers_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelCall_Headers"></a>
@@ -106,7 +106,7 @@ Headers including the user-agent suffix.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L222)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L248)
 
 <a id="Vercel_AI_Operations_ExtractionModelCall_MaxOutputTokens_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelCall_MaxOutputTokens"></a>
@@ -123,7 +123,7 @@ Maximum output tokens, an integer of at least 1. Null when the caller set none.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L228)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L254)
 
 <a id="Vercel_AI_Operations_ExtractionModelCall_ProviderOptions_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelCall_ProviderOptions"></a>
@@ -140,7 +140,7 @@ Provider options.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L219)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L245)
 
 <a id="Vercel_AI_Operations_ExtractionModelCall_Reasoning_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelCall_Reasoning"></a>
@@ -157,7 +157,7 @@ Reasoning effort. Language-model adapters default to `none` when it is null.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L231)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L257)
 
 <a id="Vercel_AI_Operations_ExtractionModelCall_ReferenceDate_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelCall_ReferenceDate"></a>
@@ -174,7 +174,7 @@ public string? ReferenceDate { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L216)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L242)
 
 <a id="Vercel_AI_Operations_ExtractionModelCall_State_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelCall_State"></a>
@@ -191,4 +191,4 @@ Ordered text, file, and JSON parts. Answer sources index into this list.
 
 **Value:** [IReadOnlyList&lt;DecisionModelStatePart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L210)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L236)

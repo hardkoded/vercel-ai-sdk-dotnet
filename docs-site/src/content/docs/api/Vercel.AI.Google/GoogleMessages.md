@@ -23,7 +23,7 @@ Converts prompts into Gemini contents.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L308)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L338)
 
 ## Fields
 
@@ -41,7 +41,7 @@ Sentinel Gemini documents for replaying a function call whose thought signature 
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L311)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L341)
 
 ## Methods
 
@@ -67,7 +67,7 @@ Converts rich turns.
 
 **Returns:** [GooglePrompt](/api/Vercel.AI.Google/GooglePrompt/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L320)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L359)
 
 <a id="Vercel_AI_Google_GoogleMessages_Convert_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_ModelMessage__Vercel_AI_Google_GoogleMessageOptions_"></a>
 
@@ -90,4 +90,4 @@ Converts shared prompt messages.
 
 **Returns:** [GooglePrompt](/api/Vercel.AI.Google/GooglePrompt/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L314)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L350)

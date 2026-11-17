@@ -16,3 +16,4 @@ Public types in the `Vercel.AI.Groq` namespace.
 | --- | --- |
 | [GroqProvider](/api/Vercel.AI.Groq/GroqProvider/) | Groq provider. OpenAI Chat Completions compatible at https://api.groq.com/openai/v1. |
 | [GroqServiceCollectionExtensions](/api/Vercel.AI.Groq/GroqServiceCollectionExtensions/) | Registers GroqProvider. |
+| [GroqTranscriptionModel](/api/Vercel.AI.Groq/GroqTranscriptionModel/) | Groq speech-to-text model. Maps to GroqTranscriptionModel. |

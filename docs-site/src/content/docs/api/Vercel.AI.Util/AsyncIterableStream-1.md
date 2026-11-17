@@ -31,7 +31,7 @@ A readable stream that can also be enumerated with `await foreach`.
 
 **Implements:** [IAsyncEnumerable&lt;T&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L555)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L724)
 
 ## Constructors
 
@@ -54,7 +54,7 @@ Creates an iterable view of &lt;code class="paramref"&gt;stream&lt;/code&gt;.
 | --- | --- | --- |
 | `stream` | `ReadableStream&lt;T&gt;` |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L558)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L727)
 
 ## Properties
 
@@ -73,7 +73,7 @@ Whether a reader holds the lock.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L567)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L736)
 
 <a id="Vercel_AI_Util_AsyncIterableStream_1_Stream_"></a>
 <a id="Vercel_AI_Util_AsyncIterableStream_1_Stream"></a>
@@ -90,7 +90,7 @@ Underlying stream.
 
 **Value:** `ReadableStream&lt;T&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L564)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L733)
 
 ## Methods
 
@@ -109,7 +109,7 @@ Cancels the stream.
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L579)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L748)
 
 <a id="Vercel_AI_Util_AsyncIterableStream_1_GetAsyncEnumerator_"></a>
 <a id="Vercel_AI_Util_AsyncIterableStream_1_GetAsyncEnumerator_System_Threading_CancellationToken_"></a>
@@ -132,7 +132,7 @@ Returns an enumerator that iterates asynchronously through the collection.
 
 **Returns:** [IAsyncEnumerator&lt;T&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerator-1) — An enumerator that can be used to iterate asynchronously through the collection.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L591)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L760)
 
 <a id="Vercel_AI_Util_AsyncIterableStream_1_GetIterator_"></a>
 <a id="Vercel_AI_Util_AsyncIterableStream_1_GetIterator"></a>
@@ -149,7 +149,7 @@ Starts an iterator that cancels the stream when exited early.
 
 **Returns:** `StreamIterator&lt;T&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L585)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L754)
 
 <a id="Vercel_AI_Util_AsyncIterableStream_1_GetReader_"></a>
 <a id="Vercel_AI_Util_AsyncIterableStream_1_GetReader"></a>
@@ -166,7 +166,7 @@ Locks the stream.
 
 **Returns:** `ReadableStreamReader&lt;T&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L573)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L742)
 
 <a id="Vercel_AI_Util_AsyncIterableStream_1_ToArrayAsync_"></a>
 <a id="Vercel_AI_Util_AsyncIterableStream_1_ToArrayAsync"></a>
@@ -183,4 +183,4 @@ Reads every value.
 
 **Returns:** [Task&lt;List&lt;T&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L597)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L766)

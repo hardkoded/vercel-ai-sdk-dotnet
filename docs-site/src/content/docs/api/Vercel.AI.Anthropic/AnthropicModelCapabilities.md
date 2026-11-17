@@ -75,7 +75,7 @@ The id is a recognized Claude model rather than a forward-compatible guess.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L70)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L71)
 
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_MaxOutputTokens_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_MaxOutputTokens"></a>
@@ -92,7 +92,7 @@ Model output token ceiling.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L41)
 
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_RejectsBudgetThinking_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_RejectsBudgetThinking"></a>
@@ -109,7 +109,7 @@ Budget-based thinking is rejected and sent as adaptive thinking.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L62)
 
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_RejectsForcedToolUse_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_RejectsForcedToolUse"></a>
@@ -126,7 +126,7 @@ Forced tool choice is rejected.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L65)
 
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_RejectsSamplingParameters_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_RejectsSamplingParameters"></a>
@@ -143,7 +143,7 @@ Temperature, top-p, and top-k are rejected.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L50)
 
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_RejectsThinkingDisabled_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_RejectsThinkingDisabled"></a>
@@ -160,7 +160,7 @@ The model always thinks and rejects `disabled` thinking.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L59)
 
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_RejectsThinkingDisabledAboveHighEffort_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_RejectsThinkingDisabledAboveHighEffort"></a>
@@ -177,7 +177,7 @@ Thinking cannot be disabled at effort above `high`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L56)
 
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_SupportsAdaptiveThinking_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_SupportsAdaptiveThinking"></a>
@@ -194,7 +194,7 @@ Thinking is adaptive rather than budget-based.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L47)
 
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_SupportsBetweenToolsThinking_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_SupportsBetweenToolsThinking"></a>
@@ -211,7 +211,7 @@ Thinking type `between_tools` is accepted. It is the lowest thinking setting on 
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L68)
 
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_SupportsStructuredOutput_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_SupportsStructuredOutput"></a>
@@ -228,7 +228,7 @@ Native `output_config.format` is available.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L44)
 
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_SupportsXhighEffort_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicModelCapabilities_SupportsXhighEffort"></a>
@@ -245,7 +245,7 @@ Effort `xhigh` is accepted.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L53)
 
 ## Methods
 
@@ -270,4 +270,4 @@ Resolves capabilities from a model id, including Bedrock-style prefixes.
 
 **Returns:** [AnthropicModelCapabilities](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L73)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelCapabilities.cs#L74)

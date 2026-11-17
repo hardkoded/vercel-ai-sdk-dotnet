@@ -23,7 +23,7 @@ Result of `Int32)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L235)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L292)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates the prepared retry settings.
 | `maxRetries` | [int](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `retry` | [RetryWithExponentialBackoffRespectingRetryHeaders](/api/Vercel.AI.Util/RetryWithExponentialBackoffRespectingRetryHeaders/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L238)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L295)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Retry count after validation, or the default.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L245)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L302)
 
 <a id="Vercel_AI_Util_PrepareRetries_Result_Retry_"></a>
 <a id="Vercel_AI_Util_PrepareRetries_Result_Retry"></a>
@@ -83,4 +83,4 @@ Retry strategy bound to that count.
 
 **Value:** [RetryWithExponentialBackoffRespectingRetryHeaders](/api/Vercel.AI.Util/RetryWithExponentialBackoffRespectingRetryHeaders/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L248)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/RetryBackoff.cs#L305)

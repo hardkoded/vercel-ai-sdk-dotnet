@@ -71,7 +71,7 @@ True when `doGenerate` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L52)
 
 <a id="Vercel_AI_Tencent_TencentVideoModel_CanStart_"></a>
 <a id="Vercel_AI_Tencent_TencentVideoModel_CanStart"></a>
@@ -88,7 +88,7 @@ True when `doStart` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L55)
 
 <a id="Vercel_AI_Tencent_TencentVideoModel_CanStatus_"></a>
 <a id="Vercel_AI_Tencent_TencentVideoModel_CanStatus"></a>
@@ -105,7 +105,7 @@ True when `doStatus` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L58)
 
 <a id="Vercel_AI_Tencent_TencentVideoModel_CanWebhook_"></a>
 <a id="Vercel_AI_Tencent_TencentVideoModel_CanWebhook"></a>
@@ -122,7 +122,7 @@ False. Tencent video tasks take no per-request callback URL.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L61)
 
 <a id="Vercel_AI_Tencent_TencentVideoModel_MaxVideosPerCall_"></a>
 <a id="Vercel_AI_Tencent_TencentVideoModel_MaxVideosPerCall"></a>
@@ -139,7 +139,7 @@ Tencent creates one video per task.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L49)
 
 <a id="Vercel_AI_Tencent_TencentVideoModel_ModelId_"></a>
 <a id="Vercel_AI_Tencent_TencentVideoModel_ModelId"></a>
@@ -156,7 +156,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L46)
 
 <a id="Vercel_AI_Tencent_TencentVideoModel_Provider_"></a>
 <a id="Vercel_AI_Tencent_TencentVideoModel_Provider"></a>
@@ -173,7 +173,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L43)
 
 <a id="Vercel_AI_Tencent_TencentVideoModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Tencent_TencentVideoModel_SpecificationVersion"></a>
@@ -190,7 +190,7 @@ Specification version. Always `v4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L40)
 
 ## Methods
 
@@ -216,7 +216,7 @@ Generates videos in one call.
 
 **Returns:** [Task&lt;VideoModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L73)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L91)
 
 <a id="Vercel_AI_Tencent_TencentVideoModel_DoGenerateAsync_Vercel_AI_Provider_VideoCallOptions_System_Threading_CancellationToken_"></a>
 
@@ -239,7 +239,7 @@ Starts a task and polls it until the video is ready.
 
 **Returns:** [Task&lt;VideoResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L70)
 
 <a id="Vercel_AI_Tencent_TencentVideoModel_DoStartAsync_"></a>
 <a id="Vercel_AI_Tencent_TencentVideoModel_DoStartAsync_Vercel_AI_Operations_VideoModelCall_System_Threading_CancellationToken_"></a>
@@ -263,7 +263,7 @@ Starts an asynchronous generation.
 
 **Returns:** [Task&lt;VideoStartResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L85)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L109)
 
 <a id="Vercel_AI_Tencent_TencentVideoModel_DoStatusAsync_"></a>
 <a id="Vercel_AI_Tencent_TencentVideoModel_DoStatusAsync_Vercel_AI_Operations_VideoModelCall_System_Threading_CancellationToken_"></a>
@@ -287,7 +287,7 @@ Reads operation status.
 
 **Returns:** [Task&lt;VideoStatusResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L152)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L224)
 
 <a id="Vercel_AI_Tencent_TencentVideoModel_HandleWebhookAsync_"></a>
 <a id="Vercel_AI_Tencent_TencentVideoModel_HandleWebhookAsync_System_Func_System_Threading_Tasks_Task_Vercel_AI_Operations_VideoWebhook___System_Threading_CancellationToken_"></a>
@@ -311,7 +311,7 @@ Turns a webhook factory into a URL and a received task.
 
 **Returns:** [Task&lt;VideoWebhook&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L79)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L100)
 
 <a id="Vercel_AI_Tencent_TencentVideoModel_ResolveMaxVideosPerCallAsync_"></a>
 <a id="Vercel_AI_Tencent_TencentVideoModel_ResolveMaxVideosPerCallAsync_System_Threading_CancellationToken_"></a>
@@ -334,4 +334,4 @@ Resolves a functional limit. The default is [MaxVideosPerCall](/api/Vercel.AI.Op
 
 **Returns:** [Task&lt;int?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentVideoModel.cs#L64)

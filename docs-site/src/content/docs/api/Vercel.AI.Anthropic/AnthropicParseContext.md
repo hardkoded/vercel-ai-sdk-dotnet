@@ -53,6 +53,23 @@ Creates parse settings.
 
 ## Properties
 
+<a id="Vercel_AI_Anthropic_AnthropicParseContext_ComputerToolsetName_"></a>
+<a id="Vercel_AI_Anthropic_AnthropicParseContext_ComputerToolsetName"></a>
+
+### ComputerToolsetName
+
+
+```csharp
+public string? ComputerToolsetName { get; init; }
+```
+
+
+The caller's name for the declared computer toolset. Defaults to `computer`.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L58)
+
 <a id="Vercel_AI_Anthropic_AnthropicParseContext_GenerateId_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicParseContext_GenerateId"></a>
 
@@ -68,7 +85,43 @@ Id factory for citation sources. Defaults to `source-n`.
 
 **Value:** [Func&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L61)
+
+<a id="Vercel_AI_Anthropic_AnthropicParseContext_MarkCodeExecutionDynamic_"></a>
+<a id="Vercel_AI_Anthropic_AnthropicParseContext_MarkCodeExecutionDynamic"></a>
+
+### MarkCodeExecutionDynamic
+
+
+```csharp
+public bool MarkCodeExecutionDynamic { get; init; }
+```
+
+
+Marks `code_execution` server tool calls as dynamic. Set when a web tool that dynamic filtering runs through code execution
+is sent without the code execution tool, which the API then allows implicitly.
+
+**Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L49)
+
+<a id="Vercel_AI_Anthropic_AnthropicParseContext_PreparedTools_"></a>
+<a id="Vercel_AI_Anthropic_AnthropicParseContext_PreparedTools"></a>
+
+### PreparedTools
+
+
+```csharp
+public JsonArray? PreparedTools { get; init; }
+```
+
+
+The effective prepared tool definitions that computer toolset member calls are checked against.
+Without them, a toolset member call is rejected as undeclared.
+
+**Value:** [JsonArray](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonarray)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L55)
 
 <a id="Vercel_AI_Anthropic_AnthropicParseContext_ProviderOptionsName_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicParseContext_ProviderOptionsName"></a>
@@ -85,7 +138,7 @@ Provider-options key.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L34)
 
 <a id="Vercel_AI_Anthropic_AnthropicParseContext_ToolNames_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicParseContext_ToolNames"></a>
@@ -102,7 +155,7 @@ Maps an API tool name back to the caller's tool name.
 
 **Value:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L43)
 
 <a id="Vercel_AI_Anthropic_AnthropicParseContext_UsedCustomProviderKey_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicParseContext_UsedCustomProviderKey"></a>
@@ -119,7 +172,7 @@ True when a custom provider-options key was present.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L37)
 
 <a id="Vercel_AI_Anthropic_AnthropicParseContext_UsesJsonResponseTool_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicParseContext_UsesJsonResponseTool"></a>
@@ -136,7 +189,7 @@ True when structured output was requested through the json tool.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L26)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L31)
 
 <a id="Vercel_AI_Anthropic_AnthropicParseContext_Warnings_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicParseContext_Warnings"></a>
@@ -153,4 +206,4 @@ Warnings from request preparation.
 
 **Value:** [IReadOnlyList&lt;CallWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicResponse.cs#L40)

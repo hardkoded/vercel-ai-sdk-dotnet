@@ -23,7 +23,7 @@ End event for `embed` and `embedMany`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L152)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L179)
 
 ## Constructors
 
@@ -56,7 +56,7 @@ Creates an end event.
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 | `response` | `EmbedEventValue&lt;ProviderResponse, IReadOnlyList&lt;ProviderResponse&gt;&gt;` |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L155)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L182)
 
 ## Properties
 
@@ -75,7 +75,7 @@ Correlates start and end.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L171)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L210)
 
 <a id="Vercel_AI_Operations_EmbedEndEvent_Embedding_"></a>
 <a id="Vercel_AI_Operations_EmbedEndEvent_Embedding"></a>
@@ -92,7 +92,7 @@ One vector, or the vector list for embedMany.
 
 **Value:** `EmbedEventValue&lt;double\[\], IReadOnlyList&lt;double\[\]&gt;&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L189)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L228)
 
 <a id="Vercel_AI_Operations_EmbedEndEvent_ModelId_"></a>
 <a id="Vercel_AI_Operations_EmbedEndEvent_ModelId"></a>
@@ -109,7 +109,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L183)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L222)
 
 <a id="Vercel_AI_Operations_EmbedEndEvent_OperationId_"></a>
 <a id="Vercel_AI_Operations_EmbedEndEvent_OperationId"></a>
@@ -126,7 +126,7 @@ public string OperationId { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L174)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L213)
 
 <a id="Vercel_AI_Operations_EmbedEndEvent_Provider_"></a>
 <a id="Vercel_AI_Operations_EmbedEndEvent_Provider"></a>
@@ -143,7 +143,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L180)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L219)
 
 <a id="Vercel_AI_Operations_EmbedEndEvent_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_EmbedEndEvent_ProviderMetadata"></a>
@@ -160,7 +160,7 @@ Merged provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L198)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L237)
 
 <a id="Vercel_AI_Operations_EmbedEndEvent_Response_"></a>
 <a id="Vercel_AI_Operations_EmbedEndEvent_Response"></a>
@@ -177,7 +177,7 @@ One response for embed, or the response list for embedMany.
 
 **Value:** `EmbedEventValue&lt;ProviderResponse, IReadOnlyList&lt;ProviderResponse&gt;&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L201)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L240)
 
 <a id="Vercel_AI_Operations_EmbedEndEvent_RuntimeContext_"></a>
 <a id="Vercel_AI_Operations_EmbedEndEvent_RuntimeContext"></a>
@@ -194,7 +194,7 @@ Caller runtime context.
 
 **Value:** [IReadOnlyDictionary&lt;string, object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L177)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L216)
 
 <a id="Vercel_AI_Operations_EmbedEndEvent_Usage_"></a>
 <a id="Vercel_AI_Operations_EmbedEndEvent_Usage"></a>
@@ -211,7 +211,7 @@ Token usage.
 
 **Value:** [OperationUsage](/api/Vercel.AI.Operations/OperationUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L192)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L231)
 
 <a id="Vercel_AI_Operations_EmbedEndEvent_Value_"></a>
 <a id="Vercel_AI_Operations_EmbedEndEvent_Value"></a>
@@ -228,7 +228,7 @@ Embedded value or values.
 
 **Value:** `EmbedEventValue&lt;string, IReadOnlyList&lt;string&gt;&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L186)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L225)
 
 <a id="Vercel_AI_Operations_EmbedEndEvent_Warnings_"></a>
 <a id="Vercel_AI_Operations_EmbedEndEvent_Warnings"></a>
@@ -245,4 +245,4 @@ Aggregated warnings.
 
 **Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L195)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L234)

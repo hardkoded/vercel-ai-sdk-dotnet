@@ -23,7 +23,7 @@ Settings for Anthropic on Vertex.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L16)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L18)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Publisher base URL. When empty, it is built from the project and location.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L25)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L27)
 
 <a id="Vercel_AI_Google_GoogleVertexAnthropicOptions_GenerateAuthToken_"></a>
 <a id="Vercel_AI_Google_GoogleVertexAnthropicOptions_GenerateAuthToken"></a>
@@ -59,7 +59,7 @@ Returns a bearer token. Called once per request. Without it, no Authorization he
 
 **Value:** [Func&lt;CancellationToken, Task&lt;string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L33)
 
 <a id="Vercel_AI_Google_GoogleVertexAnthropicOptions_Headers_"></a>
 <a id="Vercel_AI_Google_GoogleVertexAnthropicOptions_Headers"></a>
@@ -76,7 +76,7 @@ Headers merged into every request. A caller-supplied Authorization value wins ov
 
 **Value:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L30)
 
 <a id="Vercel_AI_Google_GoogleVertexAnthropicOptions_Location_"></a>
 <a id="Vercel_AI_Google_GoogleVertexAnthropicOptions_Location"></a>
@@ -93,7 +93,7 @@ Location. One DNS label.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L22)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L24)
 
 <a id="Vercel_AI_Google_GoogleVertexAnthropicOptions_Project_"></a>
 <a id="Vercel_AI_Google_GoogleVertexAnthropicOptions_Project"></a>
@@ -110,4 +110,23 @@ Project id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L19)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L21)
+
+<a id="Vercel_AI_Google_GoogleVertexAnthropicOptions_SupportsNativeStructuredOutput_"></a>
+<a id="Vercel_AI_Google_GoogleVertexAnthropicOptions_SupportsNativeStructuredOutput"></a>
+
+### SupportsNativeStructuredOutput
+
+
+```csharp
+public bool SupportsNativeStructuredOutput { get; set; }
+```
+
+
+Enables native structured output in `structuredOutputMode: "auto"` for Claude 4.5 and newer. Defaults to false.
+Requires the Google Cloud organization policy to allow the `structured_outputs` feature for each model used.
+This does not enable strict tool input schemas.
+
+**Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L40)

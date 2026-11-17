@@ -25,7 +25,7 @@ Failure while downloading a URL.
 
 **Implements:** [ISerializable](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.iserializable), [IErrorMarkers](/api/Vercel.AI.Util/IErrorMarkers/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L13)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L14)
 
 ## Constructors
 
@@ -52,7 +52,7 @@ Creates a download error.
 | `statusText` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `cause` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L19)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L20)
 
 ## Fields
 
@@ -70,7 +70,7 @@ Marker for [IsInstance(object)](#Vercel_AI_Util_DownloadError_IsInstance_System_
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L16)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L17)
 
 ## Properties
 
@@ -89,7 +89,7 @@ HTTP status, when the response was received.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L39)
 
 <a id="Vercel_AI_Util_DownloadError_StatusText_"></a>
 <a id="Vercel_AI_Util_DownloadError_StatusText"></a>
@@ -106,7 +106,7 @@ HTTP status text, when the response was received.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L42)
 
 <a id="Vercel_AI_Util_DownloadError_Url_"></a>
 <a id="Vercel_AI_Util_DownloadError_Url"></a>
@@ -123,7 +123,7 @@ URL that failed.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L36)
 
 ## Methods
 
@@ -149,7 +149,7 @@ Builds the message used when the transport throws.
 
 **Returns:** [DownloadError](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L62)
 
 <a id="Vercel_AI_Util_DownloadError_FromStatus_"></a>
 <a id="Vercel_AI_Util_DownloadError_FromStatus_System_String_System_Int32_System_String_"></a>
@@ -174,7 +174,7 @@ Builds the message used for a non-success HTTP response.
 
 **Returns:** [DownloadError](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L51)
 
 <a id="Vercel_AI_Util_DownloadError_IsInstance_"></a>
 <a id="Vercel_AI_Util_DownloadError_IsInstance_System_Object_"></a>
@@ -197,4 +197,4 @@ Returns whether &lt;code class="paramref"&gt;error&lt;/code&gt; carries this err
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L45)

@@ -52,7 +52,7 @@ drives capability detection. Requests always use &lt;code class="paramref"&gt;de
 | `deploymentId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `settings` | [AzureOpenAILanguageModelSettings](/api/Vercel.AI.Azure/AzureOpenAILanguageModelSettings/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L65)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatLanguageModel__ctor_Vercel_AI_OpenAI_OpenAIProvider_System_String_"></a>
 
@@ -73,7 +73,7 @@ Creates a Chat Completions model.
 | `provider` | [OpenAIProvider](/api/Vercel.AI.OpenAI/OpenAIProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L46)
 
 ## Properties
 
@@ -92,7 +92,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L97)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatLanguageModel_Provider_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatLanguageModel_Provider"></a>
@@ -109,7 +109,7 @@ Provider id, such as `openai`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L94)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatLanguageModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatLanguageModel_SpecificationVersion"></a>
@@ -126,7 +126,25 @@ Always `V4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L87)
+
+<a id="Vercel_AI_OpenAI_OpenAIChatLanguageModel_SupportedUrls_"></a>
+<a id="Vercel_AI_OpenAI_OpenAIChatLanguageModel_SupportedUrls"></a>
+
+### SupportedUrls
+
+
+```csharp
+public IReadOnlyDictionary<string, string> SupportedUrls { get; }
+```
+
+
+URLs the model can read itself, keyed by media type pattern (such as `image/*`). Each value is a regular expression that a URL
+must match. Prompt file URLs that match are passed through. All others are downloaded before the call. Maps to `supportedUrls`.
+
+**Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L90)
 
 ## Methods
 
@@ -152,7 +170,7 @@ Generates a complete result.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L276)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L391)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatLanguageModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatLanguageModel_DoStreamAsync_Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_"></a>
@@ -176,7 +194,7 @@ Streams partial results. The result carries the stream with the request and resp
 
 **Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L290)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L413)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatLanguageModel_Prepare_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIChatLanguageModel_Prepare_System_String_Vercel_AI_Provider_LanguageModelCallOptions_"></a>
@@ -200,7 +218,7 @@ Builds the Chat Completions body for &lt;code class="paramref"&gt;modelId&lt;/co
 
 **Returns:** [OpenAIChatPreparedRequest](/api/Vercel.AI.OpenAI/OpenAIChatPreparedRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L100)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatLanguageModel_Prepare_System_String_Vercel_AI_Provider_LanguageModelCallOptions_System_String_"></a>
 
@@ -225,4 +243,30 @@ Builds the Chat Completions body. &lt;code class="paramref"&gt;modelId&lt;/code&
 
 **Returns:** [OpenAIChatPreparedRequest](/api/Vercel.AI.OpenAI/OpenAIChatPreparedRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L92)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L112)
+
+<a id="Vercel_AI_OpenAI_OpenAIChatLanguageModel_Prepare_System_String_Vercel_AI_Provider_LanguageModelCallOptions_System_String_System_Collections_Generic_IReadOnlyList_System_String__"></a>
+
+### `Prepare(string, LanguageModelCallOptions, string?, IReadOnlyList<string>)`
+
+
+```csharp
+public static OpenAIChatPreparedRequest Prepare(string modelId, LanguageModelCallOptions options, string? requestModelId, IReadOnlyList<string> providerOptionsNames)
+```
+
+
+Builds the Chat Completions body. The options under &lt;code class="paramref"&gt;providerOptionsNames&lt;/code&gt; are merged in
+order and later names win, so an Azure model passes `openai` then `azure`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `options` | [LanguageModelCallOptions](/api/Vercel.AI.Provider/LanguageModelCallOptions/) |  |
+| `requestModelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `providerOptionsNames` | [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
+
+**Returns:** [OpenAIChatPreparedRequest](/api/Vercel.AI.OpenAI/OpenAIChatPreparedRequest/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatLanguageModel.cs#L125)

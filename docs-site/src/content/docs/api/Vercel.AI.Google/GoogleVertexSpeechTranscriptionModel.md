@@ -25,7 +25,7 @@ Cloud Speech-to-Text recognize.
 
 **Implements:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L99)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L134)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a transcription model.
 | `provider` | [GoogleVertexProvider](/api/Vercel.AI.Google/GoogleVertexProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L139)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L117)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L152)
 
 <a id="Vercel_AI_Google_GoogleVertexSpeechTranscriptionModel_Provider_"></a>
 <a id="Vercel_AI_Google_GoogleVertexSpeechTranscriptionModel_Provider"></a>
@@ -85,7 +85,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L111)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L146)
 
 ## Methods
 
@@ -111,7 +111,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L120)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L155)
 
 <a id="Vercel_AI_Google_GoogleVertexSpeechTranscriptionModel_ParseDuration_"></a>
 <a id="Vercel_AI_Google_GoogleVertexSpeechTranscriptionModel_ParseDuration_System_String_"></a>
@@ -134,7 +134,7 @@ Parses a duration such as `1.200s`.
 
 **Returns:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L177)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L230)
 
 <a id="Vercel_AI_Google_GoogleVertexSpeechTranscriptionModel_Request_"></a>
 <a id="Vercel_AI_Google_GoogleVertexSpeechTranscriptionModel_Request_System_String_System_Byte___System_String___"></a>
@@ -159,7 +159,7 @@ Builds the recognize body. Audio bytes are base64-encoded.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L130)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L179)
 
 <a id="Vercel_AI_Google_GoogleVertexSpeechTranscriptionModel_ToIso6391_"></a>
 <a id="Vercel_AI_Google_GoogleVertexSpeechTranscriptionModel_ToIso6391_System_String_"></a>
@@ -182,4 +182,4 @@ Maps a BCP-47 tag onto a two-letter ISO-639-1 code.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L159)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L212)

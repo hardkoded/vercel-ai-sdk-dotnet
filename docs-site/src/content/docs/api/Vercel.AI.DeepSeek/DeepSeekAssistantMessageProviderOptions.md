@@ -23,7 +23,7 @@ The `deepseek` provider options of an assistant message. Maps to `DeepSeekAssist
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [DeepSeekMessageProviderOptions](/api/Vercel.AI.DeepSeek/DeepSeekMessageProviderOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekChatLanguageModelOptions.cs#L386)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekChatLanguageModelOptions.cs#L394)
 
 ## Properties
 
@@ -43,4 +43,4 @@ on the final assistant message when using a beta base URL.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekChatLanguageModelOptions.cs#L392)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekChatLanguageModelOptions.cs#L400)

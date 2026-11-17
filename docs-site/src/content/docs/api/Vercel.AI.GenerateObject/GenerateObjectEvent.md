@@ -25,7 +25,7 @@ Base information shared by generate-object callback events.
 
 **Derived:** [GenerateObjectEndEvent&lt;T&gt;](/api/Vercel.AI.GenerateObject/GenerateObjectEndEvent-1/), [GenerateObjectStartEvent](/api/Vercel.AI.GenerateObject/GenerateObjectStartEvent/), [GenerateObjectStepEndEvent](/api/Vercel.AI.GenerateObject/GenerateObjectStepEndEvent/), [GenerateObjectStepStartEvent](/api/Vercel.AI.GenerateObject/GenerateObjectStepStartEvent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L154)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L159)
 
 ## Properties
 
@@ -44,7 +44,7 @@ Identifier shared by every callback from this call.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L164)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L169)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectEvent_ModelId_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectEvent_ModelId"></a>
@@ -61,7 +61,7 @@ Requested model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L170)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L175)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectEvent_Provider_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectEvent_Provider"></a>
@@ -78,4 +78,4 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L167)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L172)

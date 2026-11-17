@@ -23,7 +23,7 @@ Telemetry callbacks for an embedding operation.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L205)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L244)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Runtime context keys included in telemetry events.
 
 **Value:** [IReadOnlyDictionary&lt;string, bool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L223)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L262)
 
 <a id="Vercel_AI_Operations_EmbedTelemetry_OnEmbedEnd_"></a>
 <a id="Vercel_AI_Operations_EmbedTelemetry_OnEmbedEnd"></a>
@@ -59,7 +59,7 @@ Called when a `doEmbed` call ends.
 
 **Value:** [Func&lt;EmbeddingModelCallEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L217)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L256)
 
 <a id="Vercel_AI_Operations_EmbedTelemetry_OnEmbedStart_"></a>
 <a id="Vercel_AI_Operations_EmbedTelemetry_OnEmbedStart"></a>
@@ -76,7 +76,7 @@ Called when a `doEmbed` call starts.
 
 **Value:** [Func&lt;EmbeddingModelCallEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L214)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L253)
 
 <a id="Vercel_AI_Operations_EmbedTelemetry_OnEnd_"></a>
 <a id="Vercel_AI_Operations_EmbedTelemetry_OnEnd"></a>
@@ -93,7 +93,7 @@ Called when the operation ends. Receives filtered runtime context.
 
 **Value:** [Func&lt;EmbedEndEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L211)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L250)
 
 <a id="Vercel_AI_Operations_EmbedTelemetry_OnError_"></a>
 <a id="Vercel_AI_Operations_EmbedTelemetry_OnError"></a>
@@ -110,7 +110,7 @@ Called when the operation fails.
 
 **Value:** [Func&lt;string, Exception, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L220)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L259)
 
 <a id="Vercel_AI_Operations_EmbedTelemetry_OnStart_"></a>
 <a id="Vercel_AI_Operations_EmbedTelemetry_OnStart"></a>
@@ -127,4 +127,4 @@ Called when the operation starts. Receives filtered runtime context.
 
 **Value:** [Func&lt;EmbedStartEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L208)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L247)

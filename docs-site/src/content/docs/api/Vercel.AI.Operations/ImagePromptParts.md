@@ -23,7 +23,7 @@ Normalized image prompt fields.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L677)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L830)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates normalized prompt fields.
 | `files` | [IReadOnlyList&lt;ImageModelFile&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `mask` | [ImageModelFile](/api/Vercel.AI.Operations/ImageModelFile/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L680)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L833)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Reference files.
 
 **Value:** [IReadOnlyList&lt;ImageModelFile&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L691)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L848)
 
 <a id="Vercel_AI_Operations_ImagePromptParts_Mask_"></a>
 <a id="Vercel_AI_Operations_ImagePromptParts_Mask"></a>
@@ -84,7 +84,7 @@ Mask file.
 
 **Value:** [ImageModelFile](/api/Vercel.AI.Operations/ImageModelFile/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L694)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L851)
 
 <a id="Vercel_AI_Operations_ImagePromptParts_Prompt_"></a>
 <a id="Vercel_AI_Operations_ImagePromptParts_Prompt"></a>
@@ -101,4 +101,4 @@ Prompt text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L688)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L845)

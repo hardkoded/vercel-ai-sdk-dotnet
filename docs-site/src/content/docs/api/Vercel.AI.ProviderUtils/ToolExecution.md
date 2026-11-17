@@ -23,7 +23,7 @@ Runs a tool delegate and reports preliminary and final outputs.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L533)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L562)
 
 ## Methods
 
@@ -54,16 +54,16 @@ Yields one final step from a single result.
 
 **Returns:** [IAsyncEnumerable&lt;ToolExecution.ToolStep&lt;T&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L559)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L588)
 
 <a id="Vercel_AI_ProviderUtils_ToolExecution_ExecuteStreamAsync_"></a>
-<a id="Vercel_AI_ProviderUtils_ToolExecution_ExecuteStreamAsync__1_System_Collections_Generic_IAsyncEnumerable___0__"></a>
+<a id="Vercel_AI_ProviderUtils_ToolExecution_ExecuteStreamAsync__1_System_Collections_Generic_IAsyncEnumerable___0__System_Threading_CancellationToken_"></a>
 
-### `ExecuteStreamAsync<T>(IAsyncEnumerable<T>)`
+### `ExecuteStreamAsync<T>(IAsyncEnumerable<T>, CancellationToken)`
 
 
 ```csharp
-public static IAsyncEnumerable<ToolExecution.ToolStep<T>> ExecuteStreamAsync<T>(IAsyncEnumerable<T> outputs)
+public static IAsyncEnumerable<ToolExecution.ToolStep<T>> ExecuteStreamAsync<T>(IAsyncEnumerable<T> outputs, CancellationToken cancellationToken = default)
 ```
 
 
@@ -80,10 +80,11 @@ Yields each streamed value as preliminary, then repeats the last value as final.
 | Name | Type | Description |
 | --- | --- | --- |
 | `outputs` | [IAsyncEnumerable&lt;T&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1) |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
 
 **Returns:** [IAsyncEnumerable&lt;ToolExecution.ToolStep&lt;T&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L571)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L600)
 
 <a id="Vercel_AI_ProviderUtils_ToolExecution_IsExecutable_"></a>
 <a id="Vercel_AI_ProviderUtils_ToolExecution_IsExecutable_System_Delegate_"></a>
@@ -106,4 +107,4 @@ True when &lt;code class="paramref"&gt;execute&lt;/code&gt; is present.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L553)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L582)

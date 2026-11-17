@@ -23,7 +23,7 @@ Request counts derived from an Anthropic message batch.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L12)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L13)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates counts.
 | `completed` | [int](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `failed` | [int](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L15)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L16)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Succeeded requests.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L31)
 
 <a id="Vercel_AI_Anthropic_AnthropicBatchCounts_Failed_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicBatchCounts_Failed"></a>
@@ -85,7 +85,7 @@ errored + canceled + expired.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L34)
 
 <a id="Vercel_AI_Anthropic_AnthropicBatchCounts_Pending_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicBatchCounts_Pending"></a>
@@ -102,7 +102,7 @@ Requests still processing.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L28)
 
 <a id="Vercel_AI_Anthropic_AnthropicBatchCounts_Total_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicBatchCounts_Total"></a>
@@ -119,4 +119,4 @@ processing + succeeded + errored + canceled + expired.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L24)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L25)

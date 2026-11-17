@@ -88,7 +88,7 @@ Raw input of the call.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/InvalidToolInputError.cs#L26)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/InvalidToolInputError.cs#L39)
 
 <a id="Vercel_AI_Util_InvalidToolInputError_ToolName_"></a>
 <a id="Vercel_AI_Util_InvalidToolInputError_ToolName"></a>
@@ -105,7 +105,7 @@ Name of the tool that was called.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/InvalidToolInputError.cs#L23)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/InvalidToolInputError.cs#L36)
 
 ## Methods
 
@@ -130,4 +130,4 @@ Returns whether &lt;code class="paramref"&gt;error&lt;/code&gt; carries this err
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/InvalidToolInputError.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/InvalidToolInputError.cs#L42)

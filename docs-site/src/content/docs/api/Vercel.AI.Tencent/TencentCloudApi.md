@@ -79,7 +79,7 @@ Computes the `Authorization` header value for a Tencent Cloud API 3.0 request si
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentCloudApi.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentCloudApi.cs#L81)
 
 <a id="Vercel_AI_Tencent_TencentCloudApi_GetTencentCloudErrorStatusCode_"></a>
 <a id="Vercel_AI_Tencent_TencentCloudApi_GetTencentCloudErrorStatusCode_System_String_"></a>
@@ -103,7 +103,7 @@ Maps the code family to the HTTP status it stands for so retry logic sees the re
 
 **Returns:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentCloudApi.cs#L85)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentCloudApi.cs#L121)
 
 <a id="Vercel_AI_Tencent_TencentCloudApi_Sha256Hex_"></a>
 <a id="Vercel_AI_Tencent_TencentCloudApi_Sha256Hex_System_String_"></a>

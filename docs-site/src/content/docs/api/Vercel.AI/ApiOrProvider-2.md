@@ -114,4 +114,4 @@ Wraps a provider.
 
 **Returns:** [ApiOrProvider&lt;TApi, TProvider&gt;](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationUnions.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationUnions.cs#L36)

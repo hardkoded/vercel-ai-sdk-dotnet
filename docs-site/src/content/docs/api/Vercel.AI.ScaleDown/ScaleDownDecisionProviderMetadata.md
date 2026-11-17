@@ -59,7 +59,7 @@ Total request cost in USD, when supplied by ScaleDown.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/DecisionScaleDownModel.cs#L24)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/DecisionScaleDownModel.cs#L26)
 
 <a id="Vercel_AI_ScaleDown_ScaleDownDecisionProviderMetadata_Legend_"></a>
 <a id="Vercel_AI_ScaleDown_ScaleDownDecisionProviderMetadata_Legend"></a>
@@ -76,4 +76,4 @@ Score legend per question id.
 
 **Value:** [IReadOnlyDictionary&lt;string, IReadOnlyDictionary&lt;string, string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/DecisionScaleDownModel.cs#L21)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/DecisionScaleDownModel.cs#L22)

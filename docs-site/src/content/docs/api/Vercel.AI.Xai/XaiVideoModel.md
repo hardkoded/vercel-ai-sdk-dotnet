@@ -52,7 +52,7 @@ Creates a model. &lt;code class="paramref"&gt;clock&lt;/code&gt; sets the respon
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `clock` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L37)
 
 ## Properties
 
@@ -71,7 +71,7 @@ True when `doGenerate` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L57)
 
 <a id="Vercel_AI_Xai_XaiVideoModel_CanStart_"></a>
 <a id="Vercel_AI_Xai_XaiVideoModel_CanStart"></a>
@@ -88,7 +88,7 @@ True when `doStart` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L60)
 
 <a id="Vercel_AI_Xai_XaiVideoModel_CanStatus_"></a>
 <a id="Vercel_AI_Xai_XaiVideoModel_CanStatus"></a>
@@ -105,7 +105,7 @@ True when `doStatus` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L63)
 
 <a id="Vercel_AI_Xai_XaiVideoModel_CanWebhook_"></a>
 <a id="Vercel_AI_Xai_XaiVideoModel_CanWebhook"></a>
@@ -122,7 +122,7 @@ False. xAI does not send webhooks to this model.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L66)
 
 <a id="Vercel_AI_Xai_XaiVideoModel_MaxVideosPerCall_"></a>
 <a id="Vercel_AI_Xai_XaiVideoModel_MaxVideosPerCall"></a>
@@ -139,7 +139,7 @@ xAI creates one video per request.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L54)
 
 <a id="Vercel_AI_Xai_XaiVideoModel_ModelId_"></a>
 <a id="Vercel_AI_Xai_XaiVideoModel_ModelId"></a>
@@ -156,7 +156,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L51)
 
 <a id="Vercel_AI_Xai_XaiVideoModel_Provider_"></a>
 <a id="Vercel_AI_Xai_XaiVideoModel_Provider"></a>
@@ -173,7 +173,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L48)
 
 <a id="Vercel_AI_Xai_XaiVideoModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Xai_XaiVideoModel_SpecificationVersion"></a>
@@ -190,7 +190,7 @@ Specification version. Always `v4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L45)
 
 ## Methods
 
@@ -216,7 +216,7 @@ Generates videos in one call.
 
 **Returns:** [Task&lt;VideoModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L96)
 
 <a id="Vercel_AI_Xai_XaiVideoModel_DoGenerateAsync_Vercel_AI_Provider_VideoCallOptions_System_Threading_CancellationToken_"></a>
 
@@ -239,7 +239,7 @@ Starts a request and polls it until the video is ready.
 
 **Returns:** [Task&lt;VideoResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L72)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L75)
 
 <a id="Vercel_AI_Xai_XaiVideoModel_DoStartAsync_"></a>
 <a id="Vercel_AI_Xai_XaiVideoModel_DoStartAsync_Vercel_AI_Operations_VideoModelCall_System_Threading_CancellationToken_"></a>
@@ -263,7 +263,7 @@ Starts an asynchronous generation.
 
 **Returns:** [Task&lt;VideoStartResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L92)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L114)
 
 <a id="Vercel_AI_Xai_XaiVideoModel_DoStatusAsync_"></a>
 <a id="Vercel_AI_Xai_XaiVideoModel_DoStatusAsync_Vercel_AI_Operations_VideoModelCall_System_Threading_CancellationToken_"></a>
@@ -287,7 +287,7 @@ Reads operation status.
 
 **Returns:** [Task&lt;VideoStatusResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L144)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L181)
 
 <a id="Vercel_AI_Xai_XaiVideoModel_HandleWebhookAsync_"></a>
 <a id="Vercel_AI_Xai_XaiVideoModel_HandleWebhookAsync_System_Func_System_Threading_Tasks_Task_Vercel_AI_Operations_VideoWebhook___System_Threading_CancellationToken_"></a>
@@ -311,7 +311,7 @@ Turns a webhook factory into a URL and a received task.
 
 **Returns:** [Task&lt;VideoWebhook&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L86)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L105)
 
 <a id="Vercel_AI_Xai_XaiVideoModel_ResolveMaxVideosPerCallAsync_"></a>
 <a id="Vercel_AI_Xai_XaiVideoModel_ResolveMaxVideosPerCallAsync_System_Threading_CancellationToken_"></a>
@@ -334,4 +334,4 @@ Resolves a functional limit. The default is [MaxVideosPerCall](/api/Vercel.AI.Op
 
 **Returns:** [Task&lt;int?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L69)

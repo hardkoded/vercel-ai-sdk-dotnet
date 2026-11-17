@@ -23,18 +23,18 @@ Writes a byte stream to a [ServerResponse](/api/Vercel.AI.Util/ServerResponse/).
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L187)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L223)
 
 ## Methods
 
 <a id="Vercel_AI_Util_ServerResponseWriter_WriteAsync_"></a>
-<a id="Vercel_AI_Util_ServerResponseWriter_WriteAsync_Vercel_AI_Util_ServerResponse_Vercel_AI_Util_ReadableStream_System_Byte____System_Nullable_System_Int32__System_String_Vercel_AI_Util_HeaderCollection_"></a>
+<a id="Vercel_AI_Util_ServerResponseWriter_WriteAsync_Vercel_AI_Util_ServerResponse_Vercel_AI_Util_ReadableStream_System_Byte____System_Nullable_System_Int32__System_String_Vercel_AI_Util_HeaderCollection_System_Threading_CancellationToken_"></a>
 
-### `WriteAsync(ServerResponse?, ReadableStream<byte[]>, int?, string?, HeaderCollection?)`
+### `WriteAsync(ServerResponse?, ReadableStream<byte[]>, int?, string?, HeaderCollection?, CancellationToken)`
 
 
 ```csharp
-public static Task WriteAsync(ServerResponse? response, ReadableStream<byte[]> stream, int? status = null, string? statusText = null, HeaderCollection? headers = null)
+public static Task WriteAsync(ServerResponse? response, ReadableStream<byte[]> stream, int? status = null, string? statusText = null, HeaderCollection? headers = null, CancellationToken cancellationToken = default)
 ```
 
 
@@ -51,7 +51,8 @@ The response is ended even when reading the stream fails.
 | `status` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `statusText` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `headers` | [HeaderCollection](/api/Vercel.AI.Util/HeaderCollection/) |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L194)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ServerResponse.cs#L230)

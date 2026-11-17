@@ -78,6 +78,23 @@ Maximum temperature. Defaults to 1.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelSettings.cs#L23)
 
+<a id="Vercel_AI_Anthropic_AnthropicModelSettings_SupportsMessageThreads_"></a>
+<a id="Vercel_AI_Anthropic_AnthropicModelSettings_SupportsMessageThreads"></a>
+
+### SupportsMessageThreads
+
+
+```csharp
+public bool SupportsMessageThreads { get; init; }
+```
+
+
+Opts in to `providerOptions.anthropic.thread`. Only platforms that support Anthropic message threads set it.
+
+**Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicModelSettings.cs#L32)
+
 <a id="Vercel_AI_Anthropic_AnthropicModelSettings_SupportsTemperatureAndTopPWithThinking_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicModelSettings_SupportsTemperatureAndTopPWithThinking"></a>
 

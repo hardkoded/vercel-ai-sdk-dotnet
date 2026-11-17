@@ -123,7 +123,7 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [DeepInfraProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepInfra/DeepInfraProvider.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepInfra/DeepInfraProvider.cs#L36)
 
 <a id="Vercel_AI_DeepInfra_DeepInfraProvider_FixReasoningUsage_"></a>
 <a id="Vercel_AI_DeepInfra_DeepInfraProvider_FixReasoningUsage_System_Text_Json_JsonElement_"></a>
@@ -147,7 +147,7 @@ When reasoning exceeds completion tokens, the reasoning tokens are added to the 
 
 **Returns:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepInfra/DeepInfraProvider.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepInfra/DeepInfraProvider.cs#L51)
 
 <a id="Vercel_AI_DeepInfra_DeepInfraProvider_ImageModel_"></a>
 <a id="Vercel_AI_DeepInfra_DeepInfraProvider_ImageModel_System_String_"></a>
@@ -170,4 +170,4 @@ Returns an image model.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepInfra/DeepInfraProvider.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepInfra/DeepInfraProvider.cs#L30)

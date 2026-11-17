@@ -23,7 +23,7 @@ Arguments for a skill upload.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L382)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L446)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a skill call.
 | `displayTitle` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `providerOptions` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L385)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L449)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Display title.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L396)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L464)
 
 <a id="Vercel_AI_Operations_UploadSkillCall_Files_"></a>
 <a id="Vercel_AI_Operations_UploadSkillCall_Files"></a>
@@ -84,7 +84,7 @@ Normalized files.
 
 **Value:** [IReadOnlyList&lt;SkillFilePayload&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L393)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L461)
 
 <a id="Vercel_AI_Operations_UploadSkillCall_ProviderOptions_"></a>
 <a id="Vercel_AI_Operations_UploadSkillCall_ProviderOptions"></a>
@@ -101,4 +101,4 @@ Provider options.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L399)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L467)

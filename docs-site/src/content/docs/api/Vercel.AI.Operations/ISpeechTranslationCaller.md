@@ -21,4 +21,6 @@ public interface ISpeechTranslationCaller
 
 Speech translation model used by [StreamTranslate](/api/Vercel.AI.Operations/StreamTranslate/).
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L72)
+**Derived:** [OpenAISpeechTranslationModel](/api/Vercel.AI.OpenAI/OpenAISpeechTranslationModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L95)

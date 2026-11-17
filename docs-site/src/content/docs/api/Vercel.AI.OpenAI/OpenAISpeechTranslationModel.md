@@ -1,6 +1,6 @@
 ---
 title: "OpenAISpeechTranslationModel"
-description: "OpenAI speech translation model. REST calls use /audio/translations."
+description: "OpenAI speech translation model. REST calls use /audio/translations. Realtime streaming uses the /realtime/translations WebSocket."
 editUrl: false
 prev: false
 next: false
@@ -15,17 +15,18 @@ Namespace: [Vercel.AI.OpenAI](/api/Vercel.AI.OpenAI/)
 
 
 ```csharp
-public sealed class OpenAISpeechTranslationModel : ISpeechTranslationModel
+public sealed class OpenAISpeechTranslationModel : ISpeechTranslationModel, ISpeechTranslationCaller
 ```
 
 
-OpenAI speech translation model. REST calls use `/audio/translations`.
+OpenAI speech translation model. REST calls use `/audio/translations`. Realtime streaming uses the
+`/realtime/translations` WebSocket.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-**Implements:** [ISpeechTranslationModel](/api/Vercel.AI.Provider/ISpeechTranslationModel/)
+**Implements:** [ISpeechTranslationModel](/api/Vercel.AI.Provider/ISpeechTranslationModel/), [ISpeechTranslationCaller](/api/Vercel.AI.Operations/ISpeechTranslationCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/SpeechTranslation/OpenAISpeechTranslationModel.cs#L10)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/SpeechTranslation/OpenAISpeechTranslationModel.cs#L17)
 
 ## Constructors
 
@@ -49,7 +50,7 @@ Creates a speech translation model.
 | `provider` | [OpenAIProvider](/api/Vercel.AI.OpenAI/OpenAIProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/SpeechTranslation/OpenAISpeechTranslationModel.cs#L16)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/SpeechTranslation/OpenAISpeechTranslationModel.cs#L30)
 
 ## Properties
 
@@ -68,7 +69,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/SpeechTranslation/OpenAISpeechTranslationModel.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/SpeechTranslation/OpenAISpeechTranslationModel.cs#L94)
 
 <a id="Vercel_AI_OpenAI_OpenAISpeechTranslationModel_Provider_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISpeechTranslationModel_Provider"></a>
@@ -85,9 +86,50 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/SpeechTranslation/OpenAISpeechTranslationModel.cs#L24)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/SpeechTranslation/OpenAISpeechTranslationModel.cs#L91)
+
+<a id="Vercel_AI_OpenAI_OpenAISpeechTranslationModel_SpecificationVersion_"></a>
+<a id="Vercel_AI_OpenAI_OpenAISpeechTranslationModel_SpecificationVersion"></a>
+
+### SpecificationVersion
+
+
+```csharp
+public string SpecificationVersion { get; }
+```
+
+
+Specification version. String ids are resolved before this is checked.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/SpeechTranslation/OpenAISpeechTranslationModel.cs#L97)
 
 ## Methods
+
+<a id="Vercel_AI_OpenAI_OpenAISpeechTranslationModel_DoStreamAsync_"></a>
+<a id="Vercel_AI_OpenAI_OpenAISpeechTranslationModel_DoStreamAsync_Vercel_AI_Operations_TranslationStreamCall_System_Threading_CancellationToken_"></a>
+
+### DoStreamAsync(TranslationStreamCall, CancellationToken)
+
+
+```csharp
+public Task<TranslationStreamStart> DoStreamAsync(TranslationStreamCall call, CancellationToken cancellationToken)
+```
+
+
+Starts a realtime speech translation over the OpenAI Realtime translations WebSocket. Maps to `doStream`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `call` | [TranslationStreamCall](/api/Vercel.AI.Operations/TranslationStreamCall/) |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;TranslationStreamStart&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/SpeechTranslation/OpenAISpeechTranslationModel.cs#L109)
 
 <a id="Vercel_AI_OpenAI_OpenAISpeechTranslationModel_DoTranslateAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISpeechTranslationModel_DoTranslateAsync_Vercel_AI_Provider_AudioInput_System_Threading_CancellationToken_"></a>
@@ -111,4 +153,4 @@ Translates speech into text.
 
 **Returns:** [Task&lt;TranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/SpeechTranslation/OpenAISpeechTranslationModel.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/SpeechTranslation/OpenAISpeechTranslationModel.cs#L100)

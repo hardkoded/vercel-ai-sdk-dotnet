@@ -25,7 +25,7 @@ One part of an assistant message, kept in the order the model produced it.
 
 **Derived:** [AssistantCustomPart](/api/Vercel.AI.Provider/AssistantCustomPart/), [AssistantFilePart](/api/Vercel.AI.Provider/AssistantFilePart/), [AssistantReasoningPart](/api/Vercel.AI.Provider/AssistantReasoningPart/), [AssistantTextPart](/api/Vercel.AI.Provider/AssistantTextPart/), [AssistantToolApprovalRequestPart](/api/Vercel.AI.Provider/AssistantToolApprovalRequestPart/), [AssistantToolCallPart](/api/Vercel.AI.Provider/AssistantToolCallPart/), [AssistantToolResultPart](/api/Vercel.AI.Provider/AssistantToolResultPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L753)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L960)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a part.
 | `type` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `providerOptions` | [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L756)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L963)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Provider-specific options for this part, such as an `itemId`.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L766)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L976)
 
 <a id="Vercel_AI_Provider_AssistantContentPart_Type_"></a>
 <a id="Vercel_AI_Provider_AssistantContentPart_Type"></a>
@@ -85,4 +85,4 @@ Part type: `text`, `file`, `reasoning`, `reasoning-file`, `tool-call`, `tool-res
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L763)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L973)

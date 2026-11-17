@@ -72,7 +72,7 @@ SHA-256 digest of [CanonicalJson(object)](#Vercel_AI_Util_CanonicalHash_Canonica
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/CanonicalHash.cs#L75)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/CanonicalHash.cs#L78)
 
 <a id="Vercel_AI_Util_CanonicalHash_ToBase64Url_"></a>
 <a id="Vercel_AI_Util_CanonicalHash_ToBase64Url_System_Byte___"></a>
@@ -95,4 +95,4 @@ Encodes &lt;code class="paramref"&gt;bytes&lt;/code&gt; as base64url without pad
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/CanonicalHash.cs#L86)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/CanonicalHash.cs#L89)

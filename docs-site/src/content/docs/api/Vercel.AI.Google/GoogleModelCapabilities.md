@@ -67,7 +67,7 @@ File Search tool.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleModelCapabilities.cs#L24)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleModelCapabilities.cs#L28)
 
 <a id="Vercel_AI_Google_GoogleModelCapabilities_SupportsGemini2Tools_"></a>
 <a id="Vercel_AI_Google_GoogleModelCapabilities_SupportsGemini2Tools"></a>
@@ -84,7 +84,7 @@ Google Search, URL context, code execution, and similar tools.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleModelCapabilities.cs#L21)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleModelCapabilities.cs#L25)
 
 <a id="Vercel_AI_Google_GoogleModelCapabilities_UsesGemini3Features_"></a>
 <a id="Vercel_AI_Google_GoogleModelCapabilities_UsesGemini3Features"></a>
@@ -101,4 +101,4 @@ Gemini 3 request shape, including combined tools and thought-signature handling.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleModelCapabilities.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleModelCapabilities.cs#L31)

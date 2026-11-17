@@ -23,7 +23,7 @@ Approved and denied tool approvals from the last tool message.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L166)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L191)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates an empty or filled set.
 | `approvedToolApprovals` | [IReadOnlyList&lt;CollectedToolApproval&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `deniedToolApprovals` | [IReadOnlyList&lt;CollectedToolApproval&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L169)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L194)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Approvals the caller accepted and that have not already produced a result.
 
 **Value:** [IReadOnlyList&lt;CollectedToolApproval&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L176)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L204)
 
 <a id="Vercel_AI_GenerateText_CollectedToolApprovalSet_DeniedToolApprovals_"></a>
 <a id="Vercel_AI_GenerateText_CollectedToolApprovalSet_DeniedToolApprovals"></a>
@@ -83,4 +83,4 @@ Approvals the caller denied and that still need an execution-denied result.
 
 **Value:** [IReadOnlyList&lt;CollectedToolApproval&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L179)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L207)

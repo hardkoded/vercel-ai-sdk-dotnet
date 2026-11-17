@@ -48,7 +48,7 @@ True when &lt;code class="paramref"&gt;modelId&lt;/code&gt; is a Mistral model, 
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockToolIds.cs#L14)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockToolIds.cs#L15)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockToolIds_Normalize_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockToolIds_Normalize_System_String_System_Boolean_"></a>
@@ -73,4 +73,4 @@ For Mistral, keeps a valid nine-character alphanumeric id and hashes any other i
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockToolIds.cs#L23)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockToolIds.cs#L24)

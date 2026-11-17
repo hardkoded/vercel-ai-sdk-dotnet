@@ -49,7 +49,7 @@ Maps to `convertImageModelFileToDataUri`.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/FileDataConversions.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/FileDataConversions.cs#L43)
 
 <a id="Vercel_AI_ProviderUtils_FileDataConversions_ConvertInlineFileDataToUint8Array_"></a>
 <a id="Vercel_AI_ProviderUtils_FileDataConversions_ConvertInlineFileDataToUint8Array_Vercel_AI_Prompt_LanguageModelFilePart_"></a>

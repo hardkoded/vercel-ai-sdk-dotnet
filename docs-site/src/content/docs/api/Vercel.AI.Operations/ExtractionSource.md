@@ -23,7 +23,7 @@ Where in the state a value was found. Maps to `ExtractionModelV4Source`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L61)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a source.
 | `start` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) | Start offset in UTF-16 code units, inclusive. Text sources only. |
 | `end` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) | End offset in UTF-16 code units, exclusive. Text sources only. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L68)
 
 ## Properties
 
@@ -68,7 +68,7 @@ End offset in UTF-16 code units, exclusive. Set for a text source.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L76)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L86)
 
 <a id="Vercel_AI_Operations_ExtractionSource_Part_"></a>
 <a id="Vercel_AI_Operations_ExtractionSource_Part"></a>
@@ -85,7 +85,7 @@ Index of the text or file part in the state.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L70)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L80)
 
 <a id="Vercel_AI_Operations_ExtractionSource_Start_"></a>
 <a id="Vercel_AI_Operations_ExtractionSource_Start"></a>
@@ -102,7 +102,7 @@ Start offset in UTF-16 code units, inclusive. Set for a text source.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L73)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L83)
 
 <a id="Vercel_AI_Operations_ExtractionSource_Type_"></a>
 <a id="Vercel_AI_Operations_ExtractionSource_Type"></a>
@@ -119,4 +119,4 @@ public string Type { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L77)

@@ -51,7 +51,7 @@ Creates an image model. &lt;code class="paramref"&gt;clock&lt;/code&gt; sets the
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `clock` | [Func&lt;DateTime&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Replicate/ReplicateImageModel.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Replicate/ReplicateImageModel.cs#L39)
 
 ## Properties
 
@@ -70,7 +70,7 @@ Flux-2 models accept up to 8 input images; other models return one image per cal
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Replicate/ReplicateImageModel.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Replicate/ReplicateImageModel.cs#L57)
 
 <a id="Vercel_AI_Replicate_ReplicateImageModel_ModelId_"></a>
 <a id="Vercel_AI_Replicate_ReplicateImageModel_ModelId"></a>
@@ -87,7 +87,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Replicate/ReplicateImageModel.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Replicate/ReplicateImageModel.cs#L54)
 
 <a id="Vercel_AI_Replicate_ReplicateImageModel_Provider_"></a>
 <a id="Vercel_AI_Replicate_ReplicateImageModel_Provider"></a>
@@ -104,7 +104,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Replicate/ReplicateImageModel.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Replicate/ReplicateImageModel.cs#L51)
 
 ## Methods
 
@@ -130,7 +130,7 @@ Generates images.
 
 **Returns:** [Task&lt;ImageModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Replicate/ReplicateImageModel.cs#L76)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Replicate/ReplicateImageModel.cs#L100)
 
 <a id="Vercel_AI_Replicate_ReplicateImageModel_DoGenerateAsync_Vercel_AI_Provider_ImageCallOptions_System_Threading_CancellationToken_"></a>
 
@@ -153,7 +153,7 @@ Generates images. Maps to `doGenerate` on an image model.
 
 **Returns:** [Task&lt;ImageGenerationResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Replicate/ReplicateImageModel.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Replicate/ReplicateImageModel.cs#L68)
 
 <a id="Vercel_AI_Replicate_ReplicateImageModel_ResolveMaxImagesPerCallAsync_"></a>
 <a id="Vercel_AI_Replicate_ReplicateImageModel_ResolveMaxImagesPerCallAsync_System_Threading_CancellationToken_"></a>
@@ -176,4 +176,4 @@ Resolves a functional per-call limit. The default returns [MaxImagesPerCall](/ap
 
 **Returns:** [Task&lt;int?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Replicate/ReplicateImageModel.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Replicate/ReplicateImageModel.cs#L62)

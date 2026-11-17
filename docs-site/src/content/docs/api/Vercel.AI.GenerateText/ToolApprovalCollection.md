@@ -23,7 +23,7 @@ Collects tool approvals from the last tool message. Maps to `collectToolApproval
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L215)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L252)
 
 ## Methods
 
@@ -49,4 +49,4 @@ Returns empty lists for every other ending.
 
 **Returns:** [CollectedToolApprovalSet](/api/Vercel.AI.GenerateText/CollectedToolApprovalSet/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L221)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L258)

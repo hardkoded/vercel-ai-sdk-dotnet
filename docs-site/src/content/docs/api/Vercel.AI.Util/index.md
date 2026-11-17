@@ -26,6 +26,7 @@ Errors, downloads, warnings, and helpers.
 | [Collections](/api/Vercel.AI.Util/Collections/) | Array and property helpers from the AI SDK util package. |
 | [CompatibilityWarning](/api/Vercel.AI.Util/CompatibilityWarning/) | A feature running in compatibility mode. |
 | [ConsumeStream](/api/Vercel.AI.Util/ConsumeStream/) | Reads a stream to the end. Maps to consumeStream. |
+| [CreatedDownload](/api/Vercel.AI.Util/CreatedDownload/) | Download function created by DownloadFetch). C# has no callable overloads, so the two upstream call signatures are DownloadRequestItem%7d) and InvokeAsync(DownloadRequestItem). |
 | [DataObject](/api/Vercel.AI.Util/DataObject/) | Object with an explicit constructor token and own properties. Used where JavaScript distinguishes prototypes and inherited names. |
 | [DataUrl](/api/Vercel.AI.Util/DataUrl/) | Reads text from text/ data URLs. |
 | [DecisionRefusalError](/api/Vercel.AI.Util/DecisionRefusalError/) | A decision model refused one or more questions. |
@@ -87,6 +88,7 @@ Errors, downloads, warnings, and helpers.
 | [TimeoutError](/api/Vercel.AI.Util/TimeoutError/) | DOM TimeoutError analog used as an abort reason. |
 | [ToolCallRepairError](/api/Vercel.AI.Util/ToolCallRepairError/) | The repair of a tool call failed. Maps to ToolCallRepairError. |
 | [ToolInputSchemaValidator](/api/Vercel.AI.Util/ToolInputSchemaValidator/) | Validates a tool call input against the JSON Schema of a tool. Covers the keywords tool schemas use: type, enum, const, properties, required, additionalProperties, items, minItems, maxItems, minLength, maxLength, minimum, maximum, anyOf, oneOf and allOf. Other keywords are ignored. |
+| [UIMessageStreamError](/api/Vercel.AI.Util/UIMessageStreamError/) | Error thrown when a UI message stream reports an error or contains invalid or out-of-sequence chunks. Maps to UIMessageStreamError. |
 | [UndefinedStreamError](/api/Vercel.AI.Util/UndefinedStreamError/) | Rejection whose reason is JavaScript undefined. |
 | [UnsupportedWarning](/api/Vercel.AI.Util/UnsupportedWarning/) | A feature the provider does not support. |
 

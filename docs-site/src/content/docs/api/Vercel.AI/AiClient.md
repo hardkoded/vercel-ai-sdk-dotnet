@@ -25,7 +25,7 @@ Default [IAiClient](/api/Vercel.AI/IAiClient/). String model ids are resolved by
 
 **Implements:** [IAiClient](/api/Vercel.AI/IAiClient/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L123)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a client.
 | `gateway` | [GatewayProvider](/api/Vercel.AI.Gateway/GatewayProvider/) |  |
 | `telemetry` | [IAiTelemetry](/api/Vercel.AI/IAiTelemetry/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L129)
 
 ## Methods
 
@@ -75,7 +75,7 @@ Embeds one value. Maps to `embed`.
 
 **Returns:** [Task&lt;float\[\]&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L109)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L350)
 
 <a id="Vercel_AI_AiClient_EmbedManyAsync_"></a>
 <a id="Vercel_AI_AiClient_EmbedManyAsync_Vercel_AI_EmbedOptions_System_Threading_CancellationToken_"></a>
@@ -99,7 +99,7 @@ Embeds many values. Maps to `embedMany`.
 
 **Returns:** [Task&lt;EmbeddingResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L121)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L365)
 
 <a id="Vercel_AI_AiClient_EvaluateAsync_"></a>
 <a id="Vercel_AI_AiClient_EvaluateAsync_Vercel_AI_EvaluateOptions_System_Threading_CancellationToken_"></a>
@@ -123,7 +123,7 @@ Scores a candidate against a rubric. Uses [RubricModel](/api/Vercel.AI/EvaluateO
 
 **Returns:** [Task&lt;RubricResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L225)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L524)
 
 <a id="Vercel_AI_AiClient_GenerateImageAsync_"></a>
 <a id="Vercel_AI_AiClient_GenerateImageAsync_Vercel_AI_GenerateImageOptions_System_Threading_CancellationToken_"></a>
@@ -147,7 +147,37 @@ Generates images. Maps to `generateImage`.
 
 **Returns:** [Task&lt;ImageGenerationResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L145)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L407)
+
+<a id="Vercel_AI_AiClient_GenerateObjectAsync_"></a>
+<a id="Vercel_AI_AiClient_GenerateObjectAsync__1_Vercel_AI_GenerateObject_GenerateObjectOptions___0__System_Threading_CancellationToken_"></a>
+
+### `GenerateObjectAsync<T>(GenerateObjectOptions<T>, CancellationToken)`
+
+
+```csharp
+public Task<GenerateObjectResult<T>> GenerateObjectAsync<T>(GenerateObjectOptions<T> options, CancellationToken cancellationToken = default)
+```
+
+
+Generates a typed object. Maps to the deprecated `generateObject`.
+
+**Type parameters**
+
+| Name | Description |
+| --- | --- |
+| `T` |  |
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `options` | `GenerateObjectOptions&lt;T&gt;` |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;GenerateObjectResult&lt;T&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L155)
 
 <a id="Vercel_AI_AiClient_GenerateSpeechAsync_"></a>
 <a id="Vercel_AI_AiClient_GenerateSpeechAsync_Vercel_AI_GenerateSpeechOptions_System_Threading_CancellationToken_"></a>
@@ -171,7 +201,7 @@ Generates speech. Maps to `generateSpeech`.
 
 **Returns:** [Task&lt;SpeechResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L167)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L435)
 
 <a id="Vercel_AI_AiClient_GenerateTextAsync_"></a>
 <a id="Vercel_AI_AiClient_GenerateTextAsync_Vercel_AI_GenerateTextOptions_System_Threading_CancellationToken_"></a>
@@ -195,7 +225,7 @@ Generates text and runs tools. Maps to `generateText`.
 
 **Returns:** [Task&lt;GenerateTextResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L87)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L136)
 
 <a id="Vercel_AI_AiClient_GenerateVideoAsync_"></a>
 <a id="Vercel_AI_AiClient_GenerateVideoAsync_Vercel_AI_GenerateVideoOptions_System_Threading_CancellationToken_"></a>
@@ -219,7 +249,7 @@ Generates video. Maps to `generateVideo`.
 
 **Returns:** [Task&lt;VideoResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L214)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L507)
 
 <a id="Vercel_AI_AiClient_RerankAsync_"></a>
 <a id="Vercel_AI_AiClient_RerankAsync_Vercel_AI_RerankOptions_System_Threading_CancellationToken_"></a>
@@ -243,7 +273,7 @@ Reranks documents. Maps to `rerank`.
 
 **Returns:** [Task&lt;RerankResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L134)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L387)
 
 <a id="Vercel_AI_AiClient_StreamTextAsync_"></a>
 <a id="Vercel_AI_AiClient_StreamTextAsync_Vercel_AI_StreamTextOptions_System_Threading_CancellationToken_"></a>
@@ -267,7 +297,7 @@ Streams text and runs tools. Maps to `streamText`.
 
 **Returns:** [StreamTextResult](/api/Vercel.AI/StreamTextResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L98)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L331)
 
 <a id="Vercel_AI_AiClient_TranscribeAsync_"></a>
 <a id="Vercel_AI_AiClient_TranscribeAsync_Vercel_AI_TranscribeOptions_System_Threading_CancellationToken_"></a>
@@ -291,7 +321,7 @@ Transcribes audio. Maps to `transcribe`.
 
 **Returns:** [Task&lt;TranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L185)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L470)
 
 <a id="Vercel_AI_AiClient_TranslateAsync_"></a>
 <a id="Vercel_AI_AiClient_TranslateAsync_Vercel_AI_TranslateOptions_System_Threading_CancellationToken_"></a>
@@ -315,7 +345,7 @@ Translates speech to text. Maps to `translate`.
 
 **Returns:** [Task&lt;TranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L203)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L493)
 
 <a id="Vercel_AI_AiClient_UploadFileAsync_"></a>
 <a id="Vercel_AI_AiClient_UploadFileAsync_Vercel_AI_Provider_IFileStore_System_String_System_Byte___System_String_System_Threading_CancellationToken_"></a>
@@ -342,7 +372,7 @@ Uploads a file through &lt;code class="paramref"&gt;store&lt;/code&gt;.
 
 **Returns:** [Task&lt;UploadedFile&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L261)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L579)
 
 <a id="Vercel_AI_AiClient_UploadSkillAsync_"></a>
 <a id="Vercel_AI_AiClient_UploadSkillAsync_Vercel_AI_Provider_ISkillStore_System_String_System_String_System_Threading_CancellationToken_"></a>
@@ -368,4 +398,4 @@ Uploads a skill through &lt;code class="paramref"&gt;store&lt;/code&gt;.
 
 **Returns:** [Task&lt;UploadedSkill&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L272)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L596)

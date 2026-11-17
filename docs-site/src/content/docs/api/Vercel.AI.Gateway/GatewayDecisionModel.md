@@ -145,7 +145,7 @@ Sends the state and every question in one request.
 
 **Returns:** [Task&lt;DecisionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayDecisionModel.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayDecisionModel.cs#L54)
 
 <a id="Vercel_AI_Gateway_GatewayDecisionModel_DoEvaluateAsync_"></a>
 <a id="Vercel_AI_Gateway_GatewayDecisionModel_DoEvaluateAsync_Vercel_AI_Operations_EvaluationModelCall_System_Threading_CancellationToken_"></a>
@@ -174,4 +174,4 @@ Deprecated. Use `CancellationToken)`.
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayDecisionModel.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayDecisionModel.cs#L42)

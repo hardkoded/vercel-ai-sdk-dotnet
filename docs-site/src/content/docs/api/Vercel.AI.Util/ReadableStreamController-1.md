@@ -29,7 +29,7 @@ Enqueues chunks into a `ReadableStream%601`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L86)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L84)
 
 ## Methods
 
@@ -46,7 +46,7 @@ public void Close()
 
 Closes the stream.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L102)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L100)
 
 <a id="Vercel_AI_Util_ReadableStreamController_1_Enqueue_"></a>
 <a id="Vercel_AI_Util_ReadableStreamController_1_Enqueue__0_"></a>
@@ -67,7 +67,7 @@ Queues &lt;code class="paramref"&gt;chunk&lt;/code&gt; for the next reader.
 | --- | --- | --- |
 | `chunk` | `T` |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L96)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L94)
 
 <a id="Vercel_AI_Util_ReadableStreamController_1_Error_"></a>
 <a id="Vercel_AI_Util_ReadableStreamController_1_Error_System_Object_"></a>
@@ -88,4 +88,4 @@ Fails the stream. &lt;code class="paramref"&gt;reason&lt;/code&gt; may be `null`
 | --- | --- | --- |
 | `reason` | [object](https://learn.microsoft.com/dotnet/api/system.object) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L106)

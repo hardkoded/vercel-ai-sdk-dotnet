@@ -42,7 +42,7 @@ Size in bytes.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L58)
 
 <a id="Vercel_AI_OpenAI_OpenAIFileMetadata_CreatedAt_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIFileMetadata_CreatedAt"></a>
@@ -59,7 +59,7 @@ Creation time.
 
 **Value:** [DateTimeOffset?](https://learn.microsoft.com/dotnet/api/system.datetimeoffset)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L61)
 
 <a id="Vercel_AI_OpenAI_OpenAIFileMetadata_ExpiresAt_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIFileMetadata_ExpiresAt"></a>
@@ -76,7 +76,7 @@ Expiry time. Null when the upload has none.
 
 **Value:** [DateTimeOffset?](https://learn.microsoft.com/dotnet/api/system.datetimeoffset)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L67)
 
 <a id="Vercel_AI_OpenAI_OpenAIFileMetadata_Filename_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIFileMetadata_Filename"></a>
@@ -93,7 +93,7 @@ File name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L52)
 
 <a id="Vercel_AI_OpenAI_OpenAIFileMetadata_Id_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIFileMetadata_Id"></a>
@@ -110,7 +110,7 @@ File id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L49)
 
 <a id="Vercel_AI_OpenAI_OpenAIFileMetadata_Purpose_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIFileMetadata_Purpose"></a>
@@ -127,7 +127,7 @@ Upload purpose.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L55)
 
 <a id="Vercel_AI_OpenAI_OpenAIFileMetadata_Status_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIFileMetadata_Status"></a>
@@ -144,4 +144,4 @@ Provider status.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L64)

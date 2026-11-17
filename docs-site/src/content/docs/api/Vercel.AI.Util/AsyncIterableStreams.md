@@ -23,7 +23,7 @@ Wraps readable streams so they can be consumed with async iteration.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L662)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L834)
 
 ## Methods
 
@@ -54,7 +54,7 @@ Attaches an async iterator to &lt;code class="paramref"&gt;stream&lt;/code&gt; w
 
 **Returns:** `AsyncIterableStream&lt;T&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L665)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L837)
 
 <a id="Vercel_AI_Util_AsyncIterableStreams_CreateAsyncIterableStream_"></a>
 <a id="Vercel_AI_Util_AsyncIterableStreams_CreateAsyncIterableStream__1_Vercel_AI_Util_ReadableStream___0__"></a>
@@ -84,4 +84,4 @@ Cancelling the result cancels &lt;code class="paramref"&gt;source&lt;/code&gt;.
 
 **Returns:** `AsyncIterableStream&lt;T&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L674)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L846)

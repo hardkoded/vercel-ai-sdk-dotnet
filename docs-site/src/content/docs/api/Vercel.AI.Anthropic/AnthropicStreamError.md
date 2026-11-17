@@ -23,7 +23,7 @@ HTTP status implied by an Anthropic stream error type.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L84)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L174)
 
 ## Methods
 
@@ -48,7 +48,7 @@ True for api, overloaded, and rate-limit errors.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L114)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L204)
 
 <a id="Vercel_AI_Anthropic_AnthropicStreamError_StatusCode_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicStreamError_StatusCode_System_String_"></a>
@@ -71,4 +71,4 @@ Maps an error type onto a status code. Unknown types have no status.
 
 **Returns:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L87)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicErrorData.cs#L177)

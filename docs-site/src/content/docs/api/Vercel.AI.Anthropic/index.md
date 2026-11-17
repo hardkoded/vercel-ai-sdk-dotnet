@@ -22,17 +22,21 @@ Anthropic Messages provider.
 | [AnthropicBashResult](/api/Vercel.AI.Anthropic/AnthropicBashResult/) | Output of a bash sandbox command. |
 | [AnthropicBashTool](/api/Vercel.AI.Anthropic/AnthropicBashTool/) | Runs a bash provider tool through a caller-supplied sandbox. |
 | [AnthropicBatch](/api/Vercel.AI.Anthropic/AnthropicBatch/) | Validation and status mapping for the Anthropic Message Batches API. |
-| [AnthropicBatchApi](/api/Vercel.AI.Anthropic/AnthropicBatchApi/) | Anthropic Message Batches API. Downloads the JSONL results of a finished batch. |
+| [AnthropicBatchApi](/api/Vercel.AI.Anthropic/AnthropicBatchApi/) | Anthropic Message Batches API. Starts, inspects, cancels, and lists batches, and downloads the JSONL results of a finished batch. |
 | [AnthropicBatchCounts](/api/Vercel.AI.Anthropic/AnthropicBatchCounts/) | Request counts derived from an Anthropic message batch. |
 | [AnthropicCacheControlValidator](/api/Vercel.AI.Anthropic/AnthropicCacheControlValidator/) | Reads cachecontrol and enforces Anthropic's four-breakpoint limit. |
+| [AnthropicComputerToolsetMemberConfig](/api/Vercel.AI.Anthropic/AnthropicComputerToolsetMemberConfig/) | Configuration of one member of the computer toolset. Maps to a configs entry of computerToolset20260801. |
 | [AnthropicContainer](/api/Vercel.AI.Anthropic/AnthropicContainer/) | Copies the latest Anthropic container id into the next call's provider options. |
 | [AnthropicCustomContent](/api/Vercel.AI.Anthropic/AnthropicCustomContent/) | A provider block the V4 content list has no dedicated type for. |
-| [AnthropicErrorData](/api/Vercel.AI.Anthropic/AnthropicErrorData/) | Parsed Anthropic error body. Extra fields such as details are dropped. |
+| [AnthropicErrorData](/api/Vercel.AI.Anthropic/AnthropicErrorData/) | Parsed Anthropic error body. Unknown fields are dropped. details keeps errorcode and unsupported. |
 | [AnthropicEvaluationAnswer](/api/Vercel.AI.Anthropic/AnthropicEvaluationAnswer/) | One parsed answer. |
 | [AnthropicEvaluationModel](/api/Vercel.AI.Anthropic/AnthropicEvaluationModel/) | Builds and scores Anthropic evaluation requests on the Messages API. |
 | [AnthropicEvaluationQuestion](/api/Vercel.AI.Anthropic/AnthropicEvaluationQuestion/) | One evaluation question. |
 | [AnthropicEvaluationResult](/api/Vercel.AI.Anthropic/AnthropicEvaluationResult/) | Evaluation call result. |
+| [AnthropicFileDeleteResult](/api/Vercel.AI.Anthropic/AnthropicFileDeleteResult/) | Result of deleting an Anthropic file. |
+| [AnthropicFileDownload](/api/Vercel.AI.Anthropic/AnthropicFileDownload/) | Downloaded Anthropic file bytes. |
 | [AnthropicFiles](/api/Vercel.AI.Anthropic/AnthropicFiles/) | Anthropic Files API upload. |
+| [AnthropicInlineToolResult](/api/Vercel.AI.Anthropic/AnthropicInlineToolResult/) | The Anthropic form of a tool that a mid-conversation tool change defines by value. |
 | [AnthropicJsonSchema](/api/Vercel.AI.Anthropic/AnthropicJsonSchema/) | Relaxes a JSON Schema so it can be sent as Anthropic outputconfig.format.schema. The caller's original schema is not modified. |
 | [AnthropicLanguageModel](/api/Vercel.AI.Anthropic/AnthropicLanguageModel/) | Anthropic Messages language model. |
 | [AnthropicMessagesRequest](/api/Vercel.AI.Anthropic/AnthropicMessagesRequest/) | Builds an Anthropic Messages request from SDK call options. |
@@ -60,7 +64,8 @@ Anthropic Messages provider.
 | [AnthropicToolDefinition](/api/Vercel.AI.Anthropic/AnthropicToolDefinition/) | A function or provider tool passed to AnthropicToolPreparer. |
 | [AnthropicToolPreparer](/api/Vercel.AI.Anthropic/AnthropicToolPreparer/) | Builds the Anthropic tools and toolchoice fields. |
 | [AnthropicToolResultContent](/api/Vercel.AI.Anthropic/AnthropicToolResultContent/) | A provider-executed tool result returned inside a Messages response. |
-| [AnthropicUploadedFile](/api/Vercel.AI.Anthropic/AnthropicUploadedFile/) | Files API upload result. |
+| [AnthropicTools](/api/Vercel.AI.Anthropic/AnthropicTools/) | Factories of the Anthropic provider-defined tools. Maps to anthropic.tools. |
+| [AnthropicUploadedFile](/api/Vercel.AI.Anthropic/AnthropicUploadedFile/) | Files API upload or metadata result. |
 | [AnthropicUsage](/api/Vercel.AI.Anthropic/AnthropicUsage/) | Converts an Anthropic usage object into SDK token counts. |
 | [AnthropicWarning](/api/Vercel.AI.Anthropic/AnthropicWarning/) | A warning produced while preparing an Anthropic request. |
 
@@ -68,4 +73,5 @@ Anthropic Messages provider.
 
 | Type | Summary |
 | --- | --- |
+| [AnthropicInlineToolConverter](/api/Vercel.AI.Anthropic/AnthropicInlineToolConverter/) | Converts a tool that a mid-conversation tool change adds by value (a function or provider tool object) into its Anthropic definition. Maps to AnthropicInlineToolConverter. |
 | [AnthropicMediaPartConverter](/api/Vercel.AI.Anthropic/AnthropicMediaPartConverter/) | Converts one file part for a provider that speaks the Messages protocol. Receives the part in the SDK message JSON shape. Returns the image or video block without cachecontrol, or <a href="https://learn.microsoft.com/dotnet/csharp/language-reference/keywords/null">null</a> to use the default conversion. |

@@ -68,7 +68,7 @@ Choice label.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L55)
 
 <a id="Vercel_AI_Anthropic_AnthropicEvaluationAnswer_Probability_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicEvaluationAnswer_Probability"></a>
@@ -85,7 +85,7 @@ Boolean probability.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L61)
 
 <a id="Vercel_AI_Anthropic_AnthropicEvaluationAnswer_Score_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicEvaluationAnswer_Score"></a>
@@ -102,7 +102,7 @@ Score.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L58)
 
 <a id="Vercel_AI_Anthropic_AnthropicEvaluationAnswer_Type_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicEvaluationAnswer_Type"></a>
@@ -119,4 +119,4 @@ choice, score, or boolean.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicEvaluation.cs#L52)

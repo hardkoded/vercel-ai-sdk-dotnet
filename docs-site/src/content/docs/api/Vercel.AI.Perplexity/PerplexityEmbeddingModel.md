@@ -201,7 +201,7 @@ Embeds each value. Maps to `doEmbed`. &lt;code class="paramref"&gt;providerOptio
 
 **Returns:** [Task&lt;EmbeddingResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityEmbeddingModel.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityEmbeddingModel.cs#L63)
 
 <a id="Vercel_AI_Perplexity_PerplexityEmbeddingModel_DoEmbedAsync_Vercel_AI_Operations_EmbeddingModelCall_System_Threading_CancellationToken_"></a>
 
@@ -224,7 +224,7 @@ Embeds one chunk.
 
 **Returns:** [Task&lt;EmbeddingModelResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityEmbeddingModel.cs#L70)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Perplexity/PerplexityEmbeddingModel.cs#L97)
 
 <a id="Vercel_AI_Perplexity_PerplexityEmbeddingModel_TransformProviderOptionsAsync_"></a>
 <a id="Vercel_AI_Perplexity_PerplexityEmbeddingModel_TransformProviderOptionsAsync_System_Nullable_System_Text_Json_JsonElement__System_Collections_Generic_IReadOnlyList_System_String__System_Int32_System_Int32_System_Threading_CancellationToken_"></a>

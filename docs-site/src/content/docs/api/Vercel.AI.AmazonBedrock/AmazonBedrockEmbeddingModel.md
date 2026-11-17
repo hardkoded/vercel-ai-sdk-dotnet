@@ -71,7 +71,7 @@ Creates an embedding model with &lt;code class="paramref"&gt;settings&lt;/code&g
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `settings` | [AmazonBedrockEmbeddingModelSettings](/api/Vercel.AI.AmazonBedrock/AmazonBedrockEmbeddingModelSettings/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEmbeddingModel.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEmbeddingModel.cs#L26)
 
 ## Properties
 
@@ -90,7 +90,7 @@ Maximum values per call. Cohere models take 96. Titan and Nova take one.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEmbeddingModel.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEmbeddingModel.cs#L53)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockEmbeddingModel_ModelId_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockEmbeddingModel_ModelId"></a>
@@ -107,7 +107,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEmbeddingModel.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEmbeddingModel.cs#L50)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockEmbeddingModel_Provider_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockEmbeddingModel_Provider"></a>
@@ -124,7 +124,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEmbeddingModel.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEmbeddingModel.cs#L47)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockEmbeddingModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockEmbeddingModel_SpecificationVersion"></a>
@@ -141,7 +141,7 @@ Specification version. Always `V4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEmbeddingModel.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEmbeddingModel.cs#L44)
 
 ## Methods
 
@@ -170,7 +170,7 @@ Embeds each value. Maps to `doEmbed`. &lt;code class="paramref"&gt;providerOptio
 
 **Returns:** [Task&lt;EmbeddingResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEmbeddingModel.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEmbeddingModel.cs#L64)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockEmbeddingModel_DoEmbedAsync_Vercel_AI_Provider_EmbeddingCallOptions_System_Threading_CancellationToken_"></a>
 
@@ -193,4 +193,4 @@ Embeds each value. Values, provider options, headers, and dimensions travel in &
 
 **Returns:** [Task&lt;EmbeddingResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEmbeddingModel.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockEmbeddingModel.cs#L84)

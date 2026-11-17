@@ -25,7 +25,7 @@ A condition describes when support is available; it is documentation, not an exp
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapability.cs#L12)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L12)
 
 ## Fields
 
@@ -43,7 +43,7 @@ Supported.
 
 **Value:** [ModelCapability](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapability.cs#L15)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L15)
 
 <a id="Vercel_AI_ModelCapability_Unknown"></a>
 
@@ -59,7 +59,7 @@ Support is not declared. Upstream `'unknown'`.
 
 **Value:** [ModelCapability](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapability.cs#L21)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L21)
 
 <a id="Vercel_AI_ModelCapability_Unsupported"></a>
 
@@ -75,7 +75,7 @@ Not supported.
 
 **Value:** [ModelCapability](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapability.cs#L18)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L18)
 
 ## Properties
 
@@ -94,7 +94,7 @@ When support is available, for the `{ condition }` form. Null otherwise.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapability.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L37)
 
 <a id="Vercel_AI_ModelCapability_IsSupported_"></a>
 <a id="Vercel_AI_ModelCapability_IsSupported"></a>
@@ -111,7 +111,7 @@ True when support is declared as `true`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapability.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L31)
 
 <a id="Vercel_AI_ModelCapability_IsUnknown_"></a>
 <a id="Vercel_AI_ModelCapability_IsUnknown"></a>
@@ -128,7 +128,7 @@ True when support is declared as `'unknown'`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapability.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L34)
 
 ## Methods
 
@@ -153,7 +153,7 @@ Maps a boolean to [Supported](#Vercel_AI_ModelCapability_Supported) or [Unsuppor
 
 **Returns:** [ModelCapability](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapability.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L40)
 
 <a id="Vercel_AI_ModelCapability_When_"></a>
 <a id="Vercel_AI_ModelCapability_When_System_String_"></a>
@@ -176,4 +176,4 @@ The `{ condition }` form.
 
 **Returns:** [ModelCapability](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapability.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L43)

@@ -23,7 +23,7 @@ Converts prompts into OpenAI Chat Completions messages.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L107)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L114)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Converts prepared messages. &lt;code class="paramref"&gt;systemMessageMode&lt;/c
 
 **Returns:** [OpenAIChatMessageResult](/api/Vercel.AI.OpenAI/OpenAIChatMessageResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L148)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L186)
 
 <a id="Vercel_AI_OpenAI_OpenAIChatMessages_Convert_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_ModelMessage__System_String_"></a>
 
@@ -72,4 +72,4 @@ Converts SDK messages. &lt;code class="paramref"&gt;systemMessageMode&lt;/code&g
 
 **Returns:** [OpenAIChatMessageResult](/api/Vercel.AI.OpenAI/OpenAIChatMessageResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L110)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Chat/OpenAIChatMessages.cs#L117)

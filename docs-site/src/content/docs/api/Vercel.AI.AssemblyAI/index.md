@@ -15,8 +15,9 @@ Public types in the `Vercel.AI.AssemblyAI` namespace.
 | Type | Summary |
 | --- | --- |
 | [AssemblyAIError](/api/Vercel.AI.AssemblyAI/AssemblyAIError/) | Parses AssemblyAI error JSON. |
-| [AssemblyAIErrorData](/api/Vercel.AI.AssemblyAI/AssemblyAIErrorData/) | Parsed AssemblyAI error object. |
+| [AssemblyAIErrorData](/api/Vercel.AI.AssemblyAI/AssemblyAIErrorData/) | Parsed AssemblyAI error. AssemblyAI documents a flat { "error": "Invalid API key" } body for 4xx and 5xx responses. The nested { "error": { "message": "...", "code": 429 } } body is still read. |
 | [AssemblyAIErrorParseResult](/api/Vercel.AI.AssemblyAI/AssemblyAIErrorParseResult/) | Result of parsing an AssemblyAI error body. |
+| [AssemblyAIFailedResponseHandler](/api/Vercel.AI.AssemblyAI/AssemblyAIFailedResponseHandler/) | Creates .NET API exceptions from AssemblyAI failed JSON responses. |
 | [AssemblyAIOptions](/api/Vercel.AI.AssemblyAI/AssemblyAIOptions/) | AssemblyAI settings. |
 | [AssemblyAIProvider](/api/Vercel.AI.AssemblyAI/AssemblyAIProvider/) | AssemblyAI provider. |
 | [AssemblyAIProvider.AssemblyAITranscriptionModel](/api/Vercel.AI.AssemblyAI/AssemblyAIProvider.AssemblyAITranscriptionModel/) | Uploads audio, submits a transcript, and polls until it completes. |

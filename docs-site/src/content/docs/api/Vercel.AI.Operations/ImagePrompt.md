@@ -23,7 +23,7 @@ A string prompt or an image edit prompt.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L281)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L325)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates a text prompt.
 | --- | --- | --- |
 | `text` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L284)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L328)
 
 <a id="Vercel_AI_Operations_ImagePrompt__ctor_System_String_System_Collections_Generic_IReadOnlyList_System_Object__System_Object_"></a>
 
@@ -68,7 +68,7 @@ Creates an edit prompt.
 | `images` | [IReadOnlyList&lt;object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `mask` | [object](https://learn.microsoft.com/dotnet/api/system.object) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L290)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L334)
 
 ## Properties
 
@@ -87,7 +87,7 @@ True when the caller passed the object form.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L308)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L352)
 
 <a id="Vercel_AI_Operations_ImagePrompt_Images_"></a>
 <a id="Vercel_AI_Operations_ImagePrompt_Images"></a>
@@ -104,7 +104,7 @@ Reference images when this is an edit prompt.
 
 **Value:** [IReadOnlyList&lt;object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L302)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L346)
 
 <a id="Vercel_AI_Operations_ImagePrompt_Mask_"></a>
 <a id="Vercel_AI_Operations_ImagePrompt_Mask"></a>
@@ -121,7 +121,7 @@ Optional mask.
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L305)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L349)
 
 <a id="Vercel_AI_Operations_ImagePrompt_Text_"></a>
 <a id="Vercel_AI_Operations_ImagePrompt_Text"></a>
@@ -138,4 +138,4 @@ Prompt text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L299)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L343)

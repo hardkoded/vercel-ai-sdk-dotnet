@@ -27,7 +27,7 @@ The connection to the provider failed.
 
 **Derived:** [ApiTimeoutException](/api/Vercel.AI.Provider/ApiTimeoutException/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/Errors.cs#L144)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/Errors.cs#L133)
 
 ## Constructors
 
@@ -51,4 +51,4 @@ Creates the exception.
 | `message` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `innerException` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/Errors.cs#L147)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/Errors.cs#L136)

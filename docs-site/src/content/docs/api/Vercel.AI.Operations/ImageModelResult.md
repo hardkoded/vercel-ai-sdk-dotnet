@@ -23,7 +23,7 @@ One `doGenerate` result.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L116)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L134)
 
 ## Constructors
 
@@ -51,7 +51,7 @@ Creates a result.
 | `response` | [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/) |  |
 | `isRetryable` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L119)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L137)
 
 ## Properties
 
@@ -70,7 +70,7 @@ Image payloads: base64 strings or byte arrays.
 
 **Value:** [IReadOnlyList&lt;object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L130)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L155)
 
 <a id="Vercel_AI_Operations_ImageModelResult_IsRetryable_"></a>
 <a id="Vercel_AI_Operations_ImageModelResult_IsRetryable"></a>
@@ -87,7 +87,7 @@ When false, an empty image list is terminal.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L145)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L170)
 
 <a id="Vercel_AI_Operations_ImageModelResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_ImageModelResult_ProviderMetadata"></a>
@@ -104,7 +104,7 @@ Provider metadata, including per-image arrays.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L139)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L164)
 
 <a id="Vercel_AI_Operations_ImageModelResult_Response_"></a>
 <a id="Vercel_AI_Operations_ImageModelResult_Response"></a>
@@ -121,7 +121,7 @@ Response metadata.
 
 **Value:** [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L142)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L167)
 
 <a id="Vercel_AI_Operations_ImageModelResult_Usage_"></a>
 <a id="Vercel_AI_Operations_ImageModelResult_Usage"></a>
@@ -138,7 +138,7 @@ Token usage. Null when the provider omitted it.
 
 **Value:** [OperationUsage](/api/Vercel.AI.Operations/OperationUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L136)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L161)
 
 <a id="Vercel_AI_Operations_ImageModelResult_Warnings_"></a>
 <a id="Vercel_AI_Operations_ImageModelResult_Warnings"></a>
@@ -155,4 +155,4 @@ Warnings from this call.
 
 **Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L133)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateImage.cs#L158)

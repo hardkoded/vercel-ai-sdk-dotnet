@@ -23,4 +23,4 @@ A model that scores a candidate against a rubric. Used by `CancellationToken)`.
 
 **Derived:** [AnthropicEvaluationModel](/api/Vercel.AI.Anthropic/AnthropicEvaluationModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L502)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L580)

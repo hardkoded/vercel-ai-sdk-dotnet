@@ -25,7 +25,7 @@ Retries were exhausted or stopped.
 
 **Implements:** [ISerializable](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.iserializable), [IErrorMarkers](/api/Vercel.AI.Util/IErrorMarkers/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L225)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L241)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates the error.
 | `reason` | [RetryErrorReason](/api/Vercel.AI.Util/RetryErrorReason/) |  |
 | `errors` | [IReadOnlyList&lt;object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L231)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L247)
 
 ## Fields
 
@@ -68,7 +68,7 @@ Marker for [IsInstance(object)](#Vercel_AI_Util_RetryError_IsInstance_System_Obj
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L228)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L244)
 
 ## Properties
 
@@ -87,7 +87,7 @@ Errors from each attempt, in order.
 
 **Value:** [IReadOnlyList&lt;object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L244)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L260)
 
 <a id="Vercel_AI_Util_RetryError_LastError_"></a>
 <a id="Vercel_AI_Util_RetryError_LastError"></a>
@@ -104,7 +104,7 @@ Last attempt's error.
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L247)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L263)
 
 <a id="Vercel_AI_Util_RetryError_Reason_"></a>
 <a id="Vercel_AI_Util_RetryError_Reason"></a>
@@ -121,7 +121,7 @@ Why retrying stopped.
 
 **Value:** [RetryErrorReason](/api/Vercel.AI.Util/RetryErrorReason/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L241)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L257)
 
 ## Methods
 
@@ -146,4 +146,4 @@ Returns whether &lt;code class="paramref"&gt;error&lt;/code&gt; carries this err
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L250)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ApiCallError.cs#L266)

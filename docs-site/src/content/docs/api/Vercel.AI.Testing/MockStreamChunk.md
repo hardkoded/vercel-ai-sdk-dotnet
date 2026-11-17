@@ -23,7 +23,7 @@ One chunk of a mock language-model stream.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L43)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a chunk.
 | `id` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `delta` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L46)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Text delta, when [Type](#Vercel_AI_Testing_MockStreamChunk_Type) is `text-delta`
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L60)
 
 <a id="Vercel_AI_Testing_MockStreamChunk_Id_"></a>
 <a id="Vercel_AI_Testing_MockStreamChunk_Id"></a>
@@ -84,7 +84,7 @@ Chunk id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L57)
 
 <a id="Vercel_AI_Testing_MockStreamChunk_Type_"></a>
 <a id="Vercel_AI_Testing_MockStreamChunk_Type"></a>
@@ -101,4 +101,4 @@ Chunk kind.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L54)

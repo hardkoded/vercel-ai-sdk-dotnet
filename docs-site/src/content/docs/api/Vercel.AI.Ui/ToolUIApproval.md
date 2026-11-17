@@ -23,7 +23,7 @@ The approval of a tool call in a [ToolUIPart](/api/Vercel.AI.Ui/ToolUIPart/).
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L278)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L279)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates an approval.
 | --- | --- | --- |
 | `id` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L281)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L282)
 
 ## Properties
 
@@ -65,7 +65,24 @@ Whether the call was approved. Null while the approval is requested.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L290)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L291)
+
+<a id="Vercel_AI_Ui_ToolUIApproval_Descriptor_"></a>
+<a id="Vercel_AI_Ui_ToolUIApproval_Descriptor"></a>
+
+### Descriptor
+
+
+```csharp
+public JsonElement? Descriptor { get; init; }
+```
+
+
+A descriptor of the approval, as the UI keeps it. Maps to `descriptor`.
+
+**Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L303)
 
 <a id="Vercel_AI_Ui_ToolUIApproval_Id_"></a>
 <a id="Vercel_AI_Ui_ToolUIApproval_Id"></a>
@@ -82,7 +99,24 @@ The approval id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L287)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L288)
+
+<a id="Vercel_AI_Ui_ToolUIApproval_InputSchemaInput_"></a>
+<a id="Vercel_AI_Ui_ToolUIApproval_InputSchemaInput"></a>
+
+### InputSchemaInput
+
+
+```csharp
+public JsonElement? InputSchemaInput { get; init; }
+```
+
+
+The input of the call before its input schema transformed it. Maps to `inputSchemaInput`.
+
+**Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L309)
 
 <a id="Vercel_AI_Ui_ToolUIApproval_IsAutomatic_"></a>
 <a id="Vercel_AI_Ui_ToolUIApproval_IsAutomatic"></a>
@@ -99,7 +133,7 @@ Whether the approval was decided automatically.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L299)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L300)
 
 <a id="Vercel_AI_Ui_ToolUIApproval_Reason_"></a>
 <a id="Vercel_AI_Ui_ToolUIApproval_Reason"></a>
@@ -116,7 +150,7 @@ Why the call was approved or denied.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L296)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L297)
 
 <a id="Vercel_AI_Ui_ToolUIApproval_RequestReason_"></a>
 <a id="Vercel_AI_Ui_ToolUIApproval_RequestReason"></a>
@@ -133,4 +167,21 @@ Why the approval was requested.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L293)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L294)
+
+<a id="Vercel_AI_Ui_ToolUIApproval_Signature_"></a>
+<a id="Vercel_AI_Ui_ToolUIApproval_Signature"></a>
+
+### Signature
+
+
+```csharp
+public string? Signature { get; init; }
+```
+
+
+HMAC-SHA256 signature that binds the approval request to its tool call. Maps to `signature`.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L306)

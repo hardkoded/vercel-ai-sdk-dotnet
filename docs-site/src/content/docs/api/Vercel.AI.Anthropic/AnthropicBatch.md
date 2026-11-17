@@ -23,7 +23,7 @@ Validation and status mapping for the Anthropic Message Batches API.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L38)
 
 ## Methods
 
@@ -52,7 +52,7 @@ Builds SDK counts from the provider request_counts object.
 
 **Returns:** [AnthropicBatchCounts](/api/Vercel.AI.Anthropic/AnthropicBatchCounts/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L94)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L114)
 
 <a id="Vercel_AI_Anthropic_AnthropicBatch_Count_System_Text_Json_JsonElement_"></a>
 
@@ -74,7 +74,7 @@ Reads counts from a batch JSON object.
 
 **Returns:** [AnthropicBatchCounts](/api/Vercel.AI.Anthropic/AnthropicBatchCounts/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L131)
 
 <a id="Vercel_AI_Anthropic_AnthropicBatch_MapStatus_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicBatch_MapStatus_System_String_"></a>
@@ -97,7 +97,7 @@ Maps processing status. `ended` is completed. Other known states are pending.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L88)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L108)
 
 <a id="Vercel_AI_Anthropic_AnthropicBatch_MissingResults_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicBatch_MissingResults_System_Text_Json_JsonElement_"></a>
@@ -120,29 +120,7 @@ True when a completed batch has no results URL.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L120)
-
-<a id="Vercel_AI_Anthropic_AnthropicBatch_RejectSpeed_"></a>
-<a id="Vercel_AI_Anthropic_AnthropicBatch_RejectSpeed_System_String_System_Boolean_"></a>
-
-### RejectSpeed(string?, bool)
-
-
-```csharp
-public static void RejectSpeed(string? speed, bool fallbackSpeed)
-```
-
-
-Rejects speed and fallback speed, which batches do not support.
-
-**Parameters**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `speed` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
-| `fallbackSpeed` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
-
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L148)
 
 <a id="Vercel_AI_Anthropic_AnthropicBatch_ResultsUnavailable_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicBatch_ResultsUnavailable_System_Text_Json_JsonElement_"></a>
@@ -165,7 +143,29 @@ True when the batch is still pending, so results cannot be read.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L128)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L156)
+
+<a id="Vercel_AI_Anthropic_AnthropicBatch_ValidateAnthropicBatchBody_"></a>
+<a id="Vercel_AI_Anthropic_AnthropicBatch_ValidateAnthropicBatchBody_System_Text_Json_Nodes_JsonObject_System_String_"></a>
+
+### ValidateAnthropicBatchBody(JsonObject, string)
+
+
+```csharp
+public static void ValidateAnthropicBatchBody(JsonObject body, string requestId)
+```
+
+
+Rejects `speed` and `fallbacks[].speed`, which Message Batches do not support.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `body` | [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject) |  |
+| `requestId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L60)
 
 <a id="Vercel_AI_Anthropic_AnthropicBatch_ValidateRequestId_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicBatch_ValidateRequestId_System_String_"></a>
@@ -186,7 +186,7 @@ Throws when &lt;code class="paramref"&gt;id&lt;/code&gt; is not 1–64 letters, 
 | --- | --- | --- |
 | `id` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L47)
 
 <a id="Vercel_AI_Anthropic_AnthropicBatch_ValidateRequestIds_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicBatch_ValidateRequestIds_System_Collections_Generic_IEnumerable_System_String__"></a>
@@ -207,25 +207,4 @@ Validates ids and rejects duplicates before any HTTP call.
 | --- | --- | --- |
 | `ids` | [IEnumerable&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L51)
-
-<a id="Vercel_AI_Anthropic_AnthropicBatch_ValidateRequestType_"></a>
-<a id="Vercel_AI_Anthropic_AnthropicBatch_ValidateRequestType_System_String_"></a>
-
-### ValidateRequestType(string?)
-
-
-```csharp
-public static void ValidateRequestType(string? type)
-```
-
-
-Rejects request types the batches API does not accept, such as image.
-
-**Parameters**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `type` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
-
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatch.cs#L90)

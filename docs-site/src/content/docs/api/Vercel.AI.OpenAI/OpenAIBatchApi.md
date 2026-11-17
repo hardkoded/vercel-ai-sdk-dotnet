@@ -104,7 +104,7 @@ Cancels a batch.
 
 **Returns:** [Task&lt;BatchCancelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L149)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L232)
 
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_DoGetResultsAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_DoGetResultsAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -129,7 +129,7 @@ Errors found while reading, such as a malformed row, throw from the stream.
 
 **Returns:** [Task&lt;IAsyncEnumerable&lt;BatchItem&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L198)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L302)
 
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_DoGetStatusAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_DoGetStatusAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -153,7 +153,7 @@ Reads status.
 
 **Returns:** [Task&lt;BatchStatus&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L143)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L220)
 
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_DoListAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_DoListAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -177,7 +177,7 @@ Lists batches. The implementation is invoked on this instance.
 
 **Returns:** [Task&lt;BatchListResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L156)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L249)
 
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_DoStartAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_DoStartAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>

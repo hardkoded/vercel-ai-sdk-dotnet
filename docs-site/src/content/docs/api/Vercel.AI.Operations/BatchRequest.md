@@ -23,7 +23,7 @@ One request in a batch.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L42)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a request.
 | `type` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `model` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L45)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Image aspect ratio.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L74)
 
 <a id="Vercel_AI_Operations_BatchRequest_FrequencyPenalty_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_FrequencyPenalty"></a>
@@ -84,7 +84,7 @@ Frequency penalty.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L92)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L98)
 
 <a id="Vercel_AI_Operations_BatchRequest_Id_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_Id"></a>
@@ -101,7 +101,7 @@ Caller request id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L53)
 
 <a id="Vercel_AI_Operations_BatchRequest_ImagePrompt_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_ImagePrompt"></a>
@@ -118,7 +118,7 @@ Image prompt.
 
 **Value:** [ImagePrompt](/api/Vercel.AI.Operations/ImagePrompt/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L65)
 
 <a id="Vercel_AI_Operations_BatchRequest_MaxOutputTokens_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_MaxOutputTokens"></a>
@@ -135,7 +135,7 @@ Maximum output tokens.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L83)
 
 <a id="Vercel_AI_Operations_BatchRequest_Model_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_Model"></a>
@@ -152,7 +152,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L59)
 
 <a id="Vercel_AI_Operations_BatchRequest_N_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_N"></a>
@@ -169,7 +169,7 @@ Image count.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L68)
 
 <a id="Vercel_AI_Operations_BatchRequest_PresencePenalty_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_PresencePenalty"></a>
@@ -186,7 +186,7 @@ Presence penalty.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L89)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L95)
 
 <a id="Vercel_AI_Operations_BatchRequest_Prompt_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_Prompt"></a>
@@ -203,7 +203,7 @@ Text prompt.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L62)
 
 <a id="Vercel_AI_Operations_BatchRequest_ProviderOptions_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_ProviderOptions"></a>
@@ -220,7 +220,7 @@ Per-request provider options.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L80)
 
 <a id="Vercel_AI_Operations_BatchRequest_Reasoning_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_Reasoning"></a>
@@ -237,7 +237,7 @@ Reasoning effort.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L98)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L104)
 
 <a id="Vercel_AI_Operations_BatchRequest_Seed_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_Seed"></a>
@@ -254,7 +254,7 @@ Seed.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L77)
 
 <a id="Vercel_AI_Operations_BatchRequest_Size_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_Size"></a>
@@ -271,7 +271,7 @@ Image size.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L71)
 
 <a id="Vercel_AI_Operations_BatchRequest_StopSequences_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_StopSequences"></a>
@@ -288,7 +288,7 @@ Stop sequences.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L95)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L101)
 
 <a id="Vercel_AI_Operations_BatchRequest_Temperature_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_Temperature"></a>
@@ -305,7 +305,7 @@ Temperature.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L86)
 
 <a id="Vercel_AI_Operations_BatchRequest_ToolChoice_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_ToolChoice"></a>
@@ -322,7 +322,7 @@ Tool choice such as `required`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L110)
 
 <a id="Vercel_AI_Operations_BatchRequest_Tools_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_Tools"></a>
@@ -339,7 +339,7 @@ Tools. They are forwarded and not executed.
 
 **Value:** [IReadOnlyList&lt;BatchTool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L101)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L107)
 
 <a id="Vercel_AI_Operations_BatchRequest_TopK_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_TopK"></a>
@@ -356,7 +356,7 @@ Top-k.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L86)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L92)
 
 <a id="Vercel_AI_Operations_BatchRequest_TopP_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_TopP"></a>
@@ -373,7 +373,7 @@ Top-p.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L89)
 
 <a id="Vercel_AI_Operations_BatchRequest_Type_"></a>
 <a id="Vercel_AI_Operations_BatchRequest_Type"></a>
@@ -390,4 +390,4 @@ public string Type { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L56)

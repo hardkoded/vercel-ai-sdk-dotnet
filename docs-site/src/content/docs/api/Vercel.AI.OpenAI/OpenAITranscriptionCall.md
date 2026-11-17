@@ -23,7 +23,7 @@ Transcription settings beyond the audio payload.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L17)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L18)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates a transcription call.
 | --- | --- | --- |
 | `audio` | [AudioInput](/api/Vercel.AI.Provider/AudioInput/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L20)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L21)
 
 ## Properties
 
@@ -65,7 +65,7 @@ Audio to transcribe.
 
 **Value:** [AudioInput](/api/Vercel.AI.Provider/AudioInput/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L26)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L27)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionCall_Headers_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionCall_Headers"></a>
@@ -82,7 +82,7 @@ Extra HTTP headers.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L36)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionCall_ProviderOptions_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionCall_ProviderOptions"></a>
@@ -99,4 +99,21 @@ Provider options. The `openai` object is read.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L30)
+
+<a id="Vercel_AI_OpenAI_OpenAITranscriptionCall_TimestampGranularities_"></a>
+<a id="Vercel_AI_OpenAI_OpenAITranscriptionCall_TimestampGranularities"></a>
+
+### TimestampGranularities
+
+
+```csharp
+public IReadOnlyList<string>? TimestampGranularities { get; set; }
+```
+
+
+Timing granularities the caller asks for, `word` and `segment`. Maps to `timestampGranularities`.
+
+**Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L33)

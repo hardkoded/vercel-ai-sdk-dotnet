@@ -25,7 +25,7 @@ Reasoning text kept separate from the answer.
 
 **Derived:** [GoogleReasoning](/api/Vercel.AI.Google/GoogleReasoning/), [HuggingFaceReasoning](/api/Vercel.AI.HuggingFace/HuggingFaceReasoning/), [XaiReasoning](/api/Vercel.AI.Xai/XaiReasoning/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L278)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L351)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates reasoning content.
 | --- | --- | --- |
 | `text` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L281)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L354)
 
 <a id="Vercel_AI_Provider_GeneratedReasoning__ctor_System_String_System_Nullable_System_Text_Json_JsonElement__"></a>
 
@@ -69,7 +69,7 @@ Creates reasoning content that carries provider metadata, such as an `itemId` or
 | `text` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L287)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L358)
 
 ## Properties
 
@@ -88,7 +88,7 @@ Provider metadata for this reasoning, keyed by provider name.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L298)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L369)
 
 <a id="Vercel_AI_Provider_GeneratedReasoning_Text_"></a>
 <a id="Vercel_AI_Provider_GeneratedReasoning_Text"></a>
@@ -105,4 +105,4 @@ Reasoning text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L295)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L366)

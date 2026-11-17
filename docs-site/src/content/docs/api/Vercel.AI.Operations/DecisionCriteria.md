@@ -25,7 +25,7 @@ Criteria of a decision question. Maps to the `criteria` member of `DecisionModel
 
 **Derived:** [DecisionBooleanCriteria](/api/Vercel.AI.Operations/DecisionBooleanCriteria/), [DecisionChoiceCriteria](/api/Vercel.AI.Operations/DecisionChoiceCriteria/), [DecisionScoreCriteria](/api/Vercel.AI.Operations/DecisionScoreCriteria/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L73)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L80)
 
 ## Properties
 
@@ -44,4 +44,4 @@ Number of options or levels. A boolean has none.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L85)

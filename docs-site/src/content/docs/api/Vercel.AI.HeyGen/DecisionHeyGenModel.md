@@ -147,7 +147,7 @@ send the requests through a custom handler.
 
 **Returns:** [DecisionHeyGenModel](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenDecisionModel.cs#L70)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenDecisionModel.cs#L71)
 
 <a id="Vercel_AI_HeyGen_DecisionHeyGenModel_DoDecideAsync_"></a>
 <a id="Vercel_AI_HeyGen_DecisionHeyGenModel_DoDecideAsync_Vercel_AI_Operations_DecisionModelCall_System_Threading_CancellationToken_"></a>
@@ -171,7 +171,7 @@ Sends every question in one Decision request.
 
 **Returns:** [Task&lt;DecisionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenDecisionModel.cs#L114)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenDecisionModel.cs#L120)
 
 <a id="Vercel_AI_HeyGen_DecisionHeyGenModel_Serialize_"></a>
 <a id="Vercel_AI_HeyGen_DecisionHeyGenModel_Serialize"></a>
@@ -189,4 +189,4 @@ Maps to `[WORKFLOW_SERIALIZE]`. The HTTP client is not serialized.
 
 **Returns:** [SerializedModelOptions](/api/Vercel.AI.ProviderUtils/SerializedModelOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenDecisionModel.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenDecisionModel.cs#L47)

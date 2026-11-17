@@ -26,7 +26,7 @@ signed for `bedrock-mantle`.
 
 **Implements:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L174)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L197)
 
 ## Constructors
 
@@ -51,7 +51,7 @@ Creates a model.
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `responses` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L180)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L203)
 
 ## Properties
 
@@ -70,7 +70,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L194)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L225)
 
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleLanguageModel_Provider_"></a>
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleLanguageModel_Provider"></a>
@@ -87,7 +87,7 @@ Provider id, such as `openai`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L191)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L221)
 
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleLanguageModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleLanguageModel_SpecificationVersion"></a>
@@ -104,7 +104,25 @@ Always `V4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L188)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L215)
+
+<a id="Vercel_AI_AmazonBedrock_BedrockMantleLanguageModel_SupportedUrls_"></a>
+<a id="Vercel_AI_AmazonBedrock_BedrockMantleLanguageModel_SupportedUrls"></a>
+
+### SupportedUrls
+
+
+```csharp
+public IReadOnlyDictionary<string, string> SupportedUrls { get; }
+```
+
+
+URLs the model can read itself, keyed by media type pattern (such as `image/*`). Each value is a regular expression that a URL
+must match. Prompt file URLs that match are passed through. All others are downloaded before the call. Maps to `supportedUrls`.
+
+**Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L218)
 
 ## Methods
 
@@ -130,7 +148,7 @@ Generates a complete result.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L197)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L228)
 
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleLanguageModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleLanguageModel_DoStreamAsync_Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_"></a>
@@ -154,4 +172,4 @@ Streams partial results. The result carries the stream with the request and resp
 
 **Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L203)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L239)

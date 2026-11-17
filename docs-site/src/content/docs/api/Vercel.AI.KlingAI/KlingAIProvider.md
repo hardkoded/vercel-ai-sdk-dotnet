@@ -194,7 +194,7 @@ Resolves the bearer token on every call. An API key is sent as is. A legacy acce
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIProvider.cs#L98)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIProvider.cs#L103)
 
 <a id="Vercel_AI_KlingAI_KlingAIProvider_Video_"></a>
 <a id="Vercel_AI_KlingAI_KlingAIProvider_Video_System_String_"></a>
@@ -217,7 +217,7 @@ Creates a video model. Same as [VideoModel(string)](#Vercel_AI_KlingAI_KlingAIPr
 
 **Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIProvider.cs#L93)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIProvider.cs#L98)
 
 <a id="Vercel_AI_KlingAI_KlingAIProvider_VideoModel_"></a>
 <a id="Vercel_AI_KlingAI_KlingAIProvider_VideoModel_System_String_"></a>
@@ -240,4 +240,4 @@ Returns a video model.
 
 **Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIProvider.cs#L90)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIProvider.cs#L95)

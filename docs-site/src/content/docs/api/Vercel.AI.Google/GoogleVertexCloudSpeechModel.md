@@ -146,7 +146,7 @@ Synthesizes speech.
 
 **Returns:** [Task&lt;SpeechResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L43)
 
 <a id="Vercel_AI_Google_GoogleVertexCloudSpeechModel_Prepare_"></a>
 <a id="Vercel_AI_Google_GoogleVertexCloudSpeechModel_Prepare_System_String_System_String_System_String_System_Nullable_System_Double__System_String_"></a>
@@ -173,4 +173,4 @@ Builds the synthesize body.
 
 **Returns:** [GoogleSpeechPreparation](/api/Vercel.AI.Google/GoogleSpeechPreparation/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexMedia.cs#L80)

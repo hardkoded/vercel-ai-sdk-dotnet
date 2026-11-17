@@ -52,7 +52,7 @@ Creates a model. &lt;code class="paramref"&gt;clock&lt;/code&gt; sets the respon
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `clock` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L56)
 
 ## Properties
 
@@ -71,7 +71,7 @@ True when `doGenerate` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L70)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L80)
 
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_CanStart_"></a>
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_CanStart"></a>
@@ -88,7 +88,7 @@ True when `doStart` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L73)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L83)
 
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_CanStatus_"></a>
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_CanStatus"></a>
@@ -105,7 +105,7 @@ True when `doStatus` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L76)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L86)
 
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_CanWebhook_"></a>
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_CanWebhook"></a>
@@ -122,7 +122,7 @@ False. HeyGen is polled.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L79)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L89)
 
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_MaxVideosPerCall_"></a>
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_MaxVideosPerCall"></a>
@@ -139,7 +139,7 @@ HeyGen creates one video per call.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L77)
 
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_ModelId_"></a>
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_ModelId"></a>
@@ -156,7 +156,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L74)
 
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_Provider_"></a>
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_Provider"></a>
@@ -173,7 +173,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L71)
 
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_SpecificationVersion"></a>
@@ -190,7 +190,7 @@ Specification version. Always `v4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L68)
 
 ## Methods
 
@@ -216,7 +216,7 @@ Generates videos in one call.
 
 **Returns:** [Task&lt;VideoModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L96)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L119)
 
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_DoGenerateAsync_Vercel_AI_Provider_VideoCallOptions_System_Threading_CancellationToken_"></a>
 
@@ -239,7 +239,7 @@ Starts a job and polls it until the video is ready.
 
 **Returns:** [Task&lt;VideoResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L88)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L98)
 
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_DoStartAsync_"></a>
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_DoStartAsync_Vercel_AI_Operations_VideoModelCall_System_Threading_CancellationToken_"></a>
@@ -263,7 +263,7 @@ Starts an asynchronous generation.
 
 **Returns:** [Task&lt;VideoStartResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L137)
 
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_DoStatusAsync_"></a>
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_DoStatusAsync_Vercel_AI_Operations_VideoModelCall_System_Threading_CancellationToken_"></a>
@@ -287,7 +287,7 @@ Reads operation status.
 
 **Returns:** [Task&lt;VideoStatusResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L147)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L187)
 
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_HandleWebhookAsync_"></a>
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_HandleWebhookAsync_System_Func_System_Threading_Tasks_Task_Vercel_AI_Operations_VideoWebhook___System_Threading_CancellationToken_"></a>
@@ -311,7 +311,7 @@ Turns a webhook factory into a URL and a received task.
 
 **Returns:** [Task&lt;VideoWebhook&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L102)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L128)
 
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_ResolveMaxVideosPerCallAsync_"></a>
 <a id="Vercel_AI_HeyGen_HeyGenVideoModel_ResolveMaxVideosPerCallAsync_System_Threading_CancellationToken_"></a>
@@ -334,4 +334,4 @@ Resolves a functional limit. The default is [MaxVideosPerCall](/api/Vercel.AI.Op
 
 **Returns:** [Task&lt;int?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L82)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenVideoModel.cs#L92)

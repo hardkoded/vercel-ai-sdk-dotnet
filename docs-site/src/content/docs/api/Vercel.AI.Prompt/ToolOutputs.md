@@ -23,7 +23,7 @@ Builds the model-facing tool result. Maps to `createToolModelOutput`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/CreateToolModelOutput.cs#L140)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/CreateToolModelOutput.cs#L162)
 
 ## Methods
 
@@ -54,4 +54,4 @@ Set &lt;code class="paramref"&gt;hasOutput&lt;/code&gt; to false when the output
 
 **Returns:** [ToolModelOutput](/api/Vercel.AI.Prompt/ToolModelOutput/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/CreateToolModelOutput.cs#L151)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/CreateToolModelOutput.cs#L173)

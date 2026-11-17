@@ -114,7 +114,7 @@ Parses JSON text into an input. The text must be a JSON string, object, or array
 
 **Returns:** [DecisionInput](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L55)
 
 <a id="Vercel_AI_Operations_DecisionInput_ToString_"></a>
 <a id="Vercel_AI_Operations_DecisionInput_ToString"></a>
@@ -131,7 +131,7 @@ The string itself, or the JSON text of an object or array.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L68)
 
 ## Operators
 
@@ -156,4 +156,4 @@ Converts a string to an input.
 
 **Returns:** [DecisionInput](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L62)

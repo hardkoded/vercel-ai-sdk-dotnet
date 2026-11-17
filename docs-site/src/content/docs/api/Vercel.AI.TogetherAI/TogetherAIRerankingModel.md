@@ -137,4 +137,4 @@ Reranks text or object documents. `togetherai.rankFields` is sent as `rank_field
 
 **Returns:** [Task&lt;RerankModelResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIRerankingModel.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIRerankingModel.cs#L55)

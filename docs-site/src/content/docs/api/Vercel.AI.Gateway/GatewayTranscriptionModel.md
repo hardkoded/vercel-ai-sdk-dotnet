@@ -70,7 +70,7 @@ True when `CancellationToken)` is implemented.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L53)
 
 <a id="Vercel_AI_Gateway_GatewayTranscriptionModel_ModelId_"></a>
 <a id="Vercel_AI_Gateway_GatewayTranscriptionModel_ModelId"></a>
@@ -87,7 +87,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L47)
 
 <a id="Vercel_AI_Gateway_GatewayTranscriptionModel_Provider_"></a>
 <a id="Vercel_AI_Gateway_GatewayTranscriptionModel_Provider"></a>
@@ -104,7 +104,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L38)
 
 <a id="Vercel_AI_Gateway_GatewayTranscriptionModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Gateway_GatewayTranscriptionModel_SpecificationVersion"></a>
@@ -121,7 +121,7 @@ Specification version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L50)
 
 ## Methods
 
@@ -147,7 +147,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L77)
 
 <a id="Vercel_AI_Gateway_GatewayTranscriptionModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_Gateway_GatewayTranscriptionModel_DoStreamAsync_Vercel_AI_Operations_TranscriptionStreamCall_System_Threading_CancellationToken_"></a>
@@ -171,7 +171,7 @@ Starts a stream, or null when streaming is unsupported.
 
 **Returns:** [Task&lt;TranscriptionStreamStart&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L154)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L230)
 
 <a id="Vercel_AI_Gateway_GatewayTranscriptionModel_DoTranscribeAsync_"></a>
 <a id="Vercel_AI_Gateway_GatewayTranscriptionModel_DoTranscribeAsync_Vercel_AI_Provider_AudioInput_System_Threading_CancellationToken_"></a>
@@ -195,7 +195,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L56)
 
 <a id="Vercel_AI_Gateway_GatewayTranscriptionModel_GetProtocolsFromHeaders_"></a>
 <a id="Vercel_AI_Gateway_GatewayTranscriptionModel_GetProtocolsFromHeaders_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_String_System_Func_System_String_System_String_System_Collections_Generic_IReadOnlyList_System_String___"></a>
@@ -222,7 +222,7 @@ lookups are case-insensitive. Maps to `getProtocolsFromHeaders`.
 
 **Returns:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L218)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L305)
 
 <a id="Vercel_AI_Gateway_GatewayTranscriptionModel_ToGatewayTranscriptionUrl_"></a>
 <a id="Vercel_AI_Gateway_GatewayTranscriptionModel_ToGatewayTranscriptionUrl_System_String_System_String_"></a>
@@ -247,4 +247,4 @@ Gateway streaming transcription WebSocket URL: the HTTP(S) base upgraded to WS(S
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L206)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L289)

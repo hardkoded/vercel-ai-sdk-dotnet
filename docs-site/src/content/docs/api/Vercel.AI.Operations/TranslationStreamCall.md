@@ -28,13 +28,13 @@ Arguments for a speech-translation stream.
 ## Constructors
 
 <a id="Vercel_AI_Operations_TranslationStreamCall__ctor_"></a>
-<a id="Vercel_AI_Operations_TranslationStreamCall__ctor_Vercel_AI_Operations_AudioChunkStream_Vercel_AI_Operations_AudioFormat_System_String_System_String_System_String_System_Text_Json_JsonElement_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Nullable_System_Boolean__System_Threading_CancellationToken_"></a>
+<a id="Vercel_AI_Operations_TranslationStreamCall__ctor_Vercel_AI_Operations_AudioChunkStream_Vercel_AI_Operations_AudioFormat_System_String_System_String_System_String_System_Text_Json_JsonElement_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Nullable_System_Boolean__System_Threading_CancellationToken_System_Exception_"></a>
 
-### `TranslationStreamCall(AudioChunkStream, AudioFormat, string, string?, string?, JsonElement, IReadOnlyDictionary<string, string>, bool?, CancellationToken)`
+### `TranslationStreamCall(AudioChunkStream, AudioFormat, string, string?, string?, JsonElement, IReadOnlyDictionary<string, string>, bool?, CancellationToken, Exception?)`
 
 
 ```csharp
-public TranslationStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, string targetLanguage, string? sourceLanguage, string? outputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken)
+public TranslationStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, string targetLanguage, string? sourceLanguage, string? outputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken, Exception? abortReason = null)
 ```
 
 
@@ -53,10 +53,28 @@ Creates a translation call.
 | `headers` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 | `includeRawChunks` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+| `abortReason` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L13)
 
 ## Properties
+
+<a id="Vercel_AI_Operations_TranslationStreamCall_AbortReason_"></a>
+<a id="Vercel_AI_Operations_TranslationStreamCall_AbortReason"></a>
+
+### AbortReason
+
+
+```csharp
+public Exception? AbortReason { get; }
+```
+
+
+Error the stream fails with when [CancellationToken](#Vercel_AI_Operations_TranslationStreamCall_CancellationToken) is cancelled. Maps to `abortSignal.reason`.
+
+**Value:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L66)
 
 <a id="Vercel_AI_Operations_TranslationStreamCall_Audio_"></a>
 <a id="Vercel_AI_Operations_TranslationStreamCall_Audio"></a>
@@ -73,7 +91,7 @@ Audio stream.
 
 **Value:** [AudioChunkStream](/api/Vercel.AI.Operations/AudioChunkStream/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L39)
 
 <a id="Vercel_AI_Operations_TranslationStreamCall_CancellationToken_"></a>
 <a id="Vercel_AI_Operations_TranslationStreamCall_CancellationToken"></a>
@@ -90,7 +108,7 @@ Cancellation token shared with `fullStream` cancellation.
 
 **Value:** [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L63)
 
 <a id="Vercel_AI_Operations_TranslationStreamCall_Headers_"></a>
 <a id="Vercel_AI_Operations_TranslationStreamCall_Headers"></a>
@@ -107,7 +125,7 @@ Headers including the user-agent suffix.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L57)
 
 <a id="Vercel_AI_Operations_TranslationStreamCall_IncludeRawChunks_"></a>
 <a id="Vercel_AI_Operations_TranslationStreamCall_IncludeRawChunks"></a>
@@ -124,7 +142,7 @@ When true, raw parts are requested.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L60)
 
 <a id="Vercel_AI_Operations_TranslationStreamCall_InputAudioFormat_"></a>
 <a id="Vercel_AI_Operations_TranslationStreamCall_InputAudioFormat"></a>
@@ -141,7 +159,7 @@ Input audio format.
 
 **Value:** [AudioFormat](/api/Vercel.AI.Operations/AudioFormat/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L42)
 
 <a id="Vercel_AI_Operations_TranslationStreamCall_OutputAudioFormat_"></a>
 <a id="Vercel_AI_Operations_TranslationStreamCall_OutputAudioFormat"></a>
@@ -158,7 +176,7 @@ Requested output audio format.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L51)
 
 <a id="Vercel_AI_Operations_TranslationStreamCall_ProviderOptions_"></a>
 <a id="Vercel_AI_Operations_TranslationStreamCall_ProviderOptions"></a>
@@ -175,7 +193,7 @@ Provider options.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L54)
 
 <a id="Vercel_AI_Operations_TranslationStreamCall_SourceLanguage_"></a>
 <a id="Vercel_AI_Operations_TranslationStreamCall_SourceLanguage"></a>
@@ -192,7 +210,7 @@ Source language. Null asks the provider to detect it.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L48)
 
 <a id="Vercel_AI_Operations_TranslationStreamCall_TargetLanguage_"></a>
 <a id="Vercel_AI_Operations_TranslationStreamCall_TargetLanguage"></a>
@@ -209,4 +227,4 @@ Target language.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L45)

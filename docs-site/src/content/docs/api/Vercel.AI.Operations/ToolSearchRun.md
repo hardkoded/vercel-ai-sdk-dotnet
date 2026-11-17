@@ -23,7 +23,7 @@ The outcome of a tool-search generation.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L345)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L387)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Code-mode binding keys per step.
 
 **Value:** [List&lt;List&lt;string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L360)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L402)
 
 <a id="Vercel_AI_Operations_ToolSearchRun_ExecuteCount_"></a>
 <a id="Vercel_AI_Operations_ToolSearchRun_ExecuteCount"></a>
@@ -59,7 +59,7 @@ How many times the discovered tool ran.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L363)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L405)
 
 <a id="Vercel_AI_Operations_ToolSearchRun_ExecutedArguments_"></a>
 <a id="Vercel_AI_Operations_ToolSearchRun_ExecutedArguments"></a>
@@ -76,7 +76,7 @@ Arguments from the discovered tool.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L366)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L408)
 
 <a id="Vercel_AI_Operations_ToolSearchRun_Steps_"></a>
 <a id="Vercel_AI_Operations_ToolSearchRun_Steps"></a>
@@ -93,7 +93,7 @@ Steps.
 
 **Value:** [List&lt;ToolSearchStepRecord&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L357)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L399)
 
 <a id="Vercel_AI_Operations_ToolSearchRun_Text_"></a>
 <a id="Vercel_AI_Operations_ToolSearchRun_Text"></a>
@@ -110,7 +110,7 @@ Final text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L348)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L390)
 
 <a id="Vercel_AI_Operations_ToolSearchRun_ToolNames_"></a>
 <a id="Vercel_AI_Operations_ToolSearchRun_ToolNames"></a>
@@ -127,7 +127,7 @@ Tool names per model call.
 
 **Value:** [List&lt;List&lt;string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L351)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L393)
 
 <a id="Vercel_AI_Operations_ToolSearchRun_UserMessages_"></a>
 <a id="Vercel_AI_Operations_ToolSearchRun_UserMessages"></a>
@@ -144,4 +144,4 @@ User messages per model call.
 
 **Value:** [List&lt;List&lt;string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L354)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ToolSearch.cs#L396)

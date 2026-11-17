@@ -70,7 +70,7 @@ Vectors in request order.
 
 **Value:** [IReadOnlyList&lt;double\[\]&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L31)
 
 <a id="Vercel_AI_Operations_EmbeddingModelResponse_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_EmbeddingModelResponse_ProviderMetadata"></a>
@@ -87,7 +87,7 @@ Provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L40)
 
 <a id="Vercel_AI_Operations_EmbeddingModelResponse_Response_"></a>
 <a id="Vercel_AI_Operations_EmbeddingModelResponse_Response"></a>
@@ -104,7 +104,7 @@ Raw response.
 
 **Value:** [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L43)
 
 <a id="Vercel_AI_Operations_EmbeddingModelResponse_Tokens_"></a>
 <a id="Vercel_AI_Operations_EmbeddingModelResponse_Tokens"></a>
@@ -121,7 +121,7 @@ Token count. [NaN](https://learn.microsoft.com/dotnet/api/system.double.nan) whe
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L34)
 
 <a id="Vercel_AI_Operations_EmbeddingModelResponse_Warnings_"></a>
 <a id="Vercel_AI_Operations_EmbeddingModelResponse_Warnings"></a>
@@ -138,4 +138,4 @@ Provider warnings. Missing warnings become an empty list.
 
 **Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L37)

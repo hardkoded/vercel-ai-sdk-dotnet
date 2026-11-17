@@ -23,7 +23,7 @@ Options for `CancellationToken)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [OperationRequest](/api/Vercel.AI.Operations/OperationRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L374)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L431)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Documents. Strings are sent as text; anything else is sent as objects.
 
 **Value:** [IReadOnlyList&lt;object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L380)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L437)
 
 <a id="Vercel_AI_Operations_RerankRequest_ExperimentalOnEnd_"></a>
 <a id="Vercel_AI_Operations_RerankRequest_ExperimentalOnEnd"></a>
@@ -59,7 +59,7 @@ Deprecated alias of [OnEnd](#Vercel_AI_Operations_RerankRequest_OnEnd).
 
 **Value:** [Func&lt;RerankEndEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L398)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L455)
 
 <a id="Vercel_AI_Operations_RerankRequest_ExperimentalOnStart_"></a>
 <a id="Vercel_AI_Operations_RerankRequest_ExperimentalOnStart"></a>
@@ -76,7 +76,7 @@ Deprecated alias of [OnStart](#Vercel_AI_Operations_RerankRequest_OnStart).
 
 **Value:** [Func&lt;RerankStartEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L392)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L449)
 
 <a id="Vercel_AI_Operations_RerankRequest_ExperimentalTelemetry_"></a>
 <a id="Vercel_AI_Operations_RerankRequest_ExperimentalTelemetry"></a>
@@ -93,7 +93,7 @@ Deprecated alias of [Telemetry](#Vercel_AI_Operations_RerankRequest_Telemetry).
 
 **Value:** [RerankTelemetry](/api/Vercel.AI.Operations/RerankTelemetry/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L404)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L461)
 
 <a id="Vercel_AI_Operations_RerankRequest_Model_"></a>
 <a id="Vercel_AI_Operations_RerankRequest_Model"></a>
@@ -110,7 +110,7 @@ Reranking model.
 
 **Value:** [IRerankCaller](/api/Vercel.AI.Operations/IRerankCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L377)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L434)
 
 <a id="Vercel_AI_Operations_RerankRequest_OnEnd_"></a>
 <a id="Vercel_AI_Operations_RerankRequest_OnEnd"></a>
@@ -127,7 +127,7 @@ Called after the model.
 
 **Value:** [Func&lt;RerankEndEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L395)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L452)
 
 <a id="Vercel_AI_Operations_RerankRequest_OnStart_"></a>
 <a id="Vercel_AI_Operations_RerankRequest_OnStart"></a>
@@ -144,7 +144,7 @@ Called before the model.
 
 **Value:** [Func&lt;RerankStartEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L389)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L446)
 
 <a id="Vercel_AI_Operations_RerankRequest_Query_"></a>
 <a id="Vercel_AI_Operations_RerankRequest_Query"></a>
@@ -161,7 +161,7 @@ Query.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L383)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L440)
 
 <a id="Vercel_AI_Operations_RerankRequest_Telemetry_"></a>
 <a id="Vercel_AI_Operations_RerankRequest_Telemetry"></a>
@@ -178,7 +178,7 @@ Telemetry callbacks.
 
 **Value:** [RerankTelemetry](/api/Vercel.AI.Operations/RerankTelemetry/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L401)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L458)
 
 <a id="Vercel_AI_Operations_RerankRequest_TopN_"></a>
 <a id="Vercel_AI_Operations_RerankRequest_TopN"></a>
@@ -195,4 +195,4 @@ Maximum results.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L386)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L443)

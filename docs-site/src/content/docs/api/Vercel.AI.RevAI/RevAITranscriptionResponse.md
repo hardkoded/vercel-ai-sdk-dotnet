@@ -68,7 +68,7 @@ Raw transcript JSON.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L132)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L137)
 
 <a id="Vercel_AI_RevAI_RevAITranscriptionResponse_Headers_"></a>
 <a id="Vercel_AI_RevAI_RevAITranscriptionResponse_Headers"></a>
@@ -85,7 +85,7 @@ Headers from the transcript response.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L129)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L134)
 
 <a id="Vercel_AI_RevAI_RevAITranscriptionResponse_ModelId_"></a>
 <a id="Vercel_AI_RevAI_RevAITranscriptionResponse_ModelId"></a>
@@ -102,7 +102,7 @@ Model id sent as `transcriber`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L126)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L131)
 
 <a id="Vercel_AI_RevAI_RevAITranscriptionResponse_Timestamp_"></a>
 <a id="Vercel_AI_RevAI_RevAITranscriptionResponse_Timestamp"></a>
@@ -119,4 +119,4 @@ Timestamp captured when the call started.
 
 **Value:** [DateTimeOffset](https://learn.microsoft.com/dotnet/api/system.datetimeoffset)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L123)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L128)

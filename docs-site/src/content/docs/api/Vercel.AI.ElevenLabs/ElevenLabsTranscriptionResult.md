@@ -23,7 +23,7 @@ ElevenLabs transcription with word timings and response metadata.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L180)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L640)
 
 ## Constructors
 
@@ -51,7 +51,7 @@ Creates a transcription result.
 | `warnings` | [IReadOnlyList&lt;ModelWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `response` | [ElevenLabsResponse](/api/Vercel.AI.ElevenLabs/ElevenLabsResponse/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L183)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L643)
 
 ## Properties
 
@@ -70,7 +70,7 @@ End time of the last word, in seconds.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L209)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L670)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsTranscriptionResult_Language_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsTranscriptionResult_Language"></a>
@@ -87,7 +87,7 @@ Detected language code.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L206)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L667)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsTranscriptionResult_Response_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsTranscriptionResult_Response"></a>
@@ -104,7 +104,7 @@ Response metadata.
 
 **Value:** [ElevenLabsResponse](/api/Vercel.AI.ElevenLabs/ElevenLabsResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L215)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L676)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsTranscriptionResult_Segments_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsTranscriptionResult_Segments"></a>
@@ -121,7 +121,7 @@ One segment per word or spacing item.
 
 **Value:** [IReadOnlyList&lt;TranscriptSegment&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L203)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L664)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsTranscriptionResult_Text_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsTranscriptionResult_Text"></a>
@@ -138,7 +138,7 @@ Full transcript.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L200)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L661)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsTranscriptionResult_Warnings_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsTranscriptionResult_Warnings"></a>
@@ -155,4 +155,4 @@ Warnings for ignored settings.
 
 **Value:** [IReadOnlyList&lt;ModelWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L212)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L673)

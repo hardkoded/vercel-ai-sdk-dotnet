@@ -23,7 +23,7 @@ Registers [OpenTelemetryAiTelemetry](/api/Vercel.AI.OpenTelemetry/OpenTelemetryA
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetryAiTelemetry.cs#L107)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetryAiTelemetry.cs#L111)
 
 ## Methods
 
@@ -48,4 +48,4 @@ Registers [IAiTelemetry](/api/Vercel.AI/IAiTelemetry/) so `AddAiSdk` can attach 
 
 **Returns:** [IServiceCollection](https://learn.microsoft.com/dotnet/api/microsoft.extensions.dependencyinjection.iservicecollection)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetryAiTelemetry.cs#L110)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetryAiTelemetry.cs#L114)

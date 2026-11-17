@@ -23,7 +23,7 @@ An assistant file or reasoning file.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [GoogleAssistantPart](/api/Vercel.AI.Google/GoogleAssistantPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L203)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L233)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a file part.
 | `kind` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `reasoning` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L206)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L236)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Inline bytes.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L223)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L253)
 
 <a id="Vercel_AI_Google_GoogleFileAssistantPart_Kind_"></a>
 <a id="Vercel_AI_Google_GoogleFileAssistantPart_Kind"></a>
@@ -84,7 +84,7 @@ public string Kind { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L217)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L247)
 
 <a id="Vercel_AI_Google_GoogleFileAssistantPart_MediaType_"></a>
 <a id="Vercel_AI_Google_GoogleFileAssistantPart_MediaType"></a>
@@ -101,7 +101,7 @@ Media type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L214)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L244)
 
 <a id="Vercel_AI_Google_GoogleFileAssistantPart_Reasoning_"></a>
 <a id="Vercel_AI_Google_GoogleFileAssistantPart_Reasoning"></a>
@@ -118,7 +118,7 @@ True for a reasoning file.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L220)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L250)
 
 <a id="Vercel_AI_Google_GoogleFileAssistantPart_Reference_"></a>
 <a id="Vercel_AI_Google_GoogleFileAssistantPart_Reference"></a>
@@ -135,7 +135,7 @@ Map from provider name to an uploaded file id. The `google` entry is the file UR
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L232)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L262)
 
 <a id="Vercel_AI_Google_GoogleFileAssistantPart_Text_"></a>
 <a id="Vercel_AI_Google_GoogleFileAssistantPart_Text"></a>
@@ -152,7 +152,7 @@ Inline text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L226)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L256)
 
 <a id="Vercel_AI_Google_GoogleFileAssistantPart_Url_"></a>
 <a id="Vercel_AI_Google_GoogleFileAssistantPart_Url"></a>
@@ -169,4 +169,4 @@ Remote URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L229)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L259)

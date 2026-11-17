@@ -70,7 +70,7 @@ True when `CancellationToken)` is implemented.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L55)
 
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_ModelId_"></a>
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_ModelId"></a>
@@ -87,7 +87,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L49)
 
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_Provider_"></a>
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_Provider"></a>
@@ -104,7 +104,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L46)
 
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_SpecificationVersion"></a>
@@ -121,7 +121,7 @@ Specification version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L52)
 
 ## Methods
 
@@ -148,7 +148,7 @@ Restores a model from [Serialize()](#Vercel_AI_Xai_XaiTranscriptionModel_Seriali
 
 **Returns:** [XaiTranscriptionModel](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L75)
 
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_DoGenerateAsync_"></a>
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_DoGenerateAsync_Vercel_AI_Operations_TranscriptionModelCall_System_Threading_CancellationToken_"></a>
@@ -172,7 +172,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L96)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L124)
 
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_DoStreamAsync_Vercel_AI_Operations_TranscriptionStreamCall_System_Threading_CancellationToken_"></a>
@@ -196,7 +196,7 @@ Starts a stream, or null when streaming is unsupported.
 
 **Returns:** [Task&lt;TranscriptionStreamStart&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L182)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L263)
 
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_DoTranscribeAsync_"></a>
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_DoTranscribeAsync_Vercel_AI_Provider_AudioInput_System_Threading_CancellationToken_"></a>
@@ -220,7 +220,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L88)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L103)
 
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_Serialize_"></a>
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_Serialize"></a>
@@ -238,4 +238,4 @@ headers are not part of the serialized config. Pass the key to `HttpMessageHandl
 
 **Returns:** [SerializedModelOptions](/api/Vercel.AI.ProviderUtils/SerializedModelOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L61)

@@ -72,7 +72,7 @@ Content from the rejected model call.
 
 **Value:** [IReadOnlyList&lt;GeneratedContent&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolChoiceViolationException.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolChoiceViolationException.cs#L46)
 
 <a id="Vercel_AI_GenerateText_ToolChoiceViolationException_FinishReason_"></a>
 <a id="Vercel_AI_GenerateText_ToolChoiceViolationException_FinishReason"></a>
@@ -89,7 +89,7 @@ Finish reason from the model call.
 
 **Value:** [FinishReason](/api/Vercel.AI.Provider/FinishReason/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolChoiceViolationException.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolChoiceViolationException.cs#L37)
 
 <a id="Vercel_AI_GenerateText_ToolChoiceViolationException_ModelId_"></a>
 <a id="Vercel_AI_GenerateText_ToolChoiceViolationException_ModelId"></a>
@@ -106,7 +106,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolChoiceViolationException.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolChoiceViolationException.cs#L43)
 
 <a id="Vercel_AI_GenerateText_ToolChoiceViolationException_Name_"></a>
 <a id="Vercel_AI_GenerateText_ToolChoiceViolationException_Name"></a>
@@ -123,7 +123,7 @@ Stable error name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolChoiceViolationException.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolChoiceViolationException.cs#L31)
 
 <a id="Vercel_AI_GenerateText_ToolChoiceViolationException_Provider_"></a>
 <a id="Vercel_AI_GenerateText_ToolChoiceViolationException_Provider"></a>
@@ -140,7 +140,7 @@ Model provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolChoiceViolationException.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolChoiceViolationException.cs#L40)
 
 <a id="Vercel_AI_GenerateText_ToolChoiceViolationException_ToolChoice_"></a>
 <a id="Vercel_AI_GenerateText_ToolChoiceViolationException_ToolChoice"></a>
@@ -157,4 +157,4 @@ Tool choice that was violated.
 
 **Value:** [ToolChoice](/api/Vercel.AI.Provider/ToolChoice/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolChoiceViolationException.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolChoiceViolationException.cs#L34)

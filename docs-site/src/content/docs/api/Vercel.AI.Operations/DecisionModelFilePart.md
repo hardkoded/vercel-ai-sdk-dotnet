@@ -96,7 +96,7 @@ public string MediaType { get; }
 ```
 
 
-Media type. It is a full type after `CancellationToken)`.
+Media type. It is a full type after `DownloadResult%7d%7d%7d)`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 

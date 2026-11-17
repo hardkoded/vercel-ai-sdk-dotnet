@@ -23,7 +23,7 @@ Known Tencent model ids and the per-model policy. Upstream `tencent-model-catalo
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L56)
 
 ## Fields
 
@@ -33,15 +33,15 @@ Known Tencent model ids and the per-model policy. Upstream `tencent-model-catalo
 
 
 ```csharp
-public static readonly IReadOnlyDictionary<string, TencentModelEntry> Entries
+public static readonly IReadOnlyDictionary<string, ModelEntry<TencentRequestConfig>> Entries
 ```
 
 
 Entries of every known model id. Upstream `tencentModelCatalog`; renamed because C# does not allow a member named like its class.
 
-**Value:** [IReadOnlyDictionary&lt;string, TencentModelEntry&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+**Value:** [IReadOnlyDictionary&lt;string, ModelEntry&lt;TencentRequestConfig&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L79)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L131)
 
 <a id="Vercel_AI_Tencent_TencentModelCatalog_TencentLanguageModelIds"></a>
 
@@ -57,7 +57,7 @@ TokenHub language model ids.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L59)
 
 <a id="Vercel_AI_Tencent_TencentModelCatalog_TencentVideoModelIds"></a>
 
@@ -73,7 +73,7 @@ Video model ids.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L78)
 
 <a id="Vercel_AI_Tencent_TencentModelCatalog_TokenHubOnlyOptions"></a>
 
@@ -89,7 +89,7 @@ Options that only TokenHub Kling models read.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L99)
 
 <a id="Vercel_AI_Tencent_TencentModelCatalog_VodOnlyOptions"></a>
 
@@ -105,7 +105,7 @@ Options that only VOD models read.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L70)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L110)
 
 ## Methods
 
@@ -116,7 +116,7 @@ Options that only VOD models read.
 
 
 ```csharp
-public static TencentLanguageModelEntry GetTencentLanguageModelEntry(string modelId)
+public static ModelEntry<TencentRequestConfig> GetTencentLanguageModelEntry(string modelId)
 ```
 
 
@@ -128,9 +128,9 @@ Returns the catalog entry of a language model. Upstream `getTencentLanguageModel
 | --- | --- | --- |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-**Returns:** [TencentLanguageModelEntry](/api/Vercel.AI.Tencent/TencentLanguageModelEntry/)
+**Returns:** `ModelEntry&lt;TencentRequestConfig&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L128)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L216)
 
 <a id="Vercel_AI_Tencent_TencentModelCatalog_GetTencentVideoModelEntry_"></a>
 <a id="Vercel_AI_Tencent_TencentModelCatalog_GetTencentVideoModelEntry_System_String_"></a>
@@ -139,7 +139,7 @@ Returns the catalog entry of a language model. Upstream `getTencentLanguageModel
 
 
 ```csharp
-public static TencentVideoModelEntry GetTencentVideoModelEntry(string modelId)
+public static ModelEntry<TencentRequestConfig> GetTencentVideoModelEntry(string modelId)
 ```
 
 
@@ -151,9 +151,9 @@ Returns the catalog entry of a video model. Upstream `getTencentVideoModelEntry`
 | --- | --- | --- |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-**Returns:** [TencentVideoModelEntry](/api/Vercel.AI.Tencent/TencentVideoModelEntry/)
+**Returns:** `ModelEntry&lt;TencentRequestConfig&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L140)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L232)
 
 <a id="Vercel_AI_Tencent_TencentModelCatalog_GetTencentVideoRequestConfig_"></a>
 <a id="Vercel_AI_Tencent_TencentModelCatalog_GetTencentVideoRequestConfig_System_String_"></a>
@@ -176,7 +176,7 @@ Request-shaping policy for a video model. Upstream `getTencentVideoModelEntry(mo
 
 **Returns:** [TencentVideoRequestConfig](/api/Vercel.AI.Tencent/TencentVideoRequestConfig/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L201)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L313)
 
 <a id="Vercel_AI_Tencent_TencentModelCatalog_ParseTencentVideoModelId_"></a>
 <a id="Vercel_AI_Tencent_TencentModelCatalog_ParseTencentVideoModelId_System_String_"></a>
@@ -199,4 +199,4 @@ Parses a video model id. Returns null for an id that is neither a TokenHub Kling
 
 **Returns:** [ParsedTencentVideoModelId](/api/Vercel.AI.Tencent/ParsedTencentVideoModelId/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L84)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L137)

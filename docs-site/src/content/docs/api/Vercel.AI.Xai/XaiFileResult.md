@@ -23,7 +23,7 @@ Result of an xAI file upload or metadata read.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L79)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L86)
 
 ## Constructors
 
@@ -52,7 +52,7 @@ Creates a file result.
 | `createdAt` | [DateTimeOffset?](https://learn.microsoft.com/dotnet/api/system.datetimeoffset) |  |
 | `expiresAt` | [DateTimeOffset?](https://learn.microsoft.com/dotnet/api/system.datetimeoffset) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L82)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L89)
 
 ## Properties
 
@@ -71,7 +71,7 @@ Size in bytes, when the response includes it.
 
 **Value:** [long?](https://learn.microsoft.com/dotnet/api/system.int64)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L117)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L125)
 
 <a id="Vercel_AI_Xai_XaiFileResult_CreatedAt_"></a>
 <a id="Vercel_AI_Xai_XaiFileResult_CreatedAt"></a>
@@ -88,7 +88,7 @@ Creation time.
 
 **Value:** [DateTimeOffset?](https://learn.microsoft.com/dotnet/api/system.datetimeoffset)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L120)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L128)
 
 <a id="Vercel_AI_Xai_XaiFileResult_ExpiresAt_"></a>
 <a id="Vercel_AI_Xai_XaiFileResult_ExpiresAt"></a>
@@ -105,7 +105,7 @@ Expiration time.
 
 **Value:** [DateTimeOffset?](https://learn.microsoft.com/dotnet/api/system.datetimeoffset)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L123)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L131)
 
 <a id="Vercel_AI_Xai_XaiFileResult_FileName_"></a>
 <a id="Vercel_AI_Xai_XaiFileResult_FileName"></a>
@@ -122,7 +122,7 @@ File name from the response, or the name that was uploaded.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L111)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L119)
 
 <a id="Vercel_AI_Xai_XaiFileResult_MediaType_"></a>
 <a id="Vercel_AI_Xai_XaiFileResult_MediaType"></a>
@@ -139,7 +139,7 @@ Media type supplied by the caller.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L114)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L122)
 
 <a id="Vercel_AI_Xai_XaiFileResult_Metadata_"></a>
 <a id="Vercel_AI_Xai_XaiFileResult_Metadata"></a>
@@ -156,7 +156,7 @@ Response fields. Fields the response did not return are null.
 
 **Value:** [XaiFileMetadata](/api/Vercel.AI.Xai/XaiFileMetadata/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L116)
 
 <a id="Vercel_AI_Xai_XaiFileResult_ProviderReference_"></a>
 <a id="Vercel_AI_Xai_XaiFileResult_ProviderReference"></a>
@@ -173,7 +173,7 @@ Reference containing the `xai` file id.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L105)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L113)
 
 <a id="Vercel_AI_Xai_XaiFileResult_Warnings_"></a>
 <a id="Vercel_AI_Xai_XaiFileResult_Warnings"></a>
@@ -190,4 +190,4 @@ Always empty.
 
 **Value:** [IReadOnlyList&lt;ModelWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L102)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L110)

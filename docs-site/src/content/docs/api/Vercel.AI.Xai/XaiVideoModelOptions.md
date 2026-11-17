@@ -311,4 +311,4 @@ When `output` is present the error carries no details, so a signed upload URL ne
 
 **Returns:** [XaiVideoModelOptions](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModelOptions.cs#L105)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModelOptions.cs#L106)

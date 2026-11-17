@@ -25,7 +25,7 @@ Voyage embedding model.
 
 **Implements:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L195)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L217)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates an embedding model.
 | `provider` | [VoyageProvider](/api/Vercel.AI.Voyage/VoyageProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L200)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L222)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Maximum values in one call.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L207)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L229)
 
 <a id="Vercel_AI_Voyage_VoyageProvider_VoyageEmbeddingModel_ModelId_"></a>
 <a id="Vercel_AI_Voyage_VoyageProvider_VoyageEmbeddingModel_ModelId"></a>
@@ -85,7 +85,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L225)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L247)
 
 <a id="Vercel_AI_Voyage_VoyageProvider_VoyageEmbeddingModel_Provider_"></a>
 <a id="Vercel_AI_Voyage_VoyageProvider_VoyageEmbeddingModel_Provider"></a>
@@ -102,7 +102,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L219)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L241)
 
 <a id="Vercel_AI_Voyage_VoyageProvider_VoyageEmbeddingModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Voyage_VoyageProvider_VoyageEmbeddingModel_SpecificationVersion"></a>
@@ -119,7 +119,7 @@ Specification version. Always `V4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L213)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L235)
 
 ## Methods
 
@@ -148,7 +148,7 @@ Embeds each value. Maps to `doEmbed`. &lt;code class="paramref"&gt;providerOptio
 
 **Returns:** [Task&lt;EmbeddingResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L228)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L250)
 
 <a id="Vercel_AI_Voyage_VoyageProvider_VoyageEmbeddingModel_EmbedAsync_"></a>
 <a id="Vercel_AI_Voyage_VoyageProvider_VoyageEmbeddingModel_EmbedAsync_Vercel_AI_Voyage_VoyageEmbeddingRequest_System_Threading_CancellationToken_"></a>
@@ -172,4 +172,4 @@ Embeds values and returns usage plus the raw response.
 
 **Returns:** [Task&lt;VoyageEmbeddingResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L243)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Voyage/VoyageProvider.cs#L280)

@@ -23,7 +23,7 @@ Edges in [0, 1], measured from the image's top-left corner.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L84)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L103)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a box.
 | `left` | [double](https://learn.microsoft.com/dotnet/api/system.double) |  |
 | `right` | [double](https://learn.microsoft.com/dotnet/api/system.double) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L87)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L106)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Bottom edge.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L99)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L118)
 
 <a id="Vercel_AI_Operations_DecisionBox_Left_"></a>
 <a id="Vercel_AI_Operations_DecisionBox_Left"></a>
@@ -85,7 +85,7 @@ Left edge.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L102)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L121)
 
 <a id="Vercel_AI_Operations_DecisionBox_Right_"></a>
 <a id="Vercel_AI_Operations_DecisionBox_Right"></a>
@@ -102,7 +102,7 @@ Right edge.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L105)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L124)
 
 <a id="Vercel_AI_Operations_DecisionBox_Top_"></a>
 <a id="Vercel_AI_Operations_DecisionBox_Top"></a>
@@ -119,4 +119,4 @@ Top edge.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L96)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L115)

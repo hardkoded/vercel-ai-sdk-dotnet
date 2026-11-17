@@ -23,7 +23,7 @@ Language model v2 test double. Array-backed results are returned in order, start
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L116)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L114)
 
 ## Constructors
 
@@ -51,7 +51,7 @@ Creates a model. List results are consumed from the first entry.
 | `generate` | [Func&lt;MockLanguageModelCallOptions, Task&lt;MockGenerateResult&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2) |  |
 | `stream` | [Func&lt;MockLanguageModelCallOptions, Task&lt;MockStreamResult&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L124)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L122)
 
 ## Properties
 
@@ -70,7 +70,7 @@ Generate calls in order.
 
 **Value:** [List&lt;MockLanguageModelCallOptions&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L153)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L152)
 
 <a id="Vercel_AI_Testing_MockLanguageModelV2_DoStreamCalls_"></a>
 <a id="Vercel_AI_Testing_MockLanguageModelV2_DoStreamCalls"></a>
@@ -104,7 +104,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L150)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L149)
 
 <a id="Vercel_AI_Testing_MockLanguageModelV2_Provider_"></a>
 <a id="Vercel_AI_Testing_MockLanguageModelV2_Provider"></a>
@@ -121,7 +121,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L147)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L146)
 
 <a id="Vercel_AI_Testing_MockLanguageModelV2_SpecificationVersion_"></a>
 <a id="Vercel_AI_Testing_MockLanguageModelV2_SpecificationVersion"></a>
@@ -138,7 +138,7 @@ Specification version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L141)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L140)
 
 ## Methods
 
@@ -163,7 +163,7 @@ Returns the next scripted generate result.
 
 **Returns:** [Task&lt;MockGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L159)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L160)
 
 <a id="Vercel_AI_Testing_MockLanguageModelV2_DoStreamAsync_"></a>
 <a id="Vercel_AI_Testing_MockLanguageModelV2_DoStreamAsync_Vercel_AI_Testing_MockLanguageModelCallOptions_"></a>
@@ -186,4 +186,4 @@ Returns the next scripted stream result.
 
 **Returns:** [Task&lt;MockStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L176)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Testing/MockModels.cs#L177)

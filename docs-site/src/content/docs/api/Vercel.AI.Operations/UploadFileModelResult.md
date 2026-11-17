@@ -23,7 +23,7 @@ Provider upload result.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L94)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L101)
 
 ## Constructors
 
@@ -53,7 +53,7 @@ Creates a provider result.
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 | `warnings` | [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L97)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L104)
 
 ## Properties
 
@@ -72,7 +72,7 @@ Byte size.
 
 **Value:** [long?](https://learn.microsoft.com/dotnet/api/system.int64)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L119)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L135)
 
 <a id="Vercel_AI_Operations_UploadFileModelResult_CreatedAt_"></a>
 <a id="Vercel_AI_Operations_UploadFileModelResult_CreatedAt"></a>
@@ -89,7 +89,7 @@ Creation time.
 
 **Value:** [DateTime?](https://learn.microsoft.com/dotnet/api/system.datetime)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L122)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L138)
 
 <a id="Vercel_AI_Operations_UploadFileModelResult_ExpiresAt_"></a>
 <a id="Vercel_AI_Operations_UploadFileModelResult_ExpiresAt"></a>
@@ -106,7 +106,7 @@ Expiry time.
 
 **Value:** [DateTime?](https://learn.microsoft.com/dotnet/api/system.datetime)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L125)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L141)
 
 <a id="Vercel_AI_Operations_UploadFileModelResult_Filename_"></a>
 <a id="Vercel_AI_Operations_UploadFileModelResult_Filename"></a>
@@ -123,7 +123,7 @@ Filename reported by the provider.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L116)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L132)
 
 <a id="Vercel_AI_Operations_UploadFileModelResult_MediaType_"></a>
 <a id="Vercel_AI_Operations_UploadFileModelResult_MediaType"></a>
@@ -140,7 +140,7 @@ Media type reported by the provider.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L113)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L129)
 
 <a id="Vercel_AI_Operations_UploadFileModelResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_UploadFileModelResult_ProviderMetadata"></a>
@@ -157,7 +157,7 @@ Provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L128)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L144)
 
 <a id="Vercel_AI_Operations_UploadFileModelResult_ProviderReference_"></a>
 <a id="Vercel_AI_Operations_UploadFileModelResult_ProviderReference"></a>
@@ -174,7 +174,7 @@ Provider reference.
 
 **Value:** [ProviderFileReference](/api/Vercel.AI.Operations/ProviderFileReference/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L110)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L126)
 
 <a id="Vercel_AI_Operations_UploadFileModelResult_Warnings_"></a>
 <a id="Vercel_AI_Operations_UploadFileModelResult_Warnings"></a>
@@ -191,4 +191,4 @@ Warnings.
 
 **Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L131)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Upload.cs#L147)

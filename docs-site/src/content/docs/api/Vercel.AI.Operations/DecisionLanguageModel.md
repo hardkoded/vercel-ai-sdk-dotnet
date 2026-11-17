@@ -49,7 +49,7 @@ Wraps a language model. The provider id defaults to `{model.Provider}.decision`.
 | `model` | [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/) |  |
 | `provider` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionLanguageModel.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionLanguageModel.cs#L49)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionLanguageModel.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionLanguageModel.cs#L68)
 
 <a id="Vercel_AI_Operations_DecisionLanguageModel_Provider_"></a>
 <a id="Vercel_AI_Operations_DecisionLanguageModel_Provider"></a>
@@ -85,7 +85,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionLanguageModel.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionLanguageModel.cs#L65)
 
 <a id="Vercel_AI_Operations_DecisionLanguageModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Operations_DecisionLanguageModel_SpecificationVersion"></a>
@@ -102,7 +102,7 @@ Specification version. Only `v4` is accepted.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionLanguageModel.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionLanguageModel.cs#L71)
 
 <a id="Vercel_AI_Operations_DecisionLanguageModel_SupportedQuestionTypes_"></a>
 <a id="Vercel_AI_Operations_DecisionLanguageModel_SupportedQuestionTypes"></a>
@@ -119,7 +119,7 @@ Question types this model can answer.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionLanguageModel.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionLanguageModel.cs#L74)
 
 ## Methods
 
@@ -144,7 +144,7 @@ Restores a model from [Serialize(DecisionLanguageModel)](#Vercel_AI_Operations_D
 
 **Returns:** [DecisionLanguageModel](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionLanguageModel.cs#L81)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionLanguageModel.cs#L90)
 
 <a id="Vercel_AI_Operations_DecisionLanguageModel_DoDecideAsync_"></a>
 <a id="Vercel_AI_Operations_DecisionLanguageModel_DoDecideAsync_Vercel_AI_Operations_DecisionModelCall_System_Threading_CancellationToken_"></a>
@@ -168,7 +168,7 @@ Answers every question with one structured-output model call.
 
 **Returns:** [Task&lt;DecisionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionLanguageModel.cs#L99)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionLanguageModel.cs#L113)
 
 <a id="Vercel_AI_Operations_DecisionLanguageModel_DoEvaluateAsync_"></a>
 <a id="Vercel_AI_Operations_DecisionLanguageModel_DoEvaluateAsync_Vercel_AI_Operations_EvaluationModelCall_System_Threading_CancellationToken_"></a>
@@ -197,7 +197,7 @@ Deprecated. Use `CancellationToken)`.
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionLanguageModel.cs#L92)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionLanguageModel.cs#L101)
 
 <a id="Vercel_AI_Operations_DecisionLanguageModel_Serialize_"></a>
 <a id="Vercel_AI_Operations_DecisionLanguageModel_Serialize_Vercel_AI_Operations_DecisionLanguageModel_"></a>
@@ -220,4 +220,4 @@ Serializes the wrapped model and the provider id for a workflow boundary. Maps t
 
 **Returns:** [DecisionLanguageModelOptions](/api/Vercel.AI.Operations/DecisionLanguageModelOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionLanguageModel.cs#L69)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionLanguageModel.cs#L78)

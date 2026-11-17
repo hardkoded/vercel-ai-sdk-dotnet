@@ -42,7 +42,7 @@ True when this value is an input.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L41)
 
 ## Methods
 
@@ -67,7 +67,7 @@ Creates an input resolver.
 
 **Returns:** [ResolvableTelemetryAttribute](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L44)
 
 <a id="Vercel_AI_OpenTelemetry_ResolvableTelemetryAttribute_Input_System_Func_System_Threading_Tasks_Task_System_Object___"></a>
 
@@ -89,7 +89,7 @@ Creates an asynchronous input resolver.
 
 **Returns:** [ResolvableTelemetryAttribute](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L66)
 
 <a id="Vercel_AI_OpenTelemetry_ResolvableTelemetryAttribute_Output_"></a>
 <a id="Vercel_AI_OpenTelemetry_ResolvableTelemetryAttribute_Output_System_Func_System_Object__"></a>
@@ -112,7 +112,7 @@ Creates an output resolver.
 
 **Returns:** [ResolvableTelemetryAttribute](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L55)
 
 <a id="Vercel_AI_OpenTelemetry_ResolvableTelemetryAttribute_Output_System_Func_System_Threading_Tasks_Task_System_Object___"></a>
 
@@ -134,7 +134,7 @@ Creates an asynchronous output resolver.
 
 **Returns:** [ResolvableTelemetryAttribute](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L73)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L77)
 
 <a id="Vercel_AI_OpenTelemetry_ResolvableTelemetryAttribute_Resolve_"></a>
 <a id="Vercel_AI_OpenTelemetry_ResolvableTelemetryAttribute_Resolve"></a>
@@ -151,7 +151,7 @@ Resolves the value.
 
 **Returns:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L84)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L88)
 
 <a id="Vercel_AI_OpenTelemetry_ResolvableTelemetryAttribute_ResolveAsync_"></a>
 <a id="Vercel_AI_OpenTelemetry_ResolvableTelemetryAttribute_ResolveAsync"></a>
@@ -168,4 +168,4 @@ Resolves the value asynchronously.
 
 **Returns:** [Task&lt;object&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L100)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/TelemetryAttributes.cs#L104)

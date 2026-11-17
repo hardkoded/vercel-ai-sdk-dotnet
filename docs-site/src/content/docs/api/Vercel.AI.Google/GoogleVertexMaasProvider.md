@@ -23,7 +23,7 @@ Vertex MaaS OpenAI-compatible endpoint.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L243)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L329)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a provider. The OpenAI-compatible client is created on first use.
 | `baseUrl` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `handler` | [HttpMessageHandler](https://learn.microsoft.com/dotnet/api/system.net.http.httpmessagehandler) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L254)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L340)
 
 <a id="Vercel_AI_Google_GoogleVertexMaasProvider__ctor_Vercel_AI_Google_GoogleVertexPartnerOptions_System_Net_Http_HttpMessageHandler_"></a>
 
@@ -70,7 +70,7 @@ Creates a provider. &lt;code class="paramref"&gt;handler&lt;/code&gt; sends the 
 | `options` | [GoogleVertexPartnerOptions](/api/Vercel.AI.Google/GoogleVertexPartnerOptions/) |  |
 | `handler` | [HttpMessageHandler](https://learn.microsoft.com/dotnet/api/system.net.http.httpmessagehandler) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L260)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L357)
 
 ## Properties
 
@@ -89,7 +89,7 @@ OpenAI-compatible base URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L276)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L377)
 
 <a id="Vercel_AI_Google_GoogleVertexMaasProvider_ClientCreated_"></a>
 <a id="Vercel_AI_Google_GoogleVertexMaasProvider_ClientCreated"></a>
@@ -106,7 +106,7 @@ True after [LanguageModel(string)](#Vercel_AI_Google_GoogleVertexMaasProvider_La
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L279)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L380)
 
 <a id="Vercel_AI_Google_GoogleVertexMaasProvider_Location_"></a>
 <a id="Vercel_AI_Google_GoogleVertexMaasProvider_Location"></a>
@@ -123,7 +123,7 @@ Location. Defaults to `global`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L273)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L374)
 
 <a id="Vercel_AI_Google_GoogleVertexMaasProvider_Project_"></a>
 <a id="Vercel_AI_Google_GoogleVertexMaasProvider_Project"></a>
@@ -140,7 +140,7 @@ Project id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L270)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L371)
 
 ## Methods
 
@@ -165,7 +165,7 @@ Returns an image model. An image URL on another origin is downloaded without the
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L294)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L395)
 
 <a id="Vercel_AI_Google_GoogleVertexMaasProvider_LanguageModel_"></a>
 <a id="Vercel_AI_Google_GoogleVertexMaasProvider_LanguageModel_System_String_"></a>
@@ -188,7 +188,7 @@ Returns a chat model and caches the inner provider.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L288)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L389)
 
 <a id="Vercel_AI_Google_GoogleVertexMaasProvider_TransformBody_"></a>
 <a id="Vercel_AI_Google_GoogleVertexMaasProvider_TransformBody_System_String_System_Text_Json_Nodes_JsonObject_"></a>
@@ -212,4 +212,4 @@ Sets Llama 4 `max_tokens` when the caller did not.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L314)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L419)

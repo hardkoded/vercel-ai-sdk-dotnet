@@ -23,7 +23,7 @@ Criteria of a score question: at least two ordered levels, indexed from zero. A 
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [DecisionCriteria](/api/Vercel.AI.Operations/DecisionCriteria/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L118)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L123)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates score criteria.
 | --- | --- | --- |
 | `levels` | [IReadOnlyList&lt;DecisionInput&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L121)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L126)
 
 ## Properties
 
@@ -65,7 +65,7 @@ Number of options or levels. A boolean has none.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L130)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L135)
 
 <a id="Vercel_AI_Operations_DecisionScoreCriteria_Levels_"></a>
 <a id="Vercel_AI_Operations_DecisionScoreCriteria_Levels"></a>
@@ -82,4 +82,4 @@ Level descriptions, lowest first.
 
 **Value:** [IReadOnlyList&lt;DecisionInput&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L127)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionInput.cs#L132)

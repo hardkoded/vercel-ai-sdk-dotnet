@@ -25,6 +25,24 @@ Checks whether a model can read a URL natively. Maps to `isUrlSupported`.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/UrlSupport.cs#L10)
 
+## Fields
+
+<a id="Vercel_AI_ProviderUtils_UrlSupport_None"></a>
+
+### None
+
+
+```csharp
+public static readonly IReadOnlyDictionary<string, string> None
+```
+
+
+A model that supports no URLs, such as `supportedUrls: {}` upstream.
+
+**Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/UrlSupport.cs#L18)
+
 ## Methods
 
 <a id="Vercel_AI_ProviderUtils_UrlSupport_IsUrlSupported_"></a>
@@ -51,4 +69,29 @@ The media type is compared in lower case; the URL keeps its case, so patterns de
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/UrlSupport.cs#L16)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/UrlSupport.cs#L56)
+
+<a id="Vercel_AI_ProviderUtils_UrlSupport_IsUrlSupported_System_String_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__"></a>
+
+### `IsUrlSupported(string, string, IReadOnlyDictionary<string, string>)`
+
+
+```csharp
+public static bool IsUrlSupported(string mediaType, string url, IReadOnlyDictionary<string, string> supportedUrls)
+```
+
+
+True when a pattern in &lt;code class="paramref"&gt;supportedUrls&lt;/code&gt; (regular expression text per media type) matches &lt;code class="paramref"&gt;url&lt;/code&gt;.
+See `Regex%7d%7d)`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `mediaType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `url` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `supportedUrls` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
+
+**Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/UrlSupport.cs#L25)

@@ -94,4 +94,4 @@ Returns whether &lt;code class="paramref"&gt;marker&lt;/code&gt; is set to `true
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AiSdkError.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AiSdkError.cs#L40)

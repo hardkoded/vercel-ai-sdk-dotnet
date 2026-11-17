@@ -23,7 +23,7 @@ Success or failure of a JSON parse, including the raw value when parsing succeed
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L111)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Parse or validation error.
 
 **Value:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L136)
 
 <a id="Vercel_AI_ProviderUtils_JsonParseResult_RawValue_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonParseResult_RawValue"></a>
@@ -59,7 +59,7 @@ Value before schema projection. Null when the text was not JSON.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L133)
 
 <a id="Vercel_AI_ProviderUtils_JsonParseResult_Success_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonParseResult_Success"></a>
@@ -76,7 +76,7 @@ True when parsing and schema checks succeeded.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L127)
 
 <a id="Vercel_AI_ProviderUtils_JsonParseResult_Value_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonParseResult_Value"></a>
@@ -93,7 +93,7 @@ Projected value.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L130)
 
 ## Methods
 
@@ -119,7 +119,7 @@ Creates a failure result.
 
 **Returns:** [JsonParseResult](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L70)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L145)
 
 <a id="Vercel_AI_ProviderUtils_JsonParseResult_Ok_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonParseResult_Ok_System_Text_Json_JsonElement_System_Text_Json_JsonElement_"></a>
@@ -143,4 +143,4 @@ Creates a success result.
 
 **Returns:** [JsonParseResult](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonParsing.cs#L139)

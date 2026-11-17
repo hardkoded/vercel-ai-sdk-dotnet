@@ -54,4 +54,4 @@ The headers already on &lt;code class="paramref"&gt;request&lt;/code&gt; are sig
 | `sessionToken` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `utcNow` | [DateTimeOffset](https://learn.microsoft.com/dotnet/api/system.datetimeoffset) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AwsSigV4.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AwsSigV4.cs#L36)

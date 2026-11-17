@@ -23,7 +23,7 @@ Speech synthesis result.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L263)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L309)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a speech result with no usage.
 | `audio` | [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte) |  |
 | `mediaType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L266)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L312)
 
 <a id="Vercel_AI_Provider_SpeechResult__ctor_System_Byte___System_String_Vercel_AI_Provider_AudioUsage_"></a>
 
@@ -69,7 +69,7 @@ Creates a speech result.
 | `mediaType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `usage` | [AudioUsage](/api/Vercel.AI.Provider/AudioUsage/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L272)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L316)
 
 ## Properties
 
@@ -88,7 +88,7 @@ Audio bytes.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L280)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L324)
 
 <a id="Vercel_AI_Provider_SpeechResult_MediaType_"></a>
 <a id="Vercel_AI_Provider_SpeechResult_MediaType"></a>
@@ -105,7 +105,7 @@ IANA media type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L283)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L327)
 
 <a id="Vercel_AI_Provider_SpeechResult_Usage_"></a>
 <a id="Vercel_AI_Provider_SpeechResult_Usage"></a>
@@ -122,4 +122,4 @@ Usage reported by the call. Absent unless the caller supplies it.
 
 **Value:** [AudioUsage](/api/Vercel.AI.Provider/AudioUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L286)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L330)

@@ -23,7 +23,7 @@ Environment of [Shell(OpenAIShellToolOptions)](/api/Vercel.AI.OpenAI/OpenAITools
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L169)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L200)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Allowed domains of a `containerAuto` environment network allowlist.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L187)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L218)
 
 <a id="Vercel_AI_OpenAI_OpenAIShellEnvironment_ContainerId_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIShellEnvironment_ContainerId"></a>
@@ -59,7 +59,24 @@ Container id of a `containerReference` environment.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L175)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L206)
+
+<a id="Vercel_AI_OpenAI_OpenAIShellEnvironment_ContainerSkills_"></a>
+<a id="Vercel_AI_OpenAI_OpenAIShellEnvironment_ContainerSkills"></a>
+
+### ContainerSkills
+
+
+```csharp
+public IReadOnlyList<OpenAIShellContainerSkill>? ContainerSkills { get; set; }
+```
+
+
+Skills of a `containerAuto` environment: skill references and inline (base64 zip) skills.
+
+**Value:** [IReadOnlyList&lt;OpenAIShellContainerSkill&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L227)
 
 <a id="Vercel_AI_OpenAI_OpenAIShellEnvironment_DomainSecrets_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIShellEnvironment_DomainSecrets"></a>
@@ -76,7 +93,7 @@ Domain secrets of a network allowlist.
 
 **Value:** [IReadOnlyList&lt;OpenAIShellDomainSecret&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L190)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L221)
 
 <a id="Vercel_AI_OpenAI_OpenAIShellEnvironment_FileIds_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIShellEnvironment_FileIds"></a>
@@ -93,7 +110,7 @@ File ids of a `containerAuto` environment.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L178)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L209)
 
 <a id="Vercel_AI_OpenAI_OpenAIShellEnvironment_MemoryLimit_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIShellEnvironment_MemoryLimit"></a>
@@ -110,7 +127,7 @@ Memory limit of a `containerAuto` environment: `1g`, `4g`, `16g`, or `64g`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L181)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L212)
 
 <a id="Vercel_AI_OpenAI_OpenAIShellEnvironment_NetworkDisabled_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIShellEnvironment_NetworkDisabled"></a>
@@ -127,7 +144,7 @@ Disable network access of a `containerAuto` environment.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L184)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L215)
 
 <a id="Vercel_AI_OpenAI_OpenAIShellEnvironment_Skills_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIShellEnvironment_Skills"></a>
@@ -144,7 +161,7 @@ Skills of a `local` environment.
 
 **Value:** [IReadOnlyList&lt;OpenAIShellLocalSkill&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L193)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L224)
 
 <a id="Vercel_AI_OpenAI_OpenAIShellEnvironment_Type_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIShellEnvironment_Type"></a>
@@ -161,4 +178,4 @@ public string Type { get; set; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L172)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L203)

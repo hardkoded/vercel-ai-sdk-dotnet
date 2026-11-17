@@ -35,7 +35,7 @@ Envelope rules:
 8. Connection establishment (URL, auth) is transport-specific and out of scope.
 The envelope validates frame shape only. Both parsers reject frames carrying `__proto__` keys.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L102)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L107)
 
 ## Fields
 
@@ -53,7 +53,7 @@ Type of the client text frame that signals the end of the audio input. Maps to `
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L113)
 
 <a id="Vercel_AI_ProviderUtils_TranscriptionStreamEnvelope_TranscriptionStreamStartFrameType"></a>
 
@@ -69,7 +69,7 @@ Type of the first client text frame. Maps to `TRANSCRIPTION_STREAM_START_FRAME_T
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L105)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L110)
 
 ## Methods
 
@@ -95,7 +95,7 @@ payloads. Never throws. Maps to `parseTranscriptionStreamClientFrame`.
 
 **Returns:** [TranscriptionStreamClientFrame](/api/Vercel.AI.ProviderUtils/TranscriptionStreamClientFrame/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L114)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L119)
 
 <a id="Vercel_AI_ProviderUtils_TranscriptionStreamEnvelope_ParseTranscriptionStreamPart_"></a>
 <a id="Vercel_AI_ProviderUtils_TranscriptionStreamEnvelope_ParseTranscriptionStreamPart_System_String_"></a>
@@ -122,7 +122,7 @@ Maps to `parseTranscriptionStreamPart`.
 
 **Returns:** [ModelStreamPart](/api/Vercel.AI.Operations/ModelStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L297)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L346)
 
 <a id="Vercel_AI_ProviderUtils_TranscriptionStreamEnvelope_SerializeTranscriptionStreamPart_"></a>
 <a id="Vercel_AI_ProviderUtils_TranscriptionStreamEnvelope_SerializeTranscriptionStreamPart_Vercel_AI_Operations_ModelStreamPart_"></a>
@@ -146,4 +146,4 @@ envelope does not carry; callers drop the frame. Maps to `serializeTranscription
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L194)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L224)

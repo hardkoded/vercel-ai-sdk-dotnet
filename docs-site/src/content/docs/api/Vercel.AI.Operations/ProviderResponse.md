@@ -23,7 +23,7 @@ Headers and body returned by one provider call.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L366)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L434)
 
 ## Constructors
 
@@ -51,7 +51,7 @@ Creates response metadata.
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L369)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L437)
 
 ## Properties
 
@@ -70,7 +70,7 @@ Response body.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L383)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L458)
 
 <a id="Vercel_AI_Operations_ProviderResponse_Headers_"></a>
 <a id="Vercel_AI_Operations_ProviderResponse_Headers"></a>
@@ -87,7 +87,7 @@ Response headers.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L380)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L455)
 
 <a id="Vercel_AI_Operations_ProviderResponse_Id_"></a>
 <a id="Vercel_AI_Operations_ProviderResponse_Id"></a>
@@ -104,7 +104,7 @@ Provider response id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L386)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L461)
 
 <a id="Vercel_AI_Operations_ProviderResponse_ModelId_"></a>
 <a id="Vercel_AI_Operations_ProviderResponse_ModelId"></a>
@@ -121,7 +121,7 @@ Model id reported by the provider.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L392)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L467)
 
 <a id="Vercel_AI_Operations_ProviderResponse_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_ProviderResponse_ProviderMetadata"></a>
@@ -138,7 +138,7 @@ Provider metadata stored on the response, when the call includes it there.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L395)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L470)
 
 <a id="Vercel_AI_Operations_ProviderResponse_Timestamp_"></a>
 <a id="Vercel_AI_Operations_ProviderResponse_Timestamp"></a>
@@ -155,4 +155,4 @@ Provider timestamp.
 
 **Value:** [DateTime?](https://learn.microsoft.com/dotnet/api/system.datetime)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L389)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L464)

@@ -23,7 +23,7 @@ Options of [ToolSearch(OpenAIToolSearchToolOptions)](/api/Vercel.AI.OpenAI/OpenA
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L220)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L292)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Description of the tool.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L226)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L298)
 
 <a id="Vercel_AI_OpenAI_OpenAIToolSearchToolOptions_Execution_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIToolSearchToolOptions_Execution"></a>
@@ -59,7 +59,7 @@ Where the search runs: `server` or `client`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L223)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L295)
 
 <a id="Vercel_AI_OpenAI_OpenAIToolSearchToolOptions_Parameters_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIToolSearchToolOptions_Parameters"></a>
@@ -76,4 +76,4 @@ JSON schema of the search arguments.
 
 **Value:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L229)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L301)

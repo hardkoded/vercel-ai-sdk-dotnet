@@ -23,7 +23,7 @@ ScaleDown's experimental decision and extraction capabilities. It has no languag
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L26)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L29)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a provider. Maps to `createScaleDown`.
 | `options` | [ScaleDownProviderSettings](/api/Vercel.AI.ScaleDown/ScaleDownProviderSettings/) |  |
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L52)
 
 ## Fields
 
@@ -65,7 +65,7 @@ Environment variable for the API key.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L41)
 
 <a id="Vercel_AI_ScaleDown_ScaleDownProvider_DecisionProviderId"></a>
 
@@ -81,7 +81,7 @@ Provider id of the decision model.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L32)
 
 <a id="Vercel_AI_ScaleDown_ScaleDownProvider_DefaultBaseUrl"></a>
 
@@ -97,7 +97,7 @@ Default API origin.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L38)
 
 <a id="Vercel_AI_ScaleDown_ScaleDownProvider_ExtractionProviderId"></a>
 
@@ -113,7 +113,7 @@ Provider id of the extraction model.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L35)
 
 ## Properties
 
@@ -132,7 +132,7 @@ Provider that reads `SCALEDOWN_API_KEY` when a request is made. Maps to `scaledo
 
 **Value:** [ScaleDownProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L65)
 
 <a id="Vercel_AI_ScaleDown_ScaleDownProvider_SpecificationVersion_"></a>
 <a id="Vercel_AI_ScaleDown_ScaleDownProvider_SpecificationVersion"></a>
@@ -149,7 +149,7 @@ Specification version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L68)
 
 ## Methods
 
@@ -175,7 +175,7 @@ Creates a provider. Pass a handler from tests. Maps to `createScaleDown`.
 
 **Returns:** [ScaleDownProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L71)
 
 <a id="Vercel_AI_ScaleDown_ScaleDownProvider_DecisionModel_"></a>
 <a id="Vercel_AI_ScaleDown_ScaleDownProvider_DecisionModel_System_String_"></a>
@@ -198,7 +198,7 @@ Creates a model for ScaleDown's experimental Decisions API. The id may be one th
 
 **Returns:** [DecisionScaleDownModel](/api/Vercel.AI.ScaleDown/DecisionScaleDownModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L83)
 
 <a id="Vercel_AI_ScaleDown_ScaleDownProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_ScaleDown_ScaleDownProvider_EmbeddingModel_System_String_"></a>
@@ -221,7 +221,7 @@ ScaleDown has no embedding models.
 
 **Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L97)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L121)
 
 <a id="Vercel_AI_ScaleDown_ScaleDownProvider_ExtractionModel_"></a>
 <a id="Vercel_AI_ScaleDown_ScaleDownProvider_ExtractionModel_System_String_"></a>
@@ -244,7 +244,7 @@ Creates a model for ScaleDown's experimental Extract API. The id may be one this
 
 **Returns:** [ScaleDownExtractionModel](/api/Vercel.AI.ScaleDown/ScaleDownExtractionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L79)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L99)
 
 <a id="Vercel_AI_ScaleDown_ScaleDownProvider_ImageModel_"></a>
 <a id="Vercel_AI_ScaleDown_ScaleDownProvider_ImageModel_System_String_"></a>
@@ -267,7 +267,7 @@ ScaleDown has no image models.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L103)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L127)
 
 <a id="Vercel_AI_ScaleDown_ScaleDownProvider_LanguageModel_"></a>
 <a id="Vercel_AI_ScaleDown_ScaleDownProvider_LanguageModel_System_String_"></a>
@@ -290,4 +290,4 @@ ScaleDown has no language models.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L91)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ScaleDown/ScaleDownProvider.cs#L115)

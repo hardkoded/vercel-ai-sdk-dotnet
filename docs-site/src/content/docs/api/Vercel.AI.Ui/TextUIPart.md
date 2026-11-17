@@ -50,6 +50,23 @@ Creates a text part.
 
 ## Properties
 
+<a id="Vercel_AI_Ui_TextUIPart_Citations_"></a>
+<a id="Vercel_AI_Ui_TextUIPart_Citations"></a>
+
+### Citations
+
+
+```csharp
+public IReadOnlyList<Citation>? Citations { get; init; }
+```
+
+
+References supporting this text, separate from retrieved sources.
+
+**Value:** [IReadOnlyList&lt;Citation&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L75)
+
 <a id="Vercel_AI_Ui_TextUIPart_ProviderMetadata_"></a>
 <a id="Vercel_AI_Ui_TextUIPart_ProviderMetadata"></a>
 
@@ -65,7 +82,7 @@ The provider metadata.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L78)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L81)
 
 <a id="Vercel_AI_Ui_TextUIPart_State_"></a>
 <a id="Vercel_AI_Ui_TextUIPart_State"></a>
@@ -82,7 +99,7 @@ The state of the text part: `streaming` or `done`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L75)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Ui/UIMessages.cs#L78)
 
 <a id="Vercel_AI_Ui_TextUIPart_Text_"></a>
 <a id="Vercel_AI_Ui_TextUIPart_Text"></a>

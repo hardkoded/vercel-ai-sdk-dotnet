@@ -24,7 +24,7 @@ or to a delegate to replace the default emitter.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L129)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L133)
 
 ## Fields
 
@@ -42,7 +42,7 @@ Note emitted once before the first default warning.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L132)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L136)
 
 ## Properties
 
@@ -61,7 +61,7 @@ public static Action<string>? ConsoleWarn { get; set; }
 
 **Value:** [Action&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.action-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L195)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L206)
 
 <a id="Vercel_AI_Util_LogWarnings_Logger_"></a>
 <a id="Vercel_AI_Util_LogWarnings_Logger"></a>
@@ -79,7 +79,7 @@ public static object? Logger { get; set; }
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L152)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L165)
 
 <a id="Vercel_AI_Util_LogWarnings_ProcessEmitWarning_"></a>
 <a id="Vercel_AI_Util_LogWarnings_ProcessEmitWarning"></a>
@@ -97,7 +97,7 @@ deprecation code (`null` for ordinary warnings). `null` falls back to [ConsoleWa
 
 **Value:** [Action&lt;string, string, string&gt;](https://learn.microsoft.com/dotnet/api/system.action-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L175)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L187)
 
 ## Methods
 
@@ -120,7 +120,7 @@ Logs &lt;code class="paramref"&gt;options&lt;/code&gt; using the current logger 
 | --- | --- | --- |
 | `options` | [LogWarningsOptions](/api/Vercel.AI.Util/LogWarningsOptions/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L225)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L235)
 
 <a id="Vercel_AI_Util_LogWarnings_ResetState_"></a>
 <a id="Vercel_AI_Util_LogWarnings_ResetState"></a>
@@ -135,4 +135,4 @@ public static void ResetState()
 
 Clears the first-call note and the emitted deprecation codes so the next log emits them again.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L215)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LogWarnings.cs#L225)

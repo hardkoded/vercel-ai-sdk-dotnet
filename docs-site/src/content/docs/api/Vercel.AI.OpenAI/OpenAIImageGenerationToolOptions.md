@@ -23,7 +23,7 @@ Options of [ImageGeneration(OpenAIImageGenerationToolOptions)](/api/Vercel.AI.Op
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L12)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L13)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Whether to generate a new image or edit an existing one: `generate`, `edit`, or 
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L15)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L16)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_Background_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_Background"></a>
@@ -59,7 +59,7 @@ Background type: `auto`, `opaque`, or `transparent`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L18)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L19)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_InputFidelity_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_InputFidelity"></a>
@@ -76,7 +76,7 @@ Input fidelity: `low` or `high`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L21)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L22)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_InputImageMaskFileId_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_InputImageMaskFileId"></a>
@@ -93,7 +93,7 @@ File id of the inpainting mask.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L24)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L25)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_InputImageMaskImageUrl_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_InputImageMaskImageUrl"></a>
@@ -110,7 +110,7 @@ Base64-encoded inpainting mask.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L28)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_Model_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_Model"></a>
@@ -127,7 +127,7 @@ The image generation model. Default: `gpt-image-1`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L31)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_Moderation_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_Moderation"></a>
@@ -144,7 +144,7 @@ Moderation level: `auto` or `low`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L34)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_OutputCompression_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_OutputCompression"></a>
@@ -161,7 +161,7 @@ Compression level of the output image, 0 to 100.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L37)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_OutputFormat_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_OutputFormat"></a>
@@ -178,7 +178,7 @@ Output format: `png`, `jpeg`, or `webp`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L40)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_PartialImages_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_PartialImages"></a>
@@ -195,7 +195,7 @@ Number of partial images in streaming mode, 0 to 3.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L43)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_Quality_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_Quality"></a>
@@ -212,7 +212,7 @@ Quality: `auto`, `low`, `medium`, `high`, `xhigh`, or `max`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L46)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_Size_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_Size"></a>
@@ -229,4 +229,4 @@ Size: `auto`, `1024x1024`, `1024x1536`, `1536x1024`, or `WIDTHxHEIGHT`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L49)

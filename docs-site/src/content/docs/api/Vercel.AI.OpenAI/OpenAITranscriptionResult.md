@@ -23,7 +23,7 @@ Transcript with timed segments and response metadata.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L69)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Audio duration in seconds.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L90)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L107)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionResult_Language_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionResult_Language"></a>
@@ -59,7 +59,7 @@ ISO-639-1 code, when OpenAI reports a two-letter code, a known language name, or
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L87)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L104)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionResult_ProviderMetadata"></a>
@@ -76,7 +76,7 @@ Speaker segments under `openai.segments` for diarized responses and detected lan
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L93)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L110)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionResult_Response_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionResult_Response"></a>
@@ -93,7 +93,7 @@ Response metadata.
 
 **Value:** [OpenAITranscriptionResponse](/api/Vercel.AI.OpenAI/OpenAITranscriptionResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L99)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L119)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionResult_Segments_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionResult_Segments"></a>
@@ -110,7 +110,7 @@ Segments, or words when the response has no segments.
 
 **Value:** [IReadOnlyList&lt;TranscriptSegment&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L84)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L98)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionResult_Text_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionResult_Text"></a>
@@ -127,7 +127,24 @@ Transcript text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L81)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L95)
+
+<a id="Vercel_AI_OpenAI_OpenAITranscriptionResult_Usage_"></a>
+<a id="Vercel_AI_OpenAI_OpenAITranscriptionResult_Usage"></a>
+
+### Usage
+
+
+```csharp
+public JsonElement? Usage { get; }
+```
+
+
+The raw `usage` object of the response, when OpenAI reports one. Maps to `usage`.
+
+**Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L113)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionResult_Warnings_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionResult_Warnings"></a>
@@ -140,8 +157,25 @@ public IReadOnlyList<OpenAICallWarning> Warnings { get; }
 ```
 
 
-Warnings produced while preparing the request. OpenAI transcription reports none today.
+Warnings produced while preparing the request, such as timestamp granularities the response format cannot satisfy.
 
 **Value:** [IReadOnlyList&lt;OpenAICallWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L96)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L116)
+
+<a id="Vercel_AI_OpenAI_OpenAITranscriptionResult_Words_"></a>
+<a id="Vercel_AI_OpenAI_OpenAITranscriptionResult_Words"></a>
+
+### Words
+
+
+```csharp
+public IReadOnlyList<TranscriptSegment>? Words { get; }
+```
+
+
+Word timings, when the response has them. Kept next to [Segments](#Vercel_AI_OpenAI_OpenAITranscriptionResult_Segments). Maps to `words`.
+
+**Value:** [IReadOnlyList&lt;TranscriptSegment&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L101)

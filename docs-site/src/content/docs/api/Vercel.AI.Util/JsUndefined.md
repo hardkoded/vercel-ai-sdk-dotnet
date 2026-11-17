@@ -42,4 +42,4 @@ The single undefined value.
 
 **Value:** [JsUndefined](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/JsUndefined.cs#L17)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/JsUndefined.cs#L15)

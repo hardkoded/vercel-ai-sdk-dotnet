@@ -70,7 +70,7 @@ Provider code.
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/NormalizeStreamProviderError.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/NormalizeStreamProviderError.cs#L35)
 
 <a id="Vercel_AI_Prompt_ProviderStreamError_Data_"></a>
 <a id="Vercel_AI_Prompt_ProviderStreamError_Data"></a>
@@ -87,7 +87,7 @@ Original provider data.
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/NormalizeStreamProviderError.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/NormalizeStreamProviderError.cs#L44)
 
 <a id="Vercel_AI_Prompt_ProviderStreamError_IsRetryable_"></a>
 <a id="Vercel_AI_Prompt_ProviderStreamError_IsRetryable"></a>
@@ -104,7 +104,7 @@ Whether the caller should retry.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/NormalizeStreamProviderError.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/NormalizeStreamProviderError.cs#L41)
 
 <a id="Vercel_AI_Prompt_ProviderStreamError_Message_"></a>
 <a id="Vercel_AI_Prompt_ProviderStreamError_Message"></a>
@@ -121,7 +121,7 @@ Error message.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/NormalizeStreamProviderError.cs#L22)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/NormalizeStreamProviderError.cs#L29)
 
 <a id="Vercel_AI_Prompt_ProviderStreamError_StatusCode_"></a>
 <a id="Vercel_AI_Prompt_ProviderStreamError_StatusCode"></a>
@@ -138,7 +138,7 @@ HTTP status.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/NormalizeStreamProviderError.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/NormalizeStreamProviderError.cs#L38)
 
 <a id="Vercel_AI_Prompt_ProviderStreamError_Type_"></a>
 <a id="Vercel_AI_Prompt_ProviderStreamError_Type"></a>
@@ -155,4 +155,4 @@ Provider type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/NormalizeStreamProviderError.cs#L25)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/NormalizeStreamProviderError.cs#L32)

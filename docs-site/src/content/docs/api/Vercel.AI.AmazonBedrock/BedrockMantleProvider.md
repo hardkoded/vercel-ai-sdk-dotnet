@@ -23,7 +23,7 @@ Bedrock Mantle provider. Chat calls use `/chat/completions` and are signed for `
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L107)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L123)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a provider.
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `options` | [BedrockMantleOptions](/api/Vercel.AI.AmazonBedrock/BedrockMantleOptions/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L113)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L129)
 
 ## Fields
 
@@ -65,7 +65,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L110)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L126)
 
 ## Properties
 
@@ -84,7 +84,7 @@ HTTP client that receives the signed request.
 
 **Value:** [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L124)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L140)
 
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleProvider_Options_"></a>
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleProvider_Options"></a>
@@ -101,7 +101,7 @@ Options.
 
 **Value:** [BedrockMantleOptions](/api/Vercel.AI.AmazonBedrock/BedrockMantleOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L121)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L137)
 
 ## Methods
 
@@ -126,7 +126,7 @@ Chat Completions model. Same route as [LanguageModel(string)](#Vercel_AI_AmazonB
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L140)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L161)
 
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleProvider_Create_"></a>
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleProvider_Create_Vercel_AI_AmazonBedrock_BedrockMantleOptions_System_Net_Http_HttpMessageHandler_"></a>
@@ -150,7 +150,7 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [BedrockMantleProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L127)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L143)
 
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleProvider_EmbeddingModel_System_String_"></a>
@@ -173,7 +173,7 @@ Mantle has no embedding models.
 
 **Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L152)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L175)
 
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleProvider_ImageModel_"></a>
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleProvider_ImageModel_System_String_"></a>
@@ -196,7 +196,7 @@ Mantle has no image models.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L158)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L181)
 
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleProvider_LanguageModel_"></a>
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleProvider_LanguageModel_System_String_"></a>
@@ -219,7 +219,7 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L134)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L155)
 
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleProvider_New_"></a>
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleProvider_New_System_String_"></a>
@@ -242,7 +242,7 @@ Throws because the JavaScript provider function rejects `new`.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L146)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L167)
 
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleProvider_Responses_"></a>
 <a id="Vercel_AI_AmazonBedrock_BedrockMantleProvider_Responses_System_String_"></a>
@@ -265,4 +265,4 @@ Responses API model. The path is `/responses` on the same Mantle origin.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L164)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/BedrockMantleProvider.cs#L187)

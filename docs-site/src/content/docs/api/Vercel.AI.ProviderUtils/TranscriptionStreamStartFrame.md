@@ -67,7 +67,7 @@ When true, the server should include `raw` parts in the stream.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L41)
 
 <a id="Vercel_AI_ProviderUtils_TranscriptionStreamStartFrame_InputAudioFormat_"></a>
 <a id="Vercel_AI_ProviderUtils_TranscriptionStreamStartFrame_InputAudioFormat"></a>
@@ -84,7 +84,7 @@ Audio format of the binary audio frames, for example `audio/pcm` at 16000 Hz.
 
 **Value:** [AudioFormat](/api/Vercel.AI.Operations/AudioFormat/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L35)
 
 <a id="Vercel_AI_ProviderUtils_TranscriptionStreamStartFrame_ProviderOptions_"></a>
 <a id="Vercel_AI_ProviderUtils_TranscriptionStreamStartFrame_ProviderOptions"></a>
@@ -101,7 +101,7 @@ Provider-specific options, passed through verbatim.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L38)
 
 <a id="Vercel_AI_ProviderUtils_TranscriptionStreamStartFrame_Type_"></a>
 <a id="Vercel_AI_ProviderUtils_TranscriptionStreamStartFrame_Type"></a>
@@ -118,7 +118,7 @@ Always [TranscriptionStreamStartFrameType](/api/Vercel.AI.ProviderUtils/Transcri
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L32)
 
 ## Methods
 
@@ -137,4 +137,4 @@ Serializes the frame. Optional keys are omitted when null.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L44)

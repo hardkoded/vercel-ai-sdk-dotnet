@@ -23,7 +23,7 @@ Options for `CancellationToken)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [OperationRequest](/api/Vercel.AI.Operations/OperationRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L311)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L334)
 
 ## Properties
 
@@ -42,7 +42,7 @@ When true, providers include raw provider chunks in `fullStream`.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L344)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L367)
 
 <a id="Vercel_AI_Operations_StreamSpeechRequest_Instructions_"></a>
 <a id="Vercel_AI_Operations_StreamSpeechRequest_Instructions"></a>
@@ -59,7 +59,7 @@ Speaking instructions.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L335)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L358)
 
 <a id="Vercel_AI_Operations_StreamSpeechRequest_Language_"></a>
 <a id="Vercel_AI_Operations_StreamSpeechRequest_Language"></a>
@@ -76,7 +76,7 @@ ISO 639-1 language code or `auto`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L341)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L364)
 
 <a id="Vercel_AI_Operations_StreamSpeechRequest_Model_"></a>
 <a id="Vercel_AI_Operations_StreamSpeechRequest_Model"></a>
@@ -93,7 +93,7 @@ Speech model instance. Takes precedence over [ModelId](#Vercel_AI_Operations_Str
 
 **Value:** [ISpeechCaller](/api/Vercel.AI.Operations/ISpeechCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L314)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L337)
 
 <a id="Vercel_AI_Operations_StreamSpeechRequest_ModelId_"></a>
 <a id="Vercel_AI_Operations_StreamSpeechRequest_ModelId"></a>
@@ -110,7 +110,7 @@ Model id resolved through [Default](/api/Vercel.AI.Operations/SpeechModels/#Verc
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L317)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L340)
 
 <a id="Vercel_AI_Operations_StreamSpeechRequest_OnError_"></a>
 <a id="Vercel_AI_Operations_StreamSpeechRequest_OnError"></a>
@@ -129,7 +129,7 @@ Defaults to writing the error to [Error](https://learn.microsoft.com/dotnet/api/
 
 **Value:** [Func&lt;Exception, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L351)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L374)
 
 <a id="Vercel_AI_Operations_StreamSpeechRequest_OutputFormat_"></a>
 <a id="Vercel_AI_Operations_StreamSpeechRequest_OutputFormat"></a>
@@ -146,7 +146,7 @@ Desired format of the output audio chunks. Supported formats are provider-specif
 
 **Value:** [SpeechAudioFormat](/api/Vercel.AI.Operations/SpeechAudioFormat/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L332)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L355)
 
 <a id="Vercel_AI_Operations_StreamSpeechRequest_Speed_"></a>
 <a id="Vercel_AI_Operations_StreamSpeechRequest_Speed"></a>
@@ -163,7 +163,7 @@ Playback speed.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L338)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L361)
 
 <a id="Vercel_AI_Operations_StreamSpeechRequest_Text_"></a>
 <a id="Vercel_AI_Operations_StreamSpeechRequest_Text"></a>
@@ -180,7 +180,7 @@ The text to convert to speech, as one complete string.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L320)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L343)
 
 <a id="Vercel_AI_Operations_StreamSpeechRequest_TextParts_"></a>
 <a id="Vercel_AI_Operations_StreamSpeechRequest_TextParts"></a>
@@ -197,7 +197,7 @@ The text to convert to speech, as text parts. Strings convert implicitly to part
 
 **Value:** [IEnumerable&lt;SpeechTextPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L323)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L346)
 
 <a id="Vercel_AI_Operations_StreamSpeechRequest_TextStream_"></a>
 <a id="Vercel_AI_Operations_StreamSpeechRequest_TextStream"></a>
@@ -214,7 +214,7 @@ The text to convert to speech, as a stream of text deltas or parts that is synth
 
 **Value:** [IAsyncEnumerable&lt;SpeechTextPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L326)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L349)
 
 <a id="Vercel_AI_Operations_StreamSpeechRequest_Voice_"></a>
 <a id="Vercel_AI_Operations_StreamSpeechRequest_Voice"></a>
@@ -231,4 +231,4 @@ Voice to use.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L329)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L352)

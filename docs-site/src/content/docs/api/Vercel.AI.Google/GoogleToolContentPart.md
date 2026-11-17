@@ -23,7 +23,7 @@ One multimodal tool-result part.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L280)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L310)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates a content part.
 | --- | --- | --- |
 | `type` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L283)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L313)
 
 ## Properties
 
@@ -65,7 +65,7 @@ Inline bytes.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L301)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L331)
 
 <a id="Vercel_AI_Google_GoogleToolContentPart_DataKind_"></a>
 <a id="Vercel_AI_Google_GoogleToolContentPart_DataKind"></a>
@@ -82,7 +82,7 @@ public string? DataKind { get; set; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L298)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L328)
 
 <a id="Vercel_AI_Google_GoogleToolContentPart_MediaType_"></a>
 <a id="Vercel_AI_Google_GoogleToolContentPart_MediaType"></a>
@@ -99,7 +99,7 @@ Media type of a file.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L295)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L325)
 
 <a id="Vercel_AI_Google_GoogleToolContentPart_Text_"></a>
 <a id="Vercel_AI_Google_GoogleToolContentPart_Text"></a>
@@ -116,7 +116,7 @@ Text, when [Type](#Vercel_AI_Google_GoogleToolContentPart_Type) is `text`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L292)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L322)
 
 <a id="Vercel_AI_Google_GoogleToolContentPart_Type_"></a>
 <a id="Vercel_AI_Google_GoogleToolContentPart_Type"></a>
@@ -133,7 +133,7 @@ public string Type { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L289)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L319)
 
 <a id="Vercel_AI_Google_GoogleToolContentPart_Url_"></a>
 <a id="Vercel_AI_Google_GoogleToolContentPart_Url"></a>
@@ -150,4 +150,4 @@ URL or data URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L304)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L334)

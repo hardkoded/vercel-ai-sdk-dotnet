@@ -23,9 +23,9 @@ Content the model generated.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-**Derived:** [AnthropicCustomContent](/api/Vercel.AI.Anthropic/AnthropicCustomContent/), [AnthropicReasoningContent](/api/Vercel.AI.Anthropic/AnthropicReasoningContent/), [AnthropicToolResultContent](/api/Vercel.AI.Anthropic/AnthropicToolResultContent/), [GeneratedFileUrl](/api/Vercel.AI.GenerateText/GeneratedFileUrl/), [GoogleToolResult](/api/Vercel.AI.Google/GoogleToolResult/), [HuggingFaceToolResult](/api/Vercel.AI.HuggingFace/HuggingFaceToolResult/), [GeneratedCustom](/api/Vercel.AI.Provider/GeneratedCustom/), [GeneratedDocumentSource](/api/Vercel.AI.Provider/GeneratedDocumentSource/), [GeneratedFile](/api/Vercel.AI.Provider/GeneratedFile/), [GeneratedReasoning](/api/Vercel.AI.Provider/GeneratedReasoning/), [GeneratedSource](/api/Vercel.AI.Provider/GeneratedSource/), [GeneratedText](/api/Vercel.AI.Provider/GeneratedText/), [GeneratedToolApprovalRequest](/api/Vercel.AI.Provider/GeneratedToolApprovalRequest/), [GeneratedToolCall](/api/Vercel.AI.Provider/GeneratedToolCall/), [GeneratedToolResult](/api/Vercel.AI.Provider/GeneratedToolResult/)
+**Derived:** [AnthropicCustomContent](/api/Vercel.AI.Anthropic/AnthropicCustomContent/), [AnthropicReasoningContent](/api/Vercel.AI.Anthropic/AnthropicReasoningContent/), [AnthropicToolResultContent](/api/Vercel.AI.Anthropic/AnthropicToolResultContent/), [GeneratedFileUrl](/api/Vercel.AI.GenerateText/GeneratedFileUrl/), [GoogleToolResult](/api/Vercel.AI.Google/GoogleToolResult/), [HuggingFaceToolResult](/api/Vercel.AI.HuggingFace/HuggingFaceToolResult/), [GeneratedCustom](/api/Vercel.AI.Provider/GeneratedCustom/), [GeneratedDocumentSource](/api/Vercel.AI.Provider/GeneratedDocumentSource/), [GeneratedFile](/api/Vercel.AI.Provider/GeneratedFile/), [GeneratedReasoning](/api/Vercel.AI.Provider/GeneratedReasoning/), [GeneratedReasoningFile](/api/Vercel.AI.Provider/GeneratedReasoningFile/), [GeneratedSource](/api/Vercel.AI.Provider/GeneratedSource/), [GeneratedText](/api/Vercel.AI.Provider/GeneratedText/), [GeneratedToolApprovalRequest](/api/Vercel.AI.Provider/GeneratedToolApprovalRequest/), [GeneratedToolApprovalResponse](/api/Vercel.AI.Provider/GeneratedToolApprovalResponse/), [GeneratedToolCall](/api/Vercel.AI.Provider/GeneratedToolCall/), [GeneratedToolResult](/api/Vercel.AI.Provider/GeneratedToolResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L169)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L182)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates content of the given type.
 | --- | --- | --- |
 | `type` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L172)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L185)
 
 ## Properties
 
@@ -67,4 +67,4 @@ Content type name from the V4 specification.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L178)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L191)

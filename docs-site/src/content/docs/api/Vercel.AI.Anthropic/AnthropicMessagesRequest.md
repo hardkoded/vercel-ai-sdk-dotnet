@@ -23,7 +23,7 @@ Builds an Anthropic Messages request from SDK call options.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicMessagesRequest.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicMessagesRequest.cs#L85)
 
 ## Methods
 
@@ -55,4 +55,4 @@ Hosts without the output format or strict tools turn them off with the last two 
 
 **Returns:** [AnthropicPreparedRequest](/api/Vercel.AI.Anthropic/AnthropicPreparedRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicMessagesRequest.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicMessagesRequest.cs#L91)

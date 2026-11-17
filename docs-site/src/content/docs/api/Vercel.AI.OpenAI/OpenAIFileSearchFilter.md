@@ -23,7 +23,7 @@ A file search filter: a comparison ([Key](#Vercel_AI_OpenAI_OpenAIFileSearchFilt
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L87)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L88)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Boolean value of a comparison filter.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L102)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L103)
 
 <a id="Vercel_AI_OpenAI_OpenAIFileSearchFilter_Filters_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIFileSearchFilter_Filters"></a>
@@ -59,7 +59,7 @@ Nested filters of a compound filter.
 
 **Value:** [IReadOnlyList&lt;OpenAIFileSearchFilter&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L109)
 
 <a id="Vercel_AI_OpenAI_OpenAIFileSearchFilter_Key_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIFileSearchFilter_Key"></a>
@@ -76,7 +76,7 @@ Attribute key of a comparison filter.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L93)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L94)
 
 <a id="Vercel_AI_OpenAI_OpenAIFileSearchFilter_NumberValue_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIFileSearchFilter_NumberValue"></a>
@@ -93,7 +93,7 @@ Number value of a comparison filter.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L99)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L100)
 
 <a id="Vercel_AI_OpenAI_OpenAIFileSearchFilter_StringValue_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIFileSearchFilter_StringValue"></a>
@@ -110,7 +110,7 @@ String value of a comparison filter.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L96)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L97)
 
 <a id="Vercel_AI_OpenAI_OpenAIFileSearchFilter_StringValues_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIFileSearchFilter_StringValues"></a>
@@ -127,7 +127,7 @@ String values of an `in`/`nin` comparison filter.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L105)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L106)
 
 <a id="Vercel_AI_OpenAI_OpenAIFileSearchFilter_Type_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIFileSearchFilter_Type"></a>
@@ -144,4 +144,4 @@ Operator: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `nin`, `and`, or `or`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L90)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L91)

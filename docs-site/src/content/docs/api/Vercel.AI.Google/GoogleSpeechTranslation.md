@@ -23,7 +23,7 @@ Speech translation configuration for the Gemini Live API. The socket itself is n
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTranscriptionModel.cs#L226)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTranscriptionModel.cs#L296)
 
 ## Fields
 
@@ -41,7 +41,7 @@ Live translation WebSocket path.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTranscriptionModel.cs#L229)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTranscriptionModel.cs#L299)
 
 ## Methods
 
@@ -67,7 +67,7 @@ Warnings for options the Live translation API does not accept.
 
 **Returns:** [IReadOnlyList&lt;GoogleWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTranscriptionModel.cs#L266)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTranscriptionModel.cs#L340)
 
 <a id="Vercel_AI_Google_GoogleSpeechTranslation_WebSocketUrl_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechTranslation_WebSocketUrl_System_String_System_String_"></a>
@@ -91,4 +91,4 @@ Builds a `wss` URL and strips a trailing `/v1beta` or `/v1alpha` segment.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTranscriptionModel.cs#L232)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTranscriptionModel.cs#L303)

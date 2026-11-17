@@ -68,7 +68,7 @@ When &lt;code class="paramref"&gt;topLevelType&lt;/code&gt; is omitted, image, d
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DetectMediaType.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DetectMediaType.cs#L75)
 
 <a id="Vercel_AI_ProviderUtils_MediaTypes_DetectMediaType_System_String_System_String_"></a>
 
@@ -91,7 +91,7 @@ Detects a media type from a base64 string. See `String)`.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DetectMediaType.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DetectMediaType.cs#L81)
 
 <a id="Vercel_AI_ProviderUtils_MediaTypes_GetTopLevelMediaType_"></a>
 <a id="Vercel_AI_ProviderUtils_MediaTypes_GetTopLevelMediaType_System_String_"></a>
@@ -114,7 +114,7 @@ Returns the segment before the first slash. Maps to `getTopLevelMediaType`.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DetectMediaType.cs#L119)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DetectMediaType.cs#L128)
 
 <a id="Vercel_AI_ProviderUtils_MediaTypes_IsFullMediaType_"></a>
 <a id="Vercel_AI_ProviderUtils_MediaTypes_IsFullMediaType_System_String_"></a>
@@ -137,7 +137,7 @@ True for `type/subtype` when the subtype is non-empty and not `*`. Maps to `isFu
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DetectMediaType.cs#L131)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DetectMediaType.cs#L140)
 
 <a id="Vercel_AI_ProviderUtils_MediaTypes_ResolveFullMediaType_"></a>
 <a id="Vercel_AI_ProviderUtils_MediaTypes_ResolveFullMediaType_System_String_System_Byte___"></a>
@@ -161,7 +161,7 @@ Resolves a media type for inline bytes, or null when the file is not inline. See
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DetectMediaType.cs#L165)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DetectMediaType.cs#L174)
 
 <a id="Vercel_AI_ProviderUtils_MediaTypes_ResolveFullMediaType_Vercel_AI_Prompt_LanguageModelFilePart_"></a>
 
@@ -190,4 +190,4 @@ which is the file part's bytes or base64 text, or null when the file is not inli
 | --- | --- |
 | [UnsupportedFunctionalityException](/api/Vercel.AI.Operations/UnsupportedFunctionalityException/) | The subtype cannot be resolved. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DetectMediaType.cs#L153)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/DetectMediaType.cs#L162)

@@ -23,7 +23,7 @@ Complete batch request counts.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L350)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L372)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates counts.
 | `completed` | [long](https://learn.microsoft.com/dotnet/api/system.int64) |  |
 | `failed` | [long](https://learn.microsoft.com/dotnet/api/system.int64) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L353)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L375)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Completed requests.
 
 **Value:** [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L368)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L390)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_BatchRequestCounts_Failed_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderValues_BatchRequestCounts_Failed"></a>
@@ -85,7 +85,7 @@ Failed requests.
 
 **Value:** [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L371)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L393)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_BatchRequestCounts_Pending_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderValues_BatchRequestCounts_Pending"></a>
@@ -102,7 +102,7 @@ Requests still pending.
 
 **Value:** [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L365)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L387)
 
 <a id="Vercel_AI_ProviderUtils_ProviderValues_BatchRequestCounts_Total_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderValues_BatchRequestCounts_Total"></a>
@@ -119,4 +119,4 @@ Total requests.
 
 **Value:** [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L362)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderValues.cs#L384)

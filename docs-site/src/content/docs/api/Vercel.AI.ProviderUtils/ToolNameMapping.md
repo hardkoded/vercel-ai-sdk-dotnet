@@ -48,7 +48,7 @@ Maps a provider name to the client name, or returns the input when it is not map
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ToolNameMapping.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ToolNameMapping.cs#L51)
 
 <a id="Vercel_AI_ProviderUtils_ToolNameMapping_ToProviderToolName_"></a>
 <a id="Vercel_AI_ProviderUtils_ToolNameMapping_ToProviderToolName_System_String_"></a>
@@ -71,4 +71,4 @@ Maps a client name to the provider name, or returns the input when it is not map
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ToolNameMapping.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ToolNameMapping.cs#L44)

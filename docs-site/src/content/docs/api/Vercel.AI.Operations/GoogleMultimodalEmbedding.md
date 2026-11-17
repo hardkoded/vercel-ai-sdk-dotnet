@@ -200,7 +200,7 @@ Embeds one chunk.
 
 **Returns:** [Task&lt;EmbeddingModelResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GoogleMultimodalEmbedding.cs#L81)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GoogleMultimodalEmbedding.cs#L92)
 
 <a id="Vercel_AI_Operations_GoogleMultimodalEmbedding_TransformProviderOptionsAsync_"></a>
 <a id="Vercel_AI_Operations_GoogleMultimodalEmbedding_TransformProviderOptionsAsync_System_Nullable_System_Text_Json_JsonElement__System_Collections_Generic_IReadOnlyList_System_String__System_Int32_System_Int32_System_Threading_CancellationToken_"></a>

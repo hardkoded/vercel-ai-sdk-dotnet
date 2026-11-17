@@ -25,7 +25,7 @@ Retries were exhausted. [LastError](#Vercel_AI_Operations_OperationRetryExceptio
 
 **Implements:** [ISerializable](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.iserializable)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L225)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L265)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a retry failure.
 | `reason` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `errors` | [IReadOnlyList&lt;Exception&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L228)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L268)
 
 ## Properties
 
@@ -69,7 +69,7 @@ Errors from each attempt.
 
 **Value:** [IReadOnlyList&lt;Exception&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L240)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L280)
 
 <a id="Vercel_AI_Operations_OperationRetryException_LastError_"></a>
 <a id="Vercel_AI_Operations_OperationRetryException_LastError"></a>
@@ -86,7 +86,7 @@ The last attempt's error.
 
 **Value:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L243)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L283)
 
 <a id="Vercel_AI_Operations_OperationRetryException_Reason_"></a>
 <a id="Vercel_AI_Operations_OperationRetryException_Reason"></a>
@@ -103,4 +103,4 @@ public string Reason { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L237)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L277)

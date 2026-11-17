@@ -23,7 +23,7 @@ Prepares Gemini function and provider-defined tools.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTools.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTools.cs#L69)
 
 ## Methods
 
@@ -52,4 +52,4 @@ Prepares tools for &lt;code class="paramref"&gt;modelId&lt;/code&gt;.
 
 **Returns:** [GoogleToolPreparation](/api/Vercel.AI.Google/GoogleToolPreparation/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTools.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTools.cs#L72)

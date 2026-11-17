@@ -42,7 +42,7 @@ When false, function call and response ids are omitted. Vertex omits them.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L57)
 
 <a id="Vercel_AI_Google_GoogleMessageOptions_IsGemini3Model_"></a>
 <a id="Vercel_AI_Google_GoogleMessageOptions_IsGemini3Model"></a>
@@ -110,7 +110,7 @@ Provider-option namespaces, in precedence order.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L60)
 
 <a id="Vercel_AI_Google_GoogleMessageOptions_SupportedFunctionResponseUrls_"></a>
 <a id="Vercel_AI_Google_GoogleMessageOptions_SupportedFunctionResponseUrls"></a>
@@ -161,4 +161,4 @@ Warnings produced while converting.
 
 **Value:** [List&lt;GoogleWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L63)

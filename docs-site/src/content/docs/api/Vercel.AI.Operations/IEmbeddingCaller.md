@@ -23,4 +23,4 @@ Embedding model used by [Embed](/api/Vercel.AI.Operations/Embed/) and [EmbedMany
 
 **Derived:** [GoogleMultimodalEmbedding](/api/Vercel.AI.Operations/GoogleMultimodalEmbedding/), [PerplexityEmbeddingModel](/api/Vercel.AI.Perplexity/PerplexityEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L75)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L82)

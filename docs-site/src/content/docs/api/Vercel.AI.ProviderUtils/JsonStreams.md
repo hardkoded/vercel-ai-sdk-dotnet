@@ -23,7 +23,7 @@ Reads JSON and Server-Sent Event bodies, including response headers.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L581)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L620)
 
 ## Fields
 
@@ -41,7 +41,7 @@ Default largest JSON Lines row, in UTF-8 bytes.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L664)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L720)
 
 ## Methods
 
@@ -66,7 +66,7 @@ Lower-cases response and content header names and joins repeated values with a c
 
 **Returns:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L584)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L623)
 
 <a id="Vercel_AI_ProviderUtils_JsonStreams_ReadJsonAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonStreams_ReadJsonAsync_System_Net_Http_HttpResponseMessage_System_Text_Json_Nodes_JsonNode_System_Threading_CancellationToken_"></a>
@@ -92,7 +92,7 @@ A body above [DefaultMaxBytes](/api/Vercel.AI.Util/Download/#Vercel_AI_Util_Down
 
 **Returns:** [Task&lt;JsonStreams.JsonBody&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L626)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L671)
 
 <a id="Vercel_AI_ProviderUtils_JsonStreams_ReadJsonEventsAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonStreams_ReadJsonEventsAsync_System_IO_Stream_System_Text_Json_Nodes_JsonNode_System_Threading_CancellationToken_"></a>
@@ -118,7 +118,7 @@ Events are validated with &lt;code class="paramref"&gt;schema&lt;/code&gt; when 
 
 **Returns:** [IAsyncEnumerable&lt;JsonParseResult&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L761)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L829)
 
 <a id="Vercel_AI_ProviderUtils_JsonStreams_ReadJsonLinesAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonStreams_ReadJsonLinesAsync_System_IO_Stream_System_Text_Json_Nodes_JsonNode_System_Action_System_Threading_CancellationToken_System_Int32_System_String_"></a>
@@ -149,4 +149,4 @@ A row longer than &lt;code class="paramref"&gt;maxLineBytes&lt;/code&gt; UTF-8 b
 
 **Returns:** [IAsyncEnumerable&lt;JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L672)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L728)

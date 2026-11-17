@@ -67,7 +67,7 @@ Skill id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicSkills.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicSkills.cs#L46)
 
 <a id="Vercel_AI_Anthropic_AnthropicSkillUpload_Name_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicSkillUpload_Name"></a>
@@ -84,7 +84,7 @@ Skill name from the version metadata, when present.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicSkills.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicSkills.cs#L49)
 
 <a id="Vercel_AI_Anthropic_AnthropicSkillUpload_ProviderReference_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicSkillUpload_ProviderReference"></a>
@@ -101,4 +101,4 @@ Map from provider name to the skill id. `anthropic` is set to the skill id.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicSkills.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicSkills.cs#L52)

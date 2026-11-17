@@ -23,7 +23,7 @@ Detects media types from file signatures.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L711)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L790)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Returns a media type for &lt;code class="paramref"&gt;data&lt;/code&gt;, or null
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L714)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L793)
 
 <a id="Vercel_AI_Operations_MediaTypeDetector_ToBytes_"></a>
 <a id="Vercel_AI_Operations_MediaTypeDetector_ToBytes_System_Object_"></a>
@@ -72,4 +72,4 @@ Decodes a base64 payload or returns the bytes unchanged.
 
 **Returns:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L720)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L801)

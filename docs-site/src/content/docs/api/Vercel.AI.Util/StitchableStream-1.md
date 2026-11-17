@@ -105,7 +105,7 @@ public void Close()
 
 Lets current inner streams finish, then closes the outer stream.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StitchableStream.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StitchableStream.cs#L68)
 
 <a id="Vercel_AI_Util_StitchableStream_1_Terminate_"></a>
 <a id="Vercel_AI_Util_StitchableStream_1_Terminate"></a>
@@ -120,4 +120,4 @@ public void Terminate()
 
 Cancels every inner stream and closes the outer stream.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StitchableStream.cs#L81)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/StitchableStream.cs#L87)

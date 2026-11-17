@@ -25,7 +25,7 @@ Model response for `doDecide`.
 
 **Derived:** [EvaluationModelResult](/api/Vercel.AI.Operations/EvaluationModelResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L126)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L145)
 
 ## Constructors
 
@@ -53,7 +53,7 @@ Creates a model result.
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 | `response` | [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L129)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L148)
 
 ## Properties
 
@@ -72,7 +72,7 @@ Answers keyed by question id.
 
 **Value:** [IReadOnlyDictionary&lt;string, DecisionAnswer&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L140)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L166)
 
 <a id="Vercel_AI_Operations_DecisionModelResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_DecisionModelResult_ProviderMetadata"></a>
@@ -89,7 +89,7 @@ Provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L152)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L178)
 
 <a id="Vercel_AI_Operations_DecisionModelResult_Response_"></a>
 <a id="Vercel_AI_Operations_DecisionModelResult_Response"></a>
@@ -106,7 +106,7 @@ Response metadata. Timestamp and model id are filled when omitted.
 
 **Value:** [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L155)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L181)
 
 <a id="Vercel_AI_Operations_DecisionModelResult_Rounding_"></a>
 <a id="Vercel_AI_Operations_DecisionModelResult_Rounding"></a>
@@ -123,7 +123,7 @@ Rounding declaration.
 
 **Value:** [DecisionRounding](/api/Vercel.AI.Operations/DecisionRounding/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L149)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L175)
 
 <a id="Vercel_AI_Operations_DecisionModelResult_Usage_"></a>
 <a id="Vercel_AI_Operations_DecisionModelResult_Usage"></a>
@@ -140,7 +140,7 @@ Token usage.
 
 **Value:** [OperationUsage](/api/Vercel.AI.Operations/OperationUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L146)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L172)
 
 <a id="Vercel_AI_Operations_DecisionModelResult_Warnings_"></a>
 <a id="Vercel_AI_Operations_DecisionModelResult_Warnings"></a>
@@ -157,4 +157,4 @@ Warnings.
 
 **Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L143)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L169)

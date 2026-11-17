@@ -68,7 +68,7 @@ Maps a built-in wire name such as `code_execution` onto the caller's tool name.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTools.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTools.cs#L59)
 
 <a id="Vercel_AI_Google_GoogleToolPreparation_ToolConfig_"></a>
 <a id="Vercel_AI_Google_GoogleToolPreparation_ToolConfig"></a>
@@ -85,7 +85,7 @@ Function-calling configuration.
 
 **Value:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTools.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTools.cs#L53)
 
 <a id="Vercel_AI_Google_GoogleToolPreparation_Tools_"></a>
 <a id="Vercel_AI_Google_GoogleToolPreparation_Tools"></a>
@@ -102,7 +102,7 @@ Gemini tools array.
 
 **Value:** [JsonArray](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonarray)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTools.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTools.cs#L50)
 
 <a id="Vercel_AI_Google_GoogleToolPreparation_Warnings_"></a>
 <a id="Vercel_AI_Google_GoogleToolPreparation_Warnings"></a>
@@ -119,7 +119,7 @@ Warnings for unsupported combinations.
 
 **Value:** [IReadOnlyList&lt;GoogleWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTools.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTools.cs#L56)
 
 ## Methods
 
@@ -144,4 +144,4 @@ Returns the caller name for a built-in tool, or the wire name.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTools.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleTools.cs#L62)

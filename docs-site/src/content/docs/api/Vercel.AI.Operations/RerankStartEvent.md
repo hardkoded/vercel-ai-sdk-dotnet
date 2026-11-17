@@ -23,7 +23,7 @@ Start event for rerank.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L213)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L239)
 
 ## Constructors
 
@@ -56,7 +56,7 @@ Creates a start event.
 | `headers` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 | `providerOptions` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L216)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L242)
 
 ## Properties
 
@@ -75,7 +75,7 @@ Call id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L232)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L270)
 
 <a id="Vercel_AI_Operations_RerankStartEvent_Documents_"></a>
 <a id="Vercel_AI_Operations_RerankStartEvent_Documents"></a>
@@ -92,7 +92,7 @@ Submitted documents.
 
 **Value:** [IReadOnlyList&lt;object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L247)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L285)
 
 <a id="Vercel_AI_Operations_RerankStartEvent_Headers_"></a>
 <a id="Vercel_AI_Operations_RerankStartEvent_Headers"></a>
@@ -109,7 +109,7 @@ Request headers.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L259)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L297)
 
 <a id="Vercel_AI_Operations_RerankStartEvent_MaxRetries_"></a>
 <a id="Vercel_AI_Operations_RerankStartEvent_MaxRetries"></a>
@@ -126,7 +126,7 @@ Retry limit.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L256)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L294)
 
 <a id="Vercel_AI_Operations_RerankStartEvent_ModelId_"></a>
 <a id="Vercel_AI_Operations_RerankStartEvent_ModelId"></a>
@@ -143,7 +143,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L244)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L282)
 
 <a id="Vercel_AI_Operations_RerankStartEvent_OperationId_"></a>
 <a id="Vercel_AI_Operations_RerankStartEvent_OperationId"></a>
@@ -160,7 +160,7 @@ public string OperationId { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L235)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L273)
 
 <a id="Vercel_AI_Operations_RerankStartEvent_Provider_"></a>
 <a id="Vercel_AI_Operations_RerankStartEvent_Provider"></a>
@@ -177,7 +177,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L241)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L279)
 
 <a id="Vercel_AI_Operations_RerankStartEvent_ProviderOptions_"></a>
 <a id="Vercel_AI_Operations_RerankStartEvent_ProviderOptions"></a>
@@ -194,7 +194,7 @@ Provider options.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L262)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L300)
 
 <a id="Vercel_AI_Operations_RerankStartEvent_Query_"></a>
 <a id="Vercel_AI_Operations_RerankStartEvent_Query"></a>
@@ -211,7 +211,7 @@ Query.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L250)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L288)
 
 <a id="Vercel_AI_Operations_RerankStartEvent_RuntimeContext_"></a>
 <a id="Vercel_AI_Operations_RerankStartEvent_RuntimeContext"></a>
@@ -228,7 +228,7 @@ Runtime context.
 
 **Value:** [IReadOnlyDictionary&lt;string, object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L238)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L276)
 
 <a id="Vercel_AI_Operations_RerankStartEvent_TopN_"></a>
 <a id="Vercel_AI_Operations_RerankStartEvent_TopN"></a>
@@ -245,4 +245,4 @@ Maximum results.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L253)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L291)

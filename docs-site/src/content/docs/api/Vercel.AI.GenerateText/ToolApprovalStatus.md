@@ -136,7 +136,7 @@ The status without a reason: `approved`.
 
 **Value:** [ToolApprovalStatus](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L61)
 
 <a id="Vercel_AI_GenerateText_ToolApprovalStatus_Denied_"></a>
 <a id="Vercel_AI_GenerateText_ToolApprovalStatus_Denied"></a>
@@ -153,7 +153,7 @@ The status without a reason: `denied`.
 
 **Value:** [ToolApprovalStatus](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L64)
 
 <a id="Vercel_AI_GenerateText_ToolApprovalStatus_NotApplicable_"></a>
 <a id="Vercel_AI_GenerateText_ToolApprovalStatus_NotApplicable"></a>
@@ -170,7 +170,7 @@ The status without a reason: `not-applicable`.
 
 **Value:** [ToolApprovalStatus](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L58)
 
 <a id="Vercel_AI_GenerateText_ToolApprovalStatus_Reason_"></a>
 <a id="Vercel_AI_GenerateText_ToolApprovalStatus_Reason"></a>
@@ -187,7 +187,7 @@ Why the call was approved, denied, or needs approval.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L73)
 
 <a id="Vercel_AI_GenerateText_ToolApprovalStatus_Type_"></a>
 <a id="Vercel_AI_GenerateText_ToolApprovalStatus_Type"></a>
@@ -204,7 +204,7 @@ One of `not-applicable`, `approved`, `denied`, and `user-approval`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L70)
 
 <a id="Vercel_AI_GenerateText_ToolApprovalStatus_UserApproval_"></a>
 <a id="Vercel_AI_GenerateText_ToolApprovalStatus_UserApproval"></a>
@@ -221,7 +221,7 @@ The status without a reason: `user-approval`.
 
 **Value:** [ToolApprovalStatus](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L67)
 
 ## Operators
 
@@ -246,4 +246,4 @@ Converts a status string, such as `user-approval`, to a status without a reason.
 
 **Returns:** [ToolApprovalStatus](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L76)

@@ -68,7 +68,7 @@ One vector per input value.
 
 **Value:** [IReadOnlyList&lt;float\[\]&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L52)
 
 <a id="Vercel_AI_Provider_EmbeddingResult_Response_"></a>
 <a id="Vercel_AI_Provider_EmbeddingResult_Response"></a>
@@ -85,7 +85,7 @@ Raw HTTP response of this call, when the provider reports it.
 
 **Value:** [EmbeddingResponseInfo](/api/Vercel.AI.Provider/EmbeddingResponseInfo/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L49)
 
 <a id="Vercel_AI_Provider_EmbeddingResult_Tokens_"></a>
 <a id="Vercel_AI_Provider_EmbeddingResult_Tokens"></a>
@@ -102,7 +102,7 @@ Token usage, when the provider reports it.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L55)
 
 <a id="Vercel_AI_Provider_EmbeddingResult_Warnings_"></a>
 <a id="Vercel_AI_Provider_EmbeddingResult_Warnings"></a>
@@ -119,4 +119,4 @@ Warnings of this call.
 
 **Value:** [IReadOnlyList&lt;CallWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L46)

@@ -23,7 +23,7 @@ One approval that still needs execution or denial handling.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L137)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L159)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a collected approval.
 | `toolCall` | [ApprovalToolCallPart](/api/Vercel.AI.GenerateText/ApprovalToolCallPart/) |  |
 | `existingToolResult` | [ApprovalToolResultPart](/api/Vercel.AI.GenerateText/ApprovalToolResultPart/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L140)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L162)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Matching approval request.
 
 **Value:** [ApprovalRequestPart](/api/Vercel.AI.GenerateText/ApprovalRequestPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L153)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L178)
 
 <a id="Vercel_AI_GenerateText_CollectedToolApproval_ApprovalResponse_"></a>
 <a id="Vercel_AI_GenerateText_CollectedToolApproval_ApprovalResponse"></a>
@@ -85,7 +85,7 @@ Approval response.
 
 **Value:** [ApprovalResponsePart](/api/Vercel.AI.GenerateText/ApprovalResponsePart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L156)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L181)
 
 <a id="Vercel_AI_GenerateText_CollectedToolApproval_ExistingToolResult_"></a>
 <a id="Vercel_AI_GenerateText_CollectedToolApproval_ExistingToolResult"></a>
@@ -102,7 +102,7 @@ Existing tool result, when a denied call already has an execution-denied output.
 
 **Value:** [ApprovalToolResultPart](/api/Vercel.AI.GenerateText/ApprovalToolResultPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L162)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L187)
 
 <a id="Vercel_AI_GenerateText_CollectedToolApproval_ToolCall_"></a>
 <a id="Vercel_AI_GenerateText_CollectedToolApproval_ToolCall"></a>
@@ -119,4 +119,4 @@ Tool call the approval refers to.
 
 **Value:** [ApprovalToolCallPart](/api/Vercel.AI.GenerateText/ApprovalToolCallPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L159)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/CollectToolApprovals.cs#L184)

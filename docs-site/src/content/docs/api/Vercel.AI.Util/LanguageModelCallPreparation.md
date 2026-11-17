@@ -71,4 +71,4 @@ Validates &lt;code class="paramref"&gt;options&lt;/code&gt; and returns a copy o
 
 **Returns:** [LanguageModelCallOptionsInput](/api/Vercel.AI.Util/LanguageModelCallOptionsInput/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LanguageModelCallPreparation.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/LanguageModelCallPreparation.cs#L50)

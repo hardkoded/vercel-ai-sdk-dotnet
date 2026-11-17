@@ -51,7 +51,7 @@ Creates a transport for the SSE endpoint at &lt;code class="paramref"&gt;url&lt;
 | `url` | [Uri](https://learn.microsoft.com/dotnet/api/system.uri) |  |
 | `headers` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L36)
 
 ## Fields
 
@@ -88,7 +88,7 @@ Called when the stream closes after [CloseAsync()](#Vercel_AI_Mcp_SseMcpTranspor
 
 **Value:** [Action](https://learn.microsoft.com/dotnet/api/system.action)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L48)
 
 <a id="Vercel_AI_Mcp_SseMcpTransport_OnError_"></a>
 <a id="Vercel_AI_Mcp_SseMcpTransport_OnError"></a>
@@ -105,7 +105,7 @@ Called with each transport error, such as a failed connection or an unparsable m
 
 **Value:** [Action&lt;Exception&gt;](https://learn.microsoft.com/dotnet/api/system.action-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L51)
 
 <a id="Vercel_AI_Mcp_SseMcpTransport_OnMessage_"></a>
 <a id="Vercel_AI_Mcp_SseMcpTransport_OnMessage"></a>
@@ -122,7 +122,7 @@ Called with each JSON-RPC message the server sends.
 
 **Value:** [Action&lt;JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.action-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L54)
 
 <a id="Vercel_AI_Mcp_SseMcpTransport_ProtocolVersion_"></a>
 <a id="Vercel_AI_Mcp_SseMcpTransport_ProtocolVersion"></a>
@@ -139,7 +139,7 @@ Negotiated protocol version. Defaults to [LatestLegacyProtocolVersion](#Vercel_A
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L57)
 
 ## Methods
 
@@ -166,7 +166,7 @@ Calls &lt;code class="paramref"&gt;method&lt;/code&gt; and returns the JSON-RPC 
 
 **Returns:** [Task&lt;JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L156)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L192)
 
 <a id="Vercel_AI_Mcp_SseMcpTransport_CloseAsync_"></a>
 <a id="Vercel_AI_Mcp_SseMcpTransport_CloseAsync"></a>
@@ -183,7 +183,7 @@ Closes the event stream and fails pending calls.
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L197)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L239)
 
 <a id="Vercel_AI_Mcp_SseMcpTransport_DeserializeMessage_"></a>
 <a id="Vercel_AI_Mcp_SseMcpTransport_DeserializeMessage_System_String_"></a>
@@ -206,7 +206,7 @@ Parses one JSON-RPC message. Prototype-pollution keys are rejected.
 
 **Returns:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L231)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L273)
 
 <a id="Vercel_AI_Mcp_SseMcpTransport_Dispose_"></a>
 <a id="Vercel_AI_Mcp_SseMcpTransport_Dispose"></a>
@@ -221,7 +221,7 @@ public void Dispose()
 
 Closes the transport.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L221)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L263)
 
 <a id="Vercel_AI_Mcp_SseMcpTransport_SendAsync_"></a>
 <a id="Vercel_AI_Mcp_SseMcpTransport_SendAsync_System_Text_Json_JsonElement_System_Threading_CancellationToken_"></a>
@@ -245,7 +245,7 @@ Posts one JSON-RPC message to the endpoint the server announced.
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L115)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L138)
 
 <a id="Vercel_AI_Mcp_SseMcpTransport_StartAsync_"></a>
 <a id="Vercel_AI_Mcp_SseMcpTransport_StartAsync_System_Threading_CancellationToken_"></a>
@@ -268,4 +268,4 @@ Opens the event stream and completes once the server has sent its `endpoint` eve
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L60)

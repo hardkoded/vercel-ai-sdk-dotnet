@@ -25,7 +25,7 @@ Adapts structured language-model output to typed field extraction. Maps to `Extr
 
 **Implements:** [IExtractionCaller](/api/Vercel.AI.Operations/IExtractionCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L43)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Wraps a language model. The provider id defaults to `{model.Provider}.extraction
 | `provider` | [string](https://learn.microsoft.com/dotnet/api/system.string) | The extraction provider id. |
 | `maxFieldsPerCall` | [double](https://learn.microsoft.com/dotnet/api/system.double) | Most fields per language-model call, for providers that limit schema size. Larger field maps are split into parallel calls whose answers are merged. Usage is summed, and response and provider metadata come from the first call. A positive integer or [PositiveInfinity](https://learn.microsoft.com/dotnet/api/system.double.positiveinfinity), the default, which means no limit. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L78)
 
 ## Properties
 
@@ -69,7 +69,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L87)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L114)
 
 <a id="Vercel_AI_Operations_ExtractionLanguageModel_Provider_"></a>
 <a id="Vercel_AI_Operations_ExtractionLanguageModel_Provider"></a>
@@ -86,7 +86,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L84)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L111)
 
 <a id="Vercel_AI_Operations_ExtractionLanguageModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Operations_ExtractionLanguageModel_SpecificationVersion"></a>
@@ -103,7 +103,7 @@ Specification version. Only `v4` is accepted.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L90)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L117)
 
 <a id="Vercel_AI_Operations_ExtractionLanguageModel_SupportedFieldTypes_"></a>
 <a id="Vercel_AI_Operations_ExtractionLanguageModel_SupportedFieldTypes"></a>
@@ -120,7 +120,7 @@ Field types this model can extract. Unsupported types are rejected before any pr
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L93)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L120)
 
 ## Methods
 
@@ -145,7 +145,7 @@ Restores a model from [Serialize(ExtractionLanguageModel)](#Vercel_AI_Operations
 
 **Returns:** [ExtractionLanguageModel](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L139)
 
 <a id="Vercel_AI_Operations_ExtractionLanguageModel_DoExtractAsync_"></a>
 <a id="Vercel_AI_Operations_ExtractionLanguageModel_DoExtractAsync_Vercel_AI_Operations_ExtractionModelCall_System_Threading_CancellationToken_"></a>
@@ -169,7 +169,7 @@ Extracts every field with one structured-output model call, or one per group of 
 
 **Returns:** [Task&lt;ExtractionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L119)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L154)
 
 <a id="Vercel_AI_Operations_ExtractionLanguageModel_Serialize_"></a>
 <a id="Vercel_AI_Operations_ExtractionLanguageModel_Serialize_Vercel_AI_Operations_ExtractionLanguageModel_"></a>
@@ -192,4 +192,4 @@ Serializes the wrapped model, the provider id, and the field limit for a workflo
 
 **Returns:** [ExtractionLanguageModelOptions](/api/Vercel.AI.Operations/ExtractionLanguageModelOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L96)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L123)

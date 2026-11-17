@@ -25,7 +25,7 @@ OpenAI legacy completions language model.
 
 **Implements:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L34)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a completion model.
 | `provider` | [OpenAIProvider](/api/Vercel.AI.OpenAI/OpenAIProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L39)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L55)
 
 <a id="Vercel_AI_OpenAI_OpenAICompletionLanguageModel_Provider_"></a>
 <a id="Vercel_AI_OpenAI_OpenAICompletionLanguageModel_Provider"></a>
@@ -85,7 +85,7 @@ Provider id, such as `openai`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L52)
 
 <a id="Vercel_AI_OpenAI_OpenAICompletionLanguageModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_OpenAI_OpenAICompletionLanguageModel_SpecificationVersion"></a>
@@ -102,7 +102,25 @@ Always `V4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L46)
+
+<a id="Vercel_AI_OpenAI_OpenAICompletionLanguageModel_SupportedUrls_"></a>
+<a id="Vercel_AI_OpenAI_OpenAICompletionLanguageModel_SupportedUrls"></a>
+
+### SupportedUrls
+
+
+```csharp
+public IReadOnlyDictionary<string, string> SupportedUrls { get; }
+```
+
+
+URLs the model can read itself, keyed by media type pattern (such as `image/*`). Each value is a regular expression that a URL
+must match. Prompt file URLs that match are passed through. All others are downloaded before the call. Maps to `supportedUrls`.
+
+**Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L49)
 
 ## Methods
 
@@ -127,7 +145,7 @@ Converts messages into a completion prompt and the default stop sequence.
 
 **Returns:** [OpenAICompletionPrompt](/api/Vercel.AI.OpenAI/OpenAICompletionPrompt/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L175)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L187)
 
 <a id="Vercel_AI_OpenAI_OpenAICompletionLanguageModel_DoGenerateAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAICompletionLanguageModel_DoGenerateAsync_Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_"></a>
@@ -151,7 +169,7 @@ Generates a complete result.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L229)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L244)
 
 <a id="Vercel_AI_OpenAI_OpenAICompletionLanguageModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAICompletionLanguageModel_DoStreamAsync_Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_"></a>
@@ -175,7 +193,7 @@ Streams partial results. The result carries the stream with the request and resp
 
 **Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L264)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L299)
 
 <a id="Vercel_AI_OpenAI_OpenAICompletionLanguageModel_Prepare_"></a>
 <a id="Vercel_AI_OpenAI_OpenAICompletionLanguageModel_Prepare_System_String_Vercel_AI_Provider_LanguageModelCallOptions_System_Boolean_"></a>
@@ -200,4 +218,4 @@ Builds the completions body. &lt;code class="paramref"&gt;stream&lt;/code&gt; ad
 
 **Returns:** [OpenAICompletionPreparedRequest](/api/Vercel.AI.OpenAI/OpenAICompletionPreparedRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L58)

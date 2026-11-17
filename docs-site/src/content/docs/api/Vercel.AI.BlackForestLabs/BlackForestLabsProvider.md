@@ -102,7 +102,7 @@ HTTP client used for submit, poll, and download requests.
 
 **Value:** [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L36)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsProvider_PollIntervalMillis_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsProvider_PollIntervalMillis"></a>
@@ -119,7 +119,7 @@ Poll interval in milliseconds between status checks. Null uses 500ms for images 
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L39)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsProvider_PollTimeoutMillis_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsProvider_PollTimeoutMillis"></a>
@@ -136,7 +136,7 @@ Overall timeout in milliseconds for polling before giving up. Null uses 60s for 
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L42)
 
 ## Methods
 
@@ -164,7 +164,7 @@ Creates a provider.
 
 **Returns:** [BlackForestLabsProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L66)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsProvider_EmbeddingModel_System_String_"></a>
@@ -187,7 +187,7 @@ Returns an embedding model.
 
 **Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L51)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsProvider_Image_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsProvider_Image_System_String_"></a>
@@ -210,7 +210,7 @@ Creates an image model. Same as [ImageModel(string)](#Vercel_AI_BlackForestLabs_
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L129)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L146)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsProvider_ImageModel_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsProvider_ImageModel_System_String_"></a>
@@ -233,7 +233,7 @@ Returns an image model.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L126)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L142)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsProvider_LanguageModel_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsProvider_LanguageModel_System_String_"></a>
@@ -256,7 +256,7 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L45)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsProvider_Video_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsProvider_Video_System_String_"></a>
@@ -279,7 +279,7 @@ Creates a video model. Same as [VideoModel(string)](#Vercel_AI_BlackForestLabs_B
 
 **Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L135)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L153)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsProvider_VideoModel_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsProvider_VideoModel_System_String_"></a>
@@ -302,4 +302,4 @@ Returns a video model.
 
 **Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L132)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsProvider.cs#L149)

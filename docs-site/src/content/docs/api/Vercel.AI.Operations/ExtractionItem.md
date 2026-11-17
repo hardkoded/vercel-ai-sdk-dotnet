@@ -23,7 +23,7 @@ One entry of a list answer. Maps to the `items` member of a list `ExtractionMode
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L90)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates an item entry.
 | `confidence` | [double?](https://learn.microsoft.com/dotnet/api/system.double) |  |
 | `source` | [ExtractionSource](/api/Vercel.AI.Operations/ExtractionSource/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L93)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Confidence in [0, 1] that the item is correct.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L90)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L100)
 
 <a id="Vercel_AI_Operations_ExtractionItem_Source_"></a>
 <a id="Vercel_AI_Operations_ExtractionItem_Source"></a>
@@ -83,4 +83,4 @@ Where the item was found.
 
 **Value:** [ExtractionSource](/api/Vercel.AI.Operations/ExtractionSource/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L93)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L103)

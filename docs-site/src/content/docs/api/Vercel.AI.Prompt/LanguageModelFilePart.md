@@ -23,7 +23,7 @@ A file part in the v4 provider prompt. Maps to the result of `convertToLanguageM
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L140)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a part.
 | `dataType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `mediaType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L111)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L143)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Inline base64 text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L124)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L156)
 
 <a id="Vercel_AI_Prompt_LanguageModelFilePart_Bytes_"></a>
 <a id="Vercel_AI_Prompt_LanguageModelFilePart_Bytes"></a>
@@ -83,7 +83,7 @@ Inline bytes.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L121)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L153)
 
 <a id="Vercel_AI_Prompt_LanguageModelFilePart_DataType_"></a>
 <a id="Vercel_AI_Prompt_LanguageModelFilePart_DataType"></a>
@@ -100,7 +100,7 @@ public string DataType { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L118)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L150)
 
 <a id="Vercel_AI_Prompt_LanguageModelFilePart_MediaType_"></a>
 <a id="Vercel_AI_Prompt_LanguageModelFilePart_MediaType"></a>
@@ -117,7 +117,7 @@ Media type extracted from a data URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L139)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L171)
 
 <a id="Vercel_AI_Prompt_LanguageModelFilePart_OriginalUrl_"></a>
 <a id="Vercel_AI_Prompt_LanguageModelFilePart_OriginalUrl"></a>
@@ -134,7 +134,7 @@ Original URL string when parsing changed it.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L130)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L162)
 
 <a id="Vercel_AI_Prompt_LanguageModelFilePart_Reference_"></a>
 <a id="Vercel_AI_Prompt_LanguageModelFilePart_Reference"></a>
@@ -151,7 +151,7 @@ Provider reference.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L133)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L165)
 
 <a id="Vercel_AI_Prompt_LanguageModelFilePart_Text_"></a>
 <a id="Vercel_AI_Prompt_LanguageModelFilePart_Text"></a>
@@ -168,7 +168,7 @@ Text payload.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L136)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L168)
 
 <a id="Vercel_AI_Prompt_LanguageModelFilePart_Url_"></a>
 <a id="Vercel_AI_Prompt_LanguageModelFilePart_Url"></a>
@@ -185,4 +185,4 @@ URL.
 
 **Value:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L127)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/FilePartData.cs#L159)
