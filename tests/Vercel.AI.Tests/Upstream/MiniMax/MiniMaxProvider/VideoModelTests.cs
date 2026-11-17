@@ -19,8 +19,8 @@ public sealed class VideoModelTests
         var provider = Vercel.AI.MiniMax.MiniMaxProvider.Create();
         var model = provider.VideoModel("MiniMax-H3");
 
-        Assert.IsType<MiniMaxVideoModel>(model);
-        var minimax = (MiniMaxVideoModel)model;
+        Assert.IsType<Vercel.AI.MiniMax.MiniMaxVideoModel>(model);
+        var minimax = (Vercel.AI.MiniMax.MiniMaxVideoModel)model;
         Assert.Equal("MiniMax-H3", minimax.ModelId);
         Assert.Equal("minimax.video", minimax.Config.Provider);
         Assert.Equal("https://api.minimax.io", minimax.Config.BaseUrl);
@@ -37,7 +37,7 @@ public sealed class VideoModelTests
             new MiniMaxOptions { VideoBaseUrl = "https://custom-video.example.com" }
         );
 
-        var minimax = (MiniMaxVideoModel)provider.VideoModel("MiniMax-H3");
+        var minimax = (Vercel.AI.MiniMax.MiniMaxVideoModel)provider.VideoModel("MiniMax-H3");
         Assert.Equal("https://custom-video.example.com", minimax.Config.BaseUrl);
     }
 }

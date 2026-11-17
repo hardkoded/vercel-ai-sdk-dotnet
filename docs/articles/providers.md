@@ -1068,7 +1068,9 @@ For M3.1 and later ids, `LanguageModelCallOptions.Reasoning` maps to the effort 
 
 `MiniMaxVideoModelOptions` lists the provider options under `minimax`: **resolution** (`480P`, `768P`, `2K`), **ratio** (`adaptive`, `21:9`, `16:9`, `4:3`, `1:1`, `3:4`, `9:16`), **referenceAudioUrls**, **aigcWatermark**, **pollIntervalMs** (default 10000), and **pollTimeoutMs** (default 600000).
 
-Request building, polling, and error handling are not ported yet, so every `MiniMaxVideoModel` operation throws `NotSupportedException` for now.
+`DoStartAsync` posts to `{VideoBaseUrl}/v2/video_generation`; `DoStatusAsync` reads `/v2/query/video_generation/{taskId}`; `DoGenerateAsync` starts a task and polls it. A webhook URL is forwarded as `callback_url`, and `HandleWebhookAsync` is not supported. The default resolution is `2K` for `MiniMax-H3` (it serves `768P` and `2K`) and `768P` for `MiniMax-H3-Max` (`480P` and `768P`). A top-level `Resolution` that is a named tier (`480P`, `768P`, `2K`, any case) or one of the listed frame sizes maps to its tier. The provider option wins when both are set. The ratio defaults to `16:9` for text-to-video and follows the frame image otherwise. The duration is rounded to a whole number and clamped to 4 to 15 seconds (5 to 15 for `MiniMax-H3-Max`). Each of these adjustments adds an `unsupported` warning.
+
+Frame images (`first_frame`, optional `last_frame`) and reference inputs are exclusive; frame images win. References take at most 9 images, 3 videos, and 3 audio URLs (`referenceAudioUrls`, which need at least one image or video). A reference with no media type is treated as an image with a warning, and `MiniMax-H3-Max` ignores references. `fps`, `seed`, `N` above 1, and `GenerateAudio` are ignored with warnings. `ProviderMetadata.minimax.resolvedInputs` reports what was sent: `imageCount` and the `referenceVideoUrls` that were URLs. The status errors, redirect checks, and the failed-response error mapping are still being ported.
 
 ### Image models
 
