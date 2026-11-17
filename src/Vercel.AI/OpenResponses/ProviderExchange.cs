@@ -56,7 +56,8 @@ internal static class ProviderExchange
         Uri uri,
         HttpContent? content,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken
+        CancellationToken cancellationToken,
+        Func<int, string, ApiException>? failedResponseHandler = null
     )
     {
         using (var request = new HttpRequestMessage(method, uri))
@@ -87,7 +88,9 @@ internal static class ProviderExchange
                 var body = Encoding.UTF8.GetString(bytes);
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw ProviderHttp.MapStatus((int)response.StatusCode, body);
+                    throw failedResponseHandler != null
+                        ? failedResponseHandler((int)response.StatusCode, body)
+                        : ProviderHttp.MapStatus((int)response.StatusCode, body);
                 }
 
                 return new ProviderExchangeResult(body, bytes, Copy(response))

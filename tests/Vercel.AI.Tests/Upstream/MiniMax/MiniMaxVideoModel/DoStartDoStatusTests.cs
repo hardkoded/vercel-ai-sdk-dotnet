@@ -4,7 +4,9 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.MiniMax;
 using Vercel.AI.Operations;
+using Vercel.AI.Provider;
 using Vercel.AI.Tests.MoreProviders;
 using Vercel.AI.Tests.Upstream;
 using static Vercel.AI.Tests.MiniMaxVideoModel.MiniMaxVideoModelHarness;
@@ -266,5 +268,347 @@ public sealed class DoStartDoStatusTests
             start.Warnings.Select(w => (w.Type, w.Feature, w.Details)),
             generated.Warnings.Select(w => (w.Type, w.Feature, w.Details))
         );
+    }
+
+    private static Task<Vercel.AI.Operations.VideoStatusResult> Status(
+        ParityHandler handler,
+        MiniMaxCall? call = null,
+        string taskId = TaskId
+    )
+    {
+        return CreateModel(handler)
+            .DoStatusAsync(
+                (call ?? new MiniMaxCall()).StatusCall(StatusOperation(taskId)),
+                CancellationToken.None
+            );
+    }
+
+    private static ParityHandler PollReturns(
+        string body,
+        params (string Name, string Value)[] headers
+    )
+    {
+        return new ParityHandler(_ => ParityHandler.Json(body, headers));
+    }
+
+    [Theory]
+    [InlineData("queued")]
+    [InlineData("running")]
+    [InlineData("unknown")]
+    [InlineData(null)]
+    [InlineData("undefined")]
+    [UpstreamTest(
+        Prefix + "should return pending after one GET for status %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_return_pending_after_one_GET_for_status(string? status)
+    {
+        var body = status switch
+        {
+            null => "{\"task\":{\"status\":null}}",
+            "undefined" => "{\"task\":{}}",
+            _ => "{\"task\":{\"status\":\"" + status + "\"}}",
+        };
+        var handler = PollReturns(body);
+
+        var result = await Status(handler);
+
+        Assert.Equal("pending", result.Status);
+        Assert.Equal("MiniMax-H3", result.Response.ModelId);
+        Assert.NotEqual(default, result.Response.Timestamp);
+        Assert.Single(handler.Calls);
+        Assert.Equal(HttpMethod.Get, handler.Calls[0].Method);
+    }
+
+    [Theory]
+    [InlineData("failed", "MiniMax video generation failed")]
+    [InlineData("cancelled", "MiniMax video generation was cancelled")]
+    [InlineData("expired", "MiniMax video generation request expired")]
+    [UpstreamTest(
+        Prefix + "should return an error result for %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_return_an_error_result_for_status(string status, string message)
+    {
+        var handler = PollReturns(
+            "{\"task\":{\"status\":\"" + status + "\"}}",
+            ("x-minimax-request-id", "status-request")
+        );
+
+        var result = await Status(handler);
+
+        Assert.Equal("error", result.Status);
+        Assert.Equal(message + ". Task ID: " + TaskId, result.Error);
+        Assert.Equal("status-request", result.Response.Headers!["x-minimax-request-id"]);
+        Assert.Single(handler.Calls);
+    }
+
+    [Theory]
+    [InlineData("1027")]
+    [InlineData("\"content_policy\"")]
+    [UpstreamTest(
+        Prefix + "should include task error code %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_include_task_error_code(string code)
+    {
+        var handler = PollReturns(
+            "{\"task\":{\"status\":\"failed\",\"error\":{\"code\":"
+                + code
+                + ",\"message\":\"Rejected\"}}}"
+        );
+
+        var result = await Status(handler);
+
+        Assert.Equal("error", result.Status);
+        Assert.Equal(
+            "MiniMax video generation failed: Rejected ("
+                + code.Trim('"')
+                + "). Task ID: "
+                + TaskId,
+            result.Error
+        );
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(",\"content\":{}")]
+    [InlineData(",\"content\":{\"url\":\"\"}")]
+    [UpstreamTest(
+        Prefix + "should reject a succeeded task without a video URL (%j)",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_reject_a_succeeded_task_without_a_video_URL(string content)
+    {
+        var handler = PollReturns("{\"task\":{\"status\":\"succeeded\"" + content + "}}");
+
+        var error = await Assert.ThrowsAsync<MiniMaxVideoGenerationException>(() =>
+            Status(handler)
+        );
+
+        Assert.Equal("MINIMAX_VIDEO_GENERATION_ERROR", error.Name);
+        Assert.Equal(
+            "MiniMax video generation completed but no video URL was returned. Task ID: " + TaskId,
+            error.Message
+        );
+        Assert.Single(handler.Calls);
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"task_id\":null}")]
+    [InlineData("{\"task_id\":\"\"}")]
+    [UpstreamTest(
+        Prefix + "should reject missing task ID %s without polling",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_reject_missing_task_ID_without_polling(string body)
+    {
+        var handler = Server(createBody: body);
+
+        var error = await Assert.ThrowsAsync<MiniMaxVideoGenerationException>(() =>
+            CreateModel(handler).DoStartAsync(new MiniMaxCall().ToCall(), CancellationToken.None)
+        );
+
+        Assert.Equal("MINIMAX_VIDEO_GENERATION_ERROR", error.Name);
+        Assert.Single(handler.Calls);
+    }
+
+    [Theory]
+    [InlineData("start")]
+    [InlineData("status")]
+    [UpstreamTest(
+        Prefix + "should surface HTTP errors from %s without retrying",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_surface_HTTP_errors_from_method_without_retrying(string method)
+    {
+        var url = method == "start" ? CreateUrl : PollUrl;
+        var handler = new ParityHandler(_ =>
+            ErrorResponse(429, ErrorEnvelope("Rate limited", 429))
+        );
+        var model = CreateModel(handler);
+
+        var error = await Assert.ThrowsAsync<RateLimitException>(() =>
+            method == "start"
+                ? model.DoStartAsync(new MiniMaxCall().ToCall(), CancellationToken.None)
+                : model.DoStatusAsync(
+                    new MiniMaxCall().StatusCall(StatusOperation()),
+                    CancellationToken.None
+                )
+        );
+
+        Assert.Equal(429, error.StatusCode);
+        Assert.Equal("Rate limited", error.Message);
+        Assert.Equal(url, error.Url);
+        Assert.Single(handler.Calls);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should merge and override auth headers separately on start and status",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_merge_and_override_auth_headers_separately_on_start_and_status()
+    {
+        var handler = Server();
+        var model = CreateModel(handler);
+
+        await model.DoStartAsync(
+            new MiniMaxCall
+            {
+                Headers = new Dictionary<string, string> { ["x-request"] = "start" },
+            }.ToCall(),
+            CancellationToken.None
+        );
+        await model.DoStatusAsync(
+            new MiniMaxCall
+            {
+                Headers = new Dictionary<string, string>
+                {
+                    ["Authorization"] = "Bearer override",
+                    ["x-request"] = "status",
+                },
+            }.StatusCall(StatusOperation()),
+            CancellationToken.None
+        );
+
+        Assert.Equal("Bearer test-key", handler.Calls[0].Header("authorization"));
+        Assert.Equal("start", handler.Calls[0].Header("x-request"));
+        Assert.Equal("Bearer override", handler.Calls[1].Header("authorization"));
+        Assert.Equal("status", handler.Calls[1].Header("x-request"));
+    }
+
+    [Theory]
+    [InlineData(".", "%252E")]
+    [InlineData("..", "%252E%252E")]
+    [UpstreamTest(
+        Prefix + "should preserve the $taskId task ID as a URL path segment",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_preserve_the_taskId_task_ID_as_a_URL_path_segment(
+        string taskId,
+        string encodedTaskId
+    )
+    {
+        var handler = new ParityHandler(_ => ParityHandler.Json(SucceededStatusResponse));
+
+        await Status(handler, taskId: taskId);
+
+        Assert.Equal(
+            new[] { "/v2/query/video_generation/" + encodedTaskId },
+            handler.Calls.Select(call => call.Uri.AbsolutePath)
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should encode the task ID and forward each abort signal to the custom fetch",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_encode_the_task_ID_and_forward_each_abort_signal_to_the_custom_fetch()
+    {
+        const string taskId = "task/with?query=value#fragment";
+        using var startSource = new CancellationTokenSource();
+        using var statusSource = new CancellationTokenSource();
+        var forwarded = new List<bool>();
+        var handler = new ParityHandler(call =>
+        {
+            // The call's token is linked to the caller's token; a never-cancellable token would mean it was dropped.
+            forwarded.Add(call.CancellationToken.CanBeCanceled);
+            return ParityHandler.Json(
+                call.Method == HttpMethod.Post
+                    ? "{\"task_id\":\"" + taskId + "\"}"
+                    : SucceededStatusResponse
+            );
+        });
+        var model = CreateModel(handler);
+
+        var start = await model.DoStartAsync(
+            new MiniMaxCall { CancellationToken = startSource.Token }.ToCall(),
+            CancellationToken.None
+        );
+        Assert.Single(handler.Calls);
+        await model.DoStatusAsync(
+            new MiniMaxCall { CancellationToken = statusSource.Token }.StatusCall(
+                (JsonElement)start.Operation!
+            ),
+            statusSource.Token
+        );
+
+        Assert.Equal(2, handler.Calls.Count);
+        Assert.Equal(new[] { true, true }, forwarded);
+        Assert.Equal(
+            BaseUrl + "/v2/query/video_generation/" + Uri.EscapeDataString(taskId),
+            handler.Calls[1].Uri.AbsoluteUri
+        );
+    }
+
+    [Theory]
+    [InlineData("start")]
+    [InlineData("status")]
+    [UpstreamTest(
+        Prefix + "should propagate abort errors from %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_propagate_abort_errors_from_method(string method)
+    {
+        using var source = new CancellationTokenSource();
+        var handler = new ParityHandler(call =>
+        {
+            source.Cancel();
+            call.CancellationToken.ThrowIfCancellationRequested();
+            throw new InvalidOperationException("Expected abort");
+        });
+        var model = CreateModel(handler);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            method == "start"
+                ? model.DoStartAsync(
+                    new MiniMaxCall { CancellationToken = source.Token }.ToCall(),
+                    source.Token
+                )
+                : model.DoStatusAsync(
+                    new MiniMaxCall { CancellationToken = source.Token }.StatusCall(
+                        StatusOperation()
+                    ),
+                    source.Token
+                )
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should strip caller headers on cross-origin status redirects",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_strip_caller_headers_on_cross_origin_status_redirects()
+    {
+        var handler = new ParityHandler(call =>
+        {
+            if (call.Uri.Host == "api.example.com")
+            {
+                var redirect = new System.Net.Http.HttpResponseMessage(
+                    System.Net.HttpStatusCode.Found
+                );
+                redirect.Headers.Location = new Uri("https://cdn.example.com/status");
+                return redirect;
+            }
+
+            return ParityHandler.Json(SucceededStatusResponse);
+        });
+
+        await Status(
+            handler,
+            new MiniMaxCall
+            {
+                Headers = new Dictionary<string, string> { ["x-secret"] = "private" },
+            }
+        );
+
+        Assert.Equal(2, handler.Calls.Count);
+        Assert.Equal("Bearer test-key", handler.Calls[0].Header("authorization"));
+        Assert.Null(handler.Calls[1].Header("authorization"));
+        Assert.Null(handler.Calls[1].Header("x-secret"));
     }
 }
