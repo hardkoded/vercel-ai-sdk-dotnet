@@ -37,11 +37,6 @@ public static class LanguageModelPrompts
                 abortSignal
             )
             .ConfigureAwait(false);
-        if (downloaded.Count == 0)
-        {
-            return messages;
-        }
-
         var converted = new List<ModelMessage>(messages.Count);
         foreach (var message in messages)
         {
@@ -166,7 +161,39 @@ public static class LanguageModelPrompts
 
         foreach (var part in result.OutputContent)
         {
-            PlanDownload(part, planned, supportedUrls, abortSignal);
+            PlanDownload(
+                GetDownloadableFilePart(part) ?? part,
+                planned,
+                supportedUrls,
+                abortSignal
+            );
+        }
+    }
+
+    // Maps to getDownloadableFilePart: resolves the deprecated "file-url" and "image-url" tool result parts to the file shape.
+    private static FileContentPart? GetDownloadableFilePart(UserContentPart part)
+    {
+        switch (part)
+        {
+            case FileContentPart file:
+                return file;
+            case FileUrlContentPart fileUrl:
+                return new FileContentPart(
+                    fileUrl.MediaType ?? GetMediaTypeFromUrl(fileUrl.Url),
+                    fileUrl.Url,
+                    null,
+                    null
+                )
+                {
+                    ProviderOptions = fileUrl.ProviderOptions,
+                };
+            case ImageUrlContentPart imageUrl:
+                return new FileContentPart("image", imageUrl.Url, null, null)
+                {
+                    ProviderOptions = imageUrl.ProviderOptions,
+                };
+            default:
+                return null;
         }
     }
 
@@ -184,7 +211,7 @@ public static class LanguageModelPrompts
         var content = new List<UserContentPart>(result.OutputContent.Count);
         foreach (var part in result.OutputContent)
         {
-            var converted = part is FileContentPart file ? ConvertFilePart(file, downloaded) : part;
+            var converted = ConvertToolResultPart(part, downloaded);
             changed |= !ReferenceEquals(converted, part);
             content.Add(converted);
         }
@@ -205,6 +232,99 @@ public static class LanguageModelPrompts
             OutputProviderOptions = result.OutputProviderOptions,
             MessageProviderOptions = result.MessageProviderOptions,
         };
+    }
+
+    // Maps to mapToolResultOutput for the deprecated "file-url" and "image-url" parts.
+    private static UserContentPart ConvertToolResultPart(
+        UserContentPart part,
+        IReadOnlyDictionary<string, DownloadResult> downloaded
+    )
+    {
+        switch (part)
+        {
+            case FileContentPart file:
+                return ConvertFilePart(file, downloaded);
+            case FileUrlContentPart fileUrl:
+            {
+                var mediaType = fileUrl.MediaType ?? GetMediaTypeFromUrl(fileUrl.Url);
+                var message =
+                    "The \"file-url\" type for tool result content is deprecated. Use the \"file\" type with mediaType and { type: 'url', url } instead.";
+                if (fileUrl.MediaType is null)
+                {
+                    var inferenceSuffix =
+                        mediaType == "application/octet-stream"
+                            ? "Unable to infer media type from URL. Defaulting to 'application/octet-stream'."
+                            : $"Inferred media type '{mediaType}' from URL.";
+                    message =
+                        $"The \"file-url\" tool result content part with URL \"{fileUrl.Url}\" is missing a \"mediaType\". {inferenceSuffix} {message}";
+                }
+
+                LogDeprecation("\"tool-result\" content of type \"file-url\"", message);
+                return GetDownloadableFilePart(fileUrl) is { } converted
+                    ? ConvertFilePart(converted, downloaded)
+                    : part;
+            }
+
+            case ImageUrlContentPart imageUrl:
+                LogDeprecation(
+                    "\"tool-result\" content of type \"image-url\"",
+                    "The \"image-url\" type for tool result content is deprecated. Use the \"file\" type with mediaType 'image' (or a specific image/* subtype) and { type: 'url', url } instead."
+                );
+                return GetDownloadableFilePart(imageUrl) is { } image
+                    ? ConvertFilePart(image, downloaded)
+                    : part;
+            default:
+                return part;
+        }
+    }
+
+    private static void LogDeprecation(string setting, string message)
+    {
+        LogWarnings.Log(
+            new LogWarningsOptions(new ModelWarning[] { new DeprecatedWarning(setting, message) })
+        );
+    }
+
+    private static readonly Dictionary<string, string> UrlExtensionToMediaType = new(
+        StringComparer.Ordinal
+    )
+    {
+        ["jpg"] = "image/jpeg",
+        ["jpeg"] = "image/jpeg",
+        ["png"] = "image/png",
+        ["gif"] = "image/gif",
+        ["webp"] = "image/webp",
+        ["svg"] = "image/svg+xml",
+        ["avif"] = "image/avif",
+        ["heic"] = "image/heic",
+        ["bmp"] = "image/bmp",
+        ["tiff"] = "image/tiff",
+        ["tif"] = "image/tiff",
+        ["pdf"] = "application/pdf",
+        ["mp4"] = "video/mp4",
+        ["webm"] = "video/webm",
+        ["mp3"] = "audio/mpeg",
+        ["wav"] = "audio/wav",
+        ["ogg"] = "audio/ogg",
+    };
+
+    // Maps to getMediaTypeFromUrl: infers an IANA media type from the file extension in the URL path.
+    private static string GetMediaTypeFromUrl(
+        string url,
+        string fallbackMediaType = "application/octet-stream"
+    )
+    {
+        if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            var path = uri.AbsolutePath;
+            var extension = path.Substring(path.LastIndexOf('.') + 1).ToLowerInvariant();
+            if (UrlExtensionToMediaType.TryGetValue(extension, out var mediaType))
+            {
+                return mediaType;
+            }
+        }
+
+        return fallbackMediaType;
     }
 
     private static ToolModelMessage ConvertToolMessage(

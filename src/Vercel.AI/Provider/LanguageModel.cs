@@ -867,6 +867,50 @@ public sealed class FileContentPart : UserContentPart
 }
 
 /// <summary>
+/// A deprecated <c>file-url</c> part inside a tool result. Use <see cref="FileContentPart"/> with a URL instead.
+/// Maps to <c>{ type: 'file-url', url, mediaType?, providerOptions }</c> in the tool result content.
+/// </summary>
+public sealed class FileUrlContentPart : UserContentPart
+{
+    /// <summary>Creates a file-url part.</summary>
+    public FileUrlContentPart(string url, string? mediaType = null)
+        : base("file-url")
+    {
+        Url = url ?? throw new ArgumentNullException(nameof(url));
+        MediaType = mediaType;
+    }
+
+    /// <summary>Remote URL.</summary>
+    public string Url { get; }
+
+    /// <summary>IANA media type. When it is null, it is inferred from the URL.</summary>
+    public string? MediaType { get; }
+
+    /// <summary>Provider-specific options for this part.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
+}
+
+/// <summary>
+/// A deprecated <c>image-url</c> part inside a tool result. Use <see cref="FileContentPart"/> with the <c>image</c> media type and a URL instead.
+/// Maps to <c>{ type: 'image-url', url, providerOptions }</c> in the tool result content.
+/// </summary>
+public sealed class ImageUrlContentPart : UserContentPart
+{
+    /// <summary>Creates an image-url part.</summary>
+    public ImageUrlContentPart(string url)
+        : base("image-url")
+    {
+        Url = url ?? throw new ArgumentNullException(nameof(url));
+    }
+
+    /// <summary>Remote URL.</summary>
+    public string Url { get; }
+
+    /// <summary>Provider-specific options for this part.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
+}
+
+/// <summary>
 /// A custom content part inside a tool result, used to carry provider-specific content.
 /// Maps to <c>{ type: 'custom', providerOptions }</c> in the tool result content of <c>LanguageModelV4Prompt</c>.
 /// </summary>
@@ -1651,6 +1695,13 @@ public sealed class ToolModelMessage : ModelMessage
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
+    private static Dictionary<string, JsonElement>? CloneProviderOptions(
+        IReadOnlyDictionary<string, JsonElement>? options
+    )
+    {
+        return options?.ToDictionary(pair => pair.Key, pair => pair.Value.Clone());
+    }
+
     private static UserContentPart[] Snapshot(IReadOnlyList<UserContentPart> content)
     {
         if (content is null)
@@ -1706,6 +1757,20 @@ public sealed class ToolModelMessage : ModelMessage
             else if (part is TextContentPart)
             {
                 copy[i] = part;
+            }
+            else if (part is FileUrlContentPart fileUrl)
+            {
+                copy[i] = new FileUrlContentPart(fileUrl.Url, fileUrl.MediaType)
+                {
+                    ProviderOptions = CloneProviderOptions(fileUrl.ProviderOptions),
+                };
+            }
+            else if (part is ImageUrlContentPart imageUrl)
+            {
+                copy[i] = new ImageUrlContentPart(imageUrl.Url)
+                {
+                    ProviderOptions = CloneProviderOptions(imageUrl.ProviderOptions),
+                };
             }
             else if (part is CustomContentPart custom)
             {
@@ -1792,6 +1857,20 @@ public sealed class ToolModelMessage : ModelMessage
                 }
 
                 array.Add(json);
+            }
+            else if (part is FileUrlContentPart fileUrl)
+            {
+                var json = new JsonObject { ["type"] = "file-url", ["url"] = fileUrl.Url };
+                if (fileUrl.MediaType != null)
+                {
+                    json["mediaType"] = fileUrl.MediaType;
+                }
+
+                array.Add(json);
+            }
+            else if (part is ImageUrlContentPart imageUrl)
+            {
+                array.Add(new JsonObject { ["type"] = "image-url", ["url"] = imageUrl.Url });
             }
             else if (part is CustomContentPart custom)
             {
