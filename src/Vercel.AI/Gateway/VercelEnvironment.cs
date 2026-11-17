@@ -2,13 +2,13 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using Vercel.AI.Provider;
+using Vercel.AI.Gateway.VercelOidc;
 
 namespace Vercel.AI.Gateway;
 
 /// <summary>
 /// Vercel runtime lookups. Maps to <c>vercel-environment.ts</c>, which re-exports <c>getVercelOidcToken</c> from
-/// <c>@vercel/oidc</c>.
+/// <c>@vercel/oidc</c>, ported in <c>VercelOidc/</c>.
 /// </summary>
 internal static class VercelEnvironment
 {
@@ -25,7 +25,10 @@ internal static class VercelEnvironment
         set => s_oidcTokenOverride.Value = value;
     }
 
-    /// <summary>Returns the Vercel OIDC token, or throws when none is available.</summary>
+    /// <summary>
+    /// Returns the Vercel OIDC token, refreshing it with the Vercel CLI credentials when it is missing or expired.
+    /// Maps to <c>getVercelOidcToken</c>.
+    /// </summary>
     public static Task<string> GetVercelOidcTokenAsync(CancellationToken cancellationToken)
     {
         var overrideProvider = OidcTokenOverride;
@@ -34,14 +37,6 @@ internal static class VercelEnvironment
             return overrideProvider(cancellationToken);
         }
 
-        var token = Environment.GetEnvironmentVariable(OidcTokenEnvironmentVariable);
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            throw new AiSdkException(
-                "The '" + OidcTokenEnvironmentVariable + "' environment variable is not set."
-            );
-        }
-
-        return Task.FromResult(token!);
+        return VercelOidcToken.GetVercelOidcTokenAsync(null, cancellationToken);
     }
 }
