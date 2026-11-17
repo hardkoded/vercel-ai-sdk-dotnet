@@ -2010,10 +2010,12 @@ public sealed class LanguageModelGenerateResult
         string? responseModelId = null,
         DateTimeOffset? responseTimestamp = null,
         IReadOnlyDictionary<string, string>? responseHeaders = null,
-        string? structuredOutputText = null
+        string? structuredOutputText = null,
+        LanguageModelStreamRequest? request = null
     )
     {
         Content = content ?? Array.Empty<GeneratedContent>();
+        Request = request;
         StructuredOutputText = structuredOutputText;
         FinishReason = finishReason;
         Usage = usage ?? LanguageModelUsage.Empty;
@@ -2052,9 +2054,13 @@ public sealed class LanguageModelGenerateResult
             ResponseModelId,
             ResponseTimestamp,
             ResponseHeaders,
-            StructuredOutputText
+            StructuredOutputText,
+            Request
         );
     }
+
+    /// <summary>Request info, when the model reports it. Maps to the <c>request</c> field of <c>doGenerate</c>.</summary>
+    public LanguageModelStreamRequest? Request { get; }
 
     /// <summary>Normalized finish reason.</summary>
     public FinishReason FinishReason { get; }
