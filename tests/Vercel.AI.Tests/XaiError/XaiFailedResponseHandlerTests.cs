@@ -10,8 +10,7 @@ namespace Vercel.AI.Tests.XaiError;
 /// <summary>Port of <c>xai-error.test.ts</c> &gt; <c>xaiFailedResponseHandler</c>.</summary>
 public sealed class XaiFailedResponseHandlerTests
 {
-    private const string Id =
-        "packages/xai/src/xai-error.test.ts::xaiFailedResponseHandler::";
+    private const string Id = "packages/xai/src/xai-error.test.ts::xaiFailedResponseHandler::";
 
     [Fact]
     [UpstreamTest(
