@@ -90,13 +90,11 @@ var shell = await Ai.GenerateTextAsync(
         Model = azure.ResponsesModel("gpt-5.4-mini"),
         Tools = new[]
         {
-            ToTool(
-                AzureOpenAITools.Shell(
-                    new OpenAIShellToolOptions
-                    {
-                        Environment = new OpenAIShellEnvironment { Type = "containerAuto" },
-                    }
-                )
+            AzureOpenAITools.Shell(
+                new OpenAIShellToolOptions
+                {
+                    Environment = new OpenAIShellEnvironment { Type = "containerAuto" },
+                }
             ),
         },
         StopWhen = StopWhen.IsStepCount(20),
@@ -114,13 +112,11 @@ var shellStream = Ai.StreamTextAsync(
         Model = azure.ResponsesModel("gpt-5.4-mini"),
         Tools = new[]
         {
-            ToTool(
-                AzureOpenAITools.Shell(
-                    new OpenAIShellToolOptions
-                    {
-                        Environment = new OpenAIShellEnvironment { Type = "containerAuto" },
-                    }
-                )
+            AzureOpenAITools.Shell(
+                new OpenAIShellToolOptions
+                {
+                    Environment = new OpenAIShellEnvironment { Type = "containerAuto" },
+                }
             ),
         },
         StopWhen = StopWhen.IsStepCount(20),
@@ -159,7 +155,7 @@ var skills = await Ai.GenerateTextAsync(
     {
         // Replace with your Azure deployment name that supports this shell mode.
         Model = azure.ResponsesModel("gpt-5.4-mini"),
-        Tools = new[] { ToTool(AzureOpenAITools.Shell(IslandRescueShell())) },
+        Tools = new[] { AzureOpenAITools.Shell(IslandRescueShell()) },
         StopWhen = StopWhen.IsStepCount(20),
         Prompt = "You are trapped and lost on a lonely island in 1895. Find a way to get rescued!",
     }
@@ -173,7 +169,7 @@ var skillsStream = Ai.StreamTextAsync(
     new StreamTextOptions
     {
         Model = azure.ResponsesModel("gpt-5.4-mini"),
-        Tools = new[] { ToTool(AzureOpenAITools.Shell(IslandRescueShell())) },
+        Tools = new[] { AzureOpenAITools.Shell(IslandRescueShell()) },
         StopWhen = StopWhen.IsStepCount(20),
         Prompt = "You are trapped and lost on a lonely island in 1895. Find a way to get rescued!",
     }

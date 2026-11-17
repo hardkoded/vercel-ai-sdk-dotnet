@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.OpenAI;
@@ -231,6 +232,44 @@ public sealed class OpenAIShellToolOptions
 {
     /// <summary>The shell environment.</summary>
     public OpenAIShellEnvironment? Environment { get; set; }
+
+    /// <summary>Executes the shell commands of a local call and returns their output. Maps to <c>execute</c>.</summary>
+    public Func<
+        OpenAIShellInput,
+        ToolExecutionOptions,
+        Task<OpenAIShellOutput>
+    >? Execute { get; set; }
+
+    /// <summary>When true, a call needs approval before it runs. Maps to <c>needsApproval: true</c>.</summary>
+    public bool NeedsApproval { get; set; }
+
+    /// <summary>Decides for each call whether it needs approval. Used instead of <see cref="NeedsApproval"/>. Maps to the function form of <c>needsApproval</c>.</summary>
+    public Func<
+        OpenAIShellInput,
+        ToolNeedsApprovalOptions,
+        Task<bool>
+    >? NeedsApprovalFunction { get; set; }
+}
+
+/// <summary>Options of <see cref="OpenAITools.ApplyPatch"/>.</summary>
+public sealed class OpenAIApplyPatchToolOptions
+{
+    /// <summary>Applies the patch operation of a call and returns its status. Maps to <c>execute</c>.</summary>
+    public Func<
+        OpenAIApplyPatchInput,
+        ToolExecutionOptions,
+        Task<OpenAIApplyPatchOutput>
+    >? Execute { get; set; }
+
+    /// <summary>When true, a call needs approval before it runs. Maps to <c>needsApproval: true</c>.</summary>
+    public bool NeedsApproval { get; set; }
+
+    /// <summary>Decides for each call whether it needs approval. Used instead of <see cref="NeedsApproval"/>. Maps to the function form of <c>needsApproval</c>.</summary>
+    public Func<
+        OpenAIApplyPatchInput,
+        ToolNeedsApprovalOptions,
+        Task<bool>
+    >? NeedsApprovalFunction { get; set; }
 }
 
 /// <summary>Options of <see cref="OpenAITools.CustomTool"/>.</summary>
@@ -461,9 +500,22 @@ public static class OpenAITools
     public static LanguageModelTool LocalShell() =>
         Create("openai.local_shell", "local_shell", new JsonObject());
 
-    /// <summary>The apply patch tool (<c>openai.apply_patch</c>).</summary>
-    public static LanguageModelTool ApplyPatch() =>
-        Create("openai.apply_patch", "apply_patch", new JsonObject());
+    /// <summary>The apply patch tool (<c>openai.apply_patch</c>). The application executes it, so the options take the execute callback.</summary>
+    public static Tool ApplyPatch(OpenAIApplyPatchToolOptions? options = null)
+    {
+        var tool = Tool.ProviderDefined(
+            "openai.apply_patch",
+            "apply_patch",
+            JsonSerializer.SerializeToElement(new JsonObject()),
+            OpenAIClientTools.ParseSchema(OpenAIClientTools.ApplyPatchInputSchema)
+        );
+        return OpenAIClientTools.Build(
+            tool,
+            options?.Execute,
+            options?.NeedsApproval ?? false,
+            options?.NeedsApprovalFunction
+        );
+    }
 
     /// <summary>The computer tool (<c>openai.computer</c>).</summary>
     public static LanguageModelTool Computer() =>
@@ -524,8 +576,8 @@ public static class OpenAITools
         return Create("openai.code_interpreter", "code_interpreter", args);
     }
 
-    /// <summary>The shell tool (<c>openai.shell</c>).</summary>
-    public static LanguageModelTool Shell(OpenAIShellToolOptions? options = null)
+    /// <summary>The shell tool (<c>openai.shell</c>). A local call is executed by the application, so the options take the execute callback.</summary>
+    public static Tool Shell(OpenAIShellToolOptions? options = null)
     {
         var args = new JsonObject();
         if (options?.Environment is { } environment)
@@ -595,7 +647,18 @@ public static class OpenAITools
             args["environment"] = mapped;
         }
 
-        return Create("openai.shell", "shell", args);
+        var tool = Tool.ProviderDefined(
+            "openai.shell",
+            "shell",
+            JsonSerializer.SerializeToElement(args),
+            OpenAIClientTools.ParseSchema(OpenAIClientTools.ShellInputSchema)
+        );
+        return OpenAIClientTools.Build(
+            tool,
+            options?.Execute,
+            options?.NeedsApproval ?? false,
+            options?.NeedsApprovalFunction
+        );
     }
 
     /// <summary>A custom tool (<c>openai.custom</c>) with the name given in <paramref name="options"/>.</summary>
