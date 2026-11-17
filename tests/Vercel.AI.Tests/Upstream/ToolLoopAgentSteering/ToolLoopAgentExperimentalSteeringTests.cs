@@ -2,16 +2,21 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.AspNetCore;
 using Vercel.AI.GenerateText;
+using Vercel.AI.Operations;
+using Vercel.AI.Prompt;
+using Vercel.AI.Provider;
 using Vercel.AI.Tests.Upstream.GenerateTextSteering;
 using Vercel.AI.Tests.Upstream.Steering;
+using Vercel.AI.Ui;
+using Vercel.AI.Util;
 using static Vercel.AI.Tests.Upstream.GenerateTextSteering.SteeringTestSupport;
 
 namespace Vercel.AI.Tests.Upstream.ToolLoopAgentSteering;
 
 /// <summary>
-/// Port of <c>tool-loop-agent-steering.test.ts</c> &gt; <c>ToolLoopAgent experimental_steering</c>. The port has no <c>createAgentUIStream</c>,
-/// so the two <c>createAgentUIStream</c> tests are not ported.
+/// Port of <c>tool-loop-agent-steering.test.ts</c> &gt; <c>ToolLoopAgent experimental_steering</c>.
 /// </summary>
 public sealed class ToolLoopAgentExperimentalSteeringTests
 {
@@ -172,5 +177,101 @@ public sealed class ToolLoopAgentExperimentalSteeringTests
         await agent.GenerateAsync("hello", experimentalSteering: steering);
 
         Assert.Null(Assert.Single(prepareCalls).ExperimentalSteering);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should deliver messages through createAgentUIStream",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
+    public async Task Should_deliver_messages_through_createAgentUIStream()
+    {
+        var steering = CreateSteering();
+        Task<SteeringOutcome>? outcome = null;
+        var model = SteeringTestModel.Stream(
+            () =>
+            {
+                outcome = steering.SteerAsync("Also tell me about Tokyo.");
+                return TextStream("Sunny.");
+            },
+            () => TextStream("Tokyo is rainy.")
+        );
+
+        var stream = await UIMessageStreamConverter.CreateAgentUIStreamAsync(
+            new CreateAgentUIStreamOptions
+            {
+                Agent = new Agent(new AgentOptions { Model = model }, Client()),
+                UIMessages =
+                [
+                    new UIMessage(UIMessageRole.User, [new TextUIPart(Prompt)])
+                    {
+                        Id = "message-1",
+                    },
+                ],
+                ExperimentalSteering = steering,
+            }
+        );
+
+        await foreach (var _ in stream) { }
+
+        Assert.Equal(2, model.DoStreamCalls.Count);
+        SteeringAssert.Delivered(await outcome!, 1);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix
+            + "should throw when createAgentUIStream gets a steering object with an agent that is not a ToolLoopAgent",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
+    public async Task Should_throw_when_createAgentUIStream_gets_a_steering_object_with_an_agent_that_is_not_a_ToolLoopAgent()
+    {
+        var agent = new NotAToolLoopAgent();
+
+        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() =>
+            UIMessageStreamConverter.CreateAgentUIStreamAsync(
+                new CreateAgentUIStreamOptions
+                {
+                    Agent = agent,
+                    UIMessages =
+                    [
+                        new UIMessage(UIMessageRole.User, [new TextUIPart("hello")])
+                        {
+                            Id = "message-1",
+                        },
+                    ],
+                    ExperimentalSteering = CreateSteering(),
+                }
+            )
+        );
+
+        Assert.Equal(
+            "Invalid argument for parameter experimental_steering: Steering is only supported by ToolLoopAgent.",
+            error.Message
+        );
+        Assert.Equal(0, agent.StreamCalls);
+    }
+
+    /// <summary>Maps to the <c>Agent</c> object literal of the upstream test, whose <c>stream</c> is a mock.</summary>
+    private sealed class NotAToolLoopAgent : IAgent
+    {
+        public int StreamCalls { get; private set; }
+
+        public IReadOnlyList<Tool>? Tools => null;
+
+        public StreamTextResult Stream(
+            IReadOnlyList<ModelMessage> messages,
+            CancellationToken cancellationToken = default,
+            AbortSignal? abortSignal = null,
+            TimeoutConfiguration? timeout = null,
+            ISteering? experimentalSteering = null,
+            Func<StepResult, CancellationToken, Task>? onStepEnd = null
+        )
+        {
+            StreamCalls++;
+            throw new InvalidOperationException("stream must not be called");
+        }
     }
 }
