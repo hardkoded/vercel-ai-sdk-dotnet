@@ -108,6 +108,12 @@ public sealed class Tool
     /// </summary>
     public bool SupportsDeferredResults { get; set; }
 
+    /// <summary>
+    /// For a provider-defined tool: the provider-owned telemetry view of <see cref="ProviderToolArgs"/>, which hides credentials.
+    /// Maps to the <c>redactArgs</c> option of a provider tool factory.
+    /// </summary>
+    public Func<JsonElement, JsonElement>? RedactArgs { get; set; }
+
     private Tool(string providerToolId, string name, JsonElement args, JsonElement? inputSchema)
     {
         Name = name ?? throw new ArgumentNullException(nameof(name));

@@ -3169,7 +3169,8 @@ internal static class Generation
                     ? LanguageModelTool.ProviderDefined(
                         tool.ProviderToolId!,
                         tool.Name,
-                        tool.ProviderToolArgs
+                        tool.ProviderToolArgs,
+                        tool.RedactArgs
                     )
                     : new LanguageModelTool(
                         tool.Name,

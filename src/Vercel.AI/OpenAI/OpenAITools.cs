@@ -493,7 +493,7 @@ public static class OpenAITools
         Set(args, "serverDescription", options.ServerDescription);
         Set(args, "serverUrl", options.ServerUrl);
         Set(args, "tunnelId", options.TunnelId);
-        return Create("openai.mcp", "mcp", args);
+        return Create("openai.mcp", "mcp", args, "mcp");
     }
 
     /// <summary>The local shell tool (<c>openai.local_shell</c>).</summary>
@@ -573,7 +573,7 @@ public static class OpenAITools
             args["container"] = container;
         }
 
-        return Create("openai.code_interpreter", "code_interpreter", args);
+        return Create("openai.code_interpreter", "code_interpreter", args, "code_interpreter");
     }
 
     /// <summary>The shell tool (<c>openai.shell</c>). A local call is executed by the application, so the options take the execute callback.</summary>
@@ -653,6 +653,8 @@ public static class OpenAITools
             JsonSerializer.SerializeToElement(args),
             OpenAIClientTools.ParseSchema(OpenAIClientTools.ShellInputSchema)
         );
+        tool.RedactArgs = toolArgs =>
+            RedactOpenAIToolCredentials.RedactOpenAIToolArgs("shell", toolArgs);
         return OpenAIClientTools.Build(
             tool,
             options?.Execute,
@@ -794,10 +796,22 @@ public static class OpenAITools
         return result;
     }
 
-    private static LanguageModelTool Create(string id, string name, JsonObject args)
+    private static LanguageModelTool Create(
+        string id,
+        string name,
+        JsonObject args,
+        string? redactType = null
+    )
     {
         using var document = JsonDocument.Parse(args.ToJsonString());
-        return LanguageModelTool.ProviderDefined(id, name, document.RootElement.Clone());
+        return LanguageModelTool.ProviderDefined(
+            id,
+            name,
+            document.RootElement.Clone(),
+            redactType == null
+                ? null
+                : toolArgs => RedactOpenAIToolCredentials.RedactOpenAIToolArgs(redactType, toolArgs)
+        );
     }
 
     private static void Set(JsonObject target, string name, string? value)

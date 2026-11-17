@@ -679,10 +679,16 @@ public sealed class LanguageModelTool
     /// <summary>
     /// Creates a provider-defined tool. Maps to <c>{ type: 'provider', id, name, args }</c>.
     /// <paramref name="id"/> is <c>&lt;provider&gt;.&lt;tool&gt;</c>. <paramref name="args"/> must be a JSON object.
+    /// <paramref name="redactArgs"/> is the provider-owned telemetry view of the arguments. Maps to the <c>redactArgs</c> option of a provider tool factory.
     /// </summary>
-    public static LanguageModelTool ProviderDefined(string id, string name, JsonElement args)
+    public static LanguageModelTool ProviderDefined(
+        string id,
+        string name,
+        JsonElement args,
+        Func<JsonElement, JsonElement>? redactArgs = null
+    )
     {
-        return new LanguageModelTool(id, name, args);
+        return new LanguageModelTool(id, name, args) { RedactArgs = redactArgs };
     }
 
     /// <summary>Tool name.</summary>
@@ -696,6 +702,32 @@ public sealed class LanguageModelTool
 
     /// <summary>Arguments of a provider-defined tool. Undefined for a function tool.</summary>
     public JsonElement Args { get; }
+
+    /// <summary>
+    /// Provider-owned telemetry view of <see cref="Args"/>, which hides credentials. Maps to the <c>redactArgs</c> option of a provider tool factory.
+    /// </summary>
+    public Func<JsonElement, JsonElement>? RedactArgs { get; init; }
+
+    /// <summary>
+    /// Applies <see cref="RedactArgs"/> to <see cref="Args"/> for telemetry, leaving <see cref="Args"/> unchanged. Returns <see cref="Args"/> when the tool has no
+    /// redactor, and null when the redactor throws, so a broken redactor neither exposes credentials nor fails the call. Maps to <c>redactTelemetryValue</c>.
+    /// </summary>
+    public JsonElement? RedactTelemetryArgs()
+    {
+        if (RedactArgs == null)
+        {
+            return Args;
+        }
+
+        try
+        {
+            return RedactArgs(Args);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
 
     /// <summary>Tool description.</summary>
     public string? Description { get; }

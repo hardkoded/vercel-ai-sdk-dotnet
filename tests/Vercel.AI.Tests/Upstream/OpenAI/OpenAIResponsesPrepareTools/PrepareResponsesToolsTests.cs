@@ -2,6 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Vercel.AI.OpenAI;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
@@ -74,5 +76,84 @@ public sealed class PrepareResponsesToolsTests
                 "OpenAI does not support regex lookaround in JSON Schema patterns. The pattern was removed before sending the schema, so OpenAI will not enforce that constraint."
             )
         );
+    }
+
+    [Theory]
+    [InlineData("codeInterpreter")]
+    [InlineData("shell")]
+    [InlineData("mcp")]
+    [UpstreamTest(
+        Suite + "::%s supplies telemetry redaction for configuration and raw bodies",
+        Coverage = UpstreamCoverage.Partial
+    )]
+    public void Supplies_telemetry_redaction_for_configuration(string name)
+    {
+        const string networkPolicy =
+            """{"type":"allowlist","allowedDomains":["example.com"],"domainSecrets":[{"domain":"example.com","name":"KEY","value":"test-secret"}]}""";
+        JsonElement args;
+        Func<JsonElement, JsonElement>? redact;
+        if (name == "mcp")
+        {
+            var mcp = OpenAITools.Mcp(
+                new OpenAIMcpToolOptions
+                {
+                    ServerLabel = "remote",
+                    ServerUrl = "https://example.com",
+                    Authorization = "test-secret",
+                    Headers = new Dictionary<string, string> { ["X-Key"] = "test-secret" },
+                }
+            );
+            args = mcp.Args;
+            redact = mcp.RedactArgs;
+        }
+        else if (name == "shell")
+        {
+            var shell = OpenAITools.Shell(
+                new OpenAIShellToolOptions
+                {
+                    Environment = new OpenAIShellEnvironment
+                    {
+                        Type = "containerAuto",
+                        AllowedDomains = ["example.com"],
+                        DomainSecrets =
+                        [
+                            new OpenAIShellDomainSecret
+                            {
+                                Domain = "example.com",
+                                Name = "KEY",
+                                Value = "test-secret",
+                            },
+                        ],
+                    },
+                }
+            );
+            args = shell.ProviderToolArgs;
+            redact = shell.RedactArgs;
+        }
+        else
+        {
+            using var policy = JsonDocument.Parse(networkPolicy);
+            var interpreter = OpenAITools.CodeInterpreter(
+                new OpenAICodeInterpreterToolOptions { FileIds = ["file-1"] }
+            );
+            args = JsonSerializer.SerializeToElement(
+                new JsonObject
+                {
+                    ["container"] = new JsonObject
+                    {
+                        ["networkPolicy"] = JsonNode.Parse(policy.RootElement.GetRawText()),
+                    },
+                }
+            );
+            redact = interpreter.RedactArgs;
+        }
+
+        var original = args.GetRawText();
+        Assert.NotNull(redact);
+        Assert.Contains("test-secret", original);
+        var redacted = redact!(args).GetRawText();
+        Assert.DoesNotContain("test-secret", redacted);
+        Assert.Equal(original.Replace("test-secret", "[redacted]"), redacted);
+        Assert.Equal(original, args.GetRawText());
     }
 }
