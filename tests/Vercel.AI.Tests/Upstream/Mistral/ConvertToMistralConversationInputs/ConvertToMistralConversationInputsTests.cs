@@ -211,7 +211,8 @@ public sealed class ConvertToMistralConversationInputsTests
     [Fact]
     [UpstreamTest(
         "packages/mistral/src/convert-to-mistral-conversation-inputs.test.ts::preserves argument replay and serializes result graphs in conversation inputs",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "b05c249ca42b0653542f0f055af7a0df5e4e46e2"
     )]
     public void Preserves_argument_replay_and_serializes_result_graphs_in_conversation_inputs()
     {

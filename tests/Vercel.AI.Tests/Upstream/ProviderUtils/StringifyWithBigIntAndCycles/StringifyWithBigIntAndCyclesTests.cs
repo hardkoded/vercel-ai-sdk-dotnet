@@ -16,7 +16,8 @@ public sealed class StringifyWithBigIntAndCyclesTests
     [Fact]
     [UpstreamTest(
         Prefix + "preserves repeated references while replacing ancestor cycles",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "b05c249ca42b0653542f0f055af7a0df5e4e46e2"
     )]
     public void Preserves_repeated_references_while_replacing_ancestor_cycles()
     {
@@ -32,7 +33,8 @@ public sealed class StringifyWithBigIntAndCyclesTests
     [Fact]
     [UpstreamTest(
         Prefix + "preserves repeated array items and nested cycles",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "b05c249ca42b0653542f0f055af7a0df5e4e46e2"
     )]
     public void Preserves_repeated_array_items_and_nested_cycles()
     {
@@ -57,7 +59,8 @@ public sealed class StringifyWithBigIntAndCyclesTests
     [InlineData("[1,2]")]
     [UpstreamTest(
         Prefix + "preserves normal JSON behavior for %j",
-        Coverage = UpstreamCoverage.Partial
+        Coverage = UpstreamCoverage.Partial,
+        Commit = "b05c249ca42b0653542f0f055af7a0df5e4e46e2"
     )]
     public void Preserves_normal_JSON_behavior(string json)
     {
