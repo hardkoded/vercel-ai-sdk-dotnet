@@ -81,6 +81,8 @@ var result = await model.GenerateAsync(
 
 ### Gemini speech output
 
+Gemini 3.8 and newer TTS models (and custom model IDs) take structured speech. Set `instructions` to give a style, or pass `speechMetadata` (`speaker`, `style`) and `turns` under the `google` provider options. `turns` replace the top-level text (pass an empty string), and each turn may carry its own `speechMetadata`. Per-turn styles override `instructions`, and an empty style clears it. With `multiSpeakerVoiceConfig`, every turn must name a configured `speechMetadata.speaker`. Global `speechMetadata` together with `turns`, custom voices (`voice_*`, `voicekey_*`, or a `voice` in a speaker config) and `turns` on older models throw an `ArgumentException`. These models also accept `OutputFormat` values `mulaw` and `alaw` (and the `audio/*` forms). Raw formats return the bytes unchanged, and `wav` adds no extra header.
+
 `GoogleSpeechModel.GenerateAsync` returns a `GoogleSpeechResult`. Older Gemini TTS models return raw PCM, so `Audio` wraps it in a 44-byte WAV header unless you request `OutputFormat = "pcm"`. In that case you get the raw bytes and an `unsupported` `outputFormat` warning. WAV responses pass through unchanged. The result also carries the raw `Usage` (`usageMetadata`, including cached tokens), `SampleRate` and `MimeType` (the `providerMetadata.google` values), `Timestamp`, `ModelId`, `Headers`, `RequestBody` and `ResponseBody`. A response without inline audio gives an empty `Audio`. Through `GenerateSpeech`, the sample rate and mime type arrive as `providerMetadata.google`.
 
 ## Transcription telemetry
