@@ -14,7 +14,11 @@ public static class OutputStrategies
     /// Wraps an element schema in <c>{ elements: array }</c> and lifts root <c>definitions</c> or <c>$defs</c>
     /// so root-relative references stay valid.
     /// </summary>
-    public static JsonElement WrapArrayOutputSchema(JsonElement elementSchema)
+    public static JsonElement WrapArrayOutputSchema(
+        JsonElement elementSchema,
+        int? minItems = null,
+        int? maxItems = null
+    )
     {
         JsonNode? definitions = null;
         JsonNode? defs = null;
@@ -54,10 +58,18 @@ public static class OutputStrategies
         }
 
         root["type"] = "object";
-        root["properties"] = new JsonObject
+        var elements = new JsonObject { ["type"] = "array", ["items"] = items };
+        if (minItems != null)
         {
-            ["elements"] = new JsonObject { ["type"] = "array", ["items"] = items },
-        };
+            elements["minItems"] = minItems;
+        }
+
+        if (maxItems != null)
+        {
+            elements["maxItems"] = maxItems;
+        }
+
+        root["properties"] = new JsonObject { ["elements"] = elements };
         root["required"] = new JsonArray(JsonValue.Create("elements"));
         root["additionalProperties"] = false;
         return JsonSerializer.SerializeToElement(root);

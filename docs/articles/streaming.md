@@ -24,7 +24,13 @@ Console.WriteLine(await stream.FinishReason);
 
 ## Partial output stream
 
-Set `Output` and enumerate `PartialOutputStream` for the structured output as it grows. Each value is a `JsonElement`. With `OutputSpec.Object`, it is the partial object, repaired from the JSON text so far. With text output (no `Output`, or `OutputSpec.Text()`), it is the text so far as a JSON string. A value is published only when it differs from the last one, each step starts over, and text that the model streams in a later text block of a step is ignored. The partial object is not validated against the schema. Maps to `partialOutputStream`.
+Set `Output` and enumerate `PartialOutputStream` for the structured output as it grows. Each value is a `JsonElement`. With `OutputSpec.Object`, it is the partial object, repaired from the JSON text so far. With `OutputSpec.Array`, it is the array of elements that are complete so far, and the repaired last element is left out. With `OutputSpec.Choice`, it is the option, published only when it is not ambiguous. With `OutputSpec.Json`, it is the JSON parsed so far. With text output (no `Output`, or `OutputSpec.Text()`), it is the text so far as a JSON string. A value is published only when it differs from the last one, each step starts over, and text that the model streams in a later text block of a step is ignored. The partial object and the partial elements are not validated against the schema, except that an element of a partial array that does not match the element schema is left out. Maps to `partialOutputStream`.
+
+For `OutputSpec.Array`, enumerate `ElementStream()` to get each element once, as soon as it is complete. The stream fails with a `TypeValidationException` when the model sends more elements than `maxItems`. It is empty for any other output. Maps to `elementStream`.
+
+`StreamTextResult.Output` resolves to the parsed output: the object, the array of elements, the choice option, the JSON value, or the text as a JSON string for text output. An answer that does not parse fails `Output` with a `NoObjectGeneratedException` and leaves the stream and the other results alone.
+
+`OutputSpec.Array(elementSchema, minItems, maxItems)` asks the model for `{ "elements": [...] }`, `OutputSpec.Choice(options)` for `{ "result": option }`, and `OutputSpec.Json()` for any JSON value. They map to `Output.array`, `Output.choice`, and `Output.json`.
 
 ```csharp
 await foreach (var partialObject in result.PartialOutputStream())
