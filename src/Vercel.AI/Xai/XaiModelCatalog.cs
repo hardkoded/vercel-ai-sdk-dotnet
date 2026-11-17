@@ -539,8 +539,10 @@ internal static class XaiModelCatalog
     private static Dictionary<string, XaiModelEntry> CreateEntries()
     {
         var entries = new Dictionary<string, XaiModelEntry>(StringComparer.Ordinal);
-        foreach (var (modelId, definition) in LanguageDefinitions)
+        foreach (var pair in LanguageDefinitions)
         {
+            var modelId = pair.Key;
+            var definition = pair.Value;
             var entry = CreateLanguageModelEntry(modelId, definition);
             entries[modelId] = new XaiModelEntry
             {
@@ -549,8 +551,10 @@ internal static class XaiModelCatalog
             };
         }
 
-        foreach (var (modelId, entry) in ImageModelEntries)
+        foreach (var pair in ImageModelEntries)
         {
+            var modelId = pair.Key;
+            var entry = pair.Value;
             entries[modelId] = new XaiModelEntry
             {
                 Image = entry.Capabilities,
@@ -576,8 +580,10 @@ internal static class XaiModelCatalog
             },
         };
 
-        foreach (var (modelId, entry) in TranscriptionModelEntries)
+        foreach (var pair in TranscriptionModelEntries)
         {
+            var modelId = pair.Key;
+            var entry = pair.Value;
             entries[modelId] = new XaiModelEntry
             {
                 Transcription = entry.Capabilities,
@@ -589,8 +595,10 @@ internal static class XaiModelCatalog
             };
         }
 
-        foreach (var (modelId, entry) in RealtimeModelEntries)
+        foreach (var pair in RealtimeModelEntries)
         {
+            var modelId = pair.Key;
+            var entry = pair.Value;
             entries[modelId] = entry;
         }
 
