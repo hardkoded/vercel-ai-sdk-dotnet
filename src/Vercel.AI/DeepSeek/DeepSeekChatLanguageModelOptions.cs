@@ -96,10 +96,46 @@ public sealed class DeepSeekLanguageModelChatOptions
     }
 
     /// <summary>
+    /// The error <c>parseProviderOptions</c> throws when the options do not match the schema: an <see cref="InvalidArgumentError"/>
+    /// for <c>providerOptions</c>, with the validation failure as its cause.
+    /// </summary>
+    internal static InvalidArgumentError InvalidProviderOptions(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        string providerOptionsName,
+        InvalidArgumentError cause
+    )
+    {
+        return new InvalidArgumentError(
+            "providerOptions",
+            providerOptions != null
+            && providerOptions.TryGetValue(providerOptionsName, out var value)
+                ? value.GetRawText()
+                : null,
+            "invalid " + providerOptionsName + " provider options",
+            cause
+        );
+    }
+
+    /// <summary>
     /// Reads and validates the options under <paramref name="providerOptions"/>[<paramref name="providerOptionsName"/>].
     /// <c>adaptive</c> thinking and the <c>medium</c> and <c>xhigh</c> efforts are accepted for backwards compatibility.
     /// </summary>
     internal static DeepSeekLanguageModelChatOptions Parse(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        string providerOptionsName
+    )
+    {
+        try
+        {
+            return Validate(providerOptions, providerOptionsName);
+        }
+        catch (InvalidArgumentError error)
+        {
+            throw InvalidProviderOptions(providerOptions, providerOptionsName, error);
+        }
+    }
+
+    private static DeepSeekLanguageModelChatOptions Validate(
         IReadOnlyDictionary<string, JsonElement>? providerOptions,
         string providerOptionsName
     )
@@ -280,6 +316,25 @@ public class DeepSeekMessageProviderOptions
         string providerOptionsName
     )
     {
+        try
+        {
+            return Validate(providerOptions, providerOptionsName);
+        }
+        catch (InvalidArgumentError error)
+        {
+            throw DeepSeekLanguageModelChatOptions.InvalidProviderOptions(
+                providerOptions,
+                providerOptionsName,
+                error
+            );
+        }
+    }
+
+    private static DeepSeekAssistantMessageProviderOptions? Validate(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        string providerOptionsName
+    )
+    {
         if (
             providerOptions == null
             || !providerOptions.TryGetValue(providerOptionsName, out var source)
@@ -388,6 +443,25 @@ public sealed class DeepSeekFilePartProviderOptions
     }
 
     internal static DeepSeekFilePartProviderOptions? Parse(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        string providerOptionsName
+    )
+    {
+        try
+        {
+            return Validate(providerOptions, providerOptionsName);
+        }
+        catch (InvalidArgumentError error)
+        {
+            throw DeepSeekLanguageModelChatOptions.InvalidProviderOptions(
+                providerOptions,
+                providerOptionsName,
+                error
+            );
+        }
+    }
+
+    private static DeepSeekFilePartProviderOptions? Validate(
         IReadOnlyDictionary<string, JsonElement>? providerOptions,
         string providerOptionsName
     )

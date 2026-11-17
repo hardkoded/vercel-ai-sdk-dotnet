@@ -124,10 +124,7 @@ internal static class DeepSeekChatApiTypes
 
     private static bool IsValidUsage(JsonElement root)
     {
-        if (
-            !root.TryGetProperty("usage", out var usage)
-            || usage.ValueKind == JsonValueKind.Null
-        )
+        if (!root.TryGetProperty("usage", out var usage) || usage.ValueKind == JsonValueKind.Null)
         {
             return true;
         }
@@ -144,10 +141,7 @@ internal static class DeepSeekChatApiTypes
 
     private static bool IsValidDetails(JsonElement usage, string name, string field)
     {
-        if (
-            !usage.TryGetProperty(name, out var details)
-            || details.ValueKind == JsonValueKind.Null
-        )
+        if (!usage.TryGetProperty(name, out var details) || details.ValueKind == JsonValueKind.Null)
         {
             return true;
         }

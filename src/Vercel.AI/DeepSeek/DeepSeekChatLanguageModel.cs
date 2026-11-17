@@ -244,7 +244,10 @@ public sealed class DeepSeekChatLanguageModel : ILanguageModel
 
         if (GetHttpStatusCode(code) is { } explicitStatusCode)
         {
-            return (explicitStatusCode, Util.StreamProviderError.IsRetryableStatusCode(explicitStatusCode));
+            return (
+                explicitStatusCode,
+                Util.StreamProviderError.IsRetryableStatusCode(explicitStatusCode)
+            );
         }
 
         foreach (var discriminator in new[] { codeText, type })
@@ -287,10 +290,8 @@ public sealed class DeepSeekChatLanguageModel : ILanguageModel
         int? statusCode = value switch
         {
             string text
-                when text.Length == 3 && text.All(character => character is >= '0' and <= '9') => int.Parse(
-                    text,
-                    System.Globalization.CultureInfo.InvariantCulture
-                ),
+                when text.Length == 3 && text.All(character => character is >= '0' and <= '9') =>
+                int.Parse(text, System.Globalization.CultureInfo.InvariantCulture),
             int number => number,
             long number when number >= 0 && number <= int.MaxValue => (int)number,
             _ => null,
@@ -879,7 +880,9 @@ public sealed class DeepSeekChatLanguageModel : ILanguageModel
             if (_toolCallTypes.Count > 0)
             {
                 inner["toolCallTypes"] = new JsonArray(
-                    _toolCallTypes.Values.Select(type => (JsonNode?)JsonValue.Create(type)).ToArray()
+                    _toolCallTypes
+                        .Values.Select(type => (JsonNode?)JsonValue.Create(type))
+                        .ToArray()
                 );
             }
 

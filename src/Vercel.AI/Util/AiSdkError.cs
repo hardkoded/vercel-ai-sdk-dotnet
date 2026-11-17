@@ -107,11 +107,17 @@ public sealed class InvalidArgumentError : AiSdkError
     /// <summary>Marker for <see cref="IsInstance(object)"/>.</summary>
     public const string ErrorMarker = "vercel.ai.error.AI_InvalidArgumentError";
 
-    /// <summary>Creates the error for <paramref name="parameter"/>.</summary>
-    public InvalidArgumentError(string parameter, object? value, string message)
+    /// <summary>Creates the error for <paramref name="parameter"/>. Maps to <c>InvalidArgumentError</c>, whose <c>cause</c> is <paramref name="cause"/>.</summary>
+    public InvalidArgumentError(
+        string parameter,
+        object? value,
+        string message,
+        Exception? cause = null
+    )
         : base(
             "AI_InvalidArgumentError",
-            "Invalid argument for parameter " + parameter + ": " + message
+            "Invalid argument for parameter " + parameter + ": " + message,
+            cause
         )
     {
         Parameter = parameter;

@@ -388,7 +388,9 @@ internal static class ConvertToDeepSeekChatMessages
     {
         if (url.Length > MaxImageUrlLength)
         {
-            throw new InvalidPromptException("DeepSeek image URLs must not exceed 8192 characters.");
+            throw new InvalidPromptException(
+                "DeepSeek image URLs must not exceed 8192 characters."
+            );
         }
     }
 
@@ -437,7 +439,8 @@ internal static class ConvertToDeepSeekChatMessages
                         break;
                     }
 
-                    reasoning = reasoning == null ? reasoningPart.Text : reasoning + reasoningPart.Text;
+                    reasoning =
+                        reasoning == null ? reasoningPart.Text : reasoning + reasoningPart.Text;
                     break;
                 case AssistantToolCallPart toolCallPart:
                     var call = toolCallPart.ToolCall;
