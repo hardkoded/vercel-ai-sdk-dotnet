@@ -245,7 +245,14 @@ public sealed class CustomDownloadFunctionTests
         Assert.False(call[1].IsUrlSupportedByModel);
 
         Assert.Equal(2, result.Count);
+        var assistant = Assert.IsType<AssistantModelMessage>(result[0]);
+        var toolCall = Assert.Single(assistant.ToolCalls);
+        Assert.Equal("toolCallId", toolCall.ToolCallId);
+        Assert.Equal("toolName", toolCall.ToolName);
+        Assert.Equal("{}", toolCall.ArgumentsJson);
         var tool = Assert.IsType<ToolModelMessage>(result[1]);
+        Assert.Equal("toolCallId", tool.ToolCallId);
+        Assert.Equal("toolName", tool.ToolName);
         var parts = tool.OutputContent!;
         Assert.Equal(2, parts.Count);
         var pdf = Assert.IsType<FileContentPart>(parts[0]);

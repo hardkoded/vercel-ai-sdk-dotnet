@@ -1695,6 +1695,13 @@ public sealed class ToolModelMessage : ModelMessage
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
+    private static Dictionary<string, JsonElement>? CloneProviderOptions(
+        IReadOnlyDictionary<string, JsonElement>? options
+    )
+    {
+        return options?.ToDictionary(pair => pair.Key, pair => pair.Value.Clone());
+    }
+
     private static UserContentPart[] Snapshot(IReadOnlyList<UserContentPart> content)
     {
         if (content is null)
@@ -1751,9 +1758,19 @@ public sealed class ToolModelMessage : ModelMessage
             {
                 copy[i] = part;
             }
-            else if (part is FileUrlContentPart or ImageUrlContentPart)
+            else if (part is FileUrlContentPart fileUrl)
             {
-                copy[i] = part;
+                copy[i] = new FileUrlContentPart(fileUrl.Url, fileUrl.MediaType)
+                {
+                    ProviderOptions = CloneProviderOptions(fileUrl.ProviderOptions),
+                };
+            }
+            else if (part is ImageUrlContentPart imageUrl)
+            {
+                copy[i] = new ImageUrlContentPart(imageUrl.Url)
+                {
+                    ProviderOptions = CloneProviderOptions(imageUrl.ProviderOptions),
+                };
             }
             else if (part is CustomContentPart custom)
             {

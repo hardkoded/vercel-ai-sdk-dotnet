@@ -37,11 +37,6 @@ public static class LanguageModelPrompts
                 abortSignal
             )
             .ConfigureAwait(false);
-        if (downloaded.Count == 0)
-        {
-            return messages;
-        }
-
         var converted = new List<ModelMessage>(messages.Count);
         foreach (var message in messages)
         {
