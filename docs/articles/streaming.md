@@ -135,7 +135,7 @@ Redacting tool errors changes the message history. The tool result that `Convert
 
 ## Validating UI messages
 
-`Ai.ValidateUIMessagesAsync(new ValidateUIMessagesOptions { Messages = messages })` checks the UI messages that you load from storage or receive from a client before you convert them with `ConvertToModelMessages`. `Ai.SafeValidateUIMessagesAsync` returns a `SafeValidateUIMessagesResult` (`Success`, `Data`, or `Error`) instead of throwing. A null `Messages` throws `InvalidArgumentException`, and an empty list throws `TypeValidationException`. Because `UIMessage` is typed, the structure of a message is already checked; the options validate the values:
+`Ai.ValidateUIMessagesAsync(new ValidateUIMessagesOptions { Messages = messages })` checks the UI messages that you load from storage or receive from a client before you convert them with `ConvertToModelMessages`. `Ai.SafeValidateUIMessagesAsync` returns a `SafeValidateUIMessagesResult` (`Success`, `Data`, or `Error`) instead of throwing. A null `Messages` throws `InvalidArgumentException`. An empty list, and a system or user message with no parts, throw `TypeValidationException`. An assistant message can have no parts, as the last message of a chat that waits for a response. Because `UIMessage` is typed, the structure of a message is already checked; the options validate the values:
 
 - `MetadataSchema`: a JSON Schema for `UIMessage.Metadata`.
 - `DataSchemas`: JSON Schemas of the data parts, by data name. A data part without a schema is an error.

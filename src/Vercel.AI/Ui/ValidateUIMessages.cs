@@ -125,11 +125,26 @@ internal static class UIMessageValidation
             {
                 return SafeValidateUIMessagesResult.Fail(
                     new TypeValidationException(
-                        null,
-                        new Exception("Too small: expected array to have >=1 items"),
-                        new TypeValidationContext { Field = "messages" }
+                        ToJsonElement(options.Messages),
+                        new Exception("Messages array must not be empty"),
+                        null
                     )
                 );
+            }
+
+            foreach (var message in options.Messages)
+            {
+                // Only an assistant message can be empty, as the last message of a chat that is waiting for a response.
+                if (message.Role != UIMessageRole.Assistant && message.Parts.Count == 0)
+                {
+                    return SafeValidateUIMessagesResult.Fail(
+                        new TypeValidationException(
+                            ToJsonElement(options.Messages),
+                            new Exception("Message must contain at least one part"),
+                            null
+                        )
+                    );
+                }
             }
 
             UIMessageRawInputWarning.WarnIfUIMessageHasDeprecatedRawInput(options.Messages);
@@ -383,6 +398,17 @@ internal static class UIMessageValidation
         Func<JsonElement, Task<JsonElement>>? refine = null;
         options.ExperimentalRefineToolInput?.TryGetValue(toolName, out refine);
         return refine;
+    }
+
+    private static JsonElement ToJsonElement(IReadOnlyList<UIMessage> messages)
+    {
+        var array = new JsonArray();
+        foreach (var message in messages)
+        {
+            array.Add(UIMessageJson.ToJson(message));
+        }
+
+        return JsonSerializer.SerializeToElement(array);
     }
 
     private static JsonNode? ToSchema(JsonElement schema)
