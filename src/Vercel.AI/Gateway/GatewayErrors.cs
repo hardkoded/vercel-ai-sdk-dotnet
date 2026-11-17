@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Net.Sockets;
+using System.Runtime.ExceptionServices;
 using System.Text.Json;
 using Vercel.AI.Provider;
 
@@ -387,11 +388,17 @@ public static class GatewayErrors
     }
 
     /// <summary>
-    /// Maps any failure to a Gateway error. Gateway errors pass through, transport timeouts become <see cref="GatewayTimeoutError"/>,
+    /// Maps any failure to a Gateway error. Cancellation (<see cref="OperationCanceledException"/> and <see cref="Util.TimeoutError"/>) is rethrown unchanged, Gateway errors pass through, transport timeouts become <see cref="GatewayTimeoutError"/>,
     /// and API call errors are read as Gateway error bodies. Maps to <c>asGatewayError</c>.
     /// </summary>
     public static GatewayError AsGatewayError(Exception? error, string? authMethod = null)
     {
+        // Caller cancellation is not a gateway failure and must not become a retryable 500.
+        if (error is OperationCanceledException or Util.TimeoutError)
+        {
+            ExceptionDispatchInfo.Capture(error).Throw();
+        }
+
         if (error is GatewayError gateway)
         {
             return gateway;
