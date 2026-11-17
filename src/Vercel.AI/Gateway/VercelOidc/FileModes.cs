@@ -49,10 +49,17 @@ internal static class FileModes
             // netstandard2.0 has no create-with-mode API. The file is staged in a new directory that is restricted to its owner
             // (mode 0700) before the file exists, so no other user can reach it while its own mode is still the default.
             stagingDir = temp + ".d";
+            if (Directory.Exists(stagingDir))
+            {
+                throw new IOException("The staging directory already exists.");
+            }
+
             Directory.CreateDirectory(stagingDir);
             SetMode(stagingDir, UserRead | UserWrite | UserExecute);
             temp = Path.Combine(stagingDir, "secret");
-            File.WriteAllText(temp, "");
+            // CreateNew fails if another user created the name first, so a planted file is rejected, never written to.
+            using (new FileStream(temp, FileMode.CreateNew, FileAccess.Write)) { }
+
             SetMode(temp, mode);
             File.WriteAllText(temp, content);
 #endif
