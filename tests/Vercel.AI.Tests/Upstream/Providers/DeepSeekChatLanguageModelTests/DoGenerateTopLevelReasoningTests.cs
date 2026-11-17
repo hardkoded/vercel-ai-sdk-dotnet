@@ -18,7 +18,7 @@ public sealed class DoGenerateTopLevelReasoningTests
     public async Task Should_map_top_level_reasoning_max_directly_to_reasoning_effort_max()
     {
         var capture = new UpstreamCapture();
-        var model = (OpenAICompatibleLanguageModel)
+        var model = (DeepSeekChatLanguageModel)
             DeepSeekProvider
                 .Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture)
                 .LanguageModel("deepseek-reasoner");

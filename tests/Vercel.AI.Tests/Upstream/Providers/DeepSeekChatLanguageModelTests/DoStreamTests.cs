@@ -42,7 +42,7 @@ public sealed class DoStreamTests
                 }
             )
         );
-        var model = (OpenAICompatibleLanguageModel)
+        var model = (DeepSeekChatLanguageModel)
             DeepSeekProvider
                 .Create(new OpenAICompatibleOptions { ApiKey = "secret" }, handler)
                 .LanguageModel("deepseek-chat");
