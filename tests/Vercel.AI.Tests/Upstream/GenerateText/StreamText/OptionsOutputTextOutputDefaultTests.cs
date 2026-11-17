@@ -21,4 +21,13 @@ public sealed class OptionsOutputTextOutputDefaultTests
             await OptionsOutputSupport.Collect(result)
         );
     }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should resolve output promise with the correct content")]
+    public async Task Should_resolve_output_promise_with_the_correct_content()
+    {
+        var result = OptionsOutputSupport.Stream(OptionsOutputSupport.Text("Hello, ", "world!"));
+
+        Assert.Equal("Hello, world!", (await result.Output)!.Value.GetString());
+    }
 }

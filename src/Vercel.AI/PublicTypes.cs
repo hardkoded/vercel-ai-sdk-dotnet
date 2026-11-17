@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
@@ -579,11 +580,86 @@ public abstract class OutputSpec
         return new ObjectOutput(document.RootElement.Clone(), name, description);
     }
 
+    /// <summary>
+    /// Array output. Each element is validated against <paramref name="elementSchema"/>. The model answers with
+    /// <c>{ "elements": [...] }</c> and the output is the array of elements. Maps to <c>Output.array</c>.
+    /// </summary>
+    /// <exception cref="InvalidArgumentError"><paramref name="minItems"/> or <paramref name="maxItems"/> is negative, or <paramref name="minItems"/> is greater than <paramref name="maxItems"/>.</exception>
+    public static OutputSpec Array(
+        JsonElement elementSchema,
+        int? minItems = null,
+        int? maxItems = null,
+        string? name = null,
+        string? description = null
+    )
+    {
+        return new ArrayOutput(elementSchema, minItems, maxItems, name, description);
+    }
+
+    /// <summary>Array output with the element schema as a string. Maps to <c>Output.array</c>.</summary>
+    /// <exception cref="InvalidArgumentError"><paramref name="minItems"/> or <paramref name="maxItems"/> is negative, or <paramref name="minItems"/> is greater than <paramref name="maxItems"/>.</exception>
+    public static OutputSpec Array(
+        string elementJsonSchema,
+        int? minItems = null,
+        int? maxItems = null,
+        string? name = null,
+        string? description = null
+    )
+    {
+        using var document = JsonDocument.Parse(elementJsonSchema);
+        return new ArrayOutput(document.RootElement.Clone(), minItems, maxItems, name, description);
+    }
+
+    /// <summary>Choice output. The model answers with <c>{ "result": option }</c> and the output is the option. Maps to <c>Output.choice</c>.</summary>
+    public static OutputSpec Choice(
+        IReadOnlyList<string> options,
+        string? name = null,
+        string? description = null
+    )
+    {
+        return new ChoiceOutput(options, name, description);
+    }
+
+    /// <summary>Unstructured JSON output. The output is the parsed JSON value. Maps to <c>Output.json</c>.</summary>
+    public static OutputSpec Json(string? name = null, string? description = null)
+    {
+        return new JsonOutput(name, description);
+    }
+
     internal virtual JsonElement? Schema => null;
 
     internal virtual string? SchemaName => null;
 
     internal virtual string? SchemaDescription => null;
+
+    // Whether the model is asked for JSON. Text output is not.
+    internal virtual bool IsJson => Schema != null;
+
+    // Maps to parseCompleteOutput. Invalid JSON throws JsonParseException, a mismatch throws TypeValidationException.
+    internal virtual JsonElement ParseCompleteOutput(string text)
+    {
+        return ProviderUtils.JsonParsing.Parse(text, JsonNode.Parse(Schema!.Value.GetRawText()));
+    }
+
+    // Maps to parsePartialOutput. Null means undefined: there is no partial output yet.
+    internal virtual JsonElement? ParsePartialOutput(string text)
+    {
+        if (!IsJson)
+        {
+            return JsonSerializer.SerializeToElement(text);
+        }
+
+        var result = Util.PartialJson.Parse(text);
+        return result.State is Util.PartialJson.FailedParse or Util.PartialJson.UndefinedInput
+            ? null
+            : JsonSerializer.SerializeToElement(result.Value);
+    }
+
+    // Maps to createElementStreamTransform. Returns a stateful function from a partial output to the elements that are new.
+    internal virtual Func<JsonElement, IEnumerable<JsonElement>>? CreateElementStreamTransform()
+    {
+        return null;
+    }
 
     private sealed class TextOutput : OutputSpec
     {
@@ -610,6 +686,326 @@ public abstract class OutputSpec
         internal override string? SchemaName => Name;
 
         internal override string? SchemaDescription => Description;
+    }
+
+    private sealed class ArrayOutput : OutputSpec
+    {
+        private readonly JsonElement _elementSchema;
+        private readonly JsonNode _elementSchemaNode;
+        private readonly int? _minItems;
+        private readonly int? _maxItems;
+
+        public ArrayOutput(
+            JsonElement elementSchema,
+            int? minItems,
+            int? maxItems,
+            string? name,
+            string? description
+        )
+        {
+            ValidateArrayBound("minItems", minItems);
+            ValidateArrayBound("maxItems", maxItems);
+            if (minItems > maxItems)
+            {
+                throw new InvalidArgumentError(
+                    "minItems",
+                    minItems,
+                    "minItems must be less than or equal to maxItems"
+                );
+            }
+
+            _elementSchema = elementSchema;
+            _elementSchemaNode = JsonNode.Parse(elementSchema.GetRawText())!;
+            _minItems = minItems;
+            _maxItems = maxItems;
+            SchemaValue = OutputStrategies.WrapArrayOutputSchema(elementSchema, minItems, maxItems);
+            Name = name;
+            Description = description;
+        }
+
+        public JsonElement SchemaValue { get; }
+
+        public string? Name { get; }
+
+        public string? Description { get; }
+
+        internal override JsonElement? Schema => SchemaValue;
+
+        internal override string? SchemaName => Name;
+
+        internal override string? SchemaDescription => Description;
+
+        internal override JsonElement ParseCompleteOutput(string text)
+        {
+            var outer = ProviderUtils.JsonParsing.Parse(text);
+            if (
+                outer.ValueKind != JsonValueKind.Object
+                || !outer.TryGetProperty("elements", out var elements)
+                || elements.ValueKind != JsonValueKind.Array
+            )
+            {
+                throw new ProviderUtils.TypeValidationException(
+                    "Type validation failed: response must be an object with an elements array",
+                    outer
+                );
+            }
+
+            var lengthError = GetArrayLengthValidationError(
+                elements,
+                elements.GetArrayLength(),
+                _minItems,
+                _maxItems
+            );
+            if (lengthError != null)
+            {
+                throw lengthError;
+            }
+
+            var validated = new List<JsonElement>();
+            foreach (var element in elements.EnumerateArray())
+            {
+                validated.Add(ProviderUtils.JsonParsing.ValidateTypes(element, _elementSchemaNode));
+            }
+
+            return JsonSerializer.SerializeToElement(validated);
+        }
+
+        internal override JsonElement? ParsePartialOutput(string text)
+        {
+            var result = Util.PartialJson.Parse(text);
+            if (result.State is Util.PartialJson.FailedParse or Util.PartialJson.UndefinedInput)
+            {
+                return null;
+            }
+
+            // No parsable elements array.
+            if (
+                result.Value is not JsonObject outer
+                || !outer.TryGetPropertyValue("elements", out var node)
+                || node is not JsonArray elements
+            )
+            {
+                return null;
+            }
+
+            // The last element of a repaired parse is incomplete.
+            var count =
+                result.State == Util.PartialJson.RepairedParse && elements.Count > 0
+                    ? elements.Count - 1
+                    : elements.Count;
+            var parsed = new List<JsonElement>();
+            for (var index = 0; index < count; index++)
+            {
+                var raw = JsonSerializer.SerializeToElement(elements[index]);
+                var validation = ProviderUtils.JsonParsing.SafeValidateTypes(
+                    raw,
+                    _elementSchemaNode
+                );
+                if (validation.Success)
+                {
+                    parsed.Add(validation.Value!.Value);
+                }
+            }
+
+            return JsonSerializer.SerializeToElement(parsed);
+        }
+
+        internal override Func<
+            JsonElement,
+            IEnumerable<JsonElement>
+        >? CreateElementStreamTransform()
+        {
+            var publishedElements = 0;
+            return partial =>
+                PublishNewElements(partial, publishedElements, count => publishedElements = count);
+        }
+
+        private IEnumerable<JsonElement> PublishNewElements(
+            JsonElement partial,
+            int published,
+            Action<int> setPublished
+        )
+        {
+            var length = partial.GetArrayLength();
+            for (; published < length; published++)
+            {
+                if (_maxItems != null && published >= _maxItems)
+                {
+                    setPublished(published);
+                    throw GetArrayLengthValidationError(partial, length, null, _maxItems)!;
+                }
+
+                yield return partial[published];
+            }
+
+            setPublished(published);
+        }
+
+        private static ProviderUtils.TypeValidationException? GetArrayLengthValidationError(
+            JsonElement value,
+            int length,
+            int? minItems,
+            int? maxItems
+        )
+        {
+            if (minItems != null && length < minItems)
+            {
+                return new ProviderUtils.TypeValidationException(
+                    "Type validation failed: elements array must contain at least "
+                        + minItems.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                        + " items",
+                    value
+                );
+            }
+
+            if (maxItems != null && length > maxItems)
+            {
+                return new ProviderUtils.TypeValidationException(
+                    "Type validation failed: elements array must contain at most "
+                        + maxItems.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                        + " items",
+                    value
+                );
+            }
+
+            return null;
+        }
+
+        private static void ValidateArrayBound(string name, int? value)
+        {
+            if (value < 0)
+            {
+                throw new InvalidArgumentError(
+                    name,
+                    value,
+                    name + " must be greater than or equal to 0"
+                );
+            }
+        }
+    }
+
+    private sealed class ChoiceOutput : OutputSpec
+    {
+        private readonly string[] _options;
+
+        public ChoiceOutput(IReadOnlyList<string> options, string? name, string? description)
+        {
+            _options = options.ToArray();
+            Name = name;
+            Description = description;
+            SchemaValue = JsonSerializer.SerializeToElement(
+                new JsonObject
+                {
+                    ["$schema"] = "http://json-schema.org/draft-07/schema#",
+                    ["type"] = "object",
+                    ["properties"] = new JsonObject
+                    {
+                        ["result"] = new JsonObject
+                        {
+                            ["type"] = "string",
+                            ["enum"] = new JsonArray(
+                                _options
+                                    .Select(option => (JsonNode?)JsonValue.Create(option))
+                                    .ToArray()
+                            ),
+                        },
+                    },
+                    ["required"] = new JsonArray(JsonValue.Create("result")),
+                    ["additionalProperties"] = false,
+                }
+            );
+        }
+
+        public JsonElement SchemaValue { get; }
+
+        public string? Name { get; }
+
+        public string? Description { get; }
+
+        internal override JsonElement? Schema => SchemaValue;
+
+        internal override string? SchemaName => Name;
+
+        internal override string? SchemaDescription => Description;
+
+        internal override JsonElement ParseCompleteOutput(string text)
+        {
+            var outer = ProviderUtils.JsonParsing.Parse(text);
+            if (
+                outer.ValueKind != JsonValueKind.Object
+                || !outer.TryGetProperty("result", out var result)
+                || result.ValueKind != JsonValueKind.String
+                || !_options.Contains(result.GetString())
+            )
+            {
+                throw new ProviderUtils.TypeValidationException(
+                    "Type validation failed: response must be an object that contains a choice value.",
+                    outer
+                );
+            }
+
+            return result.Clone();
+        }
+
+        internal override JsonElement? ParsePartialOutput(string text)
+        {
+            var parsed = Util.PartialJson.Parse(text);
+            if (parsed.State is Util.PartialJson.FailedParse or Util.PartialJson.UndefinedInput)
+            {
+                return null;
+            }
+
+            if (
+                parsed.Value is not JsonObject outer
+                || !outer.TryGetPropertyValue("result", out var node)
+                || node is not JsonValue value
+                || !value.TryGetValue<string>(out var result)
+            )
+            {
+                return null;
+            }
+
+            // List of potential matches.
+            var potentialMatches = _options
+                .Where(option => option.StartsWith(result, StringComparison.Ordinal))
+                .ToArray();
+            if (parsed.State == Util.PartialJson.SuccessfulParse)
+            {
+                // Successful parse: exact choice value.
+                return potentialMatches.Contains(result)
+                    ? JsonSerializer.SerializeToElement(result)
+                    : null;
+            }
+
+            // Repaired parse: only return if not ambiguous.
+            return potentialMatches.Length == 1
+                ? JsonSerializer.SerializeToElement(potentialMatches[0])
+                : null;
+        }
+    }
+
+    private sealed class JsonOutput : OutputSpec
+    {
+        public JsonOutput(string? name, string? description)
+        {
+            Name = name;
+            Description = description;
+        }
+
+        public string? Name { get; }
+
+        public string? Description { get; }
+
+        internal override string? SchemaName => Name;
+
+        internal override string? SchemaDescription => Description;
+
+        internal override bool IsJson => true;
+
+        internal override JsonElement ParseCompleteOutput(string text)
+        {
+            return ProviderUtils.JsonParsing.Parse(text);
+        }
     }
 }
 

@@ -55,6 +55,30 @@ internal static class OptionsOutputSupport
         return values;
     }
 
+    internal static async Task<List<string>> CollectElements(StreamTextResult result)
+    {
+        var values = new List<string>();
+        await foreach (var value in result.ElementStream())
+        {
+            values.Add(value.GetRawText());
+        }
+
+        return values;
+    }
+
+    internal static LanguageModelStreamPart[] TextWithoutEnd(params string[] deltas)
+    {
+        var parts = new List<LanguageModelStreamPart> { new TextStartStreamPart("1") };
+        parts.AddRange(deltas.Select(delta => new TextDeltaStreamPart("1", delta)));
+        parts.Add(
+            new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(3, 10, 13), "stop")
+        );
+        return parts.ToArray();
+    }
+
+    internal const string ContentSchema =
+        "{\"type\":\"object\",\"properties\":{\"content\":{\"type\":\"string\"}},\"required\":[\"content\"],\"additionalProperties\":false}";
+
     internal const string ValueSchema =
         "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"],\"additionalProperties\":false}";
 }

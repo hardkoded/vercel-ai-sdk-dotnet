@@ -235,6 +235,7 @@ internal static class Generation
             FrequencyPenalty = options.FrequencyPenalty,
             StopSequences = options.StopSequences,
             Seed = options.Seed,
+            JsonResponse = options.Output is { IsJson: true, Schema: null },
             JsonSchema = options.Output?.Schema,
             JsonSchemaName = options.Output?.SchemaName,
             JsonSchemaDescription = options.Output?.SchemaDescription,
@@ -1333,8 +1334,27 @@ internal static class Generation
 
             steeringRun?.End(steeringEndReason);
             timeouts?.EndStep();
-            var result = await ToResultAsync(steps, responseMessages, options, cancellationToken)
-                .ConfigureAwait(false);
+            // A model answer that does not parse into the output fails the output promise only, not the stream.
+            Exception? outputError = null;
+            GenerateTextResult result;
+            try
+            {
+                result = await ToResultAsync(steps, responseMessages, options, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (NoObjectGeneratedException error)
+            {
+                outputError = error;
+                result = await ToResultAsync(
+                        steps,
+                        responseMessages,
+                        options,
+                        cancellationToken,
+                        parseOutput: false
+                    )
+                    .ConfigureAwait(false);
+            }
+
             if (telemetry != null && scope != null)
             {
                 telemetry.OnUsage(scope, result.Usage);
@@ -1350,7 +1370,22 @@ internal static class Generation
             textSource.TrySetResult(result.Text);
             finishSource.TrySetResult(result.FinishReason);
             usageSource.TrySetResult(result.Usage);
-            outputSource.TrySetResult(result.Output);
+            if (outputError != null)
+            {
+                outputSource.TrySetException(outputError);
+            }
+            else
+            {
+                // Without a JSON output, the output is the text. Maps to `output ?? text()`.
+                outputSource.TrySetResult(
+                    result.Output
+                        ?? (
+                            options.Output is { IsJson: true }
+                                ? null
+                                : JsonSerializer.SerializeToElement(result.Text)
+                        )
+                );
+            }
             stepsSource.TrySetResult(result.Steps);
             if (options.OnFinish != null)
             {
@@ -3236,9 +3271,11 @@ internal static class Generation
         List<StepResult> steps,
         List<ModelMessage> responseMessages,
         GenerateTextOptions options,
-        CancellationToken cancellationToken
+        CancellationToken cancellationToken,
+        bool parseOutput = true
     )
     {
+        var outputSpec = parseOutput ? options.Output : null;
         var last =
             steps.Count == 0
                 ? new StepResult(
@@ -3262,9 +3299,9 @@ internal static class Generation
         // A provider-selected structured output text replaces the step text for JSON output only. An empty selection
         // is explicit, so it is parsed (and rejected) instead of falling back to the step text.
         var outputText =
-            options.Output?.Schema != null ? last.StructuredOutputText ?? last.Text : last.Text;
+            outputSpec?.IsJson == true ? last.StructuredOutputText ?? last.Text : last.Text;
         JsonElement? output = null;
-        if (options.Output?.Schema is { } outputSchema)
+        if (outputSpec is { IsJson: true })
         {
             if (options.GenerateObjectMode && !last.Content.OfType<GeneratedText>().Any())
             {
@@ -3301,10 +3338,7 @@ internal static class Generation
 
             try
             {
-                output = ProviderUtils.JsonParsing.Parse(
-                    outputText,
-                    JsonNode.Parse(outputSchema.GetRawText())
-                );
+                output = outputSpec.ParseCompleteOutput(outputText);
             }
             catch (Exception error)
                 when (error
@@ -3337,10 +3371,7 @@ internal static class Generation
 
                 try
                 {
-                    output = ProviderUtils.JsonParsing.Parse(
-                        repairedText,
-                        JsonNode.Parse(outputSchema.GetRawText())
-                    );
+                    output = outputSpec.ParseCompleteOutput(repairedText);
                 }
                 catch (Exception repairedError)
                     when (repairedError
@@ -3827,23 +3858,77 @@ public sealed class StreamTextResult
 
     /// <summary>
     /// The partial structured output after each text delta that changes it: the text so far for text output, the repaired partial
-    /// object for object output. Each step starts over. Maps to <c>partialOutputStream</c>.
+    /// object for object output, the complete elements for array output, the choice for choice output, and the parsed JSON
+    /// so far for JSON output. Each step starts over. Maps to <c>partialOutputStream</c>.
     /// </summary>
     public async IAsyncEnumerable<JsonElement> PartialOutputStream(
         [EnumeratorCancellation] CancellationToken cancellationToken = default
     )
     {
-        var isObject = OutputSpecification?.Schema != null;
+        string? lastPublishedValue = null;
+        await foreach (var (partial, isNewStep) in ReadPartialOutputs(cancellationToken))
+        {
+            if (isNewStep)
+            {
+                lastPublishedValue = null;
+                continue;
+            }
+
+            // Only publish a value that changed.
+            var currentValue = partial!.Value.GetRawText();
+            if (currentValue == lastPublishedValue)
+            {
+                continue;
+            }
+
+            lastPublishedValue = currentValue;
+            yield return partial.Value;
+        }
+    }
+
+    /// <summary>
+    /// The elements of an array output as each one completes. Empty for any other output. The stream fails with a
+    /// type validation error when the model exceeds <c>maxItems</c>. Maps to <c>elementStream</c>.
+    /// </summary>
+    public async IAsyncEnumerable<JsonElement> ElementStream(
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
+    {
+        var transform = OutputSpecification?.CreateElementStreamTransform();
+        if (transform == null)
+        {
+            yield break;
+        }
+
+        await foreach (var (partial, isNewStep) in ReadPartialOutputs(cancellationToken))
+        {
+            if (isNewStep)
+            {
+                continue;
+            }
+
+            foreach (var element in transform(partial!.Value))
+            {
+                yield return element;
+            }
+        }
+    }
+
+    // The partial output after each text delta of the first text block of a step. A step start is reported with isNewStep.
+    private async IAsyncEnumerable<(JsonElement? Partial, bool IsNewStep)> ReadPartialOutputs(
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
+    {
+        var output = OutputSpecification ?? OutputSpec.Text();
         string? firstTextChunkId = null;
         var text = new StringBuilder();
-        string? lastPublishedValue = null;
         await foreach (var part in _buffer.Read(cancellationToken).ConfigureAwait(false))
         {
             if (part is StartStepPart)
             {
                 firstTextChunkId = null;
                 text.Clear();
-                lastPublishedValue = null;
+                yield return (null, true);
                 continue;
             }
 
@@ -3865,31 +3950,10 @@ public sealed class StreamTextResult
                 continue;
             }
 
-            JsonElement partial;
-            if (isObject)
+            if (output.ParsePartialOutput(text.ToString()) is { } partial)
             {
-                var result = PartialJson.Parse(text.ToString());
-                if (result.State is PartialJson.FailedParse or PartialJson.UndefinedInput)
-                {
-                    continue;
-                }
-
-                partial = JsonSerializer.SerializeToElement(result.Value);
+                yield return (partial, false);
             }
-            else
-            {
-                partial = JsonSerializer.SerializeToElement(text.ToString());
-            }
-
-            // Only publish a value that changed.
-            var currentValue = isObject ? partial.GetRawText() : text.ToString();
-            if (currentValue == lastPublishedValue)
-            {
-                continue;
-            }
-
-            lastPublishedValue = currentValue;
-            yield return partial;
         }
     }
 
