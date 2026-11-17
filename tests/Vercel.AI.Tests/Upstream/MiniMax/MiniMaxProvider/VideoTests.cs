@@ -19,7 +19,7 @@ public sealed class VideoTests
         var provider = Vercel.AI.MiniMax.MiniMaxProvider.Create();
         var model = provider.Video("MiniMax-H3");
 
-        Assert.IsType<MiniMaxVideoModel>(model);
+        Assert.IsType<Vercel.AI.MiniMax.MiniMaxVideoModel>(model);
         Assert.Equal("MiniMax-H3", model.ModelId);
         Assert.Equal("minimax.video", model.Config.Provider);
     }

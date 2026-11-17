@@ -1,6 +1,6 @@
 ---
 title: "MiniMaxVideoModel"
-description: "MiniMax video model. This is the shell the provider factories create. Request building, polling, and errors are not ported yet, so every operation throws Not..."
+description: "MiniMax video model. DoStartAsync posts to /v2/videogeneration and DoStatusAsync reads the task. The operation is a JSON object with the taskId and the resol..."
 editUrl: false
 prev: false
 next: false
@@ -19,14 +19,14 @@ public sealed class MiniMaxVideoModel : IVideoModel, IVideoCaller
 ```
 
 
-MiniMax video model. This is the shell the provider factories create. Request building, polling, and errors are not ported yet,
-so every operation throws [NotSupportedException](https://learn.microsoft.com/dotnet/api/system.notsupportedexception).
+MiniMax video model. `DoStartAsync` posts to `/v2/video_generation` and `DoStatusAsync` reads the task.
+The operation is a JSON object with the `taskId` and the `resolvedInputs` that were sent.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
 **Implements:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/), [IVideoCaller](/api/Vercel.AI.Operations/IVideoCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L54)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a model.
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `config` | [MiniMaxVideoModelConfig](/api/Vercel.AI.MiniMax/MiniMaxVideoModelConfig/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L90)
 
 ## Properties
 
@@ -69,7 +69,7 @@ True when `doGenerate` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L109)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_CanStart_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_CanStart"></a>
@@ -86,7 +86,7 @@ True when `doStart` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L112)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_CanStatus_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_CanStatus"></a>
@@ -103,7 +103,7 @@ True when `doStatus` exists.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L115)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_CanWebhook_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_CanWebhook"></a>
@@ -116,11 +116,11 @@ public bool CanWebhook { get; }
 ```
 
 
-True when `handleWebhookOption` exists.
+False. The challenge handshake and progress notifications need a protocol-aware receiver, so a webhook URL is only forwarded as `callback_url`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L70)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L118)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_Config_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_Config"></a>
@@ -137,7 +137,7 @@ The configuration the provider passed in.
 
 **Value:** [MiniMaxVideoModelConfig](/api/Vercel.AI.MiniMax/MiniMaxVideoModelConfig/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L73)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L121)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_MaxVideosPerCall_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_MaxVideosPerCall"></a>
@@ -154,7 +154,7 @@ MiniMax creates one video per task.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L106)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_ModelId_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_ModelId"></a>
@@ -171,7 +171,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L103)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_Provider_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_Provider"></a>
@@ -188,7 +188,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L100)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_SpecificationVersion"></a>
@@ -205,7 +205,7 @@ Specification version. Always `v4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L97)
 
 ## Methods
 
@@ -231,7 +231,7 @@ Generates videos in one call.
 
 **Returns:** [Task&lt;VideoModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L88)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L151)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_DoGenerateAsync_Vercel_AI_Provider_VideoCallOptions_System_Threading_CancellationToken_"></a>
 
@@ -243,7 +243,7 @@ public Task<VideoResult> DoGenerateAsync(VideoCallOptions options, CancellationT
 ```
 
 
-Generates a video.
+Starts a task and polls it until the video is ready.
 
 **Parameters**
 
@@ -254,7 +254,7 @@ Generates a video.
 
 **Returns:** [Task&lt;VideoResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L82)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L130)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_DoStartAsync_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_DoStartAsync_Vercel_AI_Operations_VideoModelCall_System_Threading_CancellationToken_"></a>
@@ -278,7 +278,7 @@ Starts an asynchronous generation.
 
 **Returns:** [Task&lt;VideoStartResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L94)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L233)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_DoStatusAsync_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_DoStatusAsync_Vercel_AI_Operations_VideoModelCall_System_Threading_CancellationToken_"></a>
@@ -302,7 +302,7 @@ Reads operation status.
 
 **Returns:** [Task&lt;VideoStatusResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L100)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L276)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_HandleWebhookAsync_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_HandleWebhookAsync_System_Func_System_Threading_Tasks_Task_Vercel_AI_Operations_VideoWebhook___System_Threading_CancellationToken_"></a>
@@ -326,7 +326,7 @@ Turns a webhook factory into a URL and a received task.
 
 **Returns:** [Task&lt;VideoWebhook&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L106)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L295)
 
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_ResolveMaxVideosPerCallAsync_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxVideoModel_ResolveMaxVideosPerCallAsync_System_Threading_CancellationToken_"></a>
@@ -349,4 +349,4 @@ Resolves a functional limit. The default is [MaxVideosPerCall](/api/Vercel.AI.Op
 
 **Returns:** [Task&lt;int?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L76)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxVideoModel.cs#L124)
