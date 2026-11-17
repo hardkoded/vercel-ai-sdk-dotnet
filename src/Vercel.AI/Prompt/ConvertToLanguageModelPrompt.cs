@@ -348,10 +348,10 @@ public static class LanguageModelPrompts
                 return FileContentPart.FromProviderReference(
                     "image",
                     ConvertFileIdToProviderReference(
-                            imageFileId.FileId,
-                            imageFileId.FileIds,
-                            provider
-                        ),
+                        imageFileId.FileId,
+                        imageFileId.FileIds,
+                        provider
+                    ),
                     null,
                     imageFileId.ProviderOptions
                 );
@@ -372,7 +372,9 @@ public static class LanguageModelPrompts
     {
         return new DeprecatedWarning(
             "\"tool-result\" content of type \"" + type + "\"",
-            "The \"" + type + "\" type for tool result content is deprecated. Use the \"file\" type with mediaType and { type: 'data', data } instead."
+            "The \""
+                + type
+                + "\" type for tool result content is deprecated. Use the \"file\" type with mediaType and { type: 'data', data } instead."
         );
     }
 
@@ -380,7 +382,9 @@ public static class LanguageModelPrompts
     {
         return new DeprecatedWarning(
             "\"tool-result\" content of type \"" + type + "\"",
-            "The \"" + type + "\" type for tool result content is deprecated. Use the \"file\" type with mediaType and { type: 'reference', reference } instead."
+            "The \""
+                + type
+                + "\" type for tool result content is deprecated. Use the \"file\" type with mediaType and { type: 'reference', reference } instead."
         );
     }
 

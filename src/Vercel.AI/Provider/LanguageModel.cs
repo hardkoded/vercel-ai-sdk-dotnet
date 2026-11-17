@@ -1021,8 +1021,8 @@ public sealed class FileReferenceContentPart : UserContentPart
     public FileReferenceContentPart(IReadOnlyDictionary<string, string> providerReference)
         : base("file-reference")
     {
-        ProviderReference =
-            providerReference ?? throw new ArgumentNullException(nameof(providerReference));
+        ProviderReference = providerReference
+            ?? throw new ArgumentNullException(nameof(providerReference));
     }
 
     /// <summary>Map from provider name to the provider's file id.</summary>
@@ -1096,8 +1096,8 @@ public sealed class ImageFileReferenceContentPart : UserContentPart
     public ImageFileReferenceContentPart(IReadOnlyDictionary<string, string> providerReference)
         : base("image-file-reference")
     {
-        ProviderReference =
-            providerReference ?? throw new ArgumentNullException(nameof(providerReference));
+        ProviderReference = providerReference
+            ?? throw new ArgumentNullException(nameof(providerReference));
     }
 
     /// <summary>Map from provider name to the provider's file id.</summary>

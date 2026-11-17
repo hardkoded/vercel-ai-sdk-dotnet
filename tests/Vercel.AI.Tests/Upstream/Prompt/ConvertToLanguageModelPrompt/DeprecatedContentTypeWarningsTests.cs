@@ -36,12 +36,10 @@ public sealed class DeprecatedContentTypeWarningsTests
     )
     {
         Assert.Equal(count, log.Process.Count);
-        Assert.Contains(
-            log.Process,
-            entry =>
-                entry.Message == "AI SDK Warning: Deprecated: \"" + message
-                && entry.Type == "DeprecationWarning"
-                && entry.Code == code
+        Assert.Contains(log.Process, entry =>
+            entry.Message == "AI SDK Warning: Deprecated: \"" + message
+            && entry.Type == "DeprecationWarning"
+            && entry.Code == code
         );
     }
 
@@ -54,7 +52,10 @@ public sealed class DeprecatedContentTypeWarningsTests
     {
         var file = Assert.IsType<FileContentPart>(part);
         Assert.Equal(mediaType, file.MediaType);
-        Assert.Equal(new Dictionary<string, string> { [provider] = fileId }, file.ProviderReference);
+        Assert.Equal(
+            new Dictionary<string, string> { [provider] = fileId },
+            file.ProviderReference
+        );
         Assert.Null(file.ProviderOptions);
         return file;
     }
@@ -300,7 +301,10 @@ public sealed class DeprecatedContentTypeWarningsTests
                         new ToolModelMessage(
                             "toolCallId",
                             "toolName",
-                            new UserContentPart[] { new ImageDataContentPart("dGVzdA==", "image/png") }
+                            new UserContentPart[]
+                            {
+                                new ImageDataContentPart("dGVzdA==", "image/png"),
+                            }
                         ),
                         null
                     ),
@@ -345,10 +349,7 @@ public sealed class DeprecatedContentTypeWarningsTests
         ConvertTool(
             new FileContentPart("image/png", null, new byte[] { 116, 101, 115, 116 }, null),
             new FileContentPart("image/png", "https://example.com/image.png", null, null),
-            FileContentPart.FromProviderReference(
-                "application/octet-stream",
-                TestProviderReference
-            )
+            FileContentPart.FromProviderReference("application/octet-stream", TestProviderReference)
         );
 
         Assert.Empty(log.Process);
