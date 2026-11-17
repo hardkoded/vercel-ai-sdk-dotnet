@@ -47,20 +47,34 @@ public sealed class SmoothStreamOptions
 /// <summary>Smooths text and reasoning streaming output. Maps to <c>smoothStream</c>.</summary>
 public static class SmoothStream
 {
-    private static readonly Regex s_word = new(@"\S+\s+", RegexOptions.Multiline, TimeSpan.FromSeconds(1));
-    private static readonly Regex s_line = new(@"\n+", RegexOptions.Multiline, TimeSpan.FromSeconds(1));
+    private static readonly Regex s_word = new(
+        @"\S+\s+",
+        RegexOptions.Multiline,
+        TimeSpan.FromSeconds(1)
+    );
+    private static readonly Regex s_line = new(
+        @"\n+",
+        RegexOptions.Multiline,
+        TimeSpan.FromSeconds(1)
+    );
 
     /// <summary>
     /// Creates the transform. Call the returned function with the tools to get a transform of the full stream.
     /// </summary>
-    public static Func<IReadOnlyList<Tool>?, Func<IAsyncEnumerable<TextStreamPart>, CancellationToken, IAsyncEnumerable<TextStreamPart>>> Create(SmoothStreamOptions? options = null)
+    public static Func<
+        IReadOnlyList<Tool>?,
+        Func<IAsyncEnumerable<TextStreamPart>, CancellationToken, IAsyncEnumerable<TextStreamPart>>
+    > Create(SmoothStreamOptions? options = null)
     {
         options ??= new SmoothStreamOptions();
         var delayInMs = options.DelayInMs;
-        var delay = options.Delay ?? ((ms, ct) => ms is int m ? Task.Delay(m, ct) : Task.CompletedTask);
+        var delay = options.Delay
+            ?? ((ms, ct) => ms is int m ? Task.Delay(m, ct) : Task.CompletedTask);
         var detectChunk = CreateDetector(options);
 
-        return _ => (stream, cancellationToken) => Transform(stream, detectChunk, delayInMs, delay, cancellationToken);
+        return _ =>
+            (stream, cancellationToken) =>
+                Transform(stream, detectChunk, delayInMs, delay, cancellationToken);
     }
 
     private static Func<string, string?> CreateDetector(SmoothStreamOptions options)
@@ -77,19 +91,24 @@ public static class SmoothStream
 
                 if (match.Length == 0)
                 {
-                    throw new InvalidOperationException("Chunking function must return a non-empty string.");
+                    throw new InvalidOperationException(
+                        "Chunking function must return a non-empty string."
+                    );
                 }
 
                 if (!buffer.StartsWith(match, StringComparison.Ordinal))
                 {
-                    throw new InvalidOperationException($"Chunking function must return a match that is a prefix of the buffer. Received: \"{match}\" which is not a prefix of buffer \"{buffer}\"");
+                    throw new InvalidOperationException(
+                        $"Chunking function must return a match that is a prefix of the buffer. Received: \"{match}\" which is not a prefix of buffer \"{buffer}\""
+                    );
                 }
 
                 return match;
             };
         }
 
-        var regex = options.ChunkingRegex ?? (options.Chunking == SmoothStreamChunking.Line ? s_line : s_word);
+        var regex = options.ChunkingRegex
+            ?? (options.Chunking == SmoothStreamChunking.Line ? s_line : s_word);
         return buffer =>
         {
             var match = regex.Match(buffer);
@@ -100,7 +119,9 @@ public static class SmoothStream
 
             if (match.Length == 0)
             {
-                throw new InvalidOperationException("Chunking RegExp must not match an empty string.");
+                throw new InvalidOperationException(
+                    "Chunking RegExp must not match an empty string."
+                );
             }
 
             return buffer.Substring(0, match.Index) + match.Value;
@@ -112,7 +133,8 @@ public static class SmoothStream
         Func<string, string?> detectChunk,
         int? delayInMs,
         Func<int?, CancellationToken, Task> delay,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         var buffer = string.Empty;
         var id = string.Empty;
@@ -132,7 +154,9 @@ public static class SmoothStream
             return null;
         }
 
-        await foreach (var chunk in stream.WithCancellation(cancellationToken).ConfigureAwait(false))
+        await foreach (
+            var chunk in stream.WithCancellation(cancellationToken).ConfigureAwait(false)
+        )
         {
             if (chunk is PingPart)
             {
@@ -147,10 +171,20 @@ public static class SmoothStream
             switch (chunk)
             {
                 case TextDeltaPart t:
-                    (chunkType, chunkId, chunkText, chunkMetadata) = ("text-delta", t.Id, t.Text, t.ProviderMetadata);
+                    (chunkType, chunkId, chunkText, chunkMetadata) = (
+                        "text-delta",
+                        t.Id,
+                        t.Text,
+                        t.ProviderMetadata
+                    );
                     break;
                 case ReasoningDeltaPart r:
-                    (chunkType, chunkId, chunkText, chunkMetadata) = ("reasoning-delta", r.Id, r.Text, r.ProviderMetadata);
+                    (chunkType, chunkId, chunkText, chunkMetadata) = (
+                        "reasoning-delta",
+                        r.Id,
+                        r.Text,
+                        r.ProviderMetadata
+                    );
                     break;
                 default:
                     if (Flush() is { } flushed)
@@ -175,7 +209,15 @@ public static class SmoothStream
 
             // Flush at metadata boundaries because one output part cannot preserve
             // metadata from multiple input deltas.
-            if (buffer.Length > 0 && (chunkType != type || chunkId != id || providerMetadata is not null || chunkMetadata is not null))
+            if (
+                buffer.Length > 0
+                && (
+                    chunkType != type
+                    || chunkId != id
+                    || providerMetadata is not null
+                    || chunkMetadata is not null
+                )
+            )
             {
                 if (Flush() is { } flushed)
                 {
@@ -204,7 +246,12 @@ public static class SmoothStream
         }
     }
 
-    private static TextStreamPart CreateDelta(string type, string id, string text, JsonElement? providerMetadata) =>
+    private static TextStreamPart CreateDelta(
+        string type,
+        string id,
+        string text,
+        JsonElement? providerMetadata
+    ) =>
         type == "text-delta"
             ? new TextDeltaPart(id, text, providerMetadata)
             : new ReasoningDeltaPart(id, text, providerMetadata);

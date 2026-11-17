@@ -17,7 +17,8 @@ public sealed class GoogleInteractionsPollingUpstreamTests
     private const string GetUrl = BaseUrl + "/interactions/" + InteractionId;
     private const string CancelUrl = GetUrl + "/cancel";
 
-    private static readonly IReadOnlyDictionary<string, string?> NoHeaders = new Dictionary<string, string?>();
+    private static readonly IReadOnlyDictionary<string, string?> NoHeaders =
+        new Dictionary<string, string?>();
 
     private static ProviderHttp Http(SequencedHandler handler)
     {
@@ -25,13 +26,20 @@ public sealed class GoogleInteractionsPollingUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/google/src/interactions/poll-google-interactions.test.ts::pollGoogleInteractionUntilTerminal::polls until terminal status and returns the final response", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/google/src/interactions/poll-google-interactions.test.ts::pollGoogleInteractionUntilTerminal::polls until terminal status and returns the final response",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Polls_until_terminal_status_and_returns_the_final_response()
     {
         var handler = new SequencedHandler()
             .Json("{\"id\":\"" + InteractionId + "\",\"status\":\"in_progress\"}")
             .Json("{\"id\":\"" + InteractionId + "\",\"status\":\"in_progress\"}")
-            .Json("{\"id\":\"" + InteractionId + "\",\"status\":\"completed\",\"outputs\":[{\"type\":\"text\",\"text\":\"final answer\"}],\"usage\":{\"total_input_tokens\":5,\"total_output_tokens\":7}}");
+            .Json(
+                "{\"id\":\""
+                    + InteractionId
+                    + "\",\"status\":\"completed\",\"outputs\":[{\"type\":\"text\",\"text\":\"final answer\"}],\"usage\":{\"total_input_tokens\":5,\"total_output_tokens\":7}}"
+            );
 
         using var result = await GoogleInteractionsPolling.PollUntilTerminalAsync(
             Http(handler),
@@ -41,7 +49,8 @@ public sealed class GoogleInteractionsPollingUpstreamTests
             TimeSpan.FromMilliseconds(1),
             TimeSpan.FromMilliseconds(1),
             TimeSpan.FromMilliseconds(5000),
-            CancellationToken.None);
+            CancellationToken.None
+        );
 
         Assert.Equal("completed", result.RootElement.GetProperty("status").GetString());
         var outputs = result.RootElement.GetProperty("outputs");
@@ -53,10 +62,15 @@ public sealed class GoogleInteractionsPollingUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/google/src/interactions/poll-google-interactions.test.ts::pollGoogleInteractionUntilTerminal::returns immediately on the first call if status is already terminal", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/google/src/interactions/poll-google-interactions.test.ts::pollGoogleInteractionUntilTerminal::returns immediately on the first call if status is already terminal",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Returns_immediately_on_the_first_call_if_status_is_already_terminal()
     {
-        var handler = new SequencedHandler().Json("{\"id\":\"" + InteractionId + "\",\"status\":\"completed\",\"outputs\":[]}");
+        var handler = new SequencedHandler().Json(
+            "{\"id\":\"" + InteractionId + "\",\"status\":\"completed\",\"outputs\":[]}"
+        );
 
         using var result = await GoogleInteractionsPolling.PollUntilTerminalAsync(
             Http(handler),
@@ -66,17 +80,23 @@ public sealed class GoogleInteractionsPollingUpstreamTests
             TimeSpan.FromMilliseconds(1),
             TimeSpan.FromMilliseconds(1),
             TimeSpan.FromMilliseconds(5000),
-            CancellationToken.None);
+            CancellationToken.None
+        );
 
         Assert.Equal("completed", result.RootElement.GetProperty("status").GetString());
         Assert.Single(handler.Methods);
     }
 
     [Fact]
-    [UpstreamTest("packages/google/src/interactions/poll-google-interactions.test.ts::pollGoogleInteractionUntilTerminal::aborts polling when abortSignal fires", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/google/src/interactions/poll-google-interactions.test.ts::pollGoogleInteractionUntilTerminal::aborts polling when abortSignal fires",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Aborts_polling_when_abortSignal_fires()
     {
-        var handler = new SequencedHandler().Json("{\"id\":\"" + InteractionId + "\",\"status\":\"in_progress\"}");
+        var handler = new SequencedHandler().Json(
+            "{\"id\":\"" + InteractionId + "\",\"status\":\"in_progress\"}"
+        );
         using var abort = new CancellationTokenSource();
 
         var poll = GoogleInteractionsPolling.PollUntilTerminalAsync(
@@ -87,50 +107,68 @@ public sealed class GoogleInteractionsPollingUpstreamTests
             TimeSpan.FromMilliseconds(50),
             TimeSpan.FromMilliseconds(50),
             TimeSpan.FromMilliseconds(5000),
-            abort.Token);
+            abort.Token
+        );
         abort.CancelAfter(10);
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => poll);
 
-        var cancelIndexes = Enumerable.Range(0, handler.Uris.Count).Where(i => handler.Uris[i] == CancelUrl).ToList();
+        var cancelIndexes = Enumerable
+            .Range(0, handler.Uris.Count)
+            .Where(i => handler.Uris[i] == CancelUrl)
+            .ToList();
         var cancelIndex = Assert.Single(cancelIndexes);
         Assert.Equal("POST", handler.Methods[cancelIndex]);
     }
 
     [Fact]
-    [UpstreamTest("packages/google/src/interactions/poll-google-interactions.test.ts::pollGoogleInteractionUntilTerminal::throws when no interaction id is provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/google/src/interactions/poll-google-interactions.test.ts::pollGoogleInteractionUntilTerminal::throws when no interaction id is provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Throws_when_no_interaction_id_is_provided()
     {
         var handler = new SequencedHandler().Json("{}");
 
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => GoogleInteractionsPolling.PollUntilTerminalAsync(
-            Http(handler),
-            BaseUrl,
-            null,
-            NoHeaders,
-            null,
-            null,
-            null,
-            CancellationToken.None));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            GoogleInteractionsPolling.PollUntilTerminalAsync(
+                Http(handler),
+                BaseUrl,
+                null,
+                NoHeaders,
+                null,
+                null,
+                null,
+                CancellationToken.None
+            )
+        );
 
         Assert.Matches("(?i)cannot poll", error.Message);
     }
 
     [Fact]
-    [UpstreamTest("packages/google/src/interactions/poll-google-interactions.test.ts::pollGoogleInteractionUntilTerminal::throws when timeout is exceeded", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/google/src/interactions/poll-google-interactions.test.ts::pollGoogleInteractionUntilTerminal::throws when timeout is exceeded",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Throws_when_timeout_is_exceeded()
     {
-        var handler = new SequencedHandler().Json("{\"id\":\"" + InteractionId + "\",\"status\":\"in_progress\"}");
+        var handler = new SequencedHandler().Json(
+            "{\"id\":\"" + InteractionId + "\",\"status\":\"in_progress\"}"
+        );
 
-        var error = await Assert.ThrowsAsync<TimeoutException>(() => GoogleInteractionsPolling.PollUntilTerminalAsync(
-            Http(handler),
-            BaseUrl,
-            InteractionId,
-            NoHeaders,
-            TimeSpan.FromMilliseconds(5),
-            TimeSpan.FromMilliseconds(5),
-            TimeSpan.FromMilliseconds(50),
-            CancellationToken.None));
+        var error = await Assert.ThrowsAsync<TimeoutException>(() =>
+            GoogleInteractionsPolling.PollUntilTerminalAsync(
+                Http(handler),
+                BaseUrl,
+                InteractionId,
+                NoHeaders,
+                TimeSpan.FromMilliseconds(5),
+                TimeSpan.FromMilliseconds(5),
+                TimeSpan.FromMilliseconds(50),
+                CancellationToken.None
+            )
+        );
 
         Assert.Matches("(?i)timed out", error.Message);
     }

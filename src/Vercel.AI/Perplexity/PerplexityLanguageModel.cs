@@ -30,10 +30,8 @@ public sealed class PerplexityLanguageModel : ILanguageModel
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<string, string> SupportedUrls { get; } = new Dictionary<string, string>
-    {
-        ["image/*"] = "^https?://.*\\z",
-    };
+    public IReadOnlyDictionary<string, string> SupportedUrls { get; } =
+        new Dictionary<string, string> { ["image/*"] = "^https?://.*\\z" };
 
     /// <inheritdoc />
     public string Provider => _provider.Name;
@@ -42,15 +40,21 @@ public sealed class PerplexityLanguageModel : ILanguageModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var built = Build(options, stream: false);
-        var http = await _provider.Http.SendJsonStringAsync(
-            HttpMethod.Post,
-            _provider.AgentUri(),
-            built.Body.ToJsonString(),
-            Headers(options),
-            cancellationToken).ConfigureAwait(false);
+        var http = await _provider
+            .Http.SendJsonStringAsync(
+                HttpMethod.Post,
+                _provider.AgentUri(),
+                built.Body.ToJsonString(),
+                Headers(options),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var raw = http.Body;
         JsonDocument document;
         try
@@ -69,9 +73,14 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                 throw new ApiException("Invalid JSON response", 200, raw);
             }
 
-            if (response.HasError || string.Equals(response.Status, "failed", StringComparison.Ordinal))
+            if (
+                response.HasError
+                || string.Equals(response.Status, "failed", StringComparison.Ordinal)
+            )
             {
-                var message = string.IsNullOrEmpty(response.ErrorMessage) ? "Perplexity response failed" : response.ErrorMessage!;
+                var message = string.IsNullOrEmpty(response.ErrorMessage)
+                    ? "Perplexity response failed"
+                    : response.ErrorMessage!;
                 throw new BadRequestException(message, raw);
             }
 
@@ -83,7 +92,12 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                 CollectItem(item, content, indexes, ref hasFunctionCall);
             }
 
-            var finish = PerplexityAgent.MapPerplexityFinishReason(response.Status, response.IncompleteReason, hasFunctionCall, out var rawFinish);
+            var finish = PerplexityAgent.MapPerplexityFinishReason(
+                response.Status,
+                response.IncompleteReason,
+                hasFunctionCall,
+                out var rawFinish
+            );
             return new LanguageModelGenerateResult(
                 content,
                 finish,
@@ -95,16 +109,27 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                 raw,
                 response.Model,
                 DateTimeOffset.FromUnixTimeSeconds(response.CreatedAt),
-                http.Headers);
+                http.Headers
+            );
         }
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var built = Build(options, stream: true);
         var json = built.Body.ToJsonString();
-        var sse = await _provider.Http.OpenSseResponseAsync(_provider.AgentUri(), json, Headers(options), cancellationToken).ConfigureAwait(false);
+        var sse = await _provider
+            .Http.OpenSseResponseAsync(
+                _provider.AgentUri(),
+                json,
+                Headers(options),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return sse.ToStreamResult(StreamAsync(options, built, sse.Events, cancellationToken), json);
     }
 
@@ -112,7 +137,8 @@ public sealed class PerplexityLanguageModel : ILanguageModel
         LanguageModelCallOptions options,
         PreparedRequest built,
         IAsyncEnumerable<string> events,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         var session = new StreamSession();
         var enumerator = events.GetAsyncEnumerator(cancellationToken);
@@ -165,15 +191,19 @@ public sealed class PerplexityLanguageModel : ILanguageModel
         WarnIfSet(warnings, options.Seed.HasValue, "seed");
 
         JsonElement? providerOptions = null;
-        if (options.ProviderOptions != null && options.ProviderOptions.TryGetValue("perplexity", out var configured))
+        if (
+            options.ProviderOptions != null
+            && options.ProviderOptions.TryGetValue("perplexity", out var configured)
+        )
         {
             providerOptions = configured;
             PerplexityAgent.ValidateProviderOptions(configured);
         }
 
-        var body = providerOptions is { } provided && provided.ValueKind == JsonValueKind.Object
-            ? JsonNode.Parse(provided.GetRawText())!.AsObject()
-            : new JsonObject();
+        var body =
+            providerOptions is { } provided && provided.ValueKind == JsonValueKind.Object
+                ? JsonNode.Parse(provided.GetRawText())!.AsObject()
+                : new JsonObject();
         JsonNode? providerReasoning = null;
         if (body["reasoning"] is { } reasoningNode)
         {
@@ -235,21 +265,32 @@ public sealed class PerplexityLanguageModel : ILanguageModel
             }
         }
 
-        if (options.JsonSchema is { } schema && schema.ValueKind != JsonValueKind.Undefined && schema.ValueKind != JsonValueKind.Null)
+        if (
+            options.JsonSchema is { } schema
+            && schema.ValueKind != JsonValueKind.Undefined
+            && schema.ValueKind != JsonValueKind.Null
+        )
         {
             body["response_format"] = new JsonObject
             {
                 ["type"] = "json_schema",
                 ["json_schema"] = new JsonObject
                 {
-                    ["name"] = string.IsNullOrEmpty(options.JsonSchemaName) ? "response" : options.JsonSchemaName,
+                    ["name"] = string.IsNullOrEmpty(options.JsonSchemaName)
+                        ? "response"
+                        : options.JsonSchemaName,
                     ["schema"] = JsonNode.Parse(schema.GetRawText()),
                     ["strict"] = true,
                 },
             };
         }
 
-        var tools = PreparePerplexityTools(options.Tools, options.ToolChoice, nativeTools, warnings);
+        var tools = PreparePerplexityTools(
+            options.Tools,
+            options.ToolChoice,
+            nativeTools,
+            warnings
+        );
         if (tools.Count > 0)
         {
             body["tools"] = tools;
@@ -273,7 +314,8 @@ public sealed class PerplexityLanguageModel : ILanguageModel
         IReadOnlyList<LanguageModelTool>? tools,
         ToolChoice? toolChoice,
         JsonArray? nativeTools,
-        List<CallWarning> warnings)
+        List<CallWarning> warnings
+    )
     {
         var prepared = new JsonArray();
         if (string.Equals(toolChoice?.Type, "none", StringComparison.Ordinal))
@@ -300,9 +342,10 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                 {
                     ["type"] = "function",
                     ["name"] = tool.Name,
-                    ["parameters"] = tool.InputSchema.ValueKind == JsonValueKind.Undefined
-                        ? JsonNode.Parse("{}")
-                        : JsonNode.Parse(tool.InputSchema.GetRawText()),
+                    ["parameters"] =
+                        tool.InputSchema.ValueKind == JsonValueKind.Undefined
+                            ? JsonNode.Parse("{}")
+                            : JsonNode.Parse(tool.InputSchema.GetRawText()),
                 };
                 if (!string.IsNullOrEmpty(tool.Description))
                 {
@@ -320,13 +363,21 @@ public sealed class PerplexityLanguageModel : ILanguageModel
 
         if (toolChoice != null && !string.Equals(toolChoice.Type, "auto", StringComparison.Ordinal))
         {
-            warnings.Add(new CallWarning("unsupported", "toolChoice: The Perplexity Agent API currently selects tools automatically."));
+            warnings.Add(
+                new CallWarning(
+                    "unsupported",
+                    "toolChoice: The Perplexity Agent API currently selects tools automatically."
+                )
+            );
         }
 
         return prepared;
     }
 
-    private static JsonNode ConvertToPerplexityInput(IReadOnlyList<ModelMessage> prompt, List<CallWarning> warnings)
+    private static JsonNode ConvertToPerplexityInput(
+        IReadOnlyList<ModelMessage> prompt,
+        List<CallWarning> warnings
+    )
     {
         var input = new JsonArray();
         foreach (var message in ToolModelMessage.Flatten(prompt))
@@ -334,12 +385,14 @@ public sealed class PerplexityLanguageModel : ILanguageModel
             switch (message)
             {
                 case SystemModelMessage system:
-                    input.Add(new JsonObject
-                    {
-                        ["type"] = "message",
-                        ["role"] = "system",
-                        ["content"] = system.Content,
-                    });
+                    input.Add(
+                        new JsonObject
+                        {
+                            ["type"] = "message",
+                            ["role"] = "system",
+                            ["content"] = system.Content,
+                        }
+                    );
                     break;
                 case UserModelMessage user:
                     input.Add(ConvertUser(user));
@@ -348,7 +401,14 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                     ConvertAssistant(assistant, input, warnings);
                     break;
                 case ToolModelMessage tool:
-                    input.Add(FunctionOutput(tool.ToolCallId, tool.ToolName, tool.OutputJson, tool.ProviderMetadata));
+                    input.Add(
+                        FunctionOutput(
+                            tool.ToolCallId,
+                            tool.ToolName,
+                            tool.OutputJson,
+                            tool.ProviderMetadata
+                        )
+                    );
                     break;
                 default:
                     throw new AiSdkException("Unsupported prompt role '" + message.Role + "'.");
@@ -371,7 +431,9 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                     break;
                 case FileContentPart file:
                     textOnly = false;
-                    parts.Add(new JsonObject { ["type"] = "input_image", ["image_url"] = ImageUrl(file) });
+                    parts.Add(
+                        new JsonObject { ["type"] = "input_image", ["image_url"] = ImageUrl(file) }
+                    );
                     break;
                 default:
                     throw new AiSdkException("Unsupported user content part.");
@@ -405,16 +467,22 @@ public sealed class PerplexityLanguageModel : ILanguageModel
         };
     }
 
-    private static void ConvertAssistant(AssistantModelMessage assistant, JsonArray input, List<CallWarning> warnings)
+    private static void ConvertAssistant(
+        AssistantModelMessage assistant,
+        JsonArray input,
+        List<CallWarning> warnings
+    )
     {
         if (!string.IsNullOrEmpty(assistant.Text))
         {
-            input.Add(new JsonObject
-            {
-                ["type"] = "message",
-                ["role"] = "assistant",
-                ["content"] = assistant.Text,
-            });
+            input.Add(
+                new JsonObject
+                {
+                    ["type"] = "message",
+                    ["role"] = "assistant",
+                    ["content"] = assistant.Text,
+                }
+            );
         }
 
         if (!string.IsNullOrEmpty(assistant.Reasoning))
@@ -429,7 +497,9 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                 ["type"] = "function_call",
                 ["call_id"] = call.ToolCallId,
                 ["name"] = call.ToolName,
-                ["arguments"] = string.IsNullOrEmpty(call.ArgumentsJson) ? "{}" : call.ArgumentsJson,
+                ["arguments"] = string.IsNullOrEmpty(call.ArgumentsJson)
+                    ? "{}"
+                    : call.ArgumentsJson,
             };
             var signature = PerplexityAgent.ThoughtSignature(call.ProviderMetadata);
             if (!string.IsNullOrEmpty(signature))
@@ -441,7 +511,12 @@ public sealed class PerplexityLanguageModel : ILanguageModel
         }
     }
 
-    private static JsonObject FunctionOutput(string callId, string name, string output, JsonElement? metadata)
+    private static JsonObject FunctionOutput(
+        string callId,
+        string name,
+        string output,
+        JsonElement? metadata
+    )
     {
         var item = new JsonObject
         {
@@ -464,10 +539,16 @@ public sealed class PerplexityLanguageModel : ILanguageModel
         var top = TopLevelMediaType(file.MediaType);
         if (!string.Equals(top, "image", StringComparison.OrdinalIgnoreCase))
         {
-            if (string.Equals(top, "video", StringComparison.OrdinalIgnoreCase) || IsPdf(file.MediaType))
+            if (
+                string.Equals(top, "video", StringComparison.OrdinalIgnoreCase)
+                || IsPdf(file.MediaType)
+            )
             {
                 throw new AiSdkException(
-                    "The Perplexity Agent API has no equivalent for Sonar PDF or video input (file part media type " + file.MediaType + ").");
+                    "The Perplexity Agent API has no equivalent for Sonar PDF or video input (file part media type "
+                        + file.MediaType
+                        + ")."
+                );
             }
 
             throw new AiSdkException("Unsupported file part media type " + file.MediaType + ".");
@@ -475,7 +556,10 @@ public sealed class PerplexityLanguageModel : ILanguageModel
 
         if (file.Data != null)
         {
-            return "data:" + DataMediaType(file.MediaType) + ";base64," + Convert.ToBase64String(file.Data);
+            return "data:"
+                + DataMediaType(file.MediaType)
+                + ";base64,"
+                + Convert.ToBase64String(file.Data);
         }
 
         if (!string.IsNullOrEmpty(file.Url))
@@ -518,13 +602,21 @@ public sealed class PerplexityLanguageModel : ILanguageModel
         return value.IndexOf("pdf", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
-    private static void CollectItem(AgentItem item, List<GeneratedContent> content, Dictionary<string, int> indexes, ref bool hasFunctionCall)
+    private static void CollectItem(
+        AgentItem item,
+        List<GeneratedContent> content,
+        Dictionary<string, int> indexes,
+        ref bool hasFunctionCall
+    )
     {
         if (string.Equals(item.Type, "message", StringComparison.Ordinal))
         {
             foreach (var part in item.Content)
             {
-                if (string.Equals(part.Type, "output_text", StringComparison.Ordinal) && part.Text != null)
+                if (
+                    string.Equals(part.Type, "output_text", StringComparison.Ordinal)
+                    && part.Text != null
+                )
                 {
                     content.Add(new GeneratedText(part.Text));
                 }
@@ -533,7 +625,15 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                 {
                     if (!string.IsNullOrEmpty(annotation.Url))
                     {
-                        AddSource(content, indexes, PerplexityAgent.CreateAnnotationSource(annotation.Url!, annotation.Title, NewId));
+                        AddSource(
+                            content,
+                            indexes,
+                            PerplexityAgent.CreateAnnotationSource(
+                                annotation.Url!,
+                                annotation.Title,
+                                NewId
+                            )
+                        );
                     }
                 }
             }
@@ -552,17 +652,30 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                 AddSource(content, indexes, PerplexityAgent.CreateFetchSource(result, NewId));
             }
         }
-        else if (string.Equals(item.Type, "function_call", StringComparison.Ordinal)
+        else if (
+            string.Equals(item.Type, "function_call", StringComparison.Ordinal)
             && item.CallId != null
             && item.Name != null
-            && item.Arguments != null)
+            && item.Arguments != null
+        )
         {
             hasFunctionCall = true;
-            content.Add(new GeneratedToolCall(item.CallId, item.Name, item.Arguments, PerplexityAgent.ToolMetadata(item.Id, item.ThoughtSignature)));
+            content.Add(
+                new GeneratedToolCall(
+                    item.CallId,
+                    item.Name,
+                    item.Arguments,
+                    PerplexityAgent.ToolMetadata(item.Id, item.ThoughtSignature)
+                )
+            );
         }
     }
 
-    private static void AddSource(List<GeneratedContent> content, Dictionary<string, int> indexes, GeneratedSource source)
+    private static void AddSource(
+        List<GeneratedContent> content,
+        Dictionary<string, int> indexes,
+        GeneratedSource source
+    )
     {
         if (!indexes.TryGetValue(source.Url, out var existing))
         {
@@ -571,9 +684,11 @@ public sealed class PerplexityLanguageModel : ILanguageModel
             return;
         }
 
-        if (content[existing] is GeneratedSource current
+        if (
+            content[existing] is GeneratedSource current
             && PerplexityAgent.HasSearchResultId(source)
-            && !PerplexityAgent.HasSearchResultId(current))
+            && !PerplexityAgent.HasSearchResultId(current)
+        )
         {
             content[existing] = source;
         }
@@ -656,12 +771,20 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                     case "response.output_text.delta":
                         if (chunk.Delta != null)
                         {
-                            EmitTextDelta(TextKey(chunk.ItemId, chunk.OutputIndex, chunk.ContentIndex), chunk.Delta, parts);
+                            EmitTextDelta(
+                                TextKey(chunk.ItemId, chunk.OutputIndex, chunk.ContentIndex),
+                                chunk.Delta,
+                                parts
+                            );
                         }
 
                         break;
                     case "response.output_text.done":
-                        FinishText(TextKey(chunk.ItemId, chunk.OutputIndex, chunk.ContentIndex), chunk.Text, parts);
+                        FinishText(
+                            TextKey(chunk.ItemId, chunk.OutputIndex, chunk.ContentIndex),
+                            chunk.Text,
+                            parts
+                        );
                         break;
                     case "response.reasoning.started":
                         if (_reasoningId != null)
@@ -669,9 +792,15 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                             parts.Add(new ReasoningEndStreamPart(_reasoningId));
                         }
 
-                        _reasoningId = "reasoning-" + (chunk.SequenceNumber.HasValue
-                            ? chunk.SequenceNumber.Value.ToString(CultureInfo.InvariantCulture)
-                            : Guid.NewGuid().ToString("N"));
+                        _reasoningId =
+                            "reasoning-"
+                            + (
+                                chunk.SequenceNumber.HasValue
+                                    ? chunk.SequenceNumber.Value.ToString(
+                                        CultureInfo.InvariantCulture
+                                    )
+                                    : Guid.NewGuid().ToString("N")
+                            );
                         parts.Add(new ReasoningStartStreamPart(_reasoningId));
                         EmitThought(chunk.Thought, parts);
                         break;
@@ -696,7 +825,10 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                         {
                             foreach (var result in chunk.Contents)
                             {
-                                StageSource(PerplexityAgent.CreateFetchSource(result, NewId), parts);
+                                StageSource(
+                                    PerplexityAgent.CreateFetchSource(result, NewId),
+                                    parts
+                                );
                             }
                         }
 
@@ -733,7 +865,12 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                             }
 
                             _usage = chunk.Response.Usage;
-                            _finish = PerplexityAgent.MapPerplexityFinishReason(chunk.Response.Status, chunk.Response.IncompleteReason, _hasFunctionCall, out _rawFinish);
+                            _finish = PerplexityAgent.MapPerplexityFinishReason(
+                                chunk.Response.Status,
+                                chunk.Response.IncompleteReason,
+                                _hasFunctionCall,
+                                out _rawFinish
+                            );
                         }
                         else if (_finish == FinishReason.Interrupted)
                         {
@@ -746,7 +883,13 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                     case "response.failed":
                         _finish = FinishReason.Error;
                         _rawFinish = "failed";
-                        parts.Add(new ErrorStreamPart(string.IsNullOrEmpty(chunk.ErrorMessage) ? "Perplexity response failed" : chunk.ErrorMessage!));
+                        parts.Add(
+                            new ErrorStreamPart(
+                                string.IsNullOrEmpty(chunk.ErrorMessage)
+                                    ? "Perplexity response failed"
+                                    : chunk.ErrorMessage!
+                            )
+                        );
                         break;
                 }
             }
@@ -781,7 +924,14 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                 }
             }
 
-            parts.Add(new FinishStreamPart(_finish, PerplexityAgent.ConvertPerplexityUsage(_usage), _rawFinish, PerplexityAgent.ProviderMetadata(_usage)));
+            parts.Add(
+                new FinishStreamPart(
+                    _finish,
+                    PerplexityAgent.ConvertPerplexityUsage(_usage),
+                    _rawFinish,
+                    PerplexityAgent.ProviderMetadata(_usage)
+                )
+            );
             return parts;
         }
 
@@ -800,7 +950,13 @@ public sealed class PerplexityLanguageModel : ILanguageModel
             }
 
             _metadataSent = true;
-            parts.Add(new ResponseMetadataStreamPart(response.Id, response.Model, DateTimeOffset.FromUnixTimeSeconds(response.CreatedAt)));
+            parts.Add(
+                new ResponseMetadataStreamPart(
+                    response.Id,
+                    response.Model,
+                    DateTimeOffset.FromUnixTimeSeconds(response.CreatedAt)
+                )
+            );
         }
 
         private void EmitTextDelta(string id, string delta, List<LanguageModelStreamPart> parts)
@@ -831,7 +987,11 @@ public sealed class PerplexityLanguageModel : ILanguageModel
             }
 
             var emitted = state?.Text ?? string.Empty;
-            if (text != null && PerplexityAgent.StartsWithOrdinal(text, emitted) && text.Length > emitted.Length)
+            if (
+                text != null
+                && PerplexityAgent.StartsWithOrdinal(text, emitted)
+                && text.Length > emitted.Length
+            )
             {
                 EmitTextDelta(id, text.Substring(emitted.Length), parts);
             }
@@ -843,7 +1003,11 @@ public sealed class PerplexityLanguageModel : ILanguageModel
             }
         }
 
-        private void FinishOutputText(AgentItem item, double? outputIndex, List<LanguageModelStreamPart> parts)
+        private void FinishOutputText(
+            AgentItem item,
+            double? outputIndex,
+            List<LanguageModelStreamPart> parts
+        )
         {
             if (!string.Equals(item.Type, "message", StringComparison.Ordinal))
             {
@@ -856,7 +1020,11 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                 var part = item.Content[contentIndex];
                 if (string.Equals(part.Type, "output_text", StringComparison.Ordinal))
                 {
-                    FinishText(PerplexityAgent.TextId(item.Id, index, contentIndex), part.Text, parts);
+                    FinishText(
+                        PerplexityAgent.TextId(item.Id, index, contentIndex),
+                        part.Text,
+                        parts
+                    );
                 }
             }
         }
@@ -878,17 +1046,26 @@ public sealed class PerplexityLanguageModel : ILanguageModel
 
         private void EmitFunctionCall(AgentItem item, List<LanguageModelStreamPart> parts)
         {
-            if (!string.Equals(item.Type, "function_call", StringComparison.Ordinal)
+            if (
+                !string.Equals(item.Type, "function_call", StringComparison.Ordinal)
                 || item.CallId == null
                 || item.Name == null
                 || item.Arguments == null
-                || !_seenCalls.Add(item.CallId))
+                || !_seenCalls.Add(item.CallId)
+            )
             {
                 return;
             }
 
             _hasFunctionCall = true;
-            parts.Add(new ToolCallStreamPart(item.CallId, item.Name, item.Arguments, PerplexityAgent.ToolMetadata(item.Id, item.ThoughtSignature)));
+            parts.Add(
+                new ToolCallStreamPart(
+                    item.CallId,
+                    item.Name,
+                    item.Arguments,
+                    PerplexityAgent.ToolMetadata(item.Id, item.ThoughtSignature)
+                )
+            );
         }
 
         private void EmitOutputSources(AgentItem item, List<LanguageModelStreamPart> parts)
@@ -901,7 +1078,14 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                     {
                         if (!string.IsNullOrEmpty(annotation.Url))
                         {
-                            StageSource(PerplexityAgent.CreateAnnotationSource(annotation.Url!, annotation.Title, NewId), parts);
+                            StageSource(
+                                PerplexityAgent.CreateAnnotationSource(
+                                    annotation.Url!,
+                                    annotation.Title,
+                                    NewId
+                                ),
+                                parts
+                            );
                         }
                     }
                 }
@@ -948,7 +1132,12 @@ public sealed class PerplexityLanguageModel : ILanguageModel
 
         private static SourceStreamPart ToSourcePart(GeneratedSource source)
         {
-            return new SourceStreamPart(source.Id, source.Url, source.Title, source.ProviderMetadata);
+            return new SourceStreamPart(
+                source.Id,
+                source.Url,
+                source.Title,
+                source.ProviderMetadata
+            );
         }
 
         private sealed class TextState

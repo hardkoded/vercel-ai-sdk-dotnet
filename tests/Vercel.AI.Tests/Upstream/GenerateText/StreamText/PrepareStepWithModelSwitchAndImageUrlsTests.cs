@@ -12,40 +12,60 @@ namespace Vercel.AI.Tests.Upstream.GenerateText.StreamText;
 /// <summary>Port of <c>stream-text.test.ts</c> &gt; <c>streamText &gt; prepareStep with model switch and image URLs</c>.</summary>
 public sealed class PrepareStepWithModelSwitchAndImageUrlsTests
 {
-    private const string Id = "packages/ai/src/generate-text/stream-text.test.ts::streamText > prepareStep with model switch and image URLs::";
+    private const string Id =
+        "packages/ai/src/generate-text/stream-text.test.ts::streamText > prepareStep with model switch and image URLs::";
 
     [Fact]
-    [UpstreamTest(Id + "should use the prepareStep model supportedUrls for download decision", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
+    [UpstreamTest(
+        Id + "should use the prepareStep model supportedUrls for download decision",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "2ebc78b65435926718879f85a1a85687b053c542"
+    )]
     public async Task Should_use_the_prepareStep_model_supportedUrls_for_download_decision()
     {
         var downloadCalls = new List<DownloadRequestItem>();
-        var withSupport = Model("with-image-url-support", new Dictionary<string, string> { ["image/*"] = "^https?://.*\\z" });
+        var withSupport = Model(
+            "with-image-url-support",
+            new Dictionary<string, string> { ["image/*"] = "^https?://.*\\z" }
+        );
         var withoutSupport = Model("without-image-url-support", new Dictionary<string, string>());
 
-        Task<IReadOnlyList<DownloadResult>> CustomDownload(IReadOnlyList<DownloadRequestItem> requested)
+        Task<IReadOnlyList<DownloadResult>> CustomDownload(
+            IReadOnlyList<DownloadRequestItem> requested
+        )
         {
             downloadCalls.AddRange(requested);
-            return Task.FromResult<IReadOnlyList<DownloadResult>>(requested
-                .Select(item => item.IsUrlSupportedByModel ? null! : new DownloadResult(new byte[] { 1, 2, 3, 4 }, "image/png"))
-                .ToArray());
+            return Task.FromResult<IReadOnlyList<DownloadResult>>(
+                requested
+                    .Select(item =>
+                        item.IsUrlSupportedByModel
+                            ? null!
+                            : new DownloadResult(new byte[] { 1, 2, 3, 4 }, "image/png")
+                    )
+                    .ToArray()
+            );
         }
 
         var client = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }));
         var messages = new ModelMessage[]
         {
-            new UserModelMessage(new UserContentPart[]
-            {
-                new TextContentPart("Describe this image"),
-                new FileContentPart("image/*", "https://example.com/test.jpg", null, null),
-            }),
+            new UserModelMessage(
+                new UserContentPart[]
+                {
+                    new TextContentPart("Describe this image"),
+                    new FileContentPart("image/*", "https://example.com/test.jpg", null, null),
+                }
+            ),
         };
-        var streamed = client.StreamTextAsync(new StreamTextOptions
-        {
-            Model = withSupport,
-            Messages = messages,
-            PrepareStep = _ => new PrepareStepUpdate { Model = withoutSupport }, // model switch
-            ExperimentalDownload = CustomDownload,
-        });
+        var streamed = client.StreamTextAsync(
+            new StreamTextOptions
+            {
+                Model = withSupport,
+                Messages = messages,
+                PrepareStep = _ => new PrepareStepUpdate { Model = withoutSupport }, // model switch
+                ExperimentalDownload = CustomDownload,
+            }
+        );
         var text = await streamed.Text;
 
         var download = Assert.Single(downloadCalls);
@@ -64,7 +84,10 @@ public sealed class PrepareStepWithModelSwitchAndImageUrlsTests
         Assert.Equal("response from without-image-url-support", text);
     }
 
-    private static TestLanguageModel Model(string id, IReadOnlyDictionary<string, string> supportedUrls)
+    private static TestLanguageModel Model(
+        string id,
+        IReadOnlyDictionary<string, string> supportedUrls
+    )
     {
         return new TestLanguageModel(id)
         {

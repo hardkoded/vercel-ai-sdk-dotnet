@@ -26,9 +26,14 @@ internal static class Generation
 
         if (options.Messages != null)
         {
-            if (!options.AllowSystemInMessages && options.Messages.Any(message => message is SystemModelMessage))
+            if (
+                !options.AllowSystemInMessages
+                && options.Messages.Any(message => message is SystemModelMessage)
+            )
             {
-                throw new InvalidPromptException("System messages are not allowed in the prompt or messages fields. Use the instructions option instead.");
+                throw new InvalidPromptException(
+                    "System messages are not allowed in the prompt or messages fields. Use the instructions option instead."
+                );
             }
 
             messages.AddRange(options.Messages);
@@ -49,11 +54,14 @@ internal static class Generation
 
     private static Instructions? ResolveInstructions(GenerateTextOptions options)
     {
-        return options.Instructions ?? (options.System != null ? Instructions.From(options.System) : null);
+        return options.Instructions
+            ?? (options.System != null ? Instructions.From(options.System) : null);
     }
 
     /// <summary>The leading system messages for the call's instructions. An empty string adds none.</summary>
-    private static IReadOnlyList<SystemModelMessage> InstructionMessages(GenerateTextOptions options)
+    private static IReadOnlyList<SystemModelMessage> InstructionMessages(
+        GenerateTextOptions options
+    )
     {
         return InstructionMessages(ResolveInstructions(options));
     }
@@ -65,7 +73,9 @@ internal static class Generation
             return systemMessages;
         }
 
-        return string.IsNullOrEmpty(instructions?.Text) ? Array.Empty<SystemModelMessage>() : new[] { new SystemModelMessage(instructions!.Text!) };
+        return string.IsNullOrEmpty(instructions?.Text)
+            ? Array.Empty<SystemModelMessage>()
+            : new[] { new SystemModelMessage(instructions!.Text!) };
     }
 
     /// <summary>
@@ -82,12 +92,24 @@ internal static class Generation
         IReadOnlyList<UserModelMessage> steeringMessages,
         ref Instructions? instructions,
         ref List<ModelMessage> messages,
-        ref int instructionCount)
+        ref int instructionCount
+    )
     {
-        var update = options.PrepareStep?.Invoke(new PrepareStepContext(steps.Count, steps, messages.Skip(instructionCount).ToArray(), model, instructions, initialInstructions, initialMessages, responseMessages.ToArray())
-        {
-            ExperimentalSteeringMessages = steeringMessages.Count > 0 ? steeringMessages : null,
-        });
+        var update = options.PrepareStep?.Invoke(
+            new PrepareStepContext(
+                steps.Count,
+                steps,
+                messages.Skip(instructionCount).ToArray(),
+                model,
+                instructions,
+                initialInstructions,
+                initialMessages,
+                responseMessages.ToArray()
+            )
+            {
+                ExperimentalSteeringMessages = steeringMessages.Count > 0 ? steeringMessages : null,
+            }
+        );
         if (update?.Instructions != null || update?.Messages != null)
         {
             instructions = update.Instructions ?? instructions;
@@ -104,7 +126,13 @@ internal static class Generation
 
     // Maps to the shouldStartNextStep of generateText and streamText. A step with no client tool calls continues
     // only for a waiting steering message, and `endReason` says why the waiting messages are not delivered when the loop ends.
-    private static bool ShouldStartNextStep(StepResult step, List<StepResult> steps, StopCondition stop, SteeringRun? steeringRun, ref SteeringNotDeliveredReason endReason)
+    private static bool ShouldStartNextStep(
+        StepResult step,
+        List<StepResult> steps,
+        StopCondition stop,
+        SteeringRun? steeringRun,
+        ref SteeringNotDeliveredReason endReason
+    )
     {
         if (step.FinishReason == FinishReason.Interrupted)
         {
@@ -114,7 +142,10 @@ internal static class Generation
         if (HasClientToolCall(step))
         {
             // Continue only after all client tool calls have been executed or denied:
-            if (!ToolExecution.IsToolExecutionAllowedFinishReason(step.FinishReason) || HasUnsettledToolCall(step))
+            if (
+                !ToolExecution.IsToolExecutionAllowedFinishReason(step.FinishReason)
+                || HasUnsettledToolCall(step)
+            )
             {
                 endReason = SteeringNotDeliveredReason.WaitingForToolResults;
                 return false;
@@ -123,8 +154,12 @@ internal static class Generation
         else
         {
             // queued messages wait for a task that was not cut off:
-            var isTruncated = step.FinishReason is FinishReason.Length or FinishReason.ContentFilter;
-            if (steeringRun?.HasPendingMessages() != true && (isTruncated || steeringRun?.PromoteQueuedMessage() != true))
+            var isTruncated =
+                step.FinishReason is FinishReason.Length or FinishReason.ContentFilter;
+            if (
+                steeringRun?.HasPendingMessages() != true
+                && (isTruncated || steeringRun?.PromoteQueuedMessage() != true)
+            )
             {
                 return false;
             }
@@ -147,7 +182,10 @@ internal static class Generation
         return true;
     }
 
-    public static LanguageModelCallOptions CallOptions(GenerateTextOptions options, IReadOnlyList<ModelMessage> prompt)
+    public static LanguageModelCallOptions CallOptions(
+        GenerateTextOptions options,
+        IReadOnlyList<ModelMessage> prompt
+    )
     {
         return new LanguageModelCallOptions
         {
@@ -175,7 +213,8 @@ internal static class Generation
         ILanguageModel model,
         GenerateTextOptions options,
         IAiTelemetry? telemetry,
-        CancellationToken callerToken)
+        CancellationToken callerToken
+    )
     {
         // With a timeout, the model and the tools get a token that also cancels when the timeout expires.
         using var timeouts = CallTimeouts.Create(options.Timeout, null, false, callerToken);
@@ -192,7 +231,15 @@ internal static class Generation
             var instructionCount = InstructionMessages(instructions).Count;
             var initialMessages = messages.Skip(instructionCount).ToArray();
             var responseMessages = new List<ModelMessage>();
-            await ProcessInitialApprovalsAsync(options, messages, instructionCount, responseMessages, options.NowMs ?? DefaultNowMs, cancellationToken).ConfigureAwait(false);
+            await ProcessInitialApprovalsAsync(
+                    options,
+                    messages,
+                    instructionCount,
+                    responseMessages,
+                    options.NowMs ?? DefaultNowMs,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             var steps = new List<StepResult>();
             var stop = options.StopWhen ?? StopWhen.IsStepCount(1);
             var current = model;
@@ -202,16 +249,31 @@ internal static class Generation
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 timeouts?.StartStep();
-                var steeringMessages = steeringRun?.TakeMessages() ?? Array.Empty<UserModelMessage>();
+                var steeringMessages = steeringRun?.TakeMessages()
+                    ?? Array.Empty<UserModelMessage>();
                 messages.AddRange(steeringMessages);
-                var update = PrepareStep(options, steps, current, initialInstructions, initialMessages, responseMessages, steeringMessages, ref instructions, ref messages, ref instructionCount);
+                var update = PrepareStep(
+                    options,
+                    steps,
+                    current,
+                    initialInstructions,
+                    initialMessages,
+                    responseMessages,
+                    steeringMessages,
+                    ref instructions,
+                    ref messages,
+                    ref instructionCount
+                );
                 if (update?.Model != null)
                 {
                     current = update.Model;
                 }
 
                 // steering messages are delivered when they are in the messages that are sent to the model after prepareStep:
-                var deliveredSteeringMessages = steeringRun?.ResolveTakenMessages(steps.Count, messages).Select(delivered => delivered.Message).ToArray();
+                var deliveredSteeringMessages = steeringRun
+                    ?.ResolveTakenMessages(steps.Count, messages)
+                    .Select(delivered => delivered.Message)
+                    .ToArray();
 
                 // The model gets a snapshot, because the step appends its own response to `messages` afterwards.
                 var callOptions = CallOptions(options, messages.ToArray());
@@ -221,33 +283,73 @@ internal static class Generation
                     callOptions.ToolChoice = update.ToolChoice;
                 }
 
-                callOptions.ProviderOptions = MergeProviderOptions(callOptions.ProviderOptions, update?.ProviderOptions);
-                callOptions.Prompt = await LanguageModelPrompts.ConvertToLanguageModelPromptAsync(callOptions.Prompt, current.SupportedUrls, options.ExperimentalDownload, cancellationToken).ConfigureAwait(false);
+                callOptions.ProviderOptions = MergeProviderOptions(
+                    callOptions.ProviderOptions,
+                    update?.ProviderOptions
+                );
+                callOptions.Prompt = await LanguageModelPrompts
+                    .ConvertToLanguageModelPromptAsync(
+                        callOptions.Prompt,
+                        current.SupportedUrls,
+                        options.ExperimentalDownload,
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
 
                 var now = options.NowMs ?? DefaultNowMs;
                 var stepStartMs = now();
-                var modelResponse = await current.DoGenerateAsync(callOptions, cancellationToken).ConfigureAwait(false);
+                var modelResponse = await current
+                    .DoGenerateAsync(callOptions, cancellationToken)
+                    .ConfigureAwait(false);
                 var responseTimeMs = now() - stepStartMs;
-                var generated = await ParseToolCallsAsync(modelResponse, options, messages, instructions, instructionCount, callOptions.ToolChoice?.Type == "none", cancellationToken).ConfigureAwait(false);
+                var generated = await ParseToolCallsAsync(
+                        modelResponse,
+                        options,
+                        messages,
+                        instructions,
+                        instructionCount,
+                        callOptions.ToolChoice?.Type == "none",
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
                 if (options.OnLanguageModelCallEnd != null)
                 {
                     await NotifyAsync(
-                        () => options.OnLanguageModelCallEnd(
-                            new LanguageModelCallEndEvent(
-                                current.Provider,
-                                generated.ResponseModelId ?? current.ModelId,
-                                generated.FinishReason,
-                                generated.Usage,
-                                generated.Content,
-                                generated.ResponseId,
-                                generated.ProviderMetadata,
-                                TimeSpan.FromMilliseconds(responseTimeMs)),
-                            cancellationToken),
-                        cancellationToken).ConfigureAwait(false);
+                            () =>
+                                options.OnLanguageModelCallEnd(
+                                    new LanguageModelCallEndEvent(
+                                        current.Provider,
+                                        generated.ResponseModelId ?? current.ModelId,
+                                        generated.FinishReason,
+                                        generated.Usage,
+                                        generated.Content,
+                                        generated.ResponseId,
+                                        generated.ProviderMetadata,
+                                        TimeSpan.FromMilliseconds(responseTimeMs)
+                                    ),
+                                    cancellationToken
+                                ),
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false);
                 }
 
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
-                var step = await FinishStepAsync(generated, options, messages, instructionCount, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, Array.Empty<double>()), LanguageModelRequestMetadata.Empty, GeneratedResponseInfo(generated, current), ParseResponseBody(generated.RawResponse), steeringMessages: deliveredSteeringMessages).ConfigureAwait(false);
+                var step = await FinishStepAsync(
+                        generated,
+                        options,
+                        messages,
+                        instructionCount,
+                        responseMessages,
+                        current,
+                        cancellationToken,
+                        new StepTiming(now, stepStartMs, responseTimeMs, Array.Empty<double>()),
+                        LanguageModelRequestMetadata.Empty,
+                        GeneratedResponseInfo(generated, current),
+                        ParseResponseBody(generated.RawResponse),
+                        steeringMessages: deliveredSteeringMessages
+                    )
+                    .ConfigureAwait(false);
                 steps.Add(step);
                 if (options.OnStepEnd != null)
                 {
@@ -262,7 +364,8 @@ internal static class Generation
 
             steeringRun?.End(steeringEndReason);
             timeouts?.EndStep();
-            var result = await ToResultAsync(steps, responseMessages, options, cancellationToken).ConfigureAwait(false);
+            var result = await ToResultAsync(steps, responseMessages, options, cancellationToken)
+                .ConfigureAwait(false);
             if (telemetry != null && scope != null)
             {
                 telemetry.OnUsage(scope, result.Usage);
@@ -283,10 +386,20 @@ internal static class Generation
         }
         catch (Exception exception)
         {
-            steeringRun?.End(callerToken.IsCancellationRequested || timeouts?.Token.IsCancellationRequested == true ? SteeringNotDeliveredReason.Aborted : SteeringNotDeliveredReason.Error);
+            steeringRun?.End(
+                callerToken.IsCancellationRequested
+                || timeouts?.Token.IsCancellationRequested == true
+                    ? SteeringNotDeliveredReason.Aborted
+                    : SteeringNotDeliveredReason.Error
+            );
 
             // An expired timeout aborts the call. Like upstream, the call fails with the timeout reason.
-            var error = exception is OperationCanceledException or ApiTimeoutException && !callerToken.IsCancellationRequested && timeouts?.Expired is { } expired ? expired : exception;
+            var error =
+                exception is OperationCanceledException or ApiTimeoutException
+                && !callerToken.IsCancellationRequested
+                && timeouts?.Expired is { } expired
+                    ? expired
+                    : exception;
             if (options.OnError != null)
             {
                 await options.OnError(error, callerToken).ConfigureAwait(false);
@@ -307,12 +420,22 @@ internal static class Generation
         var warnings = new List<ModelWarning>();
         if (options.Timeout?.FirstChunkMs != null)
         {
-            warnings.Add(new UnsupportedWarning("timeout.firstChunkMs", "The firstChunkMs timeout is only supported by streaming functions."));
+            warnings.Add(
+                new UnsupportedWarning(
+                    "timeout.firstChunkMs",
+                    "The firstChunkMs timeout is only supported by streaming functions."
+                )
+            );
         }
 
         if (options.Timeout?.ChunkMs != null)
         {
-            warnings.Add(new UnsupportedWarning("timeout.chunkMs", "The chunkMs timeout is only supported by streaming functions."));
+            warnings.Add(
+                new UnsupportedWarning(
+                    "timeout.chunkMs",
+                    "The chunkMs timeout is only supported by streaming functions."
+                )
+            );
         }
 
         if (warnings.Count == 0)
@@ -327,7 +450,8 @@ internal static class Generation
         ILanguageModel model,
         StreamTextOptions options,
         IAiTelemetry? telemetry,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var steeringRun = Steering.StartSteeringRun(options.ExperimentalSteering);
         try
@@ -347,33 +471,91 @@ internal static class Generation
         StreamTextOptions options,
         IAiTelemetry? telemetry,
         SteeringRun? steeringRun,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency);
         var buffer = new PartBuffer();
-        var textSource = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var finishSource = new TaskCompletionSource<FinishReason>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var usageSource = new TaskCompletionSource<LanguageModelUsage>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var stepsSource = new TaskCompletionSource<IReadOnlyList<StepResult>>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var outputSource = new TaskCompletionSource<JsonElement?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var textSource = new TaskCompletionSource<string>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var finishSource = new TaskCompletionSource<FinishReason>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var usageSource = new TaskCompletionSource<LanguageModelUsage>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var stepsSource = new TaskCompletionSource<IReadOnlyList<StepResult>>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var outputSource = new TaskCompletionSource<JsonElement?>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         var abort = new StreamAbort { SteeringRun = steeringRun };
-        var timeouts = CallTimeouts.Create(options.Timeout, options.AbortSignal, true, cancellationToken);
+        var timeouts = CallTimeouts.Create(
+            options.Timeout,
+            options.AbortSignal,
+            true,
+            cancellationToken
+        );
         var signal = timeouts?.Signal ?? options.AbortSignal;
         if (signal != null)
         {
-            Action onSignal = () => abort.Fire(signal.Reason as Exception ?? new OperationCanceledException(signal.Reason?.ToString()), textSource, finishSource, usageSource, stepsSource);
+            Action onSignal = () =>
+                abort.Fire(
+                    signal.Reason as Exception
+                        ?? new OperationCanceledException(signal.Reason?.ToString()),
+                    textSource,
+                    finishSource,
+                    usageSource,
+                    stepsSource
+                );
             signal.AddAbortHandler(onSignal);
             abort.SignalCleanup = () => signal.RemoveAbortHandler(onSignal);
         }
 
         if (cancellationToken.CanBeCanceled)
         {
-            abort.Registration = cancellationToken.Register(() => abort.Fire(new OperationCanceledException(cancellationToken), textSource, finishSource, usageSource, stepsSource));
+            abort.Registration = cancellationToken.Register(() =>
+                abort.Fire(
+                    new OperationCanceledException(cancellationToken),
+                    textSource,
+                    finishSource,
+                    usageSource,
+                    stepsSource
+                )
+            );
         }
 
         buffer.OnConsumerStop = abort.Stop;
-        _ = Task.Run(() => ProduceAsync(model, options, telemetry, steeringRun, buffer, abort, timeouts, textSource, finishSource, usageSource, stepsSource, outputSource));
-        return new StreamTextResult(buffer, textSource.Task, finishSource.Task, usageSource.Task, stepsSource.Task, outputSource.Task) { Tools = options.Tools };
+        _ = Task.Run(() =>
+            ProduceAsync(
+                model,
+                options,
+                telemetry,
+                steeringRun,
+                buffer,
+                abort,
+                timeouts,
+                textSource,
+                finishSource,
+                usageSource,
+                stepsSource,
+                outputSource
+            )
+        );
+        return new StreamTextResult(
+            buffer,
+            textSource.Task,
+            finishSource.Task,
+            usageSource.Task,
+            stepsSource.Task,
+            outputSource.Task
+        )
+        {
+            Tools = options.Tools,
+            OutputSpecification = options.Output,
+        };
     }
 
     private static async Task ProduceAsync(
@@ -388,13 +570,15 @@ internal static class Generation
         TaskCompletionSource<FinishReason> finishSource,
         TaskCompletionSource<LanguageModelUsage> usageSource,
         TaskCompletionSource<IReadOnlyList<StepResult>> stepsSource,
-        TaskCompletionSource<JsonElement?> outputSource)
+        TaskCompletionSource<JsonElement?> outputSource
+    )
     {
         var steps = new List<StepResult>();
         if (options.OnAbort is { } onAbort)
         {
             // An abort that follows the consumer's cancellation still reaches onAbort, like upstream's same-tick cancel-then-abort.
-            abort.OnLateAbort = error => onAbort(new StreamAbortContext(steps.ToArray(), error), CancellationToken.None);
+            abort.OnLateAbort = error =>
+                onAbort(new StreamAbortContext(steps.ToArray(), error), CancellationToken.None);
         }
         var cancellationToken = abort.Token;
         try
@@ -417,9 +601,21 @@ internal static class Generation
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 timeouts?.StartStep();
-                var steeringMessages = steeringRun?.TakeMessages() ?? Array.Empty<UserModelMessage>();
+                var steeringMessages = steeringRun?.TakeMessages()
+                    ?? Array.Empty<UserModelMessage>();
                 messages.AddRange(steeringMessages);
-                var update = PrepareStep(options, steps, current, initialInstructions, initialMessages, responseMessages, steeringMessages, ref instructions, ref messages, ref instructionCount);
+                var update = PrepareStep(
+                    options,
+                    steps,
+                    current,
+                    initialInstructions,
+                    initialMessages,
+                    responseMessages,
+                    steeringMessages,
+                    ref instructions,
+                    ref messages,
+                    ref instructionCount
+                );
                 if (update?.Model != null)
                 {
                     current = update.Model;
@@ -427,10 +623,15 @@ internal static class Generation
 
                 // steering messages are delivered when they are in the messages that are sent to the model after prepareStep,
                 // and they are streamed before the step output:
-                var deliveredSteeringMessages = steeringRun?.ResolveTakenMessages(steps.Count, messages) ?? Array.Empty<DeliveredSteeringMessage>();
+                var deliveredSteeringMessages = steeringRun?.ResolveTakenMessages(
+                    steps.Count,
+                    messages
+                ) ?? Array.Empty<DeliveredSteeringMessage>();
                 foreach (var delivered in deliveredSteeringMessages)
                 {
-                    buffer.Add(new SteeringMessagePart(delivered.Id, delivered.Message, steps.Count));
+                    buffer.Add(
+                        new SteeringMessagePart(delivered.Id, delivered.Message, steps.Count)
+                    );
                 }
 
                 // The model gets a snapshot, because the step appends its own response to `messages` afterwards.
@@ -442,7 +643,10 @@ internal static class Generation
                     callOptions.ToolChoice = update.ToolChoice;
                 }
 
-                callOptions.ProviderOptions = MergeProviderOptions(callOptions.ProviderOptions, update?.ProviderOptions);
+                callOptions.ProviderOptions = MergeProviderOptions(
+                    callOptions.ProviderOptions,
+                    update?.ProviderOptions
+                );
 
                 var now = options.NowMs ?? DefaultNowMs;
                 var stepStartMs = now();
@@ -471,11 +675,20 @@ internal static class Generation
                 // Tool choice none rejects tool calls when the model call finishes. Withhold tool parts so that consumers
                 // cannot act on them before the rejection, and skip the callbacks that would repair or refine them.
                 var withholdToolParts = callOptions.ToolChoice?.Type == "none";
-                callOptions.Prompt = await LanguageModelPrompts.ConvertToLanguageModelPromptAsync(callOptions.Prompt, current.SupportedUrls, options.ExperimentalDownload, cancellationToken).ConfigureAwait(false);
+                callOptions.Prompt = await LanguageModelPrompts
+                    .ConvertToLanguageModelPromptAsync(
+                        callOptions.Prompt,
+                        current.SupportedUrls,
+                        options.ExperimentalDownload,
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
                 LanguageModelStreamResult streamResult;
                 try
                 {
-                    streamResult = await current.DoStreamAsync(callOptions, cancellationToken).ConfigureAwait(false);
+                    streamResult = await current
+                        .DoStreamAsync(callOptions, cancellationToken)
+                        .ConfigureAwait(false);
                 }
                 catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
                 {
@@ -488,7 +701,9 @@ internal static class Generation
                     steeringRun?.End(SteeringNotDeliveredReason.Error);
                     if (steps.Count == 0)
                     {
-                        var noOutput = new NoOutputGeneratedException("No output generated. Check the stream for errors.");
+                        var noOutput = new NoOutputGeneratedException(
+                            "No output generated. Check the stream for errors."
+                        );
                         if (!abort.TryFinish())
                         {
                             throw abort.Error!;
@@ -533,7 +748,10 @@ internal static class Generation
                         var next = enumerator.MoveNextAsync().AsTask();
                         if (await Task.WhenAny(next, abort.Signal).ConfigureAwait(false) != next)
                         {
-                            _ = next.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+                            _ = next.ContinueWith(
+                                task => _ = task.Exception,
+                                TaskContinuationOptions.OnlyOnFaulted
+                            );
                             cancellationToken.ThrowIfCancellationRequested();
                         }
 
@@ -562,66 +780,155 @@ internal static class Generation
                         switch (part)
                         {
                             case TextStartStreamPart textStart:
-                                var startedText = TextBlock.Start(textBlocks, textStart.Id, textPartIds, contentOrder);
+                                var startedText = TextBlock.Start(
+                                    textBlocks,
+                                    textStart.Id,
+                                    textPartIds,
+                                    contentOrder
+                                );
                                 startedText.ProviderMetadata = textStart.ProviderMetadata;
-                                buffer.Add(new TextStartPart(startedText.PartId, textStart.ProviderMetadata));
+                                buffer.Add(
+                                    new TextStartPart(
+                                        startedText.PartId,
+                                        textStart.ProviderMetadata
+                                    )
+                                );
                                 break;
                             case TextDeltaStreamPart delta:
-                                var activeText = TextBlock.Find(textBlocks, delta.Id, textPartIds, buffer, contentOrder);
+                                var activeText = TextBlock.Find(
+                                    textBlocks,
+                                    delta.Id,
+                                    textPartIds,
+                                    buffer,
+                                    contentOrder
+                                );
                                 text.Append(delta.Delta);
                                 activeText.Text.Append(delta.Delta);
                                 if (delta.Delta.Length > 0 || delta.ProviderMetadata != null)
                                 {
                                     outputChunkTimes.Add(ElapsedMs());
-                                    buffer.Add(new TextDeltaPart(activeText.PartId, delta.Delta, delta.ProviderMetadata));
+                                    buffer.Add(
+                                        new TextDeltaPart(
+                                            activeText.PartId,
+                                            delta.Delta,
+                                            delta.ProviderMetadata
+                                        )
+                                    );
                                 }
 
                                 break;
                             case TextEndStreamPart textEnd:
-                                var ended = TextBlock.Find(textBlocks, textEnd.Id, textPartIds, buffer, contentOrder);
+                                var ended = TextBlock.Find(
+                                    textBlocks,
+                                    textEnd.Id,
+                                    textPartIds,
+                                    buffer,
+                                    contentOrder
+                                );
                                 ended.Citations = textEnd.Citations;
-                                ended.ProviderMetadata = textEnd.ProviderMetadata ?? ended.ProviderMetadata;
+                                ended.ProviderMetadata = textEnd.ProviderMetadata
+                                    ?? ended.ProviderMetadata;
                                 ended.Open = false;
-                                buffer.Add(new TextEndPart(ended.PartId, textEnd.Citations, textEnd.ProviderMetadata));
+                                buffer.Add(
+                                    new TextEndPart(
+                                        ended.PartId,
+                                        textEnd.Citations,
+                                        textEnd.ProviderMetadata
+                                    )
+                                );
                                 break;
                             case DocumentSourceStreamPart documentSource:
-                                documentSources.Add(new GeneratedDocumentSource(
-                                    documentSource.Id,
-                                    documentSource.MediaType,
-                                    documentSource.Title,
-                                    documentSource.Filename,
-                                    documentSource.ProviderMetadata));
-                                buffer.Add(new DocumentSourcePart(documentSources[documentSources.Count - 1]));
+                                documentSources.Add(
+                                    new GeneratedDocumentSource(
+                                        documentSource.Id,
+                                        documentSource.MediaType,
+                                        documentSource.Title,
+                                        documentSource.Filename,
+                                        documentSource.ProviderMetadata
+                                    )
+                                );
+                                buffer.Add(
+                                    new DocumentSourcePart(
+                                        documentSources[documentSources.Count - 1]
+                                    )
+                                );
                                 break;
                             case ReasoningStartStreamPart reasoningStart:
-                                var startedReasoning = ReasoningBlock.Start(reasoningBlocks, reasoningStart.Id, reasoningPartIds, contentOrder);
+                                var startedReasoning = ReasoningBlock.Start(
+                                    reasoningBlocks,
+                                    reasoningStart.Id,
+                                    reasoningPartIds,
+                                    contentOrder
+                                );
                                 startedReasoning.ProviderMetadata = reasoningStart.ProviderMetadata;
-                                buffer.Add(new ReasoningStartPart(startedReasoning.PartId, reasoningStart.ProviderMetadata));
+                                buffer.Add(
+                                    new ReasoningStartPart(
+                                        startedReasoning.PartId,
+                                        reasoningStart.ProviderMetadata
+                                    )
+                                );
                                 break;
                             case ReasoningEndStreamPart reasoningEnd:
-                                var endedReasoning = ReasoningBlock.Find(reasoningBlocks, reasoningEnd.Id, reasoningPartIds, buffer, contentOrder);
-                                endedReasoning.ProviderMetadata = reasoningEnd.ProviderMetadata ?? endedReasoning.ProviderMetadata;
+                                var endedReasoning = ReasoningBlock.Find(
+                                    reasoningBlocks,
+                                    reasoningEnd.Id,
+                                    reasoningPartIds,
+                                    buffer,
+                                    contentOrder
+                                );
+                                endedReasoning.ProviderMetadata = reasoningEnd.ProviderMetadata
+                                    ?? endedReasoning.ProviderMetadata;
                                 endedReasoning.Open = false;
-                                buffer.Add(new ReasoningEndPart(endedReasoning.PartId, reasoningEnd.ProviderMetadata));
+                                buffer.Add(
+                                    new ReasoningEndPart(
+                                        endedReasoning.PartId,
+                                        reasoningEnd.ProviderMetadata
+                                    )
+                                );
                                 break;
                             case ReasoningDeltaStreamPart reasoningDelta:
-                                var activeReasoning = ReasoningBlock.Find(reasoningBlocks, reasoningDelta.Id, reasoningPartIds, buffer, contentOrder);
+                                var activeReasoning = ReasoningBlock.Find(
+                                    reasoningBlocks,
+                                    reasoningDelta.Id,
+                                    reasoningPartIds,
+                                    buffer,
+                                    contentOrder
+                                );
                                 activeReasoning.Text.Append(reasoningDelta.Delta);
-                                activeReasoning.ProviderMetadata = reasoningDelta.ProviderMetadata ?? activeReasoning.ProviderMetadata;
+                                activeReasoning.ProviderMetadata = reasoningDelta.ProviderMetadata
+                                    ?? activeReasoning.ProviderMetadata;
                                 outputChunkTimes.Add(ElapsedMs());
-                                buffer.Add(new ReasoningDeltaPart(activeReasoning.PartId, reasoningDelta.Delta, reasoningDelta.ProviderMetadata));
+                                buffer.Add(
+                                    new ReasoningDeltaPart(
+                                        activeReasoning.PartId,
+                                        reasoningDelta.Delta,
+                                        reasoningDelta.ProviderMetadata
+                                    )
+                                );
                                 break;
                             case ToolCallStreamPart toolCall:
                                 var call = ParseProviderExecutedInput(
                                     options,
                                     await ParseToolCallAsync(
-                                        new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata) { ProviderExecuted = toolCall.ProviderExecuted, Dynamic = toolCall.Dynamic },
-                                        options,
-                                        stepMessages,
-                                        instructions,
-                                        instructionCount,
-                                        withholdToolParts,
-                                        cancellationToken).ConfigureAwait(false));
+                                            new GeneratedToolCall(
+                                                toolCall.ToolCallId,
+                                                toolCall.ToolName,
+                                                toolCall.ArgumentsJson,
+                                                toolCall.ProviderMetadata
+                                            )
+                                            {
+                                                ProviderExecuted = toolCall.ProviderExecuted,
+                                                Dynamic = toolCall.Dynamic,
+                                            },
+                                            options,
+                                            stepMessages,
+                                            instructions,
+                                            instructionCount,
+                                            withholdToolParts,
+                                            cancellationToken
+                                        )
+                                        .ConfigureAwait(false)
+                                );
                                 toolCalls.Add(call);
                                 toolContent.Add(call);
                                 if (withholdToolParts)
@@ -641,65 +948,131 @@ internal static class Generation
                             case ToolApprovalRequestStreamPart when withholdToolParts:
                                 break;
                             case ToolApprovalRequestStreamPart approvalRequest:
-                                var resolvedRequest = ResolveApprovalRequest(new GeneratedToolApprovalRequest(approvalRequest.ApprovalId, approvalRequest.ToolCallId), toolContent);
+                                var resolvedRequest = ResolveApprovalRequest(
+                                    new GeneratedToolApprovalRequest(
+                                        approvalRequest.ApprovalId,
+                                        approvalRequest.ToolCallId
+                                    ),
+                                    toolContent
+                                );
                                 toolContent.Add(resolvedRequest);
                                 buffer.Add(new ToolApprovalRequestPart(resolvedRequest));
                                 break;
                             case ToolResultStreamPart streamedResult:
-                                var providerResult = new GeneratedToolResult(streamedResult.ToolCallId, streamedResult.ToolName, streamedResult.Result.GetRawText(), streamedResult.IsError) { ProviderMetadata = streamedResult.ProviderMetadata };
+                                var providerResult = new GeneratedToolResult(
+                                    streamedResult.ToolCallId,
+                                    streamedResult.ToolName,
+                                    streamedResult.Result.GetRawText(),
+                                    streamedResult.IsError
+                                )
+                                {
+                                    ProviderMetadata = streamedResult.ProviderMetadata,
+                                };
                                 toolContent.Add(providerResult);
-                                var providerExecuted = ProviderExecutedResult(providerResult, toolCalls);
+                                var providerExecuted = ProviderExecutedResult(
+                                    providerResult,
+                                    toolCalls
+                                );
                                 emittedResultIds.Add(providerResult.ToolCallId);
                                 if (withholdToolParts)
                                 {
                                     break;
                                 }
 
-                                buffer.Add(providerResult.IsError ? new ToolErrorPart(providerExecuted) : new ToolResultPart(providerExecuted));
+                                buffer.Add(
+                                    providerResult.IsError
+                                        ? new ToolErrorPart(providerExecuted)
+                                        : new ToolResultPart(providerExecuted)
+                                );
                                 break;
-                            case ToolInputStartStreamPart or ToolInputDeltaStreamPart or ToolInputEndStreamPart when withholdToolParts:
+                            case ToolInputStartStreamPart
+                            or ToolInputDeltaStreamPart
+                            or ToolInputEndStreamPart when withholdToolParts:
                                 break;
                             case ToolInputStartStreamPart inputStart:
                                 outputChunkTimes.Add(ElapsedMs());
                                 var inputStartTool = FindTool(options, inputStart.ToolName);
-                                buffer.Add(new ToolInputStartPart(
-                                    inputStart.Id,
-                                    inputStart.ToolName,
-                                    inputStart.ProviderMetadata,
-                                    inputStart.ProviderExecuted,
-                                    inputStartTool?.IsDynamic ?? inputStart.Dynamic ?? false,
-                                    inputStart.InputEncoding,
-                                    inputStartTool?.Title)
-                                {
-                                    ToolMetadata = inputStartTool?.Metadata,
-                                });
+                                buffer.Add(
+                                    new ToolInputStartPart(
+                                        inputStart.Id,
+                                        inputStart.ToolName,
+                                        inputStart.ProviderMetadata,
+                                        inputStart.ProviderExecuted,
+                                        inputStartTool?.IsDynamic ?? inputStart.Dynamic ?? false,
+                                        inputStart.InputEncoding,
+                                        inputStartTool?.Title
+                                    )
+                                    {
+                                        ToolMetadata = inputStartTool?.Metadata,
+                                    }
+                                );
                                 break;
                             case ToolInputDeltaStreamPart inputDelta:
                                 outputChunkTimes.Add(ElapsedMs());
-                                buffer.Add(new ToolInputDeltaPart(inputDelta.Id, inputDelta.Delta, inputDelta.ProviderMetadata));
+                                buffer.Add(
+                                    new ToolInputDeltaPart(
+                                        inputDelta.Id,
+                                        inputDelta.Delta,
+                                        inputDelta.ProviderMetadata
+                                    )
+                                );
                                 break;
                             case ToolInputEndStreamPart inputEnd:
-                                buffer.Add(new ToolInputEndPart(inputEnd.Id, inputEnd.ProviderMetadata));
+                                buffer.Add(
+                                    new ToolInputEndPart(inputEnd.Id, inputEnd.ProviderMetadata)
+                                );
                                 break;
                             case SourceStreamPart source:
-                                var generatedSource = new GeneratedSource(source.Id, source.Url, source.Title, source.ProviderMetadata);
+                                var generatedSource = new GeneratedSource(
+                                    source.Id,
+                                    source.Url,
+                                    source.Title,
+                                    source.ProviderMetadata
+                                );
                                 sources.Add(generatedSource);
                                 buffer.Add(new SourcePart(generatedSource));
                                 break;
                             case FileStreamPart filePart:
                                 var generatedFile = filePart.Url is null
                                     ? new GeneratedFile(filePart.Data!, filePart.MediaType)
-                                    : await ResolveGeneratedFileDataAsync(new GeneratedFileUrl(filePart.Url, filePart.MediaType), options.ExperimentalDownload, cancellationToken).ConfigureAwait(false);
+                                    : await ResolveGeneratedFileDataAsync(
+                                            new GeneratedFileUrl(filePart.Url, filePart.MediaType),
+                                            options.ExperimentalDownload,
+                                            cancellationToken
+                                        )
+                                        .ConfigureAwait(false);
+                                outputChunkTimes.Add(ElapsedMs());
                                 toolContent.Add(generatedFile);
                                 buffer.Add(new FilePart(generatedFile, filePart.ProviderMetadata));
                                 break;
                             case ReasoningFileStreamPart reasoningFilePart:
                                 var generatedReasoningFile = reasoningFilePart.Url is null
-                                    ? new GeneratedFile(reasoningFilePart.Data!, reasoningFilePart.MediaType)
-                                    : await ResolveGeneratedFileDataAsync(new GeneratedFileUrl(reasoningFilePart.Url, reasoningFilePart.MediaType), options.ExperimentalDownload, cancellationToken).ConfigureAwait(false);
-                                var recordedReasoningFile = new GeneratedReasoningFile(generatedReasoningFile.Data, generatedReasoningFile.MediaType, reasoningFilePart.ProviderMetadata);
+                                    ? new GeneratedFile(
+                                        reasoningFilePart.Data!,
+                                        reasoningFilePart.MediaType
+                                    )
+                                    : await ResolveGeneratedFileDataAsync(
+                                            new GeneratedFileUrl(
+                                                reasoningFilePart.Url,
+                                                reasoningFilePart.MediaType
+                                            ),
+                                            options.ExperimentalDownload,
+                                            cancellationToken
+                                        )
+                                        .ConfigureAwait(false);
+                                var recordedReasoningFile = new GeneratedReasoningFile(
+                                    generatedReasoningFile.Data,
+                                    generatedReasoningFile.MediaType,
+                                    reasoningFilePart.ProviderMetadata
+                                );
+                                outputChunkTimes.Add(ElapsedMs());
                                 contentOrder.Add(recordedReasoningFile);
-                                buffer.Add(new ReasoningFilePart(generatedReasoningFile, reasoningFilePart.ProviderMetadata));
+                                buffer.Add(
+                                    new ReasoningFilePart(
+                                        generatedReasoningFile,
+                                        reasoningFilePart.ProviderMetadata
+                                    )
+                                );
                                 break;
                             case FinishStreamPart done:
                                 finish = done.FinishReason;
@@ -710,7 +1083,9 @@ internal static class Generation
                             case RawStreamPart raw:
                                 if (options.Include?.RawChunks == true)
                                 {
-                                    using var rawDocument = JsonDocument.Parse(raw.RawJson.Length == 0 ? "null" : raw.RawJson);
+                                    using var rawDocument = JsonDocument.Parse(
+                                        raw.RawJson.Length == 0 ? "null" : raw.RawJson
+                                    );
                                     buffer.Add(new RawPart(rawDocument.RootElement.Clone()));
                                 }
 
@@ -722,17 +1097,26 @@ internal static class Generation
                                 buffer.Add(new CustomPart(custom.Kind, custom.ProviderMetadata));
                                 break;
                             case ErrorStreamPart error:
-                                buffer.Add(new ErrorPart(error.Message) { Error = error.Exception });
+                                buffer.Add(
+                                    new ErrorPart(error.Message) { Error = error.Exception }
+                                );
                                 if (options.OnError != null)
                                 {
-                                    await options.OnError(error.Exception ?? new AiSdkException(error.Message), cancellationToken).ConfigureAwait(false);
+                                    await options
+                                        .OnError(
+                                            error.Exception ?? new AiSdkException(error.Message),
+                                            cancellationToken
+                                        )
+                                        .ConfigureAwait(false);
                                 }
 
                                 break;
                             case ResponseMetadataStreamPart responseMetadata:
                                 stepResponseId = responseMetadata.Id ?? stepResponseId;
-                                stepResponseTimestamp = responseMetadata.Timestamp ?? stepResponseTimestamp;
-                                stepResponseModelId = responseMetadata.ModelId ?? stepResponseModelId;
+                                stepResponseTimestamp = responseMetadata.Timestamp
+                                    ?? stepResponseTimestamp;
+                                stepResponseModelId = responseMetadata.ModelId
+                                    ?? stepResponseModelId;
                                 break;
                             case StreamStartStreamPart start:
                                 warnings = start.Warnings;
@@ -760,7 +1144,13 @@ internal static class Generation
                     if (openText.Open)
                     {
                         openText.Open = false;
-                        buffer.Add(new TextEndPart(openText.PartId, openText.Citations, openText.ProviderMetadata));
+                        buffer.Add(
+                            new TextEndPart(
+                                openText.PartId,
+                                openText.Citations,
+                                openText.ProviderMetadata
+                            )
+                        );
                     }
                 }
 
@@ -769,7 +1159,12 @@ internal static class Generation
                     if (openReasoning.Open)
                     {
                         openReasoning.Open = false;
-                        buffer.Add(new ReasoningEndPart(openReasoning.PartId, openReasoning.ProviderMetadata));
+                        buffer.Add(
+                            new ReasoningEndPart(
+                                openReasoning.PartId,
+                                openReasoning.ProviderMetadata
+                            )
+                        );
                     }
                 }
 
@@ -782,7 +1177,8 @@ internal static class Generation
                 // An incomplete stream with partial output keeps the partial result.
                 if (finish == null && !receivedOutput)
                 {
-                    const string noOutputMessage = "No output generated. The model stream ended without a finish chunk.";
+                    const string noOutputMessage =
+                        "No output generated. The model stream ended without a finish chunk.";
                     buffer.Add(new ErrorPart(noOutputMessage));
                     throw new NoOutputGeneratedException(noOutputMessage);
                 }
@@ -793,28 +1189,55 @@ internal static class Generation
                     usage,
                     rawFinish,
                     warnings,
-                    providerMetadata: providerMetadata);
+                    providerMetadata: providerMetadata
+                );
                 if (options.OnLanguageModelCallEnd != null)
                 {
                     await NotifyAsync(
-                        () => options.OnLanguageModelCallEnd(
-                            new LanguageModelCallEndEvent(
-                                current.Provider,
-                                stepResponseModelId,
-                                generated.FinishReason,
-                                generated.Usage,
-                                generated.Content,
-                                stepResponseId,
-                                generated.ProviderMetadata,
-                                TimeSpan.FromMilliseconds(responseTimeMs)),
-                            cancellationToken),
-                        cancellationToken).ConfigureAwait(false);
+                            () =>
+                                options.OnLanguageModelCallEnd(
+                                    new LanguageModelCallEndEvent(
+                                        current.Provider,
+                                        stepResponseModelId,
+                                        generated.FinishReason,
+                                        generated.Usage,
+                                        generated.Content,
+                                        stepResponseId,
+                                        generated.ProviderMetadata,
+                                        TimeSpan.FromMilliseconds(responseTimeMs)
+                                    ),
+                                    cancellationToken
+                                ),
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false);
                 }
 
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
-                var stepResponse = new LanguageModelResponseMetadata(stepResponseId, stepResponseTimestamp, stepResponseModelId, streamResult.Response?.Headers);
+                var stepResponse = new LanguageModelResponseMetadata(
+                    stepResponseId,
+                    stepResponseTimestamp,
+                    stepResponseModelId,
+                    streamResult.Response?.Headers
+                );
                 var approvalParts = new List<TextStreamPart>();
-                var step = await FinishStepAsync(generated, options, messages, instructionCount, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, outputChunkTimes), stepRequest, stepResponse, null, approvalParts, deliveredSteeringMessages.Select(delivered => delivered.Message).ToArray(), preliminary => buffer.Add(new ToolResultPart(preliminary))).ConfigureAwait(false);
+                var step = await FinishStepAsync(
+                        generated,
+                        options,
+                        messages,
+                        instructionCount,
+                        responseMessages,
+                        current,
+                        cancellationToken,
+                        new StepTiming(now, stepStartMs, responseTimeMs, outputChunkTimes),
+                        stepRequest,
+                        stepResponse,
+                        null,
+                        approvalParts,
+                        deliveredSteeringMessages.Select(delivered => delivered.Message).ToArray(),
+                        preliminary => buffer.Add(new ToolResultPart(preliminary))
+                    )
+                    .ConfigureAwait(false);
                 foreach (var approvalPart in approvalParts)
                 {
                     buffer.Add(approvalPart);
@@ -827,7 +1250,11 @@ internal static class Generation
                         continue;
                     }
 
-                    buffer.Add(toolResult.IsError ? new ToolErrorPart(toolResult) : new ToolResultPart(toolResult));
+                    buffer.Add(
+                        toolResult.IsError
+                            ? new ToolErrorPart(toolResult)
+                            : new ToolResultPart(toolResult)
+                    );
                 }
 
                 buffer.Add(new StepFinishPart(step, stepResponse, rawFinish));
@@ -845,7 +1272,8 @@ internal static class Generation
 
             steeringRun?.End(steeringEndReason);
             timeouts?.EndStep();
-            var result = await ToResultAsync(steps, responseMessages, options, cancellationToken).ConfigureAwait(false);
+            var result = await ToResultAsync(steps, responseMessages, options, cancellationToken)
+                .ConfigureAwait(false);
             if (telemetry != null && scope != null)
             {
                 telemetry.OnUsage(scope, result.Usage);
@@ -873,7 +1301,11 @@ internal static class Generation
         catch (Exception exception)
         {
             abort.TryFinish();
-            steeringRun?.End(abort.Stopped || abort.Error != null ? SteeringNotDeliveredReason.Aborted : SteeringNotDeliveredReason.Error);
+            steeringRun?.End(
+                abort.Stopped || abort.Error != null
+                    ? SteeringNotDeliveredReason.Aborted
+                    : SteeringNotDeliveredReason.Error
+            );
             if (abort.Stopped)
             {
                 // The consumer stopped reading. Nobody waits for the stream, so there is nothing to report.
@@ -928,6 +1360,8 @@ internal static class Generation
             ReasoningDeltaStreamPart { Delta.Length: > 0 } => true,
             ToolInputDeltaStreamPart { Delta.Length: > 0 } => true,
             ToolCallStreamPart => true,
+            FileStreamPart => true,
+            ReasoningFileStreamPart => true,
             _ => false,
         };
     }
@@ -953,14 +1387,21 @@ internal static class Generation
 
     // The result tasks are already faulted when the abort fires. This reports the abort, then closes the stream.
     // Like upstream, the stream ends only after OnAbort returns, so a reader that sees the end knows OnAbort ran.
-    private static async Task FinishAbortAsync(StreamTextOptions options, PartBuffer buffer, List<StepResult> steps, Exception error)
+    private static async Task FinishAbortAsync(
+        StreamTextOptions options,
+        PartBuffer buffer,
+        List<StepResult> steps,
+        Exception error
+    )
     {
         Exception? callbackError = null;
         if (options.OnAbort != null)
         {
             try
             {
-                await options.OnAbort(new StreamAbortContext(steps.ToArray(), error), CancellationToken.None).ConfigureAwait(false);
+                await options
+                    .OnAbort(new StreamAbortContext(steps.ToArray(), error), CancellationToken.None)
+                    .ConfigureAwait(false);
             }
             catch (Exception callback)
             {
@@ -983,7 +1424,8 @@ internal static class Generation
         List<object> contentOrder,
         List<GeneratedContent> toolContent,
         List<GeneratedSource> sources,
-        List<GeneratedDocumentSource> documentSources)
+        List<GeneratedDocumentSource> documentSources
+    )
     {
         var content = new List<GeneratedContent>();
         foreach (var entry in contentOrder)
@@ -991,10 +1433,19 @@ internal static class Generation
             switch (entry)
             {
                 case ReasoningBlock block:
-                    content.Add(new GeneratedReasoning(block.Text.ToString(), block.ProviderMetadata));
+                    content.Add(
+                        new GeneratedReasoning(block.Text.ToString(), block.ProviderMetadata)
+                    );
                     break;
-                case TextBlock block when block.Text.Length > 0 || (block.Citations?.Count ?? 0) > 0:
-                    content.Add(new GeneratedText(block.Text.ToString(), block.Citations, block.ProviderMetadata));
+                case TextBlock block
+                    when block.Text.Length > 0 || (block.Citations?.Count ?? 0) > 0:
+                    content.Add(
+                        new GeneratedText(
+                            block.Text.ToString(),
+                            block.Citations,
+                            block.ProviderMetadata
+                        )
+                    );
                     break;
                 case GeneratedReasoningFile reasoningFile:
                     content.Add(reasoningFile);
@@ -1030,7 +1481,12 @@ internal static class Generation
 
         public JsonElement? ProviderMetadata { get; set; }
 
-        public static TextBlock Start(List<TextBlock> blocks, string id, PartIdReserver reserver, List<object> contentOrder)
+        public static TextBlock Start(
+            List<TextBlock> blocks,
+            string id,
+            PartIdReserver reserver,
+            List<object> contentOrder
+        )
         {
             var block = new TextBlock(id, reserver.Reserve(id));
             blocks.Add(block);
@@ -1039,7 +1495,13 @@ internal static class Generation
         }
 
         // Deltas and ends belong to the latest block with their id. Providers that skip text-start get one here, with its text-start part.
-        public static TextBlock Find(List<TextBlock> blocks, string id, PartIdReserver reserver, PartBuffer buffer, List<object> contentOrder)
+        public static TextBlock Find(
+            List<TextBlock> blocks,
+            string id,
+            PartIdReserver reserver,
+            PartBuffer buffer,
+            List<object> contentOrder
+        )
         {
             for (var i = blocks.Count - 1; i >= 0; i--)
             {
@@ -1075,7 +1537,12 @@ internal static class Generation
 
         public JsonElement? ProviderMetadata { get; set; }
 
-        public static ReasoningBlock Start(List<ReasoningBlock> blocks, string id, PartIdReserver reserver, List<object> contentOrder)
+        public static ReasoningBlock Start(
+            List<ReasoningBlock> blocks,
+            string id,
+            PartIdReserver reserver,
+            List<object> contentOrder
+        )
         {
             var block = new ReasoningBlock(id, reserver.Reserve(id));
             blocks.Add(block);
@@ -1084,7 +1551,13 @@ internal static class Generation
         }
 
         // Deltas and ends belong to the latest block with their id. Providers that skip reasoning-start get one here, with its reasoning-start part.
-        public static ReasoningBlock Find(List<ReasoningBlock> blocks, string id, PartIdReserver reserver, PartBuffer buffer, List<object> contentOrder)
+        public static ReasoningBlock Find(
+            List<ReasoningBlock> blocks,
+            string id,
+            PartIdReserver reserver,
+            PartBuffer buffer,
+            List<object> contentOrder
+        )
         {
             for (var i = blocks.Count - 1; i >= 0; i--)
             {
@@ -1117,7 +1590,10 @@ internal static class Generation
             var suffix = 0;
             while (!_usedIds.Add(uniqueId))
             {
-                uniqueId = generatedId + "-" + (++suffix).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                uniqueId =
+                    generatedId
+                    + "-"
+                    + (++suffix).ToString(System.Globalization.CultureInfo.InvariantCulture);
             }
 
             return uniqueId;
@@ -1168,7 +1644,8 @@ internal static class Generation
     // Deep merge, as upstream mergeObjects: nested objects merge, other values from the step replace the call's.
     private static IReadOnlyDictionary<string, JsonElement>? MergeProviderOptions(
         IReadOnlyDictionary<string, JsonElement>? options,
-        IReadOnlyDictionary<string, JsonElement>? step)
+        IReadOnlyDictionary<string, JsonElement>? step
+    )
     {
         if (step == null || options == null)
         {
@@ -1183,7 +1660,9 @@ internal static class Generation
 
         foreach (var pair in step)
         {
-            merged[pair.Key] = merged.TryGetValue(pair.Key, out var current) ? MergeJson(current, pair.Value) : pair.Value;
+            merged[pair.Key] = merged.TryGetValue(pair.Key, out var current)
+                ? MergeJson(current, pair.Value)
+                : pair.Value;
         }
 
         return merged;
@@ -1204,13 +1683,18 @@ internal static class Generation
 
         foreach (var property in step.EnumerateObject())
         {
-            merged[property.Name] = merged.TryGetValue(property.Name, out var value) ? MergeJson(value, property.Value) : property.Value;
+            merged[property.Name] = merged.TryGetValue(property.Name, out var value)
+                ? MergeJson(value, property.Value)
+                : property.Value;
         }
 
         return JsonSerializer.SerializeToElement(merged);
     }
 
-    private static ExecutedTool ProviderExecutedResult(GeneratedToolResult result, IReadOnlyList<GeneratedToolCall> toolCalls)
+    private static ExecutedTool ProviderExecutedResult(
+        GeneratedToolResult result,
+        IReadOnlyList<GeneratedToolCall> toolCalls
+    )
     {
         string? input = null;
         GeneratedToolCall? matched = null;
@@ -1223,7 +1707,12 @@ internal static class Generation
             }
         }
 
-        return new ExecutedTool(result.ToolCallId, result.ToolName, result.ResultJson, result.IsError)
+        return new ExecutedTool(
+            result.ToolCallId,
+            result.ToolName,
+            result.ResultJson,
+            result.IsError
+        )
         {
             ProviderExecuted = true,
             ProviderMetadata = result.ProviderMetadata,
@@ -1234,7 +1723,9 @@ internal static class Generation
         };
     }
 
-    private static IReadOnlyDictionary<string, JsonElement>? ToProviderOptions(JsonElement? metadata)
+    internal static IReadOnlyDictionary<string, JsonElement>? ToProviderOptions(
+        JsonElement? metadata
+    )
     {
         if (metadata is not { ValueKind: JsonValueKind.Object } root)
         {
@@ -1255,20 +1746,34 @@ internal static class Generation
     private static async Task<GeneratedFile> ResolveGeneratedFileDataAsync(
         GeneratedFileUrl remote,
         Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>? download,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         if (download is null)
         {
             DownloadUrls.ValidateDownloadUrl(remote.Url);
-            var downloaded = await Download.GetAsync(remote.Url, null, cancellationToken).ConfigureAwait(false);
+            var downloaded = await Download
+                .GetAsync(remote.Url, null, cancellationToken)
+                .ConfigureAwait(false);
             return new GeneratedFile(downloaded.Data, remote.MediaType);
         }
 
-        var results = await download(new[] { new DownloadRequestItem(remote.Url, false) { AbortSignal = cancellationToken } }).ConfigureAwait(false);
+        var results = await download(
+                new[]
+                {
+                    new DownloadRequestItem(remote.Url, false) { AbortSignal = cancellationToken },
+                }
+            )
+            .ConfigureAwait(false);
         var result = results.Count == 0 ? null : results[0];
         if (result is null)
         {
-            throw new DownloadException(remote.Url.ToString(), "Generated file URL " + remote.Url + " must be downloaded, but the download function returned null");
+            throw new DownloadException(
+                remote.Url.ToString(),
+                "Generated file URL "
+                    + remote.Url
+                    + " must be downloaded, but the download function returned null"
+            );
         }
 
         return new GeneratedFile(result.Data, remote.MediaType);
@@ -1288,7 +1793,8 @@ internal static class Generation
         JsonElement? responseBody,
         List<TextStreamPart>? approvalParts = null,
         IReadOnlyList<UserModelMessage>? steeringMessages = null,
-        Action<ExecutedTool>? onPreliminaryToolResult = null)
+        Action<ExecutedTool>? onPreliminaryToolResult = null
+    )
     {
         var toolExecutionMs = new Dictionary<string, double>(StringComparer.Ordinal);
         var toolCalls = new List<GeneratedToolCall>();
@@ -1297,33 +1803,30 @@ internal static class Generation
         var files = new List<GeneratedFile>();
         var reasoningParts = new List<string>();
         var reasoningMetadata = new List<JsonElement?>();
-        var assistantParts = new List<AssistantContentPart>();
         foreach (var part in generated.Content)
         {
             var resolved = part switch
             {
-                GeneratedToolApprovalRequest request => ResolveApprovalRequest(request, generated.Content),
+                GeneratedToolApprovalRequest request => ResolveApprovalRequest(
+                    request,
+                    generated.Content
+                ),
                 GeneratedToolCall toolCall => ParseProviderExecutedInput(options, toolCall),
-                GeneratedFileUrl remote => await ResolveGeneratedFileDataAsync(remote, options.ExperimentalDownload, cancellationToken).ConfigureAwait(false),
+                GeneratedFileUrl remote => await ResolveGeneratedFileDataAsync(
+                        remote,
+                        options.ExperimentalDownload,
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false),
                 _ => part,
             };
             content.Add(resolved);
             switch (resolved)
             {
-                case GeneratedToolApprovalRequest approvalRequest:
-                    assistantParts.Add(new AssistantToolApprovalRequestPart(approvalRequest.ApprovalId, approvalRequest.ToolCallId));
-                    break;
                 case GeneratedToolCall call:
                     toolCalls.Add(call);
-                    assistantParts.Add(new AssistantToolCallPart(call));
                     break;
-                case GeneratedText generatedText:
-                    assistantParts.Add(new AssistantTextPart(generatedText.Text, ToProviderOptions(generatedText.ProviderMetadata)));
-                    break;
-                case GeneratedToolResult providerResult:
-                    // The provider ran the tool, so the next step replays the result in the same assistant message.
-                    var output = new ToolModelMessage(providerResult.ToolCallId, providerResult.ToolName, providerResult.ResultJson, providerResult.IsError);
-                    assistantParts.Add(new AssistantToolResultPart(providerResult.ToolCallId, providerResult.ToolName, output, ToProviderOptions(providerResult.ProviderMetadata)));
+                case GeneratedToolResult:
                     break;
                 case GeneratedSource source:
                     sources.Add(source);
@@ -1331,13 +1834,9 @@ internal static class Generation
                 case GeneratedReasoning generatedReasoning:
                     reasoningParts.Add(generatedReasoning.Text);
                     reasoningMetadata.Add(generatedReasoning.ProviderMetadata);
-                    assistantParts.Add(new AssistantReasoningPart(generatedReasoning.Text, ToProviderOptions(generatedReasoning.ProviderMetadata)));
                     break;
                 case GeneratedFile file:
                     files.Add(file);
-                    break;
-                case GeneratedReasoningFile reasoningFile:
-                    assistantParts.Add(new AssistantReasoningFilePart(reasoningFile.MediaType, null, reasoningFile.Data, ToProviderOptions(reasoningFile.ProviderMetadata)));
                     break;
             }
         }
@@ -1361,34 +1860,56 @@ internal static class Generation
 
         // Each valid call to a known tool gets its approval status. A call that needs a user decision waits for it, and
         // an automatic denial settles the call without running it.
-        var (approvalRequests, approvalResponses, blockedToolCallIds) = await ResolveStepApprovalsAsync(options, toolCalls, stepInputMessages.Skip(instructionCount).ToArray()).ConfigureAwait(false);
+        var (approvalRequests, approvalResponses, blockedToolCallIds) =
+            await ResolveStepApprovalsAsync(
+                    options,
+                    toolCalls,
+                    stepInputMessages.Skip(instructionCount).ToArray()
+                )
+                .ConfigureAwait(false);
         foreach (var request in approvalRequests)
         {
             // streamText emits the request, its response, and the denial of a call that an automatic decision settled
             if (approvalParts != null)
             {
                 approvalParts.Add(new ToolApprovalRequestPart(request));
-                var requestResponse = approvalResponses.FirstOrDefault(response => string.Equals(response.ApprovalId, request.ApprovalId, StringComparison.Ordinal));
+                var requestResponse = approvalResponses.FirstOrDefault(response =>
+                    string.Equals(response.ApprovalId, request.ApprovalId, StringComparison.Ordinal)
+                );
                 if (requestResponse != null)
                 {
                     approvalParts.Add(new ToolApprovalResponsePart(requestResponse));
                     if (!requestResponse.Approved)
                     {
-                        approvalParts.Add(new ToolOutputDeniedPart(requestResponse.ToolCall.ToolCallId, requestResponse.ToolCall.ToolName));
+                        approvalParts.Add(
+                            new ToolOutputDeniedPart(
+                                requestResponse.ToolCall.ToolCallId,
+                                requestResponse.ToolCall.ToolName
+                            )
+                        );
                     }
                 }
             }
-
-            assistantParts.Add(new AssistantToolApprovalRequestPart(request.ApprovalId, request.ToolCallId, request.IsAutomatic ? true : null) { Reason = request.Reason, Signature = request.Signature });
         }
 
         var stepResponseStart = responseMessages.Count;
-        var assistantMessage = new AssistantModelMessage(generated.Text, toolCalls, reasoning, ToProviderOptions(MergeProviderMetadata(reasoningMetadata)), assistantParts);
+        var assistantMessage = new AssistantModelMessage(
+            generated.Text,
+            toolCalls,
+            reasoning,
+            ToProviderOptions(MergeProviderMetadata(reasoningMetadata)),
+            ToResponseMessages.ToAssistantContent(content.Concat(approvalRequests).ToArray())
+        );
         messages.Add(assistantMessage);
         responseMessages.Add(assistantMessage);
         foreach (var approvalResponse in approvalResponses)
         {
-            var responseMessage = new ToolApprovalResponseModelMessage(approvalResponse.ApprovalId, approvalResponse.Approved, approvalResponse.Reason, approvalResponse.ProviderExecuted);
+            var responseMessage = new ToolApprovalResponseModelMessage(
+                approvalResponse.ApprovalId,
+                approvalResponse.Approved,
+                approvalResponse.Reason,
+                approvalResponse.ProviderExecuted
+            );
             messages.Add(responseMessage);
             responseMessages.Add(responseMessage);
         }
@@ -1406,7 +1927,15 @@ internal static class Generation
                     {
                         var invalidResult = InvalidToolResult(call);
                         toolResults.Add(invalidResult);
-                        toolMessages.Add(new ToolModelMessage(invalidResult.ToolCallId, invalidResult.ToolName, invalidResult.ModelOutput ?? invalidResult.OutputJson, invalidResult.IsError, invalidResult.ModelOutputType));
+                        toolMessages.Add(
+                            new ToolModelMessage(
+                                invalidResult.ToolCallId,
+                                invalidResult.ToolName,
+                                invalidResult.ModelOutput ?? invalidResult.OutputJson,
+                                invalidResult.IsError,
+                                invalidResult.ModelOutputType
+                            )
+                        );
                     }
 
                     continue;
@@ -1415,7 +1944,11 @@ internal static class Generation
                 var tool = FindTool(options, call.ToolName);
 
                 // A tool without execute is for the caller to run: the step has the call and no result.
-                if (call.ProviderExecuted || blockedToolCallIds.Contains(call.ToolCallId) || (tool != null && !HasExecutor(tool)))
+                if (
+                    call.ProviderExecuted
+                    || blockedToolCallIds.Contains(call.ToolCallId)
+                    || (tool != null && !HasExecutor(tool))
+                )
                 {
                     continue;
                 }
@@ -1423,23 +1956,48 @@ internal static class Generation
                 callsToExecute.Add(call);
             }
 
-            var executions = await ToolCallConcurrencyScheduler.MapWithConcurrency(
-                callsToExecute,
-                ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency),
-                async (call, _) =>
-                {
-                    var (executed, executionMs) = await ExecuteToolAsync(call, options, stepInputMessages, timing.Now, cancellationToken, onPreliminaryToolResult).ConfigureAwait(false);
-                    return (Executed: executed, ElapsedMs: executionMs);
-                },
-                cancellationToken).ConfigureAwait(false);
+            var executions = await ToolCallConcurrencyScheduler
+                .MapWithConcurrency(
+                    callsToExecute,
+                    ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(
+                        options.ToolCallConcurrency
+                    ),
+                    async (call, _) =>
+                    {
+                        var (executed, executionMs) = await ExecuteToolAsync(
+                                call,
+                                options,
+                                stepInputMessages,
+                                timing.Now,
+                                cancellationToken,
+                                onPreliminaryToolResult
+                            )
+                            .ConfigureAwait(false);
+                        return (Executed: executed, ElapsedMs: executionMs);
+                    },
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             foreach (var (executed, elapsedMs) in executions)
             {
                 toolExecutionMs[executed.ToolCallId] = elapsedMs;
 
                 toolResults.Add(executed);
-                toolMessages.Add(executed.ModelOutputContent != null
-                    ? new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutputContent)
-                    : new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutput ?? executed.OutputJson, executed.IsError, executed.ModelOutputType));
+                toolMessages.Add(
+                    executed.ModelOutputContent != null
+                        ? new ToolModelMessage(
+                            executed.ToolCallId,
+                            executed.ToolName,
+                            executed.ModelOutputContent
+                        )
+                        : new ToolModelMessage(
+                            executed.ToolCallId,
+                            executed.ToolName,
+                            executed.ModelOutput ?? executed.OutputJson,
+                            executed.IsError,
+                            executed.ModelOutputType
+                        )
+                );
             }
 
             // A denied call has no result to wait for, so it is answered with an execution-denied result. A provider-executed
@@ -1448,7 +2006,15 @@ internal static class Generation
             {
                 if (!approvalResponse.Approved && !approvalResponse.ProviderExecuted)
                 {
-                    toolMessages.Add(new ToolModelMessage(approvalResponse.ToolCall.ToolCallId, approvalResponse.ToolCall.ToolName, approvalResponse.Reason, false, "execution-denied"));
+                    toolMessages.Add(
+                        new ToolModelMessage(
+                            approvalResponse.ToolCall.ToolCallId,
+                            approvalResponse.ToolCall.ToolName,
+                            approvalResponse.Reason,
+                            false,
+                            "execution-denied"
+                        )
+                    );
                 }
             }
 
@@ -1463,7 +2029,11 @@ internal static class Generation
 
                 var sorted = toolMessages
                     .Select((message, index) => (Message: message, Index: index))
-                    .OrderBy(entry => order.TryGetValue(entry.Message.ToolCallId, out var position) ? position : int.MaxValue)
+                    .OrderBy(entry =>
+                        order.TryGetValue(entry.Message.ToolCallId, out var position)
+                            ? position
+                            : int.MaxValue
+                    )
                     .ThenBy(entry => entry.Index)
                     .Select(entry => entry.Message)
                     .ToList();
@@ -1475,14 +2045,34 @@ internal static class Generation
 
         // The results of the tools this loop ran follow the model's own content, as upstream lists them: first the results of
         // calls without an approval response, then the approval requests and responses, then the results of the others.
-        var answeredToolCallIds = new HashSet<string>(approvalResponses.Select(response => response.ToolCall.ToolCallId), StringComparer.Ordinal);
+        var answeredToolCallIds = new HashSet<string>(
+            approvalResponses.Select(response => response.ToolCall.ToolCallId),
+            StringComparer.Ordinal
+        );
         foreach (var answered in new[] { false, true })
         {
             foreach (var executed in toolResults)
             {
-                if (!executed.ProviderExecuted && answeredToolCallIds.Contains(executed.ToolCallId) == answered)
+                if (
+                    !executed.ProviderExecuted
+                    && answeredToolCallIds.Contains(executed.ToolCallId) == answered
+                )
                 {
-                    content.Add(new GeneratedToolResult(executed.ToolCallId, executed.ToolName, executed.IsError && executed.ModelOutput != null ? JsonSerializer.Serialize(executed.ModelOutput) : executed.OutputJson, executed.IsError) { Error = executed.Error, Dynamic = executed.Dynamic, ToolMetadata = executed.ToolMetadata });
+                    content.Add(
+                        new GeneratedToolResult(
+                            executed.ToolCallId,
+                            executed.ToolName,
+                            executed.IsError && executed.ModelOutput != null
+                                ? JsonSerializer.Serialize(executed.ModelOutput)
+                                : executed.OutputJson,
+                            executed.IsError
+                        )
+                        {
+                            Error = executed.Error,
+                            Dynamic = executed.Dynamic,
+                            ToolMetadata = executed.ToolMetadata,
+                        }
+                    );
                 }
             }
 
@@ -1499,9 +2089,40 @@ internal static class Generation
             responseInfo.ModelId,
             responseInfo.Headers,
             responseMessages.Skip(stepResponseStart).ToArray(),
-            responseBody);
-        var performance = StepPerformanceCalculator.Create(timing.Now() - timing.StartMs, timing.ResponseTimeMs, timing.OutputChunkTimesMs, toolExecutionMs, generated.Usage);
-        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, generated.Warnings, files, model.Provider, model.ModelId, content, performance, stepRequest, response, generated.RawFinishReason) { StructuredOutputText = generated.StructuredOutputText, ExperimentalSteeringMessages = steeringMessages is { Count: > 0 } ? steeringMessages : null };
+            responseBody
+        );
+        var performance = StepPerformanceCalculator.Create(
+            timing.Now() - timing.StartMs,
+            timing.ResponseTimeMs,
+            timing.OutputChunkTimesMs,
+            toolExecutionMs,
+            generated.Usage
+        );
+        return new StepResult(
+            generated.Text,
+            reasoning,
+            toolCalls,
+            toolResults,
+            generated.FinishReason,
+            generated.Usage,
+            sources,
+            generated.ProviderMetadata,
+            generated.Warnings,
+            files,
+            model.Provider,
+            model.ModelId,
+            content,
+            performance,
+            stepRequest,
+            response,
+            generated.RawFinishReason
+        )
+        {
+            StructuredOutputText = generated.StructuredOutputText,
+            ExperimentalSteeringMessages = steeringMessages is { Count: > 0 }
+                ? steeringMessages
+                : null,
+        };
     }
 
     // Parses the tool calls of a model response with the call's tools, repair function, and input refinements. A call that
@@ -1513,14 +2134,25 @@ internal static class Generation
         Instructions? instructions,
         int instructionCount,
         bool toolChoiceNone,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var parses = new List<Task<GeneratedToolCall>>();
         foreach (var part in generated.Content)
         {
             if (part is GeneratedToolCall call)
             {
-                parses.Add(ParseToolCallAsync(call, options, messages, instructions, instructionCount, toolChoiceNone, cancellationToken));
+                parses.Add(
+                    ParseToolCallAsync(
+                        call,
+                        options,
+                        messages,
+                        instructions,
+                        instructionCount,
+                        toolChoiceNone,
+                        cancellationToken
+                    )
+                );
             }
         }
 
@@ -1547,7 +2179,8 @@ internal static class Generation
         Instructions? instructions,
         int instructionCount,
         bool toolChoiceNone,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         // The messages are the history without the leading instructions, which the repair function gets apart.
         var history = messages.Skip(instructionCount).ToArray();
@@ -1563,17 +2196,25 @@ internal static class Generation
             repairToolCall = null;
         }
 
-        var parsed = await ToolCallParser.ParseToolCallAsync(
-            new ParseToolCallOptions(call)
-            {
-                Tools = tools,
-                RepairToolCall = repairToolCall,
-                RefineToolInput = toolChoiceNone ? null : options.RefineToolInput,
-                Messages = history,
-                Instructions = instructions,
-            },
-            cancellationToken).ConfigureAwait(false);
-        return new GeneratedToolCall(parsed.ToolCallId, parsed.ToolName, parsed.Input.GetRawText(), parsed.ProviderMetadata)
+        var parsed = await ToolCallParser
+            .ParseToolCallAsync(
+                new ParseToolCallOptions(call)
+                {
+                    Tools = tools,
+                    RepairToolCall = repairToolCall,
+                    RefineToolInput = toolChoiceNone ? null : options.RefineToolInput,
+                    Messages = history,
+                    Instructions = instructions,
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        return new GeneratedToolCall(
+            parsed.ToolCallId,
+            parsed.ToolName,
+            parsed.Input.GetRawText(),
+            parsed.ProviderMetadata
+        )
         {
             ProviderExecuted = parsed.ProviderExecuted,
             Dynamic = parsed.Dynamic,
@@ -1624,7 +2265,12 @@ internal static class Generation
     private static ExecutedTool InvalidToolResult(GeneratedToolCall call)
     {
         var message = ErrorMessage.ToErrorString(call.Error!);
-        return new ExecutedTool(call.ToolCallId, call.ToolName, JsonSerializer.Serialize(new { error = message }), true)
+        return new ExecutedTool(
+            call.ToolCallId,
+            call.ToolName,
+            JsonSerializer.Serialize(new { error = message }),
+            true
+        )
         {
             InputJson = call.ArgumentsJson,
             Dynamic = true,
@@ -1641,7 +2287,12 @@ internal static class Generation
     }
 
     // What FinishStepAsync needs to compute the performance of one step.
-    private sealed class StepTiming(Func<double> now, double startMs, double responseTimeMs, IReadOnlyList<double> outputChunkTimesMs)
+    private sealed class StepTiming(
+        Func<double> now,
+        double startMs,
+        double responseTimeMs,
+        IReadOnlyList<double> outputChunkTimesMs
+    )
     {
         public Func<double> Now { get; } = now;
 
@@ -1653,27 +2304,49 @@ internal static class Generation
     }
 
     // A provider-executed tool asks for approval by tool call id; the step carries the call itself, as upstream does.
-    private static GeneratedToolApprovalRequest ResolveApprovalRequest(GeneratedToolApprovalRequest request, IReadOnlyList<GeneratedContent> content)
+    private static GeneratedToolApprovalRequest ResolveApprovalRequest(
+        GeneratedToolApprovalRequest request,
+        IReadOnlyList<GeneratedContent> content
+    )
     {
         foreach (var part in content)
         {
-            if (part is GeneratedToolCall call && string.Equals(call.ToolCallId, request.ToolCallId, StringComparison.Ordinal))
+            if (
+                part is GeneratedToolCall call
+                && string.Equals(call.ToolCallId, request.ToolCallId, StringComparison.Ordinal)
+            )
             {
-                return new GeneratedToolApprovalRequest(request.ApprovalId, request.ToolCallId) { ToolCall = call };
+                return new GeneratedToolApprovalRequest(request.ApprovalId, request.ToolCallId)
+                {
+                    ToolCall = call,
+                };
             }
         }
 
-        throw new AiSdkException("Tool call \"" + request.ToolCallId + "\" not found for approval request \"" + request.ApprovalId + "\".");
+        throw new AiSdkException(
+            "Tool call \""
+                + request.ToolCallId
+                + "\" not found for approval request \""
+                + request.ApprovalId
+                + "\"."
+        );
     }
 
     // The model sees no approval requests, and only the approval responses of provider-executed calls.
     // A denied one is followed by an execution-denied result that names the approval for the provider.
-    private static IReadOnlyList<ModelMessage> PrepareProviderPrompt(IReadOnlyList<ModelMessage> prompt)
+    private static IReadOnlyList<ModelMessage> PrepareProviderPrompt(
+        IReadOnlyList<ModelMessage> prompt
+    )
     {
         var needsWork = false;
         foreach (var message in prompt)
         {
-            if (message is ToolApprovalResponseModelMessage || (message is AssistantModelMessage assistant && ContainsApprovalRequest(assistant)))
+            if (
+                message is ToolApprovalResponseModelMessage
+                || (
+                    message is AssistantModelMessage assistant && ContainsApprovalRequest(assistant)
+                )
+            )
             {
                 needsWork = true;
                 break;
@@ -1722,7 +2395,15 @@ internal static class Generation
                         }
                     }
 
-                    prepared.Add(new AssistantModelMessage(assistant.Text, assistant.ToolCalls, assistant.Reasoning, assistant.ReasoningProviderOptions, parts));
+                    prepared.Add(
+                        new AssistantModelMessage(
+                            assistant.Text,
+                            assistant.ToolCalls,
+                            assistant.Reasoning,
+                            assistant.ReasoningProviderOptions,
+                            parts
+                        )
+                    );
                     break;
                 case ToolApprovalResponseModelMessage response:
                     if (!response.ProviderExecuted)
@@ -1730,19 +2411,46 @@ internal static class Generation
                         break;
                     }
 
-                    if (response.Approved || !callIds.TryGetValue(response.ApprovalId, out var toolCallId))
+                    if (
+                        response.Approved
+                        || !callIds.TryGetValue(response.ApprovalId, out var toolCallId)
+                    )
                     {
                         prepared.Add(response);
                         break;
                     }
 
-                    using (var approvalOptions = JsonDocument.Parse(JsonSerializer.Serialize(new { openai = new { approvalId = response.ApprovalId } })))
+                    using (
+                        var approvalOptions = JsonDocument.Parse(
+                            JsonSerializer.Serialize(
+                                new { openai = new { approvalId = response.ApprovalId } }
+                            )
+                        )
+                    )
                     {
-                        var denied = new ToolModelMessage(toolCallId, toolNames.TryGetValue(toolCallId, out var toolName) ? toolName : string.Empty, response.Reason, false, "execution-denied")
+                        var denied = new ToolModelMessage(
+                            toolCallId,
+                            toolNames.TryGetValue(toolCallId, out var toolName)
+                                ? toolName
+                                : string.Empty,
+                            response.Reason,
+                            false,
+                            "execution-denied"
+                        )
                         {
                             OutputProviderOptions = approvalOptions.RootElement.Clone(),
                         };
-                        prepared.Add(new ToolApprovalResponseModelMessage(response.ApprovalId, false, response.Reason, true) { DeniedToolResult = denied });
+                        prepared.Add(
+                            new ToolApprovalResponseModelMessage(
+                                response.ApprovalId,
+                                false,
+                                response.Reason,
+                                true
+                            )
+                            {
+                                DeniedToolResult = denied,
+                            }
+                        );
                     }
 
                     break;
@@ -1768,7 +2476,11 @@ internal static class Generation
         return false;
     }
 
-    private static void EnforceToolChoice(ToolChoice? toolChoice, LanguageModelGenerateResult generated, ILanguageModel model)
+    private static void EnforceToolChoice(
+        ToolChoice? toolChoice,
+        LanguageModelGenerateResult generated,
+        ILanguageModel model
+    )
     {
         if (toolChoice is null || toolChoice.Type == "auto")
         {
@@ -1785,7 +2497,8 @@ internal static class Generation
                     generated.FinishReason,
                     model.Provider,
                     model.ModelId,
-                    generated.Content);
+                    generated.Content
+                );
             }
 
             return;
@@ -1815,7 +2528,8 @@ internal static class Generation
                     generated.FinishReason,
                     model.Provider,
                     model.ModelId,
-                    generated.Content);
+                    generated.Content
+                );
             }
 
             return;
@@ -1832,18 +2546,24 @@ internal static class Generation
             }
 
             throw new ToolChoiceViolationException(
-                "Model response did not contain a call to the required tool '" + named.ToolName + "'.",
+                "Model response did not contain a call to the required tool '"
+                    + named.ToolName
+                    + "'.",
                 toolChoice,
                 generated.FinishReason,
                 model.Provider,
                 model.ModelId,
-                generated.Content);
+                generated.Content
+            );
         }
     }
 
     // Upstream parses the input of a tool call with the tool's input schema. Only a provider-defined tool declared with a
     // schema is parsed here, so the input of any other call is kept as the model sent it.
-    private static GeneratedToolCall ParseProviderExecutedInput(GenerateTextOptions options, GeneratedToolCall call)
+    private static GeneratedToolCall ParseProviderExecutedInput(
+        GenerateTextOptions options,
+        GeneratedToolCall call
+    )
     {
         if (!call.ProviderExecuted || call.Invalid)
         {
@@ -1851,7 +2571,10 @@ internal static class Generation
         }
 
         var tool = FindTool(options, call.ToolName);
-        if (tool is not { IsProviderDefined: true } || tool.InputSchema.ValueKind != JsonValueKind.Object)
+        if (
+            tool is not { IsProviderDefined: true }
+            || tool.InputSchema.ValueKind != JsonValueKind.Object
+        )
         {
             return call;
         }
@@ -1859,7 +2582,9 @@ internal static class Generation
         JsonNode? input;
         try
         {
-            input = JsonNode.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson);
+            input = JsonNode.Parse(
+                string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson
+            );
         }
         catch (JsonException)
         {
@@ -1867,7 +2592,18 @@ internal static class Generation
         }
 
         var parsed = JsonSchemaProjection.Project(tool.InputSchema, input);
-        return new GeneratedToolCall(call.ToolCallId, call.ToolName, parsed?.ToJsonString() ?? "null", call.ProviderMetadata) { ProviderExecuted = true, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata };
+        return new GeneratedToolCall(
+            call.ToolCallId,
+            call.ToolName,
+            parsed?.ToJsonString() ?? "null",
+            call.ProviderMetadata
+        )
+        {
+            ProviderExecuted = true,
+            Dynamic = call.Dynamic,
+            Title = call.Title,
+            ToolMetadata = call.ToolMetadata,
+        };
     }
 
     private static Tool? FindTool(GenerateTextOptions options, string name)
@@ -1909,75 +2645,137 @@ internal static class Generation
         int instructionCount,
         List<ModelMessage> responseMessages,
         Func<double> now,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var history = messages.Skip(instructionCount).ToArray();
         var collected = ToolApprovalCollection.CollectToolApprovals(ToApprovalHistory(history));
 
         // A provider-executed call is answered by the provider, with the response in the prompt.
-        var approvedToolApprovals = collected.ApprovedToolApprovals.Where(approval => !approval.ToolCall.ProviderExecuted).ToList();
-        var validated = await ToolApprovalValidation.ValidateApprovedToolApprovalsAsync(
-            new ValidateApprovedToolApprovalsOptions(approvedToolApprovals)
-            {
-                Tools = options.Tools,
-                ToolApproval = options.ToolApproval,
-                Messages = history,
-                ToolApprovalSecret = options.ExperimentalToolApprovalSecret,
-                ToolApprovalSecretBytes = options.ExperimentalToolApprovalSecretBytes,
-                RefineToolInput = options.RefineToolInput,
-            },
-            cancellationToken).ConfigureAwait(false);
-
-        var deniedWithoutResults = collected.DeniedToolApprovals
-            .Concat(validated.DeniedToolApprovals)
-            .Where(approval => approval.ExistingToolResult == null && !approval.ToolCall.ProviderExecuted)
+        var approvedToolApprovals = collected
+            .ApprovedToolApprovals.Where(approval => !approval.ToolCall.ProviderExecuted)
             .ToList();
-        if (deniedWithoutResults.Count == 0 && validated.ApprovedToolApprovals.Count == 0 && validated.InvalidToolApprovals.Count == 0)
+        var validated = await ToolApprovalValidation
+            .ValidateApprovedToolApprovalsAsync(
+                new ValidateApprovedToolApprovalsOptions(approvedToolApprovals)
+                {
+                    Tools = options.Tools,
+                    ToolApproval = options.ToolApproval,
+                    Messages = history,
+                    ToolApprovalSecret = options.ExperimentalToolApprovalSecret,
+                    ToolApprovalSecretBytes = options.ExperimentalToolApprovalSecretBytes,
+                    RefineToolInput = options.RefineToolInput,
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+
+        var deniedWithoutResults = collected
+            .DeniedToolApprovals.Concat(validated.DeniedToolApprovals)
+            .Where(approval =>
+                approval.ExistingToolResult == null && !approval.ToolCall.ProviderExecuted
+            )
+            .ToList();
+        if (
+            deniedWithoutResults.Count == 0
+            && validated.ApprovedToolApprovals.Count == 0
+            && validated.InvalidToolApprovals.Count == 0
+        )
         {
             return;
         }
 
         var stepMessages = messages.ToArray();
-        var executions = await ToolCallConcurrencyScheduler.MapWithConcurrency(
-            validated.ApprovedToolApprovals,
-            ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency),
-            async (approval, _) =>
-            {
-                var call = new GeneratedToolCall(approval.ToolCall.ToolCallId, approval.ToolCall.ToolName, approval.ToolCall.Input.GetRawText());
-                var (executed, _) = await ExecuteToolAsync(call, options, stepMessages, now, cancellationToken).ConfigureAwait(false);
-                return executed;
-            },
-            cancellationToken).ConfigureAwait(false);
+        var executions = await ToolCallConcurrencyScheduler
+            .MapWithConcurrency(
+                validated.ApprovedToolApprovals,
+                ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(
+                    options.ToolCallConcurrency
+                ),
+                async (approval, _) =>
+                {
+                    var call = new GeneratedToolCall(
+                        approval.ToolCall.ToolCallId,
+                        approval.ToolCall.ToolName,
+                        approval.ToolCall.Input.GetRawText()
+                    );
+                    var (executed, _) = await ExecuteToolAsync(
+                            call,
+                            options,
+                            stepMessages,
+                            now,
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false);
+                    return executed;
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
 
         var toolMessages = new List<ToolModelMessage>();
         foreach (var executed in executions)
         {
-            toolMessages.Add(executed.ModelOutputContent != null
-                ? new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutputContent)
-                : new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutput ?? executed.OutputJson, executed.IsError, executed.ModelOutputType));
+            toolMessages.Add(
+                executed.ModelOutputContent != null
+                    ? new ToolModelMessage(
+                        executed.ToolCallId,
+                        executed.ToolName,
+                        executed.ModelOutputContent
+                    )
+                    : new ToolModelMessage(
+                        executed.ToolCallId,
+                        executed.ToolName,
+                        executed.ModelOutput ?? executed.OutputJson,
+                        executed.IsError,
+                        executed.ModelOutputType
+                    )
+            );
         }
 
         // Repairing the input after approval would change the operation that was approved, so the model gets the error.
         foreach (var invalid in validated.InvalidToolApprovals)
         {
-            toolMessages.Add(new ToolModelMessage(invalid.Approval.ToolCall.ToolCallId, invalid.Approval.ToolCall.ToolName, ErrorMessage.ToErrorString(invalid.Error), true, "error-text"));
+            toolMessages.Add(
+                new ToolModelMessage(
+                    invalid.Approval.ToolCall.ToolCallId,
+                    invalid.Approval.ToolCall.ToolName,
+                    ErrorMessage.ToErrorString(invalid.Error),
+                    true,
+                    "error-text"
+                )
+            );
         }
 
         foreach (var denied in deniedWithoutResults)
         {
-            toolMessages.Add(new ToolModelMessage(denied.ToolCall.ToolCallId, denied.ToolCall.ToolName, denied.ApprovalResponse.Reason, false, "execution-denied"));
+            toolMessages.Add(
+                new ToolModelMessage(
+                    denied.ToolCall.ToolCallId,
+                    denied.ToolCall.ToolName,
+                    denied.ApprovalResponse.Reason,
+                    false,
+                    "execution-denied"
+                )
+            );
         }
 
-        var toolMessage = toolMessages.Count == 1 ? toolMessages[0] : new ToolModelMessage(toolMessages);
+        var toolMessage =
+            toolMessages.Count == 1 ? toolMessages[0] : new ToolModelMessage(toolMessages);
         messages.Add(toolMessage);
         responseMessages.Add(toolMessage);
     }
 
     // The history in the shape that collectToolApprovals reads. Only the trailing tool messages count as the last tool message.
-    private static IReadOnlyList<ApprovalHistoryMessage> ToApprovalHistory(IReadOnlyList<ModelMessage> history)
+    private static IReadOnlyList<ApprovalHistoryMessage> ToApprovalHistory(
+        IReadOnlyList<ModelMessage> history
+    )
     {
         var trailingStart = history.Count;
-        while (trailingStart > 0 && string.Equals(history[trailingStart - 1].Role, "tool", StringComparison.Ordinal))
+        while (
+            trailingStart > 0
+            && string.Equals(history[trailingStart - 1].Role, "tool", StringComparison.Ordinal)
+        )
         {
             trailingStart--;
         }
@@ -1994,25 +2792,63 @@ internal static class Generation
                     {
                         if (part is AssistantToolCallPart call)
                         {
-                            using var input = JsonDocument.Parse(string.IsNullOrWhiteSpace(call.ToolCall.ArgumentsJson) ? "{}" : call.ToolCall.ArgumentsJson);
-                            parts.Add(new ApprovalToolCallPart(call.ToolCall.ToolCallId, call.ToolCall.ToolName, input.RootElement.Clone()) { ProviderExecuted = call.ToolCall.ProviderExecuted });
+                            using var input = JsonDocument.Parse(
+                                string.IsNullOrWhiteSpace(call.ToolCall.ArgumentsJson)
+                                    ? "{}"
+                                    : call.ToolCall.ArgumentsJson
+                            );
+                            parts.Add(
+                                new ApprovalToolCallPart(
+                                    call.ToolCall.ToolCallId,
+                                    call.ToolCall.ToolName,
+                                    input.RootElement.Clone()
+                                )
+                                {
+                                    ProviderExecuted = call.ToolCall.ProviderExecuted,
+                                }
+                            );
                         }
                         else if (part is AssistantToolApprovalRequestPart request)
                         {
-                            parts.Add(new ApprovalRequestPart(request.ApprovalId, request.ToolCallId) { Signature = request.Signature, Reason = request.Reason, InputSchemaInput = request.InputSchemaInput });
+                            parts.Add(
+                                new ApprovalRequestPart(request.ApprovalId, request.ToolCallId)
+                                {
+                                    Signature = request.Signature,
+                                    Reason = request.Reason,
+                                    InputSchemaInput = request.InputSchemaInput,
+                                }
+                            );
                         }
                     }
 
                     result.Add(new ApprovalHistoryMessage("assistant", null, parts));
                     break;
                 case ToolApprovalResponseModelMessage response when index >= trailingStart:
-                    trailingParts.Add(new ApprovalResponsePart(response.ApprovalId, response.Approved, response.Reason));
+                    trailingParts.Add(
+                        new ApprovalResponsePart(
+                            response.ApprovalId,
+                            response.Approved,
+                            response.Reason
+                        )
+                    );
                     break;
                 case ToolModelMessage tool when index >= trailingStart:
                     foreach (var toolResult in tool.Results)
                     {
-                        var isDenied = string.Equals(toolResult.OutputType, "execution-denied", StringComparison.Ordinal);
-                        trailingParts.Add(new ApprovalToolResultPart(toolResult.ToolCallId, toolResult.ToolName, toolResult.OutputType, null, isDenied ? toolResult.OutputJson : null));
+                        var isDenied = string.Equals(
+                            toolResult.OutputType,
+                            "execution-denied",
+                            StringComparison.Ordinal
+                        );
+                        trailingParts.Add(
+                            new ApprovalToolResultPart(
+                                toolResult.ToolCallId,
+                                toolResult.ToolName,
+                                toolResult.OutputType,
+                                null,
+                                isDenied ? toolResult.OutputJson : null
+                            )
+                        );
                     }
 
                     break;
@@ -2030,26 +2866,53 @@ internal static class Generation
         return result;
     }
 
-    private static string NewApprovalId(GenerateTextOptions options) => options.GenerateId?.Invoke() ?? Vercel.AI.ProviderUtils.JsonValues.GenerateId(string.Empty);
+    private static string NewApprovalId(GenerateTextOptions options) =>
+        options.GenerateId?.Invoke() ?? Vercel.AI.ProviderUtils.JsonValues.GenerateId(string.Empty);
 
-    private static string? SignApproval(GenerateTextOptions options, string approvalId, GeneratedToolCall call)
+    private static string? SignApproval(
+        GenerateTextOptions options,
+        string approvalId,
+        GeneratedToolCall call
+    )
     {
-        if (options.ExperimentalToolApprovalSecret == null && options.ExperimentalToolApprovalSecretBytes == null)
+        if (
+            options.ExperimentalToolApprovalSecret == null
+            && options.ExperimentalToolApprovalSecretBytes == null
+        )
         {
             return null;
         }
 
-        using var input = JsonDocument.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson);
+        using var input = JsonDocument.Parse(
+            string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson
+        );
         return options.ExperimentalToolApprovalSecret != null
-            ? ToolApprovalSignatures.SignToolApproval(options.ExperimentalToolApprovalSecret, approvalId, call.ToolCallId, call.ToolName, input.RootElement)
-            : ToolApprovalSignatures.SignToolApproval(options.ExperimentalToolApprovalSecretBytes!, approvalId, call.ToolCallId, call.ToolName, input.RootElement);
+            ? ToolApprovalSignatures.SignToolApproval(
+                options.ExperimentalToolApprovalSecret,
+                approvalId,
+                call.ToolCallId,
+                call.ToolName,
+                input.RootElement
+            )
+            : ToolApprovalSignatures.SignToolApproval(
+                options.ExperimentalToolApprovalSecretBytes!,
+                approvalId,
+                call.ToolCallId,
+                call.ToolName,
+                input.RootElement
+            );
     }
 
     // Resolves the approval of each valid call to a known tool. A call that does not need approval does not use an approval id.
-    private static async Task<(List<GeneratedToolApprovalRequest> Requests, List<GeneratedToolApprovalResponse> Responses, HashSet<string> Blocked)> ResolveStepApprovalsAsync(
+    private static async Task<(
+        List<GeneratedToolApprovalRequest> Requests,
+        List<GeneratedToolApprovalResponse> Responses,
+        HashSet<string> Blocked
+    )> ResolveStepApprovalsAsync(
         GenerateTextOptions options,
         IReadOnlyList<GeneratedToolCall> toolCalls,
-        IReadOnlyList<ModelMessage> messages)
+        IReadOnlyList<ModelMessage> messages
+    )
     {
         var requests = new List<GeneratedToolApprovalRequest>();
         var responses = new List<GeneratedToolApprovalResponse>();
@@ -2061,7 +2924,9 @@ internal static class Generation
                 continue;
             }
 
-            var status = await ToolApprovalResolution.ResolveToolApprovalAsync(options.Tools, call, options.ToolApproval, messages).ConfigureAwait(false);
+            var status = await ToolApprovalResolution
+                .ResolveToolApprovalAsync(options.Tools, call, options.ToolApproval, messages)
+                .ConfigureAwait(false);
             if (status.Type == ToolApprovalStatus.NotApplicableType)
             {
                 continue;
@@ -2072,16 +2937,53 @@ internal static class Generation
             switch (status.Type)
             {
                 case ToolApprovalStatus.UserApprovalType:
-                    requests.Add(new GeneratedToolApprovalRequest(approvalId, call.ToolCallId) { ToolCall = call, Reason = status.Reason, Signature = signature });
+                    requests.Add(
+                        new GeneratedToolApprovalRequest(approvalId, call.ToolCallId)
+                        {
+                            ToolCall = call,
+                            Reason = status.Reason,
+                            Signature = signature,
+                        }
+                    );
                     blocked.Add(call.ToolCallId);
                     break;
                 case ToolApprovalStatus.ApprovedType:
-                    requests.Add(new GeneratedToolApprovalRequest(approvalId, call.ToolCallId) { ToolCall = call, IsAutomatic = true, Signature = signature });
-                    responses.Add(new GeneratedToolApprovalResponse(approvalId, call, true, status.Reason, call.ProviderExecuted));
+                    requests.Add(
+                        new GeneratedToolApprovalRequest(approvalId, call.ToolCallId)
+                        {
+                            ToolCall = call,
+                            IsAutomatic = true,
+                            Signature = signature,
+                        }
+                    );
+                    responses.Add(
+                        new GeneratedToolApprovalResponse(
+                            approvalId,
+                            call,
+                            true,
+                            status.Reason,
+                            call.ProviderExecuted
+                        )
+                    );
                     break;
                 case ToolApprovalStatus.DeniedType:
-                    requests.Add(new GeneratedToolApprovalRequest(approvalId, call.ToolCallId) { ToolCall = call, IsAutomatic = true, Signature = signature });
-                    responses.Add(new GeneratedToolApprovalResponse(approvalId, call, false, status.Reason, call.ProviderExecuted));
+                    requests.Add(
+                        new GeneratedToolApprovalRequest(approvalId, call.ToolCallId)
+                        {
+                            ToolCall = call,
+                            IsAutomatic = true,
+                            Signature = signature,
+                        }
+                    );
+                    responses.Add(
+                        new GeneratedToolApprovalResponse(
+                            approvalId,
+                            call,
+                            false,
+                            status.Reason,
+                            call.ProviderExecuted
+                        )
+                    );
                     blocked.Add(call.ToolCallId);
                     break;
             }
@@ -2091,7 +2993,9 @@ internal static class Generation
     }
 
     // A tool without an execute function, or one awaiting approval, leaves its call for the caller, so the loop ends without asking the stop condition.
-    private static bool HasExecutor(Tool? tool) => tool != null && (tool.Execute != null || tool.ExecuteWithOptions != null || tool.ExecuteStream != null);
+    private static bool HasExecutor(Tool? tool) =>
+        tool != null
+        && (tool.Execute != null || tool.ExecuteWithOptions != null || tool.ExecuteStream != null);
 
     // A call is settled when the step answers it: with a tool result, or with an automatic denial. Like upstream, the loop goes on
     // only when every client call is settled.
@@ -2116,7 +3020,14 @@ internal static class Generation
 
             foreach (var part in step.Content)
             {
-                if (part is GeneratedToolApprovalResponse { Approved: false } response && string.Equals(response.ToolCall.ToolCallId, call.ToolCallId, StringComparison.Ordinal))
+                if (
+                    part is GeneratedToolApprovalResponse { Approved: false } response
+                    && string.Equals(
+                        response.ToolCall.ToolCallId,
+                        call.ToolCallId,
+                        StringComparison.Ordinal
+                    )
+                )
                 {
                     settled = true;
                     break;
@@ -2132,23 +3043,57 @@ internal static class Generation
         return false;
     }
 
-    private static async Task<(ExecutedTool Executed, double ElapsedMs)> ExecuteToolAsync(GeneratedToolCall call, GenerateTextOptions options, IReadOnlyList<ModelMessage> stepMessages, Func<double> now, CancellationToken cancellationToken, Action<ExecutedTool>? onPreliminaryToolResult = null)
+    private static async Task<(ExecutedTool Executed, double ElapsedMs)> ExecuteToolAsync(
+        GeneratedToolCall call,
+        GenerateTextOptions options,
+        IReadOnlyList<ModelMessage> stepMessages,
+        Func<double> now,
+        CancellationToken cancellationToken,
+        Action<ExecutedTool>? onPreliminaryToolResult = null
+    )
     {
         var tool = FindTool(options, call.ToolName);
 
         if (tool == null || !HasExecutor(tool))
         {
-            return (new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool has no execute function.\"}", true) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata, ModelOutputType = "error-text", ModelOutput = "Tool has no execute function." }, 0);
+            return (
+                new ExecutedTool(
+                    call.ToolCallId,
+                    call.ToolName,
+                    "{\"error\":\"Tool has no execute function.\"}",
+                    true
+                )
+                {
+                    InputJson = call.ArgumentsJson,
+                    Dynamic = call.Dynamic,
+                    Title = call.Title,
+                    ToolMetadata = call.ToolMetadata,
+                    ModelOutputType = "error-text",
+                    ModelOutput = "Tool has no execute function.",
+                },
+                0
+            );
         }
 
         if (options.OnToolExecutionStart != null)
         {
-            await NotifyAsync(() => options.OnToolExecutionStart(new ToolExecutionStartEvent(call, stepMessages), cancellationToken), cancellationToken).ConfigureAwait(false);
+            await NotifyAsync(
+                    () =>
+                        options.OnToolExecutionStart(
+                            new ToolExecutionStartEvent(call, stepMessages),
+                            cancellationToken
+                        ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
 
         // Like upstream, the tool timeout starts after onToolExecutionStart and cancels only this tool, not the call.
         var toolTimeoutMs = TimeoutConfiguration.GetToolTimeoutMs(options.Timeout, call.ToolName);
-        using var toolTimeout = toolTimeoutMs != null ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken) : null;
+        using var toolTimeout =
+            toolTimeoutMs != null
+                ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+                : null;
         toolTimeout?.CancelAfter(toolTimeoutMs!.Value);
         var toolToken = toolTimeout?.Token ?? cancellationToken;
 
@@ -2156,25 +3101,44 @@ internal static class Generation
         ExecutedTool executed;
         try
         {
-            using var arguments = JsonDocument.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson);
+            using var arguments = JsonDocument.Parse(
+                string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson
+            );
             var input = arguments.RootElement.Clone();
             string output;
             if (tool.ExecuteStream != null)
             {
                 // Like upstream's executeTool, each streamed value is a preliminary result and the last one is the final result.
                 var last = default(string);
-                await foreach (var part in Vercel.AI.ProviderUtils.ToolExecution.ExecuteStreamAsync(tool.ExecuteStream(input, new ToolExecutionOptions(call.ToolCallId, stepMessages, toolToken)), toolToken).ConfigureAwait(false))
+                await foreach (
+                    var part in Vercel
+                        .AI.ProviderUtils.ToolExecution.ExecuteStreamAsync(
+                            tool.ExecuteStream(
+                                input,
+                                new ToolExecutionOptions(call.ToolCallId, stepMessages, toolToken)
+                            ),
+                            toolToken
+                        )
+                        .ConfigureAwait(false)
+                )
                 {
                     if (part.Type == "preliminary")
                     {
-                        onPreliminaryToolResult?.Invoke(new ExecutedTool(call.ToolCallId, call.ToolName, string.IsNullOrEmpty(part.Output) ? "null" : part.Output, false)
-                        {
-                            InputJson = call.ArgumentsJson,
-                            Dynamic = call.Dynamic,
-                            Title = call.Title,
-                            ToolMetadata = call.ToolMetadata,
-                            Preliminary = true,
-                        });
+                        onPreliminaryToolResult?.Invoke(
+                            new ExecutedTool(
+                                call.ToolCallId,
+                                call.ToolName,
+                                string.IsNullOrEmpty(part.Output) ? "null" : part.Output,
+                                false
+                            )
+                            {
+                                InputJson = call.ArgumentsJson,
+                                Dynamic = call.Dynamic,
+                                Title = call.Title,
+                                ToolMetadata = call.ToolMetadata,
+                                Preliminary = true,
+                            }
+                        );
                     }
                     else
                     {
@@ -2186,13 +3150,20 @@ internal static class Generation
             }
             else
             {
-                output = tool.ExecuteWithOptions != null
-                    ? await tool.ExecuteWithOptions(input, new ToolExecutionOptions(call.ToolCallId, stepMessages, toolToken)).ConfigureAwait(false)
-                    : await tool.Execute!(input, toolToken).ConfigureAwait(false);
+                output =
+                    tool.ExecuteWithOptions != null
+                        ? await tool.ExecuteWithOptions(
+                                input,
+                                new ToolExecutionOptions(call.ToolCallId, stepMessages, toolToken)
+                            )
+                            .ConfigureAwait(false)
+                        : await tool.Execute!(input, toolToken).ConfigureAwait(false);
             }
 
             output = string.IsNullOrEmpty(output) ? "null" : output;
-            var modelOutput = tool.ToModelOutput?.Invoke(new ToolModelOutputCall(call.ToolCallId, input, output));
+            var modelOutput = tool.ToModelOutput?.Invoke(
+                new ToolModelOutputCall(call.ToolCallId, input, output)
+            );
             executed = new ExecutedTool(call.ToolCallId, call.ToolName, output, false)
             {
                 InputJson = call.ArgumentsJson,
@@ -2200,23 +3171,49 @@ internal static class Generation
                 Title = call.Title,
                 ToolMetadata = call.ToolMetadata,
                 ModelOutputType = modelOutput is ContentToolModelOutput ? null : modelOutput?.Type,
-                ModelOutput = modelOutput is ContentToolModelOutput ? null : ModelOutputText(modelOutput),
-                ModelOutputContent = modelOutput is ContentToolModelOutput content ? ToUserContent(content.Value) : null,
+                ModelOutput =
+                    modelOutput is ContentToolModelOutput ? null : ModelOutputText(modelOutput),
+                ModelOutputContent = modelOutput is ContentToolModelOutput content
+                    ? ToUserContent(content.Value)
+                    : null,
             };
         }
         catch (Exception thrown) when (!cancellationToken.IsCancellationRequested)
         {
             // A tool that stops on its token reports the timeout, as upstream reports the abort reason of the tool signal.
-            var exception = thrown is OperationCanceledException cancelled && toolTimeout != null && cancelled.CancellationToken == toolToken && toolToken.IsCancellationRequested ? new TimeoutError("The operation was aborted due to timeout") : thrown;
+            var exception =
+                thrown is OperationCanceledException cancelled
+                && toolTimeout != null
+                && cancelled.CancellationToken == toolToken
+                && toolToken.IsCancellationRequested
+                    ? new TimeoutError("The operation was aborted due to timeout")
+                    : thrown;
             var error = JsonSerializer.Serialize(new { error = exception.Message });
-            executed = new ExecutedTool(call.ToolCallId, call.ToolName, error, true) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata, ModelOutputType = "error-text", ModelOutput = ErrorMessage.ToErrorString(exception), Error = exception };
+            executed = new ExecutedTool(call.ToolCallId, call.ToolName, error, true)
+            {
+                InputJson = call.ArgumentsJson,
+                Dynamic = call.Dynamic,
+                Title = call.Title,
+                ToolMetadata = call.ToolMetadata,
+                ModelOutputType = "error-text",
+                ModelOutput = ErrorMessage.ToErrorString(exception),
+                Error = exception,
+            };
         }
 
         var elapsedMs = now() - startMs;
         if (options.OnToolExecutionEnd != null)
         {
             var elapsed = TimeSpan.FromMilliseconds(elapsedMs);
-            await NotifyAsync(() => options.OnToolExecutionEnd(new ToolExecutionEndEvent(call, stepMessages, executed, elapsed), cancellationToken), cancellationToken).ConfigureAwait(false);
+            await NotifyAsync(
+                    () =>
+                        options.OnToolExecutionEnd(
+                            new ToolExecutionEndEvent(call, stepMessages, executed, elapsed),
+                            cancellationToken
+                        ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
 
         return (executed, elapsedMs);
@@ -2235,7 +3232,9 @@ internal static class Generation
         };
     }
 
-    internal static IReadOnlyList<UserContentPart> ToUserContent(IReadOnlyList<ToolModelContentPart> content)
+    internal static IReadOnlyList<UserContentPart> ToUserContent(
+        IReadOnlyList<ToolModelContentPart> content
+    )
     {
         var parts = new List<UserContentPart>(content.Count);
         foreach (var part in content)
@@ -2246,11 +3245,14 @@ internal static class Generation
                 continue;
             }
 
-            parts.Add(new FileContentPart(
-                file.MediaType,
-                null,
-                Convert.FromBase64String(file.Data.TextData ?? string.Empty),
-                file.FileName));
+            parts.Add(
+                new FileContentPart(
+                    file.MediaType,
+                    null,
+                    Convert.FromBase64String(file.Data.TextData ?? string.Empty),
+                    file.FileName
+                )
+            );
         }
 
         return parts;
@@ -2263,9 +3265,7 @@ internal static class Generation
         {
             await callback().ConfigureAwait(false);
         }
-        catch (Exception) when (!cancellationToken.IsCancellationRequested)
-        {
-        }
+        catch (Exception) when (!cancellationToken.IsCancellationRequested) { }
     }
 
     private static IReadOnlyList<LanguageModelTool>? SelectTools(GenerateTextOptions options)
@@ -2283,9 +3283,23 @@ internal static class Generation
                 continue;
             }
 
-            tools.Add(tool.IsProviderDefined
-                ? LanguageModelTool.ProviderDefined(tool.ProviderToolId!, tool.Name, tool.ProviderToolArgs)
-                : new LanguageModelTool(tool.Name, tool.Description, tool.InputSchema, tool.Strict) { ProviderOptions = tool.ProviderOptions });
+            tools.Add(
+                tool.IsProviderDefined
+                    ? LanguageModelTool.ProviderDefined(
+                        tool.ProviderToolId!,
+                        tool.Name,
+                        tool.ProviderToolArgs
+                    )
+                    : new LanguageModelTool(
+                        tool.Name,
+                        tool.Description,
+                        tool.InputSchema,
+                        tool.Strict
+                    )
+                    {
+                        ProviderOptions = tool.ProviderOptions,
+                    }
+            );
         }
 
         return tools;
@@ -2304,13 +3318,17 @@ internal static class Generation
         return false;
     }
 
-    private static LanguageModelResponseMetadata GeneratedResponseInfo(LanguageModelGenerateResult generated, ILanguageModel model)
+    private static LanguageModelResponseMetadata GeneratedResponseInfo(
+        LanguageModelGenerateResult generated,
+        ILanguageModel model
+    )
     {
         return new LanguageModelResponseMetadata(
             generated.ResponseId ?? Vercel.AI.ProviderUtils.JsonValues.GenerateId("aitxt-"),
             generated.ResponseTimestamp ?? DateTimeOffset.UtcNow,
             generated.ResponseModelId ?? model.ModelId,
-            generated.ResponseHeaders);
+            generated.ResponseHeaders
+        );
     }
 
     // The raw response body, as a JSON value when the provider sent JSON and as a string otherwise.
@@ -2336,11 +3354,21 @@ internal static class Generation
         List<StepResult> steps,
         List<ModelMessage> responseMessages,
         GenerateTextOptions options,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        var last = steps.Count == 0
-            ? new StepResult(string.Empty, null, Array.Empty<GeneratedToolCall>(), Array.Empty<ExecutedTool>(), FinishReason.Other, LanguageModelUsage.Empty, Array.Empty<GeneratedSource>())
-            : steps[steps.Count - 1];
+        var last =
+            steps.Count == 0
+                ? new StepResult(
+                    string.Empty,
+                    null,
+                    Array.Empty<GeneratedToolCall>(),
+                    Array.Empty<ExecutedTool>(),
+                    FinishReason.Other,
+                    LanguageModelUsage.Empty,
+                    Array.Empty<GeneratedSource>()
+                )
+                : steps[steps.Count - 1];
         var usage = LanguageModelUsage.Null;
         var sources = new List<GeneratedSource>();
         foreach (var step in steps)
@@ -2351,7 +3379,8 @@ internal static class Generation
 
         // A provider-selected structured output text replaces the step text for JSON output only. An empty selection
         // is explicit, so it is parsed (and rejected) instead of falling back to the step text.
-        var outputText = options.Output?.Schema != null ? last.StructuredOutputText ?? last.Text : last.Text;
+        var outputText =
+            options.Output?.Schema != null ? last.StructuredOutputText ?? last.Text : last.Text;
         JsonElement? output = null;
         if (options.Output?.Schema is { } outputSchema)
         {
@@ -2363,21 +3392,43 @@ internal static class Generation
                     null,
                     last.Response,
                     last.Usage,
-                    last.FinishReason);
+                    last.FinishReason
+                );
             }
 
-            if (!options.GenerateObjectMode
+            if (
+                !options.GenerateObjectMode
                 && last.FinishReason != FinishReason.Stop
-                && (last.FinishReason == FinishReason.ToolCalls || last.Text.Length == 0))
+                && (last.FinishReason == FinishReason.ToolCalls || last.Text.Length == 0)
+            )
             {
-                return new GenerateTextResult(last.Text, last.ReasoningText, steps, last.FinishReason, usage, null, sources, last.ProviderMetadata) { ResponseMessages = responseMessages.ToArray() };
+                return new GenerateTextResult(
+                    last.Text,
+                    last.ReasoningText,
+                    steps,
+                    last.FinishReason,
+                    usage,
+                    null,
+                    sources,
+                    last.ProviderMetadata
+                )
+                {
+                    ResponseMessages = responseMessages.ToArray(),
+                };
             }
 
             try
             {
-                output = ProviderUtils.JsonParsing.Parse(outputText, JsonNode.Parse(outputSchema.GetRawText()));
+                output = ProviderUtils.JsonParsing.Parse(
+                    outputText,
+                    JsonNode.Parse(outputSchema.GetRawText())
+                );
             }
-            catch (Exception error) when (error is ProviderUtils.JsonParseException or ProviderUtils.TypeValidationException)
+            catch (Exception error)
+                when (error
+                        is ProviderUtils.JsonParseException
+                            or ProviderUtils.TypeValidationException
+                )
             {
                 var initialError = new NoObjectGeneratedException(
                     error is ProviderUtils.TypeValidationException
@@ -2387,13 +3438,16 @@ internal static class Generation
                     outputText,
                     last.Response,
                     last.Usage,
-                    last.FinishReason);
+                    last.FinishReason
+                );
                 if (options.RepairOutput == null)
                 {
                     throw initialError;
                 }
 
-                var repairedText = await options.RepairOutput(outputText, error, cancellationToken).ConfigureAwait(false);
+                var repairedText = await options
+                    .RepairOutput(outputText, error, cancellationToken)
+                    .ConfigureAwait(false);
                 if (repairedText == null)
                 {
                     throw initialError;
@@ -2401,9 +3455,16 @@ internal static class Generation
 
                 try
                 {
-                    output = ProviderUtils.JsonParsing.Parse(repairedText, JsonNode.Parse(outputSchema.GetRawText()));
+                    output = ProviderUtils.JsonParsing.Parse(
+                        repairedText,
+                        JsonNode.Parse(outputSchema.GetRawText())
+                    );
                 }
-                catch (Exception repairedError) when (repairedError is ProviderUtils.JsonParseException or ProviderUtils.TypeValidationException)
+                catch (Exception repairedError)
+                    when (repairedError
+                            is ProviderUtils.JsonParseException
+                                or ProviderUtils.TypeValidationException
+                    )
                 {
                     throw new NoObjectGeneratedException(
                         repairedError is ProviderUtils.TypeValidationException
@@ -2413,12 +3474,25 @@ internal static class Generation
                         repairedText,
                         last.Response,
                         last.Usage,
-                        last.FinishReason);
+                        last.FinishReason
+                    );
                 }
             }
         }
 
-        return new GenerateTextResult(last.Text, last.ReasoningText, steps, last.FinishReason, usage, output, sources, last.ProviderMetadata) { ResponseMessages = responseMessages.ToArray() };
+        return new GenerateTextResult(
+            last.Text,
+            last.ReasoningText,
+            steps,
+            last.FinishReason,
+            usage,
+            output,
+            sources,
+            last.ProviderMetadata
+        )
+        {
+            ResponseMessages = responseMessages.ToArray(),
+        };
     }
 }
 
@@ -2428,7 +3502,9 @@ internal sealed class StreamAbort
     private static readonly object Done = new();
     private static readonly TimeSpan StopAbortGrace = TimeSpan.FromSeconds(1);
     private readonly CancellationTokenSource _cancellation = new();
-    private readonly TaskCompletionSource<bool> _signal = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<bool> _signal = new(
+        TaskCreationOptions.RunContinuationsAsynchronously
+    );
     private object? _outcome;
     private EnumeratorDisposal? _disposal;
 
@@ -2476,7 +3552,13 @@ internal sealed class StreamAbort
 
         if (Stopped && OnLateAbort is not null)
         {
-            _ = Task.Delay(StopAbortGrace).ContinueWith(_ => cleanup(), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+            _ = Task.Delay(StopAbortGrace)
+                .ContinueWith(
+                    _ => cleanup(),
+                    CancellationToken.None,
+                    TaskContinuationOptions.None,
+                    TaskScheduler.Default
+                );
             return;
         }
 
@@ -2486,7 +3568,13 @@ internal sealed class StreamAbort
     // The consumer stopped reading. Cancels the provider call and the tool loop, like upstream cancelling the source reader.
     public void Stop()
     {
-        if (Interlocked.CompareExchange(ref _outcome, new OperationCanceledException("The stream consumer stopped reading."), null) != null)
+        if (
+            Interlocked.CompareExchange(
+                ref _outcome,
+                new OperationCanceledException("The stream consumer stopped reading."),
+                null
+            ) != null
+        )
         {
             return;
         }
@@ -2523,7 +3611,8 @@ internal sealed class StreamAbort
         TaskCompletionSource<string> text,
         TaskCompletionSource<FinishReason> finishReason,
         TaskCompletionSource<LanguageModelUsage> usage,
-        TaskCompletionSource<IReadOnlyList<StepResult>> steps)
+        TaskCompletionSource<IReadOnlyList<StepResult>> steps
+    )
     {
         if (Interlocked.CompareExchange(ref _outcome, error, null) != null)
         {
@@ -2539,7 +3628,8 @@ internal sealed class StreamAbort
         {
             _cancellation.Cancel();
         }
-        catch (Exception exception) when (exception is AggregateException or ObjectDisposedException)
+        catch (Exception exception)
+            when (exception is AggregateException or ObjectDisposedException)
         {
             // A token callback threw, or the call already ended. The call is aborted either way.
         }
@@ -2566,7 +3656,11 @@ internal sealed class StreamAbort
 
         try
         {
-            _ = late(error).ContinueWith(static task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+            _ = late(error)
+                .ContinueWith(
+                    static task => _ = task.Exception,
+                    TaskContinuationOptions.OnlyOnFaulted
+                );
         }
         catch (Exception)
         {
@@ -2638,7 +3732,8 @@ internal sealed class EnumeratorDisposal
     {
         try
         {
-            _ = DisposeAsync().ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+            _ = DisposeAsync()
+                .ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
         }
         catch (Exception)
         {
@@ -2690,7 +3785,9 @@ internal sealed class PartBuffer
         _signal.Release();
     }
 
-    public async IAsyncEnumerable<TextStreamPart> Read([EnumeratorCancellation] CancellationToken cancellationToken)
+    public async IAsyncEnumerable<TextStreamPart> Read(
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         var index = 0;
         var finished = false;
@@ -2757,13 +3854,17 @@ public sealed class StreamTextResult
     // The tools of the call. The UI message stream marks the parts of dynamic tools with them.
     internal IReadOnlyList<Tool>? Tools { get; init; }
 
+    // The output specification of the call. Null means text output.
+    internal OutputSpec? OutputSpecification { get; init; }
+
     internal StreamTextResult(
         PartBuffer buffer,
         Task<string> text,
         Task<FinishReason> finishReason,
         Task<LanguageModelUsage> usage,
         Task<IReadOnlyList<StepResult>> steps,
-        Task<JsonElement?> output)
+        Task<JsonElement?> output
+    )
     {
         _buffer = buffer;
         Text = text;
@@ -2780,26 +3881,43 @@ public sealed class StreamTextResult
         // Steps carries the failure. These tasks fail with it, so a caller that never awaits them leaves no unobserved exception.
         _ = Files.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
         _ = Request.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
-        _ = Response.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
-        _ = ResponseMessages.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
-        _ = ProviderMetadata.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        _ = Response.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = ResponseMessages.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = ProviderMetadata.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
         _ = Output.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
     }
 
-    private static async Task<IReadOnlyList<ModelMessage>> AllResponseMessages(Task<IReadOnlyList<StepResult>> steps)
+    private static async Task<IReadOnlyList<ModelMessage>> AllResponseMessages(
+        Task<IReadOnlyList<StepResult>> steps
+    )
     {
         var completed = await steps.ConfigureAwait(false);
         return completed.SelectMany(step => step.Response.Messages).ToArray();
     }
 
-    private static async Task<JsonElement?> FromSteps(Task<IReadOnlyList<StepResult>> steps, Task<JsonElement?> output)
+    private static async Task<JsonElement?> FromSteps(
+        Task<IReadOnlyList<StepResult>> steps,
+        Task<JsonElement?> output
+    )
     {
         // Steps carries the failure, so a failed stream throws its error here.
         await steps.ConfigureAwait(false);
         return await output.ConfigureAwait(false);
     }
 
-    private static async Task<T> FromFinalStep<T>(Task<IReadOnlyList<StepResult>> steps, Func<StepResult, T> select)
+    private static async Task<T> FromFinalStep<T>(
+        Task<IReadOnlyList<StepResult>> steps,
+        Func<StepResult, T> select
+    )
     {
         var completed = await steps.ConfigureAwait(false);
         return select(completed[completed.Count - 1]);
@@ -2808,13 +3926,13 @@ public sealed class StreamTextResult
     /// <summary>Consumes the stream without processing the parts. Use it when only the final result or the callbacks matter. Maps to <c>consumeStream</c>.</summary>
     public async Task ConsumeStreamAsync(CancellationToken cancellationToken = default)
     {
-        await foreach (var _ in _buffer.Read(cancellationToken).ConfigureAwait(false))
-        {
-        }
+        await foreach (var _ in _buffer.Read(cancellationToken).ConfigureAwait(false)) { }
     }
 
     /// <summary>Text deltas only.</summary>
-    public async IAsyncEnumerable<string> TextStream([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<string> TextStream(
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
     {
         await foreach (var part in _buffer.Read(cancellationToken).ConfigureAwait(false))
         {
@@ -2822,6 +3940,74 @@ public sealed class StreamTextResult
             {
                 yield return delta.Text;
             }
+        }
+    }
+
+    /// <summary>
+    /// The partial structured output after each text delta that changes it: the text so far for text output, the repaired partial
+    /// object for object output. Each step starts over. Maps to <c>partialOutputStream</c>.
+    /// </summary>
+    public async IAsyncEnumerable<JsonElement> PartialOutputStream(
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
+    {
+        var isObject = OutputSpecification?.Schema != null;
+        string? firstTextChunkId = null;
+        var text = new StringBuilder();
+        string? lastPublishedValue = null;
+        await foreach (var part in _buffer.Read(cancellationToken).ConfigureAwait(false))
+        {
+            if (part is StartStepPart)
+            {
+                firstTextChunkId = null;
+                text.Clear();
+                lastPublishedValue = null;
+                continue;
+            }
+
+            // The partial output follows the first text block of the step.
+            if (part is not TextDeltaPart delta)
+            {
+                continue;
+            }
+
+            firstTextChunkId ??= delta.Id;
+            if (delta.Id != firstTextChunkId)
+            {
+                continue;
+            }
+
+            text.Append(delta.Text);
+            if (delta.Text.Length == 0 && delta.ProviderMetadata != null)
+            {
+                continue;
+            }
+
+            JsonElement partial;
+            if (isObject)
+            {
+                var result = PartialJson.Parse(text.ToString());
+                if (result.State is PartialJson.FailedParse or PartialJson.UndefinedInput)
+                {
+                    continue;
+                }
+
+                partial = JsonSerializer.SerializeToElement(result.Value);
+            }
+            else
+            {
+                partial = JsonSerializer.SerializeToElement(text.ToString());
+            }
+
+            // Only publish a value that changed.
+            var currentValue = isObject ? partial.GetRawText() : text.ToString();
+            if (currentValue == lastPublishedValue)
+            {
+                continue;
+            }
+
+            lastPublishedValue = currentValue;
+            yield return partial;
         }
     }
 

@@ -41,7 +41,8 @@ internal static class TencentTokenHubVideo
         TencentKlingVideoKind kind,
         VideoModelCall options,
         TencentVideoModelOptions? tencentOptions,
-        List<OperationWarning> warnings)
+        List<OperationWarning> warnings
+    )
     {
         var firstFrame = ResolveFirstFrameImage(options, warnings);
         var lastFrame = ResolveLastFrameImage(options, warnings);
@@ -49,9 +50,12 @@ internal static class TencentTokenHubVideo
         var resolution = ResolveResolution(options, tencentOptions, KlingResolutionTiers, warnings);
         if (references.Audios.Count > 0)
         {
-            warnings.Add(OperationWarning.Unsupported(
-                "inputReferences",
-                "TokenHub Kling models do not accept audio references; use `providerOptions.tencent.voices` instead. The audio was ignored."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "inputReferences",
+                    "TokenHub Kling models do not accept audio references; use `providerOptions.tencent.voices` instead. The audio was ignored."
+                )
+            );
         }
 
         if (kind == TencentKlingVideoKind.MotionControl)
@@ -62,7 +66,8 @@ internal static class TencentTokenHubVideo
             var otherImageReferences = references.Images.Skip(1).ToList();
             var motionVideo = references.Videos.FirstOrDefault();
             var otherVideoReferences = references.Videos.Skip(1).ToList();
-            var unusedImageReferences = firstFrame != null ? references.Images : otherImageReferences;
+            var unusedImageReferences =
+                firstFrame != null ? references.Images : otherImageReferences;
             return new TokenHubKlingRequest(
                 "motion-control",
                 BuildMotionControlBody(
@@ -74,20 +79,30 @@ internal static class TencentTokenHubVideo
                     lastFrame,
                     unusedImageReferences.Count + otherVideoReferences.Count,
                     resolution,
-                    warnings));
+                    warnings
+                )
+            );
         }
 
         var config = TencentModelCatalog.GetTencentVideoRequestConfig(modelId);
         var supportsAudioAndMultiShot = config.AudioAndMultiShot;
         var audio = ResolveAudio(options, tencentOptions, supportsAudioAndMultiShot, warnings);
         var multiShot = ResolveMultiShot(tencentOptions, supportsAudioAndMultiShot, warnings);
-        var hasReferences = references.Images.Count > 0 || references.Videos.Count > 0 || (tencentOptions?.Voices?.Count ?? 0) > 0;
+        var hasReferences =
+            references.Images.Count > 0
+            || references.Videos.Count > 0
+            || (tencentOptions?.Voices?.Count ?? 0) > 0;
         // Elements work on image-to-video and omni but not text-to-video, so an
         // omni-capable model sends elements without a first frame to omni.
-        var hasElementsWithoutFirstFrame = firstFrame == null && (tencentOptions?.Elements?.Count ?? 0) > 0;
-        if (kind == TencentKlingVideoKind.Omni || (config.Omni && (hasReferences || hasElementsWithoutFirstFrame)))
+        var hasElementsWithoutFirstFrame =
+            firstFrame == null && (tencentOptions?.Elements?.Count ?? 0) > 0;
+        if (
+            kind == TencentKlingVideoKind.Omni
+            || (config.Omni && (hasReferences || hasElementsWithoutFirstFrame))
+        )
         {
-            var videoType = tencentOptions?.ReferenceVideoType == "base" ? "base_video" : "feature_video";
+            var videoType =
+                tencentOptions?.ReferenceVideoType == "base" ? "base_video" : "feature_video";
             var contents = new JsonArray();
             AddPrompt(contents, options.Prompt);
             if (firstFrame != null)
@@ -113,7 +128,14 @@ internal static class TencentTokenHubVideo
             AddElements(contents, tencentOptions);
             foreach (var voice in tencentOptions?.Voices ?? [])
             {
-                contents.Add(new JsonObject { ["type"] = "voice", ["voice_id"] = voice.VoiceId, ["id"] = voice.Id });
+                contents.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "voice",
+                        ["voice_id"] = voice.VoiceId,
+                        ["id"] = voice.Id,
+                    }
+                );
             }
 
             return new TokenHubKlingRequest(
@@ -128,21 +150,32 @@ internal static class TencentTokenHubVideo
                         ["multi_shot"] = Bool(multiShot),
                         ["audio"] = Str(audio),
                     },
-                    tencentOptions));
+                    tencentOptions
+                )
+            );
         }
 
         if (hasReferences)
         {
-            warnings.Add(OperationWarning.Unsupported(
-                "inputReferences",
-                modelId + " does not accept reference inputs; use an omni model such as kling-video-v3-omni or kling-video-v4. The references were ignored."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "inputReferences",
+                    modelId
+                        + " does not accept reference inputs; use an omni model such as kling-video-v3-omni or kling-video-v4. The references were ignored."
+                )
+            );
         }
 
         if (firstFrame != null)
         {
             if (options.AspectRatio != null)
             {
-                warnings.Add(OperationWarning.Unsupported("aspectRatio", "TokenHub Kling image-to-video follows the aspect ratio of the input image."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "aspectRatio",
+                        "TokenHub Kling image-to-video follows the aspect ratio of the input image."
+                    )
+                );
             }
 
             var contents = new JsonArray();
@@ -165,17 +198,29 @@ internal static class TencentTokenHubVideo
                         ["multi_shot"] = Bool(multiShot),
                         ["audio"] = Str(audio),
                     },
-                    tencentOptions));
+                    tencentOptions
+                )
+            );
         }
 
         if (lastFrame != null)
         {
-            warnings.Add(OperationWarning.Unsupported("frameImages", "TokenHub Kling does not support a last frame without a first frame; the last frame was ignored."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "frameImages",
+                    "TokenHub Kling does not support a last frame without a first frame; the last frame was ignored."
+                )
+            );
         }
 
         if ((tencentOptions?.Elements?.Count ?? 0) > 0)
         {
-            warnings.Add(OperationWarning.Unsupported("providerOptions.tencent.elements", "TokenHub Kling text-to-video does not accept elements; the elements were ignored."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "providerOptions.tencent.elements",
+                    "TokenHub Kling text-to-video does not accept elements; the elements were ignored."
+                )
+            );
         }
 
         var body = new JsonObject { ["model"] = modelId };
@@ -196,22 +241,34 @@ internal static class TencentTokenHubVideo
                     ["multi_shot"] = Bool(multiShot),
                     ["audio"] = Str(audio),
                 },
-                tencentOptions));
+                tencentOptions
+            )
+        );
     }
 
     /// <summary>Interprets a status response. Upstream <c>interpretTokenHubKlingStatus</c>.</summary>
-    internal static VideoStatusResult InterpretTokenHubKlingStatus(JsonElement statusResponse, string taskId, ProviderResponse response)
+    internal static VideoStatusResult InterpretTokenHubKlingStatus(
+        JsonElement statusResponse,
+        string taskId,
+        ProviderResponse response
+    )
     {
         var task = FindTask(statusResponse, taskId);
         var status = task is { } t ? String(t, "status") : null;
         if (status == "succeeded")
         {
             var outputs = new List<JsonElement>();
-            if (task!.Value.TryGetProperty("outputs", out var rawOutputs) && rawOutputs.ValueKind == JsonValueKind.Array)
+            if (
+                task!.Value.TryGetProperty("outputs", out var rawOutputs)
+                && rawOutputs.ValueKind == JsonValueKind.Array
+            )
             {
                 foreach (var output in rawOutputs.EnumerateArray())
                 {
-                    if (String(output, "url") != null && (String(output, "type") ?? "video") == "video")
+                    if (
+                        String(output, "url") != null
+                        && (String(output, "type") ?? "video") == "video"
+                    )
                     {
                         outputs.Add(output);
                     }
@@ -220,7 +277,11 @@ internal static class TencentTokenHubVideo
 
             if (outputs.Count == 0)
             {
-                return new VideoStatusResult("error", error: "TokenHub Kling task " + taskId + " succeeded without a video URL.", response: response);
+                return new VideoStatusResult(
+                    "error",
+                    error: "TokenHub Kling task " + taskId + " succeeded without a video URL.",
+                    response: response
+                );
             }
 
             var videos = new JsonArray();
@@ -248,24 +309,48 @@ internal static class TencentTokenHubVideo
                 metadata["requestId"] = requestId;
             }
 
-            if (statusResponse.TryGetProperty("tokenhub_usage", out var usage) && usage.ValueKind == JsonValueKind.Object
-                && usage.TryGetProperty("total_tokens", out var totalTokens) && totalTokens.ValueKind == JsonValueKind.Number)
+            if (
+                statusResponse.TryGetProperty("tokenhub_usage", out var usage)
+                && usage.ValueKind == JsonValueKind.Object
+                && usage.TryGetProperty("total_tokens", out var totalTokens)
+                && totalTokens.ValueKind == JsonValueKind.Number
+            )
             {
-                metadata["usage"] = new JsonObject { ["totalTokens"] = JsonNode.Parse(totalTokens.GetRawText()) };
+                metadata["usage"] = new JsonObject
+                {
+                    ["totalTokens"] = JsonNode.Parse(totalTokens.GetRawText()),
+                };
             }
 
             return new VideoStatusResult(
                 "completed",
-                outputs.Select(output => new VideoOutput("url", url: String(output, "url"), mediaType: "video/mp4")).ToList(),
+                outputs
+                    .Select(output => new VideoOutput(
+                        "url",
+                        url: String(output, "url"),
+                        mediaType: "video/mp4"
+                    ))
+                    .ToList(),
                 warnings: [],
-                providerMetadata: OperationJson.Parse(new JsonObject { ["tencent"] = metadata }.ToJsonString()),
-                response: response);
+                providerMetadata: OperationJson.Parse(
+                    new JsonObject { ["tencent"] = metadata }.ToJsonString()
+                ),
+                response: response
+            );
         }
 
         if (status == "failed")
         {
             var message = task is { } failed ? String(failed, "message") : null;
-            return new VideoStatusResult("error", error: "Video generation failed: " + (string.IsNullOrEmpty(message) ? "unknown error" : message) + " (task " + taskId + ")", response: response);
+            return new VideoStatusResult(
+                "error",
+                error: "Video generation failed: "
+                    + (string.IsNullOrEmpty(message) ? "unknown error" : message)
+                    + " (task "
+                    + taskId
+                    + ")",
+                response: response
+            );
         }
 
         return new VideoStatusResult("pending", response: response);
@@ -312,22 +397,35 @@ internal static class TencentTokenHubVideo
 
         return value.ValueKind == JsonValueKind.String
             && !string.IsNullOrEmpty(value.GetString())
-            && double.TryParse(value.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out duration)
+            && double.TryParse(
+                value.GetString(),
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out duration
+            )
             && !double.IsInfinity(duration);
     }
 
     private static string? String(JsonElement element, string name)
     {
-        return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        return
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
     }
 
     private static JsonNode? Str(string? value) => value == null ? null : JsonValue.Create(value);
 
-    private static JsonNode? Num(double? value) => value == null ? null : JsonValue.Create(value.Value);
+    private static JsonNode? Num(double? value) =>
+        value == null ? null : JsonValue.Create(value.Value);
 
-    private static JsonNode? Bool(bool? value) => value == null ? null : JsonValue.Create(value.Value);
+    private static JsonNode? Bool(bool? value) =>
+        value == null ? null : JsonValue.Create(value.Value);
 
-    private static JsonObject Content(string type, string key, string value) => new() { ["type"] = type, [key] = value };
+    private static JsonObject Content(string type, string key, string value) =>
+        new() { ["type"] = type, [key] = value };
 
     private static void AddPrompt(JsonArray contents, string? prompt)
     {
@@ -367,11 +465,24 @@ internal static class TencentTokenHubVideo
         return result.Count > 0 ? result : null;
     }
 
-    private static JsonObject WithSettingsAndOptions(JsonObject body, JsonObject settings, TencentVideoModelOptions? tencentOptions)
+    private static JsonObject WithSettingsAndOptions(
+        JsonObject body,
+        JsonObject settings,
+        TencentVideoModelOptions? tencentOptions
+    )
     {
         var compactSettings = Compact(settings);
-        var watermark = tencentOptions?.Watermark != null ? new JsonObject { ["enabled"] = tencentOptions.Watermark.Value } : null;
-        var requestOptions = Compact(new JsonObject { ["external_task_id"] = Str(tencentOptions?.ExternalTaskId), ["watermark_info"] = watermark });
+        var watermark =
+            tencentOptions?.Watermark != null
+                ? new JsonObject { ["enabled"] = tencentOptions.Watermark.Value }
+                : null;
+        var requestOptions = Compact(
+            new JsonObject
+            {
+                ["external_task_id"] = Str(tencentOptions?.ExternalTaskId),
+                ["watermark_info"] = watermark,
+            }
+        );
         if (compactSettings != null)
         {
             body["settings"] = compactSettings;
@@ -385,23 +496,47 @@ internal static class TencentTokenHubVideo
         return body;
     }
 
-    private static string? ResolveAudio(VideoModelCall options, TencentVideoModelOptions? tencentOptions, bool supported, List<OperationWarning> warnings)
+    private static string? ResolveAudio(
+        VideoModelCall options,
+        TencentVideoModelOptions? tencentOptions,
+        bool supported,
+        List<OperationWarning> warnings
+    )
     {
-        var audio = tencentOptions?.Audio ?? (options.GenerateAudio != null ? (options.GenerateAudio.Value ? "native" : "off") : null);
+        var audio = tencentOptions?.Audio
+            ?? (
+                options.GenerateAudio != null
+                    ? (options.GenerateAudio.Value ? "native" : "off")
+                    : null
+            );
         if (audio != null && !supported)
         {
-            warnings.Add(OperationWarning.Unsupported("generateAudio", "This TokenHub Kling model does not support the audio setting."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "generateAudio",
+                    "This TokenHub Kling model does not support the audio setting."
+                )
+            );
             return null;
         }
 
         return audio;
     }
 
-    private static bool? ResolveMultiShot(TencentVideoModelOptions? tencentOptions, bool supported, List<OperationWarning> warnings)
+    private static bool? ResolveMultiShot(
+        TencentVideoModelOptions? tencentOptions,
+        bool supported,
+        List<OperationWarning> warnings
+    )
     {
         if (tencentOptions?.MultiShot != null && !supported)
         {
-            warnings.Add(OperationWarning.Unsupported("providerOptions.tencent.multiShot", "This TokenHub Kling model does not support multi-shot output."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "providerOptions.tencent.multiShot",
+                    "This TokenHub Kling model does not support multi-shot output."
+                )
+            );
             return null;
         }
 
@@ -417,28 +552,47 @@ internal static class TencentTokenHubVideo
         VideoModelFile? lastFrame,
         int extraReferenceCount,
         string? resolution,
-        List<OperationWarning> warnings)
+        List<OperationWarning> warnings
+    )
     {
         if (options.Duration != null)
         {
-            warnings.Add(OperationWarning.Unsupported("duration", "Motion control output follows the length of the motion reference video."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "duration",
+                    "Motion control output follows the length of the motion reference video."
+                )
+            );
         }
 
         if (options.AspectRatio != null)
         {
-            warnings.Add(OperationWarning.Unsupported("aspectRatio", "Motion control output follows the aspect ratio of the input media."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "aspectRatio",
+                    "Motion control output follows the aspect ratio of the input media."
+                )
+            );
         }
 
         if (lastFrame != null)
         {
-            warnings.Add(OperationWarning.Unsupported("frameImages", "Motion control does not support a last frame; it was ignored."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "frameImages",
+                    "Motion control does not support a last frame; it was ignored."
+                )
+            );
         }
 
         if (extraReferenceCount > 0)
         {
-            warnings.Add(OperationWarning.Unsupported(
-                "inputReferences",
-                "Motion control uses one character image and one motion reference video; additional references were ignored."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "inputReferences",
+                    "Motion control uses one character image and one motion reference video; additional references were ignored."
+                )
+            );
         }
 
         var audio = tencentOptions?.Audio ?? (options.GenerateAudio == false ? "off" : null);
@@ -463,6 +617,7 @@ internal static class TencentTokenHubVideo
                 ["audio"] = Str(audio),
                 ["resolution"] = Str(resolution),
             },
-            tencentOptions);
+            tencentOptions
+        );
     }
 }

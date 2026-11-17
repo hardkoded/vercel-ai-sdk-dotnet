@@ -16,7 +16,11 @@ public static class AmazonBedrockUsage
     /// <summary>Converts <paramref name="usage"/>. A missing object leaves the token counts unset.</summary>
     public static LanguageModelUsage Convert(JsonElement? usage)
     {
-        if (usage is not { } element || element.ValueKind == JsonValueKind.Null || element.ValueKind == JsonValueKind.Undefined)
+        if (
+            usage is not { } element
+            || element.ValueKind == JsonValueKind.Null
+            || element.ValueKind == JsonValueKind.Undefined
+        )
         {
             return new LanguageModelUsage(null, null, null);
         }
@@ -30,15 +34,30 @@ public static class AmazonBedrockUsage
         var output = ReadInt(element, "outputTokens") ?? 0;
         var cacheRead = ReadCache(element, "cacheReadInputTokens");
         var cacheWrite = ReadCache(element, "cacheWriteInputTokens");
-        int? total = element.TryGetProperty("totalTokens", out var totalElement) && totalElement.ValueKind == JsonValueKind.Number
-            ? totalElement.GetInt32()
-            : null;
-        return new LanguageModelUsage(input + cacheRead + cacheWrite, output, total, cacheRead, cacheWrite, raw: element.Clone(), noCacheInputTokens: input, textTokens: output);
+        int? total =
+            element.TryGetProperty("totalTokens", out var totalElement)
+            && totalElement.ValueKind == JsonValueKind.Number
+                ? totalElement.GetInt32()
+                : null;
+        return new LanguageModelUsage(
+            input + cacheRead + cacheWrite,
+            output,
+            total,
+            cacheRead,
+            cacheWrite,
+            raw: element.Clone(),
+            noCacheInputTokens: input,
+            textTokens: output
+        );
     }
 
     private static int ReadCache(JsonElement usage, string name)
     {
-        if (!usage.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null || value.ValueKind == JsonValueKind.Undefined)
+        if (
+            !usage.TryGetProperty(name, out var value)
+            || value.ValueKind == JsonValueKind.Null
+            || value.ValueKind == JsonValueKind.Undefined
+        )
         {
             return 0;
         }

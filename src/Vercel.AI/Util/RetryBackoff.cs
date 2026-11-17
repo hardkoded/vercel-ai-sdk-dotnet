@@ -65,7 +65,11 @@ public sealed class RetryWithExponentialBackoffRespectingRetryHeaders
     /// Delay in milliseconds for <paramref name="error"/> given the current exponential delay.
     /// Header delays are used when they are at least 0 and either under 60 seconds or shorter than the backoff.
     /// </summary>
-    public static double GetRetryDelayInMs(object error, double exponentialBackoffDelay, DateTimeOffset? utcNow = null)
+    public static double GetRetryDelayInMs(
+        object error,
+        double exponentialBackoffDelay,
+        DateTimeOffset? utcNow = null
+    )
     {
         var headers = GetHeaders(error);
         if (headers == null)
@@ -78,7 +82,14 @@ public sealed class RetryWithExponentialBackoffRespectingRetryHeaders
         if (!string.IsNullOrEmpty(retryAfterMs))
         {
             double parsed;
-            if (double.TryParse(retryAfterMs, NumberStyles.Float, CultureInfo.InvariantCulture, out parsed))
+            if (
+                double.TryParse(
+                    retryAfterMs,
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out parsed
+                )
+            )
             {
                 milliseconds = parsed;
             }
@@ -88,14 +99,28 @@ public sealed class RetryWithExponentialBackoffRespectingRetryHeaders
         if (!string.IsNullOrEmpty(retryAfter) && milliseconds == null)
         {
             double seconds;
-            if (double.TryParse(retryAfter, NumberStyles.Float, CultureInfo.InvariantCulture, out seconds))
+            if (
+                double.TryParse(
+                    retryAfter,
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out seconds
+                )
+            )
             {
                 milliseconds = seconds * 1000d;
             }
             else
             {
                 DateTimeOffset date;
-                if (DateTimeOffset.TryParse(retryAfter, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out date))
+                if (
+                    DateTimeOffset.TryParse(
+                        retryAfter,
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                        out date
+                    )
+                )
                 {
                     var now = utcNow ?? DateTimeOffset.UtcNow;
                     milliseconds = (date - now).TotalMilliseconds;
@@ -103,8 +128,12 @@ public sealed class RetryWithExponentialBackoffRespectingRetryHeaders
             }
         }
 
-        if (milliseconds != null && !double.IsNaN(milliseconds.Value) && 0 <= milliseconds.Value
-            && (milliseconds.Value < 60 * 1000 || milliseconds.Value < exponentialBackoffDelay))
+        if (
+            milliseconds != null
+            && !double.IsNaN(milliseconds.Value)
+            && 0 <= milliseconds.Value
+            && (milliseconds.Value < 60 * 1000 || milliseconds.Value < exponentialBackoffDelay)
+        )
         {
             return milliseconds.Value;
         }
@@ -112,7 +141,11 @@ public sealed class RetryWithExponentialBackoffRespectingRetryHeaders
         return exponentialBackoffDelay;
     }
 
-    private async Task<T> ExecuteAsync<T>(Func<Task<T>> operation, double delayInMs, List<object> errors)
+    private async Task<T> ExecuteAsync<T>(
+        Func<Task<T>> operation,
+        double delayInMs,
+        List<object> errors
+    )
     {
         try
         {
@@ -138,16 +171,21 @@ public sealed class RetryWithExponentialBackoffRespectingRetryHeaders
                 throw new RetryError(
                     "Failed after " + tryNumber + " attempts. Last error: " + errorMessage,
                     RetryErrorReason.MaxRetriesExceeded,
-                    newErrors);
+                    newErrors
+                );
             }
 
-            if (await ShouldRetryAsync(error).ConfigureAwait(false) && tryNumber <= _options.MaxRetries)
+            if (
+                await ShouldRetryAsync(error).ConfigureAwait(false)
+                && tryNumber <= _options.MaxRetries
+            )
             {
                 var now = _options.UtcNow == null ? (DateTimeOffset?)null : _options.UtcNow();
                 var wait = GetRetryDelayInMs(error, delayInMs, now);
                 var delay = _options.Delay ?? DefaultDelay;
                 await delay((int)wait, _options.AbortSignal).ConfigureAwait(false);
-                return await ExecuteAsync(operation, _options.BackoffFactor * delayInMs, newErrors).ConfigureAwait(false);
+                return await ExecuteAsync(operation, _options.BackoffFactor * delayInMs, newErrors)
+                    .ConfigureAwait(false);
             }
 
             if (tryNumber == 1)
@@ -156,20 +194,32 @@ public sealed class RetryWithExponentialBackoffRespectingRetryHeaders
             }
 
             throw new RetryError(
-                "Failed after " + tryNumber + " attempts with non-retryable error: '" + errorMessage + "'",
+                "Failed after "
+                    + tryNumber
+                    + " attempts with non-retryable error: '"
+                    + errorMessage
+                    + "'",
                 RetryErrorReason.ErrorNotRetryable,
-                newErrors);
+                newErrors
+            );
         }
     }
 
     private async Task<bool> ShouldRetryAsync(Exception error)
     {
-        if ((error is ApiCallError api && api.IsRetryable) || (error is GatewayError gateway && gateway.IsRetryable) || (error is RetryableCallException call && call.IsRetryable))
+        if (
+            (error is ApiCallError api && api.IsRetryable)
+            || (error is GatewayError gateway && gateway.IsRetryable)
+            || (error is RetryableCallException call && call.IsRetryable)
+        )
         {
             return true;
         }
 
-        if (_options.AdditionalRetryableError != null && await _options.AdditionalRetryableError(error).ConfigureAwait(false))
+        if (
+            _options.AdditionalRetryableError != null
+            && await _options.AdditionalRetryableError(error).ConfigureAwait(false)
+        )
         {
             return true;
         }
@@ -189,7 +239,8 @@ public sealed class RetryWithExponentialBackoffRespectingRetryHeaders
 
     private static bool IsAbort(Exception error)
     {
-        return error is OperationCanceledException || (error is JsError js && js.ErrorName == "AbortError");
+        return error is OperationCanceledException
+            || (error is JsError js && js.ErrorName == "AbortError");
     }
 
     private static IReadOnlyDictionary<string, string>? GetHeaders(object error)
@@ -257,7 +308,12 @@ public static class PrepareRetries
     /// <summary>
     /// Validates <paramref name="maxRetries"/> and returns the default of 2 when it is null.
     /// </summary>
-    public static Result Prepare(int? maxRetries, CancellationToken abortSignal = default, string parameter = "maxRetries", int defaultMaxRetries = 2)
+    public static Result Prepare(
+        int? maxRetries,
+        CancellationToken abortSignal = default,
+        string parameter = "maxRetries",
+        int defaultMaxRetries = 2
+    )
     {
         if (maxRetries != null)
         {
@@ -276,10 +332,9 @@ public static class PrepareRetries
         var resolved = maxRetries ?? defaultMaxRetries;
         return new Result(
             resolved,
-            new RetryWithExponentialBackoffRespectingRetryHeaders(new RetryOptions
-            {
-                MaxRetries = resolved,
-                AbortSignal = abortSignal,
-            }));
+            new RetryWithExponentialBackoffRespectingRetryHeaders(
+                new RetryOptions { MaxRetries = resolved, AbortSignal = abortSignal }
+            )
+        );
     }
 }

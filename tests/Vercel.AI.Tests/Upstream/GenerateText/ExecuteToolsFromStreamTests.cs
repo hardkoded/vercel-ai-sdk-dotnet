@@ -24,7 +24,8 @@ public sealed class ExecuteToolsFromStreamTests
     [UpstreamTest(
         "packages/ai/src/generate-text/execute-tools-from-stream.test.ts::executeToolsFromStream::should not execute tools when the finish reason is %s",
         Coverage = UpstreamCoverage.Covered,
-        Note = "The port has no executeToolsFromStream transformer. The test drives the tool loop that StreamTextAsync uses.")]
+        Note = "The port has no executeToolsFromStream transformer. The test drives the tool loop that StreamTextAsync uses."
+    )]
     public async Task Should_not_execute_tools_when_the_finish_reason_is(FinishReason finishReason)
     {
         var executed = false;
@@ -33,26 +34,37 @@ public sealed class ExecuteToolsFromStreamTests
             StreamParts = new LanguageModelStreamPart[]
             {
                 new ToolCallStreamPart("call-1", "testTool", "{\"value\":\"test\"}"),
-                new FinishStreamPart(finishReason, new LanguageModelUsage(3, 10, 13), finishReason.ToString()),
+                new FinishStreamPart(
+                    finishReason,
+                    new LanguageModelUsage(3, 10, 13),
+                    finishReason.ToString()
+                ),
             },
         };
 
-        var result = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })).StreamTextAsync(new StreamTextOptions
-        {
-            Model = model,
-            Prompt = "test-input",
-            Tools = new[]
+        var result = new AiClient(
+            GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })
+        ).StreamTextAsync(
+            new StreamTextOptions
             {
-                Tool.Function("testTool", null, "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}}}", (_, _) =>
+                Model = model,
+                Prompt = "test-input",
+                Tools = new[]
                 {
-                    executed = true;
-                    return Task.FromResult("tool-result");
-                }),
-            },
-        });
-        await foreach (var _ in result.Stream())
-        {
-        }
+                    Tool.Function(
+                        "testTool",
+                        null,
+                        "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}}}",
+                        (_, _) =>
+                        {
+                            executed = true;
+                            return Task.FromResult("tool-result");
+                        }
+                    ),
+                },
+            }
+        );
+        await foreach (var _ in result.Stream()) { }
 
         Assert.False(executed);
     }
@@ -61,7 +73,8 @@ public sealed class ExecuteToolsFromStreamTests
     [UpstreamTest(
         "packages/ai/src/generate-text/execute-tools-from-stream.test.ts::executeToolsFromStream::should execute tool calls sequentially in stream order with concurrency 1",
         Coverage = UpstreamCoverage.Covered,
-        Note = "The port has no executeToolsFromStream transformer. The test drives the scheduler that Generation.FinishStepAsync uses for generate and stream.")]
+        Note = "The port has no executeToolsFromStream transformer. The test drives the scheduler that Generation.FinishStepAsync uses for generate and stream."
+    )]
     public async Task Should_execute_tool_calls_sequentially_in_stream_order_with_concurrency_1()
     {
         var firstStarted = new DelayedPromise<bool>();
@@ -87,7 +100,8 @@ public sealed class ExecuteToolsFromStreamTests
 
                 events.Enqueue(name + ":end");
                 return true;
-            });
+            }
+        );
 
         await firstStarted.Promise.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(new[] { "first:start" }, events.ToArray());

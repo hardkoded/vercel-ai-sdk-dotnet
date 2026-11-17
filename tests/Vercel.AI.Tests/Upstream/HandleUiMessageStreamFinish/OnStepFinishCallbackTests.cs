@@ -11,10 +11,14 @@ namespace Vercel.AI.Tests.Upstream.HandleUiMessageStreamFinish;
 /// <summary>Port of <c>handle-ui-message-stream-finish.test.ts</c> &gt; <c>handleUIMessageStreamFinish</c> &gt; <c>onStepFinish callback</c>.</summary>
 public sealed class OnStepFinishCallbackTests
 {
-    private const string Prefix = "packages/ai/src/ui-message-stream/handle-ui-message-stream-finish.test.ts::handleUIMessageStreamFinish > onStepFinish callback::";
+    private const string Prefix =
+        "packages/ai/src/ui-message-stream/handle-ui-message-stream-finish.test.ts::handleUIMessageStreamFinish > onStepFinish callback::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should call onStepEnd when finish-step chunk is encountered", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should call onStepEnd when finish-step chunk is encountered",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_call_onStepEnd_when_finish_step_chunk_is_encountered()
     {
         var harness = new HandleUIMessageStreamFinishHarness();
@@ -22,14 +26,20 @@ public sealed class OnStepFinishCallbackTests
 
         var resultStream = harness.Handle(
             HandleUIMessageStreamFinishHarness.CreateUIMessageStream(
-            """{"type":"start","messageId":"msg-step-end"}""",
-            """{"type":"text-start","id":"text-1"}""",
-            """{"type":"text-delta","id":"text-1","delta":"Hello"}""",
-            """{"type":"text-end","id":"text-1"}""",
-            """{"type":"finish-step"}""",
-            """{"type":"finish"}"""),
+                """{"type":"start","messageId":"msg-step-end"}""",
+                """{"type":"text-start","id":"text-1"}""",
+                """{"type":"text-delta","id":"text-1","delta":"Hello"}""",
+                """{"type":"text-end","id":"text-1"}""",
+                """{"type":"finish-step"}""",
+                """{"type":"finish"}"""
+            ),
             originalMessages: [],
-            onStepEnd: e => { onStepEndCalls.Add(e); return Task.CompletedTask; });
+            onStepEnd: e =>
+            {
+                onStepEndCalls.Add(e);
+                return Task.CompletedTask;
+            }
+        );
 
         await HandleUIMessageStreamFinishHarness.ToArray(resultStream);
 
@@ -38,7 +48,10 @@ public sealed class OnStepFinishCallbackTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should prefer onStepEnd over deprecated onStepFinish", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should prefer onStepEnd over deprecated onStepFinish",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_prefer_onStepEnd_over_deprecated_onStepFinish()
     {
         var harness = new HandleUIMessageStreamFinishHarness();
@@ -47,12 +60,22 @@ public sealed class OnStepFinishCallbackTests
 
         var resultStream = harness.Handle(
             HandleUIMessageStreamFinishHarness.CreateUIMessageStream(
-            """{"type":"start","messageId":"msg-step-end"}""",
-            """{"type":"finish-step"}""",
-            """{"type":"finish"}"""),
+                """{"type":"start","messageId":"msg-step-end"}""",
+                """{"type":"finish-step"}""",
+                """{"type":"finish"}"""
+            ),
             originalMessages: [],
-            onStepEnd: _ => { onStepEndCalls++; return Task.CompletedTask; },
-            onStepFinish: _ => { onStepFinishCalls++; return Task.CompletedTask; });
+            onStepEnd: _ =>
+            {
+                onStepEndCalls++;
+                return Task.CompletedTask;
+            },
+            onStepFinish: _ =>
+            {
+                onStepFinishCalls++;
+                return Task.CompletedTask;
+            }
+        );
 
         await HandleUIMessageStreamFinishHarness.ToArray(resultStream);
 
@@ -61,7 +84,10 @@ public sealed class OnStepFinishCallbackTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should call onStepFinish when finish-step chunk is encountered", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should call onStepFinish when finish-step chunk is encountered",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_call_onStepFinish_when_finish_step_chunk_is_encountered()
     {
         var harness = new HandleUIMessageStreamFinishHarness();
@@ -75,13 +101,25 @@ public sealed class OnStepFinishCallbackTests
             """{"type":"finish-step"}""",
             """{"type":"finish"}""",
         ];
-        List<UIMessage> originalMessages = [HandleUIMessageStreamFinishHarness.TextMessage("user-msg-1", UIMessageRole.User, "Hello")];
+        List<UIMessage> originalMessages =
+        [
+            HandleUIMessageStreamFinishHarness.TextMessage(
+                "user-msg-1",
+                UIMessageRole.User,
+                "Hello"
+            ),
+        ];
 
         var resultStream = harness.Handle(
             HandleUIMessageStreamFinishHarness.CreateUIMessageStream(inputChunks),
             messageId: "msg-step-1",
             originalMessages: originalMessages,
-            onStepFinish: e => { onStepFinishCalls.Add(e); return Task.CompletedTask; });
+            onStepFinish: e =>
+            {
+                onStepFinishCalls.Add(e);
+                return Task.CompletedTask;
+            }
+        );
 
         var result = await HandleUIMessageStreamFinishHarness.ToArray(resultStream);
 
@@ -96,7 +134,10 @@ public sealed class OnStepFinishCallbackTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should call onStepFinish multiple times for multiple steps", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should call onStepFinish multiple times for multiple steps",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_call_onStepFinish_multiple_times_for_multiple_steps()
     {
         var harness = new HandleUIMessageStreamFinishHarness();
@@ -104,25 +145,31 @@ public sealed class OnStepFinishCallbackTests
 
         var resultStream = harness.Handle(
             HandleUIMessageStreamFinishHarness.CreateUIMessageStream(
-            """{"type":"start","messageId":"msg-multi-step"}""",
-            """{"type":"text-start","id":"text-1"}""",
-            """{"type":"text-delta","id":"text-1","delta":"Step 1"}""",
-            """{"type":"text-end","id":"text-1"}""",
-            """{"type":"finish-step"}""",
-            """{"type":"start-step"}""",
-            """{"type":"text-start","id":"text-2"}""",
-            """{"type":"text-delta","id":"text-2","delta":"Step 2"}""",
-            """{"type":"text-end","id":"text-2"}""",
-            """{"type":"finish-step"}""",
-            """{"type":"start-step"}""",
-            """{"type":"text-start","id":"text-3"}""",
-            """{"type":"text-delta","id":"text-3","delta":"Step 3"}""",
-            """{"type":"text-end","id":"text-3"}""",
-            """{"type":"finish-step"}""",
-            """{"type":"finish"}"""),
+                """{"type":"start","messageId":"msg-multi-step"}""",
+                """{"type":"text-start","id":"text-1"}""",
+                """{"type":"text-delta","id":"text-1","delta":"Step 1"}""",
+                """{"type":"text-end","id":"text-1"}""",
+                """{"type":"finish-step"}""",
+                """{"type":"start-step"}""",
+                """{"type":"text-start","id":"text-2"}""",
+                """{"type":"text-delta","id":"text-2","delta":"Step 2"}""",
+                """{"type":"text-end","id":"text-2"}""",
+                """{"type":"finish-step"}""",
+                """{"type":"start-step"}""",
+                """{"type":"text-start","id":"text-3"}""",
+                """{"type":"text-delta","id":"text-3","delta":"Step 3"}""",
+                """{"type":"text-end","id":"text-3"}""",
+                """{"type":"finish-step"}""",
+                """{"type":"finish"}"""
+            ),
             messageId: "msg-multi-step",
             originalMessages: [],
-            onStepFinish: e => { onStepFinishCalls.Add(e); return Task.CompletedTask; });
+            onStepFinish: e =>
+            {
+                onStepFinishCalls.Add(e);
+                return Task.CompletedTask;
+            }
+        );
 
         await HandleUIMessageStreamFinishHarness.ToArray(resultStream);
 
@@ -135,7 +182,10 @@ public sealed class OnStepFinishCallbackTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should call both onStepFinish and onFinish when both are provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should call both onStepFinish and onFinish when both are provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_call_both_onStepFinish_and_onFinish_when_both_are_provided()
     {
         var harness = new HandleUIMessageStreamFinishHarness();
@@ -144,16 +194,26 @@ public sealed class OnStepFinishCallbackTests
 
         var resultStream = harness.Handle(
             HandleUIMessageStreamFinishHarness.CreateUIMessageStream(
-            """{"type":"start","messageId":"msg-both"}""",
-            """{"type":"text-start","id":"text-1"}""",
-            """{"type":"text-delta","id":"text-1","delta":"Hello"}""",
-            """{"type":"text-end","id":"text-1"}""",
-            """{"type":"finish-step"}""",
-            """{"type":"finish"}"""),
+                """{"type":"start","messageId":"msg-both"}""",
+                """{"type":"text-start","id":"text-1"}""",
+                """{"type":"text-delta","id":"text-1","delta":"Hello"}""",
+                """{"type":"text-end","id":"text-1"}""",
+                """{"type":"finish-step"}""",
+                """{"type":"finish"}"""
+            ),
             messageId: "msg-both",
             originalMessages: [],
-            onStepFinish: _ => { onStepFinishCalls++; return Task.CompletedTask; },
-            onFinish: _ => { onFinishCalls++; return Task.CompletedTask; });
+            onStepFinish: _ =>
+            {
+                onStepFinishCalls++;
+                return Task.CompletedTask;
+            },
+            onFinish: _ =>
+            {
+                onFinishCalls++;
+                return Task.CompletedTask;
+            }
+        );
 
         await HandleUIMessageStreamFinishHarness.ToArray(resultStream);
 
@@ -162,7 +222,10 @@ public sealed class OnStepFinishCallbackTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should handle onStepFinish errors by logging and continuing", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should handle onStepFinish errors by logging and continuing",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_handle_onStepFinish_errors_by_logging_and_continuing()
     {
         var harness = new HandleUIMessageStreamFinishHarness();
@@ -190,7 +253,8 @@ public sealed class OnStepFinishCallbackTests
             {
                 onStepFinishCalls++;
                 return Task.FromException(new Exception("DB error"));
-            });
+            }
+        );
 
         // Stream should complete without throwing
         var result = await HandleUIMessageStreamFinishHarness.ToArray(resultStream);
@@ -206,28 +270,45 @@ public sealed class OnStepFinishCallbackTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should handle continuation scenario with onStepFinish", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should handle continuation scenario with onStepFinish",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_handle_continuation_scenario_with_onStepFinish()
     {
         var harness = new HandleUIMessageStreamFinishHarness();
         var onStepFinishCalls = new List<UIMessageStreamOnStepEndEvent>();
         List<UIMessage> originalMessages =
         [
-            HandleUIMessageStreamFinishHarness.TextMessage("user-msg-1", UIMessageRole.User, "Continue this"),
-            HandleUIMessageStreamFinishHarness.TextMessage("assistant-msg-1", UIMessageRole.Assistant, "This is"),
+            HandleUIMessageStreamFinishHarness.TextMessage(
+                "user-msg-1",
+                UIMessageRole.User,
+                "Continue this"
+            ),
+            HandleUIMessageStreamFinishHarness.TextMessage(
+                "assistant-msg-1",
+                UIMessageRole.Assistant,
+                "This is"
+            ),
         ];
 
         var resultStream = harness.Handle(
             HandleUIMessageStreamFinishHarness.CreateUIMessageStream(
-            """{"type":"start","messageId":"assistant-msg-1"}""",
-            """{"type":"text-start","id":"text-1"}""",
-            """{"type":"text-delta","id":"text-1","delta":" continued"}""",
-            """{"type":"text-end","id":"text-1"}""",
-            """{"type":"finish-step"}""",
-            """{"type":"finish"}"""),
+                """{"type":"start","messageId":"assistant-msg-1"}""",
+                """{"type":"text-start","id":"text-1"}""",
+                """{"type":"text-delta","id":"text-1","delta":" continued"}""",
+                """{"type":"text-end","id":"text-1"}""",
+                """{"type":"finish-step"}""",
+                """{"type":"finish"}"""
+            ),
             messageId: "msg-999",
             originalMessages: originalMessages,
-            onStepFinish: e => { onStepFinishCalls.Add(e); return Task.CompletedTask; });
+            onStepFinish: e =>
+            {
+                onStepFinishCalls.Add(e);
+                return Task.CompletedTask;
+            }
+        );
 
         await HandleUIMessageStreamFinishHarness.ToArray(resultStream);
 
@@ -238,7 +319,10 @@ public sealed class OnStepFinishCallbackTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should provide deep-cloned messages in onStepFinish to prevent mutation", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should provide deep-cloned messages in onStepFinish to prevent mutation",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_provide_deep_cloned_messages_in_onStepFinish_to_prevent_mutation()
     {
         var harness = new HandleUIMessageStreamFinishHarness();
@@ -247,12 +331,13 @@ public sealed class OnStepFinishCallbackTests
 
         var resultStream = harness.Handle(
             HandleUIMessageStreamFinishHarness.CreateUIMessageStream(
-            """{"type":"start","messageId":"msg-clone"}""",
-            """{"type":"text-start","id":"text-1"}""",
-            """{"type":"text-delta","id":"text-1","delta":"Hello"}""",
-            """{"type":"text-end","id":"text-1"}""",
-            """{"type":"finish-step"}""",
-            """{"type":"finish"}"""),
+                """{"type":"start","messageId":"msg-clone"}""",
+                """{"type":"text-start","id":"text-1"}""",
+                """{"type":"text-delta","id":"text-1","delta":"Hello"}""",
+                """{"type":"text-end","id":"text-1"}""",
+                """{"type":"finish-step"}""",
+                """{"type":"finish"}"""
+            ),
             messageId: "msg-clone",
             originalMessages: [],
             onStepFinish: e =>
@@ -262,7 +347,12 @@ public sealed class OnStepFinishCallbackTests
                 onStepFinishCalls.Add(e);
                 return Task.CompletedTask;
             },
-            onFinish: e => { onFinishCalls.Add(e); return Task.CompletedTask; });
+            onFinish: e =>
+            {
+                onFinishCalls.Add(e);
+                return Task.CompletedTask;
+            }
+        );
 
         await HandleUIMessageStreamFinishHarness.ToArray(resultStream);
 
@@ -276,7 +366,10 @@ public sealed class OnStepFinishCallbackTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should not process stream when neither onFinish nor onStepFinish is provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should not process stream when neither onFinish nor onStepFinish is provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_not_process_stream_when_neither_onFinish_nor_onStepFinish_is_provided()
     {
         var harness = new HandleUIMessageStreamFinishHarness();
@@ -293,7 +386,8 @@ public sealed class OnStepFinishCallbackTests
         var resultStream = harness.Handle(
             HandleUIMessageStreamFinishHarness.CreateUIMessageStream(inputChunks),
             messageId: "msg-passthrough",
-            originalMessages: []); // Neither onFinish nor onStepFinish provided
+            originalMessages: []
+        ); // Neither onFinish nor onStepFinish provided
 
         var result = await HandleUIMessageStreamFinishHarness.ToArray(resultStream);
 

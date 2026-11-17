@@ -13,10 +13,19 @@ namespace Vercel.AI.Tests.OpenResponsesLanguageModelTests;
 internal static class OpenResponsesLanguageModelSupport
 {
     /// <summary>A model named <c>lmstudio</c>, like the upstream <c>createModel</c>.</summary>
-    internal static OpenResponsesLanguageModel Model(UpstreamCapture capture, string modelId = "gemma-7b-it")
+    internal static OpenResponsesLanguageModel Model(
+        UpstreamCapture capture,
+        string modelId = "gemma-7b-it"
+    )
     {
-        var options = new OpenResponsesOptions { ApiKey = "test-key", BaseUrl = "https://localhost:1234/v1", Name = "lmstudio" };
-        return (OpenResponsesLanguageModel)OpenResponsesProvider.Create(options, capture).LanguageModel(modelId);
+        var options = new OpenResponsesOptions
+        {
+            ApiKey = "test-key",
+            BaseUrl = "https://localhost:1234/v1",
+            Name = "lmstudio",
+        };
+        return (OpenResponsesLanguageModel)
+            OpenResponsesProvider.Create(options, capture).LanguageModel(modelId);
     }
 
     /// <summary>Replays a recorded JSON response, like the upstream <c>prepareJsonFixtureResponse</c>.</summary>
@@ -28,19 +37,29 @@ internal static class OpenResponsesLanguageModelSupport
     /// <summary>Replays a recorded <c>.chunks.txt</c> fixture, like the upstream <c>prepareChunksFixtureResponse</c>.</summary>
     internal static UpstreamCapture ChunksFixture(string name)
     {
-        var lines = File.ReadAllLines(Fixture(name + ".chunks.txt")).Where(line => line.Trim().Length > 0);
+        var lines = File.ReadAllLines(Fixture(name + ".chunks.txt"))
+            .Where(line => line.Trim().Length > 0);
         return StreamResponse(lines.ToArray());
     }
 
     /// <summary>A server-sent-event response. Each argument is the JSON of one event.</summary>
     internal static UpstreamCapture StreamResponse(params string[] events)
     {
-        return new UpstreamCapture { MediaType = "text/event-stream", ResponseBody = UpstreamChat.Sse(events) };
+        return new UpstreamCapture
+        {
+            MediaType = "text/event-stream",
+            ResponseBody = UpstreamChat.Sse(events),
+        };
     }
 
-    internal static async Task<List<LanguageModelStreamPart>> Collect(OpenResponsesLanguageModel model, LanguageModelCallOptions options)
+    internal static async Task<List<LanguageModelStreamPart>> Collect(
+        OpenResponsesLanguageModel model,
+        LanguageModelCallOptions options
+    )
     {
-        return await UpstreamChat.Read((await model.DoStreamAsync(options, CancellationToken.None)));
+        return await UpstreamChat.Read(
+            (await model.DoStreamAsync(options, CancellationToken.None))
+        );
     }
 
     /// <summary>The expected stream parts of an upstream snapshot, stored as JSON next to the fixtures.</summary>
@@ -70,7 +89,9 @@ internal static class OpenResponsesLanguageModelSupport
                 var warnings = new JsonArray();
                 foreach (var warning in start.Warnings)
                 {
-                    warnings.Add(new JsonObject { ["type"] = warning.Type, ["message"] = warning.Message });
+                    warnings.Add(
+                        new JsonObject { ["type"] = warning.Type, ["message"] = warning.Message }
+                    );
                 }
 
                 json["warnings"] = warnings;
@@ -150,7 +171,8 @@ internal static class OpenResponsesLanguageModelSupport
     {
         return new UpstreamCapture
         {
-            ResponseBody = """{"id":"resp_1","object":"response","created_at":0,"model":"test-model","status":"completed","output":"""
+            ResponseBody =
+                """{"id":"resp_1","object":"response","created_at":0,"model":"test-model","status":"completed","output":"""
                 + outputJson
                 + ""","usage":{"input_tokens":0,"output_tokens":0,"total_tokens":0}}""",
         };
@@ -165,7 +187,12 @@ internal static class OpenResponsesLanguageModelSupport
             switch (part)
             {
                 case GeneratedReasoning reasoning:
-                    parts.Add(new AssistantReasoningPart(reasoning.Text, Options(reasoning.ProviderMetadata)));
+                    parts.Add(
+                        new AssistantReasoningPart(
+                            reasoning.Text,
+                            Options(reasoning.ProviderMetadata)
+                        )
+                    );
                     break;
                 case GeneratedText text:
                     parts.Add(new AssistantTextPart(text.Text, Options(text.ProviderMetadata)));
@@ -176,11 +203,19 @@ internal static class OpenResponsesLanguageModelSupport
             }
         }
 
-        return new LanguageModelCallOptions { Prompt = new ModelMessage[] { new AssistantModelMessage(parts) } };
+        return new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[] { new AssistantModelMessage(parts) },
+        };
     }
 
     /// <summary>A function tool with a JSON schema.</summary>
-    internal static LanguageModelTool Tool(string name, string description, string schema, bool? strict = null)
+    internal static LanguageModelTool Tool(
+        string name,
+        string description,
+        string schema,
+        bool? strict = null
+    )
     {
         return new LanguageModelTool(name, description, UpstreamChat.Json(schema), strict);
     }
@@ -219,7 +254,12 @@ internal static class OpenResponsesLanguageModelSupport
         return json;
     }
 
-    private static void Add(JsonObject json, string? id, string? delta, JsonElement? providerMetadata)
+    private static void Add(
+        JsonObject json,
+        string? id,
+        string? delta,
+        JsonElement? providerMetadata
+    )
     {
         Set(json, "id", id);
         Set(json, "delta", delta);

@@ -13,7 +13,12 @@ namespace Vercel.AI.Anthropic;
 public sealed class AnthropicParseContext
 {
     /// <summary>Creates parse settings.</summary>
-    public AnthropicParseContext(bool usesJsonResponseTool, string providerOptionsName, bool usedCustomProviderKey, IReadOnlyList<CallWarning>? warnings = null)
+    public AnthropicParseContext(
+        bool usesJsonResponseTool,
+        string providerOptionsName,
+        bool usedCustomProviderKey,
+        IReadOnlyList<CallWarning>? warnings = null
+    )
     {
         UsesJsonResponseTool = usesJsonResponseTool;
         ProviderOptionsName = providerOptionsName ?? "anthropic";
@@ -60,14 +65,23 @@ public sealed class AnthropicParseContext
 public static class AnthropicResponse
 {
     /// <summary>Parses a Messages response body.</summary>
-    public static LanguageModelGenerateResult Parse(string json, AnthropicParseContext context, IReadOnlyDictionary<string, string>? headers = null)
+    public static LanguageModelGenerateResult Parse(
+        string json,
+        AnthropicParseContext context,
+        IReadOnlyDictionary<string, string>? headers = null
+    )
     {
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json);
         return Parse(document.RootElement, context, json, headers);
     }
 
     /// <summary>Parses a Messages response object.</summary>
-    public static LanguageModelGenerateResult Parse(JsonElement root, AnthropicParseContext context, string? raw = null, IReadOnlyDictionary<string, string>? headers = null)
+    public static LanguageModelGenerateResult Parse(
+        JsonElement root,
+        AnthropicParseContext context,
+        string? raw = null,
+        IReadOnlyDictionary<string, string>? headers = null
+    )
     {
         var content = new List<GeneratedContent>();
         var mcpNames = new Dictionary<string, string>();
@@ -78,16 +92,28 @@ public static class AnthropicResponse
             var hasWebSearchResults = HasWebSearchResults(parts);
             foreach (var part in parts.EnumerateArray())
             {
-                MapPart(part, content, context, mcpNames, idFactory, hasWebSearchResults, ref jsonTool);
+                MapPart(
+                    part,
+                    content,
+                    context,
+                    mcpNames,
+                    idFactory,
+                    hasWebSearchResults,
+                    ref jsonTool
+                );
             }
         }
 
-        var stop = root.TryGetProperty("stop_reason", out var stopElement) && stopElement.ValueKind == JsonValueKind.String
-            ? stopElement.GetString()
-            : null;
-        var usage = root.TryGetProperty("usage", out var usageElement) && usageElement.ValueKind == JsonValueKind.Object
-            ? AnthropicUsage.Convert(usageElement)
-            : LanguageModelUsage.Empty;
+        var stop =
+            root.TryGetProperty("stop_reason", out var stopElement)
+            && stopElement.ValueKind == JsonValueKind.String
+                ? stopElement.GetString()
+                : null;
+        var usage =
+            root.TryGetProperty("usage", out var usageElement)
+            && usageElement.ValueKind == JsonValueKind.Object
+                ? AnthropicUsage.Convert(usageElement)
+                : LanguageModelUsage.Empty;
         var metadata = Metadata(root, context);
         return new LanguageModelGenerateResult(
             content,
@@ -100,17 +126,20 @@ public static class AnthropicResponse
             raw,
             root.TryGetProperty("model", out var model) ? model.GetString() : null,
             null,
-            headers);
+            headers
+        );
     }
 
     private static bool HasWebSearchResults(JsonElement parts)
     {
         foreach (var part in parts.EnumerateArray())
         {
-            if (AnthropicJson.String(part, "type") == "web_search_tool_result"
+            if (
+                AnthropicJson.String(part, "type") == "web_search_tool_result"
                 && part.TryGetProperty("content", out var body)
                 && body.ValueKind == JsonValueKind.Array
-                && body.GetArrayLength() > 0)
+                && body.GetArrayLength() > 0
+            )
             {
                 return true;
             }
@@ -126,7 +155,8 @@ public static class AnthropicResponse
         Dictionary<string, string> mcpNames,
         Func<string> generateId,
         bool hasWebSearchResults,
-        ref bool jsonTool)
+        ref bool jsonTool
+    )
     {
         var type = AnthropicJson.String(part, "type");
         switch (type)
@@ -139,19 +169,52 @@ public static class AnthropicResponse
 
                 break;
             case "thinking":
-                content.Add(new AnthropicReasoningContent(
-                    AnthropicJson.String(part, "thinking") ?? string.Empty,
-                    ObjectElement(new JsonObject { ["anthropic"] = new JsonObject { ["signature"] = AnthropicJson.String(part, "signature") } })));
+                content.Add(
+                    new AnthropicReasoningContent(
+                        AnthropicJson.String(part, "thinking") ?? string.Empty,
+                        ObjectElement(
+                            new JsonObject
+                            {
+                                ["anthropic"] = new JsonObject
+                                {
+                                    ["signature"] = AnthropicJson.String(part, "signature"),
+                                },
+                            }
+                        )
+                    )
+                );
                 break;
             case "redacted_thinking":
-                content.Add(new AnthropicReasoningContent(
-                    string.Empty,
-                    ObjectElement(new JsonObject { ["anthropic"] = new JsonObject { ["redactedData"] = AnthropicJson.String(part, "data") } })));
+                content.Add(
+                    new AnthropicReasoningContent(
+                        string.Empty,
+                        ObjectElement(
+                            new JsonObject
+                            {
+                                ["anthropic"] = new JsonObject
+                                {
+                                    ["redactedData"] = AnthropicJson.String(part, "data"),
+                                },
+                            }
+                        )
+                    )
+                );
                 break;
             case "container_upload":
-                content.Add(new AnthropicCustomContent(
-                    "anthropic.container_upload",
-                    ObjectElement(new JsonObject { ["anthropic"] = new JsonObject { ["fileId"] = AnthropicJson.String(part, "file_id") } })));
+                content.Add(
+                    new AnthropicCustomContent(
+                        "anthropic.container_upload",
+                        ObjectElement(
+                            new JsonObject
+                            {
+                                ["anthropic"] = new JsonObject
+                                {
+                                    ["fileId"] = AnthropicJson.String(part, "file_id"),
+                                },
+                            }
+                        )
+                    )
+                );
                 break;
             case "compaction":
                 var compaction = AnthropicJson.String(part, "content");
@@ -164,7 +227,12 @@ public static class AnthropicResponse
                         compactionMetadata["signature"] = signature;
                     }
 
-                    content.Add(new AnthropicText(compaction!, ObjectElement(new JsonObject { ["anthropic"] = compactionMetadata })));
+                    content.Add(
+                        new AnthropicText(
+                            compaction!,
+                            ObjectElement(new JsonObject { ["anthropic"] = compactionMetadata })
+                        )
+                    );
                 }
 
                 break;
@@ -196,18 +264,32 @@ public static class AnthropicResponse
         }
     }
 
-    private static void MapText(JsonElement part, List<GeneratedContent> content, Func<string> generateId, bool hasWebSearchResults)
+    private static void MapText(
+        JsonElement part,
+        List<GeneratedContent> content,
+        Func<string> generateId,
+        bool hasWebSearchResults
+    )
     {
         var text = AnthropicJson.String(part, "text") ?? string.Empty;
         var citations = new List<JsonElement>();
-        if (part.TryGetProperty("citations", out var citationArray) && citationArray.ValueKind == JsonValueKind.Array)
+        if (
+            part.TryGetProperty("citations", out var citationArray)
+            && citationArray.ValueKind == JsonValueKind.Array
+        )
         {
             citations.AddRange(citationArray.EnumerateArray());
         }
 
         if (citations.Count > 0)
         {
-            content.Add(new AnthropicText(text, AnthropicCitations.TextMetadata(citations), AnthropicCitations.MapAll(citations)));
+            content.Add(
+                new AnthropicText(
+                    text,
+                    AnthropicCitations.TextMetadata(citations),
+                    AnthropicCitations.MapAll(citations)
+                )
+            );
         }
         else
         {
@@ -217,7 +299,10 @@ public static class AnthropicResponse
         foreach (var citation in citations)
         {
             // Search results are already sources. Only a citation without them falls back to a source.
-            if (hasWebSearchResults && AnthropicJson.String(citation, "type") == "web_search_result_location")
+            if (
+                hasWebSearchResults
+                && AnthropicJson.String(citation, "type") == "web_search_result_location"
+            )
             {
                 continue;
             }
@@ -243,13 +328,23 @@ public static class AnthropicResponse
                     ["encryptedIndex"] = AnthropicJson.String(citation, "encrypted_index"),
                 },
             };
-            return new GeneratedSource(generateId(), AnthropicJson.String(citation, "url") ?? string.Empty, AnthropicJson.String(citation, "title"), ObjectElement(metadata));
+            return new GeneratedSource(
+                generateId(),
+                AnthropicJson.String(citation, "url") ?? string.Empty,
+                AnthropicJson.String(citation, "title"),
+                ObjectElement(metadata)
+            );
         }
 
         return null;
     }
 
-    private static void MapToolUse(JsonElement part, List<GeneratedContent> content, AnthropicParseContext context, ref bool jsonTool)
+    private static void MapToolUse(
+        JsonElement part,
+        List<GeneratedContent> content,
+        AnthropicParseContext context,
+        ref bool jsonTool
+    )
     {
         var name = AnthropicJson.String(part, "name") ?? string.Empty;
         var id = AnthropicJson.String(part, "id") ?? "tool";
@@ -257,7 +352,11 @@ public static class AnthropicResponse
         if (context.UsesJsonResponseTool && name == "json")
         {
             jsonTool = true;
-            content.Add(new GeneratedText(input.ValueKind == JsonValueKind.Undefined ? "null" : input.GetRawText()));
+            content.Add(
+                new GeneratedText(
+                    input.ValueKind == JsonValueKind.Undefined ? "null" : input.GetRawText()
+                )
+            );
             return;
         }
 
@@ -266,9 +365,18 @@ public static class AnthropicResponse
         if (toolset != null)
         {
             AnthropicToolset.Validate(toolset, name, context.PreparedTools);
-            var memberInput = AnthropicToolset.MemberInput(name, input.ValueKind == JsonValueKind.Undefined ? null : JsonNode.Parse(input.GetRawText()));
+            var memberInput = AnthropicToolset.MemberInput(
+                name,
+                input.ValueKind == JsonValueKind.Undefined
+                    ? null
+                    : JsonNode.Parse(input.GetRawText())
+            );
             var toolsetMetadata = new JsonObject { ["toolsetName"] = toolset };
-            if (metadata != null && AnthropicJson.Node(metadata.Value) is JsonObject callerMetadata && callerMetadata["anthropic"] is JsonObject callerInfo)
+            if (
+                metadata != null
+                && AnthropicJson.Node(metadata.Value) is JsonObject callerMetadata
+                && callerMetadata["anthropic"] is JsonObject callerInfo
+            )
             {
                 foreach (var property in callerInfo)
                 {
@@ -276,34 +384,62 @@ public static class AnthropicResponse
                 }
             }
 
-            content.Add(new GeneratedToolCall(
-                id,
-                context.ComputerToolsetName ?? toolset,
-                memberInput,
-                ObjectElement(new JsonObject { ["anthropic"] = toolsetMetadata })));
+            content.Add(
+                new GeneratedToolCall(
+                    id,
+                    context.ComputerToolsetName ?? toolset,
+                    memberInput,
+                    ObjectElement(new JsonObject { ["anthropic"] = toolsetMetadata })
+                )
+            );
             return;
         }
 
-        content.Add(new GeneratedToolCall(id, CustomName(context, name), input.ValueKind == JsonValueKind.Undefined ? "{}" : input.GetRawText(), metadata));
+        content.Add(
+            new GeneratedToolCall(
+                id,
+                CustomName(context, name),
+                input.ValueKind == JsonValueKind.Undefined ? "{}" : input.GetRawText(),
+                metadata
+            )
+        );
     }
 
-    private static void MapServerTool(JsonElement part, List<GeneratedContent> content, AnthropicParseContext context)
+    private static void MapServerTool(
+        JsonElement part,
+        List<GeneratedContent> content,
+        AnthropicParseContext context
+    )
     {
         var name = AnthropicJson.String(part, "name") ?? string.Empty;
         var id = AnthropicJson.String(part, "id") ?? "tool";
-        var input = part.TryGetProperty("input", out var inputElement) ? AnthropicJson.Node(inputElement) : new JsonObject();
+        var input = part.TryGetProperty("input", out var inputElement)
+            ? AnthropicJson.Node(inputElement)
+            : new JsonObject();
         string toolName;
         if (name == "text_editor_code_execution" || name == "bash_code_execution")
         {
             toolName = "code_execution";
             input = WithType(name, input);
         }
-        else if (name == "code_execution" && input is JsonObject code && code["code"] != null && code["type"] == null)
+        else if (
+            name == "code_execution"
+            && input is JsonObject code
+            && code["code"] != null
+            && code["type"] == null
+        )
         {
             toolName = "code_execution";
             input = WithType("programmatic-tool-call", code);
         }
-        else if (name == "web_search" || name == "code_execution" || name == "web_fetch" || name == "tool_search_tool_regex" || name == "tool_search_tool_bm25" || name == "advisor")
+        else if (
+            name == "web_search"
+            || name == "code_execution"
+            || name == "web_fetch"
+            || name == "tool_search_tool_regex"
+            || name == "tool_search_tool_bm25"
+            || name == "advisor"
+        )
         {
             toolName = name;
         }
@@ -312,30 +448,61 @@ public static class AnthropicResponse
             return;
         }
 
-        content.Add(new GeneratedToolCall(id, CustomName(context, toolName), input.ToJsonString(), CallerMetadata(part))
-        {
-            Dynamic = context.MarkCodeExecutionDynamic && (name == "code_execution" || name == "text_editor_code_execution" || name == "bash_code_execution"),
-        });
+        content.Add(
+            new GeneratedToolCall(
+                id,
+                CustomName(context, toolName),
+                input.ToJsonString(),
+                CallerMetadata(part)
+            )
+            {
+                Dynamic =
+                    context.MarkCodeExecutionDynamic
+                    && (
+                        name == "code_execution"
+                        || name == "text_editor_code_execution"
+                        || name == "bash_code_execution"
+                    ),
+            }
+        );
     }
 
-    private static void MapMcpUse(JsonElement part, List<GeneratedContent> content, Dictionary<string, string> mcpNames)
+    private static void MapMcpUse(
+        JsonElement part,
+        List<GeneratedContent> content,
+        Dictionary<string, string> mcpNames
+    )
     {
         var id = AnthropicJson.String(part, "id") ?? "tool";
         var name = AnthropicJson.String(part, "name") ?? string.Empty;
         mcpNames[id] = name;
-        var metadata = ObjectElement(new JsonObject
-        {
-            ["anthropic"] = new JsonObject
+        var metadata = ObjectElement(
+            new JsonObject
             {
-                ["type"] = "mcp-tool-use",
-                ["serverName"] = AnthropicJson.String(part, "server_name"),
-            },
-        });
-        var input = part.TryGetProperty("input", out var inputElement) ? inputElement.GetRawText() : "{}";
-        content.Add(new GeneratedToolCall(id, name, input, metadata) { ProviderExecuted = true, Dynamic = true });
+                ["anthropic"] = new JsonObject
+                {
+                    ["type"] = "mcp-tool-use",
+                    ["serverName"] = AnthropicJson.String(part, "server_name"),
+                },
+            }
+        );
+        var input = part.TryGetProperty("input", out var inputElement)
+            ? inputElement.GetRawText()
+            : "{}";
+        content.Add(
+            new GeneratedToolCall(id, name, input, metadata)
+            {
+                ProviderExecuted = true,
+                Dynamic = true,
+            }
+        );
     }
 
-    private static void MapMcpResult(JsonElement part, List<GeneratedContent> content, Dictionary<string, string> mcpNames)
+    private static void MapMcpResult(
+        JsonElement part,
+        List<GeneratedContent> content,
+        Dictionary<string, string> mcpNames
+    )
     {
         var id = AnthropicJson.String(part, "tool_use_id") ?? string.Empty;
         string? name;
@@ -345,10 +512,23 @@ public static class AnthropicResponse
         }
 
         var result = part.TryGetProperty("content", out var body) ? body.GetRawText() : "null";
-        content.Add(new AnthropicToolResultContent(id, name, result, AnthropicJson.Bool(part, "is_error") == true, null));
+        content.Add(
+            new AnthropicToolResultContent(
+                id,
+                name,
+                result,
+                AnthropicJson.Bool(part, "is_error") == true,
+                null
+            )
+        );
     }
 
-    private static void MapWebSearch(JsonElement part, List<GeneratedContent> content, AnthropicParseContext context, Func<string> generateId)
+    private static void MapWebSearch(
+        JsonElement part,
+        List<GeneratedContent> content,
+        AnthropicParseContext context,
+        Func<string> generateId
+    )
     {
         var id = AnthropicJson.String(part, "tool_use_id") ?? string.Empty;
         var name = CustomName(context, "web_search");
@@ -365,7 +545,11 @@ public static class AnthropicResponse
                 var item = new JsonObject
                 {
                     ["url"] = AnthropicJson.String(result, "url"),
-                    ["pageAge"] = result.TryGetProperty("page_age", out var age) && age.ValueKind != JsonValueKind.Undefined ? AnthropicJson.Node(age) : null,
+                    ["pageAge"] =
+                        result.TryGetProperty("page_age", out var age)
+                        && age.ValueKind != JsonValueKind.Undefined
+                            ? AnthropicJson.Node(age)
+                            : null,
                     ["encryptedContent"] = AnthropicJson.String(result, "encrypted_content"),
                     ["type"] = AnthropicJson.String(result, "type"),
                 };
@@ -378,17 +562,38 @@ public static class AnthropicResponse
                 results.Add(item);
             }
 
-            content.Add(new AnthropicToolResultContent(id, name, results.ToJsonString(), false, CallerMetadata(part)));
+            content.Add(
+                new AnthropicToolResultContent(
+                    id,
+                    name,
+                    results.ToJsonString(),
+                    false,
+                    CallerMetadata(part)
+                )
+            );
             foreach (var result in body.EnumerateArray())
             {
-                var metadata = ObjectElement(new JsonObject
-                {
-                    ["anthropic"] = new JsonObject
+                var metadata = ObjectElement(
+                    new JsonObject
                     {
-                        ["pageAge"] = result.TryGetProperty("page_age", out var age) && age.ValueKind != JsonValueKind.Null ? AnthropicJson.Node(age) : null,
-                    },
-                });
-                content.Add(new GeneratedSource(generateId(), AnthropicJson.String(result, "url") ?? string.Empty, AnthropicJson.String(result, "title"), metadata));
+                        ["anthropic"] = new JsonObject
+                        {
+                            ["pageAge"] =
+                                result.TryGetProperty("page_age", out var age)
+                                && age.ValueKind != JsonValueKind.Null
+                                    ? AnthropicJson.Node(age)
+                                    : null,
+                        },
+                    }
+                );
+                content.Add(
+                    new GeneratedSource(
+                        generateId(),
+                        AnthropicJson.String(result, "url") ?? string.Empty,
+                        AnthropicJson.String(result, "title"),
+                        metadata
+                    )
+                );
             }
         }
         else
@@ -398,11 +603,23 @@ public static class AnthropicResponse
                 ["type"] = "web_search_tool_result_error",
                 ["errorCode"] = AnthropicJson.String(body, "error_code"),
             };
-            content.Add(new AnthropicToolResultContent(id, name, error.ToJsonString(), true, CallerMetadata(part)));
+            content.Add(
+                new AnthropicToolResultContent(
+                    id,
+                    name,
+                    error.ToJsonString(),
+                    true,
+                    CallerMetadata(part)
+                )
+            );
         }
     }
 
-    private static void MapWebFetch(JsonElement part, List<GeneratedContent> content, AnthropicParseContext context)
+    private static void MapWebFetch(
+        JsonElement part,
+        List<GeneratedContent> content,
+        AnthropicParseContext context
+    )
     {
         var id = AnthropicJson.String(part, "tool_use_id") ?? string.Empty;
         var name = CustomName(context, "web_fetch");
@@ -414,7 +631,15 @@ public static class AnthropicResponse
         var contentType = AnthropicJson.String(body, "type");
         if (contentType == "web_fetch_result")
         {
-            content.Add(new AnthropicToolResultContent(id, name, body.GetRawText(), false, CallerMetadata(part)));
+            content.Add(
+                new AnthropicToolResultContent(
+                    id,
+                    name,
+                    body.GetRawText(),
+                    false,
+                    CallerMetadata(part)
+                )
+            );
         }
         else if (contentType == "web_fetch_tool_result_error")
         {
@@ -423,11 +648,23 @@ public static class AnthropicResponse
                 ["type"] = "web_fetch_tool_result_error",
                 ["errorCode"] = AnthropicJson.String(body, "error_code"),
             };
-            content.Add(new AnthropicToolResultContent(id, name, error.ToJsonString(), true, CallerMetadata(part)));
+            content.Add(
+                new AnthropicToolResultContent(
+                    id,
+                    name,
+                    error.ToJsonString(),
+                    true,
+                    CallerMetadata(part)
+                )
+            );
         }
     }
 
-    private static void MapCodeExecution(JsonElement part, List<GeneratedContent> content, AnthropicParseContext context)
+    private static void MapCodeExecution(
+        JsonElement part,
+        List<GeneratedContent> content,
+        AnthropicParseContext context
+    )
     {
         var id = AnthropicJson.String(part, "tool_use_id") ?? string.Empty;
         if (!part.TryGetProperty("content", out var body))
@@ -435,7 +672,15 @@ public static class AnthropicResponse
             return;
         }
 
-        content.Add(new AnthropicToolResultContent(id, CustomName(context, "code_execution"), body.GetRawText(), false, null));
+        content.Add(
+            new AnthropicToolResultContent(
+                id,
+                CustomName(context, "code_execution"),
+                body.GetRawText(),
+                false,
+                null
+            )
+        );
     }
 
     private static JsonObject WithType(string type, JsonNode input)
@@ -463,7 +708,10 @@ public static class AnthropicResponse
 
     private static JsonElement? CallerMetadata(JsonElement part)
     {
-        if (!part.TryGetProperty("caller", out var caller) || caller.ValueKind != JsonValueKind.Object)
+        if (
+            !part.TryGetProperty("caller", out var caller)
+            || caller.ValueKind != JsonValueKind.Object
+        )
         {
             return null;
         }
@@ -475,7 +723,9 @@ public static class AnthropicResponse
             info["toolId"] = toolId;
         }
 
-        return ObjectElement(new JsonObject { ["anthropic"] = new JsonObject { ["caller"] = info } });
+        return ObjectElement(
+            new JsonObject { ["anthropic"] = new JsonObject { ["caller"] = info } }
+        );
     }
 
     private static JsonElement Metadata(JsonElement root, AnthropicParseContext context)
@@ -486,18 +736,29 @@ public static class AnthropicResponse
             anthropic["usage"] = AnthropicJson.Node(usage);
         }
 
-        anthropic["stopSequence"] = root.TryGetProperty("stop_sequence", out var sequence) && sequence.ValueKind == JsonValueKind.String
-            ? JsonValue.Create(sequence.GetString())
+        anthropic["stopSequence"] =
+            root.TryGetProperty("stop_sequence", out var sequence)
+            && sequence.ValueKind == JsonValueKind.String
+                ? JsonValue.Create(sequence.GetString())
+                : null;
+        var serviceTier =
+            usage.ValueKind == JsonValueKind.Object
+            && usage.TryGetProperty("service_tier", out var usageTier)
+            && usageTier.ValueKind == JsonValueKind.String
+                ? usageTier.GetString()
+            : root.TryGetProperty("service_tier", out var rootTier)
+            && rootTier.ValueKind == JsonValueKind.String
+                ? rootTier.GetString()
             : null;
-        var serviceTier = usage.ValueKind == JsonValueKind.Object && usage.TryGetProperty("service_tier", out var usageTier) && usageTier.ValueKind == JsonValueKind.String
-            ? usageTier.GetString()
-            : root.TryGetProperty("service_tier", out var rootTier) && rootTier.ValueKind == JsonValueKind.String ? rootTier.GetString() : null;
         if (serviceTier != null)
         {
             anthropic["serviceTier"] = serviceTier;
         }
 
-        if (root.TryGetProperty("container", out var container) && container.ValueKind == JsonValueKind.Object)
+        if (
+            root.TryGetProperty("container", out var container)
+            && container.ValueKind == JsonValueKind.Object
+        )
         {
             var mapped = new JsonObject
             {
@@ -507,8 +768,10 @@ public static class AnthropicResponse
             anthropic["container"] = mapped;
         }
 
-        if (root.TryGetProperty("safeguard_results", out var safeguardResults)
-            && safeguardResults.ValueKind != JsonValueKind.Null)
+        if (
+            root.TryGetProperty("safeguard_results", out var safeguardResults)
+            && safeguardResults.ValueKind != JsonValueKind.Null
+        )
         {
             anthropic["safeguardResults"] = AnthropicJson.Node(safeguardResults);
         }

@@ -24,7 +24,8 @@ public sealed class SseMcpTransport : IMcpTransport, IDisposable
     private readonly Uri _url;
     private readonly IReadOnlyDictionary<string, string>? _headers;
     private readonly SemaphoreSlim _startGate = new SemaphoreSlim(1, 1);
-    private readonly ConcurrentDictionary<int, TaskCompletionSource<JsonElement>> _pending = new ConcurrentDictionary<int, TaskCompletionSource<JsonElement>>();
+    private readonly ConcurrentDictionary<int, TaskCompletionSource<JsonElement>> _pending =
+        new ConcurrentDictionary<int, TaskCompletionSource<JsonElement>>();
     private Uri? _endpoint;
     private CancellationTokenSource? _cts;
     private Task? _loop;
@@ -32,7 +33,11 @@ public sealed class SseMcpTransport : IMcpTransport, IDisposable
     private int _id;
 
     /// <summary>Creates a transport for the SSE endpoint at <paramref name="url"/>.</summary>
-    public SseMcpTransport(HttpClient httpClient, Uri url, IReadOnlyDictionary<string, string>? headers = null)
+    public SseMcpTransport(
+        HttpClient httpClient,
+        Uri url,
+        IReadOnlyDictionary<string, string>? headers = null
+    )
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _url = url ?? throw new ArgumentNullException(nameof(url));
@@ -63,25 +68,43 @@ public sealed class SseMcpTransport : IMcpTransport, IDisposable
         _endpoint = null;
         var cts = new CancellationTokenSource();
         _cts = cts;
-        var ready = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var ready = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         HttpResponseMessage? response = null;
         try
         {
-            using var linked = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+                cts.Token,
+                cancellationToken
+            );
             using var request = new HttpRequestMessage(HttpMethod.Get, _url);
             AddCommonHeaders(request, "text/event-stream");
-            response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, linked.Token).ConfigureAwait(false);
+            response = await _httpClient
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, linked.Token)
+                .ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
                 var text = await TryReadBodyAsync(response, linked.Token).ConfigureAwait(false);
                 var reason = response.ReasonPhrase;
-                var message = "MCP SSE Transport Error: " + (int)response.StatusCode + " " + reason + (string.IsNullOrEmpty(text) ? string.Empty : ": " + text);
+                var message =
+                    "MCP SSE Transport Error: "
+                    + (int)response.StatusCode
+                    + " "
+                    + reason
+                    + (string.IsNullOrEmpty(text) ? string.Empty : ": " + text);
                 if ((int)response.StatusCode == 405)
                 {
-                    message += ". This server does not support SSE transport. Try using `http` transport instead";
+                    message +=
+                        ". This server does not support SSE transport. Try using `http` transport instead";
                 }
 
-                throw new MCPClientError(message, statusCode: (int)response.StatusCode, url: _url.ToString(), responseBody: string.IsNullOrEmpty(text) ? null : text);
+                throw new MCPClientError(
+                    message,
+                    statusCode: (int)response.StatusCode,
+                    url: _url.ToString(),
+                    responseBody: string.IsNullOrEmpty(text) ? null : text
+                );
             }
         }
         catch (Exception error)
@@ -124,21 +147,34 @@ public sealed class SseMcpTransport : IMcpTransport, IDisposable
 
         try
         {
-            using var linked = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+                cts.Token,
+                cancellationToken
+            );
             using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
             {
-                Content = new StringContent(message.GetRawText(), Encoding.UTF8, "application/json"),
+                Content = new StringContent(
+                    message.GetRawText(),
+                    Encoding.UTF8,
+                    "application/json"
+                ),
             };
             AddCommonHeaders(request, null);
-            using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, linked.Token).ConfigureAwait(false);
+            using var response = await _httpClient
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, linked.Token)
+                .ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
                 var text = await TryReadBodyAsync(response, linked.Token).ConfigureAwait(false);
                 throw new MCPClientError(
-                    "MCP SSE Transport Error: POSTing to endpoint (HTTP " + (int)response.StatusCode + "): " + text,
+                    "MCP SSE Transport Error: POSTing to endpoint (HTTP "
+                        + (int)response.StatusCode
+                        + "): "
+                        + text,
                     statusCode: (int)response.StatusCode,
                     url: endpoint.ToString(),
-                    responseBody: string.IsNullOrEmpty(text) ? null : text);
+                    responseBody: string.IsNullOrEmpty(text) ? null : text
+                );
             }
         }
         catch (Exception error)
@@ -153,7 +189,11 @@ public sealed class SseMcpTransport : IMcpTransport, IDisposable
     }
 
     /// <inheritdoc />
-    public async Task<JsonElement> CallAsync(string method, JsonElement parameters, CancellationToken cancellationToken)
+    public async Task<JsonElement> CallAsync(
+        string method,
+        JsonElement parameters,
+        CancellationToken cancellationToken
+    )
     {
         if (!_connected)
         {
@@ -169,7 +209,9 @@ public sealed class SseMcpTransport : IMcpTransport, IDisposable
         }
 
         var id = Interlocked.Increment(ref _id);
-        var completion = new TaskCompletionSource<JsonElement>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var completion = new TaskCompletionSource<JsonElement>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         _pending[id] = completion;
         try
         {
@@ -248,15 +290,23 @@ public sealed class SseMcpTransport : IMcpTransport, IDisposable
             request.Headers.Accept.ParseAdd(accept);
         }
 
-        request.Headers.TryAddWithoutValidation("mcp-protocol-version", ProtocolVersion ?? LatestLegacyProtocolVersion);
+        request.Headers.TryAddWithoutValidation(
+            "mcp-protocol-version",
+            ProtocolVersion ?? LatestLegacyProtocolVersion
+        );
         request.Headers.UserAgent.ParseAdd("ai-sdk/" + AiSdkVersion.Version);
     }
 
-    private static async Task<string?> TryReadBodyAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    private static async Task<string?> TryReadBodyAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
-            return await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
+            return await CancellableReads
+                .ReadAsStringAsync(response.Content, cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (Exception error) when (!(error is OperationCanceledException))
         {
@@ -264,21 +314,35 @@ public sealed class SseMcpTransport : IMcpTransport, IDisposable
         }
     }
 
-    private async Task ProcessEventsAsync(HttpResponseMessage response, TaskCompletionSource<bool> ready, CancellationTokenSource cts)
+    private async Task ProcessEventsAsync(
+        HttpResponseMessage response,
+        TaskCompletionSource<bool> ready,
+        CancellationTokenSource cts
+    )
     {
         var token = cts.Token;
         try
         {
             using (response)
             using (var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-            using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
+            using (
+                var reader = new StreamReader(
+                    stream,
+                    Encoding.UTF8,
+                    detectEncodingFromByteOrderMarks: true,
+                    bufferSize: 1024,
+                    leaveOpen: true
+                )
+            )
             {
                 string? eventName = null;
                 var data = new StringBuilder();
                 var hasData = false;
                 while (true)
                 {
-                    var line = await CancellableReads.ReadLineAsync(reader, token).ConfigureAwait(false);
+                    var line = await CancellableReads
+                        .ReadLineAsync(reader, token)
+                        .ConfigureAwait(false);
                     if (line is null)
                     {
                         if (token.IsCancellationRequested)
@@ -289,10 +353,14 @@ public sealed class SseMcpTransport : IMcpTransport, IDisposable
                         if (_connected)
                         {
                             _connected = false;
-                            throw new MCPClientError("MCP SSE Transport Error: Connection closed unexpectedly");
+                            throw new MCPClientError(
+                                "MCP SSE Transport Error: Connection closed unexpectedly"
+                            );
                         }
 
-                        throw new MCPClientError("MCP SSE Transport Error: Connection closed before endpoint event was received");
+                        throw new MCPClientError(
+                            "MCP SSE Transport Error: Connection closed before endpoint event was received"
+                        );
                     }
 
                     if (line.Length == 0)
@@ -323,9 +391,7 @@ public sealed class SseMcpTransport : IMcpTransport, IDisposable
                 }
             }
         }
-        catch (OperationCanceledException) when (token.IsCancellationRequested)
-        {
-        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         catch (Exception error)
         {
             _connected = false;
@@ -338,10 +404,17 @@ public sealed class SseMcpTransport : IMcpTransport, IDisposable
 
     private static string FieldValue(string line, int prefixLength)
     {
-        return line.Length > prefixLength && line[prefixLength] == ' ' ? line.Substring(prefixLength + 1) : line.Substring(prefixLength);
+        return line.Length > prefixLength && line[prefixLength] == ' '
+            ? line.Substring(prefixLength + 1)
+            : line.Substring(prefixLength);
     }
 
-    private void Dispatch(string? eventName, string data, TaskCompletionSource<bool> ready, CancellationTokenSource cts)
+    private void Dispatch(
+        string? eventName,
+        string data,
+        TaskCompletionSource<bool> ready,
+        CancellationTokenSource cts
+    )
     {
         if (eventName == "endpoint")
         {
@@ -356,7 +429,10 @@ public sealed class SseMcpTransport : IMcpTransport, IDisposable
                 _connected = false;
                 _endpoint = null;
                 cts.Cancel();
-                throw new MCPClientError("MCP SSE Transport Error: Endpoint origin does not match connection origin: " + Origin(endpoint));
+                throw new MCPClientError(
+                    "MCP SSE Transport Error: Endpoint origin does not match connection origin: "
+                        + Origin(endpoint)
+                );
             }
 
             _endpoint = endpoint;
@@ -372,16 +448,23 @@ public sealed class SseMcpTransport : IMcpTransport, IDisposable
             }
             catch (Exception error) when (!(error is OperationCanceledException))
             {
-                OnError?.Invoke(new MCPClientError("MCP SSE Transport Error: Failed to parse message", cause: error));
+                OnError?.Invoke(
+                    new MCPClientError(
+                        "MCP SSE Transport Error: Failed to parse message",
+                        cause: error
+                    )
+                );
                 return;
             }
 
             OnMessage?.Invoke(message);
-            if (!message.TryGetProperty("method", out _)
+            if (
+                !message.TryGetProperty("method", out _)
                 && message.TryGetProperty("id", out var id)
                 && id.ValueKind == JsonValueKind.Number
                 && id.TryGetInt32(out var number)
-                && _pending.TryGetValue(number, out var completion))
+                && _pending.TryGetValue(number, out var completion)
+            )
             {
                 try
                 {

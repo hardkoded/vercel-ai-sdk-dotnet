@@ -9,9 +9,7 @@ namespace Vercel.AI.Prompt;
 /// <summary>A file-part value before it is converted to the v4 provider shape.</summary>
 public sealed class FilePartInput
 {
-    private FilePartInput()
-    {
-    }
+    private FilePartInput() { }
 
     /// <summary>Tagged type, when this value is already tagged.</summary>
     public string? Type { get; private set; }
@@ -40,19 +38,29 @@ public sealed class FilePartInput
     /// <summary>Creates inline bytes.</summary>
     public static FilePartInput FromBytes(byte[] bytes)
     {
-        return new FilePartInput { Bytes = bytes ?? throw new ArgumentNullException(nameof(bytes)) };
+        return new FilePartInput
+        {
+            Bytes = bytes ?? throw new ArgumentNullException(nameof(bytes)),
+        };
     }
 
     /// <summary>Creates an ArrayBuffer payload. The bytes are copied during conversion.</summary>
     public static FilePartInput FromArrayBuffer(byte[] bytes)
     {
-        return new FilePartInput { Bytes = bytes ?? throw new ArgumentNullException(nameof(bytes)), IsArrayBuffer = true };
+        return new FilePartInput
+        {
+            Bytes = bytes ?? throw new ArgumentNullException(nameof(bytes)),
+            IsArrayBuffer = true,
+        };
     }
 
     /// <summary>Creates a string payload. URLs and data URLs are detected during conversion.</summary>
     public static FilePartInput FromString(string value)
     {
-        return new FilePartInput { TextData = value ?? throw new ArgumentNullException(nameof(value)) };
+        return new FilePartInput
+        {
+            TextData = value ?? throw new ArgumentNullException(nameof(value)),
+        };
     }
 
     /// <summary>Creates a URL payload.</summary>
@@ -64,37 +72,61 @@ public sealed class FilePartInput
     /// <summary>Creates a provider reference.</summary>
     public static FilePartInput FromReference(IReadOnlyDictionary<string, string> reference)
     {
-        return new FilePartInput { Reference = reference ?? throw new ArgumentNullException(nameof(reference)) };
+        return new FilePartInput
+        {
+            Reference = reference ?? throw new ArgumentNullException(nameof(reference)),
+        };
     }
 
     /// <summary>Creates tagged inline bytes.</summary>
     public static FilePartInput TaggedData(byte[] bytes)
     {
-        return new FilePartInput { Type = "data", Bytes = bytes ?? throw new ArgumentNullException(nameof(bytes)) };
+        return new FilePartInput
+        {
+            Type = "data",
+            Bytes = bytes ?? throw new ArgumentNullException(nameof(bytes)),
+        };
     }
 
     /// <summary>Creates tagged inline bytes copied from an ArrayBuffer.</summary>
     public static FilePartInput TaggedDataBuffer(byte[] bytes)
     {
-        return new FilePartInput { Type = "data", Bytes = bytes ?? throw new ArgumentNullException(nameof(bytes)), IsArrayBuffer = true };
+        return new FilePartInput
+        {
+            Type = "data",
+            Bytes = bytes ?? throw new ArgumentNullException(nameof(bytes)),
+            IsArrayBuffer = true,
+        };
     }
 
     /// <summary>Creates tagged inline text. A data URL is rejected.</summary>
     public static FilePartInput TaggedData(string data)
     {
-        return new FilePartInput { Type = "data", TextData = data ?? throw new ArgumentNullException(nameof(data)) };
+        return new FilePartInput
+        {
+            Type = "data",
+            TextData = data ?? throw new ArgumentNullException(nameof(data)),
+        };
     }
 
     /// <summary>Creates a tagged URL.</summary>
     public static FilePartInput TaggedUrl(Uri url)
     {
-        return new FilePartInput { Type = "url", Url = url ?? throw new ArgumentNullException(nameof(url)) };
+        return new FilePartInput
+        {
+            Type = "url",
+            Url = url ?? throw new ArgumentNullException(nameof(url)),
+        };
     }
 
     /// <summary>Creates a tagged provider reference.</summary>
     public static FilePartInput TaggedReference(IReadOnlyDictionary<string, string> reference)
     {
-        return new FilePartInput { Type = "reference", Reference = reference ?? throw new ArgumentNullException(nameof(reference)) };
+        return new FilePartInput
+        {
+            Type = "reference",
+            Reference = reference ?? throw new ArgumentNullException(nameof(reference)),
+        };
     }
 
     /// <summary>Creates a tagged text part.</summary>
@@ -144,9 +176,7 @@ public sealed class InvalidDataContentException : AiSdkException
 {
     /// <summary>Creates the exception.</summary>
     public InvalidDataContentException(string message)
-        : base(message)
-    {
-    }
+        : base(message) { }
 }
 
 /// <summary>File-part conversion. Maps to <c>convertToLanguageModelV4FilePart</c>.</summary>
@@ -165,20 +195,35 @@ public static class FileParts
             switch (content.Type)
             {
                 case "data":
-                    if (content.TextData != null && content.TextData.StartsWith("data:", StringComparison.Ordinal))
+                    if (
+                        content.TextData != null
+                        && content.TextData.StartsWith("data:", StringComparison.Ordinal)
+                    )
                     {
-                        throw new InvalidDataContentException("Data URLs are not valid inline data. Pass them as { type: \"url\", url } instead.");
+                        throw new InvalidDataContentException(
+                            "Data URLs are not valid inline data. Pass them as { type: \"url\", url } instead."
+                        );
                     }
 
                     return Inline(content);
                 case "url":
-                    return FromUrl(content.Url ?? throw new InvalidDataContentException("URL file data requires a URL."));
+                    return FromUrl(
+                        content.Url
+                            ?? throw new InvalidDataContentException(
+                                "URL file data requires a URL."
+                            )
+                    );
                 case "reference":
-                    return new LanguageModelFilePart("reference", null) { Reference = content.Reference };
+                    return new LanguageModelFilePart("reference", null)
+                    {
+                        Reference = content.Reference,
+                    };
                 case "text":
                     return new LanguageModelFilePart("text", null) { Text = content.Text };
                 default:
-                    throw new InvalidDataContentException("Unsupported file data type " + content.Type + ".");
+                    throw new InvalidDataContentException(
+                        "Unsupported file data type " + content.Type + "."
+                    );
             }
         }
 
@@ -192,7 +237,10 @@ public static class FileParts
             if (TryParseUrl(content.TextData, out var uri, out var absolute))
             {
                 var part = FromUrl(uri);
-                if (!string.Equals(absolute, content.TextData, StringComparison.Ordinal) && part.DataType == "url")
+                if (
+                    !string.Equals(absolute, content.TextData, StringComparison.Ordinal)
+                    && part.DataType == "url"
+                )
                 {
                     part.OriginalUrl = content.TextData;
                 }
@@ -226,14 +274,21 @@ public static class FileParts
     {
         if (string.Equals(url.Scheme, "data", StringComparison.OrdinalIgnoreCase))
         {
-            var source = string.IsNullOrEmpty(url.OriginalString) ? url.AbsoluteUri : url.OriginalString;
+            var source = string.IsNullOrEmpty(url.OriginalString)
+                ? url.AbsoluteUri
+                : url.OriginalString;
             var parts = DataUrls.SplitDataUrl(source);
             if (parts.MediaType == null || parts.Base64Content == null)
             {
-                throw new InvalidDataContentException("Invalid data URL format in content " + source);
+                throw new InvalidDataContentException(
+                    "Invalid data URL format in content " + source
+                );
             }
 
-            return new LanguageModelFilePart("data", parts.MediaType) { Base64 = parts.Base64Content };
+            return new LanguageModelFilePart("data", parts.MediaType)
+            {
+                Base64 = parts.Base64Content,
+            };
         }
 
         return new LanguageModelFilePart("url", null) { Url = url };
@@ -241,7 +296,11 @@ public static class FileParts
 
     private static bool TryParseUrl(string content, out Uri uri, out string absolute)
     {
-        if (Uri.TryCreate(content, UriKind.Absolute, out var parsed) && parsed.IsAbsoluteUri && HasScheme(content))
+        if (
+            Uri.TryCreate(content, UriKind.Absolute, out var parsed)
+            && parsed.IsAbsoluteUri
+            && HasScheme(content)
+        )
         {
             uri = parsed;
             absolute = parsed.AbsoluteUri;
@@ -249,7 +308,11 @@ public static class FileParts
         }
 
         var escaped = content.Replace(" ", "%20");
-        if (!string.Equals(escaped, content, StringComparison.Ordinal) && Uri.TryCreate(escaped, UriKind.Absolute, out parsed) && HasScheme(escaped))
+        if (
+            !string.Equals(escaped, content, StringComparison.Ordinal)
+            && Uri.TryCreate(escaped, UriKind.Absolute, out parsed)
+            && HasScheme(escaped)
+        )
         {
             uri = parsed;
             absolute = parsed.AbsoluteUri;
@@ -272,7 +335,18 @@ public static class FileParts
         for (var i = 0; i < colon; i++)
         {
             var character = value[i];
-            var ok = (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z') || (i > 0 && ((character >= '0' && character <= '9') || character == '+' || character == '-' || character == '.'));
+            var ok =
+                (character >= 'a' && character <= 'z')
+                || (character >= 'A' && character <= 'Z')
+                || (
+                    i > 0
+                    && (
+                        (character >= '0' && character <= '9')
+                        || character == '+'
+                        || character == '-'
+                        || character == '.'
+                    )
+                );
             if (!ok)
             {
                 return false;

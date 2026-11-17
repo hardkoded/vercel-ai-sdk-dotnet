@@ -15,7 +15,11 @@ public sealed class ConstructorTests
     private const string Prefix = UpstreamFile + "::TencentVideoModel > constructor::";
 
     [Fact]
-    [UpstreamTest(Prefix + "exposes provider and model information", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "exposes provider and model information",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public void Exposes_provider_and_model_information()
     {
         var model = CreateModel(new Server(), "kling-video-v3");
@@ -31,7 +35,11 @@ public sealed class ConstructorTests
     [InlineData("vod/VS")]
     [InlineData("vod//2.0")]
     [InlineData("vod/VS/")]
-    [UpstreamTest(Prefix + "rejects the unsupported model ID %s", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "rejects the unsupported model ID %s",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public void Rejects_the_unsupported_model_ID(string modelId)
     {
         Assert.Throws<NoSuchModelError>(() => CreateModel(new Server(), modelId));

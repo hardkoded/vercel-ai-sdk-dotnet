@@ -9,7 +9,10 @@ namespace Vercel.AI.Tests;
 
 public sealed class MergeObjectsTests
 {
-    [UpstreamTest("packages/ai/src/util/merge-objects.test.ts::mergeObjects::should merge two flat objects", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/merge-objects.test.ts::mergeObjects::should merge two flat objects",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Merges_flat_objects_without_mutating_inputs()
     {
@@ -26,7 +29,10 @@ public sealed class MergeObjectsTests
         Assert.Equal(4, source["c"]);
     }
 
-    [UpstreamTest("packages/ai/src/util/merge-objects.test.ts::mergeObjects::should deeply merge nested objects", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/merge-objects.test.ts::mergeObjects::should deeply merge nested objects",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Deep_merges_nested_objects()
     {
@@ -40,7 +46,10 @@ public sealed class MergeObjectsTests
         Assert.Equal(5, nested["e"]);
     }
 
-    [UpstreamTest("packages/ai/src/util/merge-objects.test.ts::mergeObjects::should replace arrays instead of merging them", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/merge-objects.test.ts::mergeObjects::should replace arrays instead of merging them",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Replaces_arrays()
     {
@@ -51,7 +60,10 @@ public sealed class MergeObjectsTests
         Assert.Equal(2, result["b"]);
     }
 
-    [UpstreamTest("packages/ai/src/util/merge-objects.test.ts::mergeObjects::should handle null and undefined values", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/merge-objects.test.ts::mergeObjects::should handle null and undefined values",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Replaces_with_null_and_skips_undefined_overrides()
     {
@@ -64,16 +76,21 @@ public sealed class MergeObjectsTests
         Assert.False(result.ContainsKey("d"));
     }
 
-    [UpstreamTest("packages/ai/src/util/merge-objects.test.ts::mergeObjects::should handle complex nested structures", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/merge-objects.test.ts::mergeObjects::should handle complex nested structures",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Merges_complex_structures()
     {
         var target = Map(
             ("a", 1),
-            ("b", Map(("c", new[] { 1, 2, 3 }), ("d", Map(("e", 4), ("f", 5))))));
+            ("b", Map(("c", new[] { 1, 2, 3 }), ("d", Map(("e", 4), ("f", 5)))))
+        );
         var source = Map(
             ("b", Map(("c", new[] { 4, 5 }), ("d", Map(("f", 6), ("g", 7))))),
-            ("h", 8));
+            ("h", 8)
+        );
         var result = ObjectMerge.MergeObjects(target, source)!;
         var nested = (IDictionary<string, object>)result["b"];
         var inner = (IDictionary<string, object>)nested["d"];
@@ -85,7 +102,10 @@ public sealed class MergeObjectsTests
         Assert.Equal(8, result["h"]);
     }
 
-    [UpstreamTest("packages/ai/src/util/merge-objects.test.ts::mergeObjects::should handle Date objects", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/merge-objects.test.ts::mergeObjects::should handle Date objects",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Replaces_dates_by_reference()
     {
@@ -95,7 +115,10 @@ public sealed class MergeObjectsTests
         Assert.Equal(second, result["a"]);
     }
 
-    [UpstreamTest("packages/ai/src/util/merge-objects.test.ts::mergeObjects::should handle RegExp objects", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/merge-objects.test.ts::mergeObjects::should handle RegExp objects",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Replaces_regular_expressions_by_reference()
     {
@@ -105,17 +128,26 @@ public sealed class MergeObjectsTests
         Assert.Same(second, result["a"]);
     }
 
-    [UpstreamTest("packages/ai/src/util/merge-objects.test.ts::mergeObjects::should handle empty objects", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/merge-objects.test.ts::mergeObjects::should handle empty objects",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Merges_empty_objects()
     {
-        Assert.Equal(1, ObjectMerge.MergeObjects(new Dictionary<string, object>(), Map(("a", 1)))!["a"]);
+        Assert.Equal(
+            1,
+            ObjectMerge.MergeObjects(new Dictionary<string, object>(), Map(("a", 1)))!["a"]
+        );
         var kept = ObjectMerge.MergeObjects(Map(("a", 1)), new Dictionary<string, object>())!;
         Assert.Equal(1, kept["a"]);
         Assert.Single(kept);
     }
 
-    [UpstreamTest("packages/ai/src/util/merge-objects.test.ts::mergeObjects::should handle undefined inputs", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/merge-objects.test.ts::mergeObjects::should handle undefined inputs",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Handles_null_inputs()
     {
@@ -126,17 +158,26 @@ public sealed class MergeObjectsTests
         Assert.Same(right, ObjectMerge.MergeObjects(null, right));
     }
 
-    [UpstreamTest("packages/ai/src/util/merge-objects.test.ts::mergeObjects::should not pollute Object.prototype via __proto__", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/merge-objects.test.ts::mergeObjects::should not pollute Object.prototype via __proto__",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Drops_a_proto_override()
     {
-        var result = ObjectMerge.MergeObjects(new Dictionary<string, object>(), Map(("__proto__", Map(("polluted", true)))))!;
+        var result = ObjectMerge.MergeObjects(
+            new Dictionary<string, object>(),
+            Map(("__proto__", Map(("polluted", true))))
+        )!;
         Assert.False(result.ContainsKey("__proto__"));
         Assert.False(result.ContainsKey("polluted"));
         Assert.Empty(result);
     }
 
-    [UpstreamTest("packages/ai/src/util/merge-objects.test.ts::mergeObjects::should ignore __proto__, constructor, and prototype keys", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/merge-objects.test.ts::mergeObjects::should ignore __proto__, constructor, and prototype keys",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Ignores_dangerous_keys()
     {
@@ -144,20 +185,25 @@ public sealed class MergeObjectsTests
             ("__proto__", Map(("a", 1))),
             ("constructor", Map(("prototype", Map(("b", 2))))),
             ("prototype", Map(("c", 3))),
-            ("safe", "value"));
+            ("safe", "value")
+        );
         var result = ObjectMerge.MergeObjects(Map(("existing", "ok")), source)!;
         Assert.Equal("ok", result["existing"]);
         Assert.Equal("value", result["safe"]);
         Assert.Equal(2, result.Count);
     }
 
-    [UpstreamTest("packages/ai/src/util/merge-objects.test.ts::mergeObjects::should ignore dangerous keys nested in mergeable objects", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/merge-objects.test.ts::mergeObjects::should ignore dangerous keys nested in mergeable objects",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Ignores_nested_dangerous_keys()
     {
         var result = ObjectMerge.MergeObjects(
             Map(("metadata", Map(("user", "alice")))),
-            Map(("metadata", Map(("__proto__", Map(("polluted", true))), ("role", "admin")))))!;
+            Map(("metadata", Map(("__proto__", Map(("polluted", true))), ("role", "admin"))))
+        )!;
         var metadata = (IDictionary<string, object>)result["metadata"];
         Assert.Equal("alice", metadata["user"]);
         Assert.Equal("admin", metadata["role"]);

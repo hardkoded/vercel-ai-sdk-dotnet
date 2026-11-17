@@ -8,7 +8,10 @@ namespace Vercel.AI.Tests.AnthropicLanguageModelTests;
 public sealed class DoGenerateTopLevelReasoningNewerModelsWithAdaptiveThinkingTests
 {
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"max\" directly to adaptive thinking with effort \"max\"", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"max\" directly to adaptive thinking with effort \"max\"",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_map_reasoning_max_directly_to_adaptive_thinking_with_effort_max()
     {
         var options = AnthropicParity.Hello();

@@ -29,7 +29,11 @@ internal sealed class AzureMaiImageModel : IImageModel
     private readonly Func<DateTimeOffset>? _clock;
 
     /// <summary>Creates a MAI image model. <paramref name="clock"/> sets the response timestamp.</summary>
-    public AzureMaiImageModel(AzureOpenAIProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
+    public AzureMaiImageModel(
+        AzureOpenAIProvider provider,
+        string modelId,
+        Func<DateTimeOffset>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -89,13 +93,24 @@ internal sealed class AzureMaiImageModel : IImageModel
     }
 
     /// <inheritdoc />
-    public Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+    public Task<ImageGenerationResult> DoGenerateAsync(
+        ImageCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
-        return DoGenerateAsync(options, AzureImageModelOptions.Parse(options.ProviderOptionsElement), cancellationToken);
+        return DoGenerateAsync(
+            options,
+            AzureImageModelOptions.Parse(options.ProviderOptionsElement),
+            cancellationToken
+        );
     }
 
     /// <summary>Generates or edits images with the MAI image API. Maps to <c>doGenerate</c>.</summary>
-    public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, AzureImageModelMaiOptions? maiOptions, CancellationToken cancellationToken)
+    public async Task<ImageGenerationResult> DoGenerateAsync(
+        ImageCallOptions options,
+        AzureImageModelMaiOptions? maiOptions,
+        CancellationToken cancellationToken
+    )
     {
         var timestamp = _clock?.Invoke() ?? DateTimeOffset.UtcNow;
         var warnings = new List<CallWarning>();
@@ -107,28 +122,38 @@ internal sealed class AzureMaiImageModel : IImageModel
 
         if (options.Mask != null)
         {
-            warnings.Add(new CallWarning("unsupported", "mask", "MAI image edits do not support masks."));
+            warnings.Add(
+                new CallWarning("unsupported", "mask", "MAI image edits do not support masks.")
+            );
         }
 
         var dimensions = ParseSize(options.Size);
         if (options.Size != null && options.AspectRatio != null)
         {
-            warnings.Add(new CallWarning("unsupported", "aspectRatio", "aspectRatio is ignored when size is set."));
+            warnings.Add(
+                new CallWarning(
+                    "unsupported",
+                    "aspectRatio",
+                    "aspectRatio is ignored when size is set."
+                )
+            );
         }
         else if (options.AspectRatio != null)
         {
             dimensions = DimensionsForAspectRatio(options.AspectRatio);
             if (dimensions == null)
             {
-                warnings.Add(new CallWarning("unsupported", "aspectRatio", "Invalid aspect ratio: " + options.AspectRatio + "."));
+                warnings.Add(
+                    new CallWarning(
+                        "unsupported",
+                        "aspectRatio",
+                        "Invalid aspect ratio: " + options.AspectRatio + "."
+                    )
+                );
             }
         }
 
-        var fields = new JsonObject
-        {
-            ["model"] = ModelId,
-            ["prompt"] = options.Prompt,
-        };
+        var fields = new JsonObject { ["model"] = ModelId, ["prompt"] = options.Prompt };
         if (dimensions is { } size)
         {
             fields["width"] = size.Width;
@@ -151,13 +176,22 @@ internal sealed class AzureMaiImageModel : IImageModel
         using var siblings = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var token = siblings.Token;
         var images = options.Files is { Count: > 0 }
-            ? await WhenAllAsync(options.Files.Select(file => FileToBlobAsync(file, token)).ToArray(), siblings).ConfigureAwait(false)
+            ? await WhenAllAsync(
+                    options.Files.Select(file => FileToBlobAsync(file, token)).ToArray(),
+                    siblings
+                )
+                .ConfigureAwait(false)
             : null;
 
         // The API ignores `n`, so a call reached with n > 1 (e.g. through an `api: 'mai'` override) sends one request per image.
-        var requests = Enumerable.Range(0, Math.Max(1, options.Count)).Select(_ => images != null
-            ? SendEditAsync(fields, images, headers, token)
-            : SendGenerationAsync(fields, headers, token)).ToArray();
+        var requests = Enumerable
+            .Range(0, Math.Max(1, options.Count))
+            .Select(_ =>
+                images != null
+                    ? SendEditAsync(fields, images, headers, token)
+                    : SendGenerationAsync(fields, headers, token)
+            )
+            .ToArray();
         var responses = await WhenAllAsync(requests, siblings).ConfigureAwait(false);
 
         var generated = new List<GeneratedImage>();
@@ -181,11 +215,21 @@ internal sealed class AzureMaiImageModel : IImageModel
                 totalTokens = AddTokens(totalTokens, AddTokens(input, output));
             }
 
-            var created = root.TryGetProperty("created", out var createdValue) && createdValue.ValueKind == JsonValueKind.Number ? createdValue : (JsonElement?)null;
-            var responseSize = root.TryGetProperty("size", out var sizeValue) && sizeValue.ValueKind == JsonValueKind.String ? sizeValue.GetString() : null;
+            var created =
+                root.TryGetProperty("created", out var createdValue)
+                && createdValue.ValueKind == JsonValueKind.Number
+                    ? createdValue
+                    : (JsonElement?)null;
+            var responseSize =
+                root.TryGetProperty("size", out var sizeValue)
+                && sizeValue.ValueKind == JsonValueKind.String
+                    ? sizeValue.GetString()
+                    : null;
             foreach (var item in root.GetProperty("data").EnumerateArray())
             {
-                generated.Add(new GeneratedImage("image/png", DecodeImage(item, response.Body), null));
+                generated.Add(
+                    new GeneratedImage("image/png", DecodeImage(item, response.Body), null)
+                );
                 var entry = new JsonObject();
                 if (created != null)
                 {
@@ -211,34 +255,46 @@ internal sealed class AzureMaiImageModel : IImageModel
             }
         }
 
-        var providerMetadata = OpenAIJson.Element(new JsonObject { ["azure"] = new JsonObject { ["images"] = metadata } });
+        var providerMetadata = OpenAIJson.Element(
+            new JsonObject { ["azure"] = new JsonObject { ["images"] = metadata } }
+        );
         return new ImageGenerationResult(
             generated,
             warnings,
-            new ImageResponseInfo(timestamp, ModelId, responses.Length > 0 ? responses[0].Headers : null),
-            inputTokens == null && outputTokens == null && totalTokens == null ? null : new LanguageModelUsage(inputTokens, outputTokens, totalTokens),
-            providerMetadata);
+            new ImageResponseInfo(
+                timestamp,
+                ModelId,
+                responses.Length > 0 ? responses[0].Headers : null
+            ),
+            inputTokens == null && outputTokens == null && totalTokens == null
+                ? null
+                : new LanguageModelUsage(inputTokens, outputTokens, totalTokens),
+            providerMetadata
+        );
     }
 
     private static byte[] DecodeImage(JsonElement item, string body)
     {
-        if (item.ValueKind == JsonValueKind.Object
+        if (
+            item.ValueKind == JsonValueKind.Object
             && item.TryGetProperty("b64_json", out var value)
-            && value.ValueKind == JsonValueKind.String)
+            && value.ValueKind == JsonValueKind.String
+        )
         {
             try
             {
                 return Convert.FromBase64String(value.GetString()!);
             }
-            catch (FormatException)
-            {
-            }
+            catch (FormatException) { }
         }
 
         throw new InvalidResponseDataException(body, "Invalid MAI image response.");
     }
 
-    private static async Task<T[]> WhenAllAsync<T>(Task<T>[] tasks, CancellationTokenSource siblings)
+    private static async Task<T[]> WhenAllAsync<T>(
+        Task<T>[] tasks,
+        CancellationTokenSource siblings
+    )
     {
         try
         {
@@ -260,7 +316,11 @@ internal sealed class AzureMaiImageModel : IImageModel
             var failed = tasks.FirstOrDefault(task => task.IsFaulted);
             if (failed != null)
             {
-                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failed.Exception!.InnerException!).Throw();
+                System
+                    .Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(
+                        failed.Exception!.InnerException!
+                    )
+                    .Throw();
             }
 
             throw;
@@ -274,7 +334,14 @@ internal sealed class AzureMaiImageModel : IImageModel
             return 0;
         }
 
-        return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) ? number : double.NaN;
+        return double.TryParse(
+            value,
+            NumberStyles.Float,
+            CultureInfo.InvariantCulture,
+            out var number
+        )
+            ? number
+            : double.NaN;
     }
 
     private static int Floor16(double value)
@@ -290,9 +357,20 @@ internal sealed class AzureMaiImageModel : IImageModel
         }
 
         var parts = size.Split('x');
-        return parts.Length == 2
-            && int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var width)
-            && int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var height)
+        return
+            parts.Length == 2
+            && int.TryParse(
+                parts[0],
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out var width
+            )
+            && int.TryParse(
+                parts[1],
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out var height
+            )
             ? (width, height)
             : null;
     }
@@ -304,12 +382,18 @@ internal sealed class AzureMaiImageModel : IImageModel
 
     private static JsonElement? Child(JsonElement element, string name, JsonValueKind kind)
     {
-        return element.TryGetProperty(name, out var value) && value.ValueKind == kind ? value : null;
+        return element.TryGetProperty(name, out var value) && value.ValueKind == kind
+            ? value
+            : null;
     }
 
     private static int? Int(JsonElement? element, string name)
     {
-        return element is { } value && value.TryGetProperty(name, out var number) && number.ValueKind == JsonValueKind.Number && number.TryGetInt32(out var result)
+        return
+            element is { } value
+            && value.TryGetProperty(name, out var number)
+            && number.ValueKind == JsonValueKind.Number
+            && number.TryGetInt32(out var result)
             ? result
             : null;
     }
@@ -319,54 +403,88 @@ internal sealed class AzureMaiImageModel : IImageModel
         try
         {
             var document = JsonDocument.Parse(body);
-            if (document.RootElement.ValueKind == JsonValueKind.Object
+            if (
+                document.RootElement.ValueKind == JsonValueKind.Object
                 && document.RootElement.TryGetProperty("data", out var data)
-                && data.ValueKind == JsonValueKind.Array)
+                && data.ValueKind == JsonValueKind.Array
+            )
             {
                 return document;
             }
 
             document.Dispose();
         }
-        catch (JsonException)
-        {
-        }
+        catch (JsonException) { }
 
         throw new InvalidResponseDataException(body, "Invalid MAI image response.");
     }
 
-    private Task<ProviderTextResponse> SendGenerationAsync(JsonObject fields, IReadOnlyDictionary<string, string?> headers, CancellationToken cancellationToken)
+    private Task<ProviderTextResponse> SendGenerationAsync(
+        JsonObject fields,
+        IReadOnlyDictionary<string, string?> headers,
+        CancellationToken cancellationToken
+    )
     {
-        return _http.SendJsonStringAsync(HttpMethod.Post, MaiUri("/images/generations"), fields.ToJsonString(), headers, cancellationToken);
+        return _http.SendJsonStringAsync(
+            HttpMethod.Post,
+            MaiUri("/images/generations"),
+            fields.ToJsonString(),
+            headers,
+            cancellationToken
+        );
     }
 
     private async Task<ProviderTextResponse> SendEditAsync(
         JsonObject fields,
         IReadOnlyList<ImageBlob> images,
         IReadOnlyDictionary<string, string?> headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         using var form = new MultipartFormDataContent();
         foreach (var field in fields)
         {
-            var text = field.Value is JsonValue value && value.TryGetValue<string>(out var str) ? str : field.Value!.ToJsonString();
+            var text =
+                field.Value is JsonValue value && value.TryGetValue<string>(out var str)
+                    ? str
+                    : field.Value!.ToJsonString();
             form.Add(new StringContent(text), field.Key);
         }
 
         for (var index = 0; index < images.Count; index++)
         {
             var content = new ByteArrayContent(images[index].Data);
-            if (System.Net.Http.Headers.MediaTypeHeaderValue.TryParse(images[index].MediaType, out var type))
+            if (
+                System.Net.Http.Headers.MediaTypeHeaderValue.TryParse(
+                    images[index].MediaType,
+                    out var type
+                )
+            )
             {
                 content.Headers.ContentType = type;
             }
 
             var extension = images[index].MediaType == "image/jpeg" ? "jpg" : "png";
-            form.Add(content, "image", "image-" + (index + 1).ToString(CultureInfo.InvariantCulture) + "." + extension);
+            form.Add(
+                content,
+                "image",
+                "image-" + (index + 1).ToString(CultureInfo.InvariantCulture) + "." + extension
+            );
         }
 
-        var response = await _http.SendBinaryAsync(HttpMethod.Post, MaiUri("/images/edits"), form, headers, cancellationToken).ConfigureAwait(false);
-        return new ProviderTextResponse(System.Text.Encoding.UTF8.GetString(response.Body), response.Headers);
+        var response = await _http
+            .SendBinaryAsync(
+                HttpMethod.Post,
+                MaiUri("/images/edits"),
+                form,
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        return new ProviderTextResponse(
+            System.Text.Encoding.UTF8.GetString(response.Body),
+            response.Headers
+        );
     }
 
     private Uri MaiUri(string path)
@@ -374,15 +492,28 @@ internal sealed class AzureMaiImageModel : IImageModel
         return new Uri(_provider.MaiBaseUrl() + path);
     }
 
-    private async Task<ImageBlob> FileToBlobAsync(ImageModelFile file, CancellationToken cancellationToken)
+    private async Task<ImageBlob> FileToBlobAsync(
+        ImageModelFile file,
+        CancellationToken cancellationToken
+    )
     {
         if (file.Type == "url")
         {
-            var (data, mediaType) = await ImageFileDownload.DownloadBlobAsync(_provider, _provider.CreateHeaders(), file.Url!, cancellationToken).ConfigureAwait(false);
+            var (data, mediaType) = await ImageFileDownload
+                .DownloadBlobAsync(
+                    _provider,
+                    _provider.CreateHeaders(),
+                    file.Url!,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             return new ImageBlob(data, mediaType);
         }
 
-        return new ImageBlob(file.Data ?? throw new AiSdkException("MAI image edits need image data."), file.MediaType ?? "application/octet-stream");
+        return new ImageBlob(
+            file.Data ?? throw new AiSdkException("MAI image edits need image data."),
+            file.MediaType ?? "application/octet-stream"
+        );
     }
 
     private sealed record ImageBlob(byte[] Data, string MediaType);

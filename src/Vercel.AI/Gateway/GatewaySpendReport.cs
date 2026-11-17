@@ -149,7 +149,10 @@ public sealed class GatewaySpendReport
     }
 
     /// <summary>Gets the spend report of the account.</summary>
-    public async Task<GatewaySpendReportResponse> GetSpendReportAsync(GatewaySpendReportParams parameters, CancellationToken cancellationToken = default)
+    public async Task<GatewaySpendReportResponse> GetSpendReportAsync(
+        GatewaySpendReportParams parameters,
+        CancellationToken cancellationToken = default
+    )
     {
         try
         {
@@ -169,7 +172,11 @@ public sealed class GatewaySpendReport
 
             if (parameters.DatePart is { } datePart)
             {
-                Add(query, "date_part", datePart == GatewaySpendReportDatePart.Hour ? "hour" : "day");
+                Add(
+                    query,
+                    "date_part",
+                    datePart == GatewaySpendReportDatePart.Hour ? "hour" : "day"
+                );
             }
 
             if (!string.IsNullOrEmpty(parameters.UserId))
@@ -197,13 +204,16 @@ public sealed class GatewaySpendReport
                 Add(query, "tags", string.Join(",", parameters.Tags));
             }
 
-            var http = _config.Http ?? throw new InvalidOperationException("GatewayConfig.Http is required.");
+            var http = _config.Http
+                ?? throw new InvalidOperationException("GatewayConfig.Http is required.");
             using var document = await http.SendJsonAsync(
-                HttpMethod.Get,
-                new Uri(baseUrl.GetLeftPart(UriPartial.Authority) + "/v1/report?" + query),
-                null,
-                await _config.ResolveHeadersAsync(cancellationToken).ConfigureAwait(false),
-                cancellationToken).ConfigureAwait(false);
+                    HttpMethod.Get,
+                    new Uri(baseUrl.GetLeftPart(UriPartial.Authority) + "/v1/report?" + query),
+                    null,
+                    await _config.ResolveHeadersAsync(cancellationToken).ConfigureAwait(false),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             return Parse(document.RootElement);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -222,29 +232,37 @@ public sealed class GatewaySpendReport
         query.Append(name).Append('=').Append(Uri.EscapeDataString(value));
     }
 
-    private static string GroupByValue(GatewaySpendReportGroupBy groupBy) => groupBy switch
-    {
-        GatewaySpendReportGroupBy.Day => "day",
-        GatewaySpendReportGroupBy.User => "user",
-        GatewaySpendReportGroupBy.Model => "model",
-        GatewaySpendReportGroupBy.Tag => "tag",
-        GatewaySpendReportGroupBy.Provider => "provider",
-        GatewaySpendReportGroupBy.CredentialType => "credential_type",
-        _ => throw new ArgumentOutOfRangeException(nameof(groupBy)),
-    };
+    private static string GroupByValue(GatewaySpendReportGroupBy groupBy) =>
+        groupBy switch
+        {
+            GatewaySpendReportGroupBy.Day => "day",
+            GatewaySpendReportGroupBy.User => "user",
+            GatewaySpendReportGroupBy.Model => "model",
+            GatewaySpendReportGroupBy.Tag => "tag",
+            GatewaySpendReportGroupBy.Provider => "provider",
+            GatewaySpendReportGroupBy.CredentialType => "credential_type",
+            _ => throw new ArgumentOutOfRangeException(nameof(groupBy)),
+        };
 
-    private static string CredentialTypeValue(GatewayCredentialType credentialType) => credentialType switch
-    {
-        GatewayCredentialType.Byok => "byok",
-        GatewayCredentialType.System => "system",
-        _ => throw new ArgumentOutOfRangeException(nameof(credentialType)),
-    };
+    private static string CredentialTypeValue(GatewayCredentialType credentialType) =>
+        credentialType switch
+        {
+            GatewayCredentialType.Byok => "byok",
+            GatewayCredentialType.System => "system",
+            _ => throw new ArgumentOutOfRangeException(nameof(credentialType)),
+        };
 
     private static GatewaySpendReportResponse Parse(JsonElement root)
     {
-        if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("results", out var results) || results.ValueKind != JsonValueKind.Array)
+        if (
+            root.ValueKind != JsonValueKind.Object
+            || !root.TryGetProperty("results", out var results)
+            || results.ValueKind != JsonValueKind.Array
+        )
         {
-            throw new FormatException("Type validation failed: expected an object with a results array.");
+            throw new FormatException(
+                "Type validation failed: expected an object with a results array."
+            );
         }
 
         var rows = new List<GatewaySpendReportRow>();
@@ -255,36 +273,45 @@ public sealed class GatewaySpendReport
                 throw new FormatException("Type validation failed: a result must be an object.");
             }
 
-            rows.Add(new GatewaySpendReportRow
-            {
-                Day = OptionalString(row, "day"),
-                Hour = OptionalString(row, "hour"),
-                User = OptionalString(row, "user"),
-                Model = OptionalString(row, "model"),
-                Tag = OptionalString(row, "tag"),
-                Provider = OptionalString(row, "provider"),
-                CredentialType = ParseCredentialType(OptionalString(row, "credential_type")),
-                TotalCost = RequiredNumber(row, "total_cost"),
-                MarketCost = OptionalNumber(row, "market_cost"),
-                InputTokens = OptionalNumber(row, "input_tokens"),
-                OutputTokens = OptionalNumber(row, "output_tokens"),
-                CachedInputTokens = OptionalNumber(row, "cached_input_tokens"),
-                CacheCreationInputTokens = OptionalNumber(row, "cache_creation_input_tokens"),
-                ReasoningTokens = OptionalNumber(row, "reasoning_tokens"),
-                RequestCount = OptionalNumber(row, "request_count"),
-            });
+            rows.Add(
+                new GatewaySpendReportRow
+                {
+                    Day = OptionalString(row, "day"),
+                    Hour = OptionalString(row, "hour"),
+                    User = OptionalString(row, "user"),
+                    Model = OptionalString(row, "model"),
+                    Tag = OptionalString(row, "tag"),
+                    Provider = OptionalString(row, "provider"),
+                    CredentialType = ParseCredentialType(OptionalString(row, "credential_type")),
+                    TotalCost = RequiredNumber(row, "total_cost"),
+                    MarketCost = OptionalNumber(row, "market_cost"),
+                    InputTokens = OptionalNumber(row, "input_tokens"),
+                    OutputTokens = OptionalNumber(row, "output_tokens"),
+                    CachedInputTokens = OptionalNumber(row, "cached_input_tokens"),
+                    CacheCreationInputTokens = OptionalNumber(row, "cache_creation_input_tokens"),
+                    ReasoningTokens = OptionalNumber(row, "reasoning_tokens"),
+                    RequestCount = OptionalNumber(row, "request_count"),
+                }
+            );
         }
 
         return new GatewaySpendReportResponse { Results = rows };
     }
 
-    private static GatewayCredentialType? ParseCredentialType(string? value) => value switch
-    {
-        null => null,
-        "byok" => GatewayCredentialType.Byok,
-        "system" => GatewayCredentialType.System,
-        _ => throw new FormatException(string.Format(CultureInfo.InvariantCulture, "Type validation failed: invalid credential_type '{0}'.", value)),
-    };
+    private static GatewayCredentialType? ParseCredentialType(string? value) =>
+        value switch
+        {
+            null => null,
+            "byok" => GatewayCredentialType.Byok,
+            "system" => GatewayCredentialType.System,
+            _ => throw new FormatException(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "Type validation failed: invalid credential_type '{0}'.",
+                    value
+                )
+            ),
+        };
 
     private static string? OptionalString(JsonElement row, string name)
     {
@@ -303,7 +330,10 @@ public sealed class GatewaySpendReport
 
     private static double RequiredNumber(JsonElement row, string name)
     {
-        return OptionalNumber(row, name) ?? throw new FormatException("Type validation failed: invalid or missing " + name + ".");
+        return OptionalNumber(row, name)
+            ?? throw new FormatException(
+                "Type validation failed: invalid or missing " + name + "."
+            );
     }
 
     private static double? OptionalNumber(JsonElement row, string name)

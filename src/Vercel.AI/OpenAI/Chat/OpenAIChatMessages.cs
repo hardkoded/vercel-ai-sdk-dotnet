@@ -114,7 +114,10 @@ public sealed class OpenAIChatMessageResult
 public static class OpenAIChatMessages
 {
     /// <summary>Converts SDK messages. <paramref name="systemMessageMode"/> is <c>system</c>, <c>developer</c>, or <c>remove</c>.</summary>
-    public static OpenAIChatMessageResult Convert(IReadOnlyList<ModelMessage> prompt, string systemMessageMode = "system")
+    public static OpenAIChatMessageResult Convert(
+        IReadOnlyList<ModelMessage> prompt,
+        string systemMessageMode = "system"
+    )
     {
         var messages = new List<OpenAIChatPromptMessage>();
         foreach (var message in prompt)
@@ -122,32 +125,51 @@ public static class OpenAIChatMessages
             switch (message)
             {
                 case SystemModelMessage system:
-                    messages.Add(new OpenAIChatPromptMessage("system") { Text = system.Content, ProviderOptions = Options(system.ProviderOptions) });
+                    messages.Add(
+                        new OpenAIChatPromptMessage("system")
+                        {
+                            Text = system.Content,
+                            ProviderOptions = Options(system.ProviderOptions),
+                        }
+                    );
                     break;
                 case UserModelMessage user:
-                    messages.Add(new OpenAIChatPromptMessage("user") { Parts = Parts(user), ProviderOptions = Options(user.ProviderOptions) });
+                    messages.Add(
+                        new OpenAIChatPromptMessage("user")
+                        {
+                            Parts = Parts(user),
+                            ProviderOptions = Options(user.ProviderOptions),
+                        }
+                    );
                     break;
                 case AssistantModelMessage assistant:
-                    messages.Add(new OpenAIChatPromptMessage("assistant")
-                    {
-                        Text = assistant.Text,
-                        ToolCalls = assistant.ToolCalls,
-                        ProviderOptions = Options(assistant.ProviderOptions),
-                    });
+                    messages.Add(
+                        new OpenAIChatPromptMessage("assistant")
+                        {
+                            Text = assistant.Text,
+                            ToolCalls = assistant.ToolCalls,
+                            ProviderOptions = Options(assistant.ProviderOptions),
+                        }
+                    );
                     break;
                 case ToolModelMessage tool:
                     // The message-level options belong to the whole tool message, so they are read once, before its results are split.
                     var first = true;
                     foreach (var result in tool.Results)
                     {
-                        messages.Add(new OpenAIChatPromptMessage("tool")
-                        {
-                            ToolCallId = result.ToolCallId,
-                            ToolOutput = result.OutputType == "execution-denied" ? result.ExecutionDeniedReason : result.OutputJson,
-                            ToolOutputType = result.OutputType,
-                            ProviderOptions = result.ProviderMetadata,
-                            MessageProviderOptions = first ? tool.MessageProviderOptions : null,
-                        });
+                        messages.Add(
+                            new OpenAIChatPromptMessage("tool")
+                            {
+                                ToolCallId = result.ToolCallId,
+                                ToolOutput =
+                                    result.OutputType == "execution-denied"
+                                        ? result.ExecutionDeniedReason
+                                        : result.OutputJson,
+                                ToolOutputType = result.OutputType,
+                                ProviderOptions = result.ProviderMetadata,
+                                MessageProviderOptions = first ? tool.MessageProviderOptions : null,
+                            }
+                        );
                         first = false;
                     }
 
@@ -161,7 +183,10 @@ public static class OpenAIChatMessages
     }
 
     /// <summary>Converts prepared messages. <paramref name="systemMessageMode"/> is <c>system</c>, <c>developer</c>, or <c>remove</c>.</summary>
-    public static OpenAIChatMessageResult Convert(IReadOnlyList<OpenAIChatPromptMessage> prompt, string systemMessageMode = "system")
+    public static OpenAIChatMessageResult Convert(
+        IReadOnlyList<OpenAIChatPromptMessage> prompt,
+        string systemMessageMode = "system"
+    )
     {
         var messages = new JsonArray();
         var warnings = new List<OpenAICallWarning>();
@@ -176,12 +201,20 @@ public static class OpenAIChatMessages
                     messages.Add(WithName(ConvertUser(message), Name(message.ProviderOptions)));
                     break;
                 case "assistant":
-                    messages.Add(WithName(ConvertAssistant(message), Name(message.ProviderOptions)));
+                    messages.Add(
+                        WithName(ConvertAssistant(message), Name(message.ProviderOptions))
+                    );
                     break;
                 case "tool":
                     if (Name(message.MessageProviderOptions) != null)
                     {
-                        warnings.Add(new OpenAICallWarning("unsupported", "message name on tool messages", null));
+                        warnings.Add(
+                            new OpenAICallWarning(
+                                "unsupported",
+                                "message name on tool messages",
+                                null
+                            )
+                        );
                     }
 
                     messages.Add(ConvertTool(message));
@@ -194,22 +227,40 @@ public static class OpenAIChatMessages
         return new OpenAIChatMessageResult(messages, warnings);
     }
 
-    private static void ConvertSystem(JsonArray messages, List<OpenAICallWarning> warnings, OpenAIChatPromptMessage message, string systemMessageMode)
+    private static void ConvertSystem(
+        JsonArray messages,
+        List<OpenAICallWarning> warnings,
+        OpenAIChatPromptMessage message,
+        string systemMessageMode
+    )
     {
         // Upstream validates the message options before it picks the role or the remove mode.
         var name = Name(message.ProviderOptions);
         switch (systemMessageMode)
         {
             case "remove":
-                warnings.Add(new OpenAICallWarning("other", null, null, "system messages are removed for this model"));
+                warnings.Add(
+                    new OpenAICallWarning(
+                        "other",
+                        null,
+                        null,
+                        "system messages are removed for this model"
+                    )
+                );
                 return;
             case "system":
             case "developer":
                 var breakpoint = OpenAIJson.PromptCacheBreakpoint(message.ProviderOptions);
-                JsonNode content = breakpoint == null
-                    ? JsonValue.Create(message.Text ?? string.Empty)!
-                    : new JsonArray(TextBlock(message.Text ?? string.Empty, breakpoint));
-                messages.Add(WithName(new JsonObject { ["role"] = systemMessageMode, ["content"] = content }, name));
+                JsonNode content =
+                    breakpoint == null
+                        ? JsonValue.Create(message.Text ?? string.Empty)!
+                        : new JsonArray(TextBlock(message.Text ?? string.Empty, breakpoint));
+                messages.Add(
+                    WithName(
+                        new JsonObject { ["role"] = systemMessageMode, ["content"] = content },
+                        name
+                    )
+                );
                 return;
             default:
                 throw new AiSdkException("Unsupported system message mode: " + systemMessageMode);
@@ -219,9 +270,17 @@ public static class OpenAIChatMessages
     private static JsonObject ConvertUser(OpenAIChatPromptMessage message)
     {
         var parts = message.Parts ?? Array.Empty<OpenAIChatPromptPart>();
-        if (parts.Count == 1 && parts[0].Type == "text" && OpenAIJson.PromptCacheBreakpoint(parts[0].ProviderOptions) == null)
+        if (
+            parts.Count == 1
+            && parts[0].Type == "text"
+            && OpenAIJson.PromptCacheBreakpoint(parts[0].ProviderOptions) == null
+        )
         {
-            return new JsonObject { ["role"] = "user", ["content"] = parts[0].Text ?? string.Empty };
+            return new JsonObject
+            {
+                ["role"] = "user",
+                ["content"] = parts[0].Text ?? string.Empty,
+            };
         }
 
         var content = new JsonArray();
@@ -241,9 +300,10 @@ public static class OpenAIChatMessages
             return TextBlock(part.Text ?? string.Empty, breakpoint);
         }
 
-        var fileId = part.ProviderReference != null
-            ? ProviderReferences.ResolveProviderReference(part.ProviderReference, "openai")
-            : part.FileId;
+        var fileId =
+            part.ProviderReference != null
+                ? ProviderReferences.ResolveProviderReference(part.ProviderReference, "openai")
+                : part.FileId;
         if (!string.IsNullOrEmpty(fileId))
         {
             var reference = new JsonObject
@@ -273,8 +333,13 @@ public static class OpenAIChatMessages
             }
             else
             {
-                var payload = part.Base64 ?? System.Convert.ToBase64String(bytes ?? Array.Empty<byte>());
-                url = "data:" + OpenAIJson.ResolveFullMediaType(mediaType, bytes, inline) + ";base64," + payload;
+                var payload = part.Base64
+                    ?? System.Convert.ToBase64String(bytes ?? Array.Empty<byte>());
+                url =
+                    "data:"
+                    + OpenAIJson.ResolveFullMediaType(mediaType, bytes, inline)
+                    + ";base64,"
+                    + payload;
             }
 
             var image = new JsonObject
@@ -317,7 +382,8 @@ public static class OpenAIChatMessages
                 ["type"] = "input_audio",
                 ["input_audio"] = new JsonObject
                 {
-                    ["data"] = part.Base64 ?? System.Convert.ToBase64String(bytes ?? Array.Empty<byte>()),
+                    ["data"] = part.Base64
+                        ?? System.Convert.ToBase64String(bytes ?? Array.Empty<byte>()),
                     ["format"] = format,
                 },
             };
@@ -325,7 +391,11 @@ public static class OpenAIChatMessages
             return audio;
         }
 
-        var fileMediaType = OpenAIJson.ResolveFullMediaType(mediaType, bytes, inline && part.Url == null);
+        var fileMediaType = OpenAIJson.ResolveFullMediaType(
+            mediaType,
+            bytes,
+            inline && part.Url == null
+        );
         if (fileMediaType != "application/pdf")
         {
             throw new AiSdkException("file part media type " + fileMediaType);
@@ -336,14 +406,18 @@ public static class OpenAIChatMessages
             throw new AiSdkException("PDF file parts with URLs");
         }
 
-        var fileName = string.IsNullOrEmpty(part.FileName) ? "part-" + index.ToString() + ".pdf" : part.FileName;
+        var fileName = string.IsNullOrEmpty(part.FileName)
+            ? "part-" + index.ToString() + ".pdf"
+            : part.FileName;
         var pdf = new JsonObject
         {
             ["type"] = "file",
             ["file"] = new JsonObject
             {
                 ["filename"] = fileName,
-                ["file_data"] = "data:application/pdf;base64," + (part.Base64 ?? System.Convert.ToBase64String(bytes ?? Array.Empty<byte>())),
+                ["file_data"] =
+                    "data:application/pdf;base64,"
+                    + (part.Base64 ?? System.Convert.ToBase64String(bytes ?? Array.Empty<byte>())),
             },
         };
         AddBreakpoint(pdf, breakpoint);
@@ -399,16 +473,18 @@ public static class OpenAIChatMessages
             var calls = new JsonArray();
             foreach (var call in toolCalls)
             {
-                calls.Add(new JsonObject
-                {
-                    ["id"] = call.ToolCallId,
-                    ["type"] = "function",
-                    ["function"] = new JsonObject
+                calls.Add(
+                    new JsonObject
                     {
-                        ["name"] = call.ToolName,
-                        ["arguments"] = ToolArguments(call.ArgumentsJson),
-                    },
-                });
+                        ["id"] = call.ToolCallId,
+                        ["type"] = "function",
+                        ["function"] = new JsonObject
+                        {
+                            ["name"] = call.ToolName,
+                            ["arguments"] = ToolArguments(call.ArgumentsJson),
+                        },
+                    }
+                );
             }
 
             json["tool_calls"] = calls;
@@ -432,9 +508,7 @@ public static class OpenAIChatMessages
                 return arguments;
             }
         }
-        catch (JsonException)
-        {
-        }
+        catch (JsonException) { }
 
         return "{}";
     }
@@ -443,9 +517,10 @@ public static class OpenAIChatMessages
     {
         var breakpoint = OpenAIJson.PromptCacheBreakpoint(message.ProviderOptions);
         var text = OpenAIJson.ToolOutputText(message.ToolOutputType, message.ToolOutput);
-        JsonNode content = breakpoint == null
-            ? JsonValue.Create(text)!
-            : new JsonArray(TextBlock(text, breakpoint));
+        JsonNode content =
+            breakpoint == null
+                ? JsonValue.Create(text)!
+                : new JsonArray(TextBlock(text, breakpoint));
         return new JsonObject
         {
             ["role"] = "tool",
@@ -473,9 +548,11 @@ public static class OpenAIChatMessages
     /// <summary>Reads <c>openai.name</c> from message options. Only the <c>openai</c> namespace counts; a name that is not a string is invalid.</summary>
     private static string? Name(JsonElement? providerOptions)
     {
-        if (providerOptions is not { ValueKind: JsonValueKind.Object } options
+        if (
+            providerOptions is not { ValueKind: JsonValueKind.Object } options
             || !options.TryGetProperty("openai", out var openai)
-            || openai.ValueKind != JsonValueKind.Object)
+            || openai.ValueKind != JsonValueKind.Object
+        )
         {
             return null;
         }
@@ -492,7 +569,11 @@ public static class OpenAIChatMessages
 
         if (name.ValueKind != JsonValueKind.String)
         {
-            throw new InvalidArgumentException("providerOptions", name.GetRawText(), "invalid openai provider options");
+            throw new InvalidArgumentException(
+                "providerOptions",
+                name.GetRawText(),
+                "invalid openai provider options"
+            );
         }
 
         return name.GetString();
@@ -500,7 +581,11 @@ public static class OpenAIChatMessages
 
     private static string? Name(IReadOnlyDictionary<string, JsonElement>? providerOptions)
     {
-        if (providerOptions == null || !providerOptions.TryGetValue("openai", out var openai) || openai.ValueKind != JsonValueKind.Object)
+        if (
+            providerOptions == null
+            || !providerOptions.TryGetValue("openai", out var openai)
+            || openai.ValueKind != JsonValueKind.Object
+        )
         {
             return null;
         }
@@ -556,13 +641,15 @@ public static class OpenAIChatMessages
             }
             else if (part is FileContentPart file)
             {
-                parts.Add(new OpenAIChatPromptPart("file")
-                {
-                    MediaType = file.MediaType,
-                    Url = file.Url,
-                    Data = file.Data,
-                    FileName = file.FileName,
-                });
+                parts.Add(
+                    new OpenAIChatPromptPart("file")
+                    {
+                        MediaType = file.MediaType,
+                        Url = file.Url,
+                        Data = file.Data,
+                        FileName = file.FileName,
+                    }
+                );
             }
         }
 

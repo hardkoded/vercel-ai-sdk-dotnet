@@ -23,23 +23,32 @@ internal static class AnthropicCitations
         var citedText = AnthropicJson.String(citation, "cited_text");
         if (type == "web_search_result_location" || type == "search_result_location")
         {
-            var url = (type == "web_search_result_location" ? AnthropicJson.String(citation, "url") : AnthropicJson.String(citation, "source")) ?? string.Empty;
+            var url = (
+                type == "web_search_result_location"
+                    ? AnthropicJson.String(citation, "url")
+                    : AnthropicJson.String(citation, "source")
+            ) ?? string.Empty;
             return new Citation(
                 new GeneratedSource(url, url, AnthropicJson.String(citation, "title"), metadata),
-                citedText: citedText);
+                citedText: citedText
+            );
         }
 
-        var index = citation.TryGetProperty("document_index", out var documentIndex) && documentIndex.ValueKind == JsonValueKind.Number
-            ? documentIndex.GetInt32().ToString(CultureInfo.InvariantCulture)
-            : "0";
+        var index =
+            citation.TryGetProperty("document_index", out var documentIndex)
+            && documentIndex.ValueKind == JsonValueKind.Number
+                ? documentIndex.GetInt32().ToString(CultureInfo.InvariantCulture)
+                : "0";
         return new Citation(
             new GeneratedDocumentSource(
                 AnthropicJson.String(citation, "file_id") ?? index,
                 "text/plain",
                 AnthropicJson.String(citation, "document_title") ?? "Document " + index,
                 null,
-                metadata),
-            citedText: citedText);
+                metadata
+            ),
+            citedText: citedText
+        );
     }
 
     /// <summary>Maps every citation in <paramref name="citations"/>, or returns null when there are none.</summary>
@@ -63,13 +72,20 @@ internal static class AnthropicCitations
             array.Add(AnthropicJson.Node(citation));
         }
 
-        using var document = JsonDocument.Parse(new JsonObject { ["anthropic"] = new JsonObject { ["citations"] = array } }.ToJsonString());
+        using var document = JsonDocument.Parse(
+            new JsonObject
+            {
+                ["anthropic"] = new JsonObject { ["citations"] = array },
+            }.ToJsonString()
+        );
         return document.RootElement.Clone();
     }
 
     private static JsonElement Metadata(JsonElement citation)
     {
-        using var document = JsonDocument.Parse(new JsonObject { ["anthropic"] = AnthropicJson.Node(citation) }.ToJsonString());
+        using var document = JsonDocument.Parse(
+            new JsonObject { ["anthropic"] = AnthropicJson.Node(citation) }.ToJsonString()
+        );
         return document.RootElement.Clone();
     }
 }

@@ -13,7 +13,8 @@ namespace Vercel.AI.Tests.Upstream.Google.GoogleInteractionsLanguageModel;
 /// </summary>
 public sealed class DoStreamServiceTierTests
 {
-    private const string Prefix = "packages/google/src/interactions/google-interactions-language-model.test.ts::GoogleInteractionsLanguageModel.doStream > service tier::";
+    private const string Prefix =
+        "packages/google/src/interactions/google-interactions-language-model.test.ts::GoogleInteractionsLanguageModel.doStream > service tier::";
 
     private static LanguageModelCallOptions Options()
     {
@@ -26,7 +27,9 @@ public sealed class DoStreamServiceTierTests
     private static List<JsonObject> BasicEvents(Action<JsonObject> changeInteraction)
     {
         var events = GoogleInteractionsStreamSupport.FixtureEvents("basic");
-        var interaction = events.Single(e => (string?)e["event_type"] == "interaction.completed")["interaction"]!.AsObject();
+        var interaction = events.Single(e => (string?)e["event_type"] == "interaction.completed")[
+            "interaction"
+        ]!.AsObject();
         changeInteraction(interaction);
         return events;
     }
@@ -39,28 +42,50 @@ public sealed class DoStreamServiceTierTests
             handler.ResponseHeaders["x-gemini-service-tier"] = header;
         }
 
-        var parts = await GoogleInteractionsStreamSupport.Stream(GoogleInteractionsStreamSupport.Model(handler), Options());
-        var finish = Assert.IsType<FinishStreamPart>(parts.Single(part => part is FinishStreamPart));
+        var parts = await GoogleInteractionsStreamSupport.Stream(
+            GoogleInteractionsStreamSupport.Model(handler),
+            Options()
+        );
+        var finish = Assert.IsType<FinishStreamPart>(
+            parts.Single(part => part is FinishStreamPart)
+        );
         var google = finish.ProviderMetadata!.Value.GetProperty("google");
-        return google.TryGetProperty("serviceTier", out var tier) && tier.ValueKind == JsonValueKind.String ? tier.GetString() : null;
+        return
+            google.TryGetProperty("serviceTier", out var tier)
+            && tier.ValueKind == JsonValueKind.String
+            ? tier.GetString()
+            : null;
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "sends service_tier in the request body when providerOptions.google.serviceTier is set", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "sends service_tier in the request body when providerOptions.google.serviceTier is set",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Sends_service_tier_in_the_request_body_when_providerOptions_google_serviceTier_is_set()
     {
         var handler = GoogleInteractionsStreamSupport.FixtureHandler("basic");
         var options = Options();
-        options.ProviderOptions = GoogleUpstream.ProviderOptions("{\"google\":{\"serviceTier\":\"priority\"}}");
+        options.ProviderOptions = GoogleUpstream.ProviderOptions(
+            "{\"google\":{\"serviceTier\":\"priority\"}}"
+        );
 
-        await GoogleInteractionsStreamSupport.Stream(GoogleInteractionsStreamSupport.Model(handler), options);
+        await GoogleInteractionsStreamSupport.Stream(
+            GoogleInteractionsStreamSupport.Model(handler),
+            options
+        );
 
         var body = JsonNode.Parse(handler.Bodies[0])!.AsObject();
         Assert.Equal("priority", (string?)body["service_tier"]);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "reads providerMetadata.google.serviceTier from the interaction.complete event body service_tier field", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "reads providerMetadata.google.serviceTier from the interaction.complete event body service_tier field",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Reads_providerMetadata_google_serviceTier_from_the_interaction_complete_event_body_service_tier_field()
     {
         var events = BasicEvents(interaction => interaction["service_tier"] = "priority");
@@ -69,7 +94,11 @@ public sealed class DoStreamServiceTierTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "falls back to the x-gemini-service-tier response header when service_tier is absent from the body", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "falls back to the x-gemini-service-tier response header when service_tier is absent from the body",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Falls_back_to_the_x_gemini_service_tier_response_header_when_service_tier_is_absent_from_the_body()
     {
         var events = BasicEvents(interaction => interaction.Remove("service_tier"));
@@ -78,7 +107,11 @@ public sealed class DoStreamServiceTierTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "omits serviceTier from finish providerMetadata when both response body and header are absent", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "omits serviceTier from finish providerMetadata when both response body and header are absent",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Omits_serviceTier_from_finish_providerMetadata_when_both_response_body_and_header_are_absent()
     {
         var events = BasicEvents(interaction => interaction.Remove("service_tier"));

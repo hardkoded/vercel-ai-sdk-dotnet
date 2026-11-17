@@ -11,7 +11,10 @@ namespace Vercel.AI.Tests.Upstream.Alibaba.AlibabaChatLanguageModelTests;
 public sealed class DoStreamToolCallTests
 {
     [Fact]
-    [UpstreamTest("packages/alibaba/src/alibaba-chat-language-model.test.ts::doStream > tool call::should stream tool call", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/alibaba/src/alibaba-chat-language-model.test.ts::doStream > tool call::should stream tool call",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_stream_tool_call()
     {
         var model = StreamModel(FixtureStream("alibaba-tool-call"));

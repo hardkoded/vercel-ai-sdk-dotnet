@@ -13,7 +13,10 @@ namespace Vercel.AI.OpenAI;
 
 internal static class OpenAIJson
 {
-    private static readonly JsonSerializerOptions ToolOutputOptions = new() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    private static readonly JsonSerializerOptions ToolOutputOptions = new()
+    {
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     /// <summary>
     /// The text OpenAI receives for a tool result. <c>error-text</c> and <c>error-json</c> are wrapped as <c>{"error": value}</c>.
@@ -24,9 +27,13 @@ internal static class OpenAIJson
         switch (outputType)
         {
             case "error-text":
-                return new JsonObject { ["error"] = output ?? string.Empty }.ToJsonString(ToolOutputOptions);
+                return new JsonObject { ["error"] = output ?? string.Empty }.ToJsonString(
+                    ToolOutputOptions
+                );
             case "error-json":
-                return new JsonObject { ["error"] = JsonNode.Parse(output ?? "null") }.ToJsonString(ToolOutputOptions);
+                return new JsonObject { ["error"] = JsonNode.Parse(output ?? "null") }.ToJsonString(
+                    ToolOutputOptions
+                );
             case "execution-denied":
                 return output ?? "Tool call execution denied.";
             default:
@@ -80,7 +87,10 @@ internal static class OpenAIJson
     /// Merges the options under <paramref name="namespaces"/>; later namespaces win key by key. Maps to
     /// <c>resolveProviderOptions</c> with the <c>merge</c> resolution.
     /// </summary>
-    public static JsonElement? MergedProvider(IReadOnlyDictionary<string, JsonElement>? providerOptions, params string[] namespaces)
+    public static JsonElement? MergedProvider(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        params string[] namespaces
+    )
     {
         var resolved = ProviderOptionsResolver.Resolve<JsonElement>(
             providerOptions,
@@ -89,7 +99,10 @@ internal static class OpenAIJson
             element => element,
             (first, second) =>
             {
-                if (first.ValueKind != JsonValueKind.Object || second.ValueKind != JsonValueKind.Object)
+                if (
+                    first.ValueKind != JsonValueKind.Object
+                    || second.ValueKind != JsonValueKind.Object
+                )
                 {
                     return second;
                 }
@@ -106,13 +119,18 @@ internal static class OpenAIJson
                 }
 
                 return Element(merged);
-            });
+            }
+        );
         return resolved.Namespaces.Count == 0 ? null : resolved.Options;
     }
 
     public static JsonElement? Child(JsonElement? element, string name)
     {
-        if (element == null || element.Value.ValueKind != JsonValueKind.Object || !element.Value.TryGetProperty(name, out var value))
+        if (
+            element == null
+            || element.Value.ValueKind != JsonValueKind.Object
+            || !element.Value.TryGetProperty(name, out var value)
+        )
         {
             return null;
         }
@@ -139,7 +157,11 @@ internal static class OpenAIJson
     public static bool? Bool(JsonElement? element, string name)
     {
         var child = Child(element, name);
-        if (child == null || child.Value.ValueKind != JsonValueKind.True && child.Value.ValueKind != JsonValueKind.False)
+        if (
+            child == null
+            || child.Value.ValueKind != JsonValueKind.True
+                && child.Value.ValueKind != JsonValueKind.False
+        )
         {
             return null;
         }
@@ -150,7 +172,11 @@ internal static class OpenAIJson
     public static int? Int(JsonElement? element, string name)
     {
         var child = Child(element, name);
-        if (child == null || child.Value.ValueKind != JsonValueKind.Number || !child.Value.TryGetInt32(out var number))
+        if (
+            child == null
+            || child.Value.ValueKind != JsonValueKind.Number
+            || !child.Value.TryGetInt32(out var number)
+        )
         {
             return null;
         }
@@ -161,7 +187,11 @@ internal static class OpenAIJson
     public static double? Double(JsonElement? element, string name)
     {
         var child = Child(element, name);
-        if (child == null || child.Value.ValueKind != JsonValueKind.Number || !child.Value.TryGetDouble(out var number))
+        if (
+            child == null
+            || child.Value.ValueKind != JsonValueKind.Number
+            || !child.Value.TryGetDouble(out var number)
+        )
         {
             return null;
         }
@@ -171,12 +201,19 @@ internal static class OpenAIJson
 
     public static int? NestedInt(JsonElement element, string objectName, string name)
     {
-        if (!element.TryGetProperty(objectName, out var child) || child.ValueKind != JsonValueKind.Object)
+        if (
+            !element.TryGetProperty(objectName, out var child)
+            || child.ValueKind != JsonValueKind.Object
+        )
         {
             return null;
         }
 
-        if (!child.TryGetProperty(name, out var value) || value.ValueKind != JsonValueKind.Number || !value.TryGetInt32(out var number))
+        if (
+            !child.TryGetProperty(name, out var value)
+            || value.ValueKind != JsonValueKind.Number
+            || !value.TryGetInt32(out var number)
+        )
         {
             return null;
         }
@@ -201,7 +238,11 @@ internal static class OpenAIJson
 
     public static JsonNode? Node(JsonElement? element)
     {
-        if (element == null || element.Value.ValueKind == JsonValueKind.Null || element.Value.ValueKind == JsonValueKind.Undefined)
+        if (
+            element == null
+            || element.Value.ValueKind == JsonValueKind.Null
+            || element.Value.ValueKind == JsonValueKind.Undefined
+        )
         {
             return null;
         }
@@ -216,7 +257,10 @@ internal static class OpenAIJson
             return null;
         }
 
-        if (providerOptions.Value.TryGetProperty("openai", out var openai) && openai.ValueKind == JsonValueKind.Object)
+        if (
+            providerOptions.Value.TryGetProperty("openai", out var openai)
+            && openai.ValueKind == JsonValueKind.Object
+        )
         {
             return openai;
         }
@@ -256,7 +300,17 @@ internal static class OpenAIJson
             ? NestedInt(element, "prompt_tokens_details", "cache_write_tokens")
             : null;
         var reasoning = NestedInt(element, "completion_tokens_details", "reasoning_tokens") ?? 0;
-        return new LanguageModelUsage(prompt, completion, total, cacheRead, cacheWrite, reasoning, element.Clone(), prompt - cacheRead - (cacheWrite ?? 0), Math.Max(0, completion - reasoning));
+        return new LanguageModelUsage(
+            prompt,
+            completion,
+            total,
+            cacheRead,
+            cacheWrite,
+            reasoning,
+            element.Clone(),
+            prompt - cacheRead - (cacheWrite ?? 0),
+            Math.Max(0, completion - reasoning)
+        );
     }
 
     public static LanguageModelUsage ResponsesUsage(JsonElement? usage)
@@ -275,7 +329,17 @@ internal static class OpenAIJson
             ? NestedInt(element, "input_tokens_details", "cache_write_tokens")
             : null;
         var reasoning = NestedInt(element, "output_tokens_details", "reasoning_tokens") ?? 0;
-        return new LanguageModelUsage(input, output, total, cacheRead, cacheWrite, reasoning, element.Clone(), input - cacheRead - (cacheWrite ?? 0), output - reasoning);
+        return new LanguageModelUsage(
+            input,
+            output,
+            total,
+            cacheRead,
+            cacheWrite,
+            reasoning,
+            element.Clone(),
+            input - cacheRead - (cacheWrite ?? 0),
+            output - reasoning
+        );
     }
 
     public static LanguageModelUsage CompletionUsage(JsonElement? usage)
@@ -294,7 +358,8 @@ internal static class OpenAIJson
             Int(element, "total_tokens"),
             raw: element.Clone(),
             noCacheInputTokens: prompt ?? 0,
-            textTokens: completion ?? 0);
+            textTokens: completion ?? 0
+        );
     }
 
     public static JsonElement ProviderMetadata(JsonObject metadata, string providerName = "openai")
@@ -303,7 +368,10 @@ internal static class OpenAIJson
         return Element(root);
     }
 
-    public static void ApplyHeaders(HttpRequestMessage request, IReadOnlyDictionary<string, string?>? headers)
+    public static void ApplyHeaders(
+        HttpRequestMessage request,
+        IReadOnlyDictionary<string, string?>? headers
+    )
     {
         if (headers == null)
         {
@@ -328,7 +396,10 @@ internal static class OpenAIJson
                 var space = value.IndexOf(' ');
                 if (space > 0)
                 {
-                    request.Headers.Authorization = new AuthenticationHeaderValue(value.Substring(0, space), value.Substring(space + 1));
+                    request.Headers.Authorization = new AuthenticationHeaderValue(
+                        value.Substring(0, space),
+                        value.Substring(space + 1)
+                    );
                 }
                 else
                 {
@@ -406,7 +477,9 @@ internal static class OpenAIJson
                 return "ogg";
             default:
                 var slash = mediaType.IndexOf('/');
-                return slash >= 0 && slash < mediaType.Length - 1 ? mediaType.Substring(slash + 1) : "bin";
+                return slash >= 0 && slash < mediaType.Length - 1
+                    ? mediaType.Substring(slash + 1)
+                    : "bin";
         }
     }
 

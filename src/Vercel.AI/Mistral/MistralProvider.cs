@@ -24,14 +24,17 @@ public sealed class MistralProvider : OpenAICompatibleProvider
 
     /// <summary>Creates a provider.</summary>
     public MistralProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
-        : base(Prepare(options), httpClient)
-    {
-    }
+        : base(Prepare(options), httpClient) { }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static new MistralProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new MistralProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new MistralProvider(client, options);
     }
 
@@ -69,13 +72,24 @@ public sealed class MistralProvider : OpenAICompatibleProvider
         { "max", "high" },
     };
 
-    private static string? ResolveReasoningEffort(string modelId, string? reasoning, string? providerEffort, IList<CallWarning> warnings)
+    private static string? ResolveReasoningEffort(
+        string modelId,
+        string? reasoning,
+        string? providerEffort,
+        IList<CallWarning> warnings
+    )
     {
         if (ModelsWithoutReasoningEffort.Contains(modelId))
         {
             if (ReasoningMap.IsCustomReasoning(reasoning))
             {
-                warnings.Add(new CallWarning("unsupported", "reasoning", "This model does not support reasoning configuration."));
+                warnings.Add(
+                    new CallWarning(
+                        "unsupported",
+                        "reasoning",
+                        "This model does not support reasoning configuration."
+                    )
+                );
             }
 
             return null;
@@ -97,7 +111,11 @@ public sealed class MistralProvider : OpenAICompatibleProvider
         }
 
         var mappingWarnings = new List<ModelWarning>();
-        var effort = ReasoningMap.MapReasoningToProviderEffort(reasoning!, EffortMap, mappingWarnings);
+        var effort = ReasoningMap.MapReasoningToProviderEffort(
+            reasoning!,
+            EffortMap,
+            mappingWarnings
+        );
         foreach (var warning in mappingWarnings)
         {
             if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
@@ -117,7 +135,10 @@ public sealed class MistralProvider : OpenAICompatibleProvider
             ["application/pdf"] = "^https://.*\\z",
         };
 
-        if (string.IsNullOrEmpty(options.ProviderName) || options.ProviderName == "openai-compatible")
+        if (
+            string.IsNullOrEmpty(options.ProviderName)
+            || options.ProviderName == "openai-compatible"
+        )
         {
             options.ProviderName = ProviderId;
         }
@@ -149,14 +170,21 @@ public sealed class MistralProvider : OpenAICompatibleProvider
 public static class MistralServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddMistral(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddMistral(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(MistralProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new MistralProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(MistralProvider.ProviderId), options);
+            return new MistralProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(MistralProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

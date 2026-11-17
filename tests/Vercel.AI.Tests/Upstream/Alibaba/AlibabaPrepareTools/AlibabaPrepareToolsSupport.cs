@@ -12,7 +12,12 @@ internal static class AlibabaPrepareToolsSupport
     internal const string TestFile = "packages/alibaba/src/alibaba-prepare-tools.test.ts";
 
     /// <summary>A function tool like <c>{ type: 'function', name, description, inputSchema }</c>.</summary>
-    internal static LanguageModelTool Function(string name, string? description, string inputSchema = """{"type":"object","properties":{}}""", bool? strict = null)
+    internal static LanguageModelTool Function(
+        string name,
+        string? description,
+        string inputSchema = """{"type":"object","properties":{}}""",
+        bool? strict = null
+    )
     {
         return new LanguageModelTool(name, description, UpstreamChat.Json(inputSchema), strict);
     }

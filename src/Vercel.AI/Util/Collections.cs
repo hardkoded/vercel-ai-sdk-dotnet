@@ -17,7 +17,11 @@ public static class Collections
 
         if (chunkSize <= 0)
         {
-            throw new InvalidArgumentError("chunkSize", chunkSize, "chunkSize must be greater than 0");
+            throw new InvalidArgumentError(
+                "chunkSize",
+                chunkSize,
+                "chunkSize must be greater than 0"
+            );
         }
 
         var result = new List<List<T>>();
@@ -103,7 +107,9 @@ public static class Collections
 /// </summary>
 public sealed class IdMap<T>
 {
-    private readonly Dictionary<string, T> _items = new Dictionary<string, T>(StringComparer.Ordinal);
+    private readonly Dictionary<string, T> _items = new Dictionary<string, T>(
+        StringComparer.Ordinal
+    );
     private readonly List<string> _order = new List<string>();
 
     /// <summary>No prototype object is consulted. Always <c>null</c>.</summary>

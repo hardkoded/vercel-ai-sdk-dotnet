@@ -33,29 +33,57 @@ public sealed class ToolChoiceNoneOnTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    [UpstreamTest("packages/google/src/google-tool-choice-none.test.ts::toolChoice none on %s::$mode with $provider, mixed=$mixed and toolChoice=$toolChoice", Coverage = UpstreamCoverage.Covered, Commit = "32dc1d2d173f21bc1fda20f750400627fa5abb98")]
-    public async Task Mode_with_provider_mixed_and_toolChoice(string modelId, string provider, bool mixed, string mode, string toolChoice)
+    [UpstreamTest(
+        "packages/google/src/google-tool-choice-none.test.ts::toolChoice none on %s::$mode with $provider, mixed=$mixed and toolChoice=$toolChoice",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "32dc1d2d173f21bc1fda20f750400627fa5abb98"
+    )]
+    public async Task Mode_with_provider_mixed_and_toolChoice(
+        string modelId,
+        string provider,
+        bool mixed,
+        string mode,
+        string toolChoice
+    )
     {
-        var handler = GoogleToolChoiceNoneSupport.Handler(mode, new JsonArray { new JsonObject { ["text"] = "Hello." } });
+        var handler = GoogleToolChoiceNoneSupport.Handler(
+            mode,
+            new JsonArray { new JsonObject { ["text"] = "Hello." } }
+        );
         var model = GoogleToolChoiceNoneSupport.Model(provider, modelId, handler);
-        var options = GoogleToolChoiceNoneSupport.Options(provider, mixed, toolChoice == "none" ? ToolChoice.None : ToolChoice.Auto);
+        var options = GoogleToolChoiceNoneSupport.Options(
+            provider,
+            mixed,
+            toolChoice == "none" ? ToolChoice.None : ToolChoice.Auto
+        );
 
         if (mode == "generate")
         {
             var result = await model.DoGenerateAsync(options, CancellationToken.None);
-            Assert.Contains(result.Content, part => part is GeneratedText text && text.Text == "Hello.");
+            Assert.Contains(result.Content, part =>
+                part is GeneratedText text && text.Text == "Hello."
+            );
         }
         else
         {
-            var parts = await GoogleUpstream.Collect(await model.DoStreamAsync(options, CancellationToken.None));
-            Assert.Contains(parts, part => part is TextDeltaStreamPart delta && delta.Delta == "Hello.");
+            var parts = await GoogleUpstream.Collect(
+                await model.DoStreamAsync(options, CancellationToken.None)
+            );
+            Assert.Contains(parts, part =>
+                part is TextDeltaStreamPart delta && delta.Delta == "Hello."
+            );
         }
 
         Assert.Equal(1, handler.Calls);
         var body = JsonNode.Parse(handler.Body)!.AsObject();
         if (toolChoice == "auto")
         {
-            Assert.Contains(body["tools"]!.AsArray(), tool => JsonNode.DeepEquals(tool, JsonNode.Parse(GoogleToolChoiceNoneSupport.ExpectedJson(provider))));
+            Assert.Contains(body["tools"]!.AsArray(), tool =>
+                JsonNode.DeepEquals(
+                    tool,
+                    JsonNode.Parse(GoogleToolChoiceNoneSupport.ExpectedJson(provider))
+                )
+            );
         }
         else if (mixed)
         {
@@ -64,7 +92,10 @@ public sealed class ToolChoiceNoneOnTests
             var declarations = tools[0]!["functionDeclarations"]!.AsArray();
             Assert.Single(declarations);
             Assert.Equal("lookup", declarations[0]!["name"]!.GetValue<string>());
-            GoogleUpstream.JsonEqual(body["toolConfig"], "{\"functionCallingConfig\":{\"mode\":\"NONE\"}}");
+            GoogleUpstream.JsonEqual(
+                body["toolConfig"],
+                "{\"functionCallingConfig\":{\"mode\":\"NONE\"}}"
+            );
         }
         else
         {

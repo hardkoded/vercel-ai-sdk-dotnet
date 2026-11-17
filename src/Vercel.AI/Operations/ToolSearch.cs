@@ -35,7 +35,11 @@ public sealed class SearchableTool
     public Func<IReadOnlyDictionary<string, object?>, string?>? Describe { get; set; }
 
     /// <summary>Bound search implementation. The unbound search tool throws.</summary>
-    public Func<string, IReadOnlyDictionary<string, object?>?, Task<ToolSearchMatchList>>? Execute { get; set; }
+    public Func<
+        string,
+        IReadOnlyDictionary<string, object?>?,
+        Task<ToolSearchMatchList>
+    >? Execute { get; set; }
 
     /// <summary>Local or provider caller bound to this tool.</summary>
     public ToolCallerBinding? Caller { get; set; }
@@ -119,7 +123,8 @@ public sealed class ToolSearchMatch
 public static class ToolSearch
 {
     /// <summary>Description copied onto the search tool.</summary>
-    public const string Description = "Search for tools by keywords in their names and descriptions. Returns up to five matching tools. Matches become available on the next model step, after this execution finishes. Wait for their tool definitions before calling the discovered tools. If no tools match, try different keywords.";
+    public const string Description =
+        "Search for tools by keywords in their names and descriptions. Returns up to five matching tools. Matches become available on the next model step, after this execution finishes. Wait for their tool definitions before calling the discovered tools. If no tools match, try different keywords.";
 
     /// <summary>Creates an unbound search tool. Its execute method throws until a generation binds it.</summary>
     public static SearchableTool Create()
@@ -127,7 +132,10 @@ public static class ToolSearch
         return new SearchableTool(Description)
         {
             IsSearch = true,
-            Execute = (_, _) => throw new InvalidOperationException("toolSearch must be bound by an AI SDK generation."),
+            Execute = (_, _) =>
+                throw new InvalidOperationException(
+                    "toolSearch must be bound by an AI SDK generation."
+                ),
         };
     }
 
@@ -142,7 +150,14 @@ public static class ToolSearch
 public static class ToolSearchState
 {
     /// <summary>Creates a prepare function. An empty routing map does not inherit keys such as <c>constructor</c>.</summary>
-    public static Func<IReadOnlyDictionary<string, SearchableTool>?, IReadOnlyDictionary<string, object?>?, IReadOnlyDictionary<string, SearchableTool>?> Create(IReadOnlyDictionary<string, SearchableTool>? tools, IReadOnlyDictionary<string, IReadOnlyList<string>>? toolCallers)
+    public static Func<
+        IReadOnlyDictionary<string, SearchableTool>?,
+        IReadOnlyDictionary<string, object?>?,
+        IReadOnlyDictionary<string, SearchableTool>?
+    > Create(
+        IReadOnlyDictionary<string, SearchableTool>? tools,
+        IReadOnlyDictionary<string, IReadOnlyList<string>>? toolCallers
+    )
     {
         var searchTools = new List<KeyValuePair<string, SearchableTool>>();
         if (tools != null)
@@ -194,7 +209,13 @@ public static class ToolSearchState
 
             if (invalidCaller || (pair.Value.IsSearch && pair.Value.DeferLoading))
             {
-                throw new InvalidArgumentException("tools", pair.Key, "tool \"" + pair.Key + "\" must be callable directly or through code mode with toolDiscovery: 'conversation'. The search tool itself must not defer loading.");
+                throw new InvalidArgumentException(
+                    "tools",
+                    pair.Key,
+                    "tool \""
+                        + pair.Key
+                        + "\" must be callable directly or through code mode with toolDiscovery: 'conversation'. The search tool itself must not defer loading."
+                );
             }
         }
 
@@ -220,8 +241,16 @@ public static class ToolSearchState
                     continue;
                 }
 
-                var searchCallers = CallersOf(pair.Key).Where(name => name == ToolCallers.Direct || activeTools.ContainsKey(name)).ToArray();
-                var candidates = entries.Where(candidate => candidate.Value.DeferLoading && !candidate.Value.IsSearch && searchCallers.Any(caller => CallersOf(candidate.Key).Contains(caller))).ToList();
+                var searchCallers = CallersOf(pair.Key)
+                    .Where(name => name == ToolCallers.Direct || activeTools.ContainsKey(name))
+                    .ToArray();
+                var candidates = entries
+                    .Where(candidate =>
+                        candidate.Value.DeferLoading
+                        && !candidate.Value.IsSearch
+                        && searchCallers.Any(caller => CallersOf(candidate.Key).Contains(caller))
+                    )
+                    .ToList();
                 var bound = pair.Value.Copy();
                 bound.Execute = (query, context) =>
                 {
@@ -229,7 +258,12 @@ public static class ToolSearchState
                     var matches = new List<(string Name, string? Description, int Score)>();
                     foreach (var candidate in candidates)
                     {
-                        var description = candidate.Value.Describe != null ? candidate.Value.Describe(context ?? new Dictionary<string, object?>()) : candidate.Value.Description;
+                        var description =
+                            candidate.Value.Describe != null
+                                ? candidate.Value.Describe(
+                                    context ?? new Dictionary<string, object?>()
+                                )
+                                : candidate.Value.Description;
                         var nameTerms = Tokenize(candidate.Key);
                         var descriptionTerms = Tokenize(description ?? string.Empty);
                         var score = 0;
@@ -258,7 +292,13 @@ public static class ToolSearchState
                         discovered.Add(match.Name);
                     }
 
-                    return Task.FromResult(new ToolSearchMatchList(ordered.Select(match => new ToolSearchMatch(match.Name, match.Description)).ToList()));
+                    return Task.FromResult(
+                        new ToolSearchMatchList(
+                            ordered
+                                .Select(match => new ToolSearchMatch(match.Name, match.Description))
+                                .ToList()
+                        )
+                    );
                 };
                 prepared[pair.Key] = bound;
             }
@@ -270,7 +310,9 @@ public static class ToolSearchState
     /// <summary>Splits camel case, then keeps letters and numbers.</summary>
     public static List<string> Tokenize(string text)
     {
-        var spaced = Regex.Replace(text ?? string.Empty, "([a-z0-9])([A-Z])", "$1 $2").ToLowerInvariant();
+        var spaced = Regex
+            .Replace(text ?? string.Empty, "([a-z0-9])([A-Z])", "$1 $2")
+            .ToLowerInvariant();
         var matches = Regex.Matches(spaced, @"[\p{L}\p{N}]+");
         var terms = new List<string>(matches.Count);
         foreach (Match match in matches)
@@ -373,7 +415,15 @@ public sealed class ToolSearchRun
 public static class ToolSearchGeneration
 {
     /// <summary>Runs one generation mode. Discovered tools appear on the next step.</summary>
-    public static async Task<ToolSearchRun> RunAsync(string mode, IReadOnlyDictionary<string, SearchableTool> tools, IReadOnlyDictionary<string, IReadOnlyList<string>>? routing, string prompt, IReadOnlyList<IReadOnlyList<ToolSearchCall>> calls, string finalText, CancellationToken cancellationToken = default)
+    public static async Task<ToolSearchRun> RunAsync(
+        string mode,
+        IReadOnlyDictionary<string, SearchableTool> tools,
+        IReadOnlyDictionary<string, IReadOnlyList<string>>? routing,
+        string prompt,
+        IReadOnlyList<IReadOnlyList<ToolSearchCall>> calls,
+        string finalText,
+        CancellationToken cancellationToken = default
+    )
     {
         var prepare = ToolSearchState.Create(tools, routing);
         var run = new ToolSearchRun { Text = finalText };
@@ -386,7 +436,11 @@ public static class ToolSearchGeneration
             var record = new ToolSearchStepRecord();
             foreach (var name in prepared.Keys)
             {
-                if (routing == null || !routing.TryGetValue(name, out var callers) || callers.Contains(ToolCallers.Direct))
+                if (
+                    routing == null
+                    || !routing.TryGetValue(name, out var callers)
+                    || callers.Contains(ToolCallers.Direct)
+                )
                 {
                     record.ToolNames.Add(name);
                 }
@@ -417,7 +471,14 @@ public static class ToolSearchGeneration
             {
                 if (!prepared.TryGetValue(call.ToolName, out var tool))
                 {
-                    record.Content.Add(new ToolSearchStepItem("tool-error", call.ToolCallId, call.ToolName, "Tool not found"));
+                    record.Content.Add(
+                        new ToolSearchStepItem(
+                            "tool-error",
+                            call.ToolCallId,
+                            call.ToolName,
+                            "Tool not found"
+                        )
+                    );
                     continue;
                 }
 
@@ -425,7 +486,14 @@ public static class ToolSearchGeneration
                 {
                     var query = ReadQuery(call.ArgumentsJson);
                     var output = await tool.Execute(query, null).ConfigureAwait(false);
-                    record.Content.Add(new ToolSearchStepItem("tool-result", call.ToolCallId, call.ToolName, output));
+                    record.Content.Add(
+                        new ToolSearchStepItem(
+                            "tool-result",
+                            call.ToolCallId,
+                            call.ToolName,
+                            output
+                        )
+                    );
                     continue;
                 }
 
@@ -434,20 +502,45 @@ public static class ToolSearchGeneration
                     var nested = ReadNested(call.ArgumentsJson);
                     if (prepared.TryGetValue(nested.Name, out var target) && target.Invoke != null)
                     {
-                        var output = await target.Invoke(nested.Input, cancellationToken).ConfigureAwait(false);
+                        var output = await target
+                            .Invoke(nested.Input, cancellationToken)
+                            .ConfigureAwait(false);
                         run.ExecuteCount++;
                         run.ExecutedArguments = nested.Input;
-                        record.Content.Add(new ToolSearchStepItem("tool-result", call.ToolCallId, call.ToolName, output));
+                        record.Content.Add(
+                            new ToolSearchStepItem(
+                                "tool-result",
+                                call.ToolCallId,
+                                call.ToolName,
+                                output
+                            )
+                        );
                     }
                     else if (nested.Name == "search")
                     {
                         var search = prepared.Values.First(candidate => candidate.IsSearch);
-                        var output = await search.Execute!(ReadQuery(nested.Input), null).ConfigureAwait(false);
-                        record.Content.Add(new ToolSearchStepItem("tool-result", call.ToolCallId, call.ToolName, output));
+                        var output = await search
+                            .Execute!(ReadQuery(nested.Input), null)
+                            .ConfigureAwait(false);
+                        record.Content.Add(
+                            new ToolSearchStepItem(
+                                "tool-result",
+                                call.ToolCallId,
+                                call.ToolName,
+                                output
+                            )
+                        );
                     }
                     else
                     {
-                        record.Content.Add(new ToolSearchStepItem("tool-error", call.ToolCallId, nested.Name, "Tool not found"));
+                        record.Content.Add(
+                            new ToolSearchStepItem(
+                                "tool-error",
+                                call.ToolCallId,
+                                nested.Name,
+                                "Tool not found"
+                            )
+                        );
                     }
 
                     continue;
@@ -455,10 +548,18 @@ public static class ToolSearchGeneration
 
                 if (tool.Invoke != null)
                 {
-                    var output = await tool.Invoke(call.ArgumentsJson, cancellationToken).ConfigureAwait(false);
+                    var output = await tool.Invoke(call.ArgumentsJson, cancellationToken)
+                        .ConfigureAwait(false);
                     run.ExecuteCount++;
                     run.ExecutedArguments = call.ArgumentsJson;
-                    record.Content.Add(new ToolSearchStepItem("tool-result", call.ToolCallId, call.ToolName, output));
+                    record.Content.Add(
+                        new ToolSearchStepItem(
+                            "tool-result",
+                            call.ToolCallId,
+                            call.ToolName,
+                            output
+                        )
+                    );
                 }
             }
 
@@ -469,7 +570,11 @@ public static class ToolSearchGeneration
         return run;
     }
 
-    private static List<string> VisibleToCaller(string caller, IReadOnlyDictionary<string, SearchableTool> prepared, IReadOnlyDictionary<string, IReadOnlyList<string>>? routing)
+    private static List<string> VisibleToCaller(
+        string caller,
+        IReadOnlyDictionary<string, SearchableTool> prepared,
+        IReadOnlyDictionary<string, IReadOnlyList<string>>? routing
+    )
     {
         var names = new List<string>();
         foreach (var pair in prepared)
@@ -501,14 +606,20 @@ public static class ToolSearchGeneration
     private static string ReadQuery(string json)
     {
         var element = OperationJson.Parse(json);
-        return element.TryGetProperty("query", out var query) ? query.GetString() ?? string.Empty : string.Empty;
+        return element.TryGetProperty("query", out var query)
+            ? query.GetString() ?? string.Empty
+            : string.Empty;
     }
 
     private static (string Name, string Input) ReadNested(string json)
     {
         var element = OperationJson.Parse(json);
-        var name = element.TryGetProperty("name", out var nameValue) ? nameValue.GetString() ?? string.Empty : string.Empty;
-        var input = element.TryGetProperty("input", out var inputValue) ? inputValue.GetRawText() : "{}";
+        var name = element.TryGetProperty("name", out var nameValue)
+            ? nameValue.GetString() ?? string.Empty
+            : string.Empty;
+        var input = element.TryGetProperty("input", out var inputValue)
+            ? inputValue.GetRawText()
+            : "{}";
         return (name, input);
     }
 }

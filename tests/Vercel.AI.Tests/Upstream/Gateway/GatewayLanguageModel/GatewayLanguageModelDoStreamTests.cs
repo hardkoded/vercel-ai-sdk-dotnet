@@ -13,41 +13,62 @@ namespace Vercel.AI.Tests.Upstream.Gateway.GatewayLanguageModel;
 /// <summary>Port of <c>gateway-language-model.test.ts</c> &gt; <c>GatewayLanguageModel &gt; doStream</c>.</summary>
 public sealed class GatewayLanguageModelDoStreamTests
 {
-    private const string Prefix = "packages/gateway/src/gateway-language-model.test.ts::GatewayLanguageModel > doStream::";
+    private const string Prefix =
+        "packages/gateway/src/gateway-language-model.test.ts::GatewayLanguageModel > doStream::";
 
     [Fact]
-    [UpstreamTest(
-        Prefix + "should stream text deltas",
-        Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "should stream text deltas", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_stream_text_deltas()
     {
         var server = PrepareStreamResponse("Hello", ", ", "World!");
 
-        var result = await CreateTestModel(server).DoStreamAsync(TestPrompt, CancellationToken.None);
+        var result = await CreateTestModel(server)
+            .DoStreamAsync(TestPrompt, CancellationToken.None);
         var parts = await ReadAll(result);
 
         Assert.Collection(
             parts,
-            part => JsonAssert.Equal(part.Chunk!.Value, "{\"textDelta\":\"Hello\",\"type\":\"text-delta\"}"),
-            part => JsonAssert.Equal(part.Chunk!.Value, "{\"textDelta\":\", \",\"type\":\"text-delta\"}"),
-            part => JsonAssert.Equal(part.Chunk!.Value, "{\"textDelta\":\"World!\",\"type\":\"text-delta\"}"),
+            part =>
+                JsonAssert.Equal(
+                    part.Chunk!.Value,
+                    "{\"textDelta\":\"Hello\",\"type\":\"text-delta\"}"
+                ),
+            part =>
+                JsonAssert.Equal(
+                    part.Chunk!.Value,
+                    "{\"textDelta\":\", \",\"type\":\"text-delta\"}"
+                ),
+            part =>
+                JsonAssert.Equal(
+                    part.Chunk!.Value,
+                    "{\"textDelta\":\"World!\",\"type\":\"text-delta\"}"
+                ),
             part =>
             {
                 Assert.Equal(FinishReason.Stop, Assert.IsType<FinishStreamPart>(part).FinishReason);
-                JsonAssert.Equal(part.Chunk!.Value, "{\"finishReason\":\"stop\",\"type\":\"finish\",\"usage\":{\"completion_tokens\":20,\"prompt_tokens\":10}}");
-            });
+                JsonAssert.Equal(
+                    part.Chunk!.Value,
+                    "{\"finishReason\":\"stop\",\"type\":\"finish\",\"usage\":{\"completion_tokens\":20,\"prompt_tokens\":10}}"
+                );
+            }
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should forward server stream-start warnings exactly once", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should forward server stream-start warnings exactly once",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_forward_server_stream_start_warnings_exactly_once()
     {
         var server = StreamChunks(
             "{\"type\":\"stream-start\",\"warnings\":[{\"type\":\"other\",\"message\":\"from provider\"}]}",
             "{\"type\":\"text-delta\",\"textDelta\":\"Hello\"}",
-            "{\"type\":\"finish\",\"finishReason\":\"stop\",\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":20}}");
+            "{\"type\":\"finish\",\"finishReason\":\"stop\",\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":20}}"
+        );
 
-        var result = await CreateTestModel(server).DoStreamAsync(TestPrompt, CancellationToken.None);
+        var result = await CreateTestModel(server)
+            .DoStreamAsync(TestPrompt, CancellationToken.None);
         var parts = await ReadAll(result);
 
         var start = Assert.Single(parts.OfType<StreamStartStreamPart>());
@@ -57,15 +78,21 @@ public sealed class GatewayLanguageModelDoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should preserve explicit mid-stream provider error metadata", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should preserve explicit mid-stream provider error metadata",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_preserve_explicit_mid_stream_provider_error_metadata()
     {
-        const string error = "{\"message\":\"Upstream provider overloaded\",\"type\":\"provider_overloaded\",\"statusCode\":503,\"isRetryable\":true}";
+        const string error =
+            "{\"message\":\"Upstream provider overloaded\",\"type\":\"provider_overloaded\",\"statusCode\":503,\"isRetryable\":true}";
         var server = StreamChunks(
             "{\"type\":\"text-delta\",\"textDelta\":\"Partial output\"}",
-            "{\"type\":\"error\",\"error\":" + error + "}");
+            "{\"type\":\"error\",\"error\":" + error + "}"
+        );
 
-        var result = await CreateTestModel(server).DoStreamAsync(TestPrompt, CancellationToken.None);
+        var result = await CreateTestModel(server)
+            .DoStreamAsync(TestPrompt, CancellationToken.None);
         var parts = await ReadAll(result);
 
         Assert.Collection(
@@ -79,7 +106,8 @@ public sealed class GatewayLanguageModelDoStreamTests
                 Assert.Equal(503, providerError.StatusCode);
                 Assert.True(providerError.IsRetryable);
                 JsonAssert.Equal(Assert.IsType<JsonElement>(providerError.Data), error);
-            });
+            }
+        );
     }
 
     [Fact]
@@ -96,7 +124,10 @@ public sealed class GatewayLanguageModelDoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should remove abortSignal from the streaming request body", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should remove abortSignal from the streaming request body",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_remove_abortSignal_from_the_streaming_request_body()
     {
         var server = PrepareStreamResponse("Test content");
@@ -108,14 +139,19 @@ public sealed class GatewayLanguageModelDoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should pass abortSignal to fetch when provided for streaming", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should pass abortSignal to fetch when provided for streaming",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_pass_abortSignal_to_fetch_when_provided_for_streaming()
     {
         var server = PrepareStreamResponse("Test content");
         using var source = new CancellationTokenSource();
         server.BeforeRespond = source.Cancel;
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => CreateTestModel(server).DoStreamAsync(TestPrompt, source.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            CreateTestModel(server).DoStreamAsync(TestPrompt, source.Token)
+        );
 
         Assert.Equal(1, server.Calls);
         Assert.True(server.RequestToken.CanBeCanceled);
@@ -126,7 +162,8 @@ public sealed class GatewayLanguageModelDoStreamTests
     [UpstreamTest(
         Prefix + "should not pass abortSignal to fetch when not provided for streaming",
         Coverage = UpstreamCoverage.Covered,
-        Note = "A .NET call always has a token and HttpClient adds its own, so the test checks that the request token is not cancelled.")]
+        Note = "A .NET call always has a token and HttpClient adds its own, so the test checks that the request token is not cancelled."
+    )]
     public async Task Should_not_pass_abortSignal_to_fetch_when_not_provided_for_streaming()
     {
         var server = PrepareStreamResponse("Test content");
@@ -138,7 +175,10 @@ public sealed class GatewayLanguageModelDoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should include o11y headers in the streaming request", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should include o11y headers in the streaming request",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_include_o11y_headers_in_the_streaming_request()
     {
         var server = PrepareStreamResponse("Test content");
@@ -149,7 +189,8 @@ public sealed class GatewayLanguageModelDoStreamTests
             ["ai-o11y-region"] = "iad1",
         };
 
-        await CreateTestModel(server, o11yHeaders).DoStreamAsync(TestPrompt, CancellationToken.None);
+        await CreateTestModel(server, o11yHeaders)
+            .DoStreamAsync(TestPrompt, CancellationToken.None);
 
         foreach (var header in o11yHeaders)
         {
@@ -158,17 +199,23 @@ public sealed class GatewayLanguageModelDoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should convert API call errors to Gateway errors in streaming", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should convert API call errors to Gateway errors in streaming",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_convert_API_call_errors_to_Gateway_errors_in_streaming()
     {
         var server = new GatewayLanguageModelServer
         {
             Status = HttpStatusCode.TooManyRequests,
             ContentType = "application/json",
-            ResponseBody = "{\"error\":{\"message\":\"Rate limit exceeded\",\"type\":\"rate_limit_exceeded\"}}",
+            ResponseBody =
+                "{\"error\":{\"message\":\"Rate limit exceeded\",\"type\":\"rate_limit_exceeded\"}}",
         };
 
-        var error = await Assert.ThrowsAsync<GatewayRateLimitError>(() => CreateTestModel(server).DoStreamAsync(TestPrompt, CancellationToken.None));
+        var error = await Assert.ThrowsAsync<GatewayRateLimitError>(() =>
+            CreateTestModel(server).DoStreamAsync(TestPrompt, CancellationToken.None)
+        );
 
         Assert.Equal("Rate limit exceeded", error.Message);
         Assert.Equal(429, error.StatusCode);
@@ -176,17 +223,23 @@ public sealed class GatewayLanguageModelDoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should handle authentication errors in streaming", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should handle authentication errors in streaming",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_handle_authentication_errors_in_streaming()
     {
         var server = new GatewayLanguageModelServer
         {
             Status = HttpStatusCode.Unauthorized,
             ContentType = "application/json",
-            ResponseBody = "{\"error\":{\"message\":\"Authentication failed for streaming\",\"type\":\"authentication_error\"}}",
+            ResponseBody =
+                "{\"error\":{\"message\":\"Authentication failed for streaming\",\"type\":\"authentication_error\"}}",
         };
 
-        var error = await Assert.ThrowsAsync<GatewayAuthenticationError>(() => CreateTestModel(server).DoStreamAsync(TestPrompt, CancellationToken.None));
+        var error = await Assert.ThrowsAsync<GatewayAuthenticationError>(() =>
+            CreateTestModel(server).DoStreamAsync(TestPrompt, CancellationToken.None)
+        );
 
         Assert.Contains("Invalid API key", error.Message);
         Assert.Contains("vercel.com/d?to=", error.Message);
@@ -195,17 +248,23 @@ public sealed class GatewayLanguageModelDoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should handle invalid request errors in streaming", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should handle invalid request errors in streaming",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_handle_invalid_request_errors_in_streaming()
     {
         var server = new GatewayLanguageModelServer
         {
             Status = HttpStatusCode.BadRequest,
             ContentType = "application/json",
-            ResponseBody = "{\"error\":{\"message\":\"Invalid streaming request\",\"type\":\"invalid_request_error\"}}",
+            ResponseBody =
+                "{\"error\":{\"message\":\"Invalid streaming request\",\"type\":\"invalid_request_error\"}}",
         };
 
-        var error = await Assert.ThrowsAsync<GatewayInvalidRequestError>(() => CreateTestModel(server).DoStreamAsync(TestPrompt, CancellationToken.None));
+        var error = await Assert.ThrowsAsync<GatewayInvalidRequestError>(() =>
+            CreateTestModel(server).DoStreamAsync(TestPrompt, CancellationToken.None)
+        );
 
         Assert.Equal("Invalid streaming request", error.Message);
         Assert.Equal(400, error.StatusCode);
@@ -213,7 +272,10 @@ public sealed class GatewayLanguageModelDoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should handle malformed error responses in streaming", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should handle malformed error responses in streaming",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_handle_malformed_error_responses_in_streaming()
     {
         var server = new GatewayLanguageModelServer
@@ -223,7 +285,9 @@ public sealed class GatewayLanguageModelDoStreamTests
             ResponseBody = "Invalid JSON for streaming",
         };
 
-        var error = await Assert.ThrowsAsync<GatewayResponseError>(() => CreateTestModel(server).DoStreamAsync(TestPrompt, CancellationToken.None));
+        var error = await Assert.ThrowsAsync<GatewayResponseError>(() =>
+            CreateTestModel(server).DoStreamAsync(TestPrompt, CancellationToken.None)
+        );
 
         Assert.Equal(500, error.StatusCode);
         Assert.Equal("response_error", error.Type);

@@ -17,11 +17,17 @@ public sealed class GenerateSystemMessagesTests
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > generate::should allow system messages when allowSystemInMessages is true", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > generate::should allow system messages when allowSystemInMessages is true",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldAllowSystemMessagesWhenAllowSystemInMessagesIsTrue()
     {
         var model = new TestLanguageModel();
-        var agent = new Agent(new AgentOptions { Model = model, AllowSystemInMessages = true }, ToolLoopAgentInstructions.Client());
+        var agent = new Agent(
+            new AgentOptions { Model = model, AllowSystemInMessages = true },
+            ToolLoopAgentInstructions.Client()
+        );
 
         await agent.GenerateAsync(Messages());
 
@@ -30,11 +36,25 @@ public sealed class GenerateSystemMessagesTests
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > generate::should allow prepareCall to return allowSystemInMessages", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > generate::should allow prepareCall to return allowSystemInMessages",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldAllowPrepareCallToReturnAllowSystemInMessages()
     {
         var model = new TestLanguageModel();
-        var agent = new Agent(new AgentOptions { Model = model, PrepareCall = call => { call.AllowSystemInMessages = true; return call; } }, ToolLoopAgentInstructions.Client());
+        var agent = new Agent(
+            new AgentOptions
+            {
+                Model = model,
+                PrepareCall = call =>
+                {
+                    call.AllowSystemInMessages = true;
+                    return call;
+                },
+            },
+            ToolLoopAgentInstructions.Client()
+        );
 
         await agent.GenerateAsync(Messages());
 
@@ -43,14 +63,26 @@ public sealed class GenerateSystemMessagesTests
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > generate::should reject system messages when allowSystemInMessages is not set", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > generate::should reject system messages when allowSystemInMessages is not set",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldRejectSystemMessagesWhenAllowSystemInMessagesIsNotSet()
     {
         var model = new TestLanguageModel();
-        var agent = new Agent(new AgentOptions { Model = model }, ToolLoopAgentInstructions.Client());
+        var agent = new Agent(
+            new AgentOptions { Model = model },
+            ToolLoopAgentInstructions.Client()
+        );
 
-        var exception = await Assert.ThrowsAsync<InvalidPromptException>(() => agent.GenerateAsync(Messages()));
+        var exception = await Assert.ThrowsAsync<InvalidPromptException>(() =>
+            agent.GenerateAsync(Messages())
+        );
 
-        Assert.Contains("system messages are not allowed", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(
+            "system messages are not allowed",
+            exception.Message,
+            StringComparison.OrdinalIgnoreCase
+        );
     }
 }

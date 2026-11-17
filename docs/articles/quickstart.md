@@ -7,15 +7,17 @@ Install `Vercel.AI` and the provider package you call. `OpenAIProvider.Create()`
 ```cs
 var client = new AiClient(GatewayProvider.Create());
 
-var result = await client.GenerateTextAsync(new GenerateTextOptions
-{
-    ModelId = "openai/gpt-6-astra", // use Vercel AI Gateway
-    Prompt = "What is an agent?",
-});
+var result = await client.GenerateTextAsync(
+    new GenerateTextOptions
+    {
+        ModelId = "openai/gpt-6-astra", // use Vercel AI Gateway
+        Prompt = "What is an agent?",
+    }
+);
 
 Console.WriteLine(result.Text);
 ```
-<sup><a href='/examples/GenerateText/Program.cs#L14-L24' title='Snippet source file'>snippet source</a> | <a href='#snippet-generate-text' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/examples/GenerateText/Program.cs#L14-L26' title='Snippet source file'>snippet source</a> | <a href='#snippet-generate-text' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `AiClient` is only required for the high-level helpers. Pass `Model` when you already have an `ILanguageModel`. Pass `ModelId` (`openai/gpt-4.1-mini`) when the Gateway should resolve it.

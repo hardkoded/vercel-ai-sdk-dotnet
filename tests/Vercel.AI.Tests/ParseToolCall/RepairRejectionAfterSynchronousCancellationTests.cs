@@ -16,7 +16,8 @@ public sealed class RepairRejectionAfterSynchronousCancellationTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/generate-text/parse-tool-call.test.ts::parseToolCall > tool call repair > repair rejection after synchronous cancellation::should observe the repair rejection",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldObserveTheRepairRejection()
     {
         var unhandledRejections = new List<Exception>();
@@ -46,7 +47,8 @@ public sealed class RepairRejectionAfterSynchronousCancellationTests
                     await Task.Yield();
                     throw repairError;
                 },
-                cancellationToken: abortController.Token);
+                cancellationToken: abortController.Token
+            );
 
             var exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => result);
             Assert.Equal(abortController.Token, exception.CancellationToken);

@@ -12,7 +12,10 @@ internal static class AmazonBedrockModelSupport
 {
     // Bedrock's Messages schema differs from Anthropic's. Each Claude model declares its support
     // here instead of a separate allowlist.
-    private static readonly Dictionary<string, (bool Strict, bool Native)> ClaudeStructuredOutputCapabilities = new(StringComparer.Ordinal)
+    private static readonly Dictionary<
+        string,
+        (bool Strict, bool Native)
+    > ClaudeStructuredOutputCapabilities = new(StringComparer.Ordinal)
     {
         ["claude-opus-4"] = StrictToolsAndNativeOutput,
         ["claude-sonnet-4"] = StrictToolsAndNativeOutput,
@@ -37,19 +40,22 @@ internal static class AmazonBedrockModelSupport
     private static readonly Regex LegacyClaude = new(
         @"claude-(?:instant|v?2|3)(?=[-.:]|\z)",
         RegexOptions.CultureInvariant,
-        TimeSpan.FromSeconds(1));
+        TimeSpan.FromSeconds(1)
+    );
 
     // Claude 4 minor-version ids historically accept additional suffixes.
     private static readonly Regex Claude4MinorVersion = new(
         @"claude-[a-z]+-4-\d{1,2}(?=[-.:]|\z)",
         RegexOptions.CultureInvariant,
-        TimeSpan.FromSeconds(1));
+        TimeSpan.FromSeconds(1)
+    );
 
     // Other aliases must end at a version, release date, or Bedrock revision.
     private static readonly Regex ClaudeAlias = new(
         @"(claude-[a-z]+-\d+(?:-\d{1,2})?)(?:-\d{8})?(?:-v\d+)?(?=[:.]|\z)",
         RegexOptions.CultureInvariant,
-        TimeSpan.FromSeconds(1));
+        TimeSpan.FromSeconds(1)
+    );
 
     private static (bool Strict, bool Native) StrictToolsAndNativeOutput => (true, true);
 
@@ -60,7 +66,10 @@ internal static class AmazonBedrockModelSupport
     public static bool IsAnthropicModel(string modelId, int? reasoningBudgetTokens)
     {
         return modelId.IndexOf("anthropic", StringComparison.Ordinal) >= 0
-            || (modelId.IndexOf(":application-inference-profile/", StringComparison.Ordinal) >= 0 && reasoningBudgetTokens != null);
+            || (
+                modelId.IndexOf(":application-inference-profile/", StringComparison.Ordinal) >= 0
+                && reasoningBudgetTokens != null
+            );
     }
 
     public static bool SupportsStrictTools(string modelId) => Resolve(modelId).Strict;
@@ -70,19 +79,24 @@ internal static class AmazonBedrockModelSupport
     private static (bool Strict, bool Native) Resolve(string modelId)
     {
         // Non-Claude models, opaque inference profiles and legacy Claude ids keep the request fallback.
-        if (string.IsNullOrEmpty(modelId)
+        if (
+            string.IsNullOrEmpty(modelId)
             || modelId.IndexOf("claude-", StringComparison.Ordinal) < 0
-            || LegacyClaude.IsMatch(modelId))
+            || LegacyClaude.IsMatch(modelId)
+        )
         {
             return StrictToolsAndNativeOutput;
         }
 
-        var canonical = Claude4MinorVersion.Match(modelId) is { Success: true } minor
-            ? minor.Value
-            : ClaudeAlias.Match(modelId) is { Success: true } alias ? alias.Groups[1].Value : null;
+        var canonical =
+            Claude4MinorVersion.Match(modelId) is { Success: true } minor ? minor.Value
+            : ClaudeAlias.Match(modelId) is { Success: true } alias ? alias.Groups[1].Value
+            : null;
 
         // Unknown Claude models get neither strict tools nor native output.
-        return canonical != null && ClaudeStructuredOutputCapabilities.TryGetValue(canonical, out var capabilities)
+        return
+            canonical != null
+            && ClaudeStructuredOutputCapabilities.TryGetValue(canonical, out var capabilities)
             ? capabilities
             : NoStrictToolsOrNativeOutput;
     }

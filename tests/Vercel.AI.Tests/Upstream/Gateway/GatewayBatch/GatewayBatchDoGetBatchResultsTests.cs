@@ -14,19 +14,35 @@ public sealed class GatewayBatchDoGetBatchResultsTests
     [Theory]
     [InlineData(16)]
     [InlineData(4096)]
-    [UpstreamTest("packages/gateway/src/gateway-batch.test.ts::GatewayBatch > doGetBatchResults::applies the factory maxLineBytes setting of %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/gateway/src/gateway-batch.test.ts::GatewayBatch > doGetBatchResults::applies the factory maxLineBytes setting of %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Applies_the_factory_maxLineBytes_setting(int maxLineBytes)
     {
-        var handler = new RoutedHandler()
-            .Add("https://api.test.com/batch/results", "{\"type\":\"text\",\"id\":\"req-1\",\"status\":\"succeeded\",\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"pong 1\"}],\"finishReason\":{\"unified\":\"stop\"},\"response\":{\"modelId\":\"openai/gpt-5.6-luna\",\"timestamp\":\"2026-08-18T00:00:00.000Z\"},\"usage\":{\"inputTokens\":{\"total\":4,\"noCache\":4},\"outputTokens\":{\"total\":2,\"text\":2}},\"warnings\":[]}}\n");
-        var provider = GatewayProvider.Create(new GatewayOptions
-        {
-            ApiKey = "test-api-key",
-            BaseUrl = "https://api.test.com",
-            BatchResultDownloads = new BatchResultDownloads { MaxLineBytes = maxLineBytes },
-        }, handler);
+        var handler = new RoutedHandler().Add(
+            "https://api.test.com/batch/results",
+            "{\"type\":\"text\",\"id\":\"req-1\",\"status\":\"succeeded\",\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"pong 1\"}],\"finishReason\":{\"unified\":\"stop\"},\"response\":{\"modelId\":\"openai/gpt-5.6-luna\",\"timestamp\":\"2026-08-18T00:00:00.000Z\"},\"usage\":{\"inputTokens\":{\"total\":4,\"noCache\":4},\"outputTokens\":{\"total\":2,\"text\":2}},\"warnings\":[]}}\n"
+        );
+        var provider = GatewayProvider.Create(
+            new GatewayOptions
+            {
+                ApiKey = "test-api-key",
+                BaseUrl = "https://api.test.com",
+                BatchResultDownloads = new BatchResultDownloads { MaxLineBytes = maxLineBytes },
+            },
+            handler
+        );
         var batch = provider.ExperimentalBatch()!;
-        var stream = await batch.DoGetResultsAsync(new BatchOperationCall("job_123", null, new Dictionary<string, string>(), CancellationToken.None), CancellationToken.None);
+        var stream = await batch.DoGetResultsAsync(
+            new BatchOperationCall(
+                "job_123",
+                null,
+                new Dictionary<string, string>(),
+                CancellationToken.None
+            ),
+            CancellationToken.None
+        );
         var results = stream.ToListAsync().AsTask();
         if (maxLineBytes == 16)
         {

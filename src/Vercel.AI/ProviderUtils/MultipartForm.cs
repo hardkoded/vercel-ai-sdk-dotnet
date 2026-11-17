@@ -24,9 +24,17 @@ internal static class MultipartForm
     }
 
     /// <summary>Adds a file part with a quoted <c>name</c> and <c>filename</c>.</summary>
-    public static void AddFile(MultipartFormDataContent form, HttpContent content, string name, string fileName)
+    public static void AddFile(
+        MultipartFormDataContent form,
+        HttpContent content,
+        string name,
+        string fileName
+    )
     {
         form.Add(content);
-        content.Headers.TryAddWithoutValidation("Content-Disposition", "form-data; name=" + Quote(name) + "; filename=" + Quote(fileName));
+        content.Headers.TryAddWithoutValidation(
+            "Content-Disposition",
+            "form-data; name=" + Quote(name) + "; filename=" + Quote(fileName)
+        );
     }
 }

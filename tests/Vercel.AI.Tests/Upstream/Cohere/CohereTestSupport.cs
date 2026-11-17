@@ -18,11 +18,19 @@ internal static class CohereTestSupport
     {
         return new LanguageModelCallOptions
         {
-            Prompt = new ModelMessage[] { new SystemModelMessage("you are a friendly bot!"), new UserModelMessage("Hello") },
+            Prompt = new ModelMessage[]
+            {
+                new SystemModelMessage("you are a friendly bot!"),
+                new UserModelMessage("Hello"),
+            },
         };
     }
 
-    public static ILanguageModel Model(ParityHandler handler, string modelId = "command-r-plus", Func<string>? generateId = null)
+    public static ILanguageModel Model(
+        ParityHandler handler,
+        string modelId = "command-r-plus",
+        Func<string>? generateId = null
+    )
     {
         var options = new CohereOptions { ApiKey = "test-api-key", GenerateId = generateId };
         return CohereProvider.Create(options, handler).LanguageModel(modelId);
@@ -40,7 +48,13 @@ internal static class CohereTestSupport
 
     public static ParityHandler ChunksFixture(string name)
     {
-        return ChunkLines(File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", name + ".chunks.txt")).Where(line => line.Trim().Length > 0).ToArray());
+        return ChunkLines(
+            File.ReadAllLines(
+                    Path.Combine(AppContext.BaseDirectory, "Fixtures", name + ".chunks.txt")
+                )
+                .Where(line => line.Trim().Length > 0)
+                .ToArray()
+        );
     }
 
     // Each line becomes one SSE event named after its type, like the Cohere API sends them.
@@ -49,14 +63,21 @@ internal static class CohereTestSupport
         var sse = new StringBuilder();
         foreach (var line in lines)
         {
-            sse.Append("event: ").Append(JsonNode.Parse(line)!["type"]!.GetValue<string>()).Append("\ndata: ").Append(line).Append("\n\n");
+            sse.Append("event: ")
+                .Append(JsonNode.Parse(line)!["type"]!.GetValue<string>())
+                .Append("\ndata: ")
+                .Append(line)
+                .Append("\n\n");
         }
 
         var bytes = Encoding.UTF8.GetBytes(sse.ToString());
         return new ParityHandler(_ => ParityHandler.Bytes(bytes, "text/event-stream"));
     }
 
-    public static async Task<List<LanguageModelStreamPart>> Stream(ILanguageModel model, LanguageModelCallOptions options)
+    public static async Task<List<LanguageModelStreamPart>> Stream(
+        ILanguageModel model,
+        LanguageModelCallOptions options
+    )
     {
         return await UpstreamChat.Read(await model.DoStreamAsync(options, CancellationToken.None));
     }
@@ -72,7 +93,12 @@ internal static class CohereTestSupport
         return JsonSerializer.Deserialize<JsonElement>(json);
     }
 
-    public static void AssertSource(LanguageModelStreamPart part, string id, string title, string metadataJson)
+    public static void AssertSource(
+        LanguageModelStreamPart part,
+        string id,
+        string title,
+        string metadataJson
+    )
     {
         var source = Assert.IsType<DocumentSourceStreamPart>(part);
         Assert.Equal(id, source.Id);
@@ -81,7 +107,12 @@ internal static class CohereTestSupport
         JsonAssert.Equal(source.ProviderMetadata!.Value, metadataJson);
     }
 
-    public static void AssertSource(GeneratedContent part, string id, string title, string metadataJson)
+    public static void AssertSource(
+        GeneratedContent part,
+        string id,
+        string title,
+        string metadataJson
+    )
     {
         var source = Assert.IsType<GeneratedDocumentSource>(part);
         Assert.Equal(id, source.Id);

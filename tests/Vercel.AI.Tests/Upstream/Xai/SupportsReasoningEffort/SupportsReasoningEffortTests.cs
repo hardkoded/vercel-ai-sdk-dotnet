@@ -9,7 +9,8 @@ namespace Vercel.AI.Tests.Upstream.Xai.SupportsReasoningEffort;
 /// <summary>Port of <c>supports-reasoning-effort.test.ts</c> &gt; <c>supportsReasoningEffort</c>.</summary>
 public sealed class SupportsReasoningEffortTests
 {
-    private const string Prefix = "packages/xai/src/supports-reasoning-effort.test.ts::supportsReasoningEffort::";
+    private const string Prefix =
+        "packages/xai/src/supports-reasoning-effort.test.ts::supportsReasoningEffort::";
 
     [Theory]
     [InlineData("grok-4.3")]

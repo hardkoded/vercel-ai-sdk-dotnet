@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <Description>Edits a video, then applies two more edits to the result concurrently.</Description>
-  </PropertyGroup>
+    <PropertyGroup>
+        <Description>Edits a video, then applies two more edits to the result concurrently.</Description>
+    </PropertyGroup>
 </Project>

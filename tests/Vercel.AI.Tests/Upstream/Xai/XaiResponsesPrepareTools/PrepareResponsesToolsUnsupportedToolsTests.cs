@@ -14,10 +14,16 @@ public sealed class PrepareResponsesToolsUnsupportedToolsTests
     private const string Prefix = TestFile + " > unsupported tools::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should warn about unsupported provider-defined tools", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should warn about unsupported provider-defined tools",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_warn_about_unsupported_provider_defined_tools()
     {
-        var result = XaiResponsesTools.Prepare(new[] { ProviderTool("unsupported.tool", "unsupported") }, null);
+        var result = XaiResponsesTools.Prepare(
+            new[] { ProviderTool("unsupported.tool", "unsupported") },
+            null
+        );
 
         var warning = Assert.Single(result.Warnings);
         Assert.Equal("unsupported", warning.Type);

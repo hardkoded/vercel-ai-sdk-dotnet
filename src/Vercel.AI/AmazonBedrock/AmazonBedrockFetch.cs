@@ -13,7 +13,12 @@ namespace Vercel.AI.AmazonBedrock;
 public sealed class AmazonBedrockCredentials
 {
     /// <summary>Creates credentials.</summary>
-    public AmazonBedrockCredentials(string region, string accessKeyId, string secretAccessKey, string? sessionToken = null)
+    public AmazonBedrockCredentials(
+        string region,
+        string accessKeyId,
+        string secretAccessKey,
+        string? sessionToken = null
+    )
     {
         Region = region ?? string.Empty;
         AccessKeyId = accessKeyId ?? string.Empty;
@@ -38,7 +43,13 @@ public sealed class AmazonBedrockCredentials
 public sealed class AmazonBedrockPreparedCall
 {
     /// <summary>Creates a prepared call.</summary>
-    public AmazonBedrockPreparedCall(string method, string url, string? body, IReadOnlyDictionary<string, string> headers, bool signed)
+    public AmazonBedrockPreparedCall(
+        string method,
+        string url,
+        string? body,
+        IReadOnlyDictionary<string, string> headers,
+        bool signed
+    )
     {
         Method = method;
         Url = url;
@@ -73,7 +84,8 @@ public static class AmazonBedrockFetch
     public const string DefaultService = "bedrock";
 
     /// <summary>User agent sent on every request. The runtime segment is dotnet.</summary>
-    public static readonly string UserAgent = "ai-sdk-amazon-bedrock/" + AiSdkVersion.Version + " runtime/dotnet";
+    public static readonly string UserAgent =
+        "ai-sdk-amazon-bedrock/" + AiSdkVersion.Version + " runtime/dotnet";
 
     /// <summary>
     /// Prepares a call. Non-POST requests and POST requests without a body are not signed.
@@ -89,7 +101,8 @@ public static class AmazonBedrockFetch
         IReadOnlyDictionary<string, string?>? requestHeaders,
         AmazonBedrockCredentials credentials,
         string service = DefaultService,
-        DateTimeOffset? utcNow = null)
+        DateTimeOffset? utcNow = null
+    )
     {
         var verb = string.IsNullOrEmpty(method) ? "GET" : method!.ToUpperInvariant();
         var merged = Merge(headers, requestHeaders);
@@ -122,7 +135,8 @@ public static class AmazonBedrockFetch
         string url,
         string? method,
         string? body,
-        IReadOnlyDictionary<string, string?>? headers)
+        IReadOnlyDictionary<string, string?>? headers
+    )
     {
         var merged = new Dictionary<string, string>(StringComparer.Ordinal);
         Copy(merged, headers);
@@ -133,9 +147,14 @@ public static class AmazonBedrockFetch
 
     // Appends the SDK user agent to a caller-supplied one.
     private static string WithUserAgent(Dictionary<string, string> headers) =>
-        headers.TryGetValue("user-agent", out var existing) ? existing + " " + UserAgent : UserAgent;
+        headers.TryGetValue("user-agent", out var existing)
+            ? existing + " " + UserAgent
+            : UserAgent;
 
-    private static Dictionary<string, string> Merge(IReadOnlyDictionary<string, string?>? headers, IReadOnlyDictionary<string, string?>? requestHeaders)
+    private static Dictionary<string, string> Merge(
+        IReadOnlyDictionary<string, string?>? headers,
+        IReadOnlyDictionary<string, string?>? requestHeaders
+    )
     {
         var merged = new Dictionary<string, string>(StringComparer.Ordinal);
         Copy(merged, requestHeaders);
@@ -143,7 +162,10 @@ public static class AmazonBedrockFetch
         return merged;
     }
 
-    private static void Copy(Dictionary<string, string> target, IReadOnlyDictionary<string, string?>? headers)
+    private static void Copy(
+        Dictionary<string, string> target,
+        IReadOnlyDictionary<string, string?>? headers
+    )
     {
         if (headers == null)
         {
@@ -161,17 +183,37 @@ public static class AmazonBedrockFetch
         }
     }
 
-    private static void Sign(string url, string body, Dictionary<string, string> headers, AmazonBedrockCredentials credentials, string service, DateTimeOffset utcNow)
+    private static void Sign(
+        string url,
+        string body,
+        Dictionary<string, string> headers,
+        AmazonBedrockCredentials credentials,
+        string service,
+        DateTimeOffset utcNow
+    )
     {
         var uri = new Uri(url);
         headers["host"] = AwsSigV4.HostHeader(uri);
-        headers["x-amz-date"] = utcNow.UtcDateTime.ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture);
+        headers["x-amz-date"] = utcNow.UtcDateTime.ToString(
+            "yyyyMMdd'T'HHmmss'Z'",
+            CultureInfo.InvariantCulture
+        );
         if (!string.IsNullOrEmpty(credentials.SessionToken))
         {
             headers["x-amz-security-token"] = credentials.SessionToken!;
         }
 
-        headers["authorization"] = AwsSigV4.Authorize("POST", uri, headers, Encoding.UTF8.GetBytes(body), credentials.Region, service, credentials.AccessKeyId, credentials.SecretAccessKey, utcNow);
+        headers["authorization"] = AwsSigV4.Authorize(
+            "POST",
+            uri,
+            headers,
+            Encoding.UTF8.GetBytes(body),
+            credentials.Region,
+            service,
+            credentials.AccessKeyId,
+            credentials.SecretAccessKey,
+            utcNow
+        );
     }
 }
 
@@ -184,7 +226,10 @@ public sealed class AmazonBedrockSigV4Fetch
     private readonly string _service;
 
     /// <summary>Creates a wrapper that signs for <paramref name="service"/>.</summary>
-    public AmazonBedrockSigV4Fetch(Func<CancellationToken, Task<AmazonBedrockCredentials>> getCredentials, string service = AmazonBedrockFetch.DefaultService)
+    public AmazonBedrockSigV4Fetch(
+        Func<CancellationToken, Task<AmazonBedrockCredentials>> getCredentials,
+        string service = AmazonBedrockFetch.DefaultService
+    )
     {
         _getCredentials = getCredentials ?? throw new ArgumentNullException(nameof(getCredentials));
         _service = service;
@@ -205,14 +250,26 @@ public sealed class AmazonBedrockSigV4Fetch
         string? method,
         string? body,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var verb = string.IsNullOrEmpty(method) ? "GET" : method!.ToUpperInvariant();
         var signs = verb == "POST" && !string.IsNullOrEmpty(body);
         var credentials = signs
             ? await _getCredentials(cancellationToken).ConfigureAwait(false)
             : new AmazonBedrockCredentials(string.Empty, string.Empty, string.Empty);
-        var prepared = AmazonBedrockFetch.Prepare(url, verb, body, null, null, headers, null, credentials, _service, UtcNow?.Invoke());
+        var prepared = AmazonBedrockFetch.Prepare(
+            url,
+            verb,
+            body,
+            null,
+            null,
+            headers,
+            null,
+            credentials,
+            _service,
+            UtcNow?.Invoke()
+        );
         var transport = Transport;
         return transport == null ? prepared : transport(prepared);
     }
@@ -235,7 +292,12 @@ public sealed class AmazonBedrockApiKeyFetch
     public Func<AmazonBedrockPreparedCall, AmazonBedrockPreparedCall>? Transport { get; set; }
 
     /// <summary>Applies the API key and user-agent, then invokes <see cref="Transport"/> if one is set.</summary>
-    public AmazonBedrockPreparedCall Send(string url, string? method, string? body, IReadOnlyDictionary<string, string?>? headers)
+    public AmazonBedrockPreparedCall Send(
+        string url,
+        string? method,
+        string? body,
+        IReadOnlyDictionary<string, string?>? headers
+    )
     {
         var prepared = AmazonBedrockFetch.PrepareApiKey(_apiKey, url, method, body, headers);
         var transport = Transport;

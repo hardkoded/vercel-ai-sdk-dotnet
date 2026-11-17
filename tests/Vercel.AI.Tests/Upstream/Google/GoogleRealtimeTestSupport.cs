@@ -37,7 +37,8 @@ internal static class GoogleRealtimeTestSupport
         string? arguments = null,
         string? transcript = null,
         string? rawType = null,
-        string? status = null)
+        string? status = null
+    )
     {
         Assert.Equal(type, actual.Type);
         Assert.Equal(responseId, actual.ResponseId);
@@ -55,9 +56,16 @@ internal static class GoogleRealtimeTestSupport
     }
 
     /// <summary>A realtime model built from the provider, as <c>provider.RealtimeModel</c> does.</summary>
-    public static global::Vercel.AI.Google.GoogleRealtimeModel CreateModel(RecordingHandler handler, string baseUrl = "https://generativelanguage.googleapis.com/v1beta", string modelId = "gemini-2.0-flash-live-001")
+    public static global::Vercel.AI.Google.GoogleRealtimeModel CreateModel(
+        RecordingHandler handler,
+        string baseUrl = "https://generativelanguage.googleapis.com/v1beta",
+        string modelId = "gemini-2.0-flash-live-001"
+    )
     {
-        var provider = GoogleUpstream.Client(handler, new GoogleOptions { ApiKey = "test-key", BaseUrl = baseUrl });
+        var provider = GoogleUpstream.Client(
+            handler,
+            new GoogleOptions { ApiKey = "test-key", BaseUrl = baseUrl }
+        );
         return (global::Vercel.AI.Google.GoogleRealtimeModel)provider.RealtimeModel(modelId);
     }
 
@@ -65,15 +73,26 @@ internal static class GoogleRealtimeTestSupport
     public static global::Vercel.AI.Google.GoogleRealtimeModel CreateModel(
         string modelId,
         Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> headers,
-        string baseUrl = "https://generativelanguage.googleapis.com/v1beta")
+        string baseUrl = "https://generativelanguage.googleapis.com/v1beta"
+    )
     {
-        return new global::Vercel.AI.Google.GoogleRealtimeModel(modelId, new GoogleRealtimeModelConfig("google.realtime", baseUrl, headers));
+        return new global::Vercel.AI.Google.GoogleRealtimeModel(
+            modelId,
+            new GoogleRealtimeModelConfig("google.realtime", baseUrl, headers)
+        );
     }
 
     /// <summary>Headers that carry the Gemini API key.</summary>
-    public static Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> ApiKeyHeaders(params (string Name, string? Value)[] extra)
+    public static Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> ApiKeyHeaders(
+        params (string Name, string? Value)[] extra
+    )
     {
-        IReadOnlyDictionary<string, string?> headers = new Dictionary<string, string?>(extra.ToDictionary(pair => pair.Name, pair => pair.Value)) { ["x-goog-api-key"] = "test-key" };
+        IReadOnlyDictionary<string, string?> headers = new Dictionary<string, string?>(
+            extra.ToDictionary(pair => pair.Name, pair => pair.Value)
+        )
+        {
+            ["x-goog-api-key"] = "test-key",
+        };
         return _ => Task.FromResult(headers);
     }
 }

@@ -14,10 +14,12 @@ internal static class HeyGenError
         try
         {
             using var document = JsonDocument.Parse(body ?? string.Empty);
-            if (document.RootElement.ValueKind != JsonValueKind.Object
+            if (
+                document.RootElement.ValueKind != JsonValueKind.Object
                 || !document.RootElement.TryGetProperty("error", out var error)
                 || error.ValueKind != JsonValueKind.Object
-                || Read(error, "message") is not { } message)
+                || Read(error, "message") is not { } message
+            )
             {
                 return null;
             }
@@ -34,6 +36,9 @@ internal static class HeyGenError
 
     private static string? Read(JsonElement element, string name)
     {
-        return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        return
+            element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
     }
 }

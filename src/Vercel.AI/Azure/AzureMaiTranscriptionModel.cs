@@ -39,7 +39,8 @@ internal sealed class AzureMaiTranscriptionModel
         Func<Uri> url,
         Func<Dictionary<string, string?>> headers,
         WebSocketFactory? webSocket = null,
-        WebSocketFactory? nativeWebSocket = null)
+        WebSocketFactory? nativeWebSocket = null
+    )
     {
         ModelId = modelId;
         _url = url;
@@ -59,14 +60,18 @@ internal sealed class AzureMaiTranscriptionModel
     {
         throw new UnsupportedFunctionalityException(
             "file transcription with " + ModelId,
-            "'file transcription with " + ModelId + " (use streaming transcription)' functionality not supported.");
+            "'file transcription with "
+                + ModelId
+                + " (use streaming transcription)' functionality not supported."
+        );
     }
 
     /// <summary>Starts a streaming transcription. Maps to <c>doStream</c>.</summary>
     public Task<TranscriptionStreamStart?> DoStreamAsync(
         TranscriptionStreamCall call,
         AzureTranscriptionModelMaiOptions maiOptions,
-        IReadOnlyList<OperationWarning> warnings)
+        IReadOnlyList<OperationWarning> warnings
+    )
     {
         var timestamp = DateTime.UtcNow;
         var type = call.InputAudioFormat.Type;
@@ -76,8 +81,15 @@ internal sealed class AzureMaiTranscriptionModel
             throw new InvalidArgumentException(
                 "inputAudioFormat",
                 call.InputAudioFormat,
-                "MAI streaming transcription requires 16-bit mono PCM (audio/pcm) at 16000 or 24000 Hz, got " + type
-                + (call.InputAudioFormat.Rate != null ? " at " + rate.ToString(CultureInfo.InvariantCulture) + " Hz" : string.Empty) + ".");
+                "MAI streaming transcription requires 16-bit mono PCM (audio/pcm) at 16000 or 24000 Hz, got "
+                    + type
+                    + (
+                        call.InputAudioFormat.Rate != null
+                            ? " at " + rate.ToString(CultureInfo.InvariantCulture) + " Hz"
+                            : string.Empty
+                    )
+                    + "."
+            );
         }
 
         var transcription = new JsonObject { ["model"] = ModelId };
@@ -113,30 +125,61 @@ internal sealed class AzureMaiTranscriptionModel
         }
 
         // Native WebSocket constructors drop headers, so bearer auth would be lost.
-        if (_webSocket == null && headers.Any(pair => string.Equals(pair.Key, "authorization", StringComparison.OrdinalIgnoreCase) && pair.Value != null))
+        if (
+            _webSocket == null
+            && headers.Any(pair =>
+                string.Equals(pair.Key, "authorization", StringComparison.OrdinalIgnoreCase)
+                && pair.Value != null
+            )
+        )
         {
             throw new InvalidArgumentException(
                 "webSocket",
                 null,
-                "MAI streaming transcription with Microsoft Entra ID (tokenProvider) or an Authorization header requires a custom webSocket implementation, because the native WebSocket cannot send headers.");
+                "MAI streaming transcription with Microsoft Entra ID (tokenProvider) or an Authorization header requires a custom webSocket implementation, because the native WebSocket cannot send headers."
+            );
         }
 
-        var connection = GetConnection(WebSocketUtils.ToWebSocketUrl(_url()), headers, _webSocket != null);
+        var connection = GetConnection(
+            WebSocketUtils.ToWebSocketUrl(_url()),
+            headers,
+            _webSocket != null
+        );
         var secrets = headers
-            .Where(pair => pair.Value is { Length: > 0 } && (string.Equals(pair.Key, "api-key", StringComparison.OrdinalIgnoreCase) || string.Equals(pair.Key, "authorization", StringComparison.OrdinalIgnoreCase)))
+            .Where(pair =>
+                pair.Value is { Length: > 0 }
+                && (
+                    string.Equals(pair.Key, "api-key", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(pair.Key, "authorization", StringComparison.OrdinalIgnoreCase)
+                )
+            )
             .SelectMany(pair => new[] { pair.Value!, Uri.EscapeDataString(pair.Value!) })
             .Distinct()
             .ToArray();
-        var session = new Session(call, sessionUpdate, (int)rate * 2, maiOptions.Language, warnings, secrets);
+        var session = new Session(
+            call,
+            sessionUpdate,
+            (int)rate * 2,
+            maiOptions.Language,
+            warnings,
+            secrets
+        );
         session.Start(connection.Url, connection.Headers, _webSocket ?? _nativeWebSocket);
-        return Task.FromResult<TranscriptionStreamStart?>(new TranscriptionStreamStart(
-            new ModelPartStream(session.Queue, session.Cancel),
-            new ProviderResponse(timestamp: timestamp, modelId: ModelId),
-            new ProviderRequest(sessionUpdate.ToJsonString())));
+        return Task.FromResult<TranscriptionStreamStart?>(
+            new TranscriptionStreamStart(
+                new ModelPartStream(session.Queue, session.Cancel),
+                new ProviderResponse(timestamp: timestamp, modelId: ModelId),
+                new ProviderRequest(sessionUpdate.ToJsonString())
+            )
+        );
     }
 
     // Native WebSocket constructors cannot send headers, so the key moves to the `api-key` query parameter that MAI also accepts.
-    internal static (Uri Url, Dictionary<string, string?> Headers) GetConnection(Uri url, IReadOnlyDictionary<string, string?> headers, bool supportsHeaders)
+    internal static (Uri Url, Dictionary<string, string?> Headers) GetConnection(
+        Uri url,
+        IReadOnlyDictionary<string, string?> headers,
+        bool supportsHeaders
+    )
     {
         if (supportsHeaders)
         {
@@ -157,7 +200,8 @@ internal sealed class AzureMaiTranscriptionModel
             {
                 if (pair.Value != null)
                 {
-                    var query = builder.Query.TrimStart('?')
+                    var query = builder
+                        .Query.TrimStart('?')
                         .Split(new[] { '&' }, StringSplitOptions.RemoveEmptyEntries)
                         .Where(part => !part.StartsWith("api-key=", StringComparison.Ordinal))
                         .ToList();
@@ -192,7 +236,14 @@ internal sealed class AzureMaiTranscriptionModel
         private bool _committed;
         private long _audioBytes;
 
-        public Session(TranscriptionStreamCall call, JsonObject sessionUpdate, int bytesPerSecond, string? language, IReadOnlyList<OperationWarning> warnings, string[] secrets)
+        public Session(
+            TranscriptionStreamCall call,
+            JsonObject sessionUpdate,
+            int bytesPerSecond,
+            string? language,
+            IReadOnlyList<OperationWarning> warnings,
+            string[] secrets
+        )
         {
             _secrets = secrets;
             _call = call;
@@ -204,24 +255,51 @@ internal sealed class AzureMaiTranscriptionModel
 
         public PartQueue<ModelStreamPart> Queue { get; } = new PartQueue<ModelStreamPart>();
 
-        public void Start(Uri url, IReadOnlyDictionary<string, string?> headers, WebSocketFactory? webSocket)
+        public void Start(
+            Uri url,
+            IReadOnlyDictionary<string, string?> headers,
+            WebSocketFactory? webSocket
+        )
         {
-            _connection = ConnectToWebSocket.Connect(new ConnectToWebSocketOptions
-            {
-                Url = url,
-                Headers = headers,
-                WebSocket = webSocket,
-                AbortSignal = _call.CancellationToken,
-                AbortReason = _call.AbortReason,
-                OnAbort = FinishWithError,
-                OnProcessingError = error => FinishWithError(Redact(error)),
-                OnOpen = _ => Queue.Enqueue(new ModelStreamPart { Type = "stream-start", Warnings = _warnings }),
-                OnMessageText = OnMessageTextAsync,
-                OnSocketError = () => FinishWithError(new AiSdkException("Azure MAI transcription WebSocket error")),
-                OnClose = (code, reason) => FinishWithError(new AiSdkException(
-                    "Azure MAI transcription connection closed before the transcript completed"
-                    + (code != null ? " (code " + code.Value.ToString(CultureInfo.InvariantCulture) + (string.IsNullOrEmpty(reason) ? string.Empty : ": " + RedactText(reason)) + ")" : string.Empty))),
-            });
+            _connection = ConnectToWebSocket.Connect(
+                new ConnectToWebSocketOptions
+                {
+                    Url = url,
+                    Headers = headers,
+                    WebSocket = webSocket,
+                    AbortSignal = _call.CancellationToken,
+                    AbortReason = _call.AbortReason,
+                    OnAbort = FinishWithError,
+                    OnProcessingError = error => FinishWithError(Redact(error)),
+                    OnOpen = _ =>
+                        Queue.Enqueue(
+                            new ModelStreamPart { Type = "stream-start", Warnings = _warnings }
+                        ),
+                    OnMessageText = OnMessageTextAsync,
+                    OnSocketError = () =>
+                        FinishWithError(
+                            new AiSdkException("Azure MAI transcription WebSocket error")
+                        ),
+                    OnClose = (code, reason) =>
+                        FinishWithError(
+                            new AiSdkException(
+                                "Azure MAI transcription connection closed before the transcript completed"
+                                    + (
+                                        code != null
+                                            ? " (code "
+                                                + code.Value.ToString(CultureInfo.InvariantCulture)
+                                                + (
+                                                    string.IsNullOrEmpty(reason)
+                                                        ? string.Empty
+                                                        : ": " + RedactText(reason)
+                                                )
+                                                + ")"
+                                            : string.Empty
+                                    )
+                            )
+                        ),
+                }
+            );
         }
 
         // The key can travel in the WebSocket URL, so error text from the socket or the server must not echo it.
@@ -243,7 +321,9 @@ internal sealed class AzureMaiTranscriptionModel
             }
 
             var message = RedactText(error.Message);
-            return string.Equals(message, error.Message, StringComparison.Ordinal) ? error : new AiSdkException(message);
+            return string.Equals(message, error.Message, StringComparison.Ordinal)
+                ? error
+                : new AiSdkException(message);
         }
 
         public void Cancel()
@@ -327,14 +407,19 @@ internal sealed class AzureMaiTranscriptionModel
                 return;
             }
 
-            Queue.Enqueue(new ModelStreamPart
-            {
-                Type = "finish",
-                Text = text,
-                Segments = Array.Empty<TranscriptSegment>(),
-                Language = _language,
-                DurationInSeconds = Interlocked.Read(ref _audioBytes) > 0 ? (double)Interlocked.Read(ref _audioBytes) / _bytesPerSecond : null,
-            });
+            Queue.Enqueue(
+                new ModelStreamPart
+                {
+                    Type = "finish",
+                    Text = text,
+                    Segments = Array.Empty<TranscriptSegment>(),
+                    Language = _language,
+                    DurationInSeconds =
+                        Interlocked.Read(ref _audioBytes) > 0
+                            ? (double)Interlocked.Read(ref _audioBytes) / _bytesPerSecond
+                            : null,
+                }
+            );
             Queue.Complete(null);
             Cleanup(1000);
         }
@@ -351,7 +436,9 @@ internal sealed class AzureMaiTranscriptionModel
             {
                 while (true)
                 {
-                    var bytes = await reader.ReadAsync(_call.CancellationToken).ConfigureAwait(false);
+                    var bytes = await reader
+                        .ReadAsync(_call.CancellationToken)
+                        .ConfigureAwait(false);
                     if (bytes == null || IsFinished)
                     {
                         break;
@@ -363,8 +450,19 @@ internal sealed class AzureMaiTranscriptionModel
                     }
 
                     Interlocked.Add(ref _audioBytes, bytes.Length);
-                    socket.Send(new JsonObject { ["type"] = "input_audio_buffer.append", ["audio"] = Convert.ToBase64String(bytes) }.ToJsonString());
-                    await WebSocketUtils.WaitForWebSocketBufferDrainAsync(socket, cancellationToken: _call.CancellationToken).ConfigureAwait(false);
+                    socket.Send(
+                        new JsonObject
+                        {
+                            ["type"] = "input_audio_buffer.append",
+                            ["audio"] = Convert.ToBase64String(bytes),
+                        }.ToJsonString()
+                    );
+                    await WebSocketUtils
+                        .WaitForWebSocketBufferDrainAsync(
+                            socket,
+                            cancellationToken: _call.CancellationToken
+                        )
+                        .ConfigureAwait(false);
                 }
             }
             finally
@@ -438,7 +536,11 @@ internal sealed class AzureMaiTranscriptionModel
                         _audioStarted = true;
                     }
 
-                    _ = SendAudioAsync(socket).ContinueWith(task => FinishWithError(task.Exception!.GetBaseException()), TaskContinuationOptions.OnlyOnFaulted);
+                    _ = SendAudioAsync(socket)
+                        .ContinueWith(
+                            task => FinishWithError(task.Exception!.GetBaseException()),
+                            TaskContinuationOptions.OnlyOnFaulted
+                        );
                     break;
 
                 case "conversation.item.input_audio_transcription.delta":
@@ -448,12 +550,26 @@ internal sealed class AzureMaiTranscriptionModel
                         _deltas.Append(delta);
                     }
 
-                    Queue.Enqueue(new ModelStreamPart { Type = "transcript-delta", Id = id, Delta = delta });
+                    Queue.Enqueue(
+                        new ModelStreamPart
+                        {
+                            Type = "transcript-delta",
+                            Id = id,
+                            Delta = delta,
+                        }
+                    );
                     break;
 
                 // MAI-specific: the provisional text after the latest delta.
                 case "conversation.item.input_audio_transcription.intermediate":
-                    Queue.Enqueue(new ModelStreamPart { Type = "transcript-partial", Id = id, Text = ReadString(root, "intermediate") ?? string.Empty });
+                    Queue.Enqueue(
+                        new ModelStreamPart
+                        {
+                            Type = "transcript-partial",
+                            Id = id,
+                            Text = ReadString(root, "intermediate") ?? string.Empty,
+                        }
+                    );
                     break;
 
                 case "conversation.item.input_audio_transcription.completed":
@@ -466,7 +582,14 @@ internal sealed class AzureMaiTranscriptionModel
                     }
 
                     var transcript = ReadString(root, "transcript") ?? accumulated;
-                    Queue.Enqueue(new ModelStreamPart { Type = "transcript-final", Id = id, Text = transcript });
+                    Queue.Enqueue(
+                        new ModelStreamPart
+                        {
+                            Type = "transcript-final",
+                            Id = id,
+                            Text = transcript,
+                        }
+                    );
                     if (committed)
                     {
                         Finish(transcript);
@@ -478,8 +601,14 @@ internal sealed class AzureMaiTranscriptionModel
                 case "error":
                     root.TryGetProperty("error", out var error);
                     var code = ReadString(error, "code");
-                    FinishWithError(new AiSdkException(
-                        "Azure MAI transcription error" + (code != null ? " (" + RedactText(code) + ")" : string.Empty) + ": " + RedactText(ReadString(error, "message") ?? "unknown error")));
+                    FinishWithError(
+                        new AiSdkException(
+                            "Azure MAI transcription error"
+                                + (code != null ? " (" + RedactText(code) + ")" : string.Empty)
+                                + ": "
+                                + RedactText(ReadString(error, "message") ?? "unknown error")
+                        )
+                    );
                     break;
             }
 
@@ -488,7 +617,10 @@ internal sealed class AzureMaiTranscriptionModel
 
         private static string? ReadString(JsonElement element, string name)
         {
-            return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            return
+                element.ValueKind == JsonValueKind.Object
+                && element.TryGetProperty(name, out var value)
+                && value.ValueKind == JsonValueKind.String
                 ? value.GetString()
                 : null;
         }

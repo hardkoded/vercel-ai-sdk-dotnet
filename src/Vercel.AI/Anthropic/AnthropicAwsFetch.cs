@@ -14,7 +14,12 @@ namespace Vercel.AI.Anthropic;
 public sealed class AnthropicAwsCredentials
 {
     /// <summary>Creates credentials.</summary>
-    public AnthropicAwsCredentials(string region, string accessKeyId, string secretAccessKey, string? sessionToken = null)
+    public AnthropicAwsCredentials(
+        string region,
+        string accessKeyId,
+        string secretAccessKey,
+        string? sessionToken = null
+    )
     {
         Region = region ?? string.Empty;
         AccessKeyId = accessKeyId ?? string.Empty;
@@ -39,7 +44,13 @@ public sealed class AnthropicAwsCredentials
 public sealed class AnthropicAwsPreparedCall
 {
     /// <summary>Creates a prepared call.</summary>
-    public AnthropicAwsPreparedCall(string method, string url, string? body, IReadOnlyDictionary<string, string> headers, bool signed)
+    public AnthropicAwsPreparedCall(
+        string method,
+        string url,
+        string? body,
+        IReadOnlyDictionary<string, string> headers,
+        bool signed
+    )
     {
         Method = method;
         Url = url;
@@ -71,7 +82,8 @@ public sealed class AnthropicAwsPreparedCall
 public static class AnthropicAwsFetch
 {
     /// <summary>User agent sent on every AWS request. The runtime segment is dotnet.</summary>
-    public static readonly string UserAgent = "ai-sdk/anthropic-aws/" + AiSdkVersion.Version + " runtime/dotnet";
+    public static readonly string UserAgent =
+        "ai-sdk/anthropic-aws/" + AiSdkVersion.Version + " runtime/dotnet";
 
     /// <summary>SigV4 service name.</summary>
     public const string Service = "aws-external-anthropic";
@@ -89,7 +101,8 @@ public static class AnthropicAwsFetch
         IReadOnlyDictionary<string, string?>? headers,
         IReadOnlyDictionary<string, string?>? requestHeaders,
         AnthropicAwsCredentials credentials,
-        DateTimeOffset? utcNow = null)
+        DateTimeOffset? utcNow = null
+    )
     {
         var verb = string.IsNullOrEmpty(method) ? "GET" : method!.ToUpperInvariant();
         var merged = Merge(headers, requestHeaders);
@@ -122,7 +135,8 @@ public static class AnthropicAwsFetch
         string url,
         string? method,
         string? body,
-        IReadOnlyDictionary<string, string?>? headers)
+        IReadOnlyDictionary<string, string?>? headers
+    )
     {
         var merged = new Dictionary<string, string>(StringComparer.Ordinal);
         Copy(merged, headers);
@@ -131,7 +145,10 @@ public static class AnthropicAwsFetch
         return new AnthropicAwsPreparedCall(method ?? string.Empty, url, body, merged, false);
     }
 
-    private static Dictionary<string, string> Merge(IReadOnlyDictionary<string, string?>? headers, IReadOnlyDictionary<string, string?>? requestHeaders)
+    private static Dictionary<string, string> Merge(
+        IReadOnlyDictionary<string, string?>? headers,
+        IReadOnlyDictionary<string, string?>? requestHeaders
+    )
     {
         var merged = new Dictionary<string, string>(StringComparer.Ordinal);
         Copy(merged, requestHeaders);
@@ -139,7 +156,10 @@ public static class AnthropicAwsFetch
         return merged;
     }
 
-    private static void Copy(Dictionary<string, string> target, IReadOnlyDictionary<string, string?>? headers)
+    private static void Copy(
+        Dictionary<string, string> target,
+        IReadOnlyDictionary<string, string?>? headers
+    )
     {
         if (headers == null)
         {
@@ -157,12 +177,24 @@ public static class AnthropicAwsFetch
         }
     }
 
-    private static void Sign(string url, string method, string body, Dictionary<string, string> headers, AnthropicAwsCredentials credentials, DateTimeOffset utcNow)
+    private static void Sign(
+        string url,
+        string method,
+        string body,
+        Dictionary<string, string> headers,
+        AnthropicAwsCredentials credentials,
+        DateTimeOffset utcNow
+    )
     {
         var uri = new Uri(url);
-        var amzDate = utcNow.UtcDateTime.ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture);
+        var amzDate = utcNow.UtcDateTime.ToString(
+            "yyyyMMdd'T'HHmmss'Z'",
+            CultureInfo.InvariantCulture
+        );
         var dateStamp = utcNow.UtcDateTime.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
-        headers["host"] = uri.IsDefaultPort ? uri.Host : uri.Host + ":" + uri.Port.ToString(CultureInfo.InvariantCulture);
+        headers["host"] = uri.IsDefaultPort
+            ? uri.Host
+            : uri.Host + ":" + uri.Port.ToString(CultureInfo.InvariantCulture);
         headers["x-amz-date"] = amzDate;
         if (!string.IsNullOrEmpty(credentials.SessionToken))
         {
@@ -191,12 +223,46 @@ public static class AnthropicAwsFetch
         }
 
         var path = string.IsNullOrEmpty(uri.AbsolutePath) ? "/" : uri.AbsolutePath;
-        var canonical = method + "\n" + path + "\n" + uri.Query.TrimStart('?') + "\n" + canonicalHeaders + "\n" + signed + "\n" + payloadHash;
+        var canonical =
+            method
+            + "\n"
+            + path
+            + "\n"
+            + uri.Query.TrimStart('?')
+            + "\n"
+            + canonicalHeaders
+            + "\n"
+            + signed
+            + "\n"
+            + payloadHash;
         var scope = dateStamp + "/" + credentials.Region + "/" + Service + "/aws4_request";
-        var stringToSign = "AWS4-HMAC-SHA256\n" + amzDate + "\n" + scope + "\n" + Hex(Sha256(Encoding.UTF8.GetBytes(canonical)));
-        var key = Hmac(Hmac(Hmac(Hmac(Encoding.UTF8.GetBytes("AWS4" + credentials.SecretAccessKey), dateStamp), credentials.Region), Service), "aws4_request");
+        var stringToSign =
+            "AWS4-HMAC-SHA256\n"
+            + amzDate
+            + "\n"
+            + scope
+            + "\n"
+            + Hex(Sha256(Encoding.UTF8.GetBytes(canonical)));
+        var key = Hmac(
+            Hmac(
+                Hmac(
+                    Hmac(Encoding.UTF8.GetBytes("AWS4" + credentials.SecretAccessKey), dateStamp),
+                    credentials.Region
+                ),
+                Service
+            ),
+            "aws4_request"
+        );
         var signature = Hex(Hmac(key, stringToSign));
-        headers["authorization"] = "AWS4-HMAC-SHA256 Credential=" + credentials.AccessKeyId + "/" + scope + ", SignedHeaders=" + signed + ", Signature=" + signature;
+        headers["authorization"] =
+            "AWS4-HMAC-SHA256 Credential="
+            + credentials.AccessKeyId
+            + "/"
+            + scope
+            + ", SignedHeaders="
+            + signed
+            + ", Signature="
+            + signature;
     }
 
     // SigV4 header values must be ASCII. Other values are sent but left out of the signature.
@@ -258,7 +324,12 @@ public sealed class AnthropicAwsApiKeyFetch
     public Func<AnthropicAwsPreparedCall, AnthropicAwsPreparedCall>? Transport { get; set; }
 
     /// <summary>Applies the API key and user-agent, then invokes <see cref="Transport"/> if one is set.</summary>
-    public AnthropicAwsPreparedCall Send(string url, string? method, string? body, IReadOnlyDictionary<string, string?>? headers)
+    public AnthropicAwsPreparedCall Send(
+        string url,
+        string? method,
+        string? body,
+        IReadOnlyDictionary<string, string?>? headers
+    )
     {
         var prepared = AnthropicAwsFetch.PrepareApiKey(_apiKey, url, method, body, headers);
         var transport = Transport;

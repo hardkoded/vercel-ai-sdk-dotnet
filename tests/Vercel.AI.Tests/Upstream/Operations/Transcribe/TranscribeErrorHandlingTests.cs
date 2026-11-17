@@ -16,21 +16,47 @@ namespace Vercel.AI.Tests.Upstream.Operations.Transcribe;
 [Collection("LogWarnings")]
 public sealed class TranscribeErrorHandlingTests
 {
-    private const string Error = "packages/ai/src/transcribe/transcribe.test.ts::transcribe > error handling::";
+    private const string Error =
+        "packages/ai/src/transcribe/transcribe.test.ts::transcribe > error handling::";
+
     [Fact]
-    [UpstreamTest(Error + "should throw NoTranscriptGeneratedError when no transcript is returned", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Error + "should throw NoTranscriptGeneratedError when no transcript is returned",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Throws_when_no_transcript_is_returned()
     {
-        var error = await Assert.ThrowsAsync<NoTranscriptGeneratedException>(() => TranscribeOperation.TranscribeAsync(new TranscribeRequest { Model = new TranscriptFake { Text = null }, Audio = new byte[] { 1 } }));
+        var error = await Assert.ThrowsAsync<NoTranscriptGeneratedException>(() =>
+            TranscribeOperation.TranscribeAsync(
+                new TranscribeRequest
+                {
+                    Model = new TranscriptFake { Text = null },
+                    Audio = new byte[] { 1 },
+                }
+            )
+        );
         Assert.Equal("No transcript generated.", error.Message);
     }
 
     [Fact]
-    [UpstreamTest(Error + "should include response headers in error when no transcript generated", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Error + "should include response headers in error when no transcript generated",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Includes_response_headers_when_no_transcript_is_generated()
     {
-        var model = new TranscriptFake { Text = null, Response = new ProviderResponse(new Dictionary<string, string> { ["x-request-id"] = "req" }) };
-        var error = await Assert.ThrowsAsync<NoTranscriptGeneratedException>(() => TranscribeOperation.TranscribeAsync(new TranscribeRequest { Model = model, Audio = new byte[] { 1 } }));
+        var model = new TranscriptFake
+        {
+            Text = null,
+            Response = new ProviderResponse(
+                new Dictionary<string, string> { ["x-request-id"] = "req" }
+            ),
+        };
+        var error = await Assert.ThrowsAsync<NoTranscriptGeneratedException>(() =>
+            TranscribeOperation.TranscribeAsync(
+                new TranscribeRequest { Model = model, Audio = new byte[] { 1 } }
+            )
+        );
         Assert.Equal("req", error.Responses[0].Headers!["x-request-id"]);
     }
 }

@@ -10,10 +10,23 @@ namespace Vercel.AI.Tests.Upstream.ProviderUtils.TranscriptionStreamEnvelope;
 public sealed class FrameTypeConstantsTests
 {
     [Fact]
-    [UpstreamTest("packages/provider-utils/src/transcription-stream-envelope.test.ts::frame type constants::should use the transcription-stream namespace", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/provider-utils/src/transcription-stream-envelope.test.ts::frame type constants::should use the transcription-stream namespace",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_use_the_transcription_stream_namespace()
     {
-        Assert.Equal("transcription-stream.start", Vercel.AI.ProviderUtils.TranscriptionStreamEnvelope.TranscriptionStreamStartFrameType);
-        Assert.Equal("transcription-stream.audio-done", Vercel.AI.ProviderUtils.TranscriptionStreamEnvelope.TranscriptionStreamAudioDoneFrameType);
+        Assert.Equal(
+            "transcription-stream.start",
+            Vercel.AI.ProviderUtils.TranscriptionStreamEnvelope.TranscriptionStreamStartFrameType
+        );
+        Assert.Equal(
+            "transcription-stream.audio-done",
+            Vercel
+                .AI
+                .ProviderUtils
+                .TranscriptionStreamEnvelope
+                .TranscriptionStreamAudioDoneFrameType
+        );
     }
 }

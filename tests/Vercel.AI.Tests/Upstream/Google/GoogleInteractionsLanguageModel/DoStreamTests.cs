@@ -13,7 +13,8 @@ namespace Vercel.AI.Tests.Upstream.Google.GoogleInteractionsLanguageModel;
 /// </summary>
 public sealed class DoStreamTests
 {
-    private const string Prefix = "packages/google/src/interactions/google-interactions-language-model.test.ts::GoogleInteractionsLanguageModel.doStream::";
+    private const string Prefix =
+        "packages/google/src/interactions/google-interactions-language-model.test.ts::GoogleInteractionsLanguageModel.doStream::";
 
     private static LanguageModelCallOptions Options(string providerOptions)
     {
@@ -25,12 +26,19 @@ public sealed class DoStreamTests
     [Theory]
     [InlineData("{}")]
     [InlineData("{\"application\":\"example\",\"safety_identifier\":\"opaque_user_123\"}")]
-    [UpstreamTest(Prefix + "forwards labels %j on streaming requests", Coverage = UpstreamCoverage.Covered, Commit = "a210a29f9b1be06d87e9e880840419defecbee2b")]
+    [UpstreamTest(
+        Prefix + "forwards labels %j on streaming requests",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "a210a29f9b1be06d87e9e880840419defecbee2b"
+    )]
     public async Task Forwards_labels_on_streaming_requests(string labels)
     {
         var handler = GoogleInteractionsStreamSupport.FixtureHandler("basic");
 
-        await GoogleInteractionsStreamSupport.Stream(GoogleInteractionsStreamSupport.Model(handler), Options("{\"google\":{\"labels\":" + labels + ",\"store\":false}}"));
+        await GoogleInteractionsStreamSupport.Stream(
+            GoogleInteractionsStreamSupport.Model(handler),
+            Options("{\"google\":{\"labels\":" + labels + ",\"store\":false}}")
+        );
 
         var body = JsonNode.Parse(handler.Bodies[0])!.AsObject();
         Assert.True(JsonNode.DeepEquals(JsonNode.Parse(labels), body["labels"]));
@@ -41,28 +49,46 @@ public sealed class DoStreamTests
     [Theory]
     [InlineData("undefined")]
     [InlineData("null")]
-    [UpstreamTest(Prefix + "omits labels set to %j on streaming requests", Coverage = UpstreamCoverage.Covered, Commit = "a210a29f9b1be06d87e9e880840419defecbee2b")]
+    [UpstreamTest(
+        Prefix + "omits labels set to %j on streaming requests",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "a210a29f9b1be06d87e9e880840419defecbee2b"
+    )]
     public async Task Omits_labels_set_to_on_streaming_requests(string labels)
     {
         var handler = GoogleInteractionsStreamSupport.FixtureHandler("basic");
-        var providerOptions = labels == "null" ? "{\"google\":{\"labels\":null}}" : "{\"google\":{}}";
+        var providerOptions =
+            labels == "null" ? "{\"google\":{\"labels\":null}}" : "{\"google\":{}}";
 
-        await GoogleInteractionsStreamSupport.Stream(GoogleInteractionsStreamSupport.Model(handler), Options(providerOptions));
+        await GoogleInteractionsStreamSupport.Stream(
+            GoogleInteractionsStreamSupport.Model(handler),
+            Options(providerOptions)
+        );
 
         Assert.False(JsonNode.Parse(handler.Bodies[0])!.AsObject().ContainsKey("labels"));
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "maps top-level reasoning on streaming requests", Coverage = UpstreamCoverage.Covered, Commit = "8e60cb4ba35426e7f4a21e341a5e16f37a478a5b")]
+    [UpstreamTest(
+        Prefix + "maps top-level reasoning on streaming requests",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "8e60cb4ba35426e7f4a21e341a5e16f37a478a5b"
+    )]
     public async Task Maps_top_level_reasoning_on_streaming_requests()
     {
         var handler = GoogleInteractionsStreamSupport.FixtureHandler("basic");
         var options = GoogleUpstream.Prompt(new UserModelMessage("Hello, how are you?"));
         options.Reasoning = "xhigh";
 
-        var parts = await GoogleInteractionsStreamSupport.Stream(GoogleInteractionsStreamSupport.Model(handler, "gemini-4-hydrogen"), options);
+        var parts = await GoogleInteractionsStreamSupport.Stream(
+            GoogleInteractionsStreamSupport.Model(handler, "gemini-4-hydrogen"),
+            options
+        );
 
-        Assert.Equal("xhigh", (string?)JsonNode.Parse(handler.Bodies[0])!["generation_config"]!["thinking_level"]);
+        Assert.Equal(
+            "xhigh",
+            (string?)JsonNode.Parse(handler.Bodies[0])!["generation_config"]!["thinking_level"]
+        );
         var start = Assert.IsType<StreamStartStreamPart>(parts[0]);
         Assert.Empty(start.Warnings);
     }

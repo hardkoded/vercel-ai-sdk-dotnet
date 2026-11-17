@@ -20,9 +20,15 @@ internal static class JsonSchemaProjection
             return value;
         }
 
-        if (value is JsonObject obj && schema.TryGetProperty("properties", out var properties) && properties.ValueKind == JsonValueKind.Object)
+        if (
+            value is JsonObject obj
+            && schema.TryGetProperty("properties", out var properties)
+            && properties.ValueKind == JsonValueKind.Object
+        )
         {
-            var keepsExtra = schema.TryGetProperty("additionalProperties", out var additional) && additional.ValueKind != JsonValueKind.False;
+            var keepsExtra =
+                schema.TryGetProperty("additionalProperties", out var additional)
+                && additional.ValueKind != JsonValueKind.False;
             var result = new JsonObject();
             foreach (var entry in obj)
             {
@@ -39,7 +45,11 @@ internal static class JsonSchemaProjection
             return result;
         }
 
-        if (value is JsonArray array && schema.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Object)
+        if (
+            value is JsonArray array
+            && schema.TryGetProperty("items", out var items)
+            && items.ValueKind == JsonValueKind.Object
+        )
         {
             var result = new JsonArray();
             foreach (var item in array)

@@ -13,25 +13,52 @@ using Model = Vercel.AI.Xai.XaiVideoModel;
 
 namespace Vercel.AI.Tests.XaiVideoModel;
 
-internal sealed record XaiVideoCall(HttpMethod Method, string Url, string Body, IReadOnlyDictionary<string, string> Headers);
+internal sealed record XaiVideoCall(
+    HttpMethod Method,
+    string Url,
+    string Body,
+    IReadOnlyDictionary<string, string> Headers
+);
 
 /// <summary>Port of the <c>createTestServer</c> call of <c>xai-video-model.test.ts</c>. Every test gets its own server, so no response has to be reset.</summary>
 internal sealed class XaiVideoServer : HttpMessageHandler
 {
     public XaiVideoServer()
     {
-        Json(XaiVideoModelFixture.TestBaseUrl + "/videos/generations", XaiVideoModelFixture.CreateVideoResponse);
-        Json(XaiVideoModelFixture.TestBaseUrl + "/videos/edits", XaiVideoModelFixture.CreateVideoResponse);
-        Json(XaiVideoModelFixture.TestBaseUrl + "/videos/extensions", XaiVideoModelFixture.CreateVideoResponse);
-        Json(XaiVideoModelFixture.TestBaseUrl + "/videos/req-123", XaiVideoModelFixture.DoneStatusResponse);
-        Json(XaiVideoModelFixture.TestBaseUrl + "/videos/abc%2F..%2F..%2Finternal", XaiVideoModelFixture.DoneStatusResponse);
-        Json(XaiVideoModelFixture.TestBaseUrl + "/videos/%252E", XaiVideoModelFixture.DoneStatusResponse);
-        Json(XaiVideoModelFixture.TestBaseUrl + "/videos/%252E%252E", XaiVideoModelFixture.DoneStatusResponse);
+        Json(
+            XaiVideoModelFixture.TestBaseUrl + "/videos/generations",
+            XaiVideoModelFixture.CreateVideoResponse
+        );
+        Json(
+            XaiVideoModelFixture.TestBaseUrl + "/videos/edits",
+            XaiVideoModelFixture.CreateVideoResponse
+        );
+        Json(
+            XaiVideoModelFixture.TestBaseUrl + "/videos/extensions",
+            XaiVideoModelFixture.CreateVideoResponse
+        );
+        Json(
+            XaiVideoModelFixture.TestBaseUrl + "/videos/req-123",
+            XaiVideoModelFixture.DoneStatusResponse
+        );
+        Json(
+            XaiVideoModelFixture.TestBaseUrl + "/videos/abc%2F..%2F..%2Finternal",
+            XaiVideoModelFixture.DoneStatusResponse
+        );
+        Json(
+            XaiVideoModelFixture.TestBaseUrl + "/videos/%252E",
+            XaiVideoModelFixture.DoneStatusResponse
+        );
+        Json(
+            XaiVideoModelFixture.TestBaseUrl + "/videos/%252E%252E",
+            XaiVideoModelFixture.DoneStatusResponse
+        );
     }
 
     public List<XaiVideoCall> Calls { get; } = [];
 
-    public Dictionary<string, Func<HttpResponseMessage>> Urls { get; } = new(StringComparer.Ordinal);
+    public Dictionary<string, Func<HttpResponseMessage>> Urls { get; } =
+        new(StringComparer.Ordinal);
 
     public void Json(string url, string body)
     {
@@ -40,15 +67,22 @@ internal sealed class XaiVideoServer : HttpMessageHandler
 
     public void Respond(string url, int status, string body)
     {
-        Urls[url] = () => new HttpResponseMessage((HttpStatusCode)status)
-        {
-            Content = new StringContent(body, Encoding.UTF8, "application/json"),
-        };
+        Urls[url] = () =>
+            new HttpResponseMessage((HttpStatusCode)status)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json"),
+            };
     }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
-        var body = request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+        var body =
+            request.Content == null
+                ? string.Empty
+                : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
         var headers = new Dictionary<string, string>();
         foreach (var header in request.Headers)
         {
@@ -73,7 +107,8 @@ internal static class XaiVideoModelFixture
     public const string TestBaseUrl = "https://api.example.com";
     public const string CreateVideoResponse = "{\"request_id\":\"req-123\"}";
 
-    public const string DoneStatusResponse = "{\"status\":\"done\",\"video\":{\"url\":\"https://vidgen.x.ai/output/video-001.mp4\",\"duration\":5,\"respect_moderation\":true},\"model\":\"grok-imagine-video\",\"progress\":100}";
+    public const string DoneStatusResponse =
+        "{\"status\":\"done\",\"video\":{\"url\":\"https://vidgen.x.ai/output/video-001.mp4\",\"duration\":5,\"respect_moderation\":true},\"model\":\"grok-imagine-video\",\"progress\":100}";
 
     public const string Req123Url = TestBaseUrl + "/videos/req-123";
 
@@ -82,7 +117,8 @@ internal static class XaiVideoModelFixture
         XaiVideoServer server,
         IReadOnlyDictionary<string, string>? headers = null,
         Func<DateTimeOffset>? currentDate = null,
-        string modelId = "grok-imagine-video")
+        string modelId = "grok-imagine-video"
+    )
     {
         var options = new OpenAICompatibleOptions { BaseUrl = TestBaseUrl, ApiKey = "test-key" };
         foreach (var header in headers ?? new Dictionary<string, string>())
@@ -107,7 +143,8 @@ internal static class XaiVideoModelFixture
         IReadOnlyList<VideoModelFile>? inputReferences = null,
         bool? generateAudio = null,
         string? xai = null,
-        IReadOnlyDictionary<string, string>? headers = null)
+        IReadOnlyDictionary<string, string>? headers = null
+    )
     {
         var providerOptions = xai == null ? "{}" : "{\"xai\":" + xai + "}";
         return new VideoModelCall(
@@ -124,11 +161,15 @@ internal static class XaiVideoModelFixture
             generateAudio,
             JsonDocument.Parse(providerOptions).RootElement.Clone(),
             headers ?? new Dictionary<string, string>(),
-            CancellationToken.None);
+            CancellationToken.None
+        );
     }
 
     /// <summary>A status call. <paramref name="operationJson"/> is the JSON of the operation.</summary>
-    public static VideoModelCall StatusCall(string operationJson, IReadOnlyDictionary<string, string>? headers = null)
+    public static VideoModelCall StatusCall(
+        string operationJson,
+        IReadOnlyDictionary<string, string>? headers = null
+    )
     {
         return new VideoModelCall(
             null,
@@ -145,12 +186,15 @@ internal static class XaiVideoModelFixture
             JsonDocument.Parse("{}").RootElement.Clone(),
             headers ?? new Dictionary<string, string>(),
             CancellationToken.None,
-            operation: JsonDocument.Parse(operationJson).RootElement.Clone());
+            operation: JsonDocument.Parse(operationJson).RootElement.Clone()
+        );
     }
 
     public static string Req123(bool hasUploadUrl = false)
     {
-        return hasUploadUrl ? "{\"requestId\":\"req-123\",\"hasUploadUrl\":true}" : "{\"requestId\":\"req-123\"}";
+        return hasUploadUrl
+            ? "{\"requestId\":\"req-123\",\"hasUploadUrl\":true}"
+            : "{\"requestId\":\"req-123\"}";
     }
 
     public static VideoFrameFile Frame(string frameType, VideoModelFile image)
@@ -168,18 +212,27 @@ internal static class XaiVideoModelFixture
     public static void AssertJson(string expected, JsonNode? actual)
     {
         var expectedNode = JsonNode.Parse(expected);
-        Assert.True(JsonNode.DeepEquals(expectedNode, actual), "Expected " + expectedNode?.ToJsonString() + " but was " + actual?.ToJsonString());
+        Assert.True(
+            JsonNode.DeepEquals(expectedNode, actual),
+            "Expected " + expectedNode?.ToJsonString() + " but was " + actual?.ToJsonString()
+        );
     }
 
     /// <summary><c>toMatchObject</c> for JSON: objects match by subset, other values must be equal.</summary>
     public static void AssertMatches(string expected, JsonNode? actual)
     {
-        Assert.True(Matches(JsonNode.Parse(expected), actual), "Expected a match of " + expected + " but was " + actual?.ToJsonString());
+        Assert.True(
+            Matches(JsonNode.Parse(expected), actual),
+            "Expected a match of " + expected + " but was " + actual?.ToJsonString()
+        );
     }
 
     public static void AssertNoProperty(string name, JsonNode? actual)
     {
-        Assert.False(actual!.AsObject().ContainsKey(name), "Unexpected property " + name + " in " + actual.ToJsonString());
+        Assert.False(
+            actual!.AsObject().ContainsKey(name),
+            "Unexpected property " + name + " in " + actual.ToJsonString()
+        );
     }
 
     public static JsonNode? Operation(VideoStartResult result)
@@ -208,14 +261,19 @@ internal static class XaiVideoModelFixture
         if (expected is JsonObject expectedObject)
         {
             return actual is JsonObject actualObject
-                && expectedObject.All(pair => actualObject.TryGetPropertyValue(pair.Key, out var value) && Matches(pair.Value, value));
+                && expectedObject.All(pair =>
+                    actualObject.TryGetPropertyValue(pair.Key, out var value)
+                    && Matches(pair.Value, value)
+                );
         }
 
         if (expected is JsonArray expectedArray)
         {
             return actual is JsonArray actualArray
                 && expectedArray.Count == actualArray.Count
-                && expectedArray.Select((item, index) => Matches(item, actualArray[index])).All(match => match);
+                && expectedArray
+                    .Select((item, index) => Matches(item, actualArray[index]))
+                    .All(match => match);
         }
 
         return JsonNode.DeepEquals(expected, actual);

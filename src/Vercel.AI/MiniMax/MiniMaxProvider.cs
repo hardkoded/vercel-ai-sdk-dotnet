@@ -28,7 +28,8 @@ public sealed class MiniMaxOptions
     public string? ImageBaseUrl { get; set; }
 
     /// <summary>Headers merged into every request.</summary>
-    public Dictionary<string, string?> Headers { get; } = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string?> Headers { get; } =
+        new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 }
 
 /// <summary>MiniMax provider. Speaks the Anthropic Messages protocol at <c>https://api.minimax.io/anthropic/v1</c>.</summary>
@@ -77,9 +78,14 @@ public sealed class MiniMaxProvider : ProviderBase
     public MiniMaxOptions Options { get; }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static MiniMaxProvider Create(MiniMaxOptions? options = null, HttpMessageHandler? handler = null)
+    public static MiniMaxProvider Create(
+        MiniMaxOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new MiniMaxProvider(client, options);
     }
 
@@ -104,8 +110,15 @@ public sealed class MiniMaxProvider : ProviderBase
     /// <summary>Creates a MiniMax video model for video generation.</summary>
     public MiniMaxVideoModel Video(string modelId)
     {
-        var baseUrl = ProviderValues.WithoutTrailingSlash(string.IsNullOrWhiteSpace(Options.VideoBaseUrl) ? DefaultVideoBaseUrl : Options.VideoBaseUrl)!;
-        return new MiniMaxVideoModel(modelId, new MiniMaxVideoModelConfig("minimax.video", baseUrl, CreateMediaHeaders, _httpClient));
+        var baseUrl = ProviderValues.WithoutTrailingSlash(
+            string.IsNullOrWhiteSpace(Options.VideoBaseUrl)
+                ? DefaultVideoBaseUrl
+                : Options.VideoBaseUrl
+        )!;
+        return new MiniMaxVideoModel(
+            modelId,
+            new MiniMaxVideoModelConfig("minimax.video", baseUrl, CreateMediaHeaders, _httpClient)
+        );
     }
 
     /// <inheritdoc />
@@ -117,36 +130,54 @@ public sealed class MiniMaxProvider : ProviderBase
     /// <summary>Creates a MiniMax image model for image generation and editing.</summary>
     public MiniMaxImageModel Image(string modelId)
     {
-        var baseUrl = ProviderValues.WithoutTrailingSlash(string.IsNullOrWhiteSpace(Options.ImageBaseUrl) ? DefaultImageBaseUrl : Options.ImageBaseUrl)!;
-        return new MiniMaxImageModel(modelId, new MiniMaxImageModelConfig("minimax.image", baseUrl, CreateMediaHeaders, _httpClient));
+        var baseUrl = ProviderValues.WithoutTrailingSlash(
+            string.IsNullOrWhiteSpace(Options.ImageBaseUrl)
+                ? DefaultImageBaseUrl
+                : Options.ImageBaseUrl
+        )!;
+        return new MiniMaxImageModel(
+            modelId,
+            new MiniMaxImageModelConfig("minimax.image", baseUrl, CreateMediaHeaders, _httpClient)
+        );
     }
 
     private Dictionary<string, string> CreateMediaHeaders()
     {
         var headers = new List<KeyValuePair<string, string?>>
         {
-            new KeyValuePair<string, string?>("Authorization", "Bearer " + ApiKeys.Require(Options.ApiKey, ApiKeyVariable)),
+            new KeyValuePair<string, string?>(
+                "Authorization",
+                "Bearer " + ApiKeys.Require(Options.ApiKey, ApiKeyVariable)
+            ),
         };
         headers.AddRange(Options.Headers);
-        return ProviderValues.WithUserAgentSuffix(headers, "ai-sdk-minimax/" + Operations.AiSdkVersion.Version);
+        return ProviderValues.WithUserAgentSuffix(
+            headers,
+            "ai-sdk-minimax/" + Operations.AiSdkVersion.Version
+        );
     }
 }
 
 /// <summary>The Messages provider behind <see cref="MiniMaxProvider"/>.</summary>
 internal sealed class MiniMaxMessagesProvider : AnthropicProvider
 {
-    private static readonly IReadOnlyDictionary<string, string> NoUrls = new Dictionary<string, string>();
+    private static readonly IReadOnlyDictionary<string, string> NoUrls =
+        new Dictionary<string, string>();
 
     public MiniMaxMessagesProvider(HttpClient httpClient, AnthropicOptions options)
-        : base(httpClient, options)
-    {
-    }
+        : base(httpClient, options) { }
 
     protected internal override IReadOnlyDictionary<string, string> SupportedUrls => NoUrls;
 
-    public override async Task<Dictionary<string, string?>> CreateHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, CancellationToken cancellationToken)
+    public override async Task<Dictionary<string, string?>> CreateHeadersAsync(
+        IReadOnlyList<string> betas,
+        IReadOnlyDictionary<string, string?>? callHeaders,
+        string? body,
+        CancellationToken cancellationToken
+    )
     {
-        var headers = await base.CreateHeadersAsync(betas, callHeaders, body, cancellationToken).ConfigureAwait(false);
+        var headers = await base.CreateHeadersAsync(betas, callHeaders, body, cancellationToken)
+            .ConfigureAwait(false);
         if (callHeaders == null || !callHeaders.ContainsKey("user-agent"))
         {
             headers["user-agent"] = "ai-sdk/minimax/" + Operations.AiSdkVersion.Version;
@@ -160,14 +191,21 @@ internal sealed class MiniMaxMessagesProvider : AnthropicProvider
 public static class MiniMaxServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddMiniMax(this IServiceCollection services, Action<MiniMaxOptions>? configure = null)
+    public static IServiceCollection AddMiniMax(
+        this IServiceCollection services,
+        Action<MiniMaxOptions>? configure = null
+    )
     {
         services.AddHttpClient(MiniMaxProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new MiniMaxOptions();
             configure?.Invoke(options);
-            return new MiniMaxProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(MiniMaxProvider.ProviderId), options);
+            return new MiniMaxProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(MiniMaxProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

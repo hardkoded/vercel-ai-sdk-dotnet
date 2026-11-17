@@ -33,7 +33,10 @@ public sealed class Instructions
     /// <summary>Creates instructions from one system message.</summary>
     public static Instructions From(SystemModelMessage message)
     {
-        return new Instructions(null, new[] { message ?? throw new ArgumentNullException(nameof(message)) });
+        return new Instructions(
+            null,
+            new[] { message ?? throw new ArgumentNullException(nameof(message)) }
+        );
     }
 
     /// <summary>Creates instructions from a list of system messages.</summary>
@@ -46,7 +49,9 @@ public sealed class Instructions
 
         if (messages.Any(message => message is null))
         {
-            throw new InvalidPromptException("instructions must be a string, SystemModelMessage, or array of SystemModelMessage");
+            throw new InvalidPromptException(
+                "instructions must be a string, SystemModelMessage, or array of SystemModelMessage"
+            );
         }
 
         return new Instructions(null, messages.ToArray());
@@ -133,9 +138,7 @@ public sealed class InvalidPromptException : AiSdkException
 {
     /// <summary>Creates the exception.</summary>
     public InvalidPromptException(string message)
-        : base(message)
-    {
-    }
+        : base(message) { }
 
     /// <summary>Stable error name.</summary>
     public string Name { get; } = "AI_InvalidPromptError";
@@ -178,10 +181,13 @@ public static class Prompts
 
         if (input.Prompt != null && input.Messages != null)
         {
-            throw new InvalidPromptException("prompt and messages cannot be defined at the same time");
+            throw new InvalidPromptException(
+                "prompt and messages cannot be defined at the same time"
+            );
         }
 
-        var instructions = input.Instructions ?? (input.System != null ? Instructions.From(input.System) : null);
+        var instructions = input.Instructions
+            ?? (input.System != null ? Instructions.From(input.System) : null);
 
         IReadOnlyList<ModelMessage> messages;
         if (input.Prompt?.Text is { } text)
@@ -208,7 +214,9 @@ public static class Prompts
 
         if (!input.AllowSystemInMessages && messages.Any(message => message is SystemModelMessage))
         {
-            throw new InvalidPromptException("System messages are not allowed in the prompt or messages fields. Use the instructions option instead.");
+            throw new InvalidPromptException(
+                "System messages are not allowed in the prompt or messages fields. Use the instructions option instead."
+            );
         }
 
         return new StandardizedPrompt(instructions, messages);

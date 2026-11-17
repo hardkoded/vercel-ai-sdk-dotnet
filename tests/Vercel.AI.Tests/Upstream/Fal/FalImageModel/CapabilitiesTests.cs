@@ -32,10 +32,26 @@ public sealed class CapabilitiesTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    [UpstreamTest("packages/fal/src/fal-image-model.test.ts::FalImageModel > capabilities::advertises file=$supportsFileInputs and mask=$supportsMaskInputs for $modelId", Coverage = UpstreamCoverage.Covered)]
-    public void Advertises_file_and_mask_support(string modelId, bool? supportsFileInputs, bool? supportsMaskInputs)
+    [UpstreamTest(
+        "packages/fal/src/fal-image-model.test.ts::FalImageModel > capabilities::advertises file=$supportsFileInputs and mask=$supportsMaskInputs for $modelId",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Advertises_file_and_mask_support(
+        string modelId,
+        bool? supportsFileInputs,
+        bool? supportsMaskInputs
+    )
     {
-        var model = new Vercel.AI.Fal.FalImageModel(FalProvider.Create(new OpenAICompatibleOptions { BaseUrl = "https://api.example.com", ApiKey = "test-key" }), modelId);
+        var model = new Vercel.AI.Fal.FalImageModel(
+            FalProvider.Create(
+                new OpenAICompatibleOptions
+                {
+                    BaseUrl = "https://api.example.com",
+                    ApiKey = "test-key",
+                }
+            ),
+            modelId
+        );
 
         Assert.Equal(supportsFileInputs, model.SupportsFileInputs);
         Assert.Equal(supportsMaskInputs, model.SupportsMaskInputs);

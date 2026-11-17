@@ -35,7 +35,13 @@ public static class FetchErrors
 
         if (error is HttpRequestException && error.InnerException != null)
         {
-            return new ApiCallError("Cannot connect to API: " + error.InnerException.Message, url, requestBodyValues, cause: error.InnerException, isRetryable: true);
+            return new ApiCallError(
+                "Cannot connect to API: " + error.InnerException.Message,
+                url,
+                requestBodyValues,
+                cause: error.InnerException,
+                isRetryable: true
+            );
         }
 
         if (!HasNetworkError(error))
@@ -54,17 +60,27 @@ public static class FetchErrors
                 apiCallError.ResponseBody,
                 apiCallError.Cause,
                 isRetryable: true,
-                apiCallError.Data);
+                apiCallError.Data
+            );
         }
 
-        return new ApiCallError("Cannot connect to API: " + error.Message, url, requestBodyValues, cause: error, isRetryable: true);
+        return new ApiCallError(
+            "Cannot connect to API: " + error.Message,
+            url,
+            requestBodyValues,
+            cause: error,
+            isRetryable: true
+        );
     }
 
     private static bool HasNetworkError(Exception? error)
     {
         for (var current = error; current != null; current = current.InnerException)
         {
-            if (current is SocketException socket && RetryableSocketErrors.Contains(socket.SocketErrorCode))
+            if (
+                current is SocketException socket
+                && RetryableSocketErrors.Contains(socket.SocketErrorCode)
+            )
             {
                 return true;
             }

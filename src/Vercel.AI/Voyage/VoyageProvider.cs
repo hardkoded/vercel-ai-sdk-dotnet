@@ -43,7 +43,12 @@ public sealed class VoyageEmbeddingRequest
 public sealed class VoyageEmbeddingResult
 {
     /// <summary>Creates an embedding result.</summary>
-    public VoyageEmbeddingResult(IReadOnlyList<float[]> embeddings, int tokens, IReadOnlyDictionary<string, string> headers, JsonElement body)
+    public VoyageEmbeddingResult(
+        IReadOnlyList<float[]> embeddings,
+        int tokens,
+        IReadOnlyDictionary<string, string> headers,
+        JsonElement body
+    )
     {
         Embeddings = embeddings ?? Array.Empty<float[]>();
         Tokens = tokens;
@@ -108,7 +113,12 @@ public sealed class VoyageRerankRequest
 public sealed class VoyageRerankResult
 {
     /// <summary>Creates a rerank result.</summary>
-    public VoyageRerankResult(IReadOnlyList<RerankItem> ranking, IReadOnlyList<VoyageWarning> warnings, IReadOnlyDictionary<string, string> headers, JsonElement body)
+    public VoyageRerankResult(
+        IReadOnlyList<RerankItem> ranking,
+        IReadOnlyList<VoyageWarning> warnings,
+        IReadOnlyDictionary<string, string> headers,
+        JsonElement body
+    )
     {
         Ranking = ranking ?? Array.Empty<RerankItem>();
         Warnings = warnings ?? Array.Empty<VoyageWarning>();
@@ -148,22 +158,31 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider.</summary>
-    public static new VoyageProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new VoyageProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new VoyageProvider(client, options);
     }
 
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
-        throw new AiSdkException("Provider 'voyage' does not support language model '" + modelId + "'.");
+        throw new AiSdkException(
+            "Provider 'voyage' does not support language model '" + modelId + "'."
+        );
     }
 
     /// <inheritdoc />
     public override IImageModel ImageModel(string modelId)
     {
-        throw new AiSdkException("Provider 'voyage' does not support image model '" + modelId + "'.");
+        throw new AiSdkException(
+            "Provider 'voyage' does not support image model '" + modelId + "'."
+        );
     }
 
     /// <inheritdoc />
@@ -182,7 +201,10 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
+        options.BaseUrl =
+            string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
+                ? DefaultBaseUrl
+                : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "VOYAGE_API_KEY";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
@@ -225,22 +247,40 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
         public string ModelId { get; }
 
         /// <inheritdoc />
-        public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null, IReadOnlyDictionary<string, string?>? headers = null)
+        public async Task<EmbeddingResult> DoEmbedAsync(
+            IReadOnlyList<string> values,
+            IReadOnlyDictionary<string, JsonElement>? providerOptions,
+            CancellationToken cancellationToken,
+            int? dimensions = null,
+            IReadOnlyDictionary<string, string?>? headers = null
+        )
         {
-            var outputDimension = providerOptions != null
+            var outputDimension =
+                providerOptions != null
                 && providerOptions.TryGetValue("voyage", out var options)
                 && options.ValueKind == JsonValueKind.Object
                 && options.TryGetProperty("outputDimension", out var width)
                 && width.ValueKind == JsonValueKind.Number
                 && width.TryGetInt32(out var parsed)
-                ? parsed
-                : dimensions;
-            var result = await EmbedAsync(new VoyageEmbeddingRequest(values) { OutputDimension = outputDimension, Headers = ProviderExchange.ToRequestHeaders(headers) }, cancellationToken).ConfigureAwait(false);
+                    ? parsed
+                    : dimensions;
+            var result = await EmbedAsync(
+                    new VoyageEmbeddingRequest(values)
+                    {
+                        OutputDimension = outputDimension,
+                        Headers = ProviderExchange.ToRequestHeaders(headers),
+                    },
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             return new EmbeddingResult(result.Embeddings, result.Tokens);
         }
 
         /// <summary>Embeds values and returns usage plus the raw response.</summary>
-        public async Task<VoyageEmbeddingResult> EmbedAsync(VoyageEmbeddingRequest request, CancellationToken cancellationToken)
+        public async Task<VoyageEmbeddingResult> EmbedAsync(
+            VoyageEmbeddingRequest request,
+            CancellationToken cancellationToken
+        )
         {
             if (request == null)
             {
@@ -249,7 +289,11 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
 
             if (request.Values.Count > MaxEmbeddingsPerCall)
             {
-                throw new AiSdkException("Too many embedding values for one Voyage call. The maximum is " + MaxEmbeddingsPerCall.ToString() + ".");
+                throw new AiSdkException(
+                    "Too many embedding values for one Voyage call. The maximum is "
+                        + MaxEmbeddingsPerCall.ToString()
+                        + "."
+                );
             }
 
             var input = new JsonArray();
@@ -281,31 +325,52 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
 
             var headers = ProviderExchange.Merge(_provider.CreateHeaders(), request.Headers);
             ProviderExchange.AddUserAgent(headers, "voyage");
-            var response = await ProviderExchange.SendAsync(
-                _provider._httpClient,
-                HttpMethod.Post,
-                ApiKeys.Combine(_provider.Options.BaseUrl, "/embeddings"),
-                ProviderExchange.Json(body.ToJsonString()),
-                headers,
-                cancellationToken).ConfigureAwait(false);
-            using (var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body))
+            var response = await ProviderExchange
+                .SendAsync(
+                    _provider._httpClient,
+                    HttpMethod.Post,
+                    ApiKeys.Combine(_provider.Options.BaseUrl, "/embeddings"),
+                    ProviderExchange.Json(body.ToJsonString()),
+                    headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+            using (
+                var document = JsonDocument.Parse(
+                    string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+                )
+            )
             {
                 var vectors = new List<float[]>();
                 var indexed = new List<KeyValuePair<int, float[]>>();
-                if (document.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
+                if (
+                    document.RootElement.TryGetProperty("data", out var data)
+                    && data.ValueKind == JsonValueKind.Array
+                )
                 {
                     var position = 0;
                     foreach (var item in data.EnumerateArray())
                     {
-                        var index = item.TryGetProperty("index", out var indexValue) && indexValue.TryGetInt32(out var parsed) ? parsed : position;
-                        indexed.Add(new KeyValuePair<int, float[]>(index, ReadVector(item.GetProperty("embedding"))));
+                        var index =
+                            item.TryGetProperty("index", out var indexValue)
+                            && indexValue.TryGetInt32(out var parsed)
+                                ? parsed
+                                : position;
+                        indexed.Add(
+                            new KeyValuePair<int, float[]>(
+                                index,
+                                ReadVector(item.GetProperty("embedding"))
+                            )
+                        );
                         position++;
                     }
 
-                    indexed.Sort(delegate (KeyValuePair<int, float[]> left, KeyValuePair<int, float[]> right)
-                    {
-                        return left.Key.CompareTo(right.Key);
-                    });
+                    indexed.Sort(
+                        delegate(KeyValuePair<int, float[]> left, KeyValuePair<int, float[]> right)
+                        {
+                            return left.Key.CompareTo(right.Key);
+                        }
+                    );
                     foreach (var pair in indexed)
                     {
                         vectors.Add(pair.Value);
@@ -313,14 +378,21 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
                 }
 
                 var tokens = 0;
-                if (document.RootElement.TryGetProperty("usage", out var usage)
+                if (
+                    document.RootElement.TryGetProperty("usage", out var usage)
                     && usage.TryGetProperty("total_tokens", out var total)
-                    && total.TryGetInt32(out var count))
+                    && total.TryGetInt32(out var count)
+                )
                 {
                     tokens = count;
                 }
 
-                return new VoyageEmbeddingResult(vectors, tokens, response.Headers, document.RootElement.Clone());
+                return new VoyageEmbeddingResult(
+                    vectors,
+                    tokens,
+                    response.Headers,
+                    document.RootElement.Clone()
+                );
             }
         }
 
@@ -359,14 +431,33 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
         public string ModelId { get; }
 
         /// <inheritdoc />
-        public async Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? headers = null)
+        public async Task<RerankResult> DoRerankAsync(
+            string query,
+            IReadOnlyList<string> documents,
+            int? topN,
+            CancellationToken cancellationToken,
+            IReadOnlyDictionary<string, string?>? headers = null
+        )
         {
-            var result = await RerankAsync(new VoyageRerankRequest { Query = query, TextDocuments = documents, TopK = topN, Headers = ProviderExchange.ToRequestHeaders(headers) }, cancellationToken).ConfigureAwait(false);
+            var result = await RerankAsync(
+                    new VoyageRerankRequest
+                    {
+                        Query = query,
+                        TextDocuments = documents,
+                        TopK = topN,
+                        Headers = ProviderExchange.ToRequestHeaders(headers),
+                    },
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             return new RerankResult(result.Ranking);
         }
 
         /// <summary>Reranks text or JSON documents.</summary>
-        public async Task<VoyageRerankResult> RerankAsync(VoyageRerankRequest request, CancellationToken cancellationToken)
+        public async Task<VoyageRerankResult> RerankAsync(
+            VoyageRerankRequest request,
+            CancellationToken cancellationToken
+        )
         {
             if (request == null)
             {
@@ -377,7 +468,13 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
             var documents = new JsonArray();
             if (request.ObjectDocuments != null)
             {
-                warnings.Add(new VoyageWarning("compatibility", "object documents", "Object documents are converted to strings."));
+                warnings.Add(
+                    new VoyageWarning(
+                        "compatibility",
+                        "object documents",
+                        "Object documents are converted to strings."
+                    )
+                );
                 foreach (var document in request.ObjectDocuments)
                 {
                     documents.Add(document.ToJsonString());
@@ -404,26 +501,43 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
 
             var headers = ProviderExchange.Merge(_provider.CreateHeaders(), request.Headers);
             ProviderExchange.AddUserAgent(headers, "voyage");
-            var response = await ProviderExchange.SendAsync(
-                _provider._httpClient,
-                HttpMethod.Post,
-                ApiKeys.Combine(_provider.Options.BaseUrl, "/rerank"),
-                ProviderExchange.Json(body.ToJsonString()),
-                headers,
-                cancellationToken).ConfigureAwait(false);
-            using (var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body))
+            var response = await ProviderExchange
+                .SendAsync(
+                    _provider._httpClient,
+                    HttpMethod.Post,
+                    ApiKeys.Combine(_provider.Options.BaseUrl, "/rerank"),
+                    ProviderExchange.Json(body.ToJsonString()),
+                    headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+            using (
+                var document = JsonDocument.Parse(
+                    string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+                )
+            )
             {
                 var ranking = new List<RerankItem>();
-                if (document.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
+                if (
+                    document.RootElement.TryGetProperty("data", out var data)
+                    && data.ValueKind == JsonValueKind.Array
+                )
                 {
                     foreach (var item in data.EnumerateArray())
                     {
-                        var score = item.TryGetProperty("relevance_score", out var relevance) ? relevance.GetDouble() : 0;
+                        var score = item.TryGetProperty("relevance_score", out var relevance)
+                            ? relevance.GetDouble()
+                            : 0;
                         ranking.Add(new RerankItem(item.GetProperty("index").GetInt32(), score));
                     }
                 }
 
-                return new VoyageRerankResult(ranking, warnings, response.Headers, document.RootElement.Clone());
+                return new VoyageRerankResult(
+                    ranking,
+                    warnings,
+                    response.Headers,
+                    document.RootElement.Clone()
+                );
             }
         }
     }
@@ -433,14 +547,20 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
 public static class VoyageServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddVoyage(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddVoyage(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(VoyageProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new VoyageProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(VoyageProvider.ProviderId), options);
+            return new VoyageProvider(
+                sp.GetRequiredService<IHttpClientFactory>().CreateClient(VoyageProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

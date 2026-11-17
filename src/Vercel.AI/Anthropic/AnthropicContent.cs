@@ -11,10 +11,12 @@ namespace Vercel.AI.Anthropic;
 public sealed class AnthropicText : GeneratedText
 {
     /// <summary>Creates text content.</summary>
-    public AnthropicText(string text, JsonElement? providerMetadata, IReadOnlyList<Citation>? citations = null)
-        : base(text ?? string.Empty, citations, providerMetadata)
-    {
-    }
+    public AnthropicText(
+        string text,
+        JsonElement? providerMetadata,
+        IReadOnlyList<Citation>? citations = null
+    )
+        : base(text ?? string.Empty, citations, providerMetadata) { }
 }
 
 /// <summary>Reasoning content with a thinking signature or redacted payload.</summary>
@@ -57,7 +59,13 @@ public sealed class AnthropicCustomContent : GeneratedContent
 public sealed class AnthropicToolResultContent : GeneratedContent
 {
     /// <summary>Creates a tool result.</summary>
-    public AnthropicToolResultContent(string toolCallId, string toolName, string resultJson, bool isError, JsonElement? providerMetadata)
+    public AnthropicToolResultContent(
+        string toolCallId,
+        string toolName,
+        string resultJson,
+        bool isError,
+        JsonElement? providerMetadata
+    )
         : base("tool-result")
     {
         ToolCallId = toolCallId ?? string.Empty;

@@ -39,10 +39,7 @@ public static class JsonSchemas
     /// <summary>JSON Schema <c>not</c> of an empty schema, used for an explicit undefined alternative.</summary>
     public static JsonObject NotEmpty()
     {
-        return new JsonObject
-        {
-            ["not"] = new JsonObject(),
-        };
+        return new JsonObject { ["not"] = new JsonObject() };
     }
 
     /// <summary>String schema.</summary>
@@ -53,7 +50,8 @@ public static class JsonSchemas
         string? pattern = null,
         string? contentEncoding = null,
         JsonArray? allOf = null,
-        JsonArray? anyOf = null)
+        JsonArray? anyOf = null
+    )
     {
         var schema = new JsonObject { ["type"] = "string" };
         Set(schema, "minLength", minLength);
@@ -80,7 +78,8 @@ public static class JsonSchemas
         double? maximum = null,
         double? exclusiveMinimum = null,
         double? exclusiveMaximum = null,
-        double? multipleOf = null)
+        double? multipleOf = null
+    )
     {
         var schema = new JsonObject { ["type"] = "number" };
         Set(schema, "minimum", minimum);
@@ -92,7 +91,11 @@ public static class JsonSchemas
     }
 
     /// <summary>Integer schema.</summary>
-    public static JsonObject Integer(double? minimum = null, double? maximum = null, string? format = null)
+    public static JsonObject Integer(
+        double? minimum = null,
+        double? maximum = null,
+        string? format = null
+    )
     {
         var schema = new JsonObject { ["type"] = "integer" };
         Set(schema, "format", format);
@@ -114,7 +117,12 @@ public static class JsonSchemas
     }
 
     /// <summary>Array schema. <paramref name="items"/> may be a schema or a tuple of schemas.</summary>
-    public static JsonObject Array(JsonNode? items = null, int? minItems = null, int? maxItems = null, JsonNode? additionalItems = null)
+    public static JsonObject Array(
+        JsonNode? items = null,
+        int? minItems = null,
+        int? maxItems = null,
+        JsonNode? additionalItems = null
+    )
     {
         var schema = new JsonObject { ["type"] = "array" };
         if (items != null)
@@ -141,7 +149,8 @@ public static class JsonSchemas
         IReadOnlyList<string>? required = null,
         JsonNode? additionalProperties = null,
         bool? additionalPropertiesFlag = null,
-        JsonNode? defaultValue = null)
+        JsonNode? defaultValue = null
+    )
     {
         var schema = new JsonObject { ["type"] = "object" };
         if (properties != null)
@@ -186,21 +195,13 @@ public static class JsonSchemas
     /// <summary>Enum schema. <paramref name="type"/> may be a string or an array of type names.</summary>
     public static JsonObject Enum(JsonNode type, JsonArray values)
     {
-        return new JsonObject
-        {
-            ["type"] = type,
-            ["enum"] = values,
-        };
+        return new JsonObject { ["type"] = type, ["enum"] = values };
     }
 
     /// <summary>A single literal.</summary>
     public static JsonObject Literal(string type, JsonNode constant, string? description = null)
     {
-        var schema = new JsonObject
-        {
-            ["type"] = type,
-            ["const"] = constant,
-        };
+        var schema = new JsonObject { ["type"] = type, ["const"] = constant };
         Set(schema, "description", description);
         return schema;
     }
@@ -314,15 +315,23 @@ public static class JsonSchemas
         var builder = new StringBuilder(json.Length);
         for (var i = 0; i < json.Length; i++)
         {
-            if (json[i] == '\\' && i + 5 < json.Length && json[i + 1] == 'u' && TryHex(json, i + 2, out var code))
+            if (
+                json[i] == '\\'
+                && i + 5 < json.Length
+                && json[i + 1] == 'u'
+                && TryHex(json, i + 2, out var code)
+            )
             {
-                if (code >= 0xD800 && code <= 0xDBFF
+                if (
+                    code >= 0xD800
+                    && code <= 0xDBFF
                     && i + 11 < json.Length
                     && json[i + 6] == '\\'
                     && json[i + 7] == 'u'
                     && TryHex(json, i + 8, out var low)
                     && low >= 0xDC00
-                    && low <= 0xDFFF)
+                    && low <= 0xDFFF
+                )
                 {
                     var rune = ((code - 0xD800) << 10) + (low - 0xDC00) + 0x10000;
                     builder.Append(char.ConvertFromUtf32(rune));
@@ -459,7 +468,11 @@ public static class JsonSchemas
         {
             foreach (var item in types)
             {
-                if (item is JsonValue value && value.TryGetValue<string>(out var typeName) && typeName == "object")
+                if (
+                    item is JsonValue value
+                    && value.TryGetValue<string>(out var typeName)
+                    && typeName == "object"
+                )
                 {
                     return true;
                 }
@@ -515,14 +528,28 @@ public static class JsonSchemas
 public static class JsonInstructions
 {
     private const string SchemaPrefix = "JSON schema:";
-    private const string SchemaSuffix = "You MUST answer with a JSON object that matches the JSON schema above.";
+    private const string SchemaSuffix =
+        "You MUST answer with a JSON object that matches the JSON schema above.";
     private const string GenericSuffix = "You MUST answer with JSON.";
 
     /// <summary>Joins an optional prompt with a JSON schema instruction.</summary>
-    public static string Inject(string? prompt, JsonNode? schema, string? schemaPrefix = null, string? schemaSuffix = null, bool prefixSpecified = false, bool suffixSpecified = false)
+    public static string Inject(
+        string? prompt,
+        JsonNode? schema,
+        string? schemaPrefix = null,
+        string? schemaSuffix = null,
+        bool prefixSpecified = false,
+        bool suffixSpecified = false
+    )
     {
-        var prefix = prefixSpecified ? schemaPrefix : schema != null ? SchemaPrefix : null;
-        var suffix = suffixSpecified ? schemaSuffix : schema != null ? SchemaSuffix : GenericSuffix;
+        var prefix =
+            prefixSpecified ? schemaPrefix
+            : schema != null ? SchemaPrefix
+            : null;
+        var suffix =
+            suffixSpecified ? schemaSuffix
+            : schema != null ? SchemaSuffix
+            : GenericSuffix;
         var lines = new List<string>();
         if (!string.IsNullOrEmpty(prompt))
         {
@@ -555,7 +582,8 @@ public static class JsonInstructions
         string? schemaPrefix = null,
         string? schemaSuffix = null,
         bool prefixSpecified = false,
-        bool suffixSpecified = false)
+        bool suffixSpecified = false
+    )
     {
         if (messages is null)
         {
@@ -563,9 +591,20 @@ public static class JsonInstructions
         }
 
         var hasSystem = messages.Count > 0 && messages[0].Role == "system";
-        var systemContent = hasSystem && messages[0] is SystemModelMessage systemMessage ? systemMessage.Content : string.Empty;
+        var systemContent =
+            hasSystem && messages[0] is SystemModelMessage systemMessage
+                ? systemMessage.Content
+                : string.Empty;
         var system = new SystemModelMessage(
-            Inject(systemContent, schema, schemaPrefix, schemaSuffix, prefixSpecified, suffixSpecified));
+            Inject(
+                systemContent,
+                schema,
+                schemaPrefix,
+                schemaSuffix,
+                prefixSpecified,
+                suffixSpecified
+            )
+        );
         var result = new List<ModelMessage> { system };
         var start = hasSystem ? 1 : 0;
         for (var index = start; index < messages.Count; index++)
@@ -581,7 +620,9 @@ public static class JsonInstructions
 public static class JsonStreams
 {
     /// <summary>Lower-cases response and content header names and joins repeated values with a comma.</summary>
-    public static IReadOnlyDictionary<string, string> ExtractResponseHeaders(HttpResponseMessage response)
+    public static IReadOnlyDictionary<string, string> ExtractResponseHeaders(
+        HttpResponseMessage response
+    )
     {
         if (response is null)
         {
@@ -602,7 +643,11 @@ public static class JsonStreams
     public sealed class JsonBody
     {
         /// <summary>Creates a body.</summary>
-        public JsonBody(JsonElement value, JsonElement rawValue, IReadOnlyDictionary<string, string> headers)
+        public JsonBody(
+            JsonElement value,
+            JsonElement rawValue,
+            IReadOnlyDictionary<string, string> headers
+        )
         {
             Value = value;
             RawValue = rawValue;
@@ -623,7 +668,11 @@ public static class JsonStreams
     /// Reads a JSON response. Unknown object properties are removed when the schema says so.
     /// A body above <see cref="Util.Download.DefaultMaxBytes"/> throws a <see cref="Util.DownloadError"/> before it is read.
     /// </summary>
-    public static async Task<JsonBody> ReadJsonAsync(HttpResponseMessage response, JsonNode? schema, CancellationToken cancellationToken = default)
+    public static async Task<JsonBody> ReadJsonAsync(
+        HttpResponseMessage response,
+        JsonNode? schema,
+        CancellationToken cancellationToken = default
+    )
     {
         if (response is null)
         {
@@ -631,15 +680,22 @@ public static class JsonStreams
         }
 
         var url = response.RequestMessage?.RequestUri?.ToString() ?? string.Empty;
-        var bytes = await ResponseBodies.ReadResponseWithSizeLimitAsync(response, url, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var bytes = await ResponseBodies
+            .ReadResponseWithSizeLimitAsync(response, url, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
         var text = ResponseEncoding(response).GetString(bytes).TrimStart('\uFEFF');
         var parsed = JsonParsing.SafeParse(text, schema);
         if (!parsed.Success || parsed.Value is null || parsed.RawValue is null)
         {
-            throw parsed.Error ?? new JsonParseException(text, new JsonException("Invalid JSON response"));
+            throw parsed.Error
+                ?? new JsonParseException(text, new JsonException("Invalid JSON response"));
         }
 
-        return new JsonBody(parsed.Value.Value, parsed.RawValue.Value, ExtractResponseHeaders(response));
+        return new JsonBody(
+            parsed.Value.Value,
+            parsed.RawValue.Value,
+            ExtractResponseHeaders(response)
+        );
     }
 
     private static Encoding ResponseEncoding(HttpResponseMessage response)
@@ -675,11 +731,16 @@ public static class JsonStreams
         Action? onCancel = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default,
         int maxLineBytes = DefaultMaxLineBytes,
-        string url = "")
+        string url = ""
+    )
     {
         if (maxLineBytes <= 0)
         {
-            throw new Util.InvalidArgumentError("maxLineBytes", maxLineBytes, "maxLineBytes must be a positive safe integer.");
+            throw new Util.InvalidArgumentError(
+                "maxLineBytes",
+                maxLineBytes,
+                "maxLineBytes must be a positive safe integer."
+            );
         }
 
         if (stream is null)
@@ -696,7 +757,9 @@ public static class JsonStreams
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var count = await stream.ReadAsync(chunk, 0, chunk.Length, cancellationToken).ConfigureAwait(false);
+                var count = await stream
+                    .ReadAsync(chunk, 0, chunk.Length, cancellationToken)
+                    .ConfigureAwait(false);
                 if (count == 0)
                 {
                     finished = true;
@@ -720,7 +783,12 @@ public static class JsonStreams
                             // The size error is the one the caller needs to see.
                         }
 
-                        throw new Util.DownloadError(url, "JSON Lines response exceeded maximum line size of " + maxLineBytes + " bytes.");
+                        throw new Util.DownloadError(
+                            url,
+                            "JSON Lines response exceeded maximum line size of "
+                                + maxLineBytes
+                                + " bytes."
+                        );
                     }
 
                     line.Write(chunk, start, end - start);
@@ -761,7 +829,8 @@ public static class JsonStreams
     public static async IAsyncEnumerable<JsonParseResult> ReadJsonEventsAsync(
         Stream stream,
         JsonNode? schema = null,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
     {
         if (stream is null)
         {
@@ -770,13 +839,23 @@ public static class JsonStreams
 
         var parser = new EventSourceParser();
         var pending = new Queue<EventSourceMessage>();
-        using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
+        using (
+            var reader = new StreamReader(
+                stream,
+                Encoding.UTF8,
+                detectEncodingFromByteOrderMarks: true,
+                bufferSize: 1024,
+                leaveOpen: true
+            )
+        )
         {
             var chunk = new char[256];
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var count = await CancellableReads.ReadAsync(reader, chunk, cancellationToken).ConfigureAwait(false);
+                var count = await CancellableReads
+                    .ReadAsync(reader, chunk, cancellationToken)
+                    .ConfigureAwait(false);
                 if (count == 0)
                 {
                     break;
@@ -802,7 +881,10 @@ public static class JsonStreams
         var bytes = line.GetBuffer();
         var length = (int)line.Length;
         line.SetLength(0);
-        var offset = first && length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? 3 : 0;
+        var offset =
+            first && length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF
+                ? 3
+                : 0;
         if (length > offset && bytes[length - 1] == (byte)'\r')
         {
             length--;
@@ -813,7 +895,10 @@ public static class JsonStreams
         return text.Trim().Length > 0 ? text : null;
     }
 
-    private static void Copy(Dictionary<string, string> target, System.Net.Http.Headers.HttpHeaders headers)
+    private static void Copy(
+        Dictionary<string, string> target,
+        System.Net.Http.Headers.HttpHeaders headers
+    )
     {
         foreach (var header in headers)
         {

@@ -75,9 +75,15 @@ public sealed class TypeSafeAiProvider
     public string SpecificationVersion => "v4";
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static TypeSafeAiProvider Create(TypeSafeAiOptions? options = null, HttpMessageHandler? handler = null)
+    public static TypeSafeAiProvider Create(
+        TypeSafeAiOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        return new TypeSafeAiProvider(options, handler is null ? null : new HttpClient(handler, disposeHandler: false));
+        return new TypeSafeAiProvider(
+            options,
+            handler is null ? null : new HttpClient(handler, disposeHandler: false)
+        );
     }
 
     /// <summary>Returns a decision model. The id may be one this library does not know yet.</summary>
@@ -126,7 +132,8 @@ public sealed class TypeSafeAiProvider
     {
         var headers = new Dictionary<string, string>
         {
-            ["Authorization"] = "Bearer " + ApiKeys.Require(_options.ApiKey, ApiKeyEnvironmentVariable),
+            ["Authorization"] =
+                "Bearer " + ApiKeys.Require(_options.ApiKey, ApiKeyEnvironmentVariable),
         };
         if (_options.Headers != null)
         {

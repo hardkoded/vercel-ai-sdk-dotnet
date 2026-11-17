@@ -14,11 +14,13 @@ public sealed class CoreTests
     [UpstreamTest(
         "packages/ai/src/generate-text/generate-text.test.ts::generateText > result.text::should generate text",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Asserts the returned text and finish reason only.")]
+        Note = "Asserts the returned text and finish reason only."
+    )]
     public async Task Generate_text_returns_the_model_text()
     {
         var model = new TestLanguageModel { OnGenerate = _ => TestLanguageModel.Text("hello") };
-        var result = await Client().GenerateTextAsync(new GenerateTextOptions { Model = model, Prompt = "Hi" });
+        var result = await Client()
+            .GenerateTextAsync(new GenerateTextOptions { Model = model, Prompt = "Hi" });
         Assert.Equal("hello", result.Text);
         Assert.Equal(FinishReason.Stop, result.FinishReason);
     }
@@ -27,32 +29,47 @@ public sealed class CoreTests
     [UpstreamTest(
         "packages/ai/src/generate-text/stop-condition.test.ts::stop conditions > isStepCount::should return true when the step count matches exactly",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Stops a tool loop at two steps. Does not assert the other stop conditions.")]
+        Note = "Stops a tool loop at two steps. Does not assert the other stop conditions."
+    )]
     [UpstreamTest(
         "packages/ai/src/generate-text/generate-text.test.ts::generateText > options.stopWhen > 2 steps: initial, tool-result::result.toolResults should contain tool results from all steps",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Runs one tool and checks its output. Does not cover multi-tool steps.")]
+        Note = "Runs one tool and checks its output. Does not cover multi-tool steps."
+    )]
     public async Task Tools_run_and_a_second_step_can_answer()
     {
         var model = new TestLanguageModel();
-        model.OnGenerate = _ => model.Calls.Count == 1
-            ? new LanguageModelGenerateResult(
-                new GeneratedContent[] { new GeneratedToolCall("c1", "lookup", "{\"q\":\"x\"}") },
-                FinishReason.ToolCalls,
-                LanguageModelUsage.Empty,
-                "tool_calls")
-            : TestLanguageModel.Text("done");
+        model.OnGenerate = _ =>
+            model.Calls.Count == 1
+                ? new LanguageModelGenerateResult(
+                    new GeneratedContent[]
+                    {
+                        new GeneratedToolCall("c1", "lookup", "{\"q\":\"x\"}"),
+                    },
+                    FinishReason.ToolCalls,
+                    LanguageModelUsage.Empty,
+                    "tool_calls"
+                )
+                : TestLanguageModel.Text("done");
 
-        var result = await Client().GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            Prompt = "find x",
-            StopWhen = StopWhen.IsStepCount(2),
-            Tools = new[]
-            {
-                Tool.Function("lookup", "Looks up a value", "{\"type\":\"object\"}", (_, _) => Task.FromResult("{\"ok\":true}")),
-            },
-        });
+        var result = await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = model,
+                    Prompt = "find x",
+                    StopWhen = StopWhen.IsStepCount(2),
+                    Tools = new[]
+                    {
+                        Tool.Function(
+                            "lookup",
+                            "Looks up a value",
+                            "{\"type\":\"object\"}",
+                            (_, _) => Task.FromResult("{\"ok\":true}")
+                        ),
+                    },
+                }
+            );
 
         Assert.Equal("done", result.Text);
         Assert.Single(result.ToolResults);
@@ -63,13 +80,22 @@ public sealed class CoreTests
     [Fact]
     public async Task Structured_output_parses_the_last_step()
     {
-        var model = new TestLanguageModel { OnGenerate = _ => TestLanguageModel.Text("{\"city\":\"Paris\"}") };
-        var result = await Client().GenerateTextAsync(new GenerateTextOptions
+        var model = new TestLanguageModel
         {
-            Model = model,
-            Prompt = "where",
-            Output = OutputSpec.Object("{\"type\":\"object\",\"properties\":{\"city\":{\"type\":\"string\"}}}", "place"),
-        });
+            OnGenerate = _ => TestLanguageModel.Text("{\"city\":\"Paris\"}"),
+        };
+        var result = await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = model,
+                    Prompt = "where",
+                    Output = OutputSpec.Object(
+                        "{\"type\":\"object\",\"properties\":{\"city\":{\"type\":\"string\"}}}",
+                        "place"
+                    ),
+                }
+            );
 
         Assert.Equal("Paris", result.Output!.Value.GetProperty("city").GetString());
     }
@@ -78,7 +104,8 @@ public sealed class CoreTests
     [UpstreamTest(
         "packages/ai/src/generate-text/stream-text.test.ts::streamText > result.textStream::should send text deltas",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Reads text deltas and the joined text. Does not cover empty-delta filtering.")]
+        Note = "Reads text deltas and the joined text. Does not cover empty-delta filtering."
+    )]
     public async Task Stream_yields_text_deltas()
     {
         var model = new TestLanguageModel
@@ -90,7 +117,8 @@ public sealed class CoreTests
                 new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(1, 2, 3), "stop"),
             },
         };
-        var stream = Client().StreamTextAsync(new StreamTextOptions { Model = model, Prompt = "go" });
+        var stream = Client()
+            .StreamTextAsync(new StreamTextOptions { Model = model, Prompt = "go" });
         var parts = new List<string>();
         await foreach (var delta in stream.TextStream())
         {
@@ -111,7 +139,8 @@ public sealed class CoreTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/registry/provider-registry.test.ts::languageModel::should return language model from provider",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Registry_resolves_provider_and_model()
     {
         var model = new TestLanguageModel("echo");

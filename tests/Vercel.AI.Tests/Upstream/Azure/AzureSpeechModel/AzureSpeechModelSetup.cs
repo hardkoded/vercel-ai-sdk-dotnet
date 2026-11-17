@@ -13,7 +13,8 @@ namespace Vercel.AI.Tests.Upstream.Azure.AzureSpeechModel;
 /// <summary>Port of <c>setup</c>, <c>ssml</c> and the shared constants of <c>azure-speech-model.test.ts</c>.</summary>
 internal sealed class AzureSpeechModelSetup
 {
-    public const string SpeechUrl = "https://test-resource.cognitiveservices.azure.com/tts/cognitiveservices/v1";
+    public const string SpeechUrl =
+        "https://test-resource.cognitiveservices.azure.com/tts/cognitiveservices/v1";
 
     public static readonly byte[] Audio = [0xff, 0xf3, 0x44, 0xc4];
 
@@ -27,12 +28,20 @@ internal sealed class AzureSpeechModelSetup
 
     public RecordingHandler Handler { get; }
 
-    public (string Url, Dictionary<string, string> Headers, string Body) Request => (Handler.Url, Handler.Headers, Handler.Body);
+    public (string Url, Dictionary<string, string> Headers, string Body) Request =>
+        (Handler.Url, Handler.Headers, Handler.Body);
 
-    public static AzureSpeechModelSetup Create(Action<AzureOpenAIOptions>? configure = null, Func<HttpResponseMessage>? response = null)
+    public static AzureSpeechModelSetup Create(
+        Action<AzureOpenAIOptions>? configure = null,
+        Func<HttpResponseMessage>? response = null
+    )
     {
         var handler = new RecordingHandler(response ?? DefaultResponse);
-        var options = new AzureOpenAIOptions { ResourceName = "test-resource", ApiKey = "test-key" };
+        var options = new AzureOpenAIOptions
+        {
+            ResourceName = "test-resource",
+            ApiKey = "test-key",
+        };
         configure?.Invoke(options);
         return new AzureSpeechModelSetup(AzureOpenAIProvider.Create(options, handler), handler);
     }
@@ -40,7 +49,12 @@ internal sealed class AzureSpeechModelSetup
     public static string Ssml(string voice, string content, string locale = "en-US")
     {
         return "<speak version=\"1.0\" xmlns=\"http://www.w3.org/2001/10/synthesis\" xmlns:mstts=\"http://www.w3.org/2001/mstts\" xml:lang=\""
-            + locale + "\"><voice name=\"" + voice + "\">" + content + "</voice></speak>";
+            + locale
+            + "\"><voice name=\""
+            + voice
+            + "\">"
+            + content
+            + "</voice></speak>";
     }
 
     public static JsonElement Json(string json)
@@ -51,12 +65,18 @@ internal sealed class AzureSpeechModelSetup
 
     public static OpenAISpeechCall Call(string text, string? providerOptions = null)
     {
-        return new OpenAISpeechCall(text) { ProviderOptions = providerOptions == null ? null : Json(providerOptions) };
+        return new OpenAISpeechCall(text)
+        {
+            ProviderOptions = providerOptions == null ? null : Json(providerOptions),
+        };
     }
 
     private static HttpResponseMessage DefaultResponse()
     {
-        var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(Audio) };
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent(Audio),
+        };
         response.Content.Headers.ContentType = new MediaTypeHeaderValue("audio/mpeg");
         return response;
     }
@@ -71,11 +91,16 @@ internal sealed class AzureSpeechModelSetup
 
         public Dictionary<string, string> Headers { get; } = new(StringComparer.OrdinalIgnoreCase);
 
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
         {
             Calls++;
             Url = request.RequestUri?.AbsoluteUri ?? string.Empty;
-            Body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+            Body = request.Content is null
+                ? string.Empty
+                : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
             Headers.Clear();
             foreach (var header in request.Headers)
             {

@@ -11,9 +11,11 @@ namespace Vercel.AI.Gateway;
 /// <summary>JSON schemas for the Gateway Tako search tool.</summary>
 public static class GatewayTakoSearch
 {
-    private const string InputSchemaJson = @"{ ""type"": ""object"", ""properties"": { ""query"": { ""type"": ""string"", ""description"": ""Natural-language search query. Include the entity, metric, and time period. Quote a phrase to force it to one entity, for example \""Tesla\"":PRODUCT price."" }, ""effort"": { ""enum"": [ ""deep"", ""fast"", ""instant"" ], ""description"": ""Search effort. fast is the balanced default, instant favors cached results and low latency, and deep broadens retrieval with reranking at higher cost and latency."" }, ""sources"": { ""type"": ""object"", ""description"": ""Sources to search. Omit to search both curated data and the web. When provided, only keys present are searched."", ""properties"": { ""data"": { ""type"": ""object"", ""properties"": { ""count"": { ""type"": ""number"", ""description"": ""Maximum number of data results to return (1-20). When include_contents is true, each additional result adds its own data surcharge."" }, ""include_contents"": { ""type"": ""boolean"", ""description"": ""Inline rows for each data result. This adds a data surcharge based on row count and dataset source. To estimate cost, search with include_contents disabled and inspect cards.content.export_pricing. This applies to every returned card; limit sources.data.count and sources.data.max_rows to control cost."" }, ""mode"": { ""enum"": [ ""inline"", ""url"" ], ""description"": ""Requested data delivery mode. Search card data is always inline."" }, ""content_format"": { ""enum"": [ ""card_json"", ""csv"", ""json_compact"", ""json_records"" ], ""description"": ""Serialization for inlined card data."" }, ""max_rows"": { ""type"": ""number"", ""description"": ""Maximum rows to inline per result. Omit to use the allowance in cards.content.export_pricing. A data surcharge applies per 1,000 exported rows; lower values reduce cost."" }, ""node_ids"": { ""type"": ""array"", ""items"": { ""type"": ""string"" }, ""description"": ""Data Graph node IDs to prioritize. Maximum 20."" }, ""strict"": { ""type"": ""boolean"", ""description"": ""Only return cards matching node_ids. Requires a non-empty node_ids."" } } }, ""web"": { ""type"": ""object"", ""properties"": { ""count"": { ""type"": ""number"", ""description"": ""Maximum number of web results to return (1-20)."" }, ""include_contents"": { ""type"": ""boolean"", ""description"": ""Inline extracted web page text. This can add a data charge."" }, ""category"": { ""enum"": [ ""finance"", ""news"", ""sports"" ], ""description"": ""Optional web-result category filter."" }, ""include_domains"": { ""type"": ""array"", ""items"": { ""type"": ""string"" }, ""description"": ""Only return results from these bare domains."" }, ""exclude_domains"": { ""type"": ""array"", ""items"": { ""type"": ""string"" }, ""description"": ""Exclude results from these bare domains."" }, ""snippet_max_chars"": { ""type"": ""number"", ""description"": ""Maximum characters in each web-result snippet."" }, ""highlights"": { ""type"": ""boolean"", ""description"": ""Include highlighted passages in web results. Defaults to true in AI Gateway."" }, ""article_content_max_chars"": { ""type"": ""number"", ""description"": ""Maximum extracted characters per web page when including contents."" }, ""published_after"": { ""type"": ""string"", ""description"": ""Keep results published on or after this ISO date (YYYY-MM-DD)."" }, ""published_before"": { ""type"": ""string"", ""description"": ""Keep results published on or before this ISO date (YYYY-MM-DD)."" } } } } }, ""location"": { ""type"": ""object"", ""description"": ""End-user coordinates for localized results."", ""properties"": { ""latitude"": { ""type"": ""number"", ""description"": ""Latitude between -90 and 90."" }, ""longitude"": { ""type"": ""number"", ""description"": ""Longitude between -180 and 180."" } }, ""required"": [ ""latitude"", ""longitude"" ] }, ""country_code"": { ""type"": ""string"", ""description"": ""Two-letter ISO 3166-1 country code, such as 'US'."" }, ""locale"": { ""type"": ""string"", ""description"": ""BCP-47 locale, such as 'en-US'."" }, ""timezone"": { ""type"": ""string"", ""description"": ""IANA timezone, such as 'America/New_York'."" }, ""output_settings"": { ""type"": ""object"", ""description"": ""Controls card rendering in the search response."", ""properties"": { ""image_dark_mode"": { ""type"": ""boolean"", ""description"": ""Render card preview images in dark mode."" }, ""force_refresh"": { ""type"": ""boolean"", ""description"": ""Instant-effort only. Request a refreshed instant result."" } } }, ""include_related"": { ""type"": ""number"", ""description"": ""Maximum related search suggestions to include (1-20)."" } }, ""required"": [ ""query"" ] }";
+    private const string InputSchemaJson =
+        @"{ ""type"": ""object"", ""properties"": { ""query"": { ""type"": ""string"", ""description"": ""Natural-language search query. Include the entity, metric, and time period. Quote a phrase to force it to one entity, for example \""Tesla\"":PRODUCT price."" }, ""effort"": { ""enum"": [ ""deep"", ""fast"", ""instant"" ], ""description"": ""Search effort. fast is the balanced default, instant favors cached results and low latency, and deep broadens retrieval with reranking at higher cost and latency."" }, ""sources"": { ""type"": ""object"", ""description"": ""Sources to search. Omit to search both curated data and the web. When provided, only keys present are searched."", ""properties"": { ""data"": { ""type"": ""object"", ""properties"": { ""count"": { ""type"": ""number"", ""description"": ""Maximum number of data results to return (1-20). When include_contents is true, each additional result adds its own data surcharge."" }, ""include_contents"": { ""type"": ""boolean"", ""description"": ""Inline rows for each data result. This adds a data surcharge based on row count and dataset source. To estimate cost, search with include_contents disabled and inspect cards.content.export_pricing. This applies to every returned card; limit sources.data.count and sources.data.max_rows to control cost."" }, ""mode"": { ""enum"": [ ""inline"", ""url"" ], ""description"": ""Requested data delivery mode. Search card data is always inline."" }, ""content_format"": { ""enum"": [ ""card_json"", ""csv"", ""json_compact"", ""json_records"" ], ""description"": ""Serialization for inlined card data."" }, ""max_rows"": { ""type"": ""number"", ""description"": ""Maximum rows to inline per result. Omit to use the allowance in cards.content.export_pricing. A data surcharge applies per 1,000 exported rows; lower values reduce cost."" }, ""node_ids"": { ""type"": ""array"", ""items"": { ""type"": ""string"" }, ""description"": ""Data Graph node IDs to prioritize. Maximum 20."" }, ""strict"": { ""type"": ""boolean"", ""description"": ""Only return cards matching node_ids. Requires a non-empty node_ids."" } } }, ""web"": { ""type"": ""object"", ""properties"": { ""count"": { ""type"": ""number"", ""description"": ""Maximum number of web results to return (1-20)."" }, ""include_contents"": { ""type"": ""boolean"", ""description"": ""Inline extracted web page text. This can add a data charge."" }, ""category"": { ""enum"": [ ""finance"", ""news"", ""sports"" ], ""description"": ""Optional web-result category filter."" }, ""include_domains"": { ""type"": ""array"", ""items"": { ""type"": ""string"" }, ""description"": ""Only return results from these bare domains."" }, ""exclude_domains"": { ""type"": ""array"", ""items"": { ""type"": ""string"" }, ""description"": ""Exclude results from these bare domains."" }, ""snippet_max_chars"": { ""type"": ""number"", ""description"": ""Maximum characters in each web-result snippet."" }, ""highlights"": { ""type"": ""boolean"", ""description"": ""Include highlighted passages in web results. Defaults to true in AI Gateway."" }, ""article_content_max_chars"": { ""type"": ""number"", ""description"": ""Maximum extracted characters per web page when including contents."" }, ""published_after"": { ""type"": ""string"", ""description"": ""Keep results published on or after this ISO date (YYYY-MM-DD)."" }, ""published_before"": { ""type"": ""string"", ""description"": ""Keep results published on or before this ISO date (YYYY-MM-DD)."" } } } } }, ""location"": { ""type"": ""object"", ""description"": ""End-user coordinates for localized results."", ""properties"": { ""latitude"": { ""type"": ""number"", ""description"": ""Latitude between -90 and 90."" }, ""longitude"": { ""type"": ""number"", ""description"": ""Longitude between -180 and 180."" } }, ""required"": [ ""latitude"", ""longitude"" ] }, ""country_code"": { ""type"": ""string"", ""description"": ""Two-letter ISO 3166-1 country code, such as 'US'."" }, ""locale"": { ""type"": ""string"", ""description"": ""BCP-47 locale, such as 'en-US'."" }, ""timezone"": { ""type"": ""string"", ""description"": ""IANA timezone, such as 'America/New_York'."" }, ""output_settings"": { ""type"": ""object"", ""description"": ""Controls card rendering in the search response."", ""properties"": { ""image_dark_mode"": { ""type"": ""boolean"", ""description"": ""Render card preview images in dark mode."" }, ""force_refresh"": { ""type"": ""boolean"", ""description"": ""Instant-effort only. Request a refreshed instant result."" } } }, ""include_related"": { ""type"": ""number"", ""description"": ""Maximum related search suggestions to include (1-20)."" } }, ""required"": [ ""query"" ] }";
 
-    private const string OutputSchemaJson = @"{
+    private const string OutputSchemaJson =
+        @"{
   ""anyOf"": [
     {
       ""type"": ""object"",
@@ -234,7 +236,8 @@ public static class GatewayTakoSearch
     /// <summary>Schema of the <c>content</c> of a card or web result, exported for reuse by other Tako tools. Maps to <c>takoResultContentSchema</c>.</summary>
     public static JsonElement ResultContentSchema => Resolved.Content;
 
-    private static readonly (JsonElement Output, JsonElement Content) Resolved = ParseWithReferences(OutputSchemaJson);
+    private static readonly (JsonElement Output, JsonElement Content) Resolved =
+        ParseWithReferences(OutputSchemaJson);
 
     /// <summary>
     /// Creates the Tako search tool. The tool is executed by the AI Gateway, so it has no local execute function.
@@ -242,7 +245,12 @@ public static class GatewayTakoSearch
     /// </summary>
     public static Tool Create(GatewayTakoSearchConfig? config = null)
     {
-        return Tool.ProviderDefined("gateway.tako_search", "tako_search", (config ?? new GatewayTakoSearchConfig()).ToArgs(), InputSchema);
+        return Tool.ProviderDefined(
+            "gateway.tako_search",
+            "tako_search",
+            (config ?? new GatewayTakoSearchConfig()).ToArgs(),
+            InputSchema
+        );
     }
 
     // The validator that checks tool outputs does not follow $ref, so the shared definitions are inlined.
@@ -258,7 +266,10 @@ public static class GatewayTakoSearch
         }
 
         var result = Inline(root, resolved);
-        return (JsonSerializer.SerializeToElement(result), JsonSerializer.SerializeToElement(resolved["content"]));
+        return (
+            JsonSerializer.SerializeToElement(result),
+            JsonSerializer.SerializeToElement(resolved["content"])
+        );
     }
 
     private static JsonNode Inline(JsonNode node, Dictionary<string, JsonNode> resolved)
@@ -275,7 +286,8 @@ public static class GatewayTakoSearch
                 var copy = new JsonObject();
                 foreach (var property in obj)
                 {
-                    copy[property.Key] = property.Value == null ? null : Inline(property.Value, resolved);
+                    copy[property.Key] =
+                        property.Value == null ? null : Inline(property.Value, resolved);
                 }
 
                 return copy;
@@ -366,7 +378,11 @@ public sealed class GatewayTakoSearchConfig
 
         if (Location != null)
         {
-            args["location"] = new JsonObject { ["latitude"] = Location.Latitude, ["longitude"] = Location.Longitude };
+            args["location"] = new JsonObject
+            {
+                ["latitude"] = Location.Latitude,
+                ["longitude"] = Location.Longitude,
+            };
         }
 
         TakoJson.Set(args, "countryCode", CountryCode);
@@ -615,7 +631,11 @@ public readonly struct TakoDatasetCell
 
 internal sealed class TakoDatasetCellConverter : JsonConverter<TakoDatasetCell>
 {
-    public override TakoDatasetCell Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override TakoDatasetCell Read(
+        ref Utf8JsonReader reader,
+        Type typeToConvert,
+        JsonSerializerOptions options
+    )
     {
         switch (reader.TokenType)
         {
@@ -630,11 +650,17 @@ internal sealed class TakoDatasetCellConverter : JsonConverter<TakoDatasetCell>
             case JsonTokenType.String:
                 return new TakoDatasetCell(null, null, reader.GetString());
             default:
-                throw new JsonException("A Tako dataset cell must be a boolean, number, string or null.");
+                throw new JsonException(
+                    "A Tako dataset cell must be a boolean, number, string or null."
+                );
         }
     }
 
-    public override void Write(Utf8JsonWriter writer, TakoDatasetCell value, JsonSerializerOptions options)
+    public override void Write(
+        Utf8JsonWriter writer,
+        TakoDatasetCell value,
+        JsonSerializerOptions options
+    )
     {
         if (value.Boolean is { } boolean)
         {
@@ -1165,11 +1191,22 @@ internal sealed class TakoSearchOutputConverter : JsonConverter<TakoSearchOutput
 {
     private static readonly string[] GatewayToolErrorCodes =
     [
-        "api_error", "configuration_error", "execution_error", "gateway_rate_limit", "invalid_input", "rate_limit",
-        "timeout", "unknown", "unknown_tool",
+        "api_error",
+        "configuration_error",
+        "execution_error",
+        "gateway_rate_limit",
+        "invalid_input",
+        "rate_limit",
+        "timeout",
+        "unknown",
+        "unknown_tool",
     ];
 
-    public override TakoSearchOutput? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override TakoSearchOutput? Read(
+        ref Utf8JsonReader reader,
+        Type typeToConvert,
+        JsonSerializerOptions options
+    )
     {
         using var document = JsonDocument.ParseValue(ref reader);
         var root = document.RootElement;
@@ -1180,22 +1217,41 @@ internal sealed class TakoSearchOutputConverter : JsonConverter<TakoSearchOutput
 
         // Upstream tries the response branch first: a response has request_id and keeps `error` and `message` as extra fields.
         var raw = root.GetRawText();
-        if (root.TryGetProperty("request_id", out var requestId) && requestId.ValueKind == JsonValueKind.String)
+        if (
+            root.TryGetProperty("request_id", out var requestId)
+            && requestId.ValueKind == JsonValueKind.String
+        )
         {
-            return new TakoSearchOutput { Response = JsonSerializer.Deserialize<TakoSearchResponse>(raw, options) };
+            return new TakoSearchOutput
+            {
+                Response = JsonSerializer.Deserialize<TakoSearchResponse>(raw, options),
+            };
         }
 
-        if (root.TryGetProperty("error", out var code) && code.ValueKind == JsonValueKind.String
+        if (
+            root.TryGetProperty("error", out var code)
+            && code.ValueKind == JsonValueKind.String
             && Array.IndexOf(GatewayToolErrorCodes, code.GetString()) >= 0
-            && root.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String)
+            && root.TryGetProperty("message", out var message)
+            && message.ValueKind == JsonValueKind.String
+        )
         {
-            return new TakoSearchOutput { Error = JsonSerializer.Deserialize<GatewayToolError>(raw, options) };
+            return new TakoSearchOutput
+            {
+                Error = JsonSerializer.Deserialize<GatewayToolError>(raw, options),
+            };
         }
 
-        throw new JsonException("The Tako search output must be a search response (request_id) or a gateway tool error.");
+        throw new JsonException(
+            "The Tako search output must be a search response (request_id) or a gateway tool error."
+        );
     }
 
-    public override void Write(Utf8JsonWriter writer, TakoSearchOutput value, JsonSerializerOptions options)
+    public override void Write(
+        Utf8JsonWriter writer,
+        TakoSearchOutput value,
+        JsonSerializerOptions options
+    )
     {
         if (value.Error is not null && value.Response is not null)
         {

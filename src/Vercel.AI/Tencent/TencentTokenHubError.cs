@@ -25,15 +25,25 @@ internal static class TencentTokenHubError
                 return null;
             }
 
-            if (root.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
+            if (
+                root.TryGetProperty("error", out var error)
+                && error.ValueKind == JsonValueKind.Object
+            )
             {
-                return error.TryGetProperty("message", out var nested) && nested.ValueKind == JsonValueKind.String ? nested.GetString() : null;
+                return
+                    error.TryGetProperty("message", out var nested)
+                    && nested.ValueKind == JsonValueKind.String
+                    ? nested.GetString()
+                    : null;
             }
 
-            return root.TryGetProperty("code", out var code) && code.ValueKind is JsonValueKind.Number or JsonValueKind.String
-                && root.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String
-                    ? message.GetString()
-                    : null;
+            return
+                root.TryGetProperty("code", out var code)
+                && code.ValueKind is JsonValueKind.Number or JsonValueKind.String
+                && root.TryGetProperty("message", out var message)
+                && message.ValueKind == JsonValueKind.String
+                ? message.GetString()
+                : null;
         }
         catch (JsonException)
         {
@@ -55,12 +65,20 @@ internal static class TencentTokenHubError
         }
         catch (JsonException)
         {
-            throw new ApiException("Invalid JSON response", 200, response.Body) { Url = url, ResponseHeaders = response.Headers };
+            throw new ApiException("Invalid JSON response", 200, response.Body)
+            {
+                Url = url,
+                ResponseHeaders = response.Headers,
+            };
         }
 
         if (root.ValueKind != JsonValueKind.Object)
         {
-            throw new ApiException("Invalid JSON response", 200, response.Body) { Url = url, ResponseHeaders = response.Headers };
+            throw new ApiException("Invalid JSON response", 200, response.Body)
+            {
+                Url = url,
+                ResponseHeaders = response.Headers,
+            };
         }
 
         if (root.TryGetProperty("code", out var code) && code.ValueKind != JsonValueKind.Null)
@@ -69,12 +87,24 @@ internal static class TencentTokenHubError
             {
                 JsonValueKind.Number => code.GetDouble() != 0,
                 JsonValueKind.String => code.GetString() != "0",
-                _ => throw new ApiException("Invalid JSON response", 200, response.Body) { Url = url, ResponseHeaders = response.Headers },
+                _ => throw new ApiException("Invalid JSON response", 200, response.Body)
+                {
+                    Url = url,
+                    ResponseHeaders = response.Headers,
+                },
             };
             if (failed)
             {
-                var message = root.TryGetProperty("message", out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
-                throw new ApiException(message ?? "TokenHub request failed with code " + code.ToString(), 200, response.Body)
+                var message =
+                    root.TryGetProperty("message", out var value)
+                    && value.ValueKind == JsonValueKind.String
+                        ? value.GetString()
+                        : null;
+                throw new ApiException(
+                    message ?? "TokenHub request failed with code " + code.ToString(),
+                    200,
+                    response.Body
+                )
                 {
                     Url = url,
                     ResponseHeaders = response.Headers,

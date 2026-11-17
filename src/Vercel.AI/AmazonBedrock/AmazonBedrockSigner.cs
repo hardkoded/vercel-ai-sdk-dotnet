@@ -13,7 +13,17 @@ internal static class AmazonBedrockSigner
     /// Sends <c>Authorization: Bearer</c> when <paramref name="apiKey"/> is non-blank.
     /// Otherwise signs <paramref name="request"/> for <paramref name="service"/>.
     /// </summary>
-    public static void Apply(HttpRequestMessage request, byte[] payload, string region, string service, string? apiKey, string? accessKeyId, string? secretAccessKey, string? sessionToken, DateTimeOffset utcNow)
+    public static void Apply(
+        HttpRequestMessage request,
+        byte[] payload,
+        string region,
+        string service,
+        string? apiKey,
+        string? accessKeyId,
+        string? secretAccessKey,
+        string? sessionToken,
+        DateTimeOffset utcNow
+    )
     {
         if (!string.IsNullOrWhiteSpace(apiKey))
         {
@@ -25,7 +35,9 @@ internal static class AmazonBedrockSigner
         var secret = secretAccessKey ?? Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
         if (string.IsNullOrEmpty(accessKey) || string.IsNullOrEmpty(secret))
         {
-            throw new AiSdkException("AWS credentials are required. Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.");
+            throw new AiSdkException(
+                "AWS credentials are required. Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY."
+            );
         }
 
         var token = sessionToken ?? Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN");

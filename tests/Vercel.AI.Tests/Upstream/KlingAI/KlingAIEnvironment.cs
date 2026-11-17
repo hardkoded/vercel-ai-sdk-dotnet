@@ -15,7 +15,12 @@ public sealed class KlingAIEnvironmentCollection
 /// <summary>Like vitest <c>vi.stubEnv</c> and <c>vi.unstubAllEnvs</c>: clears the KlingAI variables, sets stubs, restores on dispose.</summary>
 internal sealed class KlingAIEnvironment : IDisposable
 {
-    private static readonly string[] Names = ["KLINGAI_API_KEY", "KLINGAI_ACCESS_KEY", "KLINGAI_SECRET_KEY"];
+    private static readonly string[] Names =
+    [
+        "KLINGAI_API_KEY",
+        "KLINGAI_ACCESS_KEY",
+        "KLINGAI_SECRET_KEY",
+    ];
 
     private readonly Dictionary<string, string?> _saved = new(StringComparer.Ordinal);
 
@@ -50,6 +55,10 @@ internal static class KlingAIJwt
     {
         var text = token.Split('.')[part].Replace('-', '+').Replace('_', '/');
         text = text.PadRight(text.Length + ((4 - (text.Length % 4)) % 4), '=');
-        return System.Text.Json.Nodes.JsonNode.Parse(System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(text)))!.AsObject();
+        return System
+            .Text.Json.Nodes.JsonNode.Parse(
+                System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(text))
+            )!
+            .AsObject();
     }
 }

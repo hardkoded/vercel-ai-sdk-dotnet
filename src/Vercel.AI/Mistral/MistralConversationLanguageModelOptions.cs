@@ -13,19 +13,31 @@ namespace Vercel.AI.Mistral;
 internal static class MistralLanguageModelConversationOptions
 {
     /// <summary>Parses the <c>mistral</c> provider options. Maps to <c>parseProviderOptions</c> with <c>mistralLanguageModelConversationOptions</c>.</summary>
-    public static MistralLanguageModelChatOptions? Parse(IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    public static MistralLanguageModelChatOptions? Parse(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
+    )
     {
-        if (providerOptions == null
+        if (
+            providerOptions == null
             || !providerOptions.TryGetValue("mistral", out var value)
-            || value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+            || value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined
+        )
         {
             return null;
         }
 
-        var error = ProviderOptionShape.Validate(value, MistralLanguageModelChatOptions.Shape(), false);
+        var error = ProviderOptionShape.Validate(
+            value,
+            MistralLanguageModelChatOptions.Shape(),
+            false
+        );
         if (error != null)
         {
-            throw new InvalidArgumentException("providerOptions", value.GetRawText(), "invalid mistral provider options: " + error);
+            throw new InvalidArgumentException(
+                "providerOptions",
+                value.GetRawText(),
+                "invalid mistral provider options: " + error
+            );
         }
 
         return MistralLanguageModelChatOptions.FromJson(value);

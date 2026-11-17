@@ -50,12 +50,16 @@ public sealed class AnthropicStream
 
     /// <summary>Creates a stream reader.</summary>
     public AnthropicStream(bool includeRawChunks, bool usesJsonResponseTool)
-        : this(includeRawChunks, usesJsonResponseTool, "anthropic", false)
-    {
-    }
+        : this(includeRawChunks, usesJsonResponseTool, "anthropic", false) { }
 
     /// <summary>Creates a stream reader that mirrors the finish metadata under a custom provider key.</summary>
-    public AnthropicStream(bool includeRawChunks, bool usesJsonResponseTool, string providerOptionsName, bool usedCustomProviderKey, IReadOnlyDictionary<string, string>? toolNames = null)
+    public AnthropicStream(
+        bool includeRawChunks,
+        bool usesJsonResponseTool,
+        string providerOptionsName,
+        bool usedCustomProviderKey,
+        IReadOnlyDictionary<string, string>? toolNames = null
+    )
     {
         _toolNames = toolNames ?? new Dictionary<string, string>();
         _includeRaw = includeRawChunks;
@@ -123,7 +127,11 @@ public sealed class AnthropicStream
             var message = Text(error?["message"]) ?? "Unknown provider error.";
             var status = AnthropicStreamError.StatusCode(errorType);
             _failed = true;
-            yield return new ErrorStreamPart(status == null ? message : message + " (" + status.Value.ToString(CultureInfo.InvariantCulture) + ")");
+            yield return new ErrorStreamPart(
+                status == null
+                    ? message
+                    : message + " (" + status.Value.ToString(CultureInfo.InvariantCulture) + ")"
+            );
             yield break;
         }
 
@@ -182,7 +190,9 @@ public sealed class AnthropicStream
         {
             _invalid = true;
             _failed = true;
-            yield return new ErrorStreamPart("Received a new message_start event while a message was still open.");
+            yield return new ErrorStreamPart(
+                "Received a new message_start event while a message was still open."
+            );
             yield break;
         }
 
@@ -222,7 +232,10 @@ public sealed class AnthropicStream
                 ["usage"] = usage?.DeepClone(),
             },
         };
-        yield return new CustomStreamPart("anthropic.message_start", ParseElement(metadata.ToJsonString()));
+        yield return new CustomStreamPart(
+            "anthropic.message_start",
+            ParseElement(metadata.ToJsonString())
+        );
 
         // Pre-populated tool_use blocks (deferred tool calls) arrive in message_start.
         if (message?["content"] is JsonArray content)
@@ -238,10 +251,7 @@ public sealed class AnthropicStream
                     yield return new ToolInputStartStreamPart(toolCallId, CustomName(toolName));
                     yield return new ToolInputDeltaStreamPart(toolCallId, input);
                     yield return new ToolInputEndStreamPart(toolCallId);
-                    yield return new ToolCallStreamPart(
-                        toolCallId,
-                        CustomName(toolName),
-                        input);
+                    yield return new ToolCallStreamPart(toolCallId, CustomName(toolName), input);
                 }
             }
         }
@@ -274,7 +284,10 @@ public sealed class AnthropicStream
             }
 
             _blocks[index] = new Block("text", id);
-            yield return new TextStartStreamPart(id, ParseElement(new JsonObject { ["anthropic"] = metadata }.ToJsonString()));
+            yield return new TextStartStreamPart(
+                id,
+                ParseElement(new JsonObject { ["anthropic"] = metadata }.ToJsonString())
+            );
             var summary = Text(block["content"]);
             if (!string.IsNullOrEmpty(summary))
             {
@@ -316,7 +329,10 @@ public sealed class AnthropicStream
                 ToolsetMember = memberName,
                 ToolsetMetadata = metadata,
             };
-            yield return new ToolInputStartStreamPart(Text(block["id"]) ?? string.Empty, customName);
+            yield return new ToolInputStartStreamPart(
+                Text(block["id"]) ?? string.Empty,
+                customName
+            );
         }
         else if (type == "tool_use" || type == "server_tool_use")
         {
@@ -339,7 +355,8 @@ public sealed class AnthropicStream
             {
                 yield return new ToolInputStartStreamPart(
                     Text(block["id"]) ?? string.Empty,
-                    CustomName(Text(block["name"]) ?? string.Empty));
+                    CustomName(Text(block["name"]) ?? string.Empty)
+                );
             }
         }
     }
@@ -370,7 +387,10 @@ public sealed class AnthropicStream
                 yield return new TextDeltaStreamPart(block.Id, summary!);
             }
         }
-        else if ((deltaType == "thinking_delta" || deltaType == "signature_delta") && block.Kind == "reasoning")
+        else if (
+            (deltaType == "thinking_delta" || deltaType == "signature_delta")
+            && block.Kind == "reasoning"
+        )
         {
             if (deltaType == "thinking_delta")
             {
@@ -379,7 +399,11 @@ public sealed class AnthropicStream
                 yield return new ReasoningDeltaStreamPart(block.Id, thinking);
             }
         }
-        else if (deltaType == "citations_delta" && block.Kind == "text" && delta["citation"] != null)
+        else if (
+            deltaType == "citations_delta"
+            && block.Kind == "text"
+            && delta["citation"] != null
+        )
         {
             block.Citations.Add(ParseElement(delta["citation"]!.ToJsonString()));
         }
@@ -389,7 +413,11 @@ public sealed class AnthropicStream
             var partial = Text(delta["partial_json"]) ?? string.Empty;
             _hasOutput |= partial.Length > 0;
             block.Input.Append(partial);
-            if (partial.Length > 0 && block.ToolsetMember == null && !(_usesJsonTool && block.ToolName == "json"))
+            if (
+                partial.Length > 0
+                && block.ToolsetMember == null
+                && !(_usesJsonTool && block.ToolName == "json")
+            )
             {
                 yield return new ToolInputDeltaStreamPart(block.ToolCallId, partial);
             }
@@ -410,7 +438,11 @@ public sealed class AnthropicStream
         {
             yield return block.Citations.Count == 0
                 ? new TextEndStreamPart(block.Id)
-                : new TextEndStreamPart(block.Id, AnthropicCitations.MapAll(block.Citations), AnthropicCitations.TextMetadata(block.Citations));
+                : new TextEndStreamPart(
+                    block.Id,
+                    AnthropicCitations.MapAll(block.Citations),
+                    AnthropicCitations.TextMetadata(block.Citations)
+                );
         }
         else if (block.Kind == "reasoning")
         {
@@ -421,11 +453,24 @@ public sealed class AnthropicStream
             var arguments = block.Input.Length == 0 ? "{}" : block.Input.ToString();
             if (block.ToolsetMember != null)
             {
-                arguments = AnthropicToolset.MemberInput(block.ToolsetMember, AnthropicToolset.ParseStreamedInput(block.Input.ToString()));
+                arguments = AnthropicToolset.MemberInput(
+                    block.ToolsetMember,
+                    AnthropicToolset.ParseStreamedInput(block.Input.ToString())
+                );
                 _hasOutput = true;
                 yield return new ToolInputDeltaStreamPart(block.ToolCallId, arguments);
                 yield return new ToolInputEndStreamPart(block.ToolCallId);
-                yield return new ToolCallStreamPart(block.ToolCallId, block.ToolName, arguments, ParseElement(new JsonObject { ["anthropic"] = block.ToolsetMetadata!.DeepClone() }.ToJsonString()));
+                yield return new ToolCallStreamPart(
+                    block.ToolCallId,
+                    block.ToolName,
+                    arguments,
+                    ParseElement(
+                        new JsonObject
+                        {
+                            ["anthropic"] = block.ToolsetMetadata!.DeepClone(),
+                        }.ToJsonString()
+                    )
+                );
             }
             else if (_usesJsonTool && block.ToolName == "json")
             {
@@ -437,9 +482,16 @@ public sealed class AnthropicStream
             {
                 _hasOutput = true;
                 yield return new ToolInputEndStreamPart(block.ToolCallId);
-                yield return new ToolCallStreamPart(block.ToolCallId, CustomName(block.ToolName), arguments)
+                yield return new ToolCallStreamPart(
+                    block.ToolCallId,
+                    CustomName(block.ToolName),
+                    arguments
+                )
                 {
-                    Dynamic = MarkCodeExecutionDynamic && block.IsServerTool && IsCodeExecution(block.ToolName),
+                    Dynamic =
+                        MarkCodeExecutionDynamic
+                        && block.IsServerTool
+                        && IsCodeExecution(block.ToolName),
                 };
             }
         }
@@ -447,7 +499,9 @@ public sealed class AnthropicStream
 
     private static bool IsCodeExecution(string name)
     {
-        return name == "code_execution" || name == "bash_code_execution" || name == "text_editor_code_execution";
+        return name == "code_execution"
+            || name == "bash_code_execution"
+            || name == "text_editor_code_execution";
     }
 
     private void MessageDelta(JsonObject node)
@@ -460,7 +514,9 @@ public sealed class AnthropicStream
         }
 
         _stopSequence = Text(delta?["stop_sequence"]);
-        _container = delta?["container"] is JsonObject container ? Container(container, true) : null;
+        _container = delta?["container"] is JsonObject container
+            ? Container(container, true)
+            : null;
 
         if (node["usage"] is JsonObject usage)
         {
@@ -495,7 +551,8 @@ public sealed class AnthropicStream
             yield return new FinishStreamPart(
                 FinishReason.Interrupted,
                 _lastFinish?.Usage ?? LanguageModelUsage.Null,
-                providerMetadata: _lastFinish?.ProviderMetadata);
+                providerMetadata: _lastFinish?.ProviderMetadata
+            );
         }
     }
 
@@ -509,12 +566,20 @@ public sealed class AnthropicStream
         };
         if (withSkills && container["skills"] is JsonArray skills)
         {
-            mapped["skills"] = new JsonArray(skills.OfType<JsonObject>().Select(skill => (JsonNode)new JsonObject
-            {
-                ["type"] = skill["type"]?.DeepClone(),
-                ["skillId"] = skill["skill_id"]?.DeepClone(),
-                ["version"] = skill["version"]?.DeepClone(),
-            }).ToArray());
+            mapped["skills"] = new JsonArray(
+                skills
+                    .OfType<JsonObject>()
+                    .Select(skill =>
+                        (JsonNode)
+                            new JsonObject
+                            {
+                                ["type"] = skill["type"]?.DeepClone(),
+                                ["skillId"] = skill["skill_id"]?.DeepClone(),
+                                ["version"] = skill["version"]?.DeepClone(),
+                            }
+                    )
+                    .ToArray()
+            );
         }
 
         return mapped;
@@ -524,7 +589,9 @@ public sealed class AnthropicStream
     {
         var anthropic = new JsonObject
         {
-            ["usage"] = _usage is { ValueKind: JsonValueKind.Object } usage ? JsonNode.Parse(usage.GetRawText()) : null,
+            ["usage"] = _usage is { ValueKind: JsonValueKind.Object } usage
+                ? JsonNode.Parse(usage.GetRawText())
+                : null,
             ["stopSequence"] = _stopSequence,
             ["iterations"] = null,
             ["container"] = _container?.DeepClone(),
@@ -546,11 +613,17 @@ public sealed class AnthropicStream
 
     private FinishStreamPart Finish()
     {
-        var usage = _usage is { } element && element.ValueKind == JsonValueKind.Object
-            ? AnthropicUsage.Convert(element)
-            : LanguageModelUsage.Empty;
+        var usage =
+            _usage is { } element && element.ValueKind == JsonValueKind.Object
+                ? AnthropicUsage.Convert(element)
+                : LanguageModelUsage.Empty;
         _hasOutput = false;
-        _lastFinish = new FinishStreamPart(AnthropicStopReason.Map(_finish, _jsonTool), usage, _finish, FinishMetadata());
+        _lastFinish = new FinishStreamPart(
+            AnthropicStopReason.Map(_finish, _jsonTool),
+            usage,
+            _finish,
+            FinishMetadata()
+        );
         return _lastFinish;
     }
 

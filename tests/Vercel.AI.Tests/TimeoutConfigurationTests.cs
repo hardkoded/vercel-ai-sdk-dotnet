@@ -11,8 +11,12 @@ public sealed class TimeoutConfigurationTests
     [Fact]
     public void A_negative_TimeSpan_is_rejected_even_when_it_rounds_to_zero_milliseconds()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => (TimeoutConfiguration)TimeSpan.FromTicks(-1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => (TimeoutConfiguration)TimeSpan.FromSeconds(-5));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            (TimeoutConfiguration)TimeSpan.FromTicks(-1)
+        );
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            (TimeoutConfiguration)TimeSpan.FromSeconds(-5)
+        );
     }
 
     [Fact]

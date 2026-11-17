@@ -18,7 +18,10 @@ public sealed class GoogleLanguageModel : ILanguageModel
     /// <summary>The most requests that follow a CONTINUATION response. A model that never stops continuing would loop forever.</summary>
     internal const int MaxContinuationHops = 64;
 
-    private static readonly string ContinuationLimitMessage = "The Gemini model kept answering with CONTINUATION after " + MaxContinuationHops + " continuation requests. Giving up.";
+    private static readonly string ContinuationLimitMessage =
+        "The Gemini model kept answering with CONTINUATION after "
+        + MaxContinuationHops
+        + " continuation requests. Giving up.";
 
     private readonly GoogleProvider _provider;
 
@@ -50,10 +53,19 @@ public sealed class GoogleLanguageModel : ILanguageModel
     /// <summary>Builds the generateContent body without sending it.</summary>
     public GooglePreparedRequest Prepare(LanguageModelCallOptions options, bool streaming)
     {
-        return GoogleRequest.Prepare(ModelId, Provider, options, streaming, _provider.ToolResultDownloadSettings?.SupportsGoogleCloudStorageUrls ?? false);
+        return GoogleRequest.Prepare(
+            ModelId,
+            Provider,
+            options,
+            streaming,
+            _provider.ToolResultDownloadSettings?.SupportsGoogleCloudStorageUrls ?? false
+        );
     }
 
-    private async Task<LanguageModelCallOptions> DownloadToolResultFilesAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    private async Task<LanguageModelCallOptions> DownloadToolResultFilesAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var settings = _provider.ToolResultDownloadSettings;
         if (settings is null)
@@ -61,10 +73,20 @@ public sealed class GoogleLanguageModel : ILanguageModel
             return options;
         }
 
-        var supported = settings.SupportsGoogleCloudStorageUrls && GoogleModelCapability.Get(ModelId).UsesGemini3Features
-            ? GoogleMessages.GoogleCloudStorageFunctionResponseUrls
-            : null;
-        var prompt = await DownloadToolResultFiles.DownloadToolResultFilesAsync(options.Prompt, cancellationToken, settings.MaxBytes, settings.Fetch, supported).ConfigureAwait(false);
+        var supported =
+            settings.SupportsGoogleCloudStorageUrls
+            && GoogleModelCapability.Get(ModelId).UsesGemini3Features
+                ? GoogleMessages.GoogleCloudStorageFunctionResponseUrls
+                : null;
+        var prompt = await DownloadToolResultFiles
+            .DownloadToolResultFilesAsync(
+                options.Prompt,
+                cancellationToken,
+                settings.MaxBytes,
+                settings.Fetch,
+                supported
+            )
+            .ConfigureAwait(false);
         if (ReferenceEquals(prompt, options.Prompt))
         {
             return options;
@@ -76,13 +98,22 @@ public sealed class GoogleLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
-        options = await DownloadToolResultFilesAsync(options ?? new LanguageModelCallOptions(), cancellationToken).ConfigureAwait(false);
+        options = await DownloadToolResultFilesAsync(
+                options ?? new LanguageModelCallOptions(),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var prepared = Prepare(options, false);
-        var headers = await HeadersAsync(options, prepared, cancellationToken).ConfigureAwait(false);
+        var headers = await HeadersAsync(options, prepared, cancellationToken)
+            .ConfigureAwait(false);
         var context = Context(prepared);
-        var response = await PostAsync(prepared.Body, headers, cancellationToken).ConfigureAwait(false);
+        var response = await PostAsync(prepared.Body, headers, cancellationToken)
+            .ConfigureAwait(false);
 
         // Gemini 4 long decode: a request that reaches the per-request cap while maxOutputTokens budget remains finishes
         // with CONTINUATION. Resend the same request with the continuation token and combine the content of all requests.
@@ -101,16 +132,36 @@ public sealed class GoogleLanguageModel : ILanguageModel
             using var document = JsonDocument.Parse(last?.ToJsonString() ?? "{}");
             var root = document.RootElement;
             var candidate = FirstCandidate(root);
-            groundingPerRequest.Add(candidate is { } grounded && grounded.TryGetProperty("groundingMetadata", out var groundingValue) && groundingValue.ValueKind != JsonValueKind.Null ? groundingValue.Clone() : null);
-            candidateToken = candidate is { } found ? GoogleJson.String(found, "continuationToken") : null;
-            var hopUsage = root.ValueKind == JsonValueKind.Object && root.TryGetProperty("usageMetadata", out var usageValue) ? usageValue.Clone() : (JsonElement?)null;
-            if (!isContinued && hopUsage is { ValueKind: JsonValueKind.Object } first && first.TryGetProperty("promptTokenCount", out var promptCount) && promptCount.TryGetInt32(out var promptTokens))
+            groundingPerRequest.Add(
+                candidate is { } grounded
+                && grounded.TryGetProperty("groundingMetadata", out var groundingValue)
+                && groundingValue.ValueKind != JsonValueKind.Null
+                    ? groundingValue.Clone()
+                    : null
+            );
+            candidateToken = candidate is { } found
+                ? GoogleJson.String(found, "continuationToken")
+                : null;
+            var hopUsage =
+                root.ValueKind == JsonValueKind.Object
+                && root.TryGetProperty("usageMetadata", out var usageValue)
+                    ? usageValue.Clone()
+                    : (JsonElement?)null;
+            if (
+                !isContinued
+                && hopUsage is { ValueKind: JsonValueKind.Object } first
+                && first.TryGetProperty("promptTokenCount", out var promptCount)
+                && promptCount.TryGetInt32(out var promptTokens)
+            )
             {
                 firstPromptTokenCount = promptTokens;
             }
 
             usage = GoogleUsage.Add(usage, hopUsage);
-            var next = candidate is { } hop && GoogleJson.String(hop, "finishReason") == "CONTINUATION" ? candidateToken : null;
+            var next =
+                candidate is { } hop && GoogleJson.String(hop, "finishReason") == "CONTINUATION"
+                    ? candidateToken
+                    : null;
             if (next == null)
             {
                 break;
@@ -137,7 +188,13 @@ public sealed class GoogleLanguageModel : ILanguageModel
         using var lastDocument = JsonDocument.Parse(last?.ToJsonString() ?? "{}");
         var result = GoogleResponse.Parse(lastDocument.RootElement, context);
         content.AddRange(result.Content);
-        var metadata = GoogleResponse.WithLongDecode(result.ProviderMetadata, candidateToken, isContinued ? firstPromptTokenCount : null, null, isContinued ? groundingPerRequest : null);
+        var metadata = GoogleResponse.WithLongDecode(
+            result.ProviderMetadata,
+            candidateToken,
+            isContinued ? firstPromptTokenCount : null,
+            null,
+            isContinued ? groundingPerRequest : null
+        );
         return new LanguageModelGenerateResult(
             content,
             result.FinishReason,
@@ -149,22 +206,31 @@ public sealed class GoogleLanguageModel : ILanguageModel
             response.Body,
             null,
             null,
-            response.Headers);
+            response.Headers
+        );
     }
 
-    private async Task<ProviderTextResponse> PostAsync(JsonObject body, Dictionary<string, string?> headers, CancellationToken cancellationToken)
+    private async Task<ProviderTextResponse> PostAsync(
+        JsonObject body,
+        Dictionary<string, string?> headers,
+        CancellationToken cancellationToken
+    )
     {
-        return await _provider.Http.SendJsonStringAsync(
-            HttpMethod.Post,
-            Url(":generateContent"),
-            GoogleJson.Write(body),
-            headers,
-            cancellationToken).ConfigureAwait(false);
+        return await _provider
+            .Http.SendJsonStringAsync(
+                HttpMethod.Post,
+                Url(":generateContent"),
+                GoogleJson.Write(body),
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
     }
 
     private static JsonElement? FirstCandidate(JsonElement root)
     {
-        return root.ValueKind == JsonValueKind.Object
+        return
+            root.ValueKind == JsonValueKind.Object
             && root.TryGetProperty("candidates", out var candidates)
             && candidates.ValueKind == JsonValueKind.Array
             && candidates.GetArrayLength() > 0
@@ -173,17 +239,36 @@ public sealed class GoogleLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
-        options = await DownloadToolResultFilesAsync(options ?? new LanguageModelCallOptions(), cancellationToken).ConfigureAwait(false);
+        options = await DownloadToolResultFilesAsync(
+                options ?? new LanguageModelCallOptions(),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var prepared = Prepare(options, true);
-        var headers = await HeadersAsync(options, prepared, cancellationToken).ConfigureAwait(false);
+        var headers = await HeadersAsync(options, prepared, cancellationToken)
+            .ConfigureAwait(false);
         var json = GoogleJson.Write(prepared.Body);
-        var sse = await _provider.Http.OpenSseResponseAsync(Url(":streamGenerateContent?alt=sse"), json, headers, cancellationToken).ConfigureAwait(false);
+        var sse = await _provider
+            .Http.OpenSseResponseAsync(
+                Url(":streamGenerateContent?alt=sse"),
+                json,
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var stream = StreamAsync(options, prepared, headers, sse.Events, cancellationToken);
         if (prepared.JsonResponseToolName != null)
         {
-            stream = JsonResponseTools.ConvertJsonResponseToolStream(stream, prepared.JsonResponseToolName, cancellationToken);
+            stream = JsonResponseTools.ConvertJsonResponseToolStream(
+                stream,
+                prepared.JsonResponseToolName,
+                cancellationToken
+            );
         }
 
         return sse.ToStreamResult(stream, json);
@@ -194,7 +279,8 @@ public sealed class GoogleLanguageModel : ILanguageModel
         GooglePreparedRequest prepared,
         Dictionary<string, string?> headers,
         IAsyncEnumerable<string> firstEvents,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         yield return new StreamStartStreamPart(Warnings(prepared));
         string? responseId = null;
@@ -236,8 +322,16 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
             Exception? failure = null;
             // The first request is already open. A continuation sends a new request.
-            var enumerator = (hop == 0 ? firstEvents : _provider.Http.SendSseAsync(Url(":streamGenerateContent?alt=sse"), GoogleJson.Write(requestBody), headers, cancellationToken))
-                .GetAsyncEnumerator(cancellationToken);
+            var enumerator = (
+                hop == 0
+                    ? firstEvents
+                    : _provider.Http.SendSseAsync(
+                        Url(":streamGenerateContent?alt=sse"),
+                        GoogleJson.Write(requestBody),
+                        headers,
+                        cancellationToken
+                    )
+            ).GetAsyncEnumerator(cancellationToken);
             var awaitingFirstEvent = hop > 0;
             try
             {
@@ -248,7 +342,8 @@ public sealed class GoogleLanguageModel : ILanguageModel
                     {
                         moved = await enumerator.MoveNextAsync().ConfigureAwait(false);
                     }
-                    catch (Exception error) when (hop > 0 && error is not OperationCanceledException)
+                    catch (Exception error)
+                        when (hop > 0 && error is not OperationCanceledException)
                     {
                         if (!awaitingFirstEvent)
                         {
@@ -304,14 +399,19 @@ public sealed class GoogleLanguageModel : ILanguageModel
                             finish = FinishReason.Error;
                         }
 
-                        yield return new ErrorStreamPart("The Gemini stream chunk was not valid JSON.");
+                        yield return new ErrorStreamPart(
+                            "The Gemini stream chunk was not valid JSON."
+                        );
                         continue;
                     }
 
                     using (document)
                     {
                         var root = document.RootElement;
-                        if (root.TryGetProperty("error", out var streamError) && streamError.ValueKind == JsonValueKind.Object)
+                        if (
+                            root.TryGetProperty("error", out var streamError)
+                            && streamError.ValueKind == JsonValueKind.Object
+                        )
                         {
                             finish = FinishReason.Error;
                             rawFinish = null;
@@ -319,19 +419,33 @@ public sealed class GoogleLanguageModel : ILanguageModel
                             continue;
                         }
 
-                        if (!emittedMetadata && root.TryGetProperty("responseId", out var id) && id.ValueKind == JsonValueKind.String)
+                        if (
+                            !emittedMetadata
+                            && root.TryGetProperty("responseId", out var id)
+                            && id.ValueKind == JsonValueKind.String
+                        )
                         {
                             responseId = id.GetString();
                             emittedMetadata = true;
-                            yield return new ResponseMetadataStreamPart(responseId, ModelId, _provider.Clock());
+                            yield return new ResponseMetadataStreamPart(
+                                responseId,
+                                ModelId,
+                                _provider.Clock()
+                            );
                         }
 
-                        if (root.TryGetProperty("usageMetadata", out var usageElement) && usageElement.ValueKind == JsonValueKind.Object)
+                        if (
+                            root.TryGetProperty("usageMetadata", out var usageElement)
+                            && usageElement.ValueKind == JsonValueKind.Object
+                        )
                         {
                             usageRaw = usageElement.Clone();
                         }
 
-                        if (root.TryGetProperty("promptFeedback", out var feedback) && confirmedBlock == null)
+                        if (
+                            root.TryGetProperty("promptFeedback", out var feedback)
+                            && confirmedBlock == null
+                        )
                         {
                             var reason = GoogleJson.String(feedback, "blockReason");
                             if (GoogleFinishReason.IsConfirmedPromptBlock(reason))
@@ -342,9 +456,16 @@ public sealed class GoogleLanguageModel : ILanguageModel
                             }
                         }
 
-                        if (confirmedBlock != null || !root.TryGetProperty("candidates", out var candidates) || candidates.GetArrayLength() == 0)
+                        if (
+                            confirmedBlock != null
+                            || !root.TryGetProperty("candidates", out var candidates)
+                            || candidates.GetArrayLength() == 0
+                        )
                         {
-                            metadata = GoogleResponse.Parse(root, StreamContext(prepared)).ProviderMetadata ?? metadata;
+                            metadata = GoogleResponse
+                                .Parse(root, StreamContext(prepared))
+                                .ProviderMetadata
+                                ?? metadata;
                             continue;
                         }
 
@@ -365,7 +486,15 @@ public sealed class GoogleLanguageModel : ILanguageModel
                         if (GoogleJson.String(candidates[0], "finishReason") == "CONTINUATION")
                         {
                             // Usage metadata is per request. The next request reports its own usage, so bank the usage of this one.
-                            if (continuedUsage == null && usageRaw is { ValueKind: JsonValueKind.Object } firstUsage && firstUsage.TryGetProperty("promptTokenCount", out var promptCount) && promptCount.TryGetInt32(out var promptTokens))
+                            if (
+                                continuedUsage == null
+                                && usageRaw is { ValueKind: JsonValueKind.Object } firstUsage
+                                && firstUsage.TryGetProperty(
+                                    "promptTokenCount",
+                                    out var promptCount
+                                )
+                                && promptCount.TryGetInt32(out var promptTokens)
+                            )
                             {
                                 initialPromptTokenCount = promptTokens;
                             }
@@ -382,11 +511,21 @@ public sealed class GoogleLanguageModel : ILanguageModel
                                 requestGrounding = grounding.Clone();
                             }
 
-                            foreach (var source in GoogleResponse.Sources(grounding, StreamContext(prepared)))
+                            foreach (
+                                var source in GoogleResponse.Sources(
+                                    grounding,
+                                    StreamContext(prepared)
+                                )
+                            )
                             {
                                 if (seenSources.Add(source.Url))
                                 {
-                                    yield return new SourceStreamPart(source.Id, source.Url, source.Title, source.ProviderMetadata);
+                                    yield return new SourceStreamPart(
+                                        source.Id,
+                                        source.Url,
+                                        source.Title,
+                                        source.ProviderMetadata
+                                    );
                                 }
                             }
                         }
@@ -404,10 +543,17 @@ public sealed class GoogleLanguageModel : ILanguageModel
                                 if (reasoningId == null)
                                 {
                                     reasoningId = (block++).ToString(CultureInfo.InvariantCulture);
-                                    yield return new ReasoningStartStreamPart(reasoningId, reasoning.ProviderMetadata);
+                                    yield return new ReasoningStartStreamPart(
+                                        reasoningId,
+                                        reasoning.ProviderMetadata
+                                    );
                                 }
 
-                                yield return new ReasoningDeltaStreamPart(reasoningId, reasoning.Text, reasoning.ProviderMetadata);
+                                yield return new ReasoningDeltaStreamPart(
+                                    reasoningId,
+                                    reasoning.Text,
+                                    reasoning.ProviderMetadata
+                                );
                             }
                             else if (generated is GeneratedText text)
                             {
@@ -420,31 +566,79 @@ public sealed class GoogleLanguageModel : ILanguageModel
                                 if (textId == null)
                                 {
                                     textId = (block++).ToString(CultureInfo.InvariantCulture);
-                                    yield return new TextStartStreamPart(textId, text.ProviderMetadata);
+                                    yield return new TextStartStreamPart(
+                                        textId,
+                                        text.ProviderMetadata
+                                    );
                                 }
 
-                                yield return new TextDeltaStreamPart(textId, text.Text, text.ProviderMetadata);
+                                yield return new TextDeltaStreamPart(
+                                    textId,
+                                    text.Text,
+                                    text.ProviderMetadata
+                                );
                             }
                             else if (generated is GoogleToolCall tool)
                             {
                                 // Provider-executed calls. Client function calls stream below, after the rest of the chunk.
-                                yield return new ToolCallStreamPart(tool.ToolCallId, tool.ToolName, tool.ArgumentsJson, tool.ProviderMetadata) { ProviderExecuted = tool.ProviderExecuted, Dynamic = tool.Dynamic };
+                                yield return new ToolCallStreamPart(
+                                    tool.ToolCallId,
+                                    tool.ToolName,
+                                    tool.ArgumentsJson,
+                                    tool.ProviderMetadata
+                                )
+                                {
+                                    ProviderExecuted = tool.ProviderExecuted,
+                                    Dynamic = tool.Dynamic,
+                                };
                             }
-                            else if (generated is GoogleToolResult codeResult && !codeResult.ToolName.StartsWith("server:", StringComparison.Ordinal))
+                            else if (
+                                generated is GoogleToolResult codeResult
+                                && !codeResult.ToolName.StartsWith(
+                                    "server:",
+                                    StringComparison.Ordinal
+                                )
+                            )
                             {
                                 // Code execution results correspond to the most recent executable code part.
-                                var resultJson = new JsonObject { ["outcome"] = codeResult.Outcome, ["output"] = codeResult.Output };
-                                yield return new ToolResultStreamPart(codeResult.ToolCallId, codeResult.ToolName, JsonSerializer.SerializeToElement(resultJson));
+                                var resultJson = new JsonObject
+                                {
+                                    ["outcome"] = codeResult.Outcome,
+                                    ["output"] = codeResult.Output,
+                                };
+                                yield return new ToolResultStreamPart(
+                                    codeResult.ToolCallId,
+                                    codeResult.ToolName,
+                                    JsonSerializer.SerializeToElement(resultJson)
+                                );
                             }
                             else if (generated is GoogleGeneratedFile file)
                             {
-                                yield return new FileStreamPart(file.Data, file.MediaType);
+                                yield return new FileStreamPart(
+                                    file.Data,
+                                    file.MediaType,
+                                    file.ProviderMetadata
+                                );
+                            }
+                            else if (generated is GeneratedReasoningFile reasoningFile)
+                            {
+                                yield return new ReasoningFileStreamPart(
+                                    reasoningFile.Data,
+                                    reasoningFile.MediaType,
+                                    reasoningFile.ProviderMetadata
+                                );
                             }
                         }
 
-                        if (candidates[0].TryGetProperty("content", out var body) && body.TryGetProperty("parts", out var parts) && parts.ValueKind == JsonValueKind.Array)
+                        if (
+                            candidates[0].TryGetProperty("content", out var body)
+                            && body.TryGetProperty("parts", out var parts)
+                            && parts.ValueKind == JsonValueKind.Array
+                        )
                         {
-                            foreach (var toolPart in FunctionCallParts(parts, callContext, activeCalls))
+                            foreach (
+                                var toolPart in FunctionCallParts(parts, callContext, activeCalls)
+                            )
                             {
                                 clientTool |= toolPart is ToolCallStreamPart;
                                 yield return toolPart;
@@ -497,24 +691,35 @@ public sealed class GoogleLanguageModel : ILanguageModel
         }
 
         var totalUsage = GoogleUsage.Add(continuedUsage, usageRaw);
-        var usage = GoogleUsage.Convert(totalUsage)?.ToLanguageModelUsage() ?? LanguageModelUsage.Null;
+        var usage = GoogleUsage.Convert(totalUsage)?.ToLanguageModelUsage()
+            ?? LanguageModelUsage.Null;
         // Only surface the token when the response stopped early (budget used up, or continuing failed), not for the
         // checkpoint tokens of a stream that finished normally.
-        var exposeToken = lastToken != null && (rawFinish == "MAX_TOKENS" || rawFinish == "CONTINUATION");
+        var exposeToken =
+            lastToken != null && (rawFinish == "MAX_TOKENS" || rawFinish == "CONTINUATION");
         if (groundingPerRequest.Count > 0)
         {
             groundingPerRequest.Add(requestGrounding);
         }
 
-        metadata = GoogleResponse.WithLongDecode(metadata, exposeToken ? lastToken : null, initialPromptTokenCount, continuedUsage != null ? totalUsage : null, groundingPerRequest.Count > 0 ? groundingPerRequest : null);
+        metadata = GoogleResponse.WithLongDecode(
+            metadata,
+            exposeToken ? lastToken : null,
+            initialPromptTokenCount,
+            continuedUsage != null ? totalUsage : null,
+            groundingPerRequest.Count > 0 ? groundingPerRequest : null
+        );
         yield return new FinishStreamPart(finish, usage, rawFinish, metadata);
     }
 
     private static ProviderStreamError CreateStreamError(JsonElement error)
     {
-        int? code = error.TryGetProperty("code", out var codeElement) && codeElement.ValueKind == JsonValueKind.Number && codeElement.TryGetInt32(out var number)
-            ? number
-            : null;
+        int? code =
+            error.TryGetProperty("code", out var codeElement)
+            && codeElement.ValueKind == JsonValueKind.Number
+            && codeElement.TryGetInt32(out var number)
+                ? number
+                : null;
         var retryable = code is 408 or 409 or 429 or >= 500;
         return new ProviderStreamError(
             GoogleJson.String(error, "message") ?? string.Empty,
@@ -522,14 +727,17 @@ public sealed class GoogleLanguageModel : ILanguageModel
             GoogleJson.String(error, "status"),
             code,
             code,
-            retryable);
+            retryable
+        );
     }
 
     private Uri Url(string method)
     {
         var baseUrl = _provider.Options.BaseUrl ?? string.Empty;
-        if (GoogleVertexEndpoints.IsEndpointModel(ModelId)
-            && baseUrl.EndsWith("/publishers/google", StringComparison.Ordinal))
+        if (
+            GoogleVertexEndpoints.IsEndpointModel(ModelId)
+            && baseUrl.EndsWith("/publishers/google", StringComparison.Ordinal)
+        )
         {
             baseUrl = baseUrl.Substring(0, baseUrl.Length - "/publishers/google".Length);
         }
@@ -537,7 +745,11 @@ public sealed class GoogleLanguageModel : ILanguageModel
         return ApiKeys.Combine(baseUrl, GoogleModelPath.Get(ModelId) + method);
     }
 
-    private async Task<Dictionary<string, string?>> HeadersAsync(LanguageModelCallOptions? options, GooglePreparedRequest prepared, CancellationToken cancellationToken)
+    private async Task<Dictionary<string, string?>> HeadersAsync(
+        LanguageModelCallOptions? options,
+        GooglePreparedRequest prepared,
+        CancellationToken cancellationToken
+    )
     {
         var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
         if (options?.Headers != null)
@@ -558,14 +770,25 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
     private GoogleParseContext Context(GooglePreparedRequest prepared)
     {
-        return new GoogleParseContext(Provider, _provider.Options.GenerateId, prepared.Tools, prepared.Warnings, prepared.JsonResponseToolName);
+        return new GoogleParseContext(
+            Provider,
+            _provider.Options.GenerateId,
+            prepared.Tools,
+            prepared.Warnings,
+            prepared.JsonResponseToolName
+        );
     }
 
     // The stream rewrites the response tool once, from its tool input parts. Parsing chunks with the tool name would also
     // turn the call into text parts here and close an open reasoning block early.
     private GoogleParseContext StreamContext(GooglePreparedRequest prepared)
     {
-        return new GoogleParseContext(Provider, _provider.Options.GenerateId, prepared.Tools, prepared.Warnings);
+        return new GoogleParseContext(
+            Provider,
+            _provider.Options.GenerateId,
+            prepared.Tools,
+            prepared.Warnings
+        );
     }
 
     private static IReadOnlyList<CallWarning> Warnings(GooglePreparedRequest prepared)
@@ -581,22 +804,34 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
     // Gemini sends a function call whole, without arguments, or streamed: a named
     // chunk with willContinue, then partialArgs chunks, then an empty terminal chunk.
-    private static IEnumerable<LanguageModelStreamPart> FunctionCallParts(JsonElement parts, GoogleParseContext context, List<StreamingCall> active)
+    private static IEnumerable<LanguageModelStreamPart> FunctionCallParts(
+        JsonElement parts,
+        GoogleParseContext context,
+        List<StreamingCall> active
+    )
     {
         foreach (var part in parts.EnumerateArray())
         {
-            if (!part.TryGetProperty("functionCall", out var call) || call.ValueKind != JsonValueKind.Object)
+            if (
+                !part.TryGetProperty("functionCall", out var call)
+                || call.ValueKind != JsonValueKind.Object
+            )
             {
                 continue;
             }
 
             var metadata = GoogleResponse.SignatureMetadata(part, context);
             var name = GoogleJson.String(call, "name");
-            var hasArgs = call.TryGetProperty("args", out var args) && args.ValueKind != JsonValueKind.Null;
-            var hasPartial = call.TryGetProperty("partialArgs", out var partial) && partial.ValueKind == JsonValueKind.Array;
-            bool? willContinue = call.TryGetProperty("willContinue", out var cont) && (cont.ValueKind == JsonValueKind.True || cont.ValueKind == JsonValueKind.False)
-                ? cont.GetBoolean()
-                : null;
+            var hasArgs =
+                call.TryGetProperty("args", out var args) && args.ValueKind != JsonValueKind.Null;
+            var hasPartial =
+                call.TryGetProperty("partialArgs", out var partial)
+                && partial.ValueKind == JsonValueKind.Array;
+            bool? willContinue =
+                call.TryGetProperty("willContinue", out var cont)
+                && (cont.ValueKind == JsonValueKind.True || cont.ValueKind == JsonValueKind.False)
+                    ? cont.GetBoolean()
+                    : null;
 
             if (hasPartial || (name != null && willContinue == true))
             {
@@ -623,10 +858,17 @@ public sealed class GoogleLanguageModel : ILanguageModel
                     var update = current.Accumulator.Process(updates);
                     if (update.TextDelta.Length > 0)
                     {
-                        yield return new ToolInputDeltaStreamPart(current.Id, update.TextDelta, metadata);
+                        yield return new ToolInputDeltaStreamPart(
+                            current.Id,
+                            update.TextDelta,
+                            metadata
+                        );
                     }
 
-                    if (willContinue != true && updates.All(argument => argument.WillContinue != true))
+                    if (
+                        willContinue != true
+                        && updates.All(argument => argument.WillContinue != true)
+                    )
                     {
                         foreach (var finished in FinishCall(active))
                         {
@@ -645,7 +887,10 @@ public sealed class GoogleLanguageModel : ILanguageModel
             else if (name != null && hasArgs)
             {
                 var id = CallId(call, context);
-                var input = args.ValueKind == JsonValueKind.String ? args.GetString() ?? string.Empty : args.GetRawText();
+                var input =
+                    args.ValueKind == JsonValueKind.String
+                        ? args.GetString() ?? string.Empty
+                        : args.GetRawText();
                 yield return new ToolInputStartStreamPart(id, name, metadata);
                 yield return new ToolInputDeltaStreamPart(id, input, metadata);
                 yield return new ToolInputEndStreamPart(id, metadata);
@@ -683,19 +928,30 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
     private static GooglePartialArgument ReadPartial(JsonElement item)
     {
-        var argument = new GooglePartialArgument { JsonPath = GoogleJson.String(item, "jsonPath") ?? string.Empty };
-        if (item.TryGetProperty("stringValue", out var text) && text.ValueKind == JsonValueKind.String)
+        var argument = new GooglePartialArgument
+        {
+            JsonPath = GoogleJson.String(item, "jsonPath") ?? string.Empty,
+        };
+        if (
+            item.TryGetProperty("stringValue", out var text)
+            && text.ValueKind == JsonValueKind.String
+        )
         {
             argument.HasString = true;
             argument.StringValue = text.GetString();
         }
 
-        if (item.TryGetProperty("numberValue", out var number) && number.TryGetDouble(out var value))
+        if (
+            item.TryGetProperty("numberValue", out var number) && number.TryGetDouble(out var value)
+        )
         {
             argument.NumberValue = value;
         }
 
-        if (item.TryGetProperty("boolValue", out var flag) && (flag.ValueKind == JsonValueKind.True || flag.ValueKind == JsonValueKind.False))
+        if (
+            item.TryGetProperty("boolValue", out var flag)
+            && (flag.ValueKind == JsonValueKind.True || flag.ValueKind == JsonValueKind.False)
+        )
         {
             argument.BoolValue = flag.GetBoolean();
         }
@@ -705,7 +961,10 @@ public sealed class GoogleLanguageModel : ILanguageModel
             argument.HasNull = true;
         }
 
-        if (item.TryGetProperty("willContinue", out var cont) && (cont.ValueKind == JsonValueKind.True || cont.ValueKind == JsonValueKind.False))
+        if (
+            item.TryGetProperty("willContinue", out var cont)
+            && (cont.ValueKind == JsonValueKind.True || cont.ValueKind == JsonValueKind.False)
+        )
         {
             argument.WillContinue = cont.GetBoolean();
         }
@@ -730,22 +989,4 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
         public GoogleJsonAccumulator Accumulator { get; } = new();
     }
-}
-
-/// <summary>A streamed file part. The shared stream model has no file delta, so this carries the bytes.</summary>
-public sealed class FileStreamPart : LanguageModelStreamPart
-{
-    /// <summary>Creates a file part.</summary>
-    public FileStreamPart(byte[] data, string mediaType)
-        : base("file")
-    {
-        Data = data ?? Array.Empty<byte>();
-        MediaType = mediaType ?? "application/octet-stream";
-    }
-
-    /// <summary>File bytes.</summary>
-    public byte[] Data { get; }
-
-    /// <summary>IANA media type.</summary>
-    public string MediaType { get; }
 }

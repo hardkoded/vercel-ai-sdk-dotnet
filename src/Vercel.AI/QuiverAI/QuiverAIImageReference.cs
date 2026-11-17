@@ -19,7 +19,9 @@ public sealed class QuiverAIImageReference
     private const int MaxReferenceBase64Length = 16_777_216;
     private const int MaxReferenceBytes = 12_582_912;
 
-    private static readonly HashSet<string> SupportedMediaTypes = new HashSet<string>(StringComparer.Ordinal)
+    private static readonly HashSet<string> SupportedMediaTypes = new HashSet<string>(
+        StringComparer.Ordinal
+    )
     {
         "image/gif",
         "image/jpeg",
@@ -28,11 +30,31 @@ public sealed class QuiverAIImageReference
         "image/webp",
     };
 
-    private static readonly Regex Scheme = new Regex("^[a-z][a-z0-9+.-]*://", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, SafeRegex.LargeInputTimeout);
-    private static readonly Regex DataUrl = new Regex("^data:([^;,]+);base64,(.+)$", RegexOptions.Singleline | RegexOptions.CultureInvariant, SafeRegex.LargeInputTimeout);
-    private static readonly Regex SvgStart = new Regex("^(?:<\\?xml[\\s\\S]*?\\?>\\s*)?(?:<!--[\\s\\S]*?-->\\s*)?(?:<!DOCTYPE[\\s\\S]*?>\\s*)?<svg[\\s>]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, SafeRegex.LargeInputTimeout);
-    private static readonly Regex SvgClose = new Regex("</svg>\\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, SafeRegex.LargeInputTimeout);
-    private static readonly Regex SvgSelfClose = new Regex("<svg(?:\\s[^>]*)?/>\\s*$", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant, SafeRegex.LargeInputTimeout);
+    private static readonly Regex Scheme = new Regex(
+        "^[a-z][a-z0-9+.-]*://",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+        SafeRegex.LargeInputTimeout
+    );
+    private static readonly Regex DataUrl = new Regex(
+        "^data:([^;,]+);base64,(.+)$",
+        RegexOptions.Singleline | RegexOptions.CultureInvariant,
+        SafeRegex.LargeInputTimeout
+    );
+    private static readonly Regex SvgStart = new Regex(
+        "^(?:<\\?xml[\\s\\S]*?\\?>\\s*)?(?:<!--[\\s\\S]*?-->\\s*)?(?:<!DOCTYPE[\\s\\S]*?>\\s*)?<svg[\\s>]",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+        SafeRegex.LargeInputTimeout
+    );
+    private static readonly Regex SvgClose = new Regex(
+        "</svg>\\s*$",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+        SafeRegex.LargeInputTimeout
+    );
+    private static readonly Regex SvgSelfClose = new Regex(
+        "<svg(?:\\s[^>]*)?/>\\s*$",
+        RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant,
+        SafeRegex.LargeInputTimeout
+    );
 
     private QuiverAIImageReference(string? url, string? base64)
     {
@@ -72,7 +94,11 @@ public sealed class QuiverAIImageReference
             var match = SafeRegex.Match(DataUrl, input);
             if (!match.Success || !SupportedMediaTypes.Contains(match.Groups[1].Value))
             {
-                throw new InvalidArgumentException("input", input, "QuiverAI reference image data URLs must use base64 encoding and a supported image media type.");
+                throw new InvalidArgumentException(
+                    "input",
+                    input,
+                    "QuiverAI reference image data URLs must use base64 encoding and a supported image media type."
+                );
             }
 
             ValidateReferenceBase64(match.Groups[2].Value, "input");
@@ -94,12 +120,20 @@ public sealed class QuiverAIImageReference
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var parsed))
         {
-            throw new InvalidArgumentException("url", url, "QuiverAI image URLs must be valid HTTP or HTTPS URLs.");
+            throw new InvalidArgumentException(
+                "url",
+                url,
+                "QuiverAI image URLs must be valid HTTP or HTTPS URLs."
+            );
         }
 
         if (parsed.Scheme != Uri.UriSchemeHttp && parsed.Scheme != Uri.UriSchemeHttps)
         {
-            throw new InvalidArgumentException("url", url, "QuiverAI image URLs must use HTTP or HTTPS.");
+            throw new InvalidArgumentException(
+                "url",
+                url,
+                "QuiverAI image URLs must use HTTP or HTTPS."
+            );
         }
 
         return parsed.AbsoluteUri;
@@ -109,7 +143,13 @@ public sealed class QuiverAIImageReference
     {
         if (base64.Length == 0 || base64.Length > MaxReferenceBase64Length)
         {
-            throw new InvalidArgumentException(argument, base64, "QuiverAI reference images must contain 1-" + MaxReferenceBase64Length + " base64 characters.");
+            throw new InvalidArgumentException(
+                argument,
+                base64,
+                "QuiverAI reference images must contain 1-"
+                    + MaxReferenceBase64Length
+                    + " base64 characters."
+            );
         }
 
         byte[] data;
@@ -119,7 +159,11 @@ public sealed class QuiverAIImageReference
         }
         catch (FormatException)
         {
-            throw new InvalidArgumentException(argument, base64, "QuiverAI reference image data must be valid base64.");
+            throw new InvalidArgumentException(
+                argument,
+                base64,
+                "QuiverAI reference image data must be valid base64."
+            );
         }
 
         ValidateReferenceBytes(data, argument);
@@ -129,13 +173,21 @@ public sealed class QuiverAIImageReference
     {
         if (data.Length == 0 || data.Length > MaxReferenceBytes)
         {
-            throw new InvalidArgumentException(argument, null, "QuiverAI reference images must decode to 1-" + MaxReferenceBytes + " bytes.");
+            throw new InvalidArgumentException(
+                argument,
+                null,
+                "QuiverAI reference images must decode to 1-" + MaxReferenceBytes + " bytes."
+            );
         }
 
         var mediaType = IsSvg(data) ? "image/svg+xml" : MediaTypes.DetectMediaType(data, "image");
         if (mediaType == null || !SupportedMediaTypes.Contains(mediaType))
         {
-            throw new InvalidArgumentException(argument, null, "QuiverAI reference images must be PNG, JPEG, WebP, GIF, or SVG data.");
+            throw new InvalidArgumentException(
+                argument,
+                null,
+                "QuiverAI reference images must be PNG, JPEG, WebP, GIF, or SVG data."
+            );
         }
     }
 
@@ -151,7 +203,13 @@ public sealed class QuiverAIImageReference
             return false;
         }
 
-        var normalized = (text.StartsWith("\uFEFF", StringComparison.Ordinal) ? text.Substring(1) : text).Trim();
-        return SafeRegex.IsMatch(SvgStart, normalized) && (SafeRegex.IsMatch(SvgClose, normalized) || SafeRegex.IsMatch(SvgSelfClose, normalized));
+        var normalized = (
+            text.StartsWith("\uFEFF", StringComparison.Ordinal) ? text.Substring(1) : text
+        ).Trim();
+        return SafeRegex.IsMatch(SvgStart, normalized)
+            && (
+                SafeRegex.IsMatch(SvgClose, normalized)
+                || SafeRegex.IsMatch(SvgSelfClose, normalized)
+            );
     }
 }

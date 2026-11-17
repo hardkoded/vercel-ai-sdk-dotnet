@@ -10,7 +10,12 @@ namespace Vercel.AI.Google;
 public sealed class GoogleWarning
 {
     /// <summary>Creates a warning.</summary>
-    public GoogleWarning(string type, string message, string? feature = null, string? details = null)
+    public GoogleWarning(
+        string type,
+        string message,
+        string? feature = null,
+        string? details = null
+    )
     {
         Type = type ?? "other";
         Message = message ?? string.Empty;
@@ -43,7 +48,9 @@ public sealed class GoogleWarning
             }
         }
 
-        return Feature == null ? new CallWarning(Type, message) : new CallWarning(Type, Feature, message);
+        return Feature == null
+            ? new CallWarning(Type, message)
+            : new CallWarning(Type, Feature, message);
     }
 
     /// <summary>Unsupported feature warning.</summary>

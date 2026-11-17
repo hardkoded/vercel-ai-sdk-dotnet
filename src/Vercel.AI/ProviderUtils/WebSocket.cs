@@ -59,7 +59,11 @@ public interface IWebSocketLike
 /// <param name="url">The WebSocket URL.</param>
 /// <param name="protocols">Requested subprotocols.</param>
 /// <param name="headers">Request headers, for implementations that can send them.</param>
-public delegate IWebSocketLike WebSocketFactory(Uri url, IReadOnlyList<string>? protocols, IReadOnlyDictionary<string, string>? headers);
+public delegate IWebSocketLike WebSocketFactory(
+    Uri url,
+    IReadOnlyList<string>? protocols,
+    IReadOnlyDictionary<string, string>? headers
+);
 
 /// <summary>WebSocket helpers. Maps to <c>provider-utils/src/websocket.ts</c>.</summary>
 public static class WebSocketUtils
@@ -109,7 +113,9 @@ public static class WebSocketUtils
             case byte[] bytes:
                 return Task.FromResult(Encoding.UTF8.GetString(bytes));
             case ArraySegment<byte> segment when segment.Array is not null:
-                return Task.FromResult(Encoding.UTF8.GetString(segment.Array, segment.Offset, segment.Count));
+                return Task.FromResult(
+                    Encoding.UTF8.GetString(segment.Array, segment.Offset, segment.Count)
+                );
             case ReadOnlyMemory<byte> memory:
                 return Task.FromResult(Encoding.UTF8.GetString(memory.ToArray()));
             default:
@@ -122,7 +128,12 @@ public static class WebSocketUtils
     /// implementations that do not expose <see cref="IWebSocketLike.BufferedAmount"/>. It returns as soon as the
     /// socket is no longer open or the token is cancelled.
     /// </summary>
-    public static async Task WaitForWebSocketBufferDrainAsync(IWebSocketLike socket, long highWaterMark = 1024 * 1024, int pollIntervalMs = 20, CancellationToken cancellationToken = default)
+    public static async Task WaitForWebSocketBufferDrainAsync(
+        IWebSocketLike socket,
+        long highWaterMark = 1024 * 1024,
+        int pollIntervalMs = 20,
+        CancellationToken cancellationToken = default
+    )
     {
         if (socket is null)
         {
@@ -157,7 +168,11 @@ internal sealed class ClientWebSocketAdapter : IWebSocketLike
     private long _buffered;
     private int _readyState;
 
-    private ClientWebSocketAdapter(Uri url, IReadOnlyList<string>? protocols, IReadOnlyDictionary<string, string>? headers)
+    private ClientWebSocketAdapter(
+        Uri url,
+        IReadOnlyList<string>? protocols,
+        IReadOnlyDictionary<string, string>? headers
+    )
     {
         if (protocols is not null)
         {
@@ -197,7 +212,11 @@ internal sealed class ClientWebSocketAdapter : IWebSocketLike
 
     public Action<object?>? OnClose { get; set; }
 
-    public static IWebSocketLike Create(Uri url, IReadOnlyList<string>? protocols, IReadOnlyDictionary<string, string>? headers)
+    public static IWebSocketLike Create(
+        Uri url,
+        IReadOnlyList<string>? protocols,
+        IReadOnlyDictionary<string, string>? headers
+    )
     {
         return new ClientWebSocketAdapter(url, protocols, headers);
     }
@@ -245,11 +264,18 @@ internal sealed class ClientWebSocketAdapter : IWebSocketLike
         {
             while (!token.IsCancellationRequested)
             {
-                var received = await _socket.ReceiveAsync(new ArraySegment<byte>(buffer), token).ConfigureAwait(false);
+                var received = await _socket
+                    .ReceiveAsync(new ArraySegment<byte>(buffer), token)
+                    .ConfigureAwait(false);
                 if (received.MessageType == WebSocketMessageType.Close)
                 {
                     Volatile.Write(ref _readyState, 3);
-                    OnClose?.Invoke(new WebSocketCloseEvent((int?)received.CloseStatus, received.CloseStatusDescription));
+                    OnClose?.Invoke(
+                        new WebSocketCloseEvent(
+                            (int?)received.CloseStatus,
+                            received.CloseStatusDescription
+                        )
+                    );
                     return;
                 }
 
@@ -261,12 +287,14 @@ internal sealed class ClientWebSocketAdapter : IWebSocketLike
 
                 var bytes = message.ToArray();
                 message.SetLength(0);
-                OnMessage?.Invoke(received.MessageType == WebSocketMessageType.Text ? Encoding.UTF8.GetString(bytes) : (object)bytes);
+                OnMessage?.Invoke(
+                    received.MessageType == WebSocketMessageType.Text
+                        ? Encoding.UTF8.GetString(bytes)
+                        : (object)bytes
+                );
             }
         }
-        catch (Exception) when (token.IsCancellationRequested)
-        {
-        }
+        catch (Exception) when (token.IsCancellationRequested) { }
         catch (Exception)
         {
             Volatile.Write(ref _readyState, 3);
@@ -294,7 +322,9 @@ internal sealed class ClientWebSocketAdapter : IWebSocketLike
                 await _sendLock.WaitAsync(_cancellation.Token).ConfigureAwait(false);
                 try
                 {
-                    await _socket.SendAsync(new ArraySegment<byte>(data), type, true, _cancellation.Token).ConfigureAwait(false);
+                    await _socket
+                        .SendAsync(new ArraySegment<byte>(data), type, true, _cancellation.Token)
+                        .ConfigureAwait(false);
                 }
                 finally
                 {
@@ -320,9 +350,14 @@ internal sealed class ClientWebSocketAdapter : IWebSocketLike
         try
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-            if (_socket.State == WebSocketState.Open || _socket.State == WebSocketState.CloseReceived)
+            if (
+                _socket.State == WebSocketState.Open
+                || _socket.State == WebSocketState.CloseReceived
+            )
             {
-                await _socket.CloseAsync((WebSocketCloseStatus)(code ?? 1000), reason, timeout.Token).ConfigureAwait(false);
+                await _socket
+                    .CloseAsync((WebSocketCloseStatus)(code ?? 1000), reason, timeout.Token)
+                    .ConfigureAwait(false);
             }
         }
         catch (Exception)

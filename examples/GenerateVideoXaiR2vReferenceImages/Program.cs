@@ -28,21 +28,24 @@ if (!File.Exists(dog))
 var xai = XaiProvider.Create();
 
 #region generate-video-xai-r2v-reference-images
-var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
-{
-    Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
-    Prompt = new VideoPrompt(
-        "<IMAGE_1> and <IMAGE_2> are having a playful chase through a sunlit park. "
-        + "Cinematic slow-motion, warm afternoon light."),
-    InputReferences =
-    [
-        new VideoReference(File.ReadAllBytes(cat)),
-        new VideoReference(File.ReadAllBytes(dog)),
-    ],
-    Duration = 8,
-    AspectRatio = "16:9",
-    ProviderOptions = OperationJson.Parse("""{ "xai": { "pollTimeoutMs": 600000 } }"""),
-});
+var result = await GenerateVideo.GenerateVideoAsync(
+    new GenerateVideoRequest
+    {
+        Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
+        Prompt = new VideoPrompt(
+            "<IMAGE_1> and <IMAGE_2> are having a playful chase through a sunlit park. "
+                + "Cinematic slow-motion, warm afternoon light."
+        ),
+        InputReferences =
+        [
+            new VideoReference(File.ReadAllBytes(cat)),
+            new VideoReference(File.ReadAllBytes(dog)),
+        ],
+        Duration = 8,
+        AspectRatio = "16:9",
+        ProviderOptions = OperationJson.Parse("""{ "xai": { "pollTimeoutMs": 600000 } }"""),
+    }
+);
 #endregion
 
 await File.WriteAllBytesAsync("video.mp4", result.Video.Data);

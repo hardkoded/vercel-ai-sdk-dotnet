@@ -10,7 +10,17 @@ namespace Vercel.AI.Operations;
 public sealed class TranslationStreamCall
 {
     /// <summary>Creates a translation call.</summary>
-    public TranslationStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, string targetLanguage, string? sourceLanguage, string? outputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken)
+    public TranslationStreamCall(
+        AudioChunkStream audio,
+        AudioFormat inputAudioFormat,
+        string targetLanguage,
+        string? sourceLanguage,
+        string? outputAudioFormat,
+        JsonElement providerOptions,
+        IReadOnlyDictionary<string, string> headers,
+        bool? includeRawChunks,
+        CancellationToken cancellationToken
+    )
     {
         Audio = audio;
         InputAudioFormat = inputAudioFormat;
@@ -81,7 +91,10 @@ public interface ISpeechTranslationCaller
     string SpecificationVersion { get; }
 
     /// <summary>Starts a translation stream.</summary>
-    Task<TranslationStreamStart> DoStreamAsync(TranslationStreamCall call, CancellationToken cancellationToken);
+    Task<TranslationStreamStart> DoStreamAsync(
+        TranslationStreamCall call,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>Resolves string speech-translation model ids.</summary>
@@ -126,8 +139,10 @@ public sealed class StreamTranslateResult
     private readonly PendingPromise<string> _translation = new PendingPromise<string>();
     private readonly PendingPromise<double?> _duration = new PendingPromise<double?>();
     private readonly PendingPromise<OperationUsage?> _usage = new PendingPromise<OperationUsage?>();
-    private readonly PendingPromise<IReadOnlyList<OperationWarning>> _warnings = new PendingPromise<IReadOnlyList<OperationWarning>>();
-    private readonly PendingPromise<ProviderResponse> _responsePromise = new PendingPromise<ProviderResponse>();
+    private readonly PendingPromise<IReadOnlyList<OperationWarning>> _warnings =
+        new PendingPromise<IReadOnlyList<OperationWarning>>();
+    private readonly PendingPromise<ProviderResponse> _responsePromise =
+        new PendingPromise<ProviderResponse>();
     private readonly PendingPromise<JsonElement> _metadata = new PendingPromise<JsonElement>();
     private readonly PartQueue<ModelStreamPart> _queue = new PartQueue<ModelStreamPart>();
     private readonly CancellationTokenSource _pipe = new CancellationTokenSource();
@@ -138,55 +153,93 @@ public sealed class StreamTranslateResult
     private ProviderResponse? _response;
     private bool _hasAudio;
 
-    internal StreamTranslateResult(ISpeechTranslationCaller model, StreamTranslateRequest request, CancellationToken cancellationToken)
+    internal StreamTranslateResult(
+        ISpeechTranslationCaller model,
+        StreamTranslateRequest request,
+        CancellationToken cancellationToken
+    )
     {
         _model = model;
         _startedAt = request.Now?.Invoke() ?? DateTime.UtcNow;
-        var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _pipe.Token);
-        FullStreamCore = new OperationFullStream<ModelStreamPart>(token => new QueueEnumerator(this, token), CancelPipe);
+        var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _pipe.Token
+        );
+        FullStreamCore = new OperationFullStream<ModelStreamPart>(
+            token => new QueueEnumerator(this, token),
+            CancelPipe
+        );
         _ = PumpAsync(request, linked);
     }
 
     /// <summary>Source transcript. Accessing it claims the stream.</summary>
     public Task<string> SourceText
     {
-        get { Claim(); return _source.Task; }
+        get
+        {
+            Claim();
+            return _source.Task;
+        }
     }
 
     /// <summary>Translated text. Accessing it claims the stream.</summary>
     public Task<string> TranslationText
     {
-        get { Claim(); return _translation.Task; }
+        get
+        {
+            Claim();
+            return _translation.Task;
+        }
     }
 
     /// <summary>Duration. Accessing it claims the stream.</summary>
     public Task<double?> DurationInSeconds
     {
-        get { Claim(); return _duration.Task; }
+        get
+        {
+            Claim();
+            return _duration.Task;
+        }
     }
 
     /// <summary>Usage. Accessing it claims the stream.</summary>
     public Task<OperationUsage?> Usage
     {
-        get { Claim(); return _usage.Task; }
+        get
+        {
+            Claim();
+            return _usage.Task;
+        }
     }
 
     /// <summary>Warnings. Accessing it claims the stream.</summary>
     public Task<IReadOnlyList<OperationWarning>> Warnings
     {
-        get { Claim(); return _warnings.Task; }
+        get
+        {
+            Claim();
+            return _warnings.Task;
+        }
     }
 
     /// <summary>Response. Accessing it claims the stream.</summary>
     public Task<ProviderResponse> Response
     {
-        get { Claim(); return _responsePromise.Task; }
+        get
+        {
+            Claim();
+            return _responsePromise.Task;
+        }
     }
 
     /// <summary>Provider metadata. Accessing it claims the stream.</summary>
     public Task<JsonElement> ProviderMetadata
     {
-        get { Claim(); return _metadata.Task; }
+        get
+        {
+            Claim();
+            return _metadata.Task;
+        }
     }
 
     /// <summary>Single-consumer part stream.</summary>
@@ -203,7 +256,9 @@ public sealed class StreamTranslateResult
 
                 if (_owner == "result-promises")
                 {
-                    throw new InvalidOperationException("fullStream cannot be accessed after a result promise.");
+                    throw new InvalidOperationException(
+                        "fullStream cannot be accessed after a result promise."
+                    );
                 }
 
                 _owner = "full-stream";
@@ -254,10 +309,33 @@ public sealed class StreamTranslateResult
         {
             var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
             var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
-            var start = await _model.DoStreamAsync(new TranslationStreamCall(audio, request.InputAudioFormat, request.TargetLanguage, request.SourceLanguage, request.OutputAudioFormat, providerOptions, headers, request.IncludeRawChunks, cancellationToken), cancellationToken).ConfigureAwait(false);
+            var start = await _model
+                .DoStreamAsync(
+                    new TranslationStreamCall(
+                        audio,
+                        request.InputAudioFormat,
+                        request.TargetLanguage,
+                        request.SourceLanguage,
+                        request.OutputAudioFormat,
+                        providerOptions,
+                        headers,
+                        request.IncludeRawChunks,
+                        cancellationToken
+                    ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             stream = start.Stream;
-            _response = new ProviderResponse(start.Response?.Headers, null, start.Response?.Id, start.Response?.Timestamp ?? _startedAt, start.Response?.ModelId ?? _model.ModelId);
-            await foreach (var part in start.Stream.ReadAsync(cancellationToken).ConfigureAwait(false))
+            _response = new ProviderResponse(
+                start.Response?.Headers,
+                null,
+                start.Response?.Id,
+                start.Response?.Timestamp ?? _startedAt,
+                start.Response?.ModelId ?? _model.ModelId
+            );
+            await foreach (
+                var part in start.Stream.ReadAsync(cancellationToken).ConfigureAwait(false)
+            )
             {
                 Accept(part);
             }
@@ -272,7 +350,10 @@ public sealed class StreamTranslateResult
         catch (Exception error)
         {
             stream?.Cancel();
-            var reason = error is OperationCanceledException && request.AbortReason != null ? request.AbortReason : error;
+            var reason =
+                error is OperationCanceledException && request.AbortReason != null
+                    ? request.AbortReason
+                    : error;
             RejectPending(reason);
             if (!audio.Locked)
             {
@@ -316,7 +397,13 @@ public sealed class StreamTranslateResult
                 break;
             case "response-metadata":
                 var current = CurrentResponse();
-                _response = new ProviderResponse(part.Headers ?? current.Headers, null, current.Id, part.Timestamp ?? current.Timestamp, part.ModelId ?? current.ModelId);
+                _response = new ProviderResponse(
+                    part.Headers ?? current.Headers,
+                    null,
+                    current.Id,
+                    part.Timestamp ?? current.Timestamp,
+                    part.ModelId ?? current.ModelId
+                );
                 break;
             case "audio":
                 _hasAudio = true;
@@ -421,10 +508,14 @@ public sealed class StreamTranslateResult
 public static class StreamTranslate
 {
     /// <summary>Message thrown when the default provider has no speech translation models.</summary>
-    public const string MissingProviderMessage = "The default provider does not support speech translation models. Please pass a provider model instance that implements the experimental speech translation model specification.";
+    public const string MissingProviderMessage =
+        "The default provider does not support speech translation models. Please pass a provider model instance that implements the experimental speech translation model specification.";
 
     /// <summary>Starts a translation stream. <c>doStream</c> is invoked immediately.</summary>
-    public static StreamTranslateResult Start(StreamTranslateRequest request, CancellationToken cancellationToken = default)
+    public static StreamTranslateResult Start(
+        StreamTranslateRequest request,
+        CancellationToken cancellationToken = default
+    )
     {
         if (request == null)
         {
@@ -432,22 +523,32 @@ public static class StreamTranslate
         }
 
         var model = Resolve(request.Model, request.ModelId);
-        var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
+        var token = request.CancellationToken.CanBeCanceled
+            ? request.CancellationToken
+            : cancellationToken;
         return new StreamTranslateResult(model, request, token);
     }
 
-    private static ISpeechTranslationCaller Resolve(ISpeechTranslationCaller? model, string? modelId)
+    private static ISpeechTranslationCaller Resolve(
+        ISpeechTranslationCaller? model,
+        string? modelId
+    )
     {
         if (model is null && modelId is { } id)
         {
-            return SpeechTranslationModels.Default?.Invoke(id) ?? throw new InvalidOperationException(MissingProviderMessage);
+            return SpeechTranslationModels.Default?.Invoke(id)
+                ?? throw new InvalidOperationException(MissingProviderMessage);
         }
 
         if (model is { } caller)
         {
             if (caller.SpecificationVersion != "v4")
             {
-                throw new UnsupportedModelVersionException(caller.SpecificationVersion, caller.Provider, caller.ModelId);
+                throw new UnsupportedModelVersionException(
+                    caller.SpecificationVersion,
+                    caller.Provider,
+                    caller.ModelId
+                );
             }
 
             return caller;

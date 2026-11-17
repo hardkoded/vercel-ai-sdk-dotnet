@@ -11,7 +11,13 @@ namespace Vercel.AI.Tests.MoreProviders;
 internal sealed class ParityCall
 {
     /// <summary>Creates a captured call.</summary>
-    public ParityCall(HttpMethod method, Uri uri, byte[] body, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken = default)
+    public ParityCall(
+        HttpMethod method,
+        Uri uri,
+        byte[] body,
+        IReadOnlyDictionary<string, string> headers,
+        CancellationToken cancellationToken = default
+    )
     {
         CancellationToken = cancellationToken;
         Method = method;
@@ -70,22 +76,33 @@ internal sealed class ParityHandler : HttpMessageHandler
     public Func<ParityCall, HttpResponseMessage> Respond { get; set; }
 
     /// <summary>JSON response.</summary>
-    public static HttpResponseMessage Json(string json, params (string Name, string Value)[] headers)
+    public static HttpResponseMessage Json(
+        string json,
+        params (string Name, string Value)[] headers
+    )
     {
         var content = new ByteArrayContent(Encoding.UTF8.GetBytes(json ?? "{}"));
-        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+            "application/json"
+        );
         var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = content };
         Add(response, headers);
         return response;
     }
 
     /// <summary>Binary response. A null content type is omitted.</summary>
-    public static HttpResponseMessage Bytes(byte[] body, string? contentType, params (string Name, string Value)[] headers)
+    public static HttpResponseMessage Bytes(
+        byte[] body,
+        string? contentType,
+        params (string Name, string Value)[] headers
+    )
     {
         var content = new ByteArrayContent(body ?? Array.Empty<byte>());
         if (!string.IsNullOrEmpty(contentType))
         {
-            content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse(contentType);
+            content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse(
+                contentType
+            );
         }
 
         var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = content };
@@ -97,19 +114,28 @@ internal sealed class ParityHandler : HttpMessageHandler
     /// Binary response of the upstream test server (<c>type: 'binary'</c>): without an explicit
     /// content-type header the body is served as <c>application/octet-stream</c>.
     /// </summary>
-    public static HttpResponseMessage TestServerBinary(byte[] body, params (string Name, string Value)[] headers)
+    public static HttpResponseMessage TestServerBinary(
+        byte[] body,
+        params (string Name, string Value)[] headers
+    )
     {
-        var hasContentType = headers.Any(h => string.Equals(h.Name, "Content-Type", StringComparison.OrdinalIgnoreCase));
+        var hasContentType = headers.Any(h =>
+            string.Equals(h.Name, "Content-Type", StringComparison.OrdinalIgnoreCase)
+        );
         return Bytes(body, hasContentType ? null : "application/octet-stream", headers);
     }
 
     /// <inheritdoc />
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var body = request.Content == null
-            ? Array.Empty<byte>()
-            : await request.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+        var body =
+            request.Content == null
+                ? Array.Empty<byte>()
+                : await request.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
         var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var header in request.Headers)
         {
@@ -129,7 +155,13 @@ internal sealed class ParityHandler : HttpMessageHandler
             }
         }
 
-        var call = new ParityCall(request.Method, request.RequestUri ?? new Uri("https://example.invalid/"), body, headers, cancellationToken);
+        var call = new ParityCall(
+            request.Method,
+            request.RequestUri ?? new Uri("https://example.invalid/"),
+            body,
+            headers,
+            cancellationToken
+        );
         Calls.Add(call);
         return Respond(call);
     }

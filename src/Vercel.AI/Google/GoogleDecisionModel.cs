@@ -17,7 +17,10 @@ namespace Vercel.AI.Google;
 public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
 #pragma warning restore CS0618
 {
-    private static readonly JsonSerializerOptions Text = new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    private static readonly JsonSerializerOptions Text = new JsonSerializerOptions
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     private static readonly string[] MediaKinds = { "image", "audio", "video", "document" };
 
@@ -41,7 +44,8 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
     public string SpecificationVersion => "v4";
 
     /// <inheritdoc />
-    public IReadOnlyList<string> SupportedQuestionTypes { get; } = new[] { "choice", "score", "boolean" };
+    public IReadOnlyList<string> SupportedQuestionTypes { get; } =
+        new[] { "choice", "score", "boolean" };
 
     /// <summary>
     /// Serializes the model id, the provider id, the endpoint, and the resolved request headers (including authentication) for a workflow boundary.
@@ -77,7 +81,10 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
     /// Restores a model from <see cref="Serialize"/>. Maps to <c>[WORKFLOW_DESERIALIZE]</c>. Pass <paramref name="httpClient"/> to
     /// send the requests through a custom handler.
     /// </summary>
-    public static GoogleDecisionModel Deserialize(SerializedModelOptions options, HttpClient? httpClient = null)
+    public static GoogleDecisionModel Deserialize(
+        SerializedModelOptions options,
+        HttpClient? httpClient = null
+    )
     {
         if (options == null)
         {
@@ -118,31 +125,48 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
         }
 
         // The serialized headers already carry the credentials. Feed them back through the provider's own key settings.
-        if (providerOptions.Headers.TryGetValue("x-goog-api-key", out var apiKey) && !string.IsNullOrWhiteSpace(apiKey))
+        if (
+            providerOptions.Headers.TryGetValue("x-goog-api-key", out var apiKey)
+            && !string.IsNullOrWhiteSpace(apiKey)
+        )
         {
             providerOptions.ApiKey = apiKey;
         }
-        else if (providerOptions.Headers.TryGetValue("Authorization", out var authorization) && authorization is { } bearer
-            && bearer.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        else if (
+            providerOptions.Headers.TryGetValue("Authorization", out var authorization)
+            && authorization is { } bearer
+            && bearer.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+        )
         {
             providerOptions.UseBearerToken = true;
             providerOptions.ApiKey = bearer.Substring("Bearer ".Length);
         }
 
         var provider = new GoogleProvider(httpClient ?? new HttpClient(), providerOptions);
-        var providerId = options.Config.TryGetValue("provider", out var id) && AsString(id) is { } text ? text : "google.decision";
+        var providerId =
+            options.Config.TryGetValue("provider", out var id) && AsString(id) is { } text
+                ? text
+                : "google.decision";
         return new GoogleDecisionModel(provider, options.ModelId, providerId);
     }
 
     /// <summary>Deprecated. Use <see cref="DoDecideAsync(DecisionModelCall, CancellationToken)"/>.</summary>
     [Obsolete("Use DoDecideAsync instead.")]
-    public async Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken)
+    public async Task<EvaluationModelResult> DoEvaluateAsync(
+        EvaluationModelCall call,
+        CancellationToken cancellationToken
+    )
     {
-        return EvaluationModelResult.From(await DoDecideAsync(call, cancellationToken).ConfigureAwait(false));
+        return EvaluationModelResult.From(
+            await DoDecideAsync(call, cancellationToken).ConfigureAwait(false)
+        );
     }
 
     /// <summary>Sends every question in one Decisions request.</summary>
-    public async Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken = default)
+    public async Task<DecisionModelResult> DoDecideAsync(
+        DecisionModelCall call,
+        CancellationToken cancellationToken = default
+    )
     {
         if (call == null)
         {
@@ -152,7 +176,11 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
         cancellationToken.ThrowIfCancellationRequested();
         if (call.Questions.Count == 0)
         {
-            throw new InvalidArgumentException("questions", call.Questions, "Google Decisions requires at least one question.");
+            throw new InvalidArgumentException(
+                "questions",
+                call.Questions,
+                "Google Decisions requires at least one question."
+            );
         }
 
         var questions = new JsonObject();
@@ -174,21 +202,37 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
             headers[pair.Key] = pair.Value;
         }
 
-        var response = await _provider.Http.SendJsonStringAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "decisions"),
-            body.ToJsonString(Text),
-            headers,
-            cancellationToken).ConfigureAwait(false);
+        var response = await _provider
+            .Http.SendJsonStringAsync(
+                HttpMethod.Post,
+                ApiKeys.Combine(_provider.Options.BaseUrl, "decisions"),
+                body.ToJsonString(Text),
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
         using var document = ParseDocument(response.Body);
         var root = document.RootElement.Clone();
         var parsed = ParseResponse(root, response.Body);
 
-        var blocked = parsed.PromptFeedback != null && parsed.PromptFeedback.Value.TryGetProperty("block_reason", out var reason) && reason.ValueKind == JsonValueKind.String;
-        if (!blocked && (parsed.Answers == null || parsed.Answers.Count != call.Questions.Count || call.Questions.Keys.Any(id => !parsed.Answers.ContainsKey(id))))
+        var blocked =
+            parsed.PromptFeedback != null
+            && parsed.PromptFeedback.Value.TryGetProperty("block_reason", out var reason)
+            && reason.ValueKind == JsonValueKind.String;
+        if (
+            !blocked
+            && (
+                parsed.Answers == null
+                || parsed.Answers.Count != call.Questions.Count
+                || call.Questions.Keys.Any(id => !parsed.Answers.ContainsKey(id))
+            )
+        )
         {
-            throw new InvalidResponseDataException(root, "Google Decisions must return exactly one answer for every question.");
+            throw new InvalidResponseDataException(
+                root,
+                "Google Decisions must return exactly one answer for every question."
+            );
         }
 
         var answers = new Dictionary<string, DecisionAnswer>();
@@ -206,24 +250,47 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
             {
                 answers[pair.Key] = new DecisionAnswer("boolean", probability: answer.Probability);
             }
-            else if (question.Type == "choice" && answer.Type == "choice" && ((DecisionChoiceCriteria)question.Criteria!).Options.ContainsKey(answer.Choice!))
+            else if (
+                question.Type == "choice"
+                && answer.Type == "choice"
+                && ((DecisionChoiceCriteria)question.Criteria!).Options.ContainsKey(answer.Choice!)
+            )
             {
-                answers[pair.Key] = new DecisionAnswer("choice", choice: answer.Choice, probabilities: answer.Probabilities);
+                answers[pair.Key] = new DecisionAnswer(
+                    "choice",
+                    choice: answer.Choice,
+                    probabilities: answer.Probabilities
+                );
             }
-            else if (question.Type == "score" && answer.Type == "score" && answer.Score >= 0 && answer.Score <= ((DecisionScoreCriteria)question.Criteria!).Levels.Count - 1)
+            else if (
+                question.Type == "score"
+                && answer.Type == "score"
+                && answer.Score >= 0
+                && answer.Score <= ((DecisionScoreCriteria)question.Criteria!).Levels.Count - 1
+            )
             {
-                answers[pair.Key] = new DecisionAnswer("score", score: answer.Score, probabilities: answer.Probabilities);
+                answers[pair.Key] = new DecisionAnswer(
+                    "score",
+                    score: answer.Score,
+                    probabilities: answer.Probabilities
+                );
             }
             else
             {
-                throw new InvalidResponseDataException(root, "Google Decisions returned an invalid answer for question \"" + pair.Key + "\".");
+                throw new InvalidResponseDataException(
+                    root,
+                    "Google Decisions returned an invalid answer for question \"" + pair.Key + "\"."
+                );
             }
         }
 
         OperationUsage? usage = null;
         if (parsed.Usage != null)
         {
-            usage = new OperationUsage(Count(parsed.Usage.Value, "total_input_tokens"), Count(parsed.Usage.Value, "total_output_tokens"));
+            usage = new OperationUsage(
+                Count(parsed.Usage.Value, "total_input_tokens"),
+                Count(parsed.Usage.Value, "total_output_tokens")
+            );
         }
 
         var warnings = new List<OperationWarning>();
@@ -237,11 +304,20 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
             warnings.Add(new OperationWarning("unsupported", feature: "reasoning"));
         }
 
-        if (call.ProviderOptions.ValueKind == JsonValueKind.Object && call.ProviderOptions.TryGetProperty("google", out var google) && google.ValueKind == JsonValueKind.Object)
+        if (
+            call.ProviderOptions.ValueKind == JsonValueKind.Object
+            && call.ProviderOptions.TryGetProperty("google", out var google)
+            && google.ValueKind == JsonValueKind.Object
+        )
         {
             foreach (var option in google.EnumerateObject())
             {
-                warnings.Add(new OperationWarning("unsupported", feature: "providerOptions.google." + option.Name));
+                warnings.Add(
+                    new OperationWarning(
+                        "unsupported",
+                        feature: "providerOptions.google." + option.Name
+                    )
+                );
             }
         }
 
@@ -273,19 +349,27 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
 
         metadata["confidence"] = confidence;
         metadata["legend"] = legend;
-        var providerMetadata = JsonSerializer.SerializeToElement(new JsonObject { ["google"] = metadata });
+        var providerMetadata = JsonSerializer.SerializeToElement(
+            new JsonObject { ["google"] = metadata }
+        );
         return new DecisionModelResult(
             answers,
             warnings,
             usage,
             null,
             providerMetadata,
-            new ProviderResponse(response.Headers, root, modelId: ModelId));
+            new ProviderResponse(response.Headers, root, modelId: ModelId)
+        );
     }
 
     private static int? Count(JsonElement usage, string name)
     {
-        return usage.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var count) ? count : null;
+        return
+            usage.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Number
+            && value.TryGetInt32(out var count)
+            ? count
+            : null;
     }
 
     private static JsonDocument ParseDocument(string body)
@@ -302,7 +386,9 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
 
     private static string ToText(DecisionInput input)
     {
-        return input.Value.ValueKind == JsonValueKind.String ? input.Value.GetString()! : JsonSerializer.Serialize(input.Value, Text);
+        return input.Value.ValueKind == JsonValueKind.String
+            ? input.Value.GetString()!
+            : JsonSerializer.Serialize(input.Value, Text);
     }
 
     private static JsonArray BuildInput(IReadOnlyList<DecisionModelStatePart> state)
@@ -318,7 +404,13 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
 
             if (part is DecisionModelJsonPart json)
             {
-                input.Add(new JsonObject { ["type"] = "text", ["text"] = JsonSerializer.Serialize(json.Value, Text) });
+                input.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "text",
+                        ["text"] = JsonSerializer.Serialize(json.Value, Text),
+                    }
+                );
                 continue;
             }
 
@@ -327,13 +419,21 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
             var kind = mediaType == "application/pdf" ? "document" : mediaType.Split('/')[0];
             if (!MediaKinds.Contains(kind))
             {
-                throw new UnsupportedFunctionalityException("Google decision file media type", "'Google decision file media type: " + mediaType + "' functionality not supported.");
+                throw new UnsupportedFunctionalityException(
+                    "Google decision file media type",
+                    "'Google decision file media type: "
+                        + mediaType
+                        + "' functionality not supported."
+                );
             }
 
             var dataType = file.Data.DataType;
             if (dataType != "data" && dataType != "url")
             {
-                throw new UnsupportedFunctionalityException("Google decision file input", "'Google decision file input: " + dataType + "' functionality not supported.");
+                throw new UnsupportedFunctionalityException(
+                    "Google decision file input",
+                    "'Google decision file input: " + dataType + "' functionality not supported."
+                );
             }
 
             var item = new JsonObject { ["type"] = kind, ["mime_type"] = mediaType };
@@ -343,7 +443,10 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
             }
             else
             {
-                item["data"] = file.Data.Bytes != null ? Convert.ToBase64String(file.Data.Bytes) : file.Data.Base64 ?? string.Empty;
+                item["data"] =
+                    file.Data.Bytes != null
+                        ? Convert.ToBase64String(file.Data.Bytes)
+                        : file.Data.Base64 ?? string.Empty;
             }
 
             input.Add(item);
@@ -362,18 +465,32 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
         };
     }
 
-    private static JsonObject BuildQuestion(string id, DecisionQuestion question, string provider, string modelId)
+    private static JsonObject BuildQuestion(
+        string id,
+        DecisionQuestion question,
+        string provider,
+        string modelId
+    )
     {
         if (question.Type == "box")
         {
 #pragma warning disable CS0618
-            throw new EvaluationUnsupportedQuestionTypeException(id, question.Type, provider, modelId);
+            throw new EvaluationUnsupportedQuestionTypeException(
+                id,
+                question.Type,
+                provider,
+                modelId
+            );
 #pragma warning restore CS0618
         }
 
         if (question.Instructions == null)
         {
-            throw new InvalidArgumentException("questions." + id + ".instructions", null, "Google Decisions requires instructions for every question.");
+            throw new InvalidArgumentException(
+                "questions." + id + ".instructions",
+                null,
+                "Google Decisions requires instructions for every question."
+            );
         }
 
         var instructions = ToText(question.Instructions);
@@ -402,7 +519,11 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
         var count = question.Criteria?.Count ?? 0;
         if (count < 2 || count > 255)
         {
-            throw new InvalidArgumentException("questions." + id + ".criteria", null, "Google Decisions requires 2 to 255 options or score levels.");
+            throw new InvalidArgumentException(
+                "questions." + id + ".criteria",
+                null,
+                "Google Decisions requires 2 to 255 options or score levels."
+            );
         }
 
         if (question.Type == "choice")
@@ -413,21 +534,41 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
                 options[option.Key] = option.Value == null ? null : ToText(option.Value);
             }
 
-            return new JsonObject { ["type"] = "choice", ["instructions"] = instructions, ["criteria"] = options };
+            return new JsonObject
+            {
+                ["type"] = "choice",
+                ["instructions"] = instructions,
+                ["criteria"] = options,
+            };
         }
 
         var levels = new JsonArray();
         foreach (var level in ((DecisionScoreCriteria)question.Criteria!).Levels)
         {
-            if (level == null || (level.Value.ValueKind == JsonValueKind.String && level.Value.GetString() == string.Empty))
+            if (
+                level == null
+                || (
+                    level.Value.ValueKind == JsonValueKind.String
+                    && level.Value.GetString() == string.Empty
+                )
+            )
             {
-                throw new InvalidArgumentException("questions." + id + ".criteria", null, "Google Decisions requires non-empty score level descriptions.");
+                throw new InvalidArgumentException(
+                    "questions." + id + ".criteria",
+                    null,
+                    "Google Decisions requires non-empty score level descriptions."
+                );
             }
 
             levels.Add(ToText(level));
         }
 
-        return new JsonObject { ["type"] = "score", ["instructions"] = instructions, ["criteria"] = levels };
+        return new JsonObject
+        {
+            ["type"] = "score",
+            ["instructions"] = instructions,
+            ["criteria"] = levels,
+        };
     }
 
     private static ParsedResponse ParseResponse(JsonElement root, string body)
@@ -439,7 +580,12 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
 
         double Probability(JsonElement element, string property)
         {
-            if (!element.TryGetProperty(property, out var value) || value.ValueKind != JsonValueKind.Number || value.GetDouble() < 0 || value.GetDouble() > 1)
+            if (
+                !element.TryGetProperty(property, out var value)
+                || value.ValueKind != JsonValueKind.Number
+                || value.GetDouble() < 0
+                || value.GetDouble() > 1
+            )
             {
                 throw Malformed(property + " must be a number between 0 and 1.");
             }
@@ -449,7 +595,8 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
 
         static bool Present(JsonElement element, string property, out JsonElement value)
         {
-            return element.TryGetProperty(property, out value) && value.ValueKind != JsonValueKind.Null;
+            return element.TryGetProperty(property, out value)
+                && value.ValueKind != JsonValueKind.Null;
         }
 
         if (root.ValueKind != JsonValueKind.Object)
@@ -469,7 +616,11 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
             foreach (var property in answers.EnumerateObject())
             {
                 var element = property.Value;
-                if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty("type", out var typeElement) || typeElement.ValueKind != JsonValueKind.String)
+                if (
+                    element.ValueKind != JsonValueKind.Object
+                    || !element.TryGetProperty("type", out var typeElement)
+                    || typeElement.ValueKind != JsonValueKind.String
+                )
                 {
                     throw Malformed("answer type is required.");
                 }
@@ -485,7 +636,10 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
                     case "score":
                         if (type == "choice")
                         {
-                            if (!element.TryGetProperty("choice", out var choice) || choice.ValueKind != JsonValueKind.String)
+                            if (
+                                !element.TryGetProperty("choice", out var choice)
+                                || choice.ValueKind != JsonValueKind.String
+                            )
                             {
                                 throw Malformed("choice must be a string.");
                             }
@@ -494,7 +648,10 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
                         }
                         else
                         {
-                            if (!element.TryGetProperty("score", out var score) || score.ValueKind != JsonValueKind.Number)
+                            if (
+                                !element.TryGetProperty("score", out var score)
+                                || score.ValueKind != JsonValueKind.Number
+                            )
                             {
                                 throw Malformed("score must be a number.");
                             }
@@ -502,7 +659,12 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
                             answer.Score = score.GetDouble();
                             if (Present(element, "legend", out var legend))
                             {
-                                if (legend.ValueKind != JsonValueKind.Object || legend.EnumerateObject().Any(entry => entry.Value.ValueKind != JsonValueKind.String))
+                                if (
+                                    legend.ValueKind != JsonValueKind.Object
+                                    || legend
+                                        .EnumerateObject()
+                                        .Any(entry => entry.Value.ValueKind != JsonValueKind.String)
+                                )
                                 {
                                     throw Malformed("legend must be an object of strings.");
                                 }
@@ -511,12 +673,17 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
                             }
                         }
 
-                        if (!element.TryGetProperty("probabilities", out var probabilities) || probabilities.ValueKind != JsonValueKind.Object)
+                        if (
+                            !element.TryGetProperty("probabilities", out var probabilities)
+                            || probabilities.ValueKind != JsonValueKind.Object
+                        )
                         {
                             throw Malformed("probabilities must be an object.");
                         }
 
-                        answer.Probabilities = new Dictionary<string, double>(StringComparer.Ordinal);
+                        answer.Probabilities = new Dictionary<string, double>(
+                            StringComparer.Ordinal
+                        );
                         foreach (var item in probabilities.EnumerateObject())
                         {
                             answer.Probabilities[item.Name] = Probability(probabilities, item.Name);

@@ -12,7 +12,8 @@ public static class DataUrl
 {
     private static readonly Regex CharsetPattern = new Regex(
         "(?:^|;)\\s*charset\\s*=\\s*(?:\"([^\"]+)\"|([^;\\s]+))",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled
+    );
 
     /// <summary>
     /// Decodes a <c>text/*</c> data URL. Without a charset the decoded bytes are returned as Latin-1 text.
@@ -34,7 +35,9 @@ public static class DataUrl
         string? charset = null;
         if (charsetMatch.Success)
         {
-            charset = charsetMatch.Groups[1].Success ? charsetMatch.Groups[1].Value : charsetMatch.Groups[2].Value;
+            charset = charsetMatch.Groups[1].Success
+                ? charsetMatch.Groups[1].Value
+                : charsetMatch.Groups[2].Value;
         }
 
         if (string.IsNullOrEmpty(mediaType) || base64Content == null)

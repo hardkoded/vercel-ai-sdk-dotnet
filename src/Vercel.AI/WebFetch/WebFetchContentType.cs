@@ -33,14 +33,24 @@ internal static class WebFetchContentType
         "application/yaml",
     };
 
-    private static readonly Regex CharsetInContentType = new(@";\s*charset\s*=\s*""?([^"";\s]+)""?", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, MatchTimeout);
+    private static readonly Regex CharsetInContentType = new(
+        @";\s*charset\s*=\s*""?([^"";\s]+)""?",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+        MatchTimeout
+    );
 
-    private static readonly Regex CharsetInMetaTag = new(@"<meta[^>]+charset\s*=\s*[""']?\s*([\w.:-]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, MatchTimeout);
+    private static readonly Regex CharsetInMetaTag = new(
+        @"<meta[^>]+charset\s*=\s*[""']?\s*([\w.:-]+)",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+        MatchTimeout
+    );
 
     public static string? GetMediaType(string? contentType)
     {
         var semicolon = contentType?.IndexOf(';') ?? -1;
-        var mediaType = (semicolon < 0 ? contentType : contentType!.Substring(0, semicolon))?.Trim().ToLowerInvariant();
+        var mediaType = (semicolon < 0 ? contentType : contentType!.Substring(0, semicolon))
+            ?.Trim()
+            .ToLowerInvariant();
         return string.IsNullOrEmpty(mediaType) ? null : mediaType;
     }
 
@@ -58,10 +68,12 @@ internal static class WebFetchContentType
             return WebFetchContentKind.Html;
         }
 
-        if (mediaType.StartsWith("text/", StringComparison.Ordinal)
+        if (
+            mediaType.StartsWith("text/", StringComparison.Ordinal)
             || TextMediaTypes.Contains(mediaType)
             || mediaType.EndsWith("+json", StringComparison.Ordinal)
-            || mediaType.EndsWith("+xml", StringComparison.Ordinal))
+            || mediaType.EndsWith("+xml", StringComparison.Ordinal)
+        )
         {
             return WebFetchContentKind.Text;
         }
@@ -89,7 +101,8 @@ internal static class WebFetchContentType
         catch (ArgumentException)
         {
             encoding = new UTF8Encoding(false);
-            bomLength = body.Length >= 3 && body[0] == 0xef && body[1] == 0xbb && body[2] == 0xbf ? 3 : 0;
+            bomLength =
+                body.Length >= 3 && body[0] == 0xef && body[1] == 0xbb && body[2] == 0xbf ? 3 : 0;
         }
 
         return encoding.GetString(body, bomLength, body.Length - bomLength);
@@ -97,8 +110,12 @@ internal static class WebFetchContentType
 
     private static bool LooksLikeHtml(byte[] body)
     {
-        var start = new UTF8Encoding(false).GetString(body, 0, Math.Min(body.Length, 512)).TrimStart().ToLowerInvariant();
-        return start.StartsWith("<!doctype html", StringComparison.Ordinal) || start.StartsWith("<html", StringComparison.Ordinal);
+        var start = new UTF8Encoding(false)
+            .GetString(body, 0, Math.Min(body.Length, 512))
+            .TrimStart()
+            .ToLowerInvariant();
+        return start.StartsWith("<!doctype html", StringComparison.Ordinal)
+            || start.StartsWith("<html", StringComparison.Ordinal);
     }
 
     private static string? GetCharsetFromContentType(string? contentType)
@@ -149,7 +166,12 @@ internal static class WebFetchContentType
         EncodingProviderRegistration.Ensure();
 
         // The WHATWG encoding standard decodes the Latin-1 labels as windows-1252.
-        if (charset == "iso-8859-1" || charset == "latin1" || charset == "us-ascii" || charset == "ascii")
+        if (
+            charset == "iso-8859-1"
+            || charset == "latin1"
+            || charset == "us-ascii"
+            || charset == "ascii"
+        )
         {
             charset = "windows-1252";
         }
@@ -159,7 +181,11 @@ internal static class WebFetchContentType
             return new UTF8Encoding(false);
         }
 
-        return Encoding.GetEncoding(charset, EncoderFallback.ReplacementFallback, DecoderFallback.ReplacementFallback);
+        return Encoding.GetEncoding(
+            charset,
+            EncoderFallback.ReplacementFallback,
+            DecoderFallback.ReplacementFallback
+        );
     }
 
     private static class EncodingProviderRegistration

@@ -15,15 +15,36 @@ namespace Vercel.AI.Moonshot;
 /// </summary>
 internal static class MoonshotJsonSchema
 {
-    private const string RootError = "tool and response schemas must be a JSON Schema object with type \"object\" for moonshotai (MFJS)";
+    private const string RootError =
+        "tool and response schemas must be a JSON Schema object with type \"object\" for moonshotai (MFJS)";
 
     private static readonly string[] SchemaArrayKeys = ["allOf", "anyOf", "oneOf", "prefixItems"];
 
-    private static readonly string[] SchemaMapKeys = ["properties", "patternProperties", "$defs", "dependentSchemas"];
+    private static readonly string[] SchemaMapKeys =
+    [
+        "properties",
+        "patternProperties",
+        "$defs",
+        "dependentSchemas",
+    ];
 
-    private static readonly string[] SchemaSingleKeys = ["additionalProperties", "propertyNames", "items", "contains", "not", "if", "then", "else"];
+    private static readonly string[] SchemaSingleKeys =
+    [
+        "additionalProperties",
+        "propertyNames",
+        "items",
+        "contains",
+        "not",
+        "if",
+        "then",
+        "else",
+    ];
 
-    private static readonly Regex LocalRef = new(@"^#/(\$defs|definitions)/([^/]+)\z", RegexOptions.None, TimeSpan.FromSeconds(1));
+    private static readonly Regex LocalRef = new(
+        @"^#/(\$defs|definitions)/([^/]+)\z",
+        RegexOptions.None,
+        TimeSpan.FromSeconds(1)
+    );
 
     /// <summary>Port of <c>normalizeJsonSchemaForMFJS</c>.</summary>
     public static JsonNode? NormalizeJsonSchemaForMFJS(JsonNode? schema)
@@ -53,7 +74,10 @@ internal static class MoonshotJsonSchema
 
     private static UnsupportedFunctionalityException RootException()
     {
-        return new UnsupportedFunctionalityException(RootError, "'" + RootError + "' functionality not supported.");
+        return new UnsupportedFunctionalityException(
+            RootError,
+            "'" + RootError + "' functionality not supported."
+        );
     }
 
     private static JsonNode? NormalizeDefinition(JsonNode? definition, bool isRoot)
@@ -80,7 +104,14 @@ internal static class MoonshotJsonSchema
             }
         }
 
-        if (isRoot && !(root["type"] is JsonValue type && type.TryGetValue<string>(out var typeName) && typeName == "object"))
+        if (
+            isRoot
+            && !(
+                root["type"] is JsonValue type
+                && type.TryGetValue<string>(out var typeName)
+                && typeName == "object"
+            )
+        )
         {
             throw RootException();
         }
@@ -118,10 +149,12 @@ internal static class MoonshotJsonSchema
 
         // MFJS requires type to live inside anyOf items, except at the root, which
         // must keep type "object" (moving it leaves a typeless root that 400s).
-        if (!isRoot
+        if (
+            !isRoot
             && result["type"] is JsonValue parent
             && parent.TryGetValue<string>(out var parentType)
-            && result["anyOf"] is JsonArray anyOf)
+            && result["anyOf"] is JsonArray anyOf
+        )
         {
             result.Remove("type");
             var branches = new JsonArray();
@@ -177,7 +210,10 @@ internal static class MoonshotJsonSchema
         foreach (var key in SchemaSingleKeys)
         {
             var value = result[key];
-            if (value is JsonObject || (value is JsonValue single && single.TryGetValue<bool>(out _)))
+            if (
+                value is JsonObject
+                || (value is JsonValue single && single.TryGetValue<bool>(out _))
+            )
             {
                 result[key] = NormalizeDefinition(value, false);
             }
@@ -238,9 +274,11 @@ internal static class MoonshotJsonSchema
 
     private static JsonNode? ResolveLocalRef(JsonNode? branch, JsonObject root)
     {
-        if (branch is not JsonObject record
+        if (
+            branch is not JsonObject record
             || record["$ref"] is not JsonValue reference
-            || !reference.TryGetValue<string>(out var path))
+            || !reference.TryGetValue<string>(out var path)
+        )
         {
             return branch;
         }
@@ -251,6 +289,10 @@ internal static class MoonshotJsonSchema
             return branch;
         }
 
-        return root[match.Groups[1].Value] is JsonObject defs && defs.TryGetPropertyValue(match.Groups[2].Value, out var target) ? target : branch;
+        return
+            root[match.Groups[1].Value] is JsonObject defs
+            && defs.TryGetPropertyValue(match.Groups[2].Value, out var target)
+            ? target
+            : branch;
     }
 }

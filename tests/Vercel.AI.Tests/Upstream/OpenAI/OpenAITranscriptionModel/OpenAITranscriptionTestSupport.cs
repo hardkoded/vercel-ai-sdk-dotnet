@@ -21,7 +21,8 @@ internal static class OpenAITranscriptionTestSupport
         string modelId,
         Func<Dictionary<string, string?>>? headers = null,
         WebSocketFactory? webSocket = null,
-        Func<DateTimeOffset>? clock = null)
+        Func<DateTimeOffset>? clock = null
+    )
     {
         return new TranscriptionModel(
             modelId,
@@ -29,9 +30,17 @@ internal static class OpenAITranscriptionTestSupport
             new ProviderHttp(new HttpClient(new OpenAICapture())),
             () => new Uri("https://api.openai.com/v1/audio/transcriptions"),
             () => new Uri("https://api.openai.com/v1/realtime?intent=transcription"),
-            headers ?? (() => new Dictionary<string, string?> { ["Authorization"] = "Bearer test-api-key" }),
+            headers
+                ?? (
+                    () =>
+                        new Dictionary<string, string?>
+                        {
+                            ["Authorization"] = "Bearer test-api-key",
+                        }
+                ),
             webSocket ?? MockWebSocket.Factory,
-            clock);
+            clock
+        );
     }
 
     /// <summary>One chunk and then the end of the audio, like <c>convertArrayToReadableStream([new Uint8Array([1, 2, 3])])</c>.</summary>
@@ -43,11 +52,16 @@ internal static class OpenAITranscriptionTestSupport
         return audio;
     }
 
-    public static async Task<(TranscriptionStreamStart Start, Task<List<ModelStreamPart>> Parts, MockWebSocket Socket)> StartAsync(
+    public static async Task<(
+        TranscriptionStreamStart Start,
+        Task<List<ModelStreamPart>> Parts,
+        MockWebSocket Socket
+    )> StartAsync(
         TranscriptionModel model,
         AudioChunkStream? audio = null,
         string? providerOptions = null,
-        IReadOnlyDictionary<string, string?>? headers = null)
+        IReadOnlyDictionary<string, string?>? headers = null
+    )
     {
         var call = new TranscriptionStreamCall(
             audio ?? Audio(),
@@ -55,7 +69,8 @@ internal static class OpenAITranscriptionTestSupport
             JsonSerializer.Deserialize<JsonElement>(providerOptions ?? "{}"),
             headers ?? new Dictionary<string, string?>(),
             null,
-            CancellationToken.None);
+            CancellationToken.None
+        );
         var start = await model.DoStreamAsync(call, CancellationToken.None);
         return (start!, Collect(start!), MockWebSocket.Instances[^1]);
     }
@@ -73,7 +88,12 @@ internal static class OpenAITranscriptionTestSupport
 
     public static JsonObject Completed(string transcript)
     {
-        return new JsonObject { ["type"] = Transcription + ".completed", ["item_id"] = "item-1", ["transcript"] = transcript };
+        return new JsonObject
+        {
+            ["type"] = Transcription + ".completed",
+            ["item_id"] = "item-1",
+            ["transcript"] = transcript,
+        };
     }
 
     public static JsonNode? Sent(MockWebSocket socket, int index)

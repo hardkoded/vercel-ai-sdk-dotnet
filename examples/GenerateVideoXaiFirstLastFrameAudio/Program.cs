@@ -28,22 +28,25 @@ if (!File.Exists(last))
 var xai = XaiProvider.Create();
 
 #region generate-video-xai-first-last-frame-audio
-var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
-{
-    Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
-    Prompt = new VideoPrompt(
-        "The comic cat crosses the sunlit room and playfully transforms into the comic dog. "
-        + "Add light footsteps and cheerful room ambience."),
-    FrameImages =
-    [
-        new VideoFrameImage(File.ReadAllBytes(first), "first_frame"),
-        new VideoFrameImage(File.ReadAllBytes(last), "last_frame"),
-    ],
-    GenerateAudio = true,
-    Duration = 6,
-    AspectRatio = "16:9",
-    ProviderOptions = OperationJson.Parse("""{ "xai": { "pollTimeoutMs": 600000 } }"""),
-});
+var result = await GenerateVideo.GenerateVideoAsync(
+    new GenerateVideoRequest
+    {
+        Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
+        Prompt = new VideoPrompt(
+            "The comic cat crosses the sunlit room and playfully transforms into the comic dog. "
+                + "Add light footsteps and cheerful room ambience."
+        ),
+        FrameImages =
+        [
+            new VideoFrameImage(File.ReadAllBytes(first), "first_frame"),
+            new VideoFrameImage(File.ReadAllBytes(last), "last_frame"),
+        ],
+        GenerateAudio = true,
+        Duration = 6,
+        AspectRatio = "16:9",
+        ProviderOptions = OperationJson.Parse("""{ "xai": { "pollTimeoutMs": 600000 } }"""),
+    }
+);
 #endregion
 
 foreach (var warning in result.Warnings)

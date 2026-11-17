@@ -8,7 +8,8 @@ namespace Vercel.AI.Tests.Upstream.ProviderUtils.ValidateDownloadUrl;
 
 public sealed class AllowedUrlsTests
 {
-    private const string Suite = "packages/provider-utils/src/validate-download-url.test.ts::validateDownloadUrl > allowed URLs::";
+    private const string Suite =
+        "packages/provider-utils/src/validate-download-url.test.ts::validateDownloadUrl > allowed URLs::";
 
     [Fact]
     [UpstreamTest(Suite + "should allow https URLs", Coverage = UpstreamCoverage.Covered)]
@@ -53,7 +54,10 @@ public sealed class AllowedUrlsTests
     [InlineData("https://service.internal.example.com/file")]
     [InlineData("https://service.notinternal/file")]
     [InlineData("https://example.com/service.internal")]
-    [UpstreamTest(Suite + "should allow URLs without an .internal hostname suffix: %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Suite + "should allow URLs without an .internal hostname suffix: %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_allow_URLs_without_an_internal_hostname_suffix(string url)
     {
         AssertAllowed(url);

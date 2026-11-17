@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <Description>Helpers shared by the examples (port of examples/ai-functions/src/lib).</Description>
-    <OutputType>Library</OutputType>
-    <AssemblyName>Examples.Lib</AssemblyName>
-    <RootNamespace>Examples.Lib</RootNamespace>
-  </PropertyGroup>
+    <PropertyGroup>
+        <Description>Helpers shared by the examples (port of examples/ai-functions/src/lib).</Description>
+        <OutputType>Library</OutputType>
+        <AssemblyName>Examples.Lib</AssemblyName>
+        <RootNamespace>Examples.Lib</RootNamespace>
+    </PropertyGroup>
 </Project>

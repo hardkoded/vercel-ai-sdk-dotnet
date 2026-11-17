@@ -72,12 +72,14 @@ public sealed class GatewayRealtimeModelConfig
         string baseUrl,
         Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> getHeaders,
         Func<string, int?, CancellationToken, Task<GatewayMintedClientSecret>> createClientSecret,
-        string? teamIdOrSlug = null)
+        string? teamIdOrSlug = null
+    )
     {
         Provider = provider ?? throw new ArgumentNullException(nameof(provider));
         BaseUrl = baseUrl ?? throw new ArgumentNullException(nameof(baseUrl));
         GetHeaders = getHeaders ?? throw new ArgumentNullException(nameof(getHeaders));
-        CreateClientSecret = createClientSecret ?? throw new ArgumentNullException(nameof(createClientSecret));
+        CreateClientSecret = createClientSecret
+            ?? throw new ArgumentNullException(nameof(createClientSecret));
         TeamIdOrSlug = teamIdOrSlug;
     }
 
@@ -98,7 +100,12 @@ public sealed class GatewayRealtimeModelConfig
     /// Arguments are the model id and <c>expiresAfterSeconds</c>. Implemented by the provider because minting needs the
     /// long-lived Gateway credential.
     /// </summary>
-    public Func<string, int?, CancellationToken, Task<GatewayMintedClientSecret>> CreateClientSecret { get; }
+    public Func<
+        string,
+        int?,
+        CancellationToken,
+        Task<GatewayMintedClientSecret>
+    > CreateClientSecret { get; }
 }
 
 /// <summary>
@@ -134,27 +141,44 @@ public sealed class GatewayRealtimeModel : IRealtimeModel, IServerWebSocketRealt
     /// <summary>The Gateway connects through the client-secret or server WebSocket config, not through a session.</summary>
     public Task<IRealtimeSession> ConnectAsync(CancellationToken cancellationToken)
     {
-        throw new AiSdkException("AI Gateway realtime connects through the WebSocket config from GetWebSocketConfig or GetServerWebSocketConfigAsync.");
+        throw new AiSdkException(
+            "AI Gateway realtime connects through the WebSocket config from GetWebSocketConfig or GetServerWebSocketConfigAsync."
+        );
     }
 
     /// <summary>
     /// Mints a single-use, short-lived client secret (<c>vcst_</c>) the browser uses to open the realtime WebSocket without
     /// holding the long-lived Gateway credential. <paramref name="expiresAfterSeconds"/> is forwarded to the mint endpoint.
     /// </summary>
-    public async Task<GatewayRealtimeClientSecret> DoCreateClientSecretAsync(int? expiresAfterSeconds, CancellationToken cancellationToken)
+    public async Task<GatewayRealtimeClientSecret> DoCreateClientSecretAsync(
+        int? expiresAfterSeconds,
+        CancellationToken cancellationToken
+    )
     {
-        var secret = await _config.CreateClientSecret(ModelId, expiresAfterSeconds, cancellationToken).ConfigureAwait(false);
-        return new GatewayRealtimeClientSecret(secret.Token, ToGatewayRealtimeUrl(_config.BaseUrl, ModelId), secret.ExpiresAt);
+        var secret = await _config
+            .CreateClientSecret(ModelId, expiresAfterSeconds, cancellationToken)
+            .ConfigureAwait(false);
+        return new GatewayRealtimeClientSecret(
+            secret.Token,
+            ToGatewayRealtimeUrl(_config.BaseUrl, ModelId),
+            secret.ExpiresAt
+        );
     }
 
     /// <summary>Returns the URL and the subprotocols that carry the token (a browser has no header channel).</summary>
     public GatewayRealtimeWebSocketConfig GetWebSocketConfig(string token, string url)
     {
-        return new GatewayRealtimeWebSocketConfig(url, GatewayRealtimeAuth.GetGatewayRealtimeProtocols(token, _config.TeamIdOrSlug));
+        return new GatewayRealtimeWebSocketConfig(
+            url,
+            GatewayRealtimeAuth.GetGatewayRealtimeProtocols(token, _config.TeamIdOrSlug)
+        );
     }
 
     /// <inheritdoc />
-    public async Task<RealtimeModelV4ServerConnection> GetServerWebSocketConfigAsync(RealtimeModelV4SessionIntent? intent, CancellationToken cancellationToken)
+    public async Task<RealtimeModelV4ServerConnection> GetServerWebSocketConfigAsync(
+        RealtimeModelV4SessionIntent? intent,
+        CancellationToken cancellationToken
+    )
     {
         AssertConversationIntent(intent);
 
@@ -168,7 +192,10 @@ public sealed class GatewayRealtimeModel : IRealtimeModel, IServerWebSocketRealt
             }
         }
 
-        return new RealtimeModelV4ServerConnection(ToGatewayRealtimeUrl(_config.BaseUrl, ModelId), defined);
+        return new RealtimeModelV4ServerConnection(
+            ToGatewayRealtimeUrl(_config.BaseUrl, ModelId),
+            defined
+        );
     }
 
     /// <summary>The Gateway emits normalized events, so no provider-specific mapping is needed.</summary>
@@ -178,14 +205,20 @@ public sealed class GatewayRealtimeModel : IRealtimeModel, IServerWebSocketRealt
     }
 
     /// <summary>The Gateway accepts normalized client events directly.</summary>
-    public object SerializeClientEvent(RealtimeModelV4ClientEvent @event, RealtimeModelV4SessionIntent? intent = null)
+    public object SerializeClientEvent(
+        RealtimeModelV4ClientEvent @event,
+        RealtimeModelV4SessionIntent? intent = null
+    )
     {
         AssertConversationIntent(intent);
         return @event;
     }
 
     /// <summary>The session config is already normalized; the Gateway maps it to the upstream payload server-side.</summary>
-    public object BuildSessionConfig(RealtimeModelV4SessionConfig config, RealtimeModelV4SessionIntent? intent = null)
+    public object BuildSessionConfig(
+        RealtimeModelV4SessionConfig config,
+        RealtimeModelV4SessionIntent? intent = null
+    )
     {
         AssertConversationIntent(intent);
         return config;
@@ -196,14 +229,19 @@ public sealed class GatewayRealtimeModel : IRealtimeModel, IServerWebSocketRealt
         if (intent is { } value && value != RealtimeModelV4SessionIntent.Conversation)
         {
             throw new InvalidOperationException(
-                "AI Gateway realtime does not support the '" + value.ToString().ToLowerInvariant() + "' session intent on the normalized realtime route.");
+                "AI Gateway realtime does not support the '"
+                    + value.ToString().ToLowerInvariant()
+                    + "' session intent on the normalized realtime route."
+            );
         }
     }
 
     // The HTTP(S) base URL is upgraded to WS(S) and the model id rides the ?ai-model-id= query, passed through verbatim.
     private static string ToGatewayRealtimeUrl(string baseUrl, string modelId)
     {
-        var wsBase = baseUrl.StartsWith("http", StringComparison.Ordinal) ? "ws" + baseUrl.Substring(4) : baseUrl;
+        var wsBase = baseUrl.StartsWith("http", StringComparison.Ordinal)
+            ? "ws" + baseUrl.Substring(4)
+            : baseUrl;
         var url = new Uri(wsBase + "/realtime-model").AbsoluteUri;
         return url + "?ai-model-id=" + FormEncode(modelId);
     }
@@ -215,7 +253,15 @@ public sealed class GatewayRealtimeModel : IRealtimeModel, IServerWebSocketRealt
         foreach (var b in Encoding.UTF8.GetBytes(value))
         {
             var c = (char)b;
-            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '*' || c == '-' || c == '.' || c == '_')
+            if (
+                (c >= 'a' && c <= 'z')
+                || (c >= 'A' && c <= 'Z')
+                || (c >= '0' && c <= '9')
+                || c == '*'
+                || c == '-'
+                || c == '.'
+                || c == '_'
+            )
             {
                 builder.Append(c);
             }

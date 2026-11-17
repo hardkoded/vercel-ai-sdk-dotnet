@@ -79,10 +79,16 @@ public static class OpenAICompatibleChat
     /// <summary>
     /// Prefers the camelCase provider-options key when the caller supplied it.
     /// </summary>
-    public static string ResolveProviderOptionsKey(string rawName, IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    public static string ResolveProviderOptionsKey(
+        string rawName,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
+    )
     {
         var camel = ToCamelCase(rawName);
-        if (!string.Equals(camel, rawName, StringComparison.Ordinal) && HasOptions(providerOptions, camel))
+        if (
+            !string.Equals(camel, rawName, StringComparison.Ordinal)
+            && HasOptions(providerOptions, camel)
+        )
         {
             return camel;
         }
@@ -93,21 +99,38 @@ public static class OpenAICompatibleChat
     /// <summary>
     /// Adds a deprecation warning when <paramref name="providerOptions"/> uses a non-camelCase key.
     /// </summary>
-    public static void WarnIfDeprecated(string rawName, IReadOnlyDictionary<string, JsonElement>? providerOptions, IList<CallWarning> warnings)
+    public static void WarnIfDeprecated(
+        string rawName,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        IList<CallWarning> warnings
+    )
     {
         var camel = ToCamelCase(rawName ?? string.Empty);
-        if (!string.Equals(camel, rawName, StringComparison.Ordinal) && HasOptions(providerOptions, rawName ?? string.Empty))
+        if (
+            !string.Equals(camel, rawName, StringComparison.Ordinal)
+            && HasOptions(providerOptions, rawName ?? string.Empty)
+        )
         {
-            warnings.Add(new CallWarning(
-                "deprecated",
-                "providerOptions key '" + rawName + "'. Use '" + camel + "' instead."));
+            warnings.Add(
+                new CallWarning(
+                    "deprecated",
+                    "providerOptions key '" + rawName + "'. Use '" + camel + "' instead."
+                )
+            );
         }
     }
 
     /// <summary>True when <paramref name="key"/> is present and not JSON null.</summary>
-    public static bool HasOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions, string key)
+    public static bool HasOptions(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        string key
+    )
     {
-        if (providerOptions == null || string.IsNullOrEmpty(key) || !providerOptions.TryGetValue(key, out var value))
+        if (
+            providerOptions == null
+            || string.IsNullOrEmpty(key)
+            || !providerOptions.TryGetValue(key, out var value)
+        )
         {
             return false;
         }
@@ -127,7 +150,8 @@ public static class OpenAICompatibleChat
         var completion = ReadInt(element, "completion_tokens") ?? 0;
         var total = ReadInt(element, "total_tokens");
         var cache = ReadNestedInt(element, "prompt_tokens_details", "cached_tokens") ?? 0;
-        var reasoning = ReadNestedInt(element, "completion_tokens_details", "reasoning_tokens") ?? 0;
+        var reasoning = ReadNestedInt(element, "completion_tokens_details", "reasoning_tokens")
+            ?? 0;
         var modelUsage = new LanguageModelUsage(
             prompt,
             completion,
@@ -136,11 +160,13 @@ public static class OpenAICompatibleChat
             reasoningTokens: reasoning,
             raw: element.Clone(),
             noCacheInputTokens: prompt - cache,
-            textTokens: Math.Max(0, completion - reasoning));
+            textTokens: Math.Max(0, completion - reasoning)
+        );
         return new OpenAICompatibleUsage(
             modelUsage,
             ReadNestedInt(element, "completion_tokens_details", "accepted_prediction_tokens"),
-            ReadNestedInt(element, "completion_tokens_details", "rejected_prediction_tokens"));
+            ReadNestedInt(element, "completion_tokens_details", "rejected_prediction_tokens")
+        );
     }
 
     /// <summary>Maps a Completions usage object. A missing object leaves token counts unset.</summary>
@@ -159,7 +185,8 @@ public static class OpenAICompatibleChat
             ReadInt(element, "total_tokens"),
             raw: element.Clone(),
             noCacheInputTokens: prompt,
-            textTokens: completion);
+            textTokens: completion
+        );
     }
 
     /// <summary>Reads <c>error.message</c> or a string <c>error</c> without appending <c>param</c>.</summary>
@@ -174,7 +201,10 @@ public static class OpenAICompatibleChat
         {
             using var document = JsonDocument.Parse(body!);
             var root = document.RootElement;
-            if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("error", out var error))
+            if (
+                root.ValueKind != JsonValueKind.Object
+                || !root.TryGetProperty("error", out var error)
+            )
             {
                 return null;
             }
@@ -184,16 +214,16 @@ public static class OpenAICompatibleChat
                 return error.GetString();
             }
 
-            if (error.ValueKind == JsonValueKind.Object
+            if (
+                error.ValueKind == JsonValueKind.Object
                 && error.TryGetProperty("message", out var message)
-                && message.ValueKind == JsonValueKind.String)
+                && message.ValueKind == JsonValueKind.String
+            )
             {
                 return message.GetString();
             }
         }
-        catch (JsonException)
-        {
-        }
+        catch (JsonException) { }
 
         return null;
     }
@@ -201,17 +231,28 @@ public static class OpenAICompatibleChat
     /// <summary>Copies an API exception onto the same status type with a new message.</summary>
     public static ApiException WithMessage(ApiException exception, string message)
     {
-        return ProviderHttp.MapStatusWithHeaders(exception.StatusCode, message, exception.ResponseBody, exception.ResponseHeaders);
+        return ProviderHttp.MapStatusWithHeaders(
+            exception.StatusCode,
+            message,
+            exception.ResponseBody,
+            exception.ResponseHeaders
+        );
     }
 
     /// <summary>Top-level reasoning values other than <c>provider-default</c> are sent as <c>reasoning_effort</c>.</summary>
     public static bool IsCustomReasoning(string? reasoning)
     {
-        return reasoning != null && !string.Equals(reasoning, "provider-default", StringComparison.Ordinal);
+        return reasoning != null
+            && !string.Equals(reasoning, "provider-default", StringComparison.Ordinal);
     }
 
     /// <summary>Converts prompt messages to Chat Completions messages.</summary>
-    public static JsonArray ConvertMessages(IReadOnlyList<ModelMessage> prompt, string metadataKey, string? providerName = null, bool supportsMultiPartToolContent = false)
+    public static JsonArray ConvertMessages(
+        IReadOnlyList<ModelMessage> prompt,
+        string metadataKey,
+        string? providerName = null,
+        bool supportsMultiPartToolContent = false
+    )
     {
         var messages = new JsonArray();
         if (prompt == null)
@@ -224,26 +265,47 @@ public static class OpenAICompatibleChat
             switch (message)
             {
                 case SystemModelMessage system:
-                    messages.Add(new JsonObject { ["role"] = "system", ["content"] = system.Content });
+                    messages.Add(
+                        new JsonObject { ["role"] = "system", ["content"] = system.Content }
+                    );
                     break;
                 case UserModelMessage user:
-                    messages.Add(new JsonObject { ["role"] = "user", ["content"] = MapUserContent(user, metadataKey, providerName ?? metadataKey) });
+                    messages.Add(
+                        new JsonObject
+                        {
+                            ["role"] = "user",
+                            ["content"] = MapUserContent(
+                                user,
+                                metadataKey,
+                                providerName ?? metadataKey
+                            ),
+                        }
+                    );
                     break;
                 case AssistantModelMessage assistant:
                     messages.Add(MapAssistant(assistant, metadataKey));
                     break;
                 case ToolModelMessage tool:
-                    messages.Add(new JsonObject
-                    {
-                        ["role"] = "tool",
-                        ["tool_call_id"] = tool.ToolCallId,
-                        ["content"] = supportsMultiPartToolContent && tool.OutputContent != null
-                            ? MapToolContent(tool.OutputContent, metadataKey, providerName ?? metadataKey)
-                            : tool.OutputJson,
-                    });
+                    messages.Add(
+                        new JsonObject
+                        {
+                            ["role"] = "tool",
+                            ["tool_call_id"] = tool.ToolCallId,
+                            ["content"] =
+                                supportsMultiPartToolContent && tool.OutputContent != null
+                                    ? MapToolContent(
+                                        tool.OutputContent,
+                                        metadataKey,
+                                        providerName ?? metadataKey
+                                    )
+                                    : tool.OutputJson,
+                        }
+                    );
                     break;
                 default:
-                    throw new AiSdkException("Unsupported role: " + (message == null ? string.Empty : message.Role) + ".");
+                    throw new AiSdkException(
+                        "Unsupported role: " + (message == null ? string.Empty : message.Role) + "."
+                    );
             }
         }
 
@@ -272,13 +334,20 @@ public static class OpenAICompatibleChat
 
         foreach (var part in content.EnumerateArray())
         {
-            if (part.ValueKind != JsonValueKind.Object || !part.TryGetProperty("type", out var typeElement))
+            if (
+                part.ValueKind != JsonValueKind.Object
+                || !part.TryGetProperty("type", out var typeElement)
+            )
             {
                 continue;
             }
 
             var type = typeElement.GetString();
-            if (type == "text" && part.TryGetProperty("text", out var textElement) && textElement.ValueKind == JsonValueKind.String)
+            if (
+                type == "text"
+                && part.TryGetProperty("text", out var textElement)
+                && textElement.ValueKind == JsonValueKind.String
+            )
             {
                 var text = textElement.GetString();
                 if (!string.IsNullOrEmpty(text))
@@ -286,16 +355,22 @@ public static class OpenAICompatibleChat
                     parts.Add(new OpenAICompatibleContentPart(false, text!));
                 }
             }
-            else if (type == "thinking" && part.TryGetProperty("thinking", out var thinking) && thinking.ValueKind == JsonValueKind.Array)
+            else if (
+                type == "thinking"
+                && part.TryGetProperty("thinking", out var thinking)
+                && thinking.ValueKind == JsonValueKind.Array
+            )
             {
                 var builder = new StringBuilder();
                 foreach (var chunk in thinking.EnumerateArray())
                 {
-                    if (chunk.ValueKind == JsonValueKind.Object
+                    if (
+                        chunk.ValueKind == JsonValueKind.Object
                         && chunk.TryGetProperty("type", out var chunkType)
                         && chunkType.GetString() == "text"
                         && chunk.TryGetProperty("text", out var chunkText)
-                        && chunkText.ValueKind == JsonValueKind.String)
+                        && chunkText.ValueKind == JsonValueKind.String
+                    )
                     {
                         builder.Append(chunkText.GetString());
                     }
@@ -315,7 +390,12 @@ public static class OpenAICompatibleChat
     /// Builds provider metadata for accepted and rejected prediction tokens, on top of what a metadata extractor returned.
     /// An extractor entry replaces the default entry of the same key.
     /// </summary>
-    public static JsonElement ProviderMetadata(string metadataKey, JsonObject? extracted, int? acceptedPredictionTokens, int? rejectedPredictionTokens)
+    public static JsonElement ProviderMetadata(
+        string metadataKey,
+        JsonObject? extracted,
+        int? acceptedPredictionTokens,
+        int? rejectedPredictionTokens
+    )
     {
         var key = metadataKey ?? string.Empty;
         var root = new JsonObject { [key] = new JsonObject() };
@@ -344,9 +424,18 @@ public static class OpenAICompatibleChat
     }
 
     /// <summary>Builds provider metadata for accepted and rejected prediction tokens.</summary>
-    public static JsonElement ProviderMetadata(string metadataKey, int? acceptedPredictionTokens, int? rejectedPredictionTokens)
+    public static JsonElement ProviderMetadata(
+        string metadataKey,
+        int? acceptedPredictionTokens,
+        int? rejectedPredictionTokens
+    )
     {
-        return ProviderMetadata(metadataKey, null, acceptedPredictionTokens, rejectedPredictionTokens);
+        return ProviderMetadata(
+            metadataKey,
+            null,
+            acceptedPredictionTokens,
+            rejectedPredictionTokens
+        );
     }
 
     /// <summary>Builds tool-call metadata that carries a Google thought signature.</summary>
@@ -362,7 +451,11 @@ public static class OpenAICompatibleChat
         return new AiSdkException("'" + functionality + "' functionality not supported.");
     }
 
-    private static JsonNode MapUserContent(UserModelMessage user, string metadataKey, string providerName)
+    private static JsonNode MapUserContent(
+        UserModelMessage user,
+        string metadataKey,
+        string providerName
+    )
     {
         if (user.Content.Count == 1 && user.Content[0] is TextContentPart only)
         {
@@ -385,29 +478,52 @@ public static class OpenAICompatibleChat
         return parts;
     }
 
-    private static JsonArray MapToolContent(IReadOnlyList<UserContentPart> content, string metadataKey, string providerName)
+    private static JsonArray MapToolContent(
+        IReadOnlyList<UserContentPart> content,
+        string metadataKey,
+        string providerName
+    )
     {
         var parts = new JsonArray();
         foreach (var part in content)
         {
-            parts.Add(part is FileContentPart file
-                ? MapFile(file, metadataKey, providerName, includeProviderOptions: false)
-                : new JsonObject { ["type"] = "text", ["text"] = (part as TextContentPart)?.Text ?? throw Unsupported("custom tool content parts") });
+            parts.Add(
+                part is FileContentPart file
+                    ? MapFile(file, metadataKey, providerName, includeProviderOptions: false)
+                    : new JsonObject
+                    {
+                        ["type"] = "text",
+                        ["text"] = (part as TextContentPart)?.Text
+                            ?? throw Unsupported("custom tool content parts"),
+                    }
+            );
         }
 
         return parts;
     }
 
-    private static JsonObject MapFile(FileContentPart file, string metadataKey, string providerName, bool includeProviderOptions = true)
+    private static JsonObject MapFile(
+        FileContentPart file,
+        string metadataKey,
+        string providerName,
+        bool includeProviderOptions = true
+    )
     {
-        if (file.Text != null && MediaTypes.GetTopLevelMediaType(file.MediaType ?? string.Empty) == "text")
+        if (
+            file.Text != null
+            && MediaTypes.GetTopLevelMediaType(file.MediaType ?? string.Empty) == "text"
+        )
         {
             var inline = new JsonObject { ["type"] = "text", ["text"] = file.Text };
-            if (includeProviderOptions
+            if (
+                includeProviderOptions
                 && file.ProviderOptions != null
-                && (file.ProviderOptions.TryGetValue(metadataKey, out var meta)
-                    || file.ProviderOptions.TryGetValue("openaiCompatible", out meta))
-                && meta.ValueKind == JsonValueKind.Object)
+                && (
+                    file.ProviderOptions.TryGetValue(metadataKey, out var meta)
+                    || file.ProviderOptions.TryGetValue("openaiCompatible", out meta)
+                )
+                && meta.ValueKind == JsonValueKind.Object
+            )
             {
                 foreach (var property in meta.EnumerateObject())
                 {
@@ -430,17 +546,24 @@ public static class OpenAICompatibleChat
                 throw Unsupported("file parts with provider references");
             }
 
-            var fileId = ProviderReferences.ResolveProviderReference(file.ProviderReference, providerName);
+            var fileId = ProviderReferences.ResolveProviderReference(
+                file.ProviderReference,
+                providerName
+            );
             var reference = new JsonObject
             {
                 ["type"] = "file",
                 ["file"] = new JsonObject { ["file_id"] = fileId },
             };
-            if (includeProviderOptions
+            if (
+                includeProviderOptions
                 && file.ProviderOptions != null
-                && (file.ProviderOptions.TryGetValue(metadataKey, out var custom)
-                    || file.ProviderOptions.TryGetValue("openaiCompatible", out custom))
-                && custom.ValueKind == JsonValueKind.Object)
+                && (
+                    file.ProviderOptions.TryGetValue(metadataKey, out var custom)
+                    || file.ProviderOptions.TryGetValue("openaiCompatible", out custom)
+                )
+                && custom.ValueKind == JsonValueKind.Object
+            )
             {
                 foreach (var property in custom.EnumerateObject())
                 {
@@ -513,17 +636,22 @@ public static class OpenAICompatibleChat
                 ["type"] = "file",
                 ["file"] = new JsonObject
                 {
-                    ["filename"] = string.IsNullOrEmpty(file.FileName) ? "document.pdf" : file.FileName,
-                    ["file_data"] = "data:application/pdf;base64," + Convert.ToBase64String(file.Data ?? Array.Empty<byte>()),
+                    ["filename"] = string.IsNullOrEmpty(file.FileName)
+                        ? "document.pdf"
+                        : file.FileName,
+                    ["file_data"] =
+                        "data:application/pdf;base64,"
+                        + Convert.ToBase64String(file.Data ?? Array.Empty<byte>()),
                 },
             };
         }
 
         if (top == "text")
         {
-            var text = file.Url != null && file.Data == null
-                ? file.Url
-                : Encoding.UTF8.GetString(file.Data ?? Array.Empty<byte>());
+            var text =
+                file.Url != null && file.Data == null
+                    ? file.Url
+                    : Encoding.UTF8.GetString(file.Data ?? Array.Empty<byte>());
             return new JsonObject { ["type"] = "text", ["text"] = text };
         }
 
@@ -537,7 +665,10 @@ public static class OpenAICompatibleChat
             return file.Url;
         }
 
-        return "data:" + mediaType + ";base64," + Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
+        return "data:"
+            + mediaType
+            + ";base64,"
+            + Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
     }
 
     private static string? AudioFormat(string mediaType)
@@ -547,8 +678,10 @@ public static class OpenAICompatibleChat
             return "wav";
         }
 
-        if (string.Equals(mediaType, "audio/mp3", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(mediaType, "audio/mpeg", StringComparison.OrdinalIgnoreCase))
+        if (
+            string.Equals(mediaType, "audio/mp3", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(mediaType, "audio/mpeg", StringComparison.OrdinalIgnoreCase)
+        )
         {
             return "mp3";
         }
@@ -621,12 +754,19 @@ public static class OpenAICompatibleChat
 
     private static string? ReadSignature(JsonElement element, string key)
     {
-        if (string.IsNullOrEmpty(key) || !element.TryGetProperty(key, out var bag) || bag.ValueKind != JsonValueKind.Object)
+        if (
+            string.IsNullOrEmpty(key)
+            || !element.TryGetProperty(key, out var bag)
+            || bag.ValueKind != JsonValueKind.Object
+        )
         {
             return null;
         }
 
-        if (bag.TryGetProperty("thoughtSignature", out var signature) && signature.ValueKind == JsonValueKind.String)
+        if (
+            bag.TryGetProperty("thoughtSignature", out var signature)
+            && signature.ValueKind == JsonValueKind.String
+        )
         {
             return signature.GetString();
         }
@@ -647,7 +787,11 @@ public static class OpenAICompatibleChat
 
     private static int? ReadInt(JsonElement element, string name)
     {
-        if (!element.TryGetProperty(name, out var value) || value.ValueKind != JsonValueKind.Number || !value.TryGetInt32(out var number))
+        if (
+            !element.TryGetProperty(name, out var value)
+            || value.ValueKind != JsonValueKind.Number
+            || !value.TryGetInt32(out var number)
+        )
         {
             return null;
         }
@@ -657,7 +801,10 @@ public static class OpenAICompatibleChat
 
     private static int? ReadNestedInt(JsonElement element, string parent, string name)
     {
-        if (!element.TryGetProperty(parent, out var child) || child.ValueKind != JsonValueKind.Object)
+        if (
+            !element.TryGetProperty(parent, out var child)
+            || child.ValueKind != JsonValueKind.Object
+        )
         {
             return null;
         }
@@ -670,10 +817,15 @@ public static class OpenAICompatibleChat
 public sealed class OpenAICompatibleUsage
 {
     /// <summary>Usage when the provider omitted the object.</summary>
-    public static OpenAICompatibleUsage Missing { get; } = new(new LanguageModelUsage(null, null, null), null, null);
+    public static OpenAICompatibleUsage Missing { get; } =
+        new(new LanguageModelUsage(null, null, null), null, null);
 
     /// <summary>Creates converted usage.</summary>
-    public OpenAICompatibleUsage(LanguageModelUsage usage, int? acceptedPredictionTokens, int? rejectedPredictionTokens)
+    public OpenAICompatibleUsage(
+        LanguageModelUsage usage,
+        int? acceptedPredictionTokens,
+        int? rejectedPredictionTokens
+    )
     {
         Usage = usage;
         AcceptedPredictionTokens = acceptedPredictionTokens;

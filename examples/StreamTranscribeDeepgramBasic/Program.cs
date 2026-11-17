@@ -8,8 +8,10 @@ using Vercel.AI.Deepgram;
 using Vercel.AI.OpenAI;
 using Vercel.AI.Operations;
 
-if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OPENAI_API_KEY"))
-    || string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DEEPGRAM_API_KEY")))
+if (
+    string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OPENAI_API_KEY"))
+    || string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DEEPGRAM_API_KEY"))
+)
 {
     Console.WriteLine("Set OPENAI_API_KEY and DEEPGRAM_API_KEY to run this example.");
     return;
@@ -23,7 +25,8 @@ var speech = await GenerateSpeech.GenerateSpeechAsync(
         Text = "Hello from the AI SDK! Deepgram can transcribe live audio as it arrives.",
         OutputFormat = "pcm",
     },
-    CancellationToken.None);
+    CancellationToken.None
+);
 
 // 100ms of 24kHz, 16-bit mono PCM, paced like microphone input.
 const int chunkSize = 4800;
@@ -32,7 +35,11 @@ var feed = Task.Run(async () =>
 {
     for (var offset = 0; offset < speech.Audio.Data.Length; offset += chunkSize)
     {
-        audio.Write(speech.Audio.Data.AsSpan(offset, Math.Min(chunkSize, speech.Audio.Data.Length - offset)).ToArray());
+        audio.Write(
+            speech
+                .Audio.Data.AsSpan(offset, Math.Min(chunkSize, speech.Audio.Data.Length - offset))
+                .ToArray()
+        );
         await Task.Delay(100);
     }
 
@@ -40,14 +47,19 @@ var feed = Task.Run(async () =>
 });
 
 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(60));
-var result = StreamTranscribe.Start(new StreamTranscribeRequest
-{
-    Model = (DeepgramProvider.DeepgramTranscriptionModel)DeepgramProvider.Create().TranscriptionModel("nova-3"),
-    Audio = audio,
-    InputAudioFormat = new AudioFormat("audio/pcm", 24000),
-    ProviderOptions = OperationJson.Parse("""{"deepgram":{"language":"en","streaming":{"interimResults":true}}}"""),
-    CancellationToken = timeout.Token,
-});
+var result = StreamTranscribe.Start(
+    new StreamTranscribeRequest
+    {
+        Model = (DeepgramProvider.DeepgramTranscriptionModel)
+            DeepgramProvider.Create().TranscriptionModel("nova-3"),
+        Audio = audio,
+        InputAudioFormat = new AudioFormat("audio/pcm", 24000),
+        ProviderOptions = OperationJson.Parse(
+            """{"deepgram":{"language":"en","streaming":{"interimResults":true}}}"""
+        ),
+        CancellationToken = timeout.Token,
+    }
+);
 
 await foreach (var part in result.FullStream)
 {

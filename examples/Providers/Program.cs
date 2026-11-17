@@ -19,11 +19,13 @@ if (!string.IsNullOrEmpty(gatewayKey))
     #region gateway-model
     var client = new AiClient(GatewayProvider.Create());
 
-    var result = await client.GenerateTextAsync(new GenerateTextOptions
-    {
-        ModelId = "anthropic/claude-opus-5.5", // or "openai/gpt-6-astra", "google/gemini-3.8-flash", etc.
-        Prompt = "Hello!",
-    });
+    var result = await client.GenerateTextAsync(
+        new GenerateTextOptions
+        {
+            ModelId = "anthropic/claude-opus-5.5", // or "openai/gpt-6-astra", "google/gemini-3.8-flash", etc.
+            Prompt = "Hello!",
+        }
+    );
     #endregion
 
     Console.WriteLine("AI Gateway: " + result.Text);
@@ -35,11 +37,13 @@ if (!string.IsNullOrEmpty(anthropicKey))
     var client = new AiClient(GatewayProvider.Create());
     var anthropic = AnthropicProvider.Create(); // or OpenAIProvider.Create(), GoogleProvider.Create(), etc.
 
-    var result = await client.GenerateTextAsync(new GenerateTextOptions
-    {
-        Model = anthropic.LanguageModel("claude-opus-5-5"),
-        Prompt = "Hello!",
-    });
+    var result = await client.GenerateTextAsync(
+        new GenerateTextOptions
+        {
+            Model = anthropic.LanguageModel("claude-opus-5-5"),
+            Prompt = "Hello!",
+        }
+    );
     #endregion
 
     Console.WriteLine("Anthropic: " + result.Text);

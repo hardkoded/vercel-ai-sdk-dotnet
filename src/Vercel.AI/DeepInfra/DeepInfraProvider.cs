@@ -24,9 +24,7 @@ public sealed class DeepInfraProvider : OpenAICompatibleProvider
 
     /// <summary>Creates a provider.</summary>
     public DeepInfraProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
-        : base(Prepare(options), httpClient)
-    {
-    }
+        : base(Prepare(options), httpClient) { }
 
     /// <inheritdoc />
     public override IImageModel ImageModel(string modelId)
@@ -35,9 +33,14 @@ public sealed class DeepInfraProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static new DeepInfraProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new DeepInfraProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new DeepInfraProvider(client, options);
     }
 
@@ -47,14 +50,18 @@ public sealed class DeepInfraProvider : OpenAICompatibleProvider
     /// </summary>
     public static JsonElement FixReasoningUsage(JsonElement usage)
     {
-        var completion = usage.TryGetProperty("completion_tokens", out var completionValue) && completionValue.ValueKind == JsonValueKind.Number
-            ? completionValue.GetInt32()
-            : 0;
-        if (!usage.TryGetProperty("completion_tokens_details", out var details)
+        var completion =
+            usage.TryGetProperty("completion_tokens", out var completionValue)
+            && completionValue.ValueKind == JsonValueKind.Number
+                ? completionValue.GetInt32()
+                : 0;
+        if (
+            !usage.TryGetProperty("completion_tokens_details", out var details)
             || details.ValueKind != JsonValueKind.Object
             || !details.TryGetProperty("reasoning_tokens", out var reasoningValue)
             || reasoningValue.ValueKind != JsonValueKind.Number
-            || reasoningValue.GetInt32() <= completion)
+            || reasoningValue.GetInt32() <= completion
+        )
         {
             return usage;
         }
@@ -62,7 +69,10 @@ public sealed class DeepInfraProvider : OpenAICompatibleProvider
         var reasoning = reasoningValue.GetInt32();
         var fixedUsage = JsonNode.Parse(usage.GetRawText())!.AsObject();
         fixedUsage["completion_tokens"] = completion + reasoning;
-        if (usage.TryGetProperty("total_tokens", out var total) && total.ValueKind == JsonValueKind.Number)
+        if (
+            usage.TryGetProperty("total_tokens", out var total)
+            && total.ValueKind == JsonValueKind.Number
+        )
         {
             fixedUsage["total_tokens"] = total.GetInt32() + reasoning;
         }
@@ -74,7 +84,10 @@ public sealed class DeepInfraProvider : OpenAICompatibleProvider
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
-        if (string.IsNullOrEmpty(options.ProviderName) || options.ProviderName == "openai-compatible")
+        if (
+            string.IsNullOrEmpty(options.ProviderName)
+            || options.ProviderName == "openai-compatible"
+        )
         {
             options.ProviderName = ProviderId;
         }
@@ -98,12 +111,14 @@ public sealed class DeepInfraProvider : OpenAICompatibleProvider
         }
         options.SupportsStructuredOutputs = true;
         options.SelectErrorMessage = DeepInfraImageModel.ReadError;
-        options.ConvertUsage = usage => OpenAICompatibleChat.ConvertUsage(FixReasoningUsage(usage)).Usage;
+        options.ConvertUsage = usage =>
+            OpenAICompatibleChat.ConvertUsage(FixReasoningUsage(usage)).Usage;
         if (string.IsNullOrEmpty(options.ImageBaseUrl))
         {
-            options.ImageBaseUrl = options.BaseUrl == DefaultBaseUrl
-                ? "https://api.deepinfra.com/v1/inference"
-                : options.BaseUrl.TrimEnd('/') + "/inference";
+            options.ImageBaseUrl =
+                options.BaseUrl == DefaultBaseUrl
+                    ? "https://api.deepinfra.com/v1/inference"
+                    : options.BaseUrl.TrimEnd('/') + "/inference";
         }
 
         return options;
@@ -114,14 +129,21 @@ public sealed class DeepInfraProvider : OpenAICompatibleProvider
 public static class DeepInfraServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddDeepInfra(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddDeepInfra(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(DeepInfraProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new DeepInfraProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(DeepInfraProvider.ProviderId), options);
+            return new DeepInfraProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(DeepInfraProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

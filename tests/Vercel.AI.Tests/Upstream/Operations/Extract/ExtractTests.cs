@@ -19,7 +19,11 @@ public sealed class ExtractTests
     private const string UpstreamCommit = "8bc7652cdb13fc84722666eb93f45acd0d131eee";
 
     [Fact]
-    [UpstreamTest("packages/ai/src/extract/extract.test.ts::extracts every field in one call and preserves metadata", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        "packages/ai/src/extract/extract.test.ts::extracts every field in one call and preserves metadata",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public async Task Extracts_every_field_in_one_call_and_preserves_metadata()
     {
         var warning = OperationWarning.Other("Provider note");
@@ -28,36 +32,58 @@ public sealed class ExtractTests
         WarningLog.Logger = new Action<WarningLogContext>(logged.Add);
         try
         {
-            var model = Setup(new ExtractionModelResult(
-                Answers(),
-                [warning],
-                new OperationUsage(40, 12),
-                OperationJson.Parse("{\"test\":{\"passes\":1}}"),
-                new ProviderResponse(new Dictionary<string, string> { ["x-request-id"] = "request" }, OperationJson.Parse("{\"raw\":true}"), "response", timestamp, "actual-model")));
+            var model = Setup(
+                new ExtractionModelResult(
+                    Answers(),
+                    [warning],
+                    new OperationUsage(40, 12),
+                    OperationJson.Parse("{\"test\":{\"passes\":1}}"),
+                    new ProviderResponse(
+                        new Dictionary<string, string> { ["x-request-id"] = "request" },
+                        OperationJson.Parse("{\"raw\":true}"),
+                        "response",
+                        timestamp,
+                        "actual-model"
+                    )
+                )
+            );
             using var abort = new CancellationTokenSource();
             var fields = Fields();
 
-            var result = await ExtractOperation.ExtractAsync(new ExtractRequest
-            {
-                Model = model,
-                State = State,
-                Fields = fields,
-                ReferenceDate = "2026-11-11",
-                MaxOutputTokens = 200,
-                Reasoning = "low",
-                CancellationToken = abort.Token,
-                Headers = new Dictionary<string, string> { ["custom"] = "value" },
-                ProviderOptions = OperationJson.Parse("{\"test\":{\"option\":true}}"),
-            });
+            var result = await ExtractOperation.ExtractAsync(
+                new ExtractRequest
+                {
+                    Model = model,
+                    State = State,
+                    Fields = fields,
+                    ReferenceDate = "2026-11-11",
+                    MaxOutputTokens = 200,
+                    Reasoning = "low",
+                    CancellationToken = abort.Token,
+                    Headers = new Dictionary<string, string> { ["custom"] = "value" },
+                    ProviderOptions = OperationJson.Parse("{\"test\":{\"option\":true}}"),
+                }
+            );
 
             var call = Assert.Single(model.Calls);
-            Assert.Equal(J(new List<object?> { new Dictionary<string, object?> { ["type"] = "text", ["text"] = State } }), J(Canon(call.State)));
+            Assert.Equal(
+                J(
+                    new List<object?>
+                    {
+                        new Dictionary<string, object?> { ["type"] = "text", ["text"] = State },
+                    }
+                ),
+                J(Canon(call.State))
+            );
             Assert.Same(fields, call.Fields);
             Assert.Equal("2026-11-11", call.ReferenceDate);
             Assert.Equal((double?)200, call.MaxOutputTokens);
             Assert.Equal("low", call.Reasoning);
             Assert.Equal(abort.Token, call.CancellationToken);
-            Assert.Equal(new[] { "custom", "user-agent" }, call.Headers.Keys.OrderBy(key => key, StringComparer.Ordinal));
+            Assert.Equal(
+                new[] { "custom", "user-agent" },
+                call.Headers.Keys.OrderBy(key => key, StringComparer.Ordinal)
+            );
             Assert.Equal("value", call.Headers["custom"]);
             Assert.Contains("ai/", call.Headers["user-agent"]);
             Assert.Equal("{\"test\":{\"option\":true}}", call.ProviderOptions.GetRawText());
@@ -65,33 +91,39 @@ public sealed class ExtractTests
             Assert.Equal("Ana", State.Substring(70, 73 - 70));
 
             Assert.Equal(
-                Sorted("""
-                {
-                  "callWithin": { "type": "duration", "value": 2 },
-                  "contacts": {
-                    "items": [
-                      { "confidence": 0.9, "source": { "end": 73, "part": 0, "start": 70, "type": "text" } },
-                      { "confidence": 0.8 }
-                    ],
-                    "type": "list",
-                    "value": ["Ana", "Bo"]
-                  },
-                  "dueAt": { "type": "datetime", "value": "2027-03-03T17:30" },
-                  "dueDate": { "type": "date", "value": "2027-03-03" },
-                  "dueTime": { "type": "time", "value": "17:30" },
-                  "invoiceNumber": {
-                    "confidence": 0.98,
-                    "source": { "end": 16, "part": 0, "start": 8, "type": "text" },
-                    "type": "text",
-                    "value": "INV-2041"
-                  },
-                  "total": { "pNull": 0.01, "type": "number", "value": 1250 }
-                }
-                """),
-                ExtractSupport.Canon(result.Answers));
+                Sorted(
+                    """
+                    {
+                      "callWithin": { "type": "duration", "value": 2 },
+                      "contacts": {
+                        "items": [
+                          { "confidence": 0.9, "source": { "end": 73, "part": 0, "start": 70, "type": "text" } },
+                          { "confidence": 0.8 }
+                        ],
+                        "type": "list",
+                        "value": ["Ana", "Bo"]
+                      },
+                      "dueAt": { "type": "datetime", "value": "2027-03-03T17:30" },
+                      "dueDate": { "type": "date", "value": "2027-03-03" },
+                      "dueTime": { "type": "time", "value": "17:30" },
+                      "invoiceNumber": {
+                        "confidence": 0.98,
+                        "source": { "end": 16, "part": 0, "start": 8, "type": "text" },
+                        "type": "text",
+                        "value": "INV-2041"
+                      },
+                      "total": { "pNull": 0.01, "type": "number", "value": 1250 }
+                    }
+                    """
+                ),
+                ExtractSupport.Canon(result.Answers)
+            );
             Assert.Equal("{\"test\":{\"passes\":1}}", result.ProviderMetadata!.Value.GetRawText());
             Assert.Equal("{\"raw\":true}", result.Response.Body!.Value.GetRawText());
-            Assert.Equal(new Dictionary<string, string> { ["x-request-id"] = "request" }, result.Response.Headers);
+            Assert.Equal(
+                new Dictionary<string, string> { ["x-request-id"] = "request" },
+                result.Response.Headers
+            );
             Assert.Equal("response", result.Response.Id);
             Assert.Equal("actual-model", result.Response.ModelId);
             Assert.Equal((DateTime?)timestamp, result.Response.Timestamp);
@@ -114,17 +146,26 @@ public sealed class ExtractTests
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/extract/extract.test.ts::accepts null values for fields the state does not contain", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        "packages/ai/src/extract/extract.test.ts::accepts null values for fields the state does not contain",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public async Task Accepts_null_values_for_fields_the_state_does_not_contain()
     {
         var fields = Fields();
-        var empty = fields.ToDictionary(pair => pair.Key, pair => new ExtractionAnswer(pair.Value.Type));
-        var result = await ExtractOperation.ExtractAsync(new ExtractRequest
-        {
-            Model = Setup(new ExtractionModelResult(empty, [])),
-            State = string.Empty,
-            Fields = fields,
-        });
+        var empty = fields.ToDictionary(
+            pair => pair.Key,
+            pair => new ExtractionAnswer(pair.Value.Type)
+        );
+        var result = await ExtractOperation.ExtractAsync(
+            new ExtractRequest
+            {
+                Model = Setup(new ExtractionModelResult(empty, [])),
+                State = string.Empty,
+                Fields = fields,
+            }
+        );
         Assert.Equal(ExtractSupport.Canon(empty), ExtractSupport.Canon(result.Answers));
         Assert.Null(result.Usage.InputTokens);
         Assert.Null(result.Usage.OutputTokens);
@@ -138,11 +179,24 @@ public sealed class ExtractTests
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/extract/extract.test.ts::rejects unsupported types before any provider I/O", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        "packages/ai/src/extract/extract.test.ts::rejects unsupported types before any provider I/O",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public async Task Rejects_unsupported_types_before_any_provider_IO()
     {
         var model = new ExtractionMockModel { SupportedFieldTypes = ["text"] };
-        var error = await Assert.ThrowsAsync<ExtractionUnsupportedFieldTypeError>(() => ExtractOperation.ExtractAsync(new ExtractRequest { Model = model, State = State, Fields = Fields() }));
+        var error = await Assert.ThrowsAsync<ExtractionUnsupportedFieldTypeError>(() =>
+            ExtractOperation.ExtractAsync(
+                new ExtractRequest
+                {
+                    Model = model,
+                    State = State,
+                    Fields = Fields(),
+                }
+            )
+        );
         Assert.Equal("total", error.FieldId);
         Assert.Equal("number", error.FieldType);
         Assert.Equal(model.Provider, error.Provider);
@@ -153,8 +207,14 @@ public sealed class ExtractTests
     [Theory]
     [InlineData("total")]
     [InlineData("total", "contacts")]
-    [UpstreamTest("packages/ai/src/extract/extract.test.ts::rejects refused fields with a refusal error without retrying (%s)", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
-    public async Task Rejects_refused_fields_with_a_refusal_error_without_retrying(params string[] refused)
+    [UpstreamTest(
+        "packages/ai/src/extract/extract.test.ts::rejects refused fields with a refusal error without retrying (%s)",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
+    public async Task Rejects_refused_fields_with_a_refusal_error_without_retrying(
+        params string[] refused
+    )
     {
         var answers = Answers();
         foreach (var id in refused)
@@ -163,7 +223,16 @@ public sealed class ExtractTests
         }
 
         var model = Setup(new ExtractionModelResult(answers, []));
-        var error = await Assert.ThrowsAnyAsync<Exception>(() => ExtractOperation.ExtractAsync(new ExtractRequest { Model = model, State = State, Fields = Fields() }));
+        var error = await Assert.ThrowsAnyAsync<Exception>(() =>
+            ExtractOperation.ExtractAsync(
+                new ExtractRequest
+                {
+                    Model = model,
+                    State = State,
+                    Fields = Fields(),
+                }
+            )
+        );
         Assert.True(ExtractionRefusalError.IsInstance(error));
         var refusal = Assert.IsType<ExtractionRefusalError>(error);
         Assert.Equal(refused, refusal.FieldIds);
@@ -173,17 +242,34 @@ public sealed class ExtractTests
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/extract/extract.test.ts::rejects an unsupported model version", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        "packages/ai/src/extract/extract.test.ts::rejects an unsupported model version",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public async Task Rejects_an_unsupported_model_version()
     {
         var model = Setup();
         model.SpecificationVersion = "v99";
-        await Assert.ThrowsAsync<UnsupportedModelVersionException>(() => ExtractOperation.ExtractAsync(new ExtractRequest { Model = model, State = State, Fields = Fields() }));
+        await Assert.ThrowsAsync<UnsupportedModelVersionException>(() =>
+            ExtractOperation.ExtractAsync(
+                new ExtractRequest
+                {
+                    Model = model,
+                    State = State,
+                    Fields = Fields(),
+                }
+            )
+        );
         Assert.Empty(model.Calls);
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/extract/extract.test.ts::retries transient errors with the configured retry limit", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        "packages/ai/src/extract/extract.test.ts::retries transient errors with the configured retry limit",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public async Task Retries_transient_errors_with_the_configured_retry_limit()
     {
         var model = Setup();
@@ -197,52 +283,94 @@ public sealed class ExtractTests
             }
 
             rejected = true;
-            return Task.FromException<ExtractionModelResult>(new ApiCallError(
-                "Rate limited",
-                "https://example.com",
-                new Dictionary<string, object?>(),
-                statusCode: 429,
-                responseHeaders: new Dictionary<string, string> { ["retry-after-ms"] = "0" }));
+            return Task.FromException<ExtractionModelResult>(
+                new ApiCallError(
+                    "Rate limited",
+                    "https://example.com",
+                    new Dictionary<string, object?>(),
+                    statusCode: 429,
+                    responseHeaders: new Dictionary<string, string> { ["retry-after-ms"] = "0" }
+                )
+            );
         };
-        var result = await ExtractOperation.ExtractAsync(new ExtractRequest { Model = model, State = State, Fields = Fields(), MaxRetries = 1 });
+        var result = await ExtractOperation.ExtractAsync(
+            new ExtractRequest
+            {
+                Model = model,
+                State = State,
+                Fields = Fields(),
+                MaxRetries = 1,
+            }
+        );
         Assert.NotNull(result);
         Assert.Equal(2, model.Calls.Count);
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/extract/extract.test.ts::honors maxRetries: 0", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        "packages/ai/src/extract/extract.test.ts::honors maxRetries: 0",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public async Task Honors_maxRetries_0()
     {
         var model = Setup();
-        var error = new ApiCallError("Overloaded", "https://example.com", new Dictionary<string, object?>(), statusCode: 529);
+        var error = new ApiCallError(
+            "Overloaded",
+            "https://example.com",
+            new Dictionary<string, object?>(),
+            statusCode: 529
+        );
         model.OnExtract = _ => Task.FromException<ExtractionModelResult>(error);
-        var thrown = await Assert.ThrowsAsync<ApiCallError>(() => ExtractOperation.ExtractAsync(new ExtractRequest { Model = model, State = State, Fields = Fields(), MaxRetries = 0 }));
+        var thrown = await Assert.ThrowsAsync<ApiCallError>(() =>
+            ExtractOperation.ExtractAsync(
+                new ExtractRequest
+                {
+                    Model = model,
+                    State = State,
+                    Fields = Fields(),
+                    MaxRetries = 0,
+                }
+            )
+        );
         Assert.Same(error, thrown);
         Assert.Single(model.Calls);
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/extract/extract.test.ts::does not call the provider when already aborted", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        "packages/ai/src/extract/extract.test.ts::does not call the provider when already aborted",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public async Task Does_not_call_the_provider_when_already_aborted()
     {
         var model = Setup();
         using var controller = new CancellationTokenSource();
         var reason = new InvalidOperationException("Cancelled");
         controller.Cancel();
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => ExtractOperation.ExtractAsync(new ExtractRequest
-        {
-            Model = model,
-            State = State,
-            Fields = Fields(),
-            CancellationToken = controller.Token,
-            AbortReason = reason,
-        }));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            ExtractOperation.ExtractAsync(
+                new ExtractRequest
+                {
+                    Model = model,
+                    State = State,
+                    Fields = Fields(),
+                    CancellationToken = controller.Token,
+                    AbortReason = reason,
+                }
+            )
+        );
         Assert.Same(reason, error);
         Assert.Empty(model.Calls);
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/extract/extract.test.ts::does not return a result after cancellation during a call", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        "packages/ai/src/extract/extract.test.ts::does not return a result after cancellation during a call",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public async Task Does_not_return_a_result_after_cancellation_during_a_call()
     {
         var model = Setup();
@@ -253,31 +381,51 @@ public sealed class ExtractTests
             controller.Cancel();
             return Task.FromResult(new ExtractionModelResult(Answers(), []));
         };
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => ExtractOperation.ExtractAsync(new ExtractRequest
-        {
-            Model = model,
-            State = State,
-            Fields = Fields(),
-            CancellationToken = controller.Token,
-            AbortReason = reason,
-        }));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            ExtractOperation.ExtractAsync(
+                new ExtractRequest
+                {
+                    Model = model,
+                    State = State,
+                    Fields = Fields(),
+                    CancellationToken = controller.Token,
+                    AbortReason = reason,
+                }
+            )
+        );
         Assert.Same(reason, error);
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/extract/extract.test.ts::sends JSON state as a JSON part", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        "packages/ai/src/extract/extract.test.ts::sends JSON state as a JSON part",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public async Task Sends_JSON_state_as_a_JSON_part()
     {
         var model = Setup(new ExtractionModelResult(InvoiceNumberAnswer(), []));
-        await ExtractOperation.ExtractAsync(new ExtractRequest
-        {
-            Model = model,
-            State = S(new Dictionary<string, object?> { ["invoice"] = "INV-2041" }),
-            Fields = InvoiceNumberField(),
-        });
+        await ExtractOperation.ExtractAsync(
+            new ExtractRequest
+            {
+                Model = model,
+                State = S(new Dictionary<string, object?> { ["invoice"] = "INV-2041" }),
+                Fields = InvoiceNumberField(),
+            }
+        );
         Assert.Equal(
-            J(new List<object?> { new Dictionary<string, object?> { ["type"] = "json", ["value"] = new Dictionary<string, object?> { ["invoice"] = "INV-2041" } } }),
-            J(Canon(model.Calls[0].State)));
+            J(
+                new List<object?>
+                {
+                    new Dictionary<string, object?>
+                    {
+                        ["type"] = "json",
+                        ["value"] = new Dictionary<string, object?> { ["invoice"] = "INV-2041" },
+                    },
+                }
+            ),
+            J(Canon(model.Calls[0].State))
+        );
     }
 
     public static TheoryData<string> RemoteFileData()
@@ -287,7 +435,11 @@ public sealed class ExtractTests
 
     [Theory]
     [MemberData(nameof(RemoteFileData))]
-    [UpstreamTest("packages/ai/src/extract/extract.test.ts::rejects remote file state without a download hook (%s)", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        "packages/ai/src/extract/extract.test.ts::rejects remote file state without a download hook (%s)",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public async Task Rejects_remote_file_state_without_a_download_hook(string form)
     {
         const string url = "https://attacker.example/invoice.pdf";
@@ -307,12 +459,19 @@ public sealed class ExtractTests
                 fetches++;
                 return Task.FromResult(DownloadResponse.Text("invoice", "application/pdf"));
             };
-            var error = await Assert.ThrowsAsync<DownloadError>(() => ExtractOperation.ExtractAsync(new ExtractRequest
-            {
-                Model = model,
-                Fields = InvoiceNumberField(),
-                State = new DecisionStatePart[] { new DecisionFilePart("application/pdf", data) },
-            }));
+            var error = await Assert.ThrowsAsync<DownloadError>(() =>
+                ExtractOperation.ExtractAsync(
+                    new ExtractRequest
+                    {
+                        Model = model,
+                        Fields = InvoiceNumberField(),
+                        State = new DecisionStatePart[]
+                        {
+                            new DecisionFilePart("application/pdf", data),
+                        },
+                    }
+                )
+            );
             Assert.Equal("AI_DownloadError", error.ErrorName);
 
             // The option upstream calls experimental_download is ExtractRequest.Download here.
@@ -328,21 +487,36 @@ public sealed class ExtractTests
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/extract/extract.test.ts::stops before provider I/O when a file download fails", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        "packages/ai/src/extract/extract.test.ts::stops before provider I/O when a file download fails",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public async Task Stops_before_provider_IO_when_a_file_download_fails()
     {
         var model = Setup();
         var previous = Download.Fetch;
         try
         {
-            Download.Fetch = (_, _) => Task.FromResult(new DownloadResponse(404, "Not Found", null, null));
-            var error = await Assert.ThrowsAsync<DownloadError>(() => ExtractOperation.ExtractAsync(new ExtractRequest
-            {
-                Model = model,
-                Fields = Fields(),
-                Download = Download.CreateDownload(),
-                State = new DecisionStatePart[] { new DecisionFilePart("application/pdf", FilePartInput.FromUrl(new Uri("https://example.com/invoice.pdf"))) },
-            }));
+            Download.Fetch = (_, _) =>
+                Task.FromResult(new DownloadResponse(404, "Not Found", null, null));
+            var error = await Assert.ThrowsAsync<DownloadError>(() =>
+                ExtractOperation.ExtractAsync(
+                    new ExtractRequest
+                    {
+                        Model = model,
+                        Fields = Fields(),
+                        Download = Download.CreateDownload(),
+                        State = new DecisionStatePart[]
+                        {
+                            new DecisionFilePart(
+                                "application/pdf",
+                                FilePartInput.FromUrl(new Uri("https://example.com/invoice.pdf"))
+                            ),
+                        },
+                    }
+                )
+            );
             Assert.Equal("AI_DownloadError", error.ErrorName);
             Assert.Equal((int?)404, error.StatusCode);
         }
@@ -355,7 +529,11 @@ public sealed class ExtractTests
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/extract/extract.test.ts::uses the configured download transport and forwards cancellation", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        "packages/ai/src/extract/extract.test.ts::uses the configured download transport and forwards cancellation",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public async Task Uses_the_configured_download_transport_and_forwards_cancellation()
     {
         var model = Setup(new ExtractionModelResult(InvoiceNumberAnswer(), []));
@@ -376,18 +554,23 @@ public sealed class ExtractTests
                 globalFetches++;
                 return Task.FromResult(new DownloadResponse(500, "Unexpected", null, null));
             };
-            await ExtractOperation.ExtractAsync(new ExtractRequest
-            {
-                Model = model,
-                Fields = InvoiceNumberField(),
-                State = new DecisionStatePart[]
+            await ExtractOperation.ExtractAsync(
+                new ExtractRequest
                 {
-                    new DecisionTextPart("Read the invoice."),
-                    new DecisionFilePart("application/pdf", FilePartInput.FromUrl(new Uri("https://example.com/invoice.pdf"))),
-                },
-                CancellationToken = abort.Token,
-                Download = Download.CreateDownload(fetch: fetch),
-            });
+                    Model = model,
+                    Fields = InvoiceNumberField(),
+                    State = new DecisionStatePart[]
+                    {
+                        new DecisionTextPart("Read the invoice."),
+                        new DecisionFilePart(
+                            "application/pdf",
+                            FilePartInput.FromUrl(new Uri("https://example.com/invoice.pdf"))
+                        ),
+                    },
+                    CancellationToken = abort.Token,
+                    Download = Download.CreateDownload(fetch: fetch),
+                }
+            );
         }
         finally
         {
@@ -400,21 +583,36 @@ public sealed class ExtractTests
         Assert.Equal("manual", request.Redirect);
         Assert.Equal(0, globalFetches);
         Assert.Equal(
-            J(new List<object?>
-            {
-                new Dictionary<string, object?> { ["type"] = "text", ["text"] = "Read the invoice." },
-                new Dictionary<string, object?>
+            J(
+                new List<object?>
                 {
-                    ["type"] = "file",
-                    ["mediaType"] = "application/pdf",
-                    ["data"] = new Dictionary<string, object?> { ["type"] = "data", ["data"] = bytes },
-                },
-            }),
-            J(Canon(model.Calls[0].State)));
+                    new Dictionary<string, object?>
+                    {
+                        ["type"] = "text",
+                        ["text"] = "Read the invoice.",
+                    },
+                    new Dictionary<string, object?>
+                    {
+                        ["type"] = "file",
+                        ["mediaType"] = "application/pdf",
+                        ["data"] = new Dictionary<string, object?>
+                        {
+                            ["type"] = "data",
+                            ["data"] = bytes,
+                        },
+                    },
+                }
+            ),
+            J(Canon(model.Calls[0].State))
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/extract/extract.test.ts::stops before provider I/O when the download transport blocks a URL", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    [UpstreamTest(
+        "packages/ai/src/extract/extract.test.ts::stops before provider I/O when the download transport blocks a URL",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
     public async Task Stops_before_provider_IO_when_the_download_transport_blocks_a_URL()
     {
         var model = Setup();
@@ -434,13 +632,25 @@ public sealed class ExtractTests
                 globalFetches++;
                 return Task.FromResult(new DownloadResponse(500, "Unexpected", null, null));
             };
-            var error = await Assert.ThrowsAsync<DownloadError>(() => ExtractOperation.ExtractAsync(new ExtractRequest
-            {
-                Model = model,
-                Fields = Fields(),
-                State = new DecisionStatePart[] { new DecisionFilePart("application/pdf", FilePartInput.FromUrl(new Uri("https://attacker.example/invoice.pdf"))) },
-                Download = Download.CreateDownload(fetch: fetch),
-            }));
+            var error = await Assert.ThrowsAsync<DownloadError>(() =>
+                ExtractOperation.ExtractAsync(
+                    new ExtractRequest
+                    {
+                        Model = model,
+                        Fields = Fields(),
+                        State = new DecisionStatePart[]
+                        {
+                            new DecisionFilePart(
+                                "application/pdf",
+                                FilePartInput.FromUrl(
+                                    new Uri("https://attacker.example/invoice.pdf")
+                                )
+                            ),
+                        },
+                        Download = Download.CreateDownload(fetch: fetch),
+                    }
+                )
+            );
             Assert.Equal("AI_DownloadError", error.ErrorName);
             Assert.Same(reason, error.Cause);
         }
@@ -456,11 +666,17 @@ public sealed class ExtractTests
 
     private static Dictionary<string, ExtractionAnswer> InvoiceNumberAnswer()
     {
-        return new Dictionary<string, ExtractionAnswer> { ["invoiceNumber"] = new ExtractionAnswer("text", text: "INV-2041") };
+        return new Dictionary<string, ExtractionAnswer>
+        {
+            ["invoiceNumber"] = new ExtractionAnswer("text", text: "INV-2041"),
+        };
     }
 
     private static Dictionary<string, ExtractionField> InvoiceNumberField()
     {
-        return new Dictionary<string, ExtractionField> { ["invoiceNumber"] = Fields()["invoiceNumber"] };
+        return new Dictionary<string, ExtractionField>
+        {
+            ["invoiceNumber"] = Fields()["invoiceNumber"],
+        };
     }
 }

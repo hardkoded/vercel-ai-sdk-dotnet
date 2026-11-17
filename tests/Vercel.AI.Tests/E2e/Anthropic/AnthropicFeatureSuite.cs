@@ -26,9 +26,12 @@ internal static class AnthropicFeatureSuite
         Skip.If(string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")));
     }
 
-    public static ILanguageModel Chat(string modelId) => AnthropicProvider.Create().LanguageModel(modelId);
+    public static ILanguageModel Chat(string modelId) =>
+        AnthropicProvider.Create().LanguageModel(modelId);
 
-    public static AiClient Client() => new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "unused" }));
+    public static AiClient Client() =>
+        new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "unused" }));
 
-    public static byte[] Fixture(string name) => File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", name));
+    public static byte[] Fixture(string name) =>
+        File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", name));
 }

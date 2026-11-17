@@ -14,9 +14,7 @@ namespace Vercel.AI.Tests.Upstream.Registry.DecisionModel;
 
 /// <summary>Keeps tests that replace <c>DecisionModels.DefaultProvider</c> from racing each other.</summary>
 [CollectionDefinition("DecisionDefaultProvider", DisableParallelization = true)]
-public sealed class DecisionDefaultProviderCollection
-{
-}
+public sealed class DecisionDefaultProviderCollection { }
 
 /// <summary>Restores the global default provider and the Gateway key after each test.</summary>
 public abstract class DecisionDefaultProviderFixture : IDisposable
@@ -47,9 +45,7 @@ internal sealed class MockProvider : ProviderBase
     private readonly ILanguageModel _languageModel = new TestLanguageModel();
 
     public MockProvider()
-        : base("mock")
-    {
-    }
+        : base("mock") { }
 
     public override ILanguageModel LanguageModel(string modelId) => _languageModel;
 }
@@ -86,7 +82,8 @@ internal sealed class DecisionFactoryProvider : ProviderBase, IDecisionProvider
         _factory = factory;
     }
 
-    public override ILanguageModel LanguageModel(string modelId) => throw new NotSupportedException();
+    public override ILanguageModel LanguageModel(string modelId) =>
+        throw new NotSupportedException();
 
     public IDecisionCaller? DecisionModel(string modelId) => _factory(modelId);
 }
@@ -104,7 +101,8 @@ internal sealed class EvaluationFactoryProvider : ProviderBase, IEvaluationProvi
 
     public IVideoModel? Video { get; set; }
 
-    public override ILanguageModel LanguageModel(string modelId) => throw new NotSupportedException();
+    public override ILanguageModel LanguageModel(string modelId) =>
+        throw new NotSupportedException();
 
     public override IVideoModel VideoModel(string modelId) => Video ?? base.VideoModel(modelId);
 
@@ -120,21 +118,30 @@ internal sealed class DecisionMockModel : IEvaluationDecisionCaller
 
     public string SpecificationVersion { get; set; } = "v4";
 
-    public IReadOnlyList<string> SupportedQuestionTypes { get; set; } = new[] { "choice", "score", "boolean" };
+    public IReadOnlyList<string> SupportedQuestionTypes { get; set; } =
+        new[] { "choice", "score", "boolean" };
 
     public Func<DecisionModelCall, DecisionModelResult>? OnDecide { get; set; }
 
     public List<DecisionModelCall> Calls { get; } = new List<DecisionModelCall>();
 
-    public Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken)
+    public Task<DecisionModelResult> DoDecideAsync(
+        DecisionModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         Calls.Add(call);
         return Task.FromResult(OnDecide?.Invoke(call) ?? throw new NotImplementedException());
     }
 
-    public async Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken)
+    public async Task<EvaluationModelResult> DoEvaluateAsync(
+        EvaluationModelCall call,
+        CancellationToken cancellationToken
+    )
     {
-        return EvaluationModelResult.From(await DoDecideAsync(call, cancellationToken).ConfigureAwait(false));
+        return EvaluationModelResult.From(
+            await DoDecideAsync(call, cancellationToken).ConfigureAwait(false)
+        );
     }
 }
 
@@ -147,7 +154,10 @@ internal sealed class MockVideoModel : IVideoModel
 
     public string ModelId => "mock-model-id";
 
-    public Task<VideoResult> DoGenerateAsync(VideoCallOptions options, CancellationToken cancellationToken) => throw new NotImplementedException();
+    public Task<VideoResult> DoGenerateAsync(
+        VideoCallOptions options,
+        CancellationToken cancellationToken
+    ) => throw new NotImplementedException();
 }
 
 internal static class DecisionModelSupport
@@ -155,16 +165,24 @@ internal static class DecisionModelSupport
     internal static DecisionModelResult RouteResult()
     {
         return new DecisionModelResult(
-            new Dictionary<string, DecisionAnswer> { ["route"] = new DecisionAnswer("choice", choice: "billing") },
+            new Dictionary<string, DecisionAnswer>
+            {
+                ["route"] = new DecisionAnswer("choice", choice: "billing"),
+            },
             Array.Empty<OperationWarning>(),
-            new OperationUsage(10, 2, 12));
+            new OperationUsage(10, 2, 12)
+        );
     }
 
     internal static Dictionary<string, DecisionQuestion> RouteQuestions()
     {
         return new Dictionary<string, DecisionQuestion>
         {
-            ["route"] = Q("choice", "Team?", new Dictionary<string, object?> { ["billing"] = "Charges", ["support"] = "Other" }),
+            ["route"] = Q(
+                "choice",
+                "Team?",
+                new Dictionary<string, object?> { ["billing"] = "Charges", ["support"] = "Other" }
+            ),
         };
     }
 

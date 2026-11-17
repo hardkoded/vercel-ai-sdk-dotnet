@@ -21,7 +21,8 @@ public sealed class UIMessageChunkStreamResult : IResult
     public UIMessageChunkStreamResult(
         IReadOnlyList<JsonObject> chunks,
         int statusCode = 200,
-        IReadOnlyList<KeyValuePair<string, string>>? headers = null)
+        IReadOnlyList<KeyValuePair<string, string>>? headers = null
+    )
     {
         _chunks = chunks ?? throw new ArgumentNullException(nameof(chunks));
         if (statusCode < 100 || statusCode > 599)
@@ -51,6 +52,8 @@ public sealed class UIMessageChunkStreamResult : IResult
             }
         }
 
-        await UIMessageStreamResult.WriteChunksAsync(_chunks, httpContext.Response.Body, httpContext.RequestAborted).ConfigureAwait(false);
+        await UIMessageStreamResult
+            .WriteChunksAsync(_chunks, httpContext.Response.Body, httpContext.RequestAborted)
+            .ConfigureAwait(false);
     }
 }

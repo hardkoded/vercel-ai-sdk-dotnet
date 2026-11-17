@@ -53,7 +53,8 @@ public sealed class UIMessageStreamOnEndEvent
         bool isContinuation,
         bool isAborted,
         UIMessageStreamOutcome outcome,
-        UIMessage responseMessage)
+        UIMessage responseMessage
+    )
     {
         Messages = messages;
         IsContinuation = isContinuation;
@@ -91,7 +92,11 @@ public sealed class UIMessageStreamOnEndEvent
 public sealed class UIMessageStreamOnStepEndEvent
 {
     /// <summary>Creates the event.</summary>
-    public UIMessageStreamOnStepEndEvent(IReadOnlyList<UIMessage> messages, bool isContinuation, UIMessage responseMessage)
+    public UIMessageStreamOnStepEndEvent(
+        IReadOnlyList<UIMessage> messages,
+        bool isContinuation,
+        UIMessage responseMessage
+    )
     {
         Messages = messages;
         IsContinuation = isContinuation;

@@ -13,7 +13,8 @@ public static class ActiveToolFilter
     /// </summary>
     public static IReadOnlyDictionary<string, T>? FilterActiveTools<T>(
         IReadOnlyDictionary<string, T>? tools,
-        IReadOnlyList<string>? activeTools)
+        IReadOnlyList<string>? activeTools
+    )
     {
         if (tools is null || activeTools is null)
         {

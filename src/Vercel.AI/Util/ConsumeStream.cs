@@ -14,7 +14,11 @@ public static class ConsumeStream
     /// <param name="onError">Called when reading fails. The failure is not rethrown.</param>
     /// <param name="abortSignal">Cancels the stream when it aborts.</param>
     /// <returns>A task that completes when the stream is fully consumed.</returns>
-    public static async Task ConsumeAsync<T>(ReadableStream<T> stream, Action<Exception>? onError = null, AbortSignal? abortSignal = null)
+    public static async Task ConsumeAsync<T>(
+        ReadableStream<T> stream,
+        Action<Exception>? onError = null,
+        AbortSignal? abortSignal = null
+    )
     {
         if (stream is null)
         {
@@ -22,7 +26,13 @@ public static class ConsumeStream
         }
 
         var reader = stream.GetReader();
-        void CancelOnAbort() => _ = reader.CancelAsync().ContinueWith(static task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        void CancelOnAbort() =>
+            _ = reader
+                .CancelAsync()
+                .ContinueWith(
+                    static task => _ = task.Exception,
+                    TaskContinuationOptions.OnlyOnFaulted
+                );
 
         if (abortSignal?.Aborted == true)
         {

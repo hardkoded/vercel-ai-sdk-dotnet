@@ -23,12 +23,16 @@ internal static class XaiError
         {
             using var document = JsonDocument.Parse(body);
             var root = document.RootElement;
-            if (root.ValueKind == JsonValueKind.Object
+            if (
+                root.ValueKind == JsonValueKind.Object
                 && root.TryGetProperty("error", out var error)
                 && error.ValueKind == JsonValueKind.String
-                && error.GetString() is { } text)
+                && error.GetString() is { } text
+            )
             {
-                return root.TryGetProperty("code", out var code) && code.ValueKind == JsonValueKind.String
+                return
+                    root.TryGetProperty("code", out var code)
+                    && code.ValueKind == JsonValueKind.String
                     ? code.GetString() + ": " + text
                     : text;
             }

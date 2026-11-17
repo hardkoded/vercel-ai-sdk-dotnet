@@ -19,32 +19,46 @@ var xai = XaiProvider.Create();
 // AspectRatio and Resolution are not supported in extension mode: the output inherits them from the input video.
 
 // Step 1: Generate a short source video.
-var source = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
-{
-    Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
-    Prompt = new VideoPrompt("A cat sitting on a sunlit windowsill, tail gently swishing."),
-    Duration = 5,
-    AspectRatio = "16:9",
-    ProviderOptions = OperationJson.Parse("""{ "xai": { "pollTimeoutMs": 600000 } }"""),
-});
+var source = await GenerateVideo.GenerateVideoAsync(
+    new GenerateVideoRequest
+    {
+        Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
+        Prompt = new VideoPrompt("A cat sitting on a sunlit windowsill, tail gently swishing."),
+        Duration = 5,
+        AspectRatio = "16:9",
+        ProviderOptions = OperationJson.Parse("""{ "xai": { "pollTimeoutMs": 600000 } }"""),
+    }
+);
 
 var sourceUrl = source.ProviderMetadata.GetProperty("xai").GetProperty("videoUrl").GetString()
-    ?? throw new InvalidOperationException("xAI provider metadata did not include a source videoUrl.");
+    ?? throw new InvalidOperationException(
+        "xAI provider metadata did not include a source videoUrl."
+    );
 Console.WriteLine("Source video URL: " + sourceUrl);
 
 // Step 2: Extend the video with a new scene.
 #region generate-video-xai-extend
-var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
-{
-    Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
-    Prompt = new VideoPrompt("The cat slowly turns its head, notices a butterfly, and leaps off the windowsill."),
-    Duration = 6,
-    ProviderOptions = OperationJson.Parse(
-        new JsonObject
-        {
-            ["xai"] = new JsonObject { ["mode"] = "extend-video", ["videoUrl"] = sourceUrl, ["pollTimeoutMs"] = 600000 },
-        }.ToJsonString()),
-});
+var result = await GenerateVideo.GenerateVideoAsync(
+    new GenerateVideoRequest
+    {
+        Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
+        Prompt = new VideoPrompt(
+            "The cat slowly turns its head, notices a butterfly, and leaps off the windowsill."
+        ),
+        Duration = 6,
+        ProviderOptions = OperationJson.Parse(
+            new JsonObject
+            {
+                ["xai"] = new JsonObject
+                {
+                    ["mode"] = "extend-video",
+                    ["videoUrl"] = sourceUrl,
+                    ["pollTimeoutMs"] = 600000,
+                },
+            }.ToJsonString()
+        ),
+    }
+);
 #endregion
 
 Console.WriteLine("Extended video (original 5s + 6s extension = 11s total).");

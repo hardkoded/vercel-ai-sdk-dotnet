@@ -22,34 +22,68 @@ public sealed class AssistantMessagesTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should handle client-side tool-call parts", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should handle client-side tool-call parts",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_handle_client_side_tool_call_parts()
     {
-        var input = Convert(new AssistantModelMessage(null, new[] { new GeneratedToolCall("call_123", "weather", "{\"location\":\"sf\"}") }, null));
+        var input = Convert(
+            new AssistantModelMessage(
+                null,
+                new[] { new GeneratedToolCall("call_123", "weather", "{\"location\":\"sf\"}") },
+                null
+            )
+        );
 
-        JsonAssert.Equal(input, """
+        JsonAssert.Equal(
+            input,
+            """
             [{"arguments":"{\"location\":\"sf\"}","call_id":"call_123","id":"call_123","name":"weather","status":"completed","type":"function_call"}]
-            """);
+            """
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should handle client-side tool-call parts named like server-side tools", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should handle client-side tool-call parts named like server-side tools",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_handle_client_side_tool_call_parts_named_like_server_side_tools()
     {
-        var input = Convert(new AssistantModelMessage(null, new[] { new GeneratedToolCall("call_ws", "web_search", "{\"query\":\"latest news\"}") }, null));
+        var input = Convert(
+            new AssistantModelMessage(
+                null,
+                new[]
+                {
+                    new GeneratedToolCall("call_ws", "web_search", "{\"query\":\"latest news\"}"),
+                },
+                null
+            )
+        );
 
-        JsonAssert.Equal(input, """
+        JsonAssert.Equal(
+            input,
+            """
             [{"arguments":"{\"query\":\"latest news\"}","call_id":"call_ws","id":"call_ws","name":"web_search","status":"completed","type":"function_call"}]
-            """);
+            """
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should skip server-side tool-call parts", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should skip server-side tool-call parts",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_skip_server_side_tool_call_parts()
     {
         var call = new GeneratedToolCall("ws_123", "web_search", "{}") { ProviderExecuted = true };
 
-        var input = Convert(new AssistantModelMessage(new AssistantContentPart[] { new AssistantToolCallPart(call) }));
+        var input = Convert(
+            new AssistantModelMessage(
+                new AssistantContentPart[] { new AssistantToolCallPart(call) }
+            )
+        );
 
         JsonAssert.Equal(input, "[]");
     }

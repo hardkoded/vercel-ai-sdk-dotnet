@@ -9,7 +9,11 @@ namespace Vercel.AI.OpenAI;
 /// <summary>Capabilities of an OpenAI transcription model. <see langword="null"/> means unknown, as upstream's <c>'unknown'</c>.</summary>
 internal sealed class OpenAITranscriptionCapabilities
 {
-    internal OpenAITranscriptionCapabilities(bool? transcription, bool? streaming, bool? streamingDelay)
+    internal OpenAITranscriptionCapabilities(
+        bool? transcription,
+        bool? streaming,
+        bool? streamingDelay
+    )
     {
         Transcription = transcription;
         Streaming = streaming;
@@ -29,7 +33,12 @@ internal sealed class OpenAITranscriptionCapabilities
 /// <summary>A catalog entry of an OpenAI transcription model. Maps to <c>OpenAITranscriptionModelEntry</c>.</summary>
 internal sealed class OpenAITranscriptionModelEntry
 {
-    internal OpenAITranscriptionModelEntry(OpenAITranscriptionCapabilities capabilities, string languageField, string? responseFormat = null, string? chunkingStrategy = null)
+    internal OpenAITranscriptionModelEntry(
+        OpenAITranscriptionCapabilities capabilities,
+        string languageField,
+        string? responseFormat = null,
+        string? chunkingStrategy = null
+    )
     {
         ChunkingStrategy = chunkingStrategy;
         Capabilities = capabilities;
@@ -53,7 +62,12 @@ internal sealed class OpenAITranscriptionModelEntry
 /// <summary>A catalog entry of an OpenAI realtime model. Maps to <c>OpenAIRealtimeModelEntry</c>.</summary>
 internal sealed class OpenAIRealtimeModelEntry
 {
-    internal OpenAIRealtimeModelEntry(RealtimeCapabilities capabilities, string api, string startup, string finalization)
+    internal OpenAIRealtimeModelEntry(
+        RealtimeCapabilities capabilities,
+        string api,
+        string startup,
+        string finalization
+    )
     {
         Capabilities = capabilities;
         Api = api;
@@ -114,7 +128,8 @@ internal static class OpenAIModelCatalog
         },
         "live",
         "session-start",
-        "session-close");
+        "session-close"
+    );
 
     private static readonly OpenAIRealtimeModelEntry RealtimeModelEntry = new(
         new RealtimeCapabilities
@@ -125,25 +140,34 @@ internal static class OpenAIModelCatalog
         },
         "realtime",
         "session-update",
-        "transport-close");
+        "transport-close"
+    );
 
-    private static readonly Dictionary<string, OpenAIRealtimeModelEntry> RealtimeEntries = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, OpenAIRealtimeModelEntry> RealtimeEntries = new(
+        StringComparer.Ordinal
+    )
     {
         ["gpt-live-1"] = LiveModelEntry,
         ["gpt-realtime"] = RealtimeModelEntry,
     };
 
     /// <summary>The Live realtime capabilities derived from the catalog. Maps to <c>openaiLiveRealtimeCapabilities</c>.</summary>
-    internal static OpenAILiveRealtimeCapabilities OpenAILiveRealtimeCapabilities { get; } = new(LiveModelEntry);
+    internal static OpenAILiveRealtimeCapabilities OpenAILiveRealtimeCapabilities { get; } =
+        new(LiveModelEntry);
 
     /// <summary>
     /// Returns the realtime entry of a model id. An unknown id, or one the requested <paramref name="api"/> does not serve,
     /// resolves to that API's default entry; with no <paramref name="api"/> it resolves to the Realtime entry.
     /// Maps to <c>getOpenAIRealtimeModelEntry</c>.
     /// </summary>
-    public static OpenAIRealtimeModelEntry GetOpenAIRealtimeModelEntry(string modelId, string? api = null)
+    public static OpenAIRealtimeModelEntry GetOpenAIRealtimeModelEntry(
+        string modelId,
+        string? api = null
+    )
     {
-        if (RealtimeEntries.TryGetValue(modelId, out var entry) && (api == null || entry.Api == api))
+        if (
+            RealtimeEntries.TryGetValue(modelId, out var entry) && (api == null || entry.Api == api)
+        )
         {
             return entry;
         }
@@ -151,18 +175,48 @@ internal static class OpenAIModelCatalog
         return api == "live" ? LiveModelEntry : RealtimeModelEntry;
     }
 
-    private static readonly string[] TranscriptionSnapshotModelIds = { "gpt-transcribe", "gpt-live-transcribe", "gpt-realtime-whisper" };
-
-    private static readonly Dictionary<string, OpenAITranscriptionModelEntry> TranscriptionEntries = new Dictionary<string, OpenAITranscriptionModelEntry>(StringComparer.Ordinal)
+    private static readonly string[] TranscriptionSnapshotModelIds =
     {
-        ["whisper-1"] = new OpenAITranscriptionModelEntry(new OpenAITranscriptionCapabilities(true, false, false), "language", "verbose_json"),
-        ["gpt-4o-mini-transcribe"] = new OpenAITranscriptionModelEntry(new OpenAITranscriptionCapabilities(true, false, false), "language"),
-        ["gpt-4o-transcribe"] = new OpenAITranscriptionModelEntry(new OpenAITranscriptionCapabilities(true, false, false), "language"),
-        ["gpt-4o-transcribe-diarize"] = new OpenAITranscriptionModelEntry(new OpenAITranscriptionCapabilities(true, false, false), "language", "diarized_json", "auto"),
-        ["gpt-transcribe"] = new OpenAITranscriptionModelEntry(new OpenAITranscriptionCapabilities(true, true, false), "languages"),
-        ["gpt-live-transcribe"] = new OpenAITranscriptionModelEntry(new OpenAITranscriptionCapabilities(false, true, true), "languages"),
-        ["gpt-realtime-whisper"] = new OpenAITranscriptionModelEntry(new OpenAITranscriptionCapabilities(false, true, true), "language"),
+        "gpt-transcribe",
+        "gpt-live-transcribe",
+        "gpt-realtime-whisper",
     };
+
+    private static readonly Dictionary<string, OpenAITranscriptionModelEntry> TranscriptionEntries =
+        new Dictionary<string, OpenAITranscriptionModelEntry>(StringComparer.Ordinal)
+        {
+            ["whisper-1"] = new OpenAITranscriptionModelEntry(
+                new OpenAITranscriptionCapabilities(true, false, false),
+                "language",
+                "verbose_json"
+            ),
+            ["gpt-4o-mini-transcribe"] = new OpenAITranscriptionModelEntry(
+                new OpenAITranscriptionCapabilities(true, false, false),
+                "language"
+            ),
+            ["gpt-4o-transcribe"] = new OpenAITranscriptionModelEntry(
+                new OpenAITranscriptionCapabilities(true, false, false),
+                "language"
+            ),
+            ["gpt-4o-transcribe-diarize"] = new OpenAITranscriptionModelEntry(
+                new OpenAITranscriptionCapabilities(true, false, false),
+                "language",
+                "diarized_json",
+                "auto"
+            ),
+            ["gpt-transcribe"] = new OpenAITranscriptionModelEntry(
+                new OpenAITranscriptionCapabilities(true, true, false),
+                "languages"
+            ),
+            ["gpt-live-transcribe"] = new OpenAITranscriptionModelEntry(
+                new OpenAITranscriptionCapabilities(false, true, true),
+                "languages"
+            ),
+            ["gpt-realtime-whisper"] = new OpenAITranscriptionModelEntry(
+                new OpenAITranscriptionCapabilities(false, true, true),
+                "language"
+            ),
+        };
 
     /// <summary>Returns the entry of a transcription model id. Dated snapshots resolve to their base model. Maps to <c>getOpenAITranscriptionModelEntry</c>.</summary>
     public static OpenAITranscriptionModelEntry GetOpenAITranscriptionModelEntry(string modelId)
@@ -180,6 +234,9 @@ internal static class OpenAIModelCatalog
             }
         }
 
-        return new OpenAITranscriptionModelEntry(new OpenAITranscriptionCapabilities(null, null, null), "language");
+        return new OpenAITranscriptionModelEntry(
+            new OpenAITranscriptionCapabilities(null, null, null),
+            "language"
+        );
     }
 }

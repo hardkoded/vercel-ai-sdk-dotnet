@@ -177,7 +177,11 @@ public sealed class DecisionState
     {
         if (value.ValueKind != JsonValueKind.Object)
         {
-            throw new InvalidArgumentException("state", value.ValueKind == JsonValueKind.Undefined ? null : value.GetRawText(), InvalidMessage);
+            throw new InvalidArgumentException(
+                "state",
+                value.ValueKind == JsonValueKind.Undefined ? null : value.GetRawText(),
+                InvalidMessage
+            );
         }
 
         return new DecisionState(null, value.Clone(), null);
@@ -186,7 +190,11 @@ public sealed class DecisionState
     /// <summary>Creates state from ordered parts.</summary>
     public static DecisionState From(IReadOnlyList<DecisionStatePart> parts)
     {
-        return new DecisionState(null, null, parts ?? throw new ArgumentNullException(nameof(parts)));
+        return new DecisionState(
+            null,
+            null,
+            parts ?? throw new ArgumentNullException(nameof(parts))
+        );
     }
 
     /// <summary>Converts text to state.</summary>
@@ -201,7 +209,8 @@ public sealed class DecisionState
         return From(parts);
     }
 
-    internal const string InvalidMessage = "must be a string, JSON object, or array of text, file, or json parts";
+    internal const string InvalidMessage =
+        "must be a string, JSON object, or array of text, file, or json parts";
 
     /// <summary>
     /// Turns public state into the list of parts the model receives.
@@ -209,7 +218,12 @@ public sealed class DecisionState
     /// <see cref="DownloadError"/>. Inline bytes, base64 content, and data URLs do not need it.
     /// File media types are resolved to a full type.
     /// </summary>
-    public static async Task<IReadOnlyList<DecisionModelStatePart>> PrepareDecisionStateAsync(DecisionState state, CancellationToken cancellationToken = default, Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>? download = null)
+    public static async Task<IReadOnlyList<DecisionModelStatePart>> PrepareDecisionStateAsync(
+        DecisionState state,
+        CancellationToken cancellationToken = default,
+        Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>? download =
+            null
+    )
     {
         if (state is null)
         {
@@ -226,7 +240,9 @@ public sealed class DecisionState
             return new DecisionModelStatePart[] { new DecisionModelJsonPart(json) };
         }
 
-        var converted = new List<(DecisionStatePart Part, LanguageModelFilePart? File)>(state.Parts!.Count);
+        var converted = new List<(DecisionStatePart Part, LanguageModelFilePart? File)>(
+            state.Parts!.Count
+        );
         var requested = new List<DownloadRequestItem>();
         foreach (var part in state.Parts)
         {
@@ -235,7 +251,12 @@ public sealed class DecisionState
                 var file = FileParts.ConvertToLanguageModelV4FilePart(filePart.Data);
                 if (file.DataType == "url")
                 {
-                    requested.Add(new DownloadRequestItem(file.Url!, false) { AbortSignal = cancellationToken });
+                    requested.Add(
+                        new DownloadRequestItem(file.Url!, false)
+                        {
+                            AbortSignal = cancellationToken,
+                        }
+                    );
                 }
 
                 converted.Add((part, file));
@@ -253,13 +274,23 @@ public sealed class DecisionState
             // URL and literal-IP validation alone cannot protect against private DNS answers.
             if (download is null)
             {
-                throw new DownloadError(requested[0].Url.ToString(), "URL file state requires Download. For untrusted URLs, use Download.CreateDownload(fetch: ...) with a transport that validates DNS at connection time.");
+                throw new DownloadError(
+                    requested[0].Url.ToString(),
+                    "URL file state requires Download. For untrusted URLs, use Download.CreateDownload(fetch: ...) with a transport that validates DNS at connection time."
+                );
             }
 
             downloads = await download(requested).ConfigureAwait(false);
-            if (downloads is null || downloads.Count != requested.Count || downloads.Any(item => item is null))
+            if (
+                downloads is null
+                || downloads.Count != requested.Count
+                || downloads.Any(item => item is null)
+            )
             {
-                throw new DownloadError(requested[0].Url.ToString(), "The download function must return one result for every requested URL.");
+                throw new DownloadError(
+                    requested[0].Url.ToString(),
+                    "The download function must return one result for every requested URL."
+                );
             }
         }
 
@@ -276,7 +307,13 @@ public sealed class DecisionState
                     prepared.Add(new DecisionModelJsonPart(jsonPart.Value));
                     break;
                 case DecisionFilePart filePart:
-                    prepared.Add(ConvertFile(filePart, file!, file!.DataType == "url" ? downloads[next++] : null));
+                    prepared.Add(
+                        ConvertFile(
+                            filePart,
+                            file!,
+                            file!.DataType == "url" ? downloads[next++] : null
+                        )
+                    );
                     break;
                 default:
                     throw new InvalidArgumentException("state", part, InvalidMessage);
@@ -286,19 +323,38 @@ public sealed class DecisionState
         return prepared;
     }
 
-    private static DecisionModelFilePart ConvertFile(DecisionFilePart part, LanguageModelFilePart converted, DownloadResult? downloaded)
+    private static DecisionModelFilePart ConvertFile(
+        DecisionFilePart part,
+        LanguageModelFilePart converted,
+        DownloadResult? downloaded
+    )
     {
         var mediaType = converted.MediaType ?? part.MediaType;
         LanguageModelFilePart data;
         switch (converted.DataType)
         {
             case "data":
-                mediaType = MediaTypes.ResolveFullMediaType(new LanguageModelFilePart("data", mediaType) { Bytes = converted.Bytes, Base64 = converted.Base64 });
-                data = new LanguageModelFilePart("data", mediaType) { Bytes = converted.Bytes, Base64 = converted.Bytes == null ? converted.Base64 ?? string.Empty : null };
+                mediaType = MediaTypes.ResolveFullMediaType(
+                    new LanguageModelFilePart("data", mediaType)
+                    {
+                        Bytes = converted.Bytes,
+                        Base64 = converted.Base64,
+                    }
+                );
+                data = new LanguageModelFilePart("data", mediaType)
+                {
+                    Bytes = converted.Bytes,
+                    Base64 = converted.Bytes == null ? converted.Base64 ?? string.Empty : null,
+                };
                 break;
             case "url":
                 var contentType = downloaded!.MediaType?.Split(';')[0].Trim();
-                if (!MediaTypes.IsFullMediaType(mediaType) && contentType != null && MediaTypes.IsFullMediaType(contentType) && MediaTypes.GetTopLevelMediaType(contentType) == mediaType)
+                if (
+                    !MediaTypes.IsFullMediaType(mediaType)
+                    && contentType != null
+                    && MediaTypes.IsFullMediaType(contentType)
+                    && MediaTypes.GetTopLevelMediaType(contentType) == mediaType
+                )
                 {
                     mediaType = contentType;
                 }
@@ -307,13 +363,20 @@ public sealed class DecisionState
                 data = new LanguageModelFilePart("data", mediaType) { Bytes = downloaded.Data };
                 break;
             case "reference":
-                data = new LanguageModelFilePart("reference", null) { Reference = converted.Reference };
+                data = new LanguageModelFilePart("reference", null)
+                {
+                    Reference = converted.Reference,
+                };
                 break;
             default:
                 data = new LanguageModelFilePart("text", null) { Text = converted.Text };
                 break;
         }
 
-        return new DecisionModelFilePart(mediaType, data) { FileName = part.FileName, ProviderOptions = part.ProviderOptions };
+        return new DecisionModelFilePart(mediaType, data)
+        {
+            FileName = part.FileName,
+            ProviderOptions = part.ProviderOptions,
+        };
     }
 }

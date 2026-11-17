@@ -14,11 +14,13 @@ if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AI_GATEWAY_API_KEY"
 #region generate-text
 var client = new AiClient(GatewayProvider.Create());
 
-var result = await client.GenerateTextAsync(new GenerateTextOptions
-{
-    ModelId = "openai/gpt-6-astra", // use Vercel AI Gateway
-    Prompt = "What is an agent?",
-});
+var result = await client.GenerateTextAsync(
+    new GenerateTextOptions
+    {
+        ModelId = "openai/gpt-6-astra", // use Vercel AI Gateway
+        Prompt = "What is an agent?",
+    }
+);
 
 Console.WriteLine(result.Text);
 #endregion

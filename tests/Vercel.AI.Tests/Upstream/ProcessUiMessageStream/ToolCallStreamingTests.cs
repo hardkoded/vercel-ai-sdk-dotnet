@@ -12,19 +12,26 @@ namespace Vercel.AI.Tests.Upstream.ProcessUiMessageStream;
 /// <summary>Port of <c>process-ui-message-stream.test.ts</c> &gt; <c>processUIMessageStream</c> &gt; <c>tool call streaming</c>.</summary>
 public sealed class ToolCallStreamingTests
 {
-    private const string Prefix = "packages/ai/src/ui/process-ui-message-stream.test.ts::processUIMessageStream > ";
+    private const string Prefix =
+        "packages/ai/src/ui/process-ui-message-stream.test.ts::processUIMessageStream > ";
 
     [Fact]
-    [UpstreamTest(Prefix + "tool call streaming::should call the update function with the correct arguments", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "tool call streaming::should call the update function with the correct arguments",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_call_the_update_function_with_the_correct_arguments()
     {
         var harness = new ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
-        await harness.ProcessAsync("""
+        await harness.ProcessAsync(
+            """
             [{"type":"start","messageId":"msg-123"},{"type":"start-step"},{"type":"tool-input-start","toolCallId":"tool-call-0","toolName":"test-tool"},{"type":"tool-input-delta","toolCallId":"tool-call-0","inputTextDelta":"{\"testArg\":\"t"},{"type":"tool-input-delta","toolCallId":"tool-call-0","inputTextDelta":"est-value\"}}"},{"type":"tool-input-available","toolCallId":"tool-call-0","toolName":"test-tool","input":{"testArg":"test-value"}},{"type":"tool-output-available","toolCallId":"tool-call-0","output":"test-result"},{"type":"finish-step"},{"type":"finish"}]
-            """);
+            """
+        );
 
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             [
               {
                 "message": {
@@ -129,20 +136,28 @@ public sealed class ToolCallStreamingTests
                 }
               }
             ]
-            """, harness.WriteCalls);
+            """,
+            harness.WriteCalls
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "tool call streaming::should have the correct final message state", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "tool call streaming::should have the correct final message state",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_have_the_correct_final_message_state()
     {
         var harness = new ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
-        await harness.ProcessAsync("""
+        await harness.ProcessAsync(
+            """
             [{"type":"start","messageId":"msg-123"},{"type":"start-step"},{"type":"tool-input-start","toolCallId":"tool-call-0","toolName":"test-tool"},{"type":"tool-input-delta","toolCallId":"tool-call-0","inputTextDelta":"{\"testArg\":\"t"},{"type":"tool-input-delta","toolCallId":"tool-call-0","inputTextDelta":"est-value\"}}"},{"type":"tool-input-available","toolCallId":"tool-call-0","toolName":"test-tool","input":{"testArg":"test-value"}},{"type":"tool-output-available","toolCallId":"tool-call-0","output":"test-result"},{"type":"finish-step"},{"type":"finish"}]
-            """);
+            """
+        );
 
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             {
               "id": "msg-123",
               "parts": [
@@ -161,6 +176,8 @@ public sealed class ToolCallStreamingTests
               ],
               "role": "assistant"
             }
-            """, harness.Message);
+            """,
+            harness.Message
+        );
     }
 }

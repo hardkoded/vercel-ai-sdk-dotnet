@@ -14,12 +14,16 @@ namespace Vercel.AI.Tests.Upstream.GenerateText.StreamText;
 /// <summary>Port of <c>stream-text.test.ts</c> &gt; <c>streamText &gt; dynamic tools &gt; single dynamic tool call and result</c>.</summary>
 public sealed class SingleDynamicToolCallAndResultTests
 {
-    private const string Prefix = "packages/ai/src/generate-text/stream-text.test.ts::streamText > dynamic tools > single dynamic tool call and result::";
+    private const string Prefix =
+        "packages/ai/src/generate-text/stream-text.test.ts::streamText > dynamic tools > single dynamic tool call and result::";
 
     private const string Input = "{ \"value\": \"value\" }";
 
     [Fact]
-    [UpstreamTest(Prefix + "should include dynamic tool call and result content", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should include dynamic tool call and result content",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_include_dynamic_tool_call_and_result_content()
     {
         var step = Assert.Single(await Run().Steps);
@@ -44,7 +48,10 @@ public sealed class SingleDynamicToolCallAndResultTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should include dynamic tool call and result in the full stream", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should include dynamic tool call and result in the full stream",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_include_dynamic_tool_call_and_result_in_the_full_stream()
     {
         var parts = new List<TextStreamPart>();
@@ -54,8 +61,20 @@ public sealed class SingleDynamicToolCallAndResultTests
         }
 
         Assert.Equal(
-            new[] { "start", "start-step", "tool-input-start", "tool-input-delta", "tool-input-end", "tool-call", "tool-result", "finish-step", "finish" },
-            parts.Select(part => part.Type).ToArray());
+            new[]
+            {
+                "start",
+                "start-step",
+                "tool-input-start",
+                "tool-input-delta",
+                "tool-input-end",
+                "tool-call",
+                "tool-result",
+                "finish-step",
+                "finish",
+            },
+            parts.Select(part => part.Type).ToArray()
+        );
         var startStep = Assert.IsType<StartStepPart>(parts[1]);
         Assert.Null(startStep.Request.Body);
         Assert.Null(startStep.Request.Messages);
@@ -116,7 +135,10 @@ public sealed class SingleDynamicToolCallAndResultTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should include dynamic tool call and result in the ui message stream", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should include dynamic tool call and result in the ui message stream",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_include_dynamic_tool_call_and_result_in_the_ui_message_stream()
     {
         var chunks = await SingleProviderExecutedToolCallAndResultTests.ReadUiChunks(Run());
@@ -124,7 +146,8 @@ public sealed class SingleDynamicToolCallAndResultTests
         // The .NET stream always sends a generated messageId on start.
         Assert.NotNull(chunks[0]!["messageId"]);
         chunks[0]!.AsObject().Remove("messageId");
-        var expected = JsonNode.Parse("""
+        var expected = JsonNode.Parse(
+            """
             [
               { "type": "start" },
               { "type": "start-step" },
@@ -135,11 +158,13 @@ public sealed class SingleDynamicToolCallAndResultTests
               { "type": "finish-step" },
               { "finishReason": "tool-calls", "type": "finish" }
             ]
-            """);
+            """
+        );
         Assert.True(JsonNode.DeepEquals(expected, chunks), chunks.ToJsonString());
     }
 
-    private static string Compact(string json) => JsonSerializer.Serialize(JsonDocument.Parse(json).RootElement);
+    private static string Compact(string json) =>
+        JsonSerializer.Serialize(JsonDocument.Parse(json).RootElement);
 
     private static StreamTextResult Run()
     {
@@ -147,23 +172,40 @@ public sealed class SingleDynamicToolCallAndResultTests
         {
             StreamParts = new LanguageModelStreamPart[]
             {
-                new ResponseMetadataStreamPart("id-0", "mock-model-id", DateTimeOffset.FromUnixTimeMilliseconds(0)),
+                new ResponseMetadataStreamPart(
+                    "id-0",
+                    "mock-model-id",
+                    DateTimeOffset.FromUnixTimeMilliseconds(0)
+                ),
                 new ToolInputStartStreamPart("call-1", "dynamicTool"),
                 new ToolInputDeltaStreamPart("call-1", Input),
                 new ToolInputEndStreamPart("call-1"),
                 new ToolCallStreamPart("call-1", "dynamicTool", Input),
-                new FinishStreamPart(FinishReason.ToolCalls, new LanguageModelUsage(3, 10, 13, noCacheInputTokens: 3, textTokens: 10), null),
+                new FinishStreamPart(
+                    FinishReason.ToolCalls,
+                    new LanguageModelUsage(3, 10, 13, noCacheInputTokens: 3, textTokens: 10),
+                    null
+                ),
             },
         };
-        return new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })).StreamTextAsync(new StreamTextOptions
-        {
-            Model = model,
-            Prompt = "test-input",
-            Tools = new[]
+        return new AiClient(
+            GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })
+        ).StreamTextAsync(
+            new StreamTextOptions
             {
-                Tool.DynamicTool("dynamicTool", null, "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}", (_, _) => Task.FromResult("{\"value\":\"test-result\"}")),
-            },
-            NowMs = () => 0,
-        });
+                Model = model,
+                Prompt = "test-input",
+                Tools = new[]
+                {
+                    Tool.DynamicTool(
+                        "dynamicTool",
+                        null,
+                        "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}",
+                        (_, _) => Task.FromResult("{\"value\":\"test-result\"}")
+                    ),
+                },
+                NowMs = () => 0,
+            }
+        );
     }
 }

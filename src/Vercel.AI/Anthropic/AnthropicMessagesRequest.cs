@@ -25,7 +25,8 @@ public sealed class AnthropicPreparedRequest
         bool markCodeExecutionDynamic = false,
         JsonArray? preparedTools = null,
         string? computerToolsetName = null,
-        bool includePings = false)
+        bool includePings = false
+    )
     {
         IncludePings = includePings;
         MarkCodeExecutionDynamic = markCodeExecutionDynamic;
@@ -70,7 +71,8 @@ public sealed class AnthropicPreparedRequest
     public bool UsedCustomProviderKey { get; }
 
     /// <summary>Maps API names of provider tools back to the caller's tool names.</summary>
-    internal IReadOnlyDictionary<string, string> ToolNames { get; set; } = new Dictionary<string, string>();
+    internal IReadOnlyDictionary<string, string> ToolNames { get; set; } =
+        new Dictionary<string, string>();
 
     /// <summary>
     /// True when a web tool that dynamic filtering runs through code execution is sent without the code execution tool.
@@ -93,7 +95,8 @@ public static class AnthropicMessagesRequest
         string providerName,
         bool supportsNativeStructuredOutput = true,
         bool supportsStrictTools = true,
-        AnthropicModelSettings? settings = null)
+        AnthropicModelSettings? settings = null
+    )
     {
         var warnings = new List<AnthropicWarning>();
         var betas = new List<string>();
@@ -117,100 +120,180 @@ public static class AnthropicMessagesRequest
         }
 
         var maxTemperature = settings?.MaxTemperature ?? 1;
-        var temperatureProvider = settings?.MaxTemperature == null ? "anthropic" : ProviderOptionsName(providerName);
+        var temperatureProvider =
+            settings?.MaxTemperature == null ? "anthropic" : ProviderOptionsName(providerName);
         if (temperature != null && temperature > maxTemperature)
         {
             var maxText = maxTemperature.ToString("0.0", CultureInfo.InvariantCulture);
-            warnings.Add(new AnthropicWarning("unsupported", "temperature", temperature.Value.ToString(CultureInfo.InvariantCulture) + " exceeds " + temperatureProvider + " maximum of " + maxText + ". clamped to " + maxText));
+            warnings.Add(
+                new AnthropicWarning(
+                    "unsupported",
+                    "temperature",
+                    temperature.Value.ToString(CultureInfo.InvariantCulture)
+                        + " exceeds "
+                        + temperatureProvider
+                        + " maximum of "
+                        + maxText
+                        + ". clamped to "
+                        + maxText
+                )
+            );
             temperature = maxTemperature;
         }
         else if (temperature != null && temperature < 0)
         {
-            warnings.Add(new AnthropicWarning("unsupported", "temperature", temperature.Value.ToString(CultureInfo.InvariantCulture) + " is below " + temperatureProvider + " minimum of 0. clamped to 0"));
+            warnings.Add(
+                new AnthropicWarning(
+                    "unsupported",
+                    "temperature",
+                    temperature.Value.ToString(CultureInfo.InvariantCulture)
+                        + " is below "
+                        + temperatureProvider
+                        + " minimum of 0. clamped to 0"
+                )
+            );
             temperature = 0;
         }
 
         if (options.JsonSchema == null && (options.JsonResponse || options.JsonSchemaName != null))
         {
-            warnings.Add(new AnthropicWarning("unsupported", "responseFormat", "JSON response format requires a schema. The response format is ignored."));
+            warnings.Add(
+                new AnthropicWarning(
+                    "unsupported",
+                    "responseFormat",
+                    "JSON response format requires a schema. The response format is ignored."
+                )
+            );
         }
 
         var providerOptionsName = ProviderOptionsName(providerName);
         var canonical = ReadProvider(options, "anthropic");
         // The custom key and its legacy aliases are alternatives: the first present one is used.
-        var customNamespaces = providerOptionsName == "anthropic"
-            ? Array.Empty<string>()
+        var customNamespaces =
+            providerOptionsName == "anthropic" ? Array.Empty<string>()
             : LegacyProviderOptionsNames.TryGetValue(providerOptionsName, out var legacy)
                 ? new[] { providerOptionsName }.Concat(legacy).ToArray()
-                : new[] { providerOptionsName };
+            : new[] { providerOptionsName };
         var resolvedCustom = ProviderOptionsResolver.Resolve<JsonElement>(
             ObjectProviderOptions(options),
             customNamespaces,
             ProviderOptionsResolution.First,
-            element => element);
+            element => element
+        );
         JsonElement? custom = resolvedCustom.Namespaces.Count == 0 ? null : resolvedCustom.Options;
         // Provider metadata is written under the custom key only when that key itself was used.
-        var usedCustom = resolvedCustom.Namespaces.Count > 0 && resolvedCustom.Namespaces[0] == providerOptionsName;
+        var usedCustom =
+            resolvedCustom.Namespaces.Count > 0
+            && resolvedCustom.Namespaces[0] == providerOptionsName;
         var anthropic = Merge(canonical, custom);
-        var serviceTier = ResolveServiceTier(anthropic, canonical, custom, providerOptionsName, warnings);
+        var serviceTier = ResolveServiceTier(
+            anthropic,
+            canonical,
+            custom,
+            providerOptionsName,
+            warnings
+        );
         var mode = String(anthropic, "structuredOutputMode") ?? "auto";
-        var supportsStructured = supportsNativeStructuredOutput && capabilities.SupportsStructuredOutput;
-        var supportsResponseSchema = options.JsonSchema is not { } responseSchema
-            || SupportsNativeStructuredOutputSchemaChecker.SupportsNativeStructuredOutputSchema(responseSchema);
-        var useStructured = mode == "outputFormat" || (mode == "auto" && supportsStructured && supportsResponseSchema);
+        var supportsStructured =
+            supportsNativeStructuredOutput && capabilities.SupportsStructuredOutput;
+        var supportsResponseSchema =
+            options.JsonSchema is not { } responseSchema
+            || SupportsNativeStructuredOutputSchemaChecker.SupportsNativeStructuredOutputSchema(
+                responseSchema
+            );
+        var useStructured =
+            mode == "outputFormat"
+            || (mode == "auto" && supportsStructured && supportsResponseSchema);
 
         // The JSON response tool relies on forced tool use, which some models reject (e.g. Opus 5.5,
         // Fable 5.1). Fall back to native structured outputs even when the provider disables them by
         // default (Bedrock, Vertex), unless they would reject the schema or lose data from it.
-        if (!useStructured
+        if (
+            !useStructured
             && capabilities.RejectsForcedToolUse
             && capabilities.SupportsStructuredOutput
             && options.JsonSchema is { } fallbackSchema
-            && SupportsNativeStructuredOutputSchemaChecker.SupportsNativeStructuredOutputSchema(fallbackSchema))
+            && SupportsNativeStructuredOutputSchemaChecker.SupportsNativeStructuredOutputSchema(
+                fallbackSchema
+            )
+        )
         {
-            warnings.Add(new AnthropicWarning(
-                "unsupported",
-                "providerOptions.anthropic.structuredOutputMode",
-                "structuredOutputMode 'jsonTool' is not supported by " + modelId + " because it rejects forced tool use. Using 'outputFormat' instead."));
+            warnings.Add(
+                new AnthropicWarning(
+                    "unsupported",
+                    "providerOptions.anthropic.structuredOutputMode",
+                    "structuredOutputMode 'jsonTool' is not supported by "
+                        + modelId
+                        + " because it rejects forced tool use. Using 'outputFormat' instead."
+                )
+            );
             useStructured = true;
         }
 
         var usesJsonTool = options.JsonSchema != null && !useStructured;
         if (usesJsonTool && Bool(anthropic, "disableParallelToolUse") == false)
         {
-            warnings.Add(new AnthropicWarning(
-                "unsupported",
-                "providerOptions.anthropic.disableParallelToolUse",
-                "`disableParallelToolUse: false` is ignored when using the JSON response tool. Parallel tool use is disabled to ensure a single coherent JSON tool call."));
+            warnings.Add(
+                new AnthropicWarning(
+                    "unsupported",
+                    "providerOptions.anthropic.disableParallelToolUse",
+                    "`disableParallelToolUse: false` is ignored when using the JSON response tool. Parallel tool use is disabled to ensure a single coherent JSON tool call."
+                )
+            );
         }
 
         if (capabilities.RejectsSamplingParameters)
         {
             if (temperature != null)
             {
-                warnings.Add(new AnthropicWarning("unsupported", "temperature", "temperature is not supported by " + modelId + " and will be ignored"));
+                warnings.Add(
+                    new AnthropicWarning(
+                        "unsupported",
+                        "temperature",
+                        "temperature is not supported by " + modelId + " and will be ignored"
+                    )
+                );
                 temperature = null;
             }
 
             if (topK != null)
             {
-                warnings.Add(new AnthropicWarning("unsupported", "topK", "topK is not supported by " + modelId + " and will be ignored"));
+                warnings.Add(
+                    new AnthropicWarning(
+                        "unsupported",
+                        "topK",
+                        "topK is not supported by " + modelId + " and will be ignored"
+                    )
+                );
                 topK = null;
             }
 
             if (topP != null)
             {
-                warnings.Add(new AnthropicWarning("unsupported", "topP", "topP is not supported by " + modelId + " and will be ignored"));
+                warnings.Add(
+                    new AnthropicWarning(
+                        "unsupported",
+                        "topP",
+                        "topP is not supported by " + modelId + " and will be ignored"
+                    )
+                );
                 topP = null;
             }
         }
 
         if (!capabilities.IsKnownModel && options.MaxOutputTokens == null)
         {
-            warnings.Add(new AnthropicWarning(
-                "compatibility",
-                "maxOutputTokens",
-                "The model \"" + modelId + "\" is unknown. The max output tokens have been limited to " + capabilities.MaxOutputTokens + ". Set maxOutputTokens explicitly to override this limit."));
+            warnings.Add(
+                new AnthropicWarning(
+                    "compatibility",
+                    "maxOutputTokens",
+                    "The model \""
+                        + modelId
+                        + "\" is unknown. The max output tokens have been limited to "
+                        + capabilities.MaxOutputTokens
+                        + ". Set maxOutputTokens explicitly to override this limit."
+                )
+            );
         }
 
         var thread = ReadThread(anthropic, providerName, settings);
@@ -218,7 +301,12 @@ public static class AnthropicMessagesRequest
         var continuesThread = thread?.PreviousMessageId != null;
         var validator = new AnthropicCacheControlValidator(
             settings?.CacheControlProviderOptionsName ?? "anthropic",
-            hasThread && AnthropicCacheControlValidator.Read(anthropic == null ? null : Wrap(anthropic.Value)) != null ? 1 : 0);
+            hasThread
+            && AnthropicCacheControlValidator.Read(anthropic == null ? null : Wrap(anthropic.Value))
+                != null
+                ? 1
+                : 0
+        );
         var sendReasoning = Bool(anthropic, "sendReasoning") ?? true;
         var promptJson = PromptOverride(options) ?? AnthropicPrompt.PromptJson(options.Prompt);
 
@@ -228,7 +316,10 @@ public static class AnthropicMessagesRequest
         var toolsets = ToolsetNames(options);
         foreach (var definition in ToTools(options))
         {
-            if (definition.Id == "anthropic.computer_toolset_20260801" && !string.IsNullOrEmpty(definition.Name))
+            if (
+                definition.Id == "anthropic.computer_toolset_20260801"
+                && !string.IsNullOrEmpty(definition.Name)
+            )
             {
                 toolsets[definition.Name] = "computer";
             }
@@ -251,17 +342,27 @@ public static class AnthropicMessagesRequest
                     null,
                     validator,
                     usesJsonTool ? false : supportsStructured,
-                    supportsStrictTools && capabilities.SupportsStructuredOutput);
+                    supportsStrictTools && capabilities.SupportsStructuredOutput
+                );
                 // No stream-dependent defaults (eager input streaming): the definition is replayed on
                 // every request and has to stay identical between streaming and non-streaming calls to keep the cache.
-                var definition = prepared.Tools != null && prepared.Tools.Count > 0 ? prepared.Tools[0]?.DeepClone() as JsonObject : null;
+                var definition =
+                    prepared.Tools != null && prepared.Tools.Count > 0
+                        ? prepared.Tools[0]?.DeepClone() as JsonObject
+                        : null;
                 if (definition != null)
                 {
-                    inlineToolDefinitions.Add(new KeyValuePair<string, JsonObject>(AnthropicJson.String(inlineTool, "name") ?? string.Empty, definition));
+                    inlineToolDefinitions.Add(
+                        new KeyValuePair<string, JsonObject>(
+                            AnthropicJson.String(inlineTool, "name") ?? string.Empty,
+                            definition
+                        )
+                    );
                 }
 
                 return new AnthropicInlineToolResult(definition, prepared.Warnings, prepared.Betas);
-            });
+            }
+        );
         warnings.AddRange(converted.Warnings);
         betas.AddRange(converted.Betas);
 
@@ -270,7 +371,11 @@ public static class AnthropicMessagesRequest
         if (hasThread)
         {
             var pinned = new HashSet<string>(explicitBetas, StringComparer.Ordinal);
-            if (anthropic != null && anthropic.Value.TryGetProperty("anthropicBeta", out var pinnedBetas) && pinnedBetas.ValueKind == JsonValueKind.Array)
+            if (
+                anthropic != null
+                && anthropic.Value.TryGetProperty("anthropicBeta", out var pinnedBetas)
+                && pinnedBetas.ValueKind == JsonValueKind.Array
+            )
             {
                 foreach (var pinnedBeta in pinnedBetas.EnumerateArray())
                 {
@@ -284,18 +389,29 @@ public static class AnthropicMessagesRequest
             var unpinned = betas.Where(beta => !pinned.Contains(beta)).Distinct().ToList();
             if (unpinned.Count > 0)
             {
-                warnings.Add(new AnthropicWarning(
-                    "compatibility",
-                    "providerOptions.anthropic.thread",
-                    "Message content enabled beta headers: " + string.Join(", ", unpinned) + ". Thread requests require the same beta set on every turn. Pin these values with anthropicBeta on every request, or start a new thread when the set changes."));
+                warnings.Add(
+                    new AnthropicWarning(
+                        "compatibility",
+                        "providerOptions.anthropic.thread",
+                        "Message content enabled beta headers: "
+                            + string.Join(", ", unpinned)
+                            + ". Thread requests require the same beta set on every turn. Pin these values with anthropicBeta on every request, or start a new thread when the set changes."
+                    )
+                );
             }
 
-            if (continuesThread && ((converted.System != null && converted.System.Count > 0) || tools.Count > 0))
+            if (
+                continuesThread
+                && ((converted.System != null && converted.System.Count > 0) || tools.Count > 0)
+            )
             {
-                warnings.Add(new AnthropicWarning(
-                    "compatibility",
-                    "providerOptions.anthropic.thread",
-                    "Continuation uses the system prompt and tool definitions stored by the create request; supplied definitions are omitted from the wire request. Supply identical tools for local tool handling and fixed request settings. To change system instructions or tools, start a new thread."));
+                warnings.Add(
+                    new AnthropicWarning(
+                        "compatibility",
+                        "providerOptions.anthropic.thread",
+                        "Continuation uses the system prompt and tool definitions stored by the create request; supplied definitions are omitted from the wire request. Supply identical tools for local tool handling and fixed request settings. To change system instructions or tools, start a new thread."
+                    )
+                );
             }
         }
 
@@ -306,17 +422,30 @@ public static class AnthropicMessagesRequest
         JsonElement? blockBinding = anthropic == null ? null : BlockBinding(anthropic.Value);
         if (AnthropicReasoning.IsCustom(options.Reasoning) && effort == null)
         {
-            var mapped = AnthropicReasoning.Resolve(options.Reasoning, modelId, capabilities, warnings);
+            var mapped = AnthropicReasoning.Resolve(
+                options.Reasoning,
+                modelId,
+                capabilities,
+                warnings
+            );
             if (mapped != null)
             {
-                if (thinkingType == null && String(anthropic, "thinkingType") == null && !HasThinking(anthropic))
+                if (
+                    thinkingType == null
+                    && String(anthropic, "thinkingType") == null
+                    && !HasThinking(anthropic)
+                )
                 {
                     thinkingType = mapped.ThinkingType;
                     budget = mapped.BudgetTokens;
                     display = mapped.Display;
                 }
 
-                if (mapped.Effort != null && thinkingType != "disabled" && String(anthropic, "thinkingType") != "disabled")
+                if (
+                    mapped.Effort != null
+                    && thinkingType != "disabled"
+                    && String(anthropic, "thinkingType") != "disabled"
+                )
                 {
                     effort = mapped.Effort;
                 }
@@ -331,58 +460,107 @@ public static class AnthropicMessagesRequest
             blockBinding = BlockBinding(anthropic!.Value);
         }
 
-        if (capabilities.RejectsThinkingDisabled && capabilities.SupportsBetweenToolsThinking && thinkingType == "disabled")
+        if (
+            capabilities.RejectsThinkingDisabled
+            && capabilities.SupportsBetweenToolsThinking
+            && thinkingType == "disabled"
+        )
         {
-            warnings.Add(new AnthropicWarning(
-                "unsupported",
-                "providerOptions.anthropic.thinking",
-                "thinking cannot be disabled for " + modelId + ". Using 'between_tools' thinking, the lowest thinking setting, instead."));
+            warnings.Add(
+                new AnthropicWarning(
+                    "unsupported",
+                    "providerOptions.anthropic.thinking",
+                    "thinking cannot be disabled for "
+                        + modelId
+                        + ". Using 'between_tools' thinking, the lowest thinking setting, instead."
+                )
+            );
             thinkingType = "between_tools";
             budget = null;
         }
         else if (capabilities.RejectsThinkingDisabled && thinkingType == "disabled")
         {
-            warnings.Add(new AnthropicWarning(
-                "unsupported",
-                "providerOptions.anthropic.thinking",
-                "thinking cannot be disabled for " + modelId + "; it always uses adaptive thinking. The thinking setting has been removed. Lower 'effort' to reduce thinking."));
+            warnings.Add(
+                new AnthropicWarning(
+                    "unsupported",
+                    "providerOptions.anthropic.thinking",
+                    "thinking cannot be disabled for "
+                        + modelId
+                        + "; it always uses adaptive thinking. The thinking setting has been removed. Lower 'effort' to reduce thinking."
+                )
+            );
             thinkingType = null;
             budget = null;
         }
         else if (capabilities.RejectsBudgetThinking && thinkingType == "enabled")
         {
-            warnings.Add(new AnthropicWarning(
-                "unsupported",
-                "providerOptions.anthropic.thinking",
-                "budget-based thinking is not supported by " + modelId + (capabilities.RejectsThinkingDisabled ? "; it always uses adaptive thinking. " : ". ") + "Using adaptive thinking instead. Use 'effort' to control how much the model thinks."));
+            warnings.Add(
+                new AnthropicWarning(
+                    "unsupported",
+                    "providerOptions.anthropic.thinking",
+                    "budget-based thinking is not supported by "
+                        + modelId
+                        + (
+                            capabilities.RejectsThinkingDisabled
+                                ? "; it always uses adaptive thinking. "
+                                : ". "
+                        )
+                        + "Using adaptive thinking instead. Use 'effort' to control how much the model thinks."
+                )
+            );
             thinkingType = "adaptive";
             budget = null;
         }
 
-        if (capabilities.RejectsThinkingDisabledAboveHighEffort && thinkingType == "disabled" && (effort == "xhigh" || effort == "max"))
+        if (
+            capabilities.RejectsThinkingDisabledAboveHighEffort
+            && thinkingType == "disabled"
+            && (effort == "xhigh" || effort == "max")
+        )
         {
-            warnings.Add(new AnthropicWarning(
-                "unsupported",
-                "providerOptions.anthropic.effort",
-                "effort '" + effort + "' is not supported by " + modelId + " when thinking is disabled. The effort has been lowered to 'high'."));
+            warnings.Add(
+                new AnthropicWarning(
+                    "unsupported",
+                    "providerOptions.anthropic.effort",
+                    "effort '"
+                        + effort
+                        + "' is not supported by "
+                        + modelId
+                        + " when thinking is disabled. The effort has been lowered to 'high'."
+                )
+            );
             effort = "high";
         }
 
         if (thinkingType == "between_tools" && (effort == "xhigh" || effort == "max"))
         {
-            warnings.Add(new AnthropicWarning(
-                "unsupported",
-                "providerOptions.anthropic.effort",
-                "effort '" + effort + "' is not supported with 'between_tools' thinking. The effort has been lowered to 'high'."));
+            warnings.Add(
+                new AnthropicWarning(
+                    "unsupported",
+                    "providerOptions.anthropic.effort",
+                    "effort '"
+                        + effort
+                        + "' is not supported with 'between_tools' thinking. The effort has been lowered to 'high'."
+                )
+            );
             effort = "high";
         }
 
-        var isThinking = thinkingType == "enabled" || thinkingType == "adaptive" || thinkingType == "between_tools";
+        var isThinking =
+            thinkingType == "enabled"
+            || thinkingType == "adaptive"
+            || thinkingType == "between_tools";
         var sendThinking = isThinking || thinkingType == "disabled" || blockBinding != null;
         var maxTokens = options.MaxOutputTokens ?? capabilities.MaxOutputTokens;
         if (isThinking && thinkingType == "enabled" && budget == null)
         {
-            warnings.Add(new AnthropicWarning("compatibility", "extended thinking", "thinking budget is required when thinking is enabled. using default budget of 1024 tokens."));
+            warnings.Add(
+                new AnthropicWarning(
+                    "compatibility",
+                    "extended thinking",
+                    "thinking budget is required when thinking is enabled. using default budget of 1024 tokens."
+                )
+            );
             budget = 1024;
         }
 
@@ -391,26 +569,54 @@ public static class AnthropicMessagesRequest
             if (temperature != null && settings?.SupportsTemperatureAndTopPWithThinking != true)
             {
                 temperature = null;
-                warnings.Add(new AnthropicWarning("unsupported", "temperature", "temperature is not supported when thinking is enabled"));
+                warnings.Add(
+                    new AnthropicWarning(
+                        "unsupported",
+                        "temperature",
+                        "temperature is not supported when thinking is enabled"
+                    )
+                );
             }
 
             if (topK != null)
             {
                 topK = null;
-                warnings.Add(new AnthropicWarning("unsupported", "topK", "topK is not supported when thinking is enabled"));
+                warnings.Add(
+                    new AnthropicWarning(
+                        "unsupported",
+                        "topK",
+                        "topK is not supported when thinking is enabled"
+                    )
+                );
             }
 
             if (topP != null && settings?.SupportsTemperatureAndTopPWithThinking != true)
             {
                 topP = null;
-                warnings.Add(new AnthropicWarning("unsupported", "topP", "topP is not supported when thinking is enabled"));
+                warnings.Add(
+                    new AnthropicWarning(
+                        "unsupported",
+                        "topP",
+                        "topP is not supported when thinking is enabled"
+                    )
+                );
             }
 
             maxTokens += budget ?? 0;
         }
-        else if ((capabilities.IsKnownModel || modelId.IndexOf("claude-", StringComparison.Ordinal) >= 0) && topP != null && temperature != null)
+        else if (
+            (capabilities.IsKnownModel || modelId.IndexOf("claude-", StringComparison.Ordinal) >= 0)
+            && topP != null
+            && temperature != null
+        )
         {
-            warnings.Add(new AnthropicWarning("unsupported", "topP", "topP is not supported when temperature is set. topP is ignored."));
+            warnings.Add(
+                new AnthropicWarning(
+                    "unsupported",
+                    "topP",
+                    "topP is not supported when temperature is set. topP is ignored."
+                )
+            );
             topP = null;
         }
 
@@ -418,10 +624,20 @@ public static class AnthropicMessagesRequest
         {
             if (options.MaxOutputTokens != null)
             {
-                warnings.Add(new AnthropicWarning(
-                    "unsupported",
-                    "maxOutputTokens",
-                    maxTokens + " (maxOutputTokens + thinkingBudget) is greater than " + modelId + " " + capabilities.MaxOutputTokens + " max output tokens. The max output tokens have been limited to " + capabilities.MaxOutputTokens + "."));
+                warnings.Add(
+                    new AnthropicWarning(
+                        "unsupported",
+                        "maxOutputTokens",
+                        maxTokens
+                            + " (maxOutputTokens + thinkingBudget) is greater than "
+                            + modelId
+                            + " "
+                            + capabilities.MaxOutputTokens
+                            + " max output tokens. The max output tokens have been limited to "
+                            + capabilities.MaxOutputTokens
+                            + "."
+                    )
+                );
             }
 
             maxTokens = capabilities.MaxOutputTokens;
@@ -435,17 +651,28 @@ public static class AnthropicMessagesRequest
             // `none` sends only the JSON response tool, a named choice only that application tool.
             var jsonChoice = options.ToolChoice;
             toolsToPrepare = tools
-                .Where(tool => jsonChoice?.Type != "none" && (!(jsonChoice is ToolChoice.NamedChoice selected) || tool.Name == selected.ToolName))
+                .Where(tool =>
+                    jsonChoice?.Type != "none"
+                    && (
+                        !(jsonChoice is ToolChoice.NamedChoice selected)
+                        || tool.Name == selected.ToolName
+                    )
+                )
                 .ToList();
-            toolsToPrepare.Add(new AnthropicToolDefinition
-            {
-                Name = "json",
-                Description = "Respond with a JSON object.",
-                InputSchema = options.JsonSchema,
-            });
+            toolsToPrepare.Add(
+                new AnthropicToolDefinition
+                {
+                    Name = "json",
+                    Description = "Respond with a JSON object.",
+                    InputSchema = options.JsonSchema,
+                }
+            );
         }
 
-        var choiceType = usesJsonTool ? "required" : options.ToolChoice == null ? null : options.ToolChoice.Type;
+        var choiceType =
+            usesJsonTool ? "required"
+            : options.ToolChoice == null ? null
+            : options.ToolChoice.Type;
         var choiceName = options.ToolChoice is ToolChoice.NamedChoice named ? named.ToolName : null;
         var disableParallel = usesJsonTool ? true : Bool(anthropic, "disableParallelToolUse");
         var eagerDefault = stream && (Bool(anthropic, "toolStreaming") ?? true);
@@ -460,19 +687,36 @@ public static class AnthropicMessagesRequest
             eagerDefault,
             capabilities.RejectsForcedToolUse || thinkingType == "enabled",
             // tool changes can add tools when `tools` is empty, so the tool choice and parallel tool use settings still apply
-            inlineTools.Count > 0);
+            inlineTools.Count > 0
+        );
         warnings.AddRange(preparedTools.Warnings);
         betas.AddRange(preparedTools.Betas);
-        EnsureInlineToolsRespectChoice(options.ToolChoice, usesJsonTool, preparedTools, declaredTools, toolNames, inlineToolDefinitions, converted.InlineToolDefinitions);
+        EnsureInlineToolsRespectChoice(
+            options.ToolChoice,
+            usesJsonTool,
+            preparedTools,
+            declaredTools,
+            toolNames,
+            inlineToolDefinitions,
+            converted.InlineToolDefinitions
+        );
         warnings.AddRange(validator.Warnings);
 
-        var hasCompaction = anthropic != null && anthropic.Value.TryGetProperty("compaction", out var compactionOption) && compactionOption.ValueKind == JsonValueKind.Object;
-        if (hasCompaction && anthropic!.Value.TryGetProperty("contextManagement", out var conflicting) && conflicting.ValueKind == JsonValueKind.Object)
+        var hasCompaction =
+            anthropic != null
+            && anthropic.Value.TryGetProperty("compaction", out var compactionOption)
+            && compactionOption.ValueKind == JsonValueKind.Object;
+        if (
+            hasCompaction
+            && anthropic!.Value.TryGetProperty("contextManagement", out var conflicting)
+            && conflicting.ValueKind == JsonValueKind.Object
+        )
         {
             throw new InvalidArgumentException(
                 "providerOptions",
                 null,
-                "Anthropic provider options `compaction` and `contextManagement` cannot be used together.");
+                "Anthropic provider options `compaction` and `contextManagement` cannot be used together."
+            );
         }
 
         if (hasCompaction)
@@ -482,12 +726,22 @@ public static class AnthropicMessagesRequest
 
         AddContextBetas(anthropic, betas, warnings);
         AddContainerBetas(anthropic, tools, betas, warnings);
-        if (anthropic != null && anthropic.Value.TryGetProperty("mcpServers", out var servers) && servers.ValueKind == JsonValueKind.Array && servers.GetArrayLength() > 0)
+        if (
+            anthropic != null
+            && anthropic.Value.TryGetProperty("mcpServers", out var servers)
+            && servers.ValueKind == JsonValueKind.Array
+            && servers.GetArrayLength() > 0
+        )
         {
             betas.Add("mcp-client-2025-04-04");
         }
 
-        if (anthropic != null && anthropic.Value.TryGetProperty("safeguards", out var safeguards) && safeguards.ValueKind == JsonValueKind.Array && safeguards.GetArrayLength() > 0)
+        if (
+            anthropic != null
+            && anthropic.Value.TryGetProperty("safeguards", out var safeguards)
+            && safeguards.ValueKind == JsonValueKind.Array
+            && safeguards.GetArrayLength() > 0
+        )
         {
             betas.Add("dangerous-tool-use-2026-09-03");
         }
@@ -512,12 +766,21 @@ public static class AnthropicMessagesRequest
             betas.Add("thinking-binding-controls-2026-08-01");
         }
 
-        var fallbacks = anthropic == null ? null : AnthropicJson.Property(anthropic.Value, "fallbacks");
-        if (fallbacks != null && fallbacks.Value.ValueKind == JsonValueKind.String && fallbacks.Value.GetString() == "default")
+        var fallbacks =
+            anthropic == null ? null : AnthropicJson.Property(anthropic.Value, "fallbacks");
+        if (
+            fallbacks != null
+            && fallbacks.Value.ValueKind == JsonValueKind.String
+            && fallbacks.Value.GetString() == "default"
+        )
         {
             betas.Add("server-side-fallback-2026-07-01");
         }
-        else if (fallbacks != null && fallbacks.Value.ValueKind == JsonValueKind.Array && fallbacks.Value.GetArrayLength() > 0)
+        else if (
+            fallbacks != null
+            && fallbacks.Value.ValueKind == JsonValueKind.Array
+            && fallbacks.Value.GetArrayLength() > 0
+        )
         {
             betas.Add("server-side-fallback-2026-06-01");
         }
@@ -530,7 +793,11 @@ public static class AnthropicMessagesRequest
             }
         }
 
-        if (anthropic != null && anthropic.Value.TryGetProperty("anthropicBeta", out var extra) && extra.ValueKind == JsonValueKind.Array)
+        if (
+            anthropic != null
+            && anthropic.Value.TryGetProperty("anthropicBeta", out var extra)
+            && extra.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var beta in extra.EnumerateArray())
             {
@@ -585,7 +852,10 @@ public static class AnthropicMessagesRequest
             {
                 thinking["block_binding"] = new JsonObject
                 {
-                    ["prefix_mismatch_behavior"] = AnthropicJson.String(blockBinding.Value, "prefixMismatchBehavior"),
+                    ["prefix_mismatch_behavior"] = AnthropicJson.String(
+                        blockBinding.Value,
+                        "prefixMismatchBehavior"
+                    ),
                 };
             }
 
@@ -594,7 +864,11 @@ public static class AnthropicMessagesRequest
 
         var outputConfig = new JsonObject();
         AnthropicJson.Set(outputConfig, "effort", effort);
-        if (anthropic != null && anthropic.Value.TryGetProperty("taskBudget", out var taskBudget) && taskBudget.ValueKind == JsonValueKind.Object)
+        if (
+            anthropic != null
+            && anthropic.Value.TryGetProperty("taskBudget", out var taskBudget)
+            && taskBudget.ValueKind == JsonValueKind.Object
+        )
         {
             var budgetNode = new JsonObject
             {
@@ -622,12 +896,23 @@ public static class AnthropicMessagesRequest
         AnthropicJson.Set(body, "speed", String(anthropic, "speed"));
         AnthropicJson.Set(body, "service_tier", serviceTier);
         AnthropicJson.Set(body, "inference_geo", String(anthropic, "inferenceGeo"));
-        if (fallbacks != null && (fallbacks.Value.ValueKind == JsonValueKind.String || (fallbacks.Value.ValueKind == JsonValueKind.Array && fallbacks.Value.GetArrayLength() > 0)))
+        if (
+            fallbacks != null
+            && (
+                fallbacks.Value.ValueKind == JsonValueKind.String
+                || (
+                    fallbacks.Value.ValueKind == JsonValueKind.Array
+                    && fallbacks.Value.GetArrayLength() > 0
+                )
+            )
+        )
         {
             body["fallbacks"] = AnthropicJson.Node(fallbacks.Value);
         }
 
-        var cacheControl = AnthropicCacheControlValidator.Read(anthropic == null ? null : Wrap(anthropic.Value));
+        var cacheControl = AnthropicCacheControlValidator.Read(
+            anthropic == null ? null : Wrap(anthropic.Value)
+        );
         AnthropicJson.Set(body, "cache_control", cacheControl);
         var userId = anthropic == null ? null : UserId(anthropic.Value);
         if (userId != null)
@@ -635,12 +920,21 @@ public static class AnthropicMessagesRequest
             body["metadata"] = new JsonObject { ["user_id"] = userId };
         }
 
-        if (anthropic != null && anthropic.Value.TryGetProperty("mcpServers", out var mcp) && mcp.ValueKind == JsonValueKind.Array && mcp.GetArrayLength() > 0)
+        if (
+            anthropic != null
+            && anthropic.Value.TryGetProperty("mcpServers", out var mcp)
+            && mcp.ValueKind == JsonValueKind.Array
+            && mcp.GetArrayLength() > 0
+        )
         {
             body["mcp_servers"] = MapMcp(mcp);
         }
 
-        if (anthropic != null && anthropic.Value.TryGetProperty("container", out var container) && container.ValueKind == JsonValueKind.Object)
+        if (
+            anthropic != null
+            && anthropic.Value.TryGetProperty("container", out var container)
+            && container.ValueKind == JsonValueKind.Object
+        )
         {
             body["container"] = MapContainer(container);
         }
@@ -652,7 +946,10 @@ public static class AnthropicMessagesRequest
 
         if (thread != null)
         {
-            var threadBody = new JsonObject { ["type"] = thread.PreviousMessageId == null ? "create" : "continue" };
+            var threadBody = new JsonObject
+            {
+                ["type"] = thread.PreviousMessageId == null ? "create" : "continue",
+            };
             if (thread.PreviousMessageId != null)
             {
                 threadBody["previous_message_id"] = thread.PreviousMessageId;
@@ -661,7 +958,12 @@ public static class AnthropicMessagesRequest
             body["thread"] = threadBody;
         }
 
-        if (anthropic != null && anthropic.Value.TryGetProperty("safeguards", out var safeguardValue) && safeguardValue.ValueKind == JsonValueKind.Array && safeguardValue.GetArrayLength() > 0)
+        if (
+            anthropic != null
+            && anthropic.Value.TryGetProperty("safeguards", out var safeguardValue)
+            && safeguardValue.ValueKind == JsonValueKind.Array
+            && safeguardValue.GetArrayLength() > 0
+        )
         {
             body["safeguards"] = MapSafeguards(safeguardValue);
         }
@@ -669,7 +971,10 @@ public static class AnthropicMessagesRequest
         if (hasCompaction)
         {
             anthropic!.Value.TryGetProperty("compaction", out var compaction);
-            var compactionBody = new JsonObject { ["type"] = AnthropicJson.String(compaction, "type") };
+            var compactionBody = new JsonObject
+            {
+                ["type"] = AnthropicJson.String(compaction, "type"),
+            };
             if (AnthropicJson.Property(compaction, "instructions") is { } instructions)
             {
                 compactionBody["instructions"] = AnthropicJson.Node(instructions);
@@ -678,7 +983,11 @@ public static class AnthropicMessagesRequest
             body["compaction"] = compactionBody;
         }
 
-        if (anthropic != null && anthropic.Value.TryGetProperty("contextManagement", out var context) && context.ValueKind == JsonValueKind.Object)
+        if (
+            anthropic != null
+            && anthropic.Value.TryGetProperty("contextManagement", out var context)
+            && context.ValueKind == JsonValueKind.Object
+        )
         {
             body["context_management"] = MapContext(context, warnings);
         }
@@ -698,7 +1007,21 @@ public static class AnthropicMessagesRequest
             body["stream"] = true;
         }
 
-        return new AnthropicPreparedRequest(body, warnings, betas, usesJsonTool, providerOptionsName, usedCustom, HasDynamicFilteringWebToolWithoutCodeExecution(tools), preparedTools.Tools, ComputerToolsetName(tools), stream && Bool(anthropic, "includePings") == true) { ToolNames = ResponseToolNames(options, inlineTools) };
+        return new AnthropicPreparedRequest(
+            body,
+            warnings,
+            betas,
+            usesJsonTool,
+            providerOptionsName,
+            usedCustom,
+            HasDynamicFilteringWebToolWithoutCodeExecution(tools),
+            preparedTools.Tools,
+            ComputerToolsetName(tools),
+            stream && Bool(anthropic, "includePings") == true
+        )
+        {
+            ToolNames = ResponseToolNames(options, inlineTools),
+        };
     }
 
     // Forced-choice and JSON-tool fallbacks restrict the declared tools. Inline definitions, including those
@@ -710,7 +1033,8 @@ public static class AnthropicMessagesRequest
         IReadOnlyList<AnthropicToolDefinition> declaredTools,
         IReadOnlyDictionary<string, string> toolNames,
         IReadOnlyList<KeyValuePair<string, JsonObject>> inlineToolDefinitions,
-        IReadOnlyList<JsonObject> emittedDefinitions)
+        IReadOnlyList<JsonObject> emittedDefinitions
+    )
     {
         if (toolChoice == null || inlineToolDefinitions.Count == 0)
         {
@@ -718,8 +1042,11 @@ public static class AnthropicMessagesRequest
         }
 
         var named = toolChoice as ToolChoice.NamedChoice;
-        var fallsBack = (named != null && (preparedTools.ToolChoice?["type"]?.GetValue<string>() == "auto" || usesJsonTool))
-            || (toolChoice.Type == "none" && usesJsonTool);
+        var fallsBack =
+            (
+                named != null
+                && (preparedTools.ToolChoice?["type"]?.GetValue<string>() == "auto" || usesJsonTool)
+            ) || (toolChoice.Type == "none" && usesJsonTool);
         if (!fallsBack)
         {
             return;
@@ -729,9 +1056,14 @@ public static class AnthropicMessagesRequest
         // Validate only definitions that remain in the outgoing messages.
         var selectedSdkName = named?.ToolName;
         var selectedTool = declaredTools.FirstOrDefault(tool => tool.Name == selectedSdkName);
-        var selectedProviderName = usesJsonTool && selectedSdkName != null && selectedTool?.Type != "function"
-            ? (toolNames.TryGetValue(selectedSdkName, out var mapped) ? mapped : selectedSdkName)
-            : selectedSdkName;
+        var selectedProviderName =
+            usesJsonTool && selectedSdkName != null && selectedTool?.Type != "function"
+                ? (
+                    toolNames.TryGetValue(selectedSdkName, out var mapped)
+                        ? mapped
+                        : selectedSdkName
+                )
+                : selectedSdkName;
         foreach (var pair in inlineToolDefinitions)
         {
             var definition = pair.Value;
@@ -743,7 +1075,8 @@ public static class AnthropicMessagesRequest
             var definitionName = definition["name"]?.GetValue<string>();
             // The JSON-tool path filters application tools by SDK name before conversion;
             // the forced-choice fallback filters by provider name.
-            var conflicts = toolChoice.Type == "none"
+            var conflicts =
+                toolChoice.Type == "none"
                 || (usesJsonTool && pair.Key != selectedSdkName)
                 || definitionName == null
                 || definitionName != selectedProviderName;
@@ -753,17 +1086,26 @@ public static class AnthropicMessagesRequest
             }
 
             var toolName = definitionName ?? definition["type"]?.GetValue<string>() ?? string.Empty;
-            var choice = named != null ? "named tool choice '" + named.ToolName + "'" : "tool choice 'none'";
+            var choice =
+                named != null ? "named tool choice '" + named.ToolName + "'" : "tool choice 'none'";
             throw new InvalidArgumentException(
                 "toolChoice",
                 null,
-                "Inline tool '" + toolName + "' conflicts with " + choice + ". Inline definitions must respect the tool choice when forced tool use falls back or the JSON response tool is used.");
+                "Inline tool '"
+                    + toolName
+                    + "' conflicts with "
+                    + choice
+                    + ". Inline definitions must respect the tool choice when forced tool use falls back or the JSON response tool is used."
+            );
         }
     }
 
     // Maps API names of provider tools back to the caller's tool names. Declared tools go last so that an
     // inline tool cannot take over their mapping.
-    private static Dictionary<string, string> ResponseToolNames(LanguageModelCallOptions options, IReadOnlyList<JsonElement> inlineTools)
+    private static Dictionary<string, string> ResponseToolNames(
+        LanguageModelCallOptions options,
+        IReadOnlyList<JsonElement> inlineTools
+    )
     {
         var names = new Dictionary<string, string>();
         foreach (var tool in inlineTools.Concat(DeclaredProviderTools(options)))
@@ -786,7 +1128,10 @@ public static class AnthropicMessagesRequest
             ["type"] = "provider",
             ["id"] = tool.ProviderToolId,
             ["name"] = tool.Name,
-            ["args"] = tool.Args.ValueKind == JsonValueKind.Object ? AnthropicJson.Node(tool.Args) : new JsonObject(),
+            ["args"] =
+                tool.Args.ValueKind == JsonValueKind.Object
+                    ? AnthropicJson.Node(tool.Args)
+                    : new JsonObject(),
         };
         using var document = JsonDocument.Parse(node.ToJsonString());
         return document.RootElement.Clone();
@@ -795,7 +1140,11 @@ public static class AnthropicMessagesRequest
     private static IEnumerable<JsonElement> ProviderOptionTools(LanguageModelCallOptions options)
     {
         var provider = ReadProvider(options, "anthropic");
-        if (provider != null && provider.Value.TryGetProperty("providerTools", out var tools) && tools.ValueKind == JsonValueKind.Array)
+        if (
+            provider != null
+            && provider.Value.TryGetProperty("providerTools", out var tools)
+            && tools.ValueKind == JsonValueKind.Array
+        )
         {
             return tools.EnumerateArray().ToList();
         }
@@ -809,7 +1158,9 @@ public static class AnthropicMessagesRequest
         var declared = new List<JsonElement>();
         if (options.Tools != null)
         {
-            declared.AddRange(options.Tools.Where(tool => tool.ProviderToolId != null).Select(ProviderToolJson));
+            declared.AddRange(
+                options.Tools.Where(tool => tool.ProviderToolId != null).Select(ProviderToolJson)
+            );
         }
 
         declared.AddRange(ProviderOptionTools(options));
@@ -829,7 +1180,9 @@ public static class AnthropicMessagesRequest
         return null;
     }
 
-    private static bool HasDynamicFilteringWebToolWithoutCodeExecution(IReadOnlyList<AnthropicToolDefinition> tools)
+    private static bool HasDynamicFilteringWebToolWithoutCodeExecution(
+        IReadOnlyList<AnthropicToolDefinition> tools
+    )
     {
         var hasDynamicFilteringWebTool = false;
         foreach (var tool in tools)
@@ -859,39 +1212,65 @@ public static class AnthropicMessagesRequest
         public string? PreviousMessageId { get; init; }
     }
 
-    private static ThreadOption? ReadThread(JsonElement? anthropic, string providerName, AnthropicModelSettings? settings)
+    private static ThreadOption? ReadThread(
+        JsonElement? anthropic,
+        string providerName,
+        AnthropicModelSettings? settings
+    )
     {
-        if (anthropic == null || !anthropic.Value.TryGetProperty("thread", out var thread) || thread.ValueKind == JsonValueKind.Undefined)
+        if (
+            anthropic == null
+            || !anthropic.Value.TryGetProperty("thread", out var thread)
+            || thread.ValueKind == JsonValueKind.Undefined
+        )
         {
             return null;
         }
 
-        var type = thread.ValueKind == JsonValueKind.Object ? AnthropicJson.String(thread, "type") : null;
-        var previous = type == "continue" ? AnthropicJson.String(thread, "previousMessageId") : null;
-        if ((type != "create" && type != "continue") || (type == "continue" && string.IsNullOrEmpty(previous)))
+        var type =
+            thread.ValueKind == JsonValueKind.Object ? AnthropicJson.String(thread, "type") : null;
+        var previous =
+            type == "continue" ? AnthropicJson.String(thread, "previousMessageId") : null;
+        if (
+            (type != "create" && type != "continue")
+            || (type == "continue" && string.IsNullOrEmpty(previous))
+        )
         {
             throw new InvalidArgumentException(
                 "providerOptions.anthropic.thread",
                 thread.GetRawText(),
-                "thread must be { type: 'create' } or { type: 'continue', previousMessageId: string }.");
+                "thread must be { type: 'create' } or { type: 'continue', previousMessageId: string }."
+            );
         }
 
         if (settings?.SupportsMessageThreads != true)
         {
             throw new UnsupportedFunctionalityException(
                 "Anthropic message threads",
-                providerName + " does not support Anthropic message threads.");
+                providerName + " does not support Anthropic message threads."
+            );
         }
 
-        var hasCompaction = anthropic.Value.TryGetProperty("compaction", out var compaction) && compaction.ValueKind == JsonValueKind.Object;
+        var hasCompaction =
+            anthropic.Value.TryGetProperty("compaction", out var compaction)
+            && compaction.ValueKind == JsonValueKind.Object;
         var unsupportedEdit = false;
-        if (anthropic.Value.TryGetProperty("contextManagement", out var context) && context.ValueKind == JsonValueKind.Object
-            && context.TryGetProperty("edits", out var edits) && edits.ValueKind == JsonValueKind.Array)
+        if (
+            anthropic.Value.TryGetProperty("contextManagement", out var context)
+            && context.ValueKind == JsonValueKind.Object
+            && context.TryGetProperty("edits", out var edits)
+            && edits.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var edit in edits.EnumerateArray())
             {
-                if (AnthropicJson.String(edit, "type") != "clear_thinking_20251015" || edit.ValueKind != JsonValueKind.Object
-                    || !edit.TryGetProperty("keep", out var keep) || keep.ValueKind != JsonValueKind.String || keep.GetString() != "all")
+                if (
+                    AnthropicJson.String(edit, "type") != "clear_thinking_20251015"
+                    || edit.ValueKind != JsonValueKind.Object
+                    || !edit.TryGetProperty("keep", out var keep)
+                    || keep.ValueKind != JsonValueKind.String
+                    || keep.GetString() != "all"
+                )
                 {
                     unsupportedEdit = true;
                 }
@@ -903,21 +1282,32 @@ public static class AnthropicMessagesRequest
             throw new InvalidArgumentException(
                 "providerOptions.anthropic.thread",
                 null,
-                "Anthropic message threads do not support compaction or context editing, except clear_thinking_20251015 with keep: \"all\".");
+                "Anthropic message threads do not support compaction or context editing, except clear_thinking_20251015 with keep: \"all\"."
+            );
         }
 
         return new ThreadOption { PreviousMessageId = previous };
     }
 
-    private static void AddContextBetas(JsonElement? anthropic, List<string> betas, List<AnthropicWarning> warnings)
+    private static void AddContextBetas(
+        JsonElement? anthropic,
+        List<string> betas,
+        List<AnthropicWarning> warnings
+    )
     {
-        if (anthropic == null || !anthropic.Value.TryGetProperty("contextManagement", out var context))
+        if (
+            anthropic == null
+            || !anthropic.Value.TryGetProperty("contextManagement", out var context)
+        )
         {
             return;
         }
 
         betas.Add("context-management-2025-06-27");
-        if (context.TryGetProperty("edits", out var edits) && edits.ValueKind == JsonValueKind.Array)
+        if (
+            context.TryGetProperty("edits", out var edits)
+            && edits.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var edit in edits.EnumerateArray())
             {
@@ -930,14 +1320,27 @@ public static class AnthropicMessagesRequest
         }
     }
 
-    private static void AddContainerBetas(JsonElement? anthropic, List<AnthropicToolDefinition> tools, List<string> betas, List<AnthropicWarning> warnings)
+    private static void AddContainerBetas(
+        JsonElement? anthropic,
+        List<AnthropicToolDefinition> tools,
+        List<string> betas,
+        List<AnthropicWarning> warnings
+    )
     {
-        if (anthropic == null || !anthropic.Value.TryGetProperty("container", out var container) || container.ValueKind != JsonValueKind.Object)
+        if (
+            anthropic == null
+            || !anthropic.Value.TryGetProperty("container", out var container)
+            || container.ValueKind != JsonValueKind.Object
+        )
         {
             return;
         }
 
-        if (!container.TryGetProperty("skills", out var skills) || skills.ValueKind != JsonValueKind.Array || skills.GetArrayLength() == 0)
+        if (
+            !container.TryGetProperty("skills", out var skills)
+            || skills.ValueKind != JsonValueKind.Array
+            || skills.GetArrayLength() == 0
+        )
         {
             return;
         }
@@ -948,7 +1351,10 @@ public static class AnthropicMessagesRequest
         var hasCode = false;
         foreach (var tool in tools)
         {
-            if (tool.Id == "anthropic.code_execution_20250825" || tool.Id == "anthropic.code_execution_20260120")
+            if (
+                tool.Id == "anthropic.code_execution_20250825"
+                || tool.Id == "anthropic.code_execution_20260120"
+            )
             {
                 hasCode = true;
             }
@@ -956,13 +1362,22 @@ public static class AnthropicMessagesRequest
 
         if (!hasCode)
         {
-            warnings.Add(new AnthropicWarning("other", message: "code execution tool is required when using skills"));
+            warnings.Add(
+                new AnthropicWarning(
+                    "other",
+                    message: "code execution tool is required when using skills"
+                )
+            );
         }
     }
 
     private static JsonNode MapContainer(JsonElement container)
     {
-        if (!container.TryGetProperty("skills", out var skills) || skills.ValueKind != JsonValueKind.Array || skills.GetArrayLength() == 0)
+        if (
+            !container.TryGetProperty("skills", out var skills)
+            || skills.ValueKind != JsonValueKind.Array
+            || skills.GetArrayLength() == 0
+        )
         {
             return JsonValue.Create(AnthropicJson.String(container, "id") ?? string.Empty)!;
         }
@@ -974,9 +1389,15 @@ public static class AnthropicMessagesRequest
             var node = new JsonObject { ["type"] = type };
             if (type == "custom")
             {
-                if (!skill.TryGetProperty("providerReference", out var reference) || reference.ValueKind != JsonValueKind.Object || !reference.TryGetProperty("anthropic", out var id))
+                if (
+                    !skill.TryGetProperty("providerReference", out var reference)
+                    || reference.ValueKind != JsonValueKind.Object
+                    || !reference.TryGetProperty("anthropic", out var id)
+                )
                 {
-                    throw new AiSdkException("Custom skill provider reference does not include anthropic.");
+                    throw new AiSdkException(
+                        "Custom skill provider reference does not include anthropic."
+                    );
                 }
 
                 node["skill_id"] = id.GetString();
@@ -1006,8 +1427,15 @@ public static class AnthropicMessagesRequest
                 ["name"] = AnthropicJson.String(server, "name"),
                 ["url"] = AnthropicJson.String(server, "url"),
             };
-            AnthropicJson.Set(node, "authorization_token", AnthropicJson.String(server, "authorizationToken"));
-            if (server.TryGetProperty("toolConfiguration", out var configuration) && configuration.ValueKind == JsonValueKind.Object)
+            AnthropicJson.Set(
+                node,
+                "authorization_token",
+                AnthropicJson.String(server, "authorizationToken")
+            );
+            if (
+                server.TryGetProperty("toolConfiguration", out var configuration)
+                && configuration.ValueKind == JsonValueKind.Object
+            )
             {
                 var mapped = new JsonObject();
                 if (configuration.TryGetProperty("allowedTools", out var allowed))
@@ -1050,7 +1478,10 @@ public static class AnthropicMessagesRequest
     private static JsonObject MapContext(JsonElement context, List<AnthropicWarning> warnings)
     {
         var edits = new JsonArray();
-        if (context.TryGetProperty("edits", out var source) && source.ValueKind == JsonValueKind.Array)
+        if (
+            context.TryGetProperty("edits", out var source)
+            && source.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var edit in source.EnumerateArray())
             {
@@ -1081,7 +1512,12 @@ public static class AnthropicMessagesRequest
                 }
                 else
                 {
-                    warnings.Add(new AnthropicWarning("other", message: "Unknown context management strategy: " + type));
+                    warnings.Add(
+                        new AnthropicWarning(
+                            "other",
+                            message: "Unknown context management strategy: " + type
+                        )
+                    );
                 }
             }
         }
@@ -1132,24 +1568,29 @@ public static class AnthropicMessagesRequest
             {
                 if (tool.IsProviderDefined)
                 {
-                    tools.Add(new AnthropicToolDefinition
-                    {
-                        Type = "provider",
-                        Name = tool.Name,
-                        Id = tool.ProviderToolId,
-                        Args = tool.Args.ValueKind == JsonValueKind.Undefined ? null : tool.Args,
-                        ProviderOptions = tool.ProviderOptions,
-                    });
+                    tools.Add(
+                        new AnthropicToolDefinition
+                        {
+                            Type = "provider",
+                            Name = tool.Name,
+                            Id = tool.ProviderToolId,
+                            Args =
+                                tool.Args.ValueKind == JsonValueKind.Undefined ? null : tool.Args,
+                            ProviderOptions = tool.ProviderOptions,
+                        }
+                    );
                     continue;
                 }
 
-                tools.Add(new AnthropicToolDefinition
-                {
-                    Name = tool.Name,
-                    Description = tool.Description,
-                    InputSchema = tool.InputSchema,
-                    Strict = tool.Strict,
-                });
+                tools.Add(
+                    new AnthropicToolDefinition
+                    {
+                        Name = tool.Name,
+                        Description = tool.Description,
+                        InputSchema = tool.InputSchema,
+                        Strict = tool.Strict,
+                    }
+                );
             }
         }
 
@@ -1171,13 +1612,20 @@ public static class AnthropicMessagesRequest
             Id = AnthropicJson.String(tool, "id"),
             InputSchema = tool.TryGetProperty("inputSchema", out var schema) ? schema : null,
             Args = tool.TryGetProperty("args", out var args) ? args : null,
-            ProviderOptions = tool.TryGetProperty("providerOptions", out var providerOptions) ? providerOptions : null,
+            ProviderOptions = tool.TryGetProperty("providerOptions", out var providerOptions)
+                ? providerOptions
+                : null,
             Strict = AnthropicJson.Bool(tool, "strict"),
-            InputExamples = tool.TryGetProperty("inputExamples", out var examples) ? examples : null,
+            InputExamples = tool.TryGetProperty("inputExamples", out var examples)
+                ? examples
+                : null,
         };
     }
 
-    private static Dictionary<string, string> ProviderToolNames(LanguageModelCallOptions options, IReadOnlyList<JsonElement> inlineTools)
+    private static Dictionary<string, string> ProviderToolNames(
+        LanguageModelCallOptions options,
+        IReadOnlyList<JsonElement> inlineTools
+    )
     {
         // Declared tools win when provider tool names collide, so an inline tool cannot take over their mapping.
         var names = new Dictionary<string, string>();
@@ -1258,7 +1706,11 @@ public static class AnthropicMessagesRequest
     private static JsonElement? PromptOverride(LanguageModelCallOptions options)
     {
         var provider = ReadProvider(options, "anthropic");
-        if (provider != null && provider.Value.TryGetProperty("prompt", out var prompt) && prompt.ValueKind == JsonValueKind.Array)
+        if (
+            provider != null
+            && provider.Value.TryGetProperty("prompt", out var prompt)
+            && prompt.ValueKind == JsonValueKind.Array
+        )
         {
             return prompt;
         }
@@ -1276,7 +1728,10 @@ public static class AnthropicMessagesRequest
         string? header = null;
         foreach (var pair in options.Headers)
         {
-            if (pair.Key.Equals("anthropic-beta", StringComparison.OrdinalIgnoreCase) && pair.Value != null)
+            if (
+                pair.Key.Equals("anthropic-beta", StringComparison.OrdinalIgnoreCase)
+                && pair.Value != null
+            )
             {
                 header = pair.Value;
             }
@@ -1308,15 +1763,15 @@ public static class AnthropicMessagesRequest
     /// Anthropic provider was renamed from <c>vertex</c> to <c>googleVertex</c>, which silently changed its
     /// custom providerOptions key.
     /// </summary>
-    private static readonly IReadOnlyDictionary<string, string[]> LegacyProviderOptionsNames = new Dictionary<string, string[]>
-    {
-        ["googleVertex"] = new[] { "vertex" },
-    };
+    private static readonly IReadOnlyDictionary<string, string[]> LegacyProviderOptionsNames =
+        new Dictionary<string, string[]> { ["googleVertex"] = new[] { "vertex" } };
 
-    private static IReadOnlyDictionary<string, JsonElement>? ObjectProviderOptions(LanguageModelCallOptions options)
+    private static IReadOnlyDictionary<string, JsonElement>? ObjectProviderOptions(
+        LanguageModelCallOptions options
+    )
     {
-        return options.ProviderOptions?
-            .Where(pair => pair.Value.ValueKind == JsonValueKind.Object)
+        return options
+            .ProviderOptions?.Where(pair => pair.Value.ValueKind == JsonValueKind.Object)
             .ToDictionary(pair => pair.Key, pair => pair.Value);
     }
 
@@ -1325,56 +1780,84 @@ public static class AnthropicMessagesRequest
         JsonElement? canonical,
         JsonElement? custom,
         string providerOptionsName,
-        IList<AnthropicWarning> warnings)
+        IList<AnthropicWarning> warnings
+    )
     {
         // The schema accepts every known tier; the custom namespace of MiniMax only accepts its own.
-        ValidateServiceTier(canonical, "anthropic", new[] { "auto", "standard_only", "standard", "priority" });
+        ValidateServiceTier(
+            canonical,
+            "anthropic",
+            new[] { "auto", "standard_only", "standard", "priority" }
+        );
         ValidateServiceTier(
             custom,
             providerOptionsName,
-            providerOptionsName == "minimax" ? new[] { "standard", "priority" } : new[] { "auto", "standard_only", "standard", "priority" });
+            providerOptionsName == "minimax"
+                ? new[] { "standard", "priority" }
+                : new[] { "auto", "standard_only", "standard", "priority" }
+        );
         var tier = String(merged, "serviceTier");
         if (tier == null)
         {
             return null;
         }
 
-        var supported = providerOptionsName == "anthropic"
-            ? new[] { "auto", "standard_only" }
-            : providerOptionsName == "minimax"
-                ? new[] { "standard", "priority" }
-                : null;
+        var supported =
+            providerOptionsName == "anthropic" ? new[] { "auto", "standard_only" }
+            : providerOptionsName == "minimax" ? new[] { "standard", "priority" }
+            : null;
         if (supported != null && Array.IndexOf(supported, tier) < 0)
         {
-            warnings.Add(new AnthropicWarning(
-                "unsupported",
-                "serviceTier",
-                "serviceTier \"" + tier + "\" is not supported by " + providerOptionsName + ". Use " + string.Join(" or ", supported.Select(value => "\"" + value + "\"")) + "."));
+            warnings.Add(
+                new AnthropicWarning(
+                    "unsupported",
+                    "serviceTier",
+                    "serviceTier \""
+                        + tier
+                        + "\" is not supported by "
+                        + providerOptionsName
+                        + ". Use "
+                        + string.Join(" or ", supported.Select(value => "\"" + value + "\""))
+                        + "."
+                )
+            );
             return null;
         }
 
         return tier;
     }
 
-    private static void ValidateServiceTier(JsonElement? options, string namespaceName, string[] allowed)
+    private static void ValidateServiceTier(
+        JsonElement? options,
+        string namespaceName,
+        string[] allowed
+    )
     {
         if (options == null || !options.Value.TryGetProperty("serviceTier", out var value))
         {
             return;
         }
 
-        if (value.ValueKind != JsonValueKind.String || Array.IndexOf(allowed, value.GetString()) < 0)
+        if (
+            value.ValueKind != JsonValueKind.String
+            || Array.IndexOf(allowed, value.GetString()) < 0
+        )
         {
             throw new InvalidArgumentException(
                 "providerOptions." + namespaceName + ".serviceTier",
                 value.GetRawText(),
-                "serviceTier must be one of " + string.Join(", ", allowed) + ".");
+                "serviceTier must be one of " + string.Join(", ", allowed) + "."
+            );
         }
     }
 
     private static JsonElement? ReadProvider(LanguageModelCallOptions options, string name)
     {
-        if (options.ProviderOptions == null || !options.ProviderOptions.TryGetValue(name, out var value) || value.ValueKind != JsonValueKind.Object)
+        if (
+            options.ProviderOptions == null
+            || !options.ProviderOptions.TryGetValue(name, out var value)
+            || value.ValueKind != JsonValueKind.Object
+        )
         {
             return null;
         }
@@ -1410,7 +1893,9 @@ public static class AnthropicMessagesRequest
 
     private static bool HasThinking(JsonElement? anthropic)
     {
-        return anthropic != null && anthropic.Value.TryGetProperty("thinking", out var thinking) && thinking.ValueKind == JsonValueKind.Object;
+        return anthropic != null
+            && anthropic.Value.TryGetProperty("thinking", out var thinking)
+            && thinking.ValueKind == JsonValueKind.Object;
     }
 
     private static string? ThinkingType(JsonElement? anthropic)
@@ -1445,17 +1930,27 @@ public static class AnthropicMessagesRequest
 
     private static JsonElement? BlockBinding(JsonElement anthropic)
     {
-        if (!anthropic.TryGetProperty("thinking", out var thinking) || thinking.ValueKind != JsonValueKind.Object)
+        if (
+            !anthropic.TryGetProperty("thinking", out var thinking)
+            || thinking.ValueKind != JsonValueKind.Object
+        )
         {
             return null;
         }
 
-        return thinking.TryGetProperty("blockBinding", out var binding) && binding.ValueKind == JsonValueKind.Object ? binding : (JsonElement?)null;
+        return
+            thinking.TryGetProperty("blockBinding", out var binding)
+            && binding.ValueKind == JsonValueKind.Object
+            ? binding
+            : (JsonElement?)null;
     }
 
     private static string? UserId(JsonElement anthropic)
     {
-        if (!anthropic.TryGetProperty("metadata", out var metadata) || metadata.ValueKind != JsonValueKind.Object)
+        if (
+            !anthropic.TryGetProperty("metadata", out var metadata)
+            || metadata.ValueKind != JsonValueKind.Object
+        )
         {
             return null;
         }

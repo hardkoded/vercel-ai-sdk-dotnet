@@ -26,7 +26,11 @@ public enum RealtimeModelV4SessionIntent
 public sealed class RealtimeModelV4ServerConnection
 {
     /// <summary>Creates a server connection descriptor.</summary>
-    public RealtimeModelV4ServerConnection(string url, IReadOnlyDictionary<string, string> headers, IReadOnlyList<string>? protocols = null)
+    public RealtimeModelV4ServerConnection(
+        string url,
+        IReadOnlyDictionary<string, string> headers,
+        IReadOnlyList<string>? protocols = null
+    )
     {
         Url = url ?? throw new ArgumentNullException(nameof(url));
         Headers = headers ?? throw new ArgumentNullException(nameof(headers));
@@ -54,5 +58,8 @@ public interface IServerWebSocketRealtimeModel : IRealtimeModel
     /// Returns the upstream WebSocket URL and auth headers for a server-initiated connection, using the
     /// credential the model was constructed with. Unsupported intents throw before any connection is made.
     /// </summary>
-    Task<RealtimeModelV4ServerConnection> GetServerWebSocketConfigAsync(RealtimeModelV4SessionIntent? intent, CancellationToken cancellationToken);
+    Task<RealtimeModelV4ServerConnection> GetServerWebSocketConfigAsync(
+        RealtimeModelV4SessionIntent? intent,
+        CancellationToken cancellationToken
+    );
 }

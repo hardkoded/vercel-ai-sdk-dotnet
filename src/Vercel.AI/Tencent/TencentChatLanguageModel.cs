@@ -51,7 +51,11 @@ public sealed class TencentChatLanguageModel : OpenAICompatibleLanguageModel
     /// <param name="serialized">The serialized model id and config.</param>
     /// <param name="apiKey">API key. Defaults to the <c>TENCENT_TOKENHUB_API_KEY</c> environment variable.</param>
     /// <param name="handler">HTTP handler. Pass one from tests.</param>
-    public static TencentChatLanguageModel Deserialize(SerializedModelOptions serialized, string? apiKey = null, HttpMessageHandler? handler = null)
+    public static TencentChatLanguageModel Deserialize(
+        SerializedModelOptions serialized,
+        string? apiKey = null,
+        HttpMessageHandler? handler = null
+    )
     {
         if (serialized is null)
         {
@@ -61,7 +65,9 @@ public sealed class TencentChatLanguageModel : OpenAICompatibleLanguageModel
         var options = new TencentOptions { ApiKey = apiKey };
         if (serialized.Config.TryGetValue("baseURL", out var baseUrl))
         {
-            var url = baseUrl is JsonElement { ValueKind: JsonValueKind.String } element ? element.GetString() : baseUrl as string;
+            var url = baseUrl is JsonElement { ValueKind: JsonValueKind.String } element
+                ? element.GetString()
+                : baseUrl as string;
             if (!string.IsNullOrEmpty(url))
             {
                 options.BaseUrl = url;
@@ -92,7 +98,8 @@ public sealed class TencentChatLanguageModel : OpenAICompatibleLanguageModel
             }
         }
 
-        return (TencentChatLanguageModel)TencentProvider.Create(options, handler).Chat(serialized.ModelId);
+        return (TencentChatLanguageModel)
+            TencentProvider.Create(options, handler).Chat(serialized.ModelId);
     }
 
     private static bool IsSensitiveHeader(string name)

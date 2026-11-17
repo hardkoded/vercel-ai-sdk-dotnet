@@ -7,11 +7,9 @@
 ```cs
 var client = new AiClient(GatewayProvider.Create());
 
-var stream = client.StreamTextAsync(new StreamTextOptions
-{
-    ModelId = "openai/gpt-6-astra",
-    Prompt = "Draft a changelog entry.",
-});
+var stream = client.StreamTextAsync(
+    new StreamTextOptions { ModelId = "openai/gpt-6-astra", Prompt = "Draft a changelog entry." }
+);
 
 await foreach (var delta in stream.TextStream())
 {
@@ -21,8 +19,19 @@ await foreach (var delta in stream.TextStream())
 Console.WriteLine();
 Console.WriteLine(await stream.FinishReason);
 ```
-<sup><a href='/examples/StreamText/Program.cs#L14-L30' title='Snippet source file'>snippet source</a> | <a href='#snippet-streaming' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/examples/StreamText/Program.cs#L14-L28' title='Snippet source file'>snippet source</a> | <a href='#snippet-streaming' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
+
+## Partial output stream
+
+Set `Output` and enumerate `PartialOutputStream` for the structured output as it grows. Each value is a `JsonElement`. With `OutputSpec.Object`, it is the partial object, repaired from the JSON text so far. With text output (no `Output`, or `OutputSpec.Text()`), it is the text so far as a JSON string. A value is published only when it differs from the last one, each step starts over, and text that the model streams in a later text block of a step is ignored. The partial object is not validated against the schema. Maps to `partialOutputStream`.
+
+```csharp
+await foreach (var partialObject in result.PartialOutputStream())
+{
+    Console.WriteLine(partialObject);
+}
+```
 
 ## UI message stream
 
@@ -126,7 +135,7 @@ Redacting tool errors changes the message history. The tool result that `Convert
 
 ## Validating UI messages
 
-`Ai.ValidateUIMessagesAsync(new ValidateUIMessagesOptions { Messages = messages })` checks the UI messages that you load from storage or receive from a client before you convert them with `ConvertToModelMessages`. `Ai.SafeValidateUIMessagesAsync` returns a `SafeValidateUIMessagesResult` (`Success`, `Data`, or `Error`) instead of throwing. A null `Messages` throws `InvalidArgumentException`, and an empty list throws `TypeValidationException`. Because `UIMessage` is typed, the structure of a message is already checked; the options validate the values:
+`Ai.ValidateUIMessagesAsync(new ValidateUIMessagesOptions { Messages = messages })` checks the UI messages that you load from storage or receive from a client before you convert them with `ConvertToModelMessages`. `Ai.SafeValidateUIMessagesAsync` returns a `SafeValidateUIMessagesResult` (`Success`, `Data`, or `Error`) instead of throwing. A null `Messages` throws `InvalidArgumentException`. An empty list, and a system or user message with no parts, throw `TypeValidationException`. An assistant message can have no parts, as the last message of a chat that waits for a response. Because `UIMessage` is typed, the structure of a message is already checked; the options validate the values:
 
 - `MetadataSchema`: a JSON Schema for `UIMessage.Metadata`.
 - `DataSchemas`: JSON Schemas of the data parts, by data name. A data part without a schema is an error.

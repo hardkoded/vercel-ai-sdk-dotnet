@@ -9,10 +9,14 @@ namespace Vercel.AI.Tests.Upstream.GenerateText;
 
 public sealed class WhenAProviderExecutedToolEmitsToolApprovalRequestTests
 {
-    private const string Suite = "packages/ai/src/generate-text/generate-text.test.ts::generateText > tool execution approval > provider-executed tool (MCP) approval > when a provider-executed tool emits tool-approval-request::";
+    private const string Suite =
+        "packages/ai/src/generate-text/generate-text.test.ts::generateText > tool execution approval > provider-executed tool (MCP) approval > when a provider-executed tool emits tool-approval-request::";
 
     [Fact]
-    [UpstreamTest(Suite + "should only execute 1 step when waiting for approval", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Suite + "should only execute 1 step when waiting for approval",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_only_execute_1_step_when_waiting_for_approval()
     {
         var result = await RunAsync();
@@ -20,7 +24,10 @@ public sealed class WhenAProviderExecutedToolEmitsToolApprovalRequestTests
     }
 
     [Fact]
-    [UpstreamTest(Suite + "should have tool-calls finish reason", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Suite + "should have tool-calls finish reason",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_have_tool_calls_finish_reason()
     {
         var result = await RunAsync();
@@ -28,11 +35,17 @@ public sealed class WhenAProviderExecutedToolEmitsToolApprovalRequestTests
     }
 
     [Fact]
-    [UpstreamTest(Suite + "should add tool approval request with providerExecuted tool call to content", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Suite + "should add tool approval request with providerExecuted tool call to content",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_add_tool_approval_request_with_providerExecuted_tool_call_to_content()
     {
         var result = await RunAsync();
-        Assert.Equal(new[] { "tool-call", "tool-approval-request" }, result.Content.Select(part => part.Type).ToArray());
+        Assert.Equal(
+            new[] { "tool-call", "tool-approval-request" },
+            result.Content.Select(part => part.Type).ToArray()
+        );
         var call = Assert.IsType<GeneratedToolCall>(result.Content[0]);
         Assert.True(call.ProviderExecuted);
         Assert.Equal("mcp-call-1", call.ToolCallId);
@@ -44,7 +57,10 @@ public sealed class WhenAProviderExecutedToolEmitsToolApprovalRequestTests
     }
 
     [Fact]
-    [UpstreamTest(Suite + "should include tool approval request in response messages", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Suite + "should include tool approval request in response messages",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_include_tool_approval_request_in_response_messages()
     {
         var result = await RunAsync();
@@ -69,13 +85,19 @@ public sealed class WhenAProviderExecutedToolEmitsToolApprovalRequestTests
             OnGenerate = _ => new LanguageModelGenerateResult(
                 new GeneratedContent[]
                 {
-                    new GeneratedToolCall("mcp-call-1", "mcp_tool", "{ \"query\": \"test\" }") { ProviderExecuted = true },
+                    new GeneratedToolCall("mcp-call-1", "mcp_tool", "{ \"query\": \"test\" }")
+                    {
+                        ProviderExecuted = true,
+                    },
                     new GeneratedToolApprovalRequest("mcp-approval-1", "mcp-call-1"),
                 },
                 FinishReason.ToolCalls,
                 new LanguageModelUsage(3, 10, 13),
-                null),
+                null
+            ),
         };
-        return ProviderExecutedToolApprovalSupport.Client().GenerateTextAsync(ProviderExecutedToolApprovalSupport.Options(model, null));
+        return ProviderExecutedToolApprovalSupport
+            .Client()
+            .GenerateTextAsync(ProviderExecutedToolApprovalSupport.Options(model, null));
     }
 }

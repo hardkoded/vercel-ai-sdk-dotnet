@@ -33,9 +33,14 @@ public sealed class ByteDanceProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider.</summary>
-    public static new ByteDanceProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new ByteDanceProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new ByteDanceProvider(client, options);
     }
 
@@ -43,7 +48,10 @@ public sealed class ByteDanceProvider : OpenAICompatibleProvider
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
+        options.BaseUrl =
+            string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
+                ? DefaultBaseUrl
+                : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "ARK_API_KEY";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
@@ -53,15 +61,26 @@ public sealed class ByteDanceProvider : OpenAICompatibleProvider
     }
 
     /// <inheritdoc />
-    public override IImageModel ImageModel(string modelId) => new ByteDanceImageModel(this, modelId);
+    public override IImageModel ImageModel(string modelId) =>
+        new ByteDanceImageModel(this, modelId);
 
     /// <inheritdoc />
-    public override IVideoModel VideoModel(string modelId) => new ByteDanceVideoModel(this, modelId);
+    public override IVideoModel VideoModel(string modelId) =>
+        new ByteDanceVideoModel(this, modelId);
 
     /// <summary>Posts an image generation. <paramref name="headers"/> override the provider headers.</summary>
-    public Task<ImageGenerationResult> GenerateImageAsync(string modelId, ImageCallOptions options, IDictionary<string, string>? headers, CancellationToken cancellationToken)
+    public Task<ImageGenerationResult> GenerateImageAsync(
+        string modelId,
+        ImageCallOptions options,
+        IDictionary<string, string>? headers,
+        CancellationToken cancellationToken
+    )
     {
-        return new ByteDanceImageModel(this, modelId).GenerateAsync(options, headers, cancellationToken);
+        return new ByteDanceImageModel(this, modelId).GenerateAsync(
+            options,
+            headers,
+            cancellationToken
+        );
     }
 }
 
@@ -69,14 +88,21 @@ public sealed class ByteDanceProvider : OpenAICompatibleProvider
 public static class ByteDanceServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddByteDance(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddByteDance(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(ByteDanceProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new ByteDanceProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(ByteDanceProvider.ProviderId), options);
+            return new ByteDanceProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(ByteDanceProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

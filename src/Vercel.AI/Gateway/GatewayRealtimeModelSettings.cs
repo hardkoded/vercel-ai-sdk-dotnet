@@ -17,7 +17,8 @@ public static class GatewayRealtimeModelId
     public const string GoogleGemini38Live = "google/gemini-3.8-live";
 
     /// <summary><c>google/gemini-3.8-live-extended-thinking</c>.</summary>
-    public const string GoogleGemini38LiveExtendedThinking = "google/gemini-3.8-live-extended-thinking";
+    public const string GoogleGemini38LiveExtendedThinking =
+        "google/gemini-3.8-live-extended-thinking";
 
     /// <summary><c>openai/gpt-live-1</c>.</summary>
     public const string OpenaiGptLive1 = "openai/gpt-live-1";

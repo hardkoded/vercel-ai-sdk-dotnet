@@ -25,7 +25,9 @@ internal static class TencentVodVideo
         [2160] = "4K",
     };
 
-    private static readonly Dictionary<string, string> VodFileTypeMediaTypes = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, string> VodFileTypeMediaTypes = new(
+        StringComparer.Ordinal
+    )
     {
         ["mov"] = "video/quicktime",
         ["mp4"] = "video/mp4",
@@ -39,7 +41,8 @@ internal static class TencentVodVideo
         long subAppId,
         VideoModelCall options,
         TencentVideoModelOptions? tencentOptions,
-        List<OperationWarning> warnings)
+        List<OperationWarning> warnings
+    )
     {
         var fileInfos = new List<JsonObject>();
         var firstFrame = ResolveFirstFrameImage(options, warnings);
@@ -56,7 +59,10 @@ internal static class TencentVodVideo
 
         foreach (var reference in options.InputReferences ?? [])
         {
-            var category = IsVideoFile(reference) ? "Video" : IsAudioFile(reference) ? "Audio" : "Image";
+            var category =
+                IsVideoFile(reference) ? "Video"
+                : IsAudioFile(reference) ? "Audio"
+                : "Image";
             var info = FileInfo(reference, category, "Reference");
             if (category == "Video" && tencentOptions?.ReferenceVideoType != null)
             {
@@ -73,17 +79,36 @@ internal static class TencentVodVideo
             // VOD takes one first frame and one last frame; keep the first one given.
             if (usage != "Reference" && fileInfos.Any(file => (string?)file["Usage"] == usage))
             {
-                warnings.Add(OperationWarning.Unsupported(
-                    "providerOptions.tencent.assets",
-                    "VOD accepts one " + (usage == "FirstFrame" ? "first" : "last") + " frame; the asset " + asset.Url + " was ignored."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "providerOptions.tencent.assets",
+                        "VOD accepts one "
+                            + (usage == "FirstFrame" ? "first" : "last")
+                            + " frame; the asset "
+                            + asset.Url
+                            + " was ignored."
+                    )
+                );
                 continue;
             }
 
-            fileInfos.Add(new JsonObject { ["Type"] = "Url", ["Url"] = asset.Url, ["Category"] = asset.Category ?? "Image", ["Usage"] = usage });
+            fileInfos.Add(
+                new JsonObject
+                {
+                    ["Type"] = "Url",
+                    ["Url"] = asset.Url,
+                    ["Category"] = asset.Category ?? "Image",
+                    ["Usage"] = usage,
+                }
+            );
         }
 
         var outputConfig = new JsonObject { ["StorageMode"] = "Temporary" };
-        Set(outputConfig, "Resolution", ResolveResolution(options, tencentOptions, VodResolutionTiers, warnings));
+        Set(
+            outputConfig,
+            "Resolution",
+            ResolveResolution(options, tencentOptions, VodResolutionTiers, warnings)
+        );
         Set(outputConfig, "AspectRatio", options.AspectRatio);
         if (options.Duration != null)
         {
@@ -92,8 +117,16 @@ internal static class TencentVodVideo
 
         Set(outputConfig, "AudioGeneration", EnabledDisabled(options.GenerateAudio));
         Set(outputConfig, "PersonGeneration", tencentOptions?.PersonGeneration);
-        Set(outputConfig, "InputComplianceCheck", EnabledDisabled(tencentOptions?.InputComplianceCheck));
-        Set(outputConfig, "OutputComplianceCheck", EnabledDisabled(tencentOptions?.OutputComplianceCheck));
+        Set(
+            outputConfig,
+            "InputComplianceCheck",
+            EnabledDisabled(tencentOptions?.InputComplianceCheck)
+        );
+        Set(
+            outputConfig,
+            "OutputComplianceCheck",
+            EnabledDisabled(tencentOptions?.OutputComplianceCheck)
+        );
         Set(outputConfig, "EnhanceSwitch", EnabledDisabled(tencentOptions?.EnhanceSwitch));
         Set(outputConfig, "OffPeak", EnabledDisabled(tencentOptions?.OffPeak));
         Set(outputConfig, "LogoAdd", EnabledDisabled(tencentOptions?.Watermark));
@@ -132,13 +165,21 @@ internal static class TencentVodVideo
     }
 
     /// <summary>Interprets a <c>DescribeTaskDetail</c> response for an AIGC video task.</summary>
-    internal static VideoStatusResult InterpretVodTaskDetail(JsonElement detail, string taskId, ProviderResponse response)
+    internal static VideoStatusResult InterpretVodTaskDetail(
+        JsonElement detail,
+        string taskId,
+        ProviderResponse response
+    )
     {
         var task = Object(detail, "AigcVideoTask");
         var detailStatus = String(detail, "Status");
         if (detailStatus == "ABORTED")
         {
-            return new VideoStatusResult("error", error: "Video generation aborted (task " + taskId + ")", response: response);
+            return new VideoStatusResult(
+                "error",
+                error: "Video generation aborted (task " + taskId + ")",
+                response: response
+            );
         }
 
         if (detailStatus != "FINISH")
@@ -146,37 +187,68 @@ internal static class TencentVodVideo
             return new VideoStatusResult("pending", response: response);
         }
 
-        if (task is { } t && t.TryGetProperty("ErrCode", out var errCode) && errCode.ValueKind == JsonValueKind.Number && errCode.GetDouble() != 0)
+        if (
+            task is { } t
+            && t.TryGetProperty("ErrCode", out var errCode)
+            && errCode.ValueKind == JsonValueKind.Number
+            && errCode.GetDouble() != 0
+        )
         {
             var ext = String(t, "ErrCodeExt");
             var code = !string.IsNullOrEmpty(ext) ? ext : errCode.GetRawText();
             var message = String(t, "Message");
             return new VideoStatusResult(
                 "error",
-                error: "Video generation failed (" + code + "): " + (string.IsNullOrEmpty(message) ? "unknown error" : message) + " (task " + taskId + ")",
-                response: response);
+                error: "Video generation failed ("
+                    + code
+                    + "): "
+                    + (string.IsNullOrEmpty(message) ? "unknown error" : message)
+                    + " (task "
+                    + taskId
+                    + ")",
+                response: response
+            );
         }
 
         // VOD reports unset strings as "". `return_last_frame` (via `extInfo`) adds the last frame as a PNG entry
         // with UsageType `last_frame_url`; it is not a video.
         var output = task is { } owner ? Object(owner, "Output") : null;
         var fileInfos = new List<JsonElement>();
-        if (output is { } outputElement && outputElement.TryGetProperty("FileInfos", out var rawInfos) && rawInfos.ValueKind == JsonValueKind.Array)
+        if (
+            output is { } outputElement
+            && outputElement.TryGetProperty("FileInfos", out var rawInfos)
+            && rawInfos.ValueKind == JsonValueKind.Array
+        )
         {
-            fileInfos.AddRange(rawInfos.EnumerateArray().Where(file => !string.IsNullOrEmpty(String(file, "FileUrl"))));
+            fileInfos.AddRange(
+                rawInfos
+                    .EnumerateArray()
+                    .Where(file => !string.IsNullOrEmpty(String(file, "FileUrl")))
+            );
         }
 
         var files = fileInfos.Where(file => String(file, "UsageType") != "last_frame_url").ToList();
-        var lastFrameUrl = fileInfos.Where(file => String(file, "UsageType") == "last_frame_url").Select(file => String(file, "FileUrl")).FirstOrDefault();
+        var lastFrameUrl = fileInfos
+            .Where(file => String(file, "UsageType") == "last_frame_url")
+            .Select(file => String(file, "FileUrl"))
+            .FirstOrDefault();
         if (files.Count == 0)
         {
-            return new VideoStatusResult("error", error: "VOD task " + taskId + " finished without a video URL.", response: response);
+            return new VideoStatusResult(
+                "error",
+                error: "VOD task " + taskId + " finished without a video URL.",
+                response: response
+            );
         }
 
         var usage = output is { } usageOwner ? Object(usageOwner, "Usage") : null;
         // VOD reports unset strings as "". The billing SKU (e.g. `SV2.0_720P`) and the resolved resolution identify the price tier.
         var specificationUsages = new JsonArray();
-        if (usage is { } usageElement && usageElement.TryGetProperty("SpecificationUsages", out var rawSpecs) && rawSpecs.ValueKind == JsonValueKind.Array)
+        if (
+            usage is { } usageElement
+            && usageElement.TryGetProperty("SpecificationUsages", out var rawSpecs)
+            && rawSpecs.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var entry in rawSpecs.EnumerateArray())
             {
@@ -199,7 +271,8 @@ internal static class TencentVodVideo
             // Temporary storage reports an empty FileId.
             Set(entry, "fileId", NonEmpty(String(file, "FileId")));
             var metaData = Object(file, "MetaData");
-            var duration = (metaData is { } meta ? Number(meta, "Duration") : null) ?? outputSeconds;
+            var duration = (metaData is { } meta ? Number(meta, "Duration") : null)
+                ?? outputSeconds;
             if (duration != null)
             {
                 entry["duration"] = duration.Value;
@@ -212,7 +285,11 @@ internal static class TencentVodVideo
         Set(metadata, "requestId", String(detail, "RequestId"));
         var input = task is { } inputOwner ? Object(inputOwner, "Input") : null;
         var outputConfig = input is { } inputElement ? Object(inputElement, "OutputConfig") : null;
-        Set(metadata, "resolution", NonEmpty(outputConfig is { } config ? String(config, "Resolution") : null));
+        Set(
+            metadata,
+            "resolution",
+            NonEmpty(outputConfig is { } config ? String(config, "Resolution") : null)
+        );
         Set(metadata, "lastFrameUrl", lastFrameUrl);
         metadata["videos"] = videos;
         if (usage is { } usageValue)
@@ -234,17 +311,31 @@ internal static class TencentVodVideo
 
         return new VideoStatusResult(
             "completed",
-            files.Select(file =>
-            {
-                var fileType = (String(file, "FileType") ?? string.Empty).ToLowerInvariant();
-                return new VideoOutput("url", url: String(file, "FileUrl"), mediaType: VodFileTypeMediaTypes.TryGetValue(fileType, out var mediaType) ? mediaType : "video/mp4");
-            }).ToList(),
+            files
+                .Select(file =>
+                {
+                    var fileType = (String(file, "FileType") ?? string.Empty).ToLowerInvariant();
+                    return new VideoOutput(
+                        "url",
+                        url: String(file, "FileUrl"),
+                        mediaType: VodFileTypeMediaTypes.TryGetValue(fileType, out var mediaType)
+                            ? mediaType
+                            : "video/mp4"
+                    );
+                })
+                .ToList(),
             warnings: [],
-            providerMetadata: OperationJson.Parse(new JsonObject { ["tencent"] = metadata }.ToJsonString()),
-            response: response);
+            providerMetadata: OperationJson.Parse(
+                new JsonObject { ["tencent"] = metadata }.ToJsonString()
+            ),
+            response: response
+        );
     }
 
-    private static string? EnabledDisabled(bool? value) => value == null ? null : value.Value ? "Enabled" : "Disabled";
+    private static string? EnabledDisabled(bool? value) =>
+        value == null ? null
+        : value.Value ? "Enabled"
+        : "Disabled";
 
     private static string? NonEmpty(string? value) => string.IsNullOrEmpty(value) ? null : value;
 
@@ -256,9 +347,17 @@ internal static class TencentVodVideo
         }
     }
 
-    private static void CopyNumber(JsonObject target, string name, JsonElement source, string sourceName)
+    private static void CopyNumber(
+        JsonObject target,
+        string name,
+        JsonElement source,
+        string sourceName
+    )
     {
-        if (source.TryGetProperty(sourceName, out var value) && value.ValueKind == JsonValueKind.Number)
+        if (
+            source.TryGetProperty(sourceName, out var value)
+            && value.ValueKind == JsonValueKind.Number
+        )
         {
             target[name] = JsonNode.Parse(value.GetRawText());
         }
@@ -266,9 +365,10 @@ internal static class TencentVodVideo
 
     private static JsonObject FileInfo(VideoModelFile file, string category, string usage)
     {
-        var info = file.Type == "url"
-            ? new JsonObject { ["Type"] = "Url", ["Url"] = file.Url }
-            : new JsonObject { ["Type"] = "Base64", ["Base64"] = GetFileBase64(file) };
+        var info =
+            file.Type == "url"
+                ? new JsonObject { ["Type"] = "Url", ["Url"] = file.Url }
+                : new JsonObject { ["Type"] = "Base64", ["Base64"] = GetFileBase64(file) };
         info["Category"] = category;
         info["Usage"] = usage;
         return info;
@@ -276,16 +376,31 @@ internal static class TencentVodVideo
 
     private static JsonElement? Object(JsonElement element, string name)
     {
-        return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Object ? value : null;
+        return
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Object
+            ? value
+            : null;
     }
 
     private static string? String(JsonElement element, string name)
     {
-        return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        return
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
     }
 
     private static double? Number(JsonElement element, string name)
     {
-        return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number ? value.GetDouble() : null;
+        return
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Number
+            ? value.GetDouble()
+            : null;
     }
 }

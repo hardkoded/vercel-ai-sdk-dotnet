@@ -13,7 +13,9 @@ internal sealed record TestOptions(string? A = null, double? B = null);
 
 internal static class ResolveProviderOptionsFixture
 {
-    public static IReadOnlyDictionary<string, JsonElement> ProviderOptions(params (string Name, string Json)[] entries)
+    public static IReadOnlyDictionary<string, JsonElement> ProviderOptions(
+        params (string Name, string Json)[] entries
+    )
     {
         var result = new Dictionary<string, JsonElement>();
         foreach (var (name, json) in entries)
@@ -32,16 +34,26 @@ internal static class ResolveProviderOptionsFixture
         double? b = null;
         if (element.TryGetProperty("a", out var aValue))
         {
-            a = aValue.ValueKind == JsonValueKind.String
-                ? aValue.GetString()
-                : throw new InvalidArgumentError("providerOptions", element.ToString(), "a must be a string");
+            a =
+                aValue.ValueKind == JsonValueKind.String
+                    ? aValue.GetString()
+                    : throw new InvalidArgumentError(
+                        "providerOptions",
+                        element.ToString(),
+                        "a must be a string"
+                    );
         }
 
         if (element.TryGetProperty("b", out var bValue))
         {
-            b = bValue.ValueKind == JsonValueKind.Number
-                ? bValue.GetDouble()
-                : throw new InvalidArgumentError("providerOptions", element.ToString(), "b must be a number");
+            b =
+                bValue.ValueKind == JsonValueKind.Number
+                    ? bValue.GetDouble()
+                    : throw new InvalidArgumentError(
+                        "providerOptions",
+                        element.ToString(),
+                        "b must be a number"
+                    );
         }
 
         return new TestOptions(a, b);
@@ -55,8 +67,15 @@ internal static class ResolveProviderOptionsFixture
     public static ResolvedProviderOptions<TestOptions> Resolve(
         IReadOnlyDictionary<string, JsonElement> providerOptions,
         string[] namespaces,
-        ProviderOptionsResolution resolution)
+        ProviderOptionsResolution resolution
+    )
     {
-        return ProviderOptionsResolver.Resolve(providerOptions, namespaces, resolution, Parse, Merge);
+        return ProviderOptionsResolver.Resolve(
+            providerOptions,
+            namespaces,
+            resolution,
+            Parse,
+            Merge
+        );
     }
 }

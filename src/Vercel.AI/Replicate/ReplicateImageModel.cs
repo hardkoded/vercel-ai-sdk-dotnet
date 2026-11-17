@@ -21,14 +21,26 @@ public sealed class ReplicateImageModel : IImageModel, IImageCaller
     private const int DefaultPollIntervalMillis = 500;
     private const int DefaultMaxPollAttempts = 240;
     private const int MaxFlux2InputImages = 8;
-    private static readonly Regex Flux2Model = new Regex("^black-forest-labs/flux-2-", RegexOptions.CultureInvariant);
-    private static readonly string[] CallSettings = { "maxWaitTimeInSeconds", "pollIntervalMillis", "maxPollAttempts" };
+    private static readonly Regex Flux2Model = new Regex(
+        "^black-forest-labs/flux-2-",
+        RegexOptions.CultureInvariant
+    );
+    private static readonly string[] CallSettings =
+    {
+        "maxWaitTimeInSeconds",
+        "pollIntervalMillis",
+        "maxPollAttempts",
+    };
 
     private readonly ReplicateProvider _provider;
     private readonly Func<DateTime>? _clock;
 
     /// <summary>Creates an image model. <paramref name="clock"/> sets the response timestamp.</summary>
-    public ReplicateImageModel(ReplicateProvider provider, string modelId, Func<DateTime>? clock = null)
+    public ReplicateImageModel(
+        ReplicateProvider provider,
+        string modelId,
+        Func<DateTime>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -53,7 +65,10 @@ public sealed class ReplicateImageModel : IImageModel, IImageCaller
     }
 
     /// <inheritdoc />
-    public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+    public async Task<ImageGenerationResult> DoGenerateAsync(
+        ImageCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         if (options is null)
         {
@@ -66,14 +81,26 @@ public sealed class ReplicateImageModel : IImageModel, IImageCaller
         foreach (var image in result.Images)
         {
             var bytes = (byte[])image!;
-            images.Add(new ProviderImage(MediaTypes.DetectMediaType(bytes, "image") ?? "image/png", bytes, null));
+            images.Add(
+                new ProviderImage(
+                    MediaTypes.DetectMediaType(bytes, "image") ?? "image/png",
+                    bytes,
+                    null
+                )
+            );
         }
 
-        return new ImageGenerationResult(images, result.Warnings.Select(warning => warning.ToCallWarning()).ToList());
+        return new ImageGenerationResult(
+            images,
+            result.Warnings.Select(warning => warning.ToCallWarning()).ToList()
+        );
     }
 
     /// <inheritdoc />
-    public async Task<ImageModelResult> DoGenerateAsync(ImageModelCall call, CancellationToken cancellationToken)
+    public async Task<ImageModelResult> DoGenerateAsync(
+        ImageModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (call is null)
         {
@@ -135,30 +162,61 @@ public sealed class ReplicateImageModel : IImageModel, IImageCaller
 
         headers["Prefer"] = maxWait == null ? "wait" : "wait=" + maxWait.Value.GetRawText();
         var path = version != null ? "/predictions" : "/models/" + model + "/predictions";
-        var created = await _provider.SendAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, path), ProviderExchange.Json(body.ToJsonString()), headers, cancellationToken).ConfigureAwait(false);
+        var created = await _provider
+            .SendAsync(
+                HttpMethod.Post,
+                ApiKeys.Combine(_provider.Options.BaseUrl, path),
+                ProviderExchange.Json(body.ToJsonString()),
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var prediction = await PollAsync(
-            ParsePrediction(created.Body),
-            call.Headers,
-            ReadSetting(replicate, "pollIntervalMillis")?.GetInt32() ?? DefaultPollIntervalMillis,
-            ReadSetting(replicate, "maxPollAttempts")?.GetInt32() ?? DefaultMaxPollAttempts,
-            cancellationToken).ConfigureAwait(false);
-        if (!prediction.TryGetProperty("output", out var output) || output.ValueKind == JsonValueKind.Null)
+                ParsePrediction(created.Body),
+                call.Headers,
+                ReadSetting(replicate, "pollIntervalMillis")?.GetInt32()
+                    ?? DefaultPollIntervalMillis,
+                ReadSetting(replicate, "maxPollAttempts")?.GetInt32() ?? DefaultMaxPollAttempts,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        if (
+            !prediction.TryGetProperty("output", out var output)
+            || output.ValueKind == JsonValueKind.Null
+        )
         {
-            throw new InvalidResponseDataException(prediction, "Replicate image generation completed without output.");
+            throw new InvalidResponseDataException(
+                prediction,
+                "Replicate image generation completed without output."
+            );
         }
 
-        var urls = output.ValueKind == JsonValueKind.Array ? output.EnumerateArray().Select(url => url.GetString()!).ToList() : new List<string> { output.GetString()! };
+        var urls =
+            output.ValueKind == JsonValueKind.Array
+                ? output.EnumerateArray().Select(url => url.GetString()!).ToList()
+                : new List<string> { output.GetString()! };
         var images = new List<object?>();
         foreach (var url in urls)
         {
-            var image = await _provider.GetResponseUrlAsync(url, null, cancellationToken).ConfigureAwait(false);
+            var image = await _provider
+                .GetResponseUrlAsync(url, null, cancellationToken)
+                .ConfigureAwait(false);
             images.Add(image.Bytes);
         }
 
-        return new ImageModelResult(images, warnings, response: new ProviderResponse(created.Headers, timestamp: timestamp, modelId: ModelId));
+        return new ImageModelResult(
+            images,
+            warnings,
+            response: new ProviderResponse(created.Headers, timestamp: timestamp, modelId: ModelId)
+        );
     }
 
-    private void AddImageInputs(JsonObject input, IReadOnlyList<ImageModelFile>? files, ImageModelFile? mask, List<OperationWarning> warnings)
+    private void AddImageInputs(
+        JsonObject input,
+        IReadOnlyList<ImageModelFile>? files,
+        ImageModelFile? mask,
+        List<OperationWarning> warnings
+    )
     {
         if (files is { Count: > 0 })
         {
@@ -166,12 +224,19 @@ public sealed class ReplicateImageModel : IImageModel, IImageCaller
             {
                 for (var i = 0; i < Math.Min(files.Count, MaxFlux2InputImages); i++)
                 {
-                    input[i == 0 ? "input_image" : "input_image_" + (i + 1)] = FileDataConversions.ConvertImageModelFileToDataUri(files[i]);
+                    input[i == 0 ? "input_image" : "input_image_" + (i + 1)] =
+                        FileDataConversions.ConvertImageModelFileToDataUri(files[i]);
                 }
 
                 if (files.Count > MaxFlux2InputImages)
                 {
-                    warnings.Add(OperationWarning.Other("Flux-2 models support up to " + MaxFlux2InputImages + " input images. Additional images are ignored."));
+                    warnings.Add(
+                        OperationWarning.Other(
+                            "Flux-2 models support up to "
+                                + MaxFlux2InputImages
+                                + " input images. Additional images are ignored."
+                        )
+                    );
                 }
             }
             else
@@ -179,7 +244,11 @@ public sealed class ReplicateImageModel : IImageModel, IImageCaller
                 input["image"] = FileDataConversions.ConvertImageModelFileToDataUri(files[0]);
                 if (files.Count > 1)
                 {
-                    warnings.Add(OperationWarning.Other("This Replicate model only supports a single input image. Additional images are ignored."));
+                    warnings.Add(
+                        OperationWarning.Other(
+                            "This Replicate model only supports a single input image. Additional images are ignored."
+                        )
+                    );
                 }
             }
         }
@@ -188,7 +257,11 @@ public sealed class ReplicateImageModel : IImageModel, IImageCaller
         {
             if (IsFlux2)
             {
-                warnings.Add(OperationWarning.Other("Flux-2 models do not support mask input. The mask will be ignored."));
+                warnings.Add(
+                    OperationWarning.Other(
+                        "Flux-2 models do not support mask input. The mask will be ignored."
+                    )
+                );
             }
             else
             {
@@ -199,7 +272,13 @@ public sealed class ReplicateImageModel : IImageModel, IImageCaller
 
     // Polls the prediction's get URL until it has output, succeeds, or fails.
     // When the caller cancels while polling, or polling gives up, the prediction is cancelled on Replicate.
-    private async Task<JsonElement> PollAsync(JsonElement prediction, IReadOnlyDictionary<string, string> headers, int pollIntervalMillis, int maxPollAttempts, CancellationToken cancellationToken)
+    private async Task<JsonElement> PollAsync(
+        JsonElement prediction,
+        IReadOnlyDictionary<string, string> headers,
+        int pollIntervalMillis,
+        int maxPollAttempts,
+        CancellationToken cancellationToken
+    )
     {
         var current = prediction;
         for (var attempt = 0; attempt < maxPollAttempts; attempt++)
@@ -212,7 +291,9 @@ public sealed class ReplicateImageModel : IImageModel, IImageCaller
             try
             {
                 var url = current.GetProperty("urls").GetProperty("get").GetString()!;
-                var response = await _provider.GetResponseUrlAsync(url, headers, cancellationToken).ConfigureAwait(false);
+                var response = await _provider
+                    .GetResponseUrlAsync(url, headers, cancellationToken)
+                    .ConfigureAwait(false);
                 current = ParsePrediction(response.Body);
                 if (attempt < maxPollAttempts - 1)
                 {
@@ -234,7 +315,11 @@ public sealed class ReplicateImageModel : IImageModel, IImageCaller
 
         // Polling gave up: cancel the prediction instead of leaving it running.
         CancelPrediction(current);
-        throw new AiSdkException("Replicate image generation did not complete after " + maxPollAttempts + " polling attempts.");
+        throw new AiSdkException(
+            "Replicate image generation did not complete after "
+                + maxPollAttempts
+                + " polling attempts."
+        );
     }
 
     // Fire-and-forget: cancellation must never mask, replace, or delay the cancellation or timeout error that is about to be thrown.
@@ -248,20 +333,38 @@ public sealed class ReplicateImageModel : IImageModel, IImageCaller
         var status = prediction.GetProperty("status").GetString();
         if (status == "failed" || status == "canceled")
         {
-            var error = prediction.TryGetProperty("error", out var message) && message.ValueKind == JsonValueKind.String ? message.GetString() : null;
-            throw new InvalidResponseDataException(prediction, "Replicate image generation " + status + ": " + (error ?? "Unknown error"));
+            var error =
+                prediction.TryGetProperty("error", out var message)
+                && message.ValueKind == JsonValueKind.String
+                    ? message.GetString()
+                    : null;
+            throw new InvalidResponseDataException(
+                prediction,
+                "Replicate image generation " + status + ": " + (error ?? "Unknown error")
+            );
         }
 
-        return (prediction.TryGetProperty("output", out var output) && output.ValueKind != JsonValueKind.Null) || status == "succeeded";
+        return (
+                prediction.TryGetProperty("output", out var output)
+                && output.ValueKind != JsonValueKind.Null
+            )
+            || status == "succeeded";
     }
 
     private static JsonElement ParsePrediction(string body)
     {
         using var document = JsonDocument.Parse(body);
         var prediction = document.RootElement.Clone();
-        if (prediction.ValueKind != JsonValueKind.Object || !prediction.TryGetProperty("id", out var id) || id.ValueKind != JsonValueKind.String)
+        if (
+            prediction.ValueKind != JsonValueKind.Object
+            || !prediction.TryGetProperty("id", out var id)
+            || id.ValueKind != JsonValueKind.String
+        )
         {
-            throw new InvalidResponseDataException(prediction, "Replicate prediction response has no id.");
+            throw new InvalidResponseDataException(
+                prediction,
+                "Replicate prediction response has no id."
+            );
         }
 
         return prediction;
@@ -269,13 +372,21 @@ public sealed class ReplicateImageModel : IImageModel, IImageCaller
 
     private static JsonElement? ReplicateOptions(JsonElement? providerOptions)
     {
-        return providerOptions is { ValueKind: JsonValueKind.Object } options && options.TryGetProperty(ReplicateProvider.ProviderId, out var replicate) && replicate.ValueKind == JsonValueKind.Object
+        return
+            providerOptions is { ValueKind: JsonValueKind.Object } options
+            && options.TryGetProperty(ReplicateProvider.ProviderId, out var replicate)
+            && replicate.ValueKind == JsonValueKind.Object
             ? replicate
             : null;
     }
 
     private static JsonElement? ReadSetting(JsonElement? replicate, string name)
     {
-        return replicate is { } options && options.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number ? value : null;
+        return
+            replicate is { } options
+            && options.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Number
+            ? value
+            : null;
     }
 }

@@ -103,7 +103,10 @@ public sealed class TimeoutConfiguration
             return null;
         }
 
-        if (timeout.Tools != null && timeout.Tools.TryGetValue(toolName + "Ms", out var toolTimeoutMs))
+        if (
+            timeout.Tools != null
+            && timeout.Tools.TryGetValue(toolName + "Ms", out var toolTimeoutMs)
+        )
         {
             return toolTimeoutMs;
         }
@@ -124,7 +127,11 @@ public sealed class TimeoutConfiguration
 
         if (timeout < TimeSpan.Zero)
         {
-            throw new ArgumentOutOfRangeException(nameof(timeout), timeout, "A timeout cannot be negative.");
+            throw new ArgumentOutOfRangeException(
+                nameof(timeout),
+                timeout,
+                "A timeout cannot be negative."
+            );
         }
 
         var milliseconds = Math.Ceiling(timeout.TotalMilliseconds);

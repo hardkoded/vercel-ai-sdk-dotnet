@@ -30,16 +30,31 @@ public sealed class AnthropicMessageStartTests
         var start = new JsonObject
         {
             ["type"] = "message_start",
-            ["message"] = new JsonObject { ["id"] = "msg_initial_usage", ["model"] = "claude-haiku-4-5", ["usage"] = usage },
+            ["message"] = new JsonObject
+            {
+                ["id"] = "msg_initial_usage",
+                ["model"] = "claude-haiku-4-5",
+                ["usage"] = usage,
+            },
         };
         var handler = AnthropicParity.Ok();
         handler.ContentType = "text/event-stream";
-        handler.ResponseBody = "data: " + start.ToJsonString() + "\n\n"
+        handler.ResponseBody =
+            "data: "
+            + start.ToJsonString()
+            + "\n\n"
             + "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":12,\"output_tokens\":7,\"cache_read_input_tokens\":22,\"cache_creation_input_tokens\":32}}\n\n"
             + "data: {\"type\":\"message_stop\"}\n\n";
 
         var parts = new List<LanguageModelStreamPart>();
-        await foreach (var part in (await AnthropicParity.Client(handler).LanguageModel("claude-3-haiku-20240307").DoStreamAsync(AnthropicParity.Hello(), CancellationToken.None)))
+        await foreach (
+            var part in (
+                await AnthropicParity
+                    .Client(handler)
+                    .LanguageModel("claude-3-haiku-20240307")
+                    .DoStreamAsync(AnthropicParity.Hello(), CancellationToken.None)
+            )
+        )
         {
             parts.Add(part);
         }
@@ -67,7 +82,8 @@ public sealed class AnthropicMessageStartTests
                 Assert.Equal(22, finish.Usage.CacheReadTokens);
                 Assert.Equal(32, finish.Usage.CacheWriteTokens);
                 Assert.Equal(7, finish.Usage.OutputTokens);
-            });
+            }
+        );
 
         var expected = new JsonObject
         {
@@ -80,7 +96,13 @@ public sealed class AnthropicMessageStartTests
         };
         var providerMetadata = ((CustomStreamPart)parts[2]).ProviderMetadata!.Value;
         Assert.True(JsonNode.DeepEquals(expected, JsonNode.Parse(providerMetadata.GetRawText())));
-        Assert.Equal(outputTokens != null, providerMetadata.GetProperty("anthropic").GetProperty("usage").TryGetProperty("output_tokens", out _));
+        Assert.Equal(
+            outputTokens != null,
+            providerMetadata
+                .GetProperty("anthropic")
+                .GetProperty("usage")
+                .TryGetProperty("output_tokens", out _)
+        );
     }
 
     [Fact]
@@ -89,20 +111,29 @@ public sealed class AnthropicMessageStartTests
         var result = AnthropicPrompt.Convert(
             new ModelMessage[]
             {
-                new AssistantModelMessage(new AssistantContentPart[]
-                {
-                    new AssistantCustomPart(
-                        "anthropic.message_start",
-                        new Dictionary<string, JsonElement>
-                        {
-                            ["anthropic"] = AnthropicParity.Json("{\"id\":\"msg_usage\",\"model\":\"claude-haiku-4-5\",\"usage\":{\"input_tokens\":13,\"output_tokens\":1}}"),
-                        }),
-                    new AssistantTextPart("Hi!"),
-                }),
+                new AssistantModelMessage(
+                    new AssistantContentPart[]
+                    {
+                        new AssistantCustomPart(
+                            "anthropic.message_start",
+                            new Dictionary<string, JsonElement>
+                            {
+                                ["anthropic"] = AnthropicParity.Json(
+                                    "{\"id\":\"msg_usage\",\"model\":\"claude-haiku-4-5\",\"usage\":{\"input_tokens\":13,\"output_tokens\":1}}"
+                                ),
+                            }
+                        ),
+                        new AssistantTextPart("Hi!"),
+                    }
+                ),
             },
-            sendReasoning: false);
+            sendReasoning: false
+        );
 
-        Assert.Equal("[{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Hi!\"}]}]", result.Messages.ToJsonString());
+        Assert.Equal(
+            "[{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Hi!\"}]}]",
+            result.Messages.ToJsonString()
+        );
         Assert.Empty(result.Warnings);
     }
 }

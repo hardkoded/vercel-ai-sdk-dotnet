@@ -23,7 +23,14 @@ internal static class OpenAIBatchTestSupport
         return BatchObject(outputFileId: outputFileId, errorFileId: errorFileId).ToJsonString();
     }
 
-    public static JsonObject BatchObject(string id = "batch_123", string status = "completed", string? outputFileId = null, string? errorFileId = null, JsonObject? requestCounts = null, JsonObject? errors = null)
+    public static JsonObject BatchObject(
+        string id = "batch_123",
+        string status = "completed",
+        string? outputFileId = null,
+        string? errorFileId = null,
+        JsonObject? requestCounts = null,
+        JsonObject? errors = null
+    )
     {
         return new JsonObject
         {
@@ -40,7 +47,12 @@ internal static class OpenAIBatchTestSupport
 
     public static JsonObject Counts(int total, int completed, int failed)
     {
-        return new JsonObject { ["total"] = total, ["completed"] = completed, ["failed"] = failed };
+        return new JsonObject
+        {
+            ["total"] = total,
+            ["completed"] = completed,
+            ["failed"] = failed,
+        };
     }
 
     public static string UploadResponse()
@@ -49,38 +61,79 @@ internal static class OpenAIBatchTestSupport
     }
 
     /// <summary>A text request for <c>gpt-5.6</c> in the shape <c>startBatch</c> normalizes it to.</summary>
-    public static NormalizedBatchRequest TextRequest(string id, string prompt, Action<JsonObject>? configure = null, string modelId = "gpt-5.6")
+    public static NormalizedBatchRequest TextRequest(
+        string id,
+        string prompt,
+        Action<JsonObject>? configure = null,
+        string modelId = "gpt-5.6"
+    )
     {
         var options = new JsonObject
         {
-            ["prompt"] = new JsonArray(new JsonObject
-            {
-                ["role"] = "user",
-                ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = prompt }),
-            }),
+            ["prompt"] = new JsonArray(
+                new JsonObject
+                {
+                    ["role"] = "user",
+                    ["content"] = new JsonArray(
+                        new JsonObject { ["type"] = "text", ["text"] = prompt }
+                    ),
+                }
+            ),
         };
         configure?.Invoke(options);
-        return new NormalizedBatchRequest(id, "text", modelId, System.Text.Json.JsonDocument.Parse(options.ToJsonString()).RootElement.Clone());
+        return new NormalizedBatchRequest(
+            id,
+            "text",
+            modelId,
+            System.Text.Json.JsonDocument.Parse(options.ToJsonString()).RootElement.Clone()
+        );
     }
 
-    public static IBatchApi Batch(HttpMessageHandler handler, Action<OpenAIOptions>? configure = null)
+    public static IBatchApi Batch(
+        HttpMessageHandler handler,
+        Action<OpenAIOptions>? configure = null
+    )
     {
         var options = new OpenAIOptions { ApiKey = "test-api-key" };
         configure?.Invoke(options);
         return OpenAIProvider.Create(options, handler).ExperimentalBatch()!;
     }
 
-    public static BatchOperationCall Call(string? batchId = null, IReadOnlyList<NormalizedBatchRequest>? requests = null, IReadOnlyDictionary<string, string>? headers = null, string? providerOptions = null, string? webhookUrl = null, int? limit = null, string? cursor = null)
+    public static BatchOperationCall Call(
+        string? batchId = null,
+        IReadOnlyList<NormalizedBatchRequest>? requests = null,
+        IReadOnlyDictionary<string, string>? headers = null,
+        string? providerOptions = null,
+        string? webhookUrl = null,
+        int? limit = null,
+        string? cursor = null
+    )
     {
-        System.Text.Json.JsonElement? options = providerOptions == null ? null : System.Text.Json.JsonDocument.Parse(providerOptions).RootElement.Clone();
-        return new BatchOperationCall(batchId, options, headers ?? new Dictionary<string, string>(), CancellationToken.None, limit, cursor, webhookUrl, requests);
+        System.Text.Json.JsonElement? options =
+            providerOptions == null
+                ? null
+                : System.Text.Json.JsonDocument.Parse(providerOptions).RootElement.Clone();
+        return new BatchOperationCall(
+            batchId,
+            options,
+            headers ?? new Dictionary<string, string>(),
+            CancellationToken.None,
+            limit,
+            cursor,
+            webhookUrl,
+            requests
+        );
     }
 
     /// <summary>
     /// Runs <paramref name="operation"/> once per request. Each run cancels its token when that request arrives and
     /// checks that the request saw the cancellation, which shows the token reached every request.
     /// </summary>
-    public static async Task AssertForwardsCancellation(int requestCount, Func<RecordingHandler> handler, Func<IBatchApi, CancellationToken, Task> operation)
+    public static async Task AssertForwardsCancellation(
+        int requestCount,
+        Func<RecordingHandler> handler,
+        Func<IBatchApi, CancellationToken, Task> operation
+    )
     {
         for (var request = 1; request <= requestCount; request++)
         {
@@ -122,13 +175,15 @@ internal static class OpenAIBatchTestSupport
             ["role"] = "assistant",
             ["id"] = "msg_123",
             ["phase"] = null,
-            ["content"] = new JsonArray(new JsonObject
-            {
-                ["type"] = "output_text",
-                ["text"] = text,
-                ["logprobs"] = null,
-                ["annotations"] = new JsonArray(),
-            }),
+            ["content"] = new JsonArray(
+                new JsonObject
+                {
+                    ["type"] = "output_text",
+                    ["text"] = text,
+                    ["logprobs"] = null,
+                    ["annotations"] = new JsonArray(),
+                }
+            ),
         };
     }
 
@@ -143,15 +198,30 @@ internal static class OpenAIBatchTestSupport
         return new JsonObject
         {
             ["custom_id"] = id,
-            ["response"] = new JsonObject { ["status_code"] = 200, ["request_id"] = "openai-" + id, ["body"] = body },
+            ["response"] = new JsonObject
+            {
+                ["status_code"] = 200,
+                ["request_id"] = "openai-" + id,
+                ["body"] = body,
+            },
             ["error"] = null,
         }.ToJsonString();
     }
 
     public static async Task<IReadOnlyList<BatchItem>> GetResultsAsync(HttpMessageHandler handler)
     {
-        var batch = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key" }, handler).ExperimentalBatch()!;
-        var stream = await batch.DoGetResultsAsync(new BatchOperationCall("batch_123", null, new Dictionary<string, string>(), CancellationToken.None), CancellationToken.None);
+        var batch = OpenAIProvider
+            .Create(new OpenAIOptions { ApiKey = "test-api-key" }, handler)
+            .ExperimentalBatch()!;
+        var stream = await batch.DoGetResultsAsync(
+            new BatchOperationCall(
+                "batch_123",
+                null,
+                new Dictionary<string, string>(),
+                CancellationToken.None
+            ),
+            CancellationToken.None
+        );
         return await stream.ToListAsync();
     }
 }
@@ -179,10 +249,18 @@ internal sealed class RecordingHandler : HttpMessageHandler
         _cancel = source;
     }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         var recorded = new RecordedRequest(request.Method.Method, request.RequestUri!.AbsoluteUri);
-        foreach (var header in request.Headers.Concat(request.Content?.Headers ?? Enumerable.Empty<KeyValuePair<string, IEnumerable<string>>>()))
+        foreach (
+            var header in request.Headers.Concat(
+                request.Content?.Headers
+                    ?? Enumerable.Empty<KeyValuePair<string, IEnumerable<string>>>()
+            )
+        )
         {
             recorded.Headers[header.Key.ToLowerInvariant()] = string.Join(",", header.Value);
         }
@@ -192,7 +270,11 @@ internal sealed class RecordingHandler : HttpMessageHandler
             foreach (var part in multipart)
             {
                 var disposition = part.Headers.ContentDisposition!;
-                recorded.Parts[disposition.Name!.Trim('"')] = new RecordedPart(disposition.FileName?.Trim('"'), part.Headers.ContentType?.MediaType, await part.ReadAsStringAsync(cancellationToken));
+                recorded.Parts[disposition.Name!.Trim('"')] = new RecordedPart(
+                    disposition.FileName?.Trim('"'),
+                    part.Headers.ContentType?.MediaType,
+                    await part.ReadAsStringAsync(cancellationToken)
+                );
             }
         }
         else if (request.Content != null)
@@ -211,10 +293,18 @@ internal sealed class RecordingHandler : HttpMessageHandler
         var url = request.RequestUri.GetLeftPart(UriPartial.Path);
         if (!_bodies.TryGetValue(url, out var body))
         {
-            return new HttpResponseMessage(System.Net.HttpStatusCode.NotFound) { Content = new StringContent("{\"error\":{\"message\":\"no route for " + url + "\"}}") };
+            return new HttpResponseMessage(System.Net.HttpStatusCode.NotFound)
+            {
+                Content = new StringContent(
+                    "{\"error\":{\"message\":\"no route for " + url + "\"}}"
+                ),
+            };
         }
 
-        return new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };
+        return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json"),
+        };
     }
 }
 
@@ -252,18 +342,32 @@ internal sealed class ChunkedHandler : HttpMessageHandler
         return this;
     }
 
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         var url = request.RequestUri?.AbsoluteUri ?? string.Empty;
         RequestUrls.Add(url);
         if (!_chunks.TryGetValue(url, out var chunks))
         {
-            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.NotFound) { Content = new StringContent("{\"error\":{\"message\":\"no route for " + url + "\"}}") });
+            return Task.FromResult(
+                new HttpResponseMessage(System.Net.HttpStatusCode.NotFound)
+                {
+                    Content = new StringContent(
+                        "{\"error\":{\"message\":\"no route for " + url + "\"}}"
+                    ),
+                }
+            );
         }
 
         var content = new StreamContent(new ChunkStream(chunks));
-        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/jsonl");
-        return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = content });
+        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+            "application/jsonl"
+        );
+        return Task.FromResult(
+            new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = content }
+        );
     }
 
     private sealed class ChunkStream : Stream
@@ -272,7 +376,9 @@ internal sealed class ChunkedHandler : HttpMessageHandler
 
         public ChunkStream(string[] chunks)
         {
-            _chunks = new Queue<byte[]>(chunks.Select(chunk => System.Text.Encoding.UTF8.GetBytes(chunk)));
+            _chunks = new Queue<byte[]>(
+                chunks.Select(chunk => System.Text.Encoding.UTF8.GetBytes(chunk))
+            );
         }
 
         public override bool CanRead => true;
@@ -301,14 +407,14 @@ internal sealed class ChunkedHandler : HttpMessageHandler
             return chunk.Length;
         }
 
-        public override void Flush()
-        {
-        }
+        public override void Flush() { }
 
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) =>
+            throw new NotSupportedException();
 
         public override void SetLength(long value) => throw new NotSupportedException();
 
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) =>
+            throw new NotSupportedException();
     }
 }

@@ -27,7 +27,9 @@ internal sealed class MiniMaxServer : HttpMessageHandler
 
     public MiniMaxServer()
     {
-        SetJson("{\"type\":\"message\",\"content\":[{\"type\":\"text\",\"text\":\"Hello!\"}],\"stop_reason\":\"end_turn\",\"usage\":{\"input_tokens\":10,\"output_tokens\":3}}");
+        SetJson(
+            "{\"type\":\"message\",\"content\":[{\"type\":\"text\",\"text\":\"Hello!\"}],\"stop_reason\":\"end_turn\",\"usage\":{\"input_tokens\":10,\"output_tokens\":3}}"
+        );
     }
 
     public string ResponseBody { get; private set; } = string.Empty;
@@ -57,9 +59,15 @@ internal sealed class MiniMaxServer : HttpMessageHandler
         ContentType = "text/event-stream";
     }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
-        var body = request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+        var body =
+            request.Content == null
+                ? string.Empty
+                : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
         var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var header in request.Headers)
         {
@@ -81,26 +89,35 @@ internal sealed class MiniMaxServer : HttpMessageHandler
 /// <summary>Shared fixtures for the MiniMax chat language model tests.</summary>
 internal static class MiniMaxParity
 {
-    public const string StreamMessageStart = "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_flash\",\"model\":\"minimax-m3.1-flash\",\"usage\":{\"input_tokens\":4,\"output_tokens\":0}}}\n\n";
+    public const string StreamMessageStart =
+        "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_flash\",\"model\":\"minimax-m3.1-flash\",\"usage\":{\"input_tokens\":4,\"output_tokens\":0}}}\n\n";
 
     public const string StreamEnd =
-        "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":0}}\n\n" +
-        "data: {\"type\":\"message_stop\"}\n\n";
+        "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":0}}\n\n"
+        + "data: {\"type\":\"message_stop\"}\n\n";
 
     public static global::Vercel.AI.MiniMax.MiniMaxProvider Provider(MiniMaxServer server)
     {
-        return global::Vercel.AI.MiniMax.MiniMaxProvider.Create(new MiniMaxOptions { ApiKey = "test-api-key" }, server);
+        return global::Vercel.AI.MiniMax.MiniMaxProvider.Create(
+            new MiniMaxOptions { ApiKey = "test-api-key" },
+            server
+        );
     }
 
     public static LanguageModelCallOptions Hello()
     {
-        return new LanguageModelCallOptions { Prompt = new ModelMessage[] { new UserModelMessage("Hello") } };
+        return new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[] { new UserModelMessage("Hello") },
+        };
     }
 
     public static IReadOnlyDictionary<string, JsonElement> Options(string json)
     {
         using var document = JsonDocument.Parse(json);
-        return document.RootElement.EnumerateObject().ToDictionary(property => property.Name, property => property.Value.Clone());
+        return document
+            .RootElement.EnumerateObject()
+            .ToDictionary(property => property.Name, property => property.Value.Clone());
     }
 
     public static IReadOnlyDictionary<string, JsonElement> Options(string provider, string json)
@@ -110,22 +127,42 @@ internal static class MiniMaxParity
 
     public static FileContentPart File(string mediaType, byte[] data, string? options = null)
     {
-        return new FileContentPart(mediaType, null, data, null) { ProviderOptions = options == null ? null : Options("minimax", options) };
+        return new FileContentPart(mediaType, null, data, null)
+        {
+            ProviderOptions = options == null ? null : Options("minimax", options),
+        };
     }
 
     public static FileContentPart FileUrl(string mediaType, string url, string? options = null)
     {
-        return new FileContentPart(mediaType, url, null, null) { ProviderOptions = options == null ? null : Options("minimax", options) };
+        return new FileContentPart(mediaType, url, null, null)
+        {
+            ProviderOptions = options == null ? null : Options("minimax", options),
+        };
     }
 
-    public static FileContentPart FileReference(string mediaType, string provider, string id, string? options = null)
+    public static FileContentPart FileReference(
+        string mediaType,
+        string provider,
+        string id,
+        string? options = null
+    )
     {
-        return FileContentPart.FromProviderReference(mediaType, new Dictionary<string, string> { [provider] = id }, null, options == null ? null : Options("minimax", options));
+        return FileContentPart.FromProviderReference(
+            mediaType,
+            new Dictionary<string, string> { [provider] = id },
+            null,
+            options == null ? null : Options("minimax", options)
+        );
     }
 
     public static LanguageModelCallOptions Media(params UserContentPart[] parts)
     {
-        return new LanguageModelCallOptions { MaxOutputTokens = 1000, Prompt = new ModelMessage[] { new UserModelMessage(parts) } };
+        return new LanguageModelCallOptions
+        {
+            MaxOutputTokens = 1000,
+            Prompt = new ModelMessage[] { new UserModelMessage(parts) },
+        };
     }
 
     public static void AssertMatch(JsonNode? actual, string expected)
@@ -133,7 +170,9 @@ internal static class MiniMaxParity
         AssertMatch(actual, JsonNode.Parse(expected), "$");
     }
 
-    public static async Task<List<LanguageModelStreamPart>> Collect(LanguageModelStreamResult result)
+    public static async Task<List<LanguageModelStreamPart>> Collect(
+        LanguageModelStreamResult result
+    )
     {
         var parts = new List<LanguageModelStreamPart>();
         await foreach (var part in result.Stream)
@@ -151,7 +190,10 @@ internal static class MiniMaxParity
             var actualObject = Assert.IsType<JsonObject>(actual);
             foreach (var pair in expectedObject)
             {
-                Assert.True(actualObject.ContainsKey(pair.Key), path + "." + pair.Key + " is missing in " + actualObject.ToJsonString());
+                Assert.True(
+                    actualObject.ContainsKey(pair.Key),
+                    path + "." + pair.Key + " is missing in " + actualObject.ToJsonString()
+                );
                 AssertMatch(actualObject[pair.Key], pair.Value, path + "." + pair.Key);
             }
 
@@ -170,6 +212,13 @@ internal static class MiniMaxParity
             return;
         }
 
-        Assert.True(JsonNode.DeepEquals(actual, expected), path + ": " + (actual?.ToJsonString() ?? "null") + " != " + (expected?.ToJsonString() ?? "null"));
+        Assert.True(
+            JsonNode.DeepEquals(actual, expected),
+            path
+                + ": "
+                + (actual?.ToJsonString() ?? "null")
+                + " != "
+                + (expected?.ToJsonString() ?? "null")
+        );
     }
 }

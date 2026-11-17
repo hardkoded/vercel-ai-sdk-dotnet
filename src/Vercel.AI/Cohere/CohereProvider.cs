@@ -50,22 +50,32 @@ public sealed class CohereProvider : ProviderBase
     public ProviderHttp Http { get; }
 
     /// <summary>Creates a provider.</summary>
-    public static CohereProvider Create(CohereOptions? options = null, HttpMessageHandler? handler = null)
+    public static CohereProvider Create(
+        CohereOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new CohereProvider(client, options);
     }
 
     /// <inheritdoc />
-    public override ILanguageModel LanguageModel(string modelId) => new CohereLanguageModel(this, modelId);
+    public override ILanguageModel LanguageModel(string modelId) =>
+        new CohereLanguageModel(this, modelId);
 
     /// <inheritdoc />
-    public override IEmbeddingModel EmbeddingModel(string modelId) => new CohereEmbeddingModel(this, modelId);
+    public override IEmbeddingModel EmbeddingModel(string modelId) =>
+        new CohereEmbeddingModel(this, modelId);
 
     /// <inheritdoc />
-    public override IRerankingModel RerankingModel(string modelId) => new CohereRerankingModel(this, modelId);
+    public override IRerankingModel RerankingModel(string modelId) =>
+        new CohereRerankingModel(this, modelId);
 
-    internal Dictionary<string, string?> Headers(IReadOnlyDictionary<string, string?>? callHeaders = null)
+    internal Dictionary<string, string?> Headers(
+        IReadOnlyDictionary<string, string?>? callHeaders = null
+    )
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
@@ -110,7 +120,13 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null, IReadOnlyDictionary<string, string?>? headers = null)
+    public async Task<EmbeddingResult> DoEmbedAsync(
+        IReadOnlyList<string> values,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        CancellationToken cancellationToken,
+        int? dimensions = null,
+        IReadOnlyDictionary<string, string?>? headers = null
+    )
     {
         var embeddingType = EmbeddingType(providerOptions);
         var texts = new JsonArray();
@@ -140,11 +156,22 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
             body["output_dimension"] = width;
         }
 
-        using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "embed"), body.ToJsonString(), _provider.Headers(headers), cancellationToken).ConfigureAwait(false);
+        using var document = await _provider
+            .Http.SendJsonAsync(
+                HttpMethod.Post,
+                ApiKeys.Combine(_provider.Options.BaseUrl, "embed"),
+                body.ToJsonString(),
+                _provider.Headers(headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var root = document.RootElement;
         var embeddings = root.GetProperty("embeddings");
         var vectorsElement = embeddings;
-        var found = embeddings.ValueKind == JsonValueKind.Object ? embeddings.TryGetProperty(embeddingType, out vectorsElement) : embeddingType == "float";
+        var found =
+            embeddings.ValueKind == JsonValueKind.Object
+                ? embeddings.TryGetProperty(embeddingType, out vectorsElement)
+                : embeddingType == "float";
         if (!found)
         {
             throw new AiSdkException("Cohere response has no " + embeddingType + " embeddings.");
@@ -160,7 +187,9 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
             {
                 if (number.ValueKind != JsonValueKind.Number)
                 {
-                    throw new AiSdkException("Cohere " + embeddingType + " embeddings must contain only numbers.");
+                    throw new AiSdkException(
+                        "Cohere " + embeddingType + " embeddings must contain only numbers."
+                    );
                 }
 
                 vector[index++] = number.GetSingle();
@@ -169,13 +198,23 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
             vectors.Add(vector);
         }
 
-        int? tokens = root.TryGetProperty("meta", out var meta) && meta.TryGetProperty("billed_units", out var billed) && billed.TryGetProperty("input_tokens", out var inputTokens) ? inputTokens.GetInt32() : null;
+        int? tokens =
+            root.TryGetProperty("meta", out var meta)
+            && meta.TryGetProperty("billed_units", out var billed)
+            && billed.TryGetProperty("input_tokens", out var inputTokens)
+                ? inputTokens.GetInt32()
+                : null;
         return new EmbeddingResult(vectors, tokens);
     }
 
     private static string EmbeddingType(IReadOnlyDictionary<string, JsonElement>? providerOptions)
     {
-        if (providerOptions == null || !providerOptions.TryGetValue(CohereProvider.ProviderName, out var options) || options.ValueKind != JsonValueKind.Object || !options.TryGetProperty("embeddingType", out var value))
+        if (
+            providerOptions == null
+            || !providerOptions.TryGetValue(CohereProvider.ProviderName, out var options)
+            || options.ValueKind != JsonValueKind.Object
+            || !options.TryGetProperty("embeddingType", out var value)
+        )
         {
             return "float";
         }
@@ -183,12 +222,18 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
         var type = value.ValueKind == JsonValueKind.String ? value.GetString() : null;
         return type is "float" or "int8" or "uint8" or "binary" or "ubinary"
             ? type
-            : throw new AiSdkException("invalid cohere provider options: embeddingType must be float, int8, uint8, binary, or ubinary.");
+            : throw new AiSdkException(
+                "invalid cohere provider options: embeddingType must be float, int8, uint8, binary, or ubinary."
+            );
     }
 
-    private static JsonElement? Option(IReadOnlyDictionary<string, JsonElement>? providerOptions, string name)
+    private static JsonElement? Option(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        string name
+    )
     {
-        return providerOptions != null
+        return
+            providerOptions != null
             && providerOptions.TryGetValue(CohereProvider.ProviderName, out var options)
             && options.ValueKind == JsonValueKind.Object
             && options.TryGetProperty(name, out var value)
@@ -217,14 +262,33 @@ public sealed class CohereRerankingModel : IRerankingModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? headers = null)
+    public async Task<RerankResult> DoRerankAsync(
+        string query,
+        IReadOnlyList<string> documents,
+        int? topN,
+        CancellationToken cancellationToken,
+        IReadOnlyDictionary<string, string?>? headers = null
+    )
     {
-        var result = await RerankAsync(new CohereRerankRequest { Query = query, TextDocuments = documents, TopN = topN, Headers = ProviderExchange.ToRequestHeaders(headers) }, cancellationToken).ConfigureAwait(false);
+        var result = await RerankAsync(
+                new CohereRerankRequest
+                {
+                    Query = query,
+                    TextDocuments = documents,
+                    TopN = topN,
+                    Headers = ProviderExchange.ToRequestHeaders(headers),
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return new RerankResult(result.Ranking);
     }
 
     /// <summary>Reranks text or JSON documents and returns the response body.</summary>
-    public async Task<CohereRerankResult> RerankAsync(CohereRerankRequest request, CancellationToken cancellationToken)
+    public async Task<CohereRerankResult> RerankAsync(
+        CohereRerankRequest request,
+        CancellationToken cancellationToken
+    )
     {
         if (request == null)
         {
@@ -235,7 +299,13 @@ public sealed class CohereRerankingModel : IRerankingModel
         var documents = new JsonArray();
         if (request.ObjectDocuments != null)
         {
-            warnings.Add(new CohereRerankWarning("compatibility", "object documents", "Object documents are converted to strings."));
+            warnings.Add(
+                new CohereRerankWarning(
+                    "compatibility",
+                    "object documents",
+                    "Object documents are converted to strings."
+                )
+            );
             foreach (var document in request.ObjectDocuments)
             {
                 documents.Add(document.ToJsonString());
@@ -271,29 +341,48 @@ public sealed class CohereRerankingModel : IRerankingModel
         }
 
         var headers = ProviderExchange.Merge(_provider.Headers(), request.Headers);
-        var response = await ProviderExchange.SendAsync(
-            _provider._httpClient,
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "rerank"),
-            ProviderExchange.Json(body.ToJsonString()),
-            headers,
-            cancellationToken).ConfigureAwait(false);
-        using (var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body))
+        var response = await ProviderExchange
+            .SendAsync(
+                _provider._httpClient,
+                HttpMethod.Post,
+                ApiKeys.Combine(_provider.Options.BaseUrl, "rerank"),
+                ProviderExchange.Json(body.ToJsonString()),
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        using (
+            var document = JsonDocument.Parse(
+                string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+            )
+        )
         {
             var ranking = new List<RerankItem>();
-            if (document.RootElement.TryGetProperty("results", out var results) && results.ValueKind == JsonValueKind.Array)
+            if (
+                document.RootElement.TryGetProperty("results", out var results)
+                && results.ValueKind == JsonValueKind.Array
+            )
             {
                 foreach (var item in results.EnumerateArray())
                 {
-                    var score = item.TryGetProperty("relevance_score", out var relevance) ? relevance.GetDouble() : 0;
+                    var score = item.TryGetProperty("relevance_score", out var relevance)
+                        ? relevance.GetDouble()
+                        : 0;
                     ranking.Add(new RerankItem(item.GetProperty("index").GetInt32(), score));
                 }
             }
 
-            var id = document.RootElement.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.String
-                ? idValue.GetString()
-                : null;
-            return new CohereRerankResult(ranking, warnings, null, new CohereRerankResponse(id, response.Headers, document.RootElement.Clone()));
+            var id =
+                document.RootElement.TryGetProperty("id", out var idValue)
+                && idValue.ValueKind == JsonValueKind.String
+                    ? idValue.GetString()
+                    : null;
+            return new CohereRerankResult(
+                ranking,
+                warnings,
+                null,
+                new CohereRerankResponse(id, response.Headers, document.RootElement.Clone())
+            );
         }
     }
 }
@@ -348,7 +437,11 @@ public sealed class CohereRerankRequest
 public sealed class CohereRerankResponse
 {
     /// <summary>Creates response metadata.</summary>
-    public CohereRerankResponse(string? id, IReadOnlyDictionary<string, string> headers, JsonElement body)
+    public CohereRerankResponse(
+        string? id,
+        IReadOnlyDictionary<string, string> headers,
+        JsonElement body
+    )
     {
         Id = id;
         Headers = headers ?? new Dictionary<string, string>();
@@ -369,7 +462,12 @@ public sealed class CohereRerankResponse
 public sealed class CohereRerankResult
 {
     /// <summary>Creates a rerank result.</summary>
-    public CohereRerankResult(IReadOnlyList<RerankItem> ranking, IReadOnlyList<CohereRerankWarning> warnings, JsonElement? providerMetadata, CohereRerankResponse response)
+    public CohereRerankResult(
+        IReadOnlyList<RerankItem> ranking,
+        IReadOnlyList<CohereRerankWarning> warnings,
+        JsonElement? providerMetadata,
+        CohereRerankResponse response
+    )
     {
         Ranking = ranking ?? Array.Empty<RerankItem>();
         Warnings = warnings ?? Array.Empty<CohereRerankWarning>();
@@ -394,14 +492,21 @@ public sealed class CohereRerankResult
 public static class CohereServiceCollectionExtensions
 {
     /// <summary>Adds <see cref="CohereProvider"/>.</summary>
-    public static IServiceCollection AddCohere(this IServiceCollection services, Action<CohereOptions>? configure = null)
+    public static IServiceCollection AddCohere(
+        this IServiceCollection services,
+        Action<CohereOptions>? configure = null
+    )
     {
         services.AddHttpClient(CohereProvider.ProviderName);
         services.AddSingleton(sp =>
         {
             var options = new CohereOptions();
             configure?.Invoke(options);
-            return new CohereProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(CohereProvider.ProviderName), options);
+            return new CohereProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(CohereProvider.ProviderName),
+                options
+            );
         });
         return services;
     }

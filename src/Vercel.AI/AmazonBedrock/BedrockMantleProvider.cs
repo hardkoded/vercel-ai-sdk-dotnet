@@ -53,7 +53,10 @@ public sealed class BedrockMantleOptions
     /// <summary>
     /// Resolves extra headers on every call, after <see cref="Headers"/>. Its values win. A null value drops the header.
     /// </summary>
-    public Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? HeadersProvider { get; set; }
+    public Func<
+        CancellationToken,
+        Task<IReadOnlyDictionary<string, string?>>
+    >? HeadersProvider { get; set; }
 }
 
 /// <summary>Mantle URL rules. Some model ids are served under <c>/openai/v1</c>.</summary>
@@ -67,12 +70,18 @@ public static class BedrockMantleRoutes
             return false;
         }
 
-        if (modelId.StartsWith("openai.gpt-", StringComparison.Ordinal) && !modelId.StartsWith("openai.gpt-oss-", StringComparison.Ordinal))
+        if (
+            modelId.StartsWith("openai.gpt-", StringComparison.Ordinal)
+            && !modelId.StartsWith("openai.gpt-oss-", StringComparison.Ordinal)
+        )
         {
             return true;
         }
 
-        if (modelId.StartsWith("google.gemma-4", StringComparison.Ordinal) || modelId.StartsWith("xai.", StringComparison.Ordinal))
+        if (
+            modelId.StartsWith("google.gemma-4", StringComparison.Ordinal)
+            || modelId.StartsWith("xai.", StringComparison.Ordinal)
+        )
         {
             return true;
         }
@@ -92,10 +101,17 @@ public static class BedrockMantleRoutes
         {
             if (!HostnameParts.IsValidHostnamePart(region))
             {
-                throw new ArgumentException("An AWS region must be a single DNS label.", nameof(region));
+                throw new ArgumentException(
+                    "An AWS region must be a single DNS label.",
+                    nameof(region)
+                );
             }
 
-            origin = "https://bedrock-mantle." + region + ".api.aws/" + (UsesOpenAiRoute(modelId) ? "openai/v1" : "v1");
+            origin =
+                "https://bedrock-mantle."
+                + region
+                + ".api.aws/"
+                + (UsesOpenAiRoute(modelId) ? "openai/v1" : "v1");
         }
 
         var relative = path.StartsWith("/", StringComparison.Ordinal) ? path : "/" + path;
@@ -124,9 +140,14 @@ public sealed class BedrockMantleProvider : ProviderBase
     public HttpClient HttpClient { get; }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static BedrockMantleProvider Create(BedrockMantleOptions? options = null, HttpMessageHandler? handler = null)
+    public static BedrockMantleProvider Create(
+        BedrockMantleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new BedrockMantleProvider(client, options);
     }
 
@@ -145,7 +166,9 @@ public sealed class BedrockMantleProvider : ProviderBase
     /// <summary>Throws because the JavaScript provider function rejects <c>new</c>.</summary>
     public ILanguageModel New(string modelId)
     {
-        throw new InvalidOperationException("The Bedrock Mantle model function cannot be called with the new keyword.");
+        throw new InvalidOperationException(
+            "The Bedrock Mantle model function cannot be called with the new keyword."
+        );
     }
 
     /// <summary>Mantle has no embedding models.</summary>
@@ -177,7 +200,11 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
     private readonly bool _responses;
 
     /// <summary>Creates a model.</summary>
-    public BedrockMantleLanguageModel(BedrockMantleProvider provider, string modelId, bool responses)
+    public BedrockMantleLanguageModel(
+        BedrockMantleProvider provider,
+        string modelId,
+        bool responses
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -191,28 +218,45 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
     public IReadOnlyDictionary<string, string> SupportedUrls => UrlSupport.None;
 
     /// <inheritdoc />
-    public string Provider => _responses ? "bedrock-mantle.responses" : BedrockMantleProvider.ProviderId;
+    public string Provider =>
+        _responses ? "bedrock-mantle.responses" : BedrockMantleProvider.ProviderId;
 
     /// <inheritdoc />
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
-        return await (await InnerAsync(cancellationToken).ConfigureAwait(false)).DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
+        return await (await InnerAsync(cancellationToken).ConfigureAwait(false))
+            .DoGenerateAsync(options, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
-        return await (await InnerAsync(cancellationToken).ConfigureAwait(false)).DoStreamAsync(options, cancellationToken).ConfigureAwait(false);
+        return await (await InnerAsync(cancellationToken).ConfigureAwait(false))
+            .DoStreamAsync(options, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     private async Task<ILanguageModel> InnerAsync(CancellationToken cancellationToken)
     {
         var options = _provider.Options;
-        var baseUrl = BedrockMantleRoutes.Url(options.Region, options.BaseUrl, ModelId, string.Empty);
-        var apiKey = options.ApiKey ?? Environment.GetEnvironmentVariable("AWS_BEARER_TOKEN_BEDROCK");
+        var baseUrl = BedrockMantleRoutes.Url(
+            options.Region,
+            options.BaseUrl,
+            ModelId,
+            string.Empty
+        );
+        var apiKey = options.ApiKey
+            ?? Environment.GetEnvironmentVariable("AWS_BEARER_TOKEN_BEDROCK");
         var signing = new AmazonBedrockSigningHandler(
             new HttpClientMessageHandler(_provider.HttpClient),
             options.Region,
@@ -222,7 +266,8 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
             options.SecretAccessKey,
             options.SessionToken,
             options.UtcNow,
-            options.CredentialProvider);
+            options.CredentialProvider
+        );
         var openAI = new OpenAIOptions
         {
             ProviderName = "bedrock-mantle",
@@ -233,10 +278,18 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
         };
 
         // Precedence: static Headers, then HeadersProvider, then per-call headers (applied by the OpenAI model).
-        var headers = options.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value, StringComparer.OrdinalIgnoreCase);
+        var headers = options.Headers.ToDictionary(
+            pair => pair.Key,
+            pair => (string?)pair.Value,
+            StringComparer.OrdinalIgnoreCase
+        );
         if (options.HeadersProvider != null)
         {
-            foreach (var pair in await AmazonBedrockProvider.WaitAsync(options.HeadersProvider(cancellationToken), cancellationToken).ConfigureAwait(false))
+            foreach (
+                var pair in await AmazonBedrockProvider
+                    .WaitAsync(options.HeadersProvider(cancellationToken), cancellationToken)
+                    .ConfigureAwait(false)
+            )
             {
                 if (pair.Value == null)
                 {
@@ -249,14 +302,22 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
             }
         }
 
-        foreach (var header in ProviderValues.WithUserAgentSuffix(headers, OpenAICompatibleInfo.UserAgent("amazon-bedrock")))
+        foreach (
+            var header in ProviderValues.WithUserAgentSuffix(
+                headers,
+                OpenAICompatibleInfo.UserAgent("amazon-bedrock")
+            )
+        )
         {
             openAI.Headers[header.Key] = header.Value;
         }
 
         var provider = new OpenAIProvider(new HttpClient(signing, disposeHandler: false), openAI);
         return _responses
-            ? new OpenAIResponsesLanguageModel(provider, ModelId) { SupportsWebSearchSourcesInclude = false }
+            ? new OpenAIResponsesLanguageModel(provider, ModelId)
+            {
+                SupportsWebSearchSourcesInclude = false,
+            }
             : provider.ChatModel(ModelId);
     }
 }

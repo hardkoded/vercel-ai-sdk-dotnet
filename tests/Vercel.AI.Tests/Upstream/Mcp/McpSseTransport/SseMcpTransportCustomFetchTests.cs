@@ -11,12 +11,14 @@ namespace Vercel.AI.Tests.Upstream.Mcp.McpSseTransport;
 /// <summary>Upstream's <c>fetch</c> option is the <see cref="HttpClient"/> the transport is built with.</summary>
 public sealed class SseMcpTransportCustomFetchTests
 {
-    private const string EndpointEvent = "event: endpoint\ndata: http://localhost:3000/messages\n\n";
+    private const string EndpointEvent =
+        "event: endpoint\ndata: http://localhost:3000/messages\n\n";
 
     [Fact]
     [UpstreamTest(
         "packages/mcp/src/tool/mcp-sse-transport.test.ts::SseMCPTransport > custom fetch::should use provided fetch function for SSE connection",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldUseProvidedFetchFunctionForSseConnection()
     {
         var server = new SseTestServer();
@@ -25,13 +27,19 @@ public sealed class SseMcpTransportCustomFetchTests
         var seen = new List<HttpRequestMessage>();
         using var customFetch = new HttpClient(new RecordingHandler(server, seen));
 
-        using var transport = new SseMcpTransport(customFetch, new Uri("http://localhost:3000/sse"));
+        using var transport = new SseMcpTransport(
+            customFetch,
+            new Uri("http://localhost:3000/sse")
+        );
 
         var connectTask = transport.StartAsync();
         controller.Write(EndpointEvent);
         await connectTask;
 
-        Assert.Contains(seen, request => request.Method == HttpMethod.Get && request.RequestUri!.AbsoluteUri == "http://localhost:3000/sse");
+        Assert.Contains(seen, request =>
+            request.Method == HttpMethod.Get
+            && request.RequestUri!.AbsoluteUri == "http://localhost:3000/sse"
+        );
         Assert.NotEmpty(seen[0].Headers);
 
         await transport.CloseAsync();
@@ -40,17 +48,22 @@ public sealed class SseMcpTransportCustomFetchTests
     [Fact]
     [UpstreamTest(
         "packages/mcp/src/tool/mcp-sse-transport.test.ts::SseMCPTransport > custom fetch::should use provided fetch function for POST send()",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldUseProvidedFetchFunctionForPostSend()
     {
         var server = new SseTestServer();
         var controller = new TestResponseController();
         server.Controlled(controller);
-        server.MessagesResponse = (_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+        server.MessagesResponse = (_, _) =>
+            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
         var seen = new List<HttpRequestMessage>();
         using var customFetch = new HttpClient(new RecordingHandler(server, seen));
 
-        using var transport = new SseMcpTransport(customFetch, new Uri("http://localhost:3000/sse"));
+        using var transport = new SseMcpTransport(
+            customFetch,
+            new Uri("http://localhost:3000/sse")
+        );
 
         var connectTask = transport.StartAsync();
         controller.Write(EndpointEvent);
@@ -58,10 +71,15 @@ public sealed class SseMcpTransportCustomFetchTests
 
         seen.Clear();
 
-        using var document = JsonDocument.Parse("{\"jsonrpc\":\"2.0\",\"method\":\"test\",\"params\":{},\"id\":\"1\"}");
+        using var document = JsonDocument.Parse(
+            "{\"jsonrpc\":\"2.0\",\"method\":\"test\",\"params\":{},\"id\":\"1\"}"
+        );
         await transport.SendAsync(document.RootElement);
 
-        Assert.Contains(seen, request => request.Method == HttpMethod.Post && request.RequestUri!.AbsoluteUri == "http://localhost:3000/messages");
+        Assert.Contains(seen, request =>
+            request.Method == HttpMethod.Post
+            && request.RequestUri!.AbsoluteUri == "http://localhost:3000/messages"
+        );
 
         await transport.CloseAsync();
     }
@@ -76,7 +94,10 @@ public sealed class SseMcpTransportCustomFetchTests
             _seen = seen;
         }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
         {
             _seen.Add(request);
             return base.SendAsync(request, cancellationToken);

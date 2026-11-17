@@ -12,7 +12,8 @@ namespace Vercel.AI.Tests.Upstream.GenerateText.GenerateText;
 /// <summary>Port of <c>generate-text.test.ts</c> &gt; <c>generateText &gt; tool execution approval &gt; when a call from a single tool that needs approval is denied</c>.</summary>
 public sealed class WhenACallFromASingleToolThatNeedsApprovalIsDeniedTests
 {
-    private const string Id = "packages/ai/src/generate-text/generate-text.test.ts::generateText > tool execution approval > when a call from a single tool that needs approval is denied::";
+    private const string Id =
+        "packages/ai/src/generate-text/generate-text.test.ts::generateText > tool execution approval > when a call from a single tool that needs approval is denied::";
 
     [Fact]
     [UpstreamTest(Id + "should not execute the tool", Coverage = UpstreamCoverage.Covered)]
@@ -24,7 +25,10 @@ public sealed class WhenACallFromASingleToolThatNeedsApprovalIsDeniedTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should call the model with a prompt that includes the tool error", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should call the model with a prompt that includes the tool error",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_call_the_model_with_a_prompt_that_includes_the_tool_error()
     {
         var run = await RunAsync();
@@ -33,7 +37,12 @@ public sealed class WhenACallFromASingleToolThatNeedsApprovalIsDeniedTests
         Assert.Equal(3, prompt.Count);
         Assert.Equal("test-input", PromptText(prompt));
         var assistant = Assert.IsType<AssistantModelMessage>(prompt[1]);
-        AssertToolCallPart(Assert.Single(assistant.Parts), "call-1", "tool1", "{\"value\":\"value\"}");
+        AssertToolCallPart(
+            Assert.Single(assistant.Parts),
+            "call-1",
+            "tool1",
+            "{\"value\":\"value\"}"
+        );
         var denied = Assert.IsType<ToolModelMessage>(prompt[2]);
         Assert.Equal("call-1", denied.ToolCallId);
         Assert.Equal("tool1", denied.ToolName);
@@ -42,7 +51,10 @@ public sealed class WhenACallFromASingleToolThatNeedsApprovalIsDeniedTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should include the tool error in the response messages", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should include the tool error in the response messages",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_include_the_tool_error_in_the_response_messages()
     {
         var run = await RunAsync();
@@ -56,29 +68,42 @@ public sealed class WhenACallFromASingleToolThatNeedsApprovalIsDeniedTests
         AssertText(run.Result.ResponseMessages[1], "Hello, world!");
     }
 
-    private static async Task<(GenerateTextResult Result, TestLanguageModel Model, int ExecuteCalls)> RunAsync()
+    private static async Task<(
+        GenerateTextResult Result,
+        TestLanguageModel Model,
+        int ExecuteCalls
+    )> RunAsync()
     {
         var executeCalls = 0;
-        var model = new TestLanguageModel { OnGenerate = _ => Text("Hello, world!", FinishReason.ToolCalls) };
-        var result = await Client().GenerateTextAsync(new GenerateTextOptions
+        var model = new TestLanguageModel
         {
-            Model = model,
-            Tools = new[]
-            {
-                ValueTool((_, _) =>
+            OnGenerate = _ => Text("Hello, world!", FinishReason.ToolCalls),
+        };
+        var result = await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
                 {
-                    executeCalls++;
-                    return Task.FromResult("result1");
-                }),
-            },
-            ToolApproval = new ToolApprovalConfiguration { { "tool1", "user-approval" } },
-            StopWhen = StopWhen.IsStepCount(3),
-            GenerateId = MockId("id"),
-            Messages = History(
-                "tool1",
-                new[] { ("call-1", "{\"value\":\"value\"}", "id-1") },
-                new ToolApprovalResponseModelMessage("id-1", false)),
-        });
+                    Model = model,
+                    Tools = new[]
+                    {
+                        ValueTool(
+                            (_, _) =>
+                            {
+                                executeCalls++;
+                                return Task.FromResult("result1");
+                            }
+                        ),
+                    },
+                    ToolApproval = new ToolApprovalConfiguration { { "tool1", "user-approval" } },
+                    StopWhen = StopWhen.IsStepCount(3),
+                    GenerateId = MockId("id"),
+                    Messages = History(
+                        "tool1",
+                        new[] { ("call-1", "{\"value\":\"value\"}", "id-1") },
+                        new ToolApprovalResponseModelMessage("id-1", false)
+                    ),
+                }
+            );
         return (result, model, executeCalls);
     }
 }

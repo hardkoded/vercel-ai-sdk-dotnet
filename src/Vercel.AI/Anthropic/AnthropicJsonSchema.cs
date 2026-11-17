@@ -17,14 +17,34 @@ public static class AnthropicJsonSchema
 {
     private static readonly string[] SupportedFormats =
     {
-        "date-time", "time", "date", "duration", "email", "hostname", "uri", "ipv4", "ipv6", "uuid",
+        "date-time",
+        "time",
+        "date",
+        "duration",
+        "email",
+        "hostname",
+        "uri",
+        "ipv4",
+        "ipv6",
+        "uuid",
     };
 
     private static readonly string[] ConstraintKeys =
     {
-        "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf",
-        "minLength", "maxLength", "pattern", "minItems", "maxItems", "uniqueItems",
-        "minProperties", "maxProperties", "not",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "multipleOf",
+        "minLength",
+        "maxLength",
+        "pattern",
+        "minItems",
+        "maxItems",
+        "uniqueItems",
+        "minProperties",
+        "maxProperties",
+        "not",
     };
 
     /// <summary>Returns a schema Anthropic's constrained decoder accepts.</summary>
@@ -52,7 +72,10 @@ public static class AnthropicJsonSchema
             return JsonNode.Parse(schema.GetRawText()) ?? new JsonObject();
         }
 
-        if (schema.TryGetProperty("$ref", out var reference) && reference.ValueKind != JsonValueKind.Null)
+        if (
+            schema.TryGetProperty("$ref", out var reference)
+            && reference.ValueKind != JsonValueKind.Null
+        )
         {
             // Keep the definitions next to a `$ref` so a top-level reference still resolves
             // (e.g. `{ $ref: '#/definitions/Answer', definitions: {...} }`).
@@ -75,7 +98,10 @@ public static class AnthropicJsonSchema
         {
             result["anyOf"] = MapArray(anyOf);
         }
-        else if (schema.TryGetProperty("oneOf", out var oneOf) && oneOf.ValueKind == JsonValueKind.Array)
+        else if (
+            schema.TryGetProperty("oneOf", out var oneOf)
+            && oneOf.ValueKind == JsonValueKind.Array
+        )
         {
             result["anyOf"] = MapArray(oneOf);
         }
@@ -87,8 +113,14 @@ public static class AnthropicJsonSchema
 
         AddDefinitions(schema, result);
 
-        var type = schema.TryGetProperty("type", out var typeValue) && typeValue.ValueKind == JsonValueKind.String ? typeValue.GetString() : null;
-        var hasProperties = schema.TryGetProperty("properties", out var properties) && properties.ValueKind == JsonValueKind.Object;
+        var type =
+            schema.TryGetProperty("type", out var typeValue)
+            && typeValue.ValueKind == JsonValueKind.String
+                ? typeValue.GetString()
+                : null;
+        var hasProperties =
+            schema.TryGetProperty("properties", out var properties)
+            && properties.ValueKind == JsonValueKind.Object;
         if (type == "object" || hasProperties)
         {
             if (hasProperties)
@@ -102,10 +134,15 @@ public static class AnthropicJsonSchema
 
         if (schema.TryGetProperty("items", out var items) && items.ValueKind != JsonValueKind.Null)
         {
-            result["items"] = items.ValueKind == JsonValueKind.Array ? MapArray(items) : SanitizeNode(items);
+            result["items"] =
+                items.ValueKind == JsonValueKind.Array ? MapArray(items) : SanitizeNode(items);
         }
 
-        if (schema.TryGetProperty("format", out var format) && format.ValueKind == JsonValueKind.String && IsSupportedFormat(format.GetString()))
+        if (
+            schema.TryGetProperty("format", out var format)
+            && format.ValueKind == JsonValueKind.String
+            && IsSupportedFormat(format.GetString())
+        )
         {
             result["format"] = format.GetString();
         }
@@ -133,7 +170,10 @@ public static class AnthropicJsonSchema
 
     private static void AddDefinitions(JsonElement schema, JsonObject result)
     {
-        if (schema.TryGetProperty("definitions", out var definitions) && definitions.ValueKind == JsonValueKind.Object)
+        if (
+            schema.TryGetProperty("definitions", out var definitions)
+            && definitions.ValueKind == JsonValueKind.Object
+        )
         {
             result["definitions"] = MapObject(definitions);
         }
@@ -157,7 +197,11 @@ public static class AnthropicJsonSchema
 
     private static void Copy(JsonElement source, JsonObject target, string name)
     {
-        if (source.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null && value.ValueKind != JsonValueKind.Undefined)
+        if (
+            source.TryGetProperty(name, out var value)
+            && value.ValueKind != JsonValueKind.Null
+            && value.ValueKind != JsonValueKind.Undefined
+        )
         {
             target[name] = JsonNode.Parse(value.GetRawText());
         }
@@ -186,7 +230,11 @@ public static class AnthropicJsonSchema
         var parts = new List<string>();
         foreach (var key in ConstraintKeys)
         {
-            if (!schema.TryGetProperty(key, out var value) || value.ValueKind == JsonValueKind.Null || value.ValueKind == JsonValueKind.Undefined)
+            if (
+                !schema.TryGetProperty(key, out var value)
+                || value.ValueKind == JsonValueKind.Null
+                || value.ValueKind == JsonValueKind.Undefined
+            )
             {
                 continue;
             }
@@ -199,7 +247,11 @@ public static class AnthropicJsonSchema
             parts.Add(FormatName(key) + ": " + FormatValue(value));
         }
 
-        if (schema.TryGetProperty("format", out var format) && format.ValueKind == JsonValueKind.String && !IsSupportedFormat(format.GetString()))
+        if (
+            schema.TryGetProperty("format", out var format)
+            && format.ValueKind == JsonValueKind.String
+            && !IsSupportedFormat(format.GetString())
+        )
         {
             parts.Add("format: " + format.GetString());
         }
@@ -228,6 +280,8 @@ public static class AnthropicJsonSchema
 
     private static string FormatValue(JsonElement value)
     {
-        return value.ValueKind == JsonValueKind.String ? value.GetString() ?? string.Empty : value.GetRawText();
+        return value.ValueKind == JsonValueKind.String
+            ? value.GetString() ?? string.Empty
+            : value.GetRawText();
     }
 }
