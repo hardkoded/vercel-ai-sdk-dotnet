@@ -35,6 +35,10 @@ public sealed class ZaiProvider : OpenAICompatibleProvider
         return new ZaiProvider(client, options);
     }
 
+    /// <inheritdoc />
+    public override OpenAICompatibleLanguageModel CreateChatModel(string modelId) =>
+        new ZaiChatLanguageModel(this, modelId);
+
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
