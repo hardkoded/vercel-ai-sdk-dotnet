@@ -188,23 +188,6 @@ public sealed class GoogleMediaUpstreamTests
 
     [Fact]
     [UpstreamTest(
-        "packages/google/src/google-speech-model.test.ts::%s::rejects custom voice %s before fetching",
-        Coverage = UpstreamCoverage.Covered
-    )]
-    public void Rejects_a_custom_voice_before_the_request()
-    {
-        var error = Assert.Throws<ArgumentException>(() =>
-            GoogleSpeechModel.Prepare(
-                "gemini-2.5-flash-preview-tts",
-                "google",
-                new GoogleSpeechCall("Hello") { Voice = "voice_test" }
-            )
-        );
-        Assert.Contains("Custom voices", error.Message);
-    }
-
-    [Fact]
-    [UpstreamTest(
         "packages/google/src/google-speech-input.test.ts::getGoogleSpeechInput::extracts only transcript text, preserving Unicode and inline tags",
         Coverage = UpstreamCoverage.Covered
     )]

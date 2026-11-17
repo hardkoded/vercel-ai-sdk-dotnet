@@ -422,24 +422,14 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
             }
         }
 
-        var inspection = GoogleSpeechInput.Inspect(
-            call.Text,
-            call.Voice,
-            google.ValueKind == JsonValueKind.Object ? google : null
-        );
+        var options = google.ValueKind == JsonValueKind.Object ? google : (JsonElement?)null;
+        ValidateOptions(options);
+        var inspection = GoogleSpeechInput.Inspect(call.Text, call.Voice, options);
         if (inspection.UsesCustomVoice)
         {
             throw new ArgumentException(
                 "Custom voices are not supported. Use a prebuilt voice instead.",
                 "voice"
-            );
-        }
-
-        if (inspection.Text.Length == 0)
-        {
-            throw new ArgumentException(
-                "Speech input must contain a non-empty transcript.",
-                "text"
             );
         }
 
@@ -493,6 +483,121 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
             }
         }
 
+        var parts = new JsonArray();
+        var hasTurns = options is { } turnOptions && turnOptions.TryGetProperty("turns", out _);
+        var hasSpeechMetadata =
+            options is { } metadataOptions
+            && metadataOptions.TryGetProperty("speechMetadata", out _);
+        if (structured)
+        {
+            if (hasTurns && hasSpeechMetadata)
+            {
+                throw new ArgumentException(
+                    "Set speechMetadata on each turn when using turns.",
+                    "providerOptions"
+                );
+            }
+
+            if (hasTurns && call.Text != string.Empty)
+            {
+                warnings.Add(
+                    GoogleWarning.Unsupported(
+                        "text",
+                        "Google TTS turns replace the top-level text."
+                    )
+                );
+            }
+
+            var speakers = new List<string>();
+            if (
+                speechConfig["multiSpeakerVoiceConfig"] is JsonObject multiConfig
+                && multiConfig["speakerVoiceConfigs"] is JsonArray configs
+            )
+            {
+                foreach (var config in configs)
+                {
+                    speakers.Add((string?)config?["speaker"] ?? string.Empty);
+                }
+            }
+
+            var multiSpeaker = speechConfig.ContainsKey("multiSpeakerVoiceConfig");
+            var sources = new List<(string Text, JsonElement? Metadata)>();
+            if (hasTurns)
+            {
+                foreach (var turn in options!.Value.GetProperty("turns").EnumerateArray())
+                {
+                    sources.Add(
+                        (
+                            turn.GetProperty("text").GetString() ?? string.Empty,
+                            turn.TryGetProperty("speechMetadata", out var turnMetadata)
+                                ? turnMetadata
+                                : null
+                        )
+                    );
+                }
+            }
+            else
+            {
+                sources.Add(
+                    (
+                        call.Text,
+                        hasSpeechMetadata ? options!.Value.GetProperty("speechMetadata") : null
+                    )
+                );
+            }
+
+            foreach (var source in sources)
+            {
+                var style = ReadString(source.Metadata, "style") ?? call.Instructions;
+                var speaker = ReadString(source.Metadata, "speaker");
+                if (multiSpeaker && (speaker == null || !speakers.Contains(speaker)))
+                {
+                    throw new ArgumentException(
+                        "Every multi-speaker turn must specify a speechMetadata.speaker matching a configured speaker.",
+                        "speechMetadata.speaker"
+                    );
+                }
+
+                var turnPart = new JsonObject { ["text"] = source.Text };
+                if (style != null || speaker != null)
+                {
+                    var metadata = new JsonObject();
+                    if (style != null)
+                    {
+                        metadata["style"] = style;
+                    }
+
+                    if (speaker != null)
+                    {
+                        metadata["speaker"] = speaker;
+                    }
+
+                    turnPart["speechMetadata"] = metadata;
+                }
+
+                parts.Add(turnPart);
+            }
+        }
+        else if (hasTurns || hasSpeechMetadata)
+        {
+            throw new ArgumentException(
+                "Structured speech metadata and turns require Gemini 3.8 TTS.",
+                "providerOptions"
+            );
+        }
+        else
+        {
+            parts.Add(new JsonObject { ["text"] = prompt });
+        }
+
+        if (inspection.Text.Length == 0)
+        {
+            throw new ArgumentException(
+                "Speech input must contain a non-empty transcript.",
+                "text"
+            );
+        }
+
         if (call.Speed != null)
         {
             warnings.Add(
@@ -503,7 +608,6 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
             );
         }
 
-        var part = new JsonObject { ["text"] = prompt };
         var generation = new JsonObject
         {
             ["responseModalities"] = new JsonArray(JsonValue.Create("AUDIO")),
@@ -553,7 +657,7 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
         {
             ["contents"] = new JsonArray
             {
-                new JsonObject { ["role"] = "user", ["parts"] = new JsonArray(part) },
+                new JsonObject { ["role"] = "user", ["parts"] = parts },
             },
             ["generationConfig"] = generation,
         };
@@ -563,6 +667,97 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
             formats[resolvedOutputFormat],
             structured
         );
+    }
+
+    private static string? ReadString(JsonElement? element, string name)
+    {
+        return
+            element is { ValueKind: JsonValueKind.Object } value
+            && value.TryGetProperty(name, out var property)
+            && property.ValueKind == JsonValueKind.String
+            ? property.GetString()
+            : null;
+    }
+
+    private static void ValidateOptions(JsonElement? google)
+    {
+        if (google is not { ValueKind: JsonValueKind.Object } options)
+        {
+            return;
+        }
+
+        var valid = true;
+        if (options.TryGetProperty("speechMetadata", out var speechMetadata))
+        {
+            valid &= IsSpeechMetadata(speechMetadata);
+        }
+
+        if (options.TryGetProperty("turns", out var turns))
+        {
+            valid &=
+                turns.ValueKind == JsonValueKind.Array
+                && turns.GetArrayLength() > 0
+                && turns
+                    .EnumerateArray()
+                    .All(turn =>
+                        turn.ValueKind == JsonValueKind.Object
+                        && turn.TryGetProperty("text", out var text)
+                        && text.ValueKind == JsonValueKind.String
+                        && (
+                            !turn.TryGetProperty("speechMetadata", out var metadata)
+                            || IsSpeechMetadata(metadata)
+                        )
+                    );
+        }
+
+        if (options.TryGetProperty("multiSpeakerVoiceConfig", out var multi))
+        {
+            valid &=
+                multi.ValueKind == JsonValueKind.Object
+                && multi.TryGetProperty("speakerVoiceConfigs", out var speakers)
+                && speakers.ValueKind == JsonValueKind.Array
+                && speakers
+                    .EnumerateArray()
+                    .All(speaker =>
+                        speaker.ValueKind == JsonValueKind.Object
+                        && speaker.TryGetProperty("speaker", out var name)
+                        && name.ValueKind == JsonValueKind.String
+                        && speaker.TryGetProperty("voiceConfig", out var voiceConfig)
+                        && voiceConfig.ValueKind == JsonValueKind.Object
+                        && !voiceConfig.TryGetProperty("voice", out _)
+                        && voiceConfig.TryGetProperty("prebuiltVoiceConfig", out var prebuilt)
+                        && prebuilt.ValueKind == JsonValueKind.Object
+                        && prebuilt.TryGetProperty("voiceName", out var voiceName)
+                        && voiceName.ValueKind == JsonValueKind.String
+                    );
+        }
+
+        if (!valid)
+        {
+            throw new ArgumentException(
+                "Invalid Google speech provider options.",
+                "providerOptions"
+            );
+        }
+    }
+
+    private static bool IsSpeechMetadata(JsonElement metadata)
+    {
+        if (metadata.ValueKind != JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        if (metadata.TryGetProperty("speaker", out var speaker))
+        {
+            if (speaker.ValueKind != JsonValueKind.String || speaker.GetString()!.Length == 0)
+            {
+                return false;
+            }
+        }
+
+        return !metadata.TryGetProperty("style", out var style)
+            || style.ValueKind == JsonValueKind.String;
     }
 
     /// <summary>Parses the sample rate from a PCM mime type such as <c>audio/L16;rate=24000</c>.</summary>
