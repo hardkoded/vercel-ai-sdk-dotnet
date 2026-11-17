@@ -117,7 +117,8 @@ public sealed class XaiRealtimeModel : IServerWebSocketRealtimeModel
                 ApiKeys.Combine(_config.BaseUrl, "/realtime/client_secrets"),
                 ProviderExchange.Json(body.ToJsonString()),
                 headers,
-                cancellationToken
+                cancellationToken,
+                XaiError.FailedResponseHandler
             )
             .ConfigureAwait(false);
         using (
