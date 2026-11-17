@@ -38,7 +38,12 @@ public sealed class UIMessageStreamResponseInit
 public sealed class UIMessageStreamResponse
 {
     /// <summary>Creates the response.</summary>
-    public UIMessageStreamResponse(int status, string? statusText, HeaderCollection headers, ReadableStream<byte[]> body)
+    public UIMessageStreamResponse(
+        int status,
+        string? statusText,
+        HeaderCollection headers,
+        ReadableStream<byte[]> body
+    )
     {
         Status = status;
         StatusText = statusText;
@@ -68,7 +73,10 @@ public static class UIMessageStreamResponses
     /// <param name="stream">The UI message chunk stream to send.</param>
     /// <param name="init">Status, headers, keep-alive interval, and the optional SSE stream consumer.</param>
     /// <returns>A response with the UI message stream as the body.</returns>
-    public static UIMessageStreamResponse CreateUIMessageStreamResponse(ReadableStream<JsonObject> stream, UIMessageStreamResponseInit? init = null)
+    public static UIMessageStreamResponse CreateUIMessageStreamResponse(
+        ReadableStream<JsonObject> stream,
+        UIMessageStreamResponseInit? init = null
+    )
     {
         if (stream is null)
         {
@@ -82,7 +90,11 @@ public static class UIMessageStreamResponses
         if (init.KeepAliveMs is not null)
         {
             sseStream = ReadableStream<string>.From(
-                UIMessageStreamResult.CreateSseStreamWithKeepAlive(new AsyncIterableStream<string>(sseStream), init.KeepAliveMs));
+                UIMessageStreamResult.CreateSseStreamWithKeepAlive(
+                    new AsyncIterableStream<string>(sseStream),
+                    init.KeepAliveMs
+                )
+            );
         }
 
         // when the consumeSseStream is provided, we need to tee the stream
@@ -99,10 +111,14 @@ public static class UIMessageStreamResponses
             init.Status ?? 200,
             init.StatusText,
             PrepareHeaders.Apply(init.Headers, UIMessageStreamResult.ProtocolHeaders),
-            Encode(sseStream));
+            Encode(sseStream)
+        );
     }
 
-    private static void Consume(Func<ReadableStream<string>, Task?> consumeSseStream, ReadableStream<string> stream)
+    private static void Consume(
+        Func<ReadableStream<string>, Task?> consumeSseStream,
+        ReadableStream<string> stream
+    )
     {
         try
         {
@@ -110,7 +126,10 @@ public static class UIMessageStreamResponses
             if (task is not null)
             {
                 // The response does not wait for the consumer. A failing consumer must not break it.
-                _ = task.ContinueWith(static completed => _ = completed.Exception, TaskContinuationOptions.OnlyOnFaulted);
+                _ = task.ContinueWith(
+                    static completed => _ = completed.Exception,
+                    TaskContinuationOptions.OnlyOnFaulted
+                );
             }
         }
         catch (Exception)
@@ -142,7 +161,8 @@ public static class UIMessageStreamResponses
 
                 controller.Enqueue("data: " + read.Value.ToJsonString() + "\n\n");
             },
-            cancel: () => reader.CancelAsync());
+            cancel: () => reader.CancelAsync()
+        );
     }
 
     // TextEncoderStream
@@ -168,6 +188,7 @@ public static class UIMessageStreamResponses
 
                 controller.Enqueue(utf8.GetBytes(read.Value));
             },
-            cancel: () => reader.CancelAsync());
+            cancel: () => reader.CancelAsync()
+        );
     }
 }

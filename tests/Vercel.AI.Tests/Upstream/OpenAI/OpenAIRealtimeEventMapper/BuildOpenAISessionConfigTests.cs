@@ -18,7 +18,11 @@ public sealed class BuildOpenAISessionConfigTests
     [InlineData("instructions")]
     [InlineData("tools")]
     [InlineData("outputModalities")]
-    [UpstreamTest(Prefix + "rejects unsupported transcription configuration: %j", Coverage = UpstreamCoverage.Covered, Commit = RealtimeMapperSupport.Commit)]
+    [UpstreamTest(
+        Prefix + "rejects unsupported transcription configuration: %j",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = RealtimeMapperSupport.Commit
+    )]
     public void Rejects_unsupported_transcription_configuration(string setting)
     {
         var config = new RealtimeModelV4SessionConfig();
@@ -38,15 +42,22 @@ public sealed class BuildOpenAISessionConfigTests
                 break;
         }
 
-        var exception = Assert.Throws<InvalidOperationException>(() => Mapper.BuildOpenAISessionConfig(
-            config,
-            "gpt-realtime-whisper",
-            new SessionOptions { Intent = RealtimeModelV4SessionIntent.Transcription }));
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            Mapper.BuildOpenAISessionConfig(
+                config,
+                "gpt-realtime-whisper",
+                new SessionOptions { Intent = RealtimeModelV4SessionIntent.Transcription }
+            )
+        );
         Assert.Matches("transcription sessions do not support", exception.Message);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "builds a dedicated transcription session with the selected model id", Coverage = UpstreamCoverage.Covered, Commit = RealtimeMapperSupport.Commit)]
+    [UpstreamTest(
+        Prefix + "builds a dedicated transcription session with the selected model id",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = RealtimeMapperSupport.Commit
+    )]
     public void Builds_a_dedicated_transcription_session_with_the_selected_model_id()
     {
         var result = Mapper.BuildOpenAISessionConfig(
@@ -62,26 +73,41 @@ public sealed class BuildOpenAISessionConfigTests
                 },
             },
             "gpt-realtime",
-            new SessionOptions { Intent = RealtimeModelV4SessionIntent.Transcription });
+            new SessionOptions { Intent = RealtimeModelV4SessionIntent.Transcription }
+        );
 
         OpenAIUpstream.Equal(
             result,
-            "{\"type\":\"transcription\",\"audio\":{\"input\":{\"format\":{\"type\":\"audio/pcm\",\"rate\":24000},\"transcription\":{\"model\":\"gpt-realtime-whisper\",\"language\":\"en\",\"prompt\":\"Medical vocabulary.\"}}}}");
+            "{\"type\":\"transcription\",\"audio\":{\"input\":{\"format\":{\"type\":\"audio/pcm\",\"rate\":24000},\"transcription\":{\"model\":\"gpt-realtime-whisper\",\"language\":\"en\",\"prompt\":\"Medical vocabulary.\"}}}}"
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "enables input audio transcription with a default model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "enables input audio transcription with a default model",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Enables_input_audio_transcription_with_a_default_model()
     {
         var result = Mapper.BuildOpenAISessionConfig(
-            new RealtimeModelV4SessionConfig { InputAudioTranscription = new RealtimeModelV4AudioTranscription() },
-            "gpt-realtime");
+            new RealtimeModelV4SessionConfig
+            {
+                InputAudioTranscription = new RealtimeModelV4AudioTranscription(),
+            },
+            "gpt-realtime"
+        );
 
-        OpenAIUpstream.Equal(result["audio"], "{\"input\":{\"transcription\":{\"model\":\"gpt-realtime-whisper\"}}}");
+        OpenAIUpstream.Equal(
+            result["audio"],
+            "{\"input\":{\"transcription\":{\"model\":\"gpt-realtime-whisper\"}}}"
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "maps input audio transcription options", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "maps input audio transcription options",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Maps_input_audio_transcription_options()
     {
         var result = Mapper.BuildOpenAISessionConfig(
@@ -94,22 +120,31 @@ public sealed class BuildOpenAISessionConfigTests
                     Prompt = "Transcribe short voice chat messages.",
                 },
             },
-            "gpt-realtime");
+            "gpt-realtime"
+        );
 
         OpenAIUpstream.Equal(
             result["audio"],
-            "{\"input\":{\"transcription\":{\"model\":\"gpt-4o-mini-transcribe\",\"language\":\"en\",\"prompt\":\"Transcribe short voice chat messages.\"}}}");
+            "{\"input\":{\"transcription\":{\"model\":\"gpt-4o-mini-transcribe\",\"language\":\"en\",\"prompt\":\"Transcribe short voice chat messages.\"}}}"
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "does not build translation sessions until the normalized codec supports them", Coverage = UpstreamCoverage.Covered, Commit = RealtimeMapperSupport.Commit)]
+    [UpstreamTest(
+        Prefix + "does not build translation sessions until the normalized codec supports them",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = RealtimeMapperSupport.Commit
+    )]
     public void Does_not_build_translation_sessions_until_the_normalized_codec_supports_them()
     {
         // Upstream passes the unsupported intent 'translation' (`as never`).
-        var exception = Assert.Throws<InvalidOperationException>(() => Mapper.BuildOpenAISessionConfig(
-            new RealtimeModelV4SessionConfig(),
-            "gpt-realtime-translate",
-            new SessionOptions { Intent = (RealtimeModelV4SessionIntent)2 }));
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            Mapper.BuildOpenAISessionConfig(
+                new RealtimeModelV4SessionConfig(),
+                "gpt-realtime-translate",
+                new SessionOptions { Intent = (RealtimeModelV4SessionIntent)2 }
+            )
+        );
         Assert.Matches("is not supported", exception.Message);
     }
 }

@@ -12,7 +12,8 @@ namespace Vercel.AI.Tests.Upstream.Perplexity.ConvertToPerplexityDecisionState;
 /// <summary>Fixtures shared by the <c>convert-to-perplexity-decision-state.test.ts</c> port.</summary>
 internal static class ConvertToPerplexityDecisionStateSupport
 {
-    internal const string Image = """{ "type": "image_url", "image_url": { "url": "data:image/png;base64,iVBORw==" } }""";
+    internal const string Image =
+        """{ "type": "image_url", "image_url": { "url": "data:image/png;base64,iVBORw==" } }""";
 
     internal static JsonNode? Convert(params object?[] parts)
     {

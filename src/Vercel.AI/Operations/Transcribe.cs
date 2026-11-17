@@ -27,7 +27,13 @@ public sealed class DownloadedMedia
 public sealed class TranscriptionModelCall
 {
     /// <summary>Creates a call.</summary>
-    public TranscriptionModelCall(byte[] audio, string mediaType, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
+    public TranscriptionModelCall(
+        byte[] audio,
+        string mediaType,
+        JsonElement providerOptions,
+        IReadOnlyDictionary<string, string> headers,
+        CancellationToken cancellationToken
+    )
     {
         Audio = audio ?? Array.Empty<byte>();
         MediaType = mediaType;
@@ -37,7 +43,13 @@ public sealed class TranscriptionModelCall
     }
 
     /// <summary>Creates a call whose audio is a base64 string. Maps to upstream's <c>audio: string</c>.</summary>
-    public TranscriptionModelCall(string audioBase64, string mediaType, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
+    public TranscriptionModelCall(
+        string audioBase64,
+        string mediaType,
+        JsonElement providerOptions,
+        IReadOnlyDictionary<string, string> headers,
+        CancellationToken cancellationToken
+    )
     {
         AudioBase64 = audioBase64 ?? throw new ArgumentNullException(nameof(audioBase64));
         MediaType = mediaType;
@@ -52,7 +64,10 @@ public sealed class TranscriptionModelCall
     /// </summary>
     public byte[] Audio
     {
-        get => field ??= AudioBase64 is null ? Array.Empty<byte>() : Convert.FromBase64String(AudioBase64);
+        get =>
+            field ??= AudioBase64 is null
+                ? Array.Empty<byte>()
+                : Convert.FromBase64String(AudioBase64);
     }
 
     /// <summary>The audio as the base64 string the caller passed, or <see langword="null"/> when the call carries bytes.</summary>
@@ -81,7 +96,12 @@ public sealed class TranscriptionModelCall
 public sealed class TranscriptionModelUrlCall
 {
     /// <summary>Creates a call.</summary>
-    public TranscriptionModelUrlCall(Uri audio, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
+    public TranscriptionModelUrlCall(
+        Uri audio,
+        JsonElement providerOptions,
+        IReadOnlyDictionary<string, string> headers,
+        CancellationToken cancellationToken
+    )
     {
         Audio = audio ?? throw new ArgumentNullException(nameof(audio));
         ProviderOptions = providerOptions;
@@ -109,7 +129,17 @@ public sealed class TranscriptionModelUrlCall
 public sealed class TranscriptionModelResult
 {
     /// <summary>Creates a result.</summary>
-    public TranscriptionModelResult(string? text, IReadOnlyList<TranscriptSegment>? segments = null, string? language = null, double? durationInSeconds = null, IReadOnlyList<OperationWarning>? warnings = null, JsonElement? providerMetadata = null, ProviderResponse? response = null, IReadOnlyList<TranscriptSegment>? words = null, JsonElement? usage = null)
+    public TranscriptionModelResult(
+        string? text,
+        IReadOnlyList<TranscriptSegment>? segments = null,
+        string? language = null,
+        double? durationInSeconds = null,
+        IReadOnlyList<OperationWarning>? warnings = null,
+        JsonElement? providerMetadata = null,
+        ProviderResponse? response = null,
+        IReadOnlyList<TranscriptSegment>? words = null,
+        JsonElement? usage = null
+    )
     {
         Usage = usage;
         Text = text;
@@ -154,13 +184,34 @@ public sealed class TranscriptionModelResult
 public sealed class TranscriptionStreamCall
 {
     /// <summary>Creates a stream call.</summary>
-    public TranscriptionStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string?> headers, bool? includeRawChunks, CancellationToken cancellationToken)
-        : this(audio, inputAudioFormat, providerOptions, headers, includeRawChunks, cancellationToken, null)
-    {
-    }
+    public TranscriptionStreamCall(
+        AudioChunkStream audio,
+        AudioFormat inputAudioFormat,
+        JsonElement providerOptions,
+        IReadOnlyDictionary<string, string?> headers,
+        bool? includeRawChunks,
+        CancellationToken cancellationToken
+    )
+        : this(
+            audio,
+            inputAudioFormat,
+            providerOptions,
+            headers,
+            includeRawChunks,
+            cancellationToken,
+            null
+        ) { }
 
     /// <summary>Creates a stream call that fails with <paramref name="abortReason"/> when cancelled.</summary>
-    public TranscriptionStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string?> headers, bool? includeRawChunks, CancellationToken cancellationToken, Exception? abortReason)
+    public TranscriptionStreamCall(
+        AudioChunkStream audio,
+        AudioFormat inputAudioFormat,
+        JsonElement providerOptions,
+        IReadOnlyDictionary<string, string?> headers,
+        bool? includeRawChunks,
+        CancellationToken cancellationToken,
+        Exception? abortReason
+    )
     {
         Audio = audio;
         InputAudioFormat = inputAudioFormat;
@@ -197,7 +248,11 @@ public sealed class TranscriptionStreamCall
 public sealed class TranscriptionStreamStart
 {
     /// <summary>Creates a start payload.</summary>
-    public TranscriptionStreamStart(ModelPartStream stream, ProviderResponse? response = null, ProviderRequest? request = null)
+    public TranscriptionStreamStart(
+        ModelPartStream stream,
+        ProviderResponse? response = null,
+        ProviderRequest? request = null
+    )
     {
         Stream = stream;
         Response = response;
@@ -230,10 +285,16 @@ public interface ITranscriptionCaller
     bool CanStream { get; }
 
     /// <summary>Transcribes audio.</summary>
-    Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken);
+    Task<TranscriptionModelResult> DoGenerateAsync(
+        TranscriptionModelCall call,
+        CancellationToken cancellationToken
+    );
 
     /// <summary>Starts a stream, or null when streaming is unsupported.</summary>
-    Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken);
+    Task<TranscriptionStreamStart?> DoStreamAsync(
+        TranscriptionStreamCall call,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>
@@ -248,7 +309,10 @@ public interface ITranscriptionUrlCaller : ITranscriptionCaller
     /// when the provider cannot fetch this URL and the SDK should download it locally and call <see cref="ITranscriptionCaller.DoGenerateAsync"/>.
     /// Throws for other errors, such as authentication or invalid audio.
     /// </summary>
-    Task<TranscriptionModelResult?> DoGenerateFromUrlAsync(TranscriptionModelUrlCall call, CancellationToken cancellationToken);
+    Task<TranscriptionModelResult?> DoGenerateFromUrlAsync(
+        TranscriptionModelUrlCall call,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>Resolves string transcription model ids.</summary>
@@ -262,7 +326,16 @@ public static class TranscriptionModels
 public sealed class TranscribeResult
 {
     /// <summary>Creates a result.</summary>
-    public TranscribeResult(string text, IReadOnlyList<TranscriptSegment> segments, string? language, double? durationInSeconds, IReadOnlyList<OperationWarning> warnings, IReadOnlyList<ProviderResponse> responses, JsonElement providerMetadata, IReadOnlyList<TranscriptSegment>? words = null)
+    public TranscribeResult(
+        string text,
+        IReadOnlyList<TranscriptSegment> segments,
+        string? language,
+        double? durationInSeconds,
+        IReadOnlyList<OperationWarning> warnings,
+        IReadOnlyList<ProviderResponse> responses,
+        JsonElement providerMetadata,
+        IReadOnlyList<TranscriptSegment>? words = null
+    )
     {
         Text = text;
         Segments = segments ?? Array.Empty<TranscriptSegment>();
@@ -323,7 +396,20 @@ public sealed class TranscriptionAudioInfo
 public sealed class TranscriptionStartEvent
 {
     /// <summary>Creates the event.</summary>
-    public TranscriptionStartEvent(string callId, string provider, string modelId, TranscriptionAudioInfo audio, int? maxRetries, IReadOnlyDictionary<string, string>? headers, JsonElement providerOptions, IReadOnlyList<string>? timestampGranularities, AudioFormat? inputAudioFormat = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
+    public TranscriptionStartEvent(
+        string callId,
+        string provider,
+        string modelId,
+        TranscriptionAudioInfo audio,
+        int? maxRetries,
+        IReadOnlyDictionary<string, string>? headers,
+        JsonElement providerOptions,
+        IReadOnlyList<string>? timestampGranularities,
+        AudioFormat? inputAudioFormat = null,
+        bool? recordInputs = null,
+        bool? recordOutputs = null,
+        string? functionId = null
+    )
     {
         CallId = callId;
         Provider = provider;
@@ -383,7 +469,24 @@ public sealed class TranscriptionStartEvent
 public sealed class TranscriptionEndEvent
 {
     /// <summary>Creates the event.</summary>
-    public TranscriptionEndEvent(string callId, string provider, string modelId, TranscriptionAudioInfo audio, string text, IReadOnlyList<TranscriptSegment> segments, IReadOnlyList<TranscriptSegment>? words, string? language, double? durationInSeconds, JsonElement? usage, IReadOnlyList<OperationWarning> warnings, JsonElement? providerMetadata, ProviderResponse response, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
+    public TranscriptionEndEvent(
+        string callId,
+        string provider,
+        string modelId,
+        TranscriptionAudioInfo audio,
+        string text,
+        IReadOnlyList<TranscriptSegment> segments,
+        IReadOnlyList<TranscriptSegment>? words,
+        string? language,
+        double? durationInSeconds,
+        JsonElement? usage,
+        IReadOnlyList<OperationWarning> warnings,
+        JsonElement? providerMetadata,
+        ProviderResponse response,
+        bool? recordInputs = null,
+        bool? recordOutputs = null,
+        string? functionId = null
+    )
     {
         CallId = callId;
         Provider = provider;
@@ -531,11 +634,14 @@ public sealed class StreamTranscribeRequest : OperationRequest
 public sealed class StreamTranscribeResult
 {
     private readonly PendingPromise<string> _text = new PendingPromise<string>();
-    private readonly PendingPromise<IReadOnlyList<TranscriptSegment>> _segments = new PendingPromise<IReadOnlyList<TranscriptSegment>>();
+    private readonly PendingPromise<IReadOnlyList<TranscriptSegment>> _segments =
+        new PendingPromise<IReadOnlyList<TranscriptSegment>>();
     private readonly PendingPromise<string?> _language = new PendingPromise<string?>();
     private readonly PendingPromise<double?> _duration = new PendingPromise<double?>();
-    private readonly PendingPromise<IReadOnlyList<OperationWarning>> _warnings = new PendingPromise<IReadOnlyList<OperationWarning>>();
-    private readonly PendingPromise<IReadOnlyList<ProviderResponse>> _responses = new PendingPromise<IReadOnlyList<ProviderResponse>>();
+    private readonly PendingPromise<IReadOnlyList<OperationWarning>> _warnings =
+        new PendingPromise<IReadOnlyList<OperationWarning>>();
+    private readonly PendingPromise<IReadOnlyList<ProviderResponse>> _responses =
+        new PendingPromise<IReadOnlyList<ProviderResponse>>();
     private readonly PendingPromise<JsonElement> _metadata = new PendingPromise<JsonElement>();
     private readonly PartQueue<ModelStreamPart> _queue = new PartQueue<ModelStreamPart>();
     private readonly CancellationTokenSource _pipe = new CancellationTokenSource();
@@ -545,55 +651,93 @@ public sealed class StreamTranscribeResult
     private readonly ITranscriptionCaller _model;
     private readonly DateTime _startedAt;
 
-    internal StreamTranscribeResult(ITranscriptionCaller model, StreamTranscribeRequest request, CancellationToken cancellationToken)
+    internal StreamTranscribeResult(
+        ITranscriptionCaller model,
+        StreamTranscribeRequest request,
+        CancellationToken cancellationToken
+    )
     {
         _model = model;
         _startedAt = request.Now?.Invoke() ?? DateTime.UtcNow;
-        var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _pipe.Token);
-        FullStreamCore = new OperationFullStream<ModelStreamPart>(token => new QueueEnumerator(this, token), CancelPipe);
+        var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _pipe.Token
+        );
+        FullStreamCore = new OperationFullStream<ModelStreamPart>(
+            token => new QueueEnumerator(this, token),
+            CancelPipe
+        );
         _ = PumpAsync(model, request, linked);
     }
 
     /// <summary>Final transcript. Accessing it claims the stream.</summary>
     public Task<string> Text
     {
-        get { Claim(); return _text.Task; }
+        get
+        {
+            Claim();
+            return _text.Task;
+        }
     }
 
     /// <summary>Segments. Accessing it claims the stream.</summary>
     public Task<IReadOnlyList<TranscriptSegment>> Segments
     {
-        get { Claim(); return _segments.Task; }
+        get
+        {
+            Claim();
+            return _segments.Task;
+        }
     }
 
     /// <summary>Language. Accessing it claims the stream.</summary>
     public Task<string?> Language
     {
-        get { Claim(); return _language.Task; }
+        get
+        {
+            Claim();
+            return _language.Task;
+        }
     }
 
     /// <summary>Duration. Accessing it claims the stream.</summary>
     public Task<double?> DurationInSeconds
     {
-        get { Claim(); return _duration.Task; }
+        get
+        {
+            Claim();
+            return _duration.Task;
+        }
     }
 
     /// <summary>Warnings. Accessing it claims the stream.</summary>
     public Task<IReadOnlyList<OperationWarning>> Warnings
     {
-        get { Claim(); return _warnings.Task; }
+        get
+        {
+            Claim();
+            return _warnings.Task;
+        }
     }
 
     /// <summary>Responses. Accessing it claims the stream.</summary>
     public Task<IReadOnlyList<ProviderResponse>> Responses
     {
-        get { Claim(); return _responses.Task; }
+        get
+        {
+            Claim();
+            return _responses.Task;
+        }
     }
 
     /// <summary>Provider metadata. Accessing it claims the stream.</summary>
     public Task<JsonElement> ProviderMetadata
     {
-        get { Claim(); return _metadata.Task; }
+        get
+        {
+            Claim();
+            return _metadata.Task;
+        }
     }
 
     /// <summary>Single-consumer part stream.</summary>
@@ -610,7 +754,9 @@ public sealed class StreamTranscribeResult
 
                 if (_owner == "result-promises")
                 {
-                    throw new InvalidOperationException("fullStream cannot be accessed after a result promise.");
+                    throw new InvalidOperationException(
+                        "fullStream cannot be accessed after a result promise."
+                    );
                 }
 
                 _owner = "full-stream";
@@ -652,7 +798,11 @@ public sealed class StreamTranscribeResult
         }
     }
 
-    private async Task PumpAsync(ITranscriptionCaller model, StreamTranscribeRequest request, CancellationTokenSource linked)
+    private async Task PumpAsync(
+        ITranscriptionCaller model,
+        StreamTranscribeRequest request,
+        CancellationTokenSource linked
+    )
     {
         var cancellationToken = linked.Token;
         var audio = request.Audio ?? new AudioChunkStream();
@@ -661,15 +811,36 @@ public sealed class StreamTranscribeResult
         {
             var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
             var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
-            var start = await model.DoStreamAsync(new TranscriptionStreamCall(audio, request.InputAudioFormat, providerOptions, (IReadOnlyDictionary<string, string?>)headers, request.IncludeRawChunks, cancellationToken, request.AbortReason), cancellationToken).ConfigureAwait(false);
+            var start = await model
+                .DoStreamAsync(
+                    new TranscriptionStreamCall(
+                        audio,
+                        request.InputAudioFormat,
+                        providerOptions,
+                        (IReadOnlyDictionary<string, string?>)headers,
+                        request.IncludeRawChunks,
+                        cancellationToken,
+                        request.AbortReason
+                    ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             if (start == null)
             {
                 throw Unsupported(model, request.ModelWasString);
             }
 
             stream = start.Stream;
-            _response = new ProviderResponse(start.Response?.Headers, null, start.Response?.Id, start.Response?.Timestamp ?? _startedAt, start.Response?.ModelId ?? model.ModelId);
-            await foreach (var part in start.Stream.ReadAsync(cancellationToken).ConfigureAwait(false))
+            _response = new ProviderResponse(
+                start.Response?.Headers,
+                null,
+                start.Response?.Id,
+                start.Response?.Timestamp ?? _startedAt,
+                start.Response?.ModelId ?? model.ModelId
+            );
+            await foreach (
+                var part in start.Stream.ReadAsync(cancellationToken).ConfigureAwait(false)
+            )
             {
                 Accept(part);
             }
@@ -684,7 +855,10 @@ public sealed class StreamTranscribeResult
         catch (Exception error)
         {
             stream?.Cancel();
-            var reason = error is OperationCanceledException && request.AbortReason != null ? request.AbortReason : error;
+            var reason =
+                error is OperationCanceledException && request.AbortReason != null
+                    ? request.AbortReason
+                    : error;
             RejectPending(reason);
             if (!audio.Locked)
             {
@@ -768,7 +942,13 @@ public sealed class StreamTranscribeResult
                 break;
             case "response-metadata":
                 var current = CurrentResponse();
-                _response = new ProviderResponse(part.Headers ?? current.Headers, null, current.Id, part.Timestamp ?? current.Timestamp, part.ModelId ?? current.ModelId);
+                _response = new ProviderResponse(
+                    part.Headers ?? current.Headers,
+                    null,
+                    current.Id,
+                    part.Timestamp ?? current.Timestamp,
+                    part.ModelId ?? current.ModelId
+                );
                 break;
             case "transcript-delta":
             case "transcript-partial":
@@ -822,10 +1002,16 @@ public sealed class StreamTranscribeResult
 
     internal static Exception Unsupported(ITranscriptionCaller model, bool modelWasString)
     {
-        var message = "The " + model.Provider + " model \"" + model.ModelId + "\" does not support streaming transcription.";
+        var message =
+            "The "
+            + model.Provider
+            + " model \""
+            + model.ModelId
+            + "\" does not support streaming transcription.";
         if (modelWasString)
         {
-            message += " String model IDs resolve through the global provider (AI Gateway by default). If that provider does not support streaming transcription, pass a provider model instance instead (e.g. openai.transcription('gpt-realtime-whisper')) or upgrade @ai-sdk/gateway to a version with streaming transcription support.";
+            message +=
+                " String model IDs resolve through the global provider (AI Gateway by default). If that provider does not support streaming transcription, pass a provider model instance instead (e.g. openai.transcription('gpt-realtime-whisper')) or upgrade @ai-sdk/gateway to a version with streaming transcription support.";
         }
 
         return new UnsupportedFunctionalityException("streaming transcription", message);
@@ -836,7 +1022,10 @@ public sealed class StreamTranscribeResult
 public static class Transcribe
 {
     /// <summary>Transcribes one audio payload.</summary>
-    public static async Task<TranscribeResult> TranscribeAsync(TranscribeRequest request, CancellationToken cancellationToken = default)
+    public static async Task<TranscribeResult> TranscribeAsync(
+        TranscribeRequest request,
+        CancellationToken cancellationToken = default
+    )
     {
         if (request == null)
         {
@@ -844,7 +1033,9 @@ public static class Transcribe
         }
 
         var model = Resolve(request.Model, request.ModelId);
-        var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
+        var token = request.CancellationToken.CanBeCanceled
+            ? request.CancellationToken
+            : cancellationToken;
         var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
         var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
         var maxRetries = OperationRetry.ResolveMaxRetries(request.MaxRetries);
@@ -854,7 +1045,20 @@ public static class Transcribe
         TranscriptionStartEvent CreateStartEvent(int? byteLength, string? startMediaType)
         {
             var hideInputs = telemetry?.RecordInputs == false;
-            return new TranscriptionStartEvent(callId, model.Provider, model.ModelId, new TranscriptionAudioInfo(byteLength, startMediaType), maxRetries, request.Headers, hideInputs ? OperationJson.Parse("{}") : providerOptions, request.TimestampGranularities, null, telemetry?.RecordInputs, telemetry?.RecordOutputs, telemetry?.FunctionId);
+            return new TranscriptionStartEvent(
+                callId,
+                model.Provider,
+                model.ModelId,
+                new TranscriptionAudioInfo(byteLength, startMediaType),
+                maxRetries,
+                request.Headers,
+                hideInputs ? OperationJson.Parse("{}") : providerOptions,
+                request.TimestampGranularities,
+                null,
+                telemetry?.RecordInputs,
+                telemetry?.RecordOutputs,
+                telemetry?.FunctionId
+            );
         }
 
         byte[] audio = Array.Empty<byte>();
@@ -865,17 +1069,25 @@ public static class Transcribe
         {
             if (!string.IsNullOrEmpty(request.AudioUrl))
             {
-                if (model is ITranscriptionUrlCaller
+                if (
+                    model is ITranscriptionUrlCaller
                     && request.Download is null
                     && Uri.TryCreate(request.AudioUrl, UriKind.Absolute, out var parsed)
-                    && (parsed.Scheme == Uri.UriSchemeHttps || parsed.Scheme == Uri.UriSchemeHttp))
+                    && (parsed.Scheme == Uri.UriSchemeHttps || parsed.Scheme == Uri.UriSchemeHttp)
+                )
                 {
                     nativeUrl = parsed;
                 }
                 else
                 {
-                    var download = request.Download ?? throw new InvalidArgumentException("download", null, "download is required for URL audio");
-                    var downloadedAudio = await download(request.AudioUrl!, token).ConfigureAwait(false);
+                    var download = request.Download
+                        ?? throw new InvalidArgumentException(
+                            "download",
+                            null,
+                            "download is required for URL audio"
+                        );
+                    var downloadedAudio = await download(request.AudioUrl!, token)
+                        .ConfigureAwait(false);
                     audio = downloadedAudio.Data;
                     downloadedMediaType = downloadedAudio.MediaType;
                 }
@@ -895,53 +1107,127 @@ public static class Transcribe
 
         if (nativeUrl is null)
         {
-            mediaType = GetAudioMediaType(downloadedMediaType) ?? MediaTypeDetector.Detect(audio, "audio") ?? "audio/wav";
+            mediaType = GetAudioMediaType(downloadedMediaType)
+                ?? MediaTypeDetector.Detect(audio, "audio")
+                ?? "audio/wav";
         }
 
         int? byteLength = nativeUrl is null ? audio.Length : null;
         string? startMediaType = nativeUrl is null ? mediaType : null;
-        await NotifyStartAsync(telemetry, CreateStartEvent(byteLength, startMediaType)).ConfigureAwait(false);
+        await NotifyStartAsync(telemetry, CreateStartEvent(byteLength, startMediaType))
+            .ConfigureAwait(false);
         try
         {
-            var result = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, async ct =>
-            {
-                if (nativeUrl is not null)
-                {
-                    var native = await ((ITranscriptionUrlCaller)model).DoGenerateFromUrlAsync(new TranscriptionModelUrlCall(nativeUrl, providerOptions, headers, ct) { TimestampGranularities = request.TimestampGranularities }, ct).ConfigureAwait(false);
-                    if (native is not null)
+            var result = await OperationRetry
+                .ExecuteAsync(
+                    request.MaxRetries,
+                    token,
+                    request.AbortReason,
+                    async ct =>
                     {
-                        return native;
-                    }
+                        if (nativeUrl is not null)
+                        {
+                            var native = await ((ITranscriptionUrlCaller)model)
+                                .DoGenerateFromUrlAsync(
+                                    new TranscriptionModelUrlCall(
+                                        nativeUrl,
+                                        providerOptions,
+                                        headers,
+                                        ct
+                                    )
+                                    {
+                                        TimestampGranularities = request.TimestampGranularities,
+                                    },
+                                    ct
+                                )
+                                .ConfigureAwait(false);
+                            if (native is not null)
+                            {
+                                return native;
+                            }
 
-                    // A capable provider can decline an unsupported URL (for example, a redirect).
-                    // Keep the existing secure download and file path, and retry only the file call.
-                    DownloadedMedia downloaded;
-                    try
-                    {
-                        downloaded = await ((Func<string, CancellationToken, Task<DownloadedMedia>>)Util.Download.CreateDownload())(nativeUrl.AbsoluteUri, ct).ConfigureAwait(false);
-                    }
-                    catch (Util.DownloadError) when (ct.IsCancellationRequested)
-                    {
-                        throw new OperationCanceledException(ct);
-                    }
+                            // A capable provider can decline an unsupported URL (for example, a redirect).
+                            // Keep the existing secure download and file path, and retry only the file call.
+                            DownloadedMedia downloaded;
+                            try
+                            {
+                                downloaded = await (
+                                    (Func<string, CancellationToken, Task<DownloadedMedia>>)
+                                        Util.Download.CreateDownload()
+                                )(nativeUrl.AbsoluteUri, ct)
+                                    .ConfigureAwait(false);
+                            }
+                            catch (Util.DownloadError) when (ct.IsCancellationRequested)
+                            {
+                                throw new OperationCanceledException(ct);
+                            }
 
-                    audio = downloaded.Data;
-                    mediaType = GetAudioMediaType(downloaded.MediaType) ?? MediaTypeDetector.Detect(audio, "audio") ?? "audio/wav";
-                    byteLength = audio.Length;
-                    startMediaType = mediaType;
-                    nativeUrl = null;
-                }
+                            audio = downloaded.Data;
+                            mediaType = GetAudioMediaType(downloaded.MediaType)
+                                ?? MediaTypeDetector.Detect(audio, "audio")
+                                ?? "audio/wav";
+                            byteLength = audio.Length;
+                            startMediaType = mediaType;
+                            nativeUrl = null;
+                        }
 
-                return await model.DoGenerateAsync(new TranscriptionModelCall(audio, mediaType, providerOptions, headers, ct) { TimestampGranularities = request.TimestampGranularities }, ct).ConfigureAwait(false);
-            }, null).ConfigureAwait(false);
+                        return await model
+                            .DoGenerateAsync(
+                                new TranscriptionModelCall(
+                                    audio,
+                                    mediaType,
+                                    providerOptions,
+                                    headers,
+                                    ct
+                                )
+                                {
+                                    TimestampGranularities = request.TimestampGranularities,
+                                },
+                                ct
+                            )
+                            .ConfigureAwait(false);
+                    },
+                    null
+                )
+                .ConfigureAwait(false);
             WarningLog.Write(result.Warnings, model.Provider, model.ModelId);
             if (result.Text is null)
             {
                 throw new NoTranscriptGeneratedException(new[] { result.Response });
             }
 
-            await NotifyEndAsync(telemetry, new TranscriptionEndEvent(callId, model.Provider, model.ModelId, new TranscriptionAudioInfo(byteLength, startMediaType), result.Text, result.Segments, result.Words, result.Language, result.DurationInSeconds, result.Usage, result.Warnings, result.ProviderMetadata, result.Response, telemetry?.RecordInputs, telemetry?.RecordOutputs, telemetry?.FunctionId)).ConfigureAwait(false);
-            return new TranscribeResult(result.Text, result.Segments, result.Language, result.DurationInSeconds, result.Warnings, new[] { result.Response }, result.ProviderMetadata ?? OperationJson.Parse("{}"), result.Words);
+            await NotifyEndAsync(
+                    telemetry,
+                    new TranscriptionEndEvent(
+                        callId,
+                        model.Provider,
+                        model.ModelId,
+                        new TranscriptionAudioInfo(byteLength, startMediaType),
+                        result.Text,
+                        result.Segments,
+                        result.Words,
+                        result.Language,
+                        result.DurationInSeconds,
+                        result.Usage,
+                        result.Warnings,
+                        result.ProviderMetadata,
+                        result.Response,
+                        telemetry?.RecordInputs,
+                        telemetry?.RecordOutputs,
+                        telemetry?.FunctionId
+                    )
+                )
+                .ConfigureAwait(false);
+            return new TranscribeResult(
+                result.Text,
+                result.Segments,
+                result.Language,
+                result.DurationInSeconds,
+                result.Warnings,
+                new[] { result.Response },
+                result.ProviderMetadata ?? OperationJson.Parse("{}"),
+                result.Words
+            );
         }
         catch (Exception error)
         {
@@ -950,12 +1236,20 @@ public static class Transcribe
         }
     }
 
-    private static Task NotifyStartAsync(TranscribeTelemetry? telemetry, TranscriptionStartEvent payload)
+    private static Task NotifyStartAsync(
+        TranscribeTelemetry? telemetry,
+        TranscriptionStartEvent payload
+    )
     {
-        return telemetry?.OnStart is null ? Task.CompletedTask : OperationCallbacks.NotifyAsync(payload, telemetry.OnStart);
+        return telemetry?.OnStart is null
+            ? Task.CompletedTask
+            : OperationCallbacks.NotifyAsync(payload, telemetry.OnStart);
     }
 
-    private static Task NotifyEndAsync(TranscribeTelemetry? telemetry, TranscriptionEndEvent payload)
+    private static Task NotifyEndAsync(
+        TranscribeTelemetry? telemetry,
+        TranscriptionEndEvent payload
+    )
     {
         if (telemetry?.OnEnd is null)
         {
@@ -967,13 +1261,34 @@ public static class Transcribe
         var hideOutputs = telemetry.RecordOutputs == false;
         if (hideInputs || hideOutputs)
         {
-            payload = new TranscriptionEndEvent(payload.CallId, payload.Provider, payload.ModelId, payload.Audio, hideOutputs ? string.Empty : payload.Text, hideOutputs ? Array.Empty<TranscriptSegment>() : payload.Segments, hideOutputs ? Array.Empty<TranscriptSegment>() : payload.Words, payload.Language, payload.DurationInSeconds, payload.Usage, payload.Warnings, null, payload.Response, payload.RecordInputs, payload.RecordOutputs, payload.FunctionId);
+            payload = new TranscriptionEndEvent(
+                payload.CallId,
+                payload.Provider,
+                payload.ModelId,
+                payload.Audio,
+                hideOutputs ? string.Empty : payload.Text,
+                hideOutputs ? Array.Empty<TranscriptSegment>() : payload.Segments,
+                hideOutputs ? Array.Empty<TranscriptSegment>() : payload.Words,
+                payload.Language,
+                payload.DurationInSeconds,
+                payload.Usage,
+                payload.Warnings,
+                null,
+                payload.Response,
+                payload.RecordInputs,
+                payload.RecordOutputs,
+                payload.FunctionId
+            );
         }
 
         return OperationCallbacks.NotifyAsync(payload, telemetry.OnEnd);
     }
 
-    private static async Task NotifyErrorAsync(TranscribeTelemetry? telemetry, string callId, Exception error)
+    private static async Task NotifyErrorAsync(
+        TranscribeTelemetry? telemetry,
+        string callId,
+        Exception error
+    )
     {
         if (telemetry?.OnError is null)
         {
@@ -1003,16 +1318,29 @@ public static class Transcribe
         }
 
         var slash = mediaType.IndexOf('/');
-        return mediaType.StartsWith("audio/", StringComparison.Ordinal) && slash > 0 && slash < mediaType.Length - 1 ? mediaType : null;
+        return
+            mediaType.StartsWith("audio/", StringComparison.Ordinal)
+            && slash > 0
+            && slash < mediaType.Length - 1
+            ? mediaType
+            : null;
     }
 
     internal static ITranscriptionCaller Resolve(ITranscriptionCaller? model, string? modelId)
     {
         if (model is { } caller)
         {
-            if (caller.SpecificationVersion != "v4" && caller.SpecificationVersion != "v3" && caller.SpecificationVersion != "v2")
+            if (
+                caller.SpecificationVersion != "v4"
+                && caller.SpecificationVersion != "v3"
+                && caller.SpecificationVersion != "v2"
+            )
             {
-                throw new UnsupportedModelVersionException(caller.SpecificationVersion, caller.Provider, caller.ModelId);
+                throw new UnsupportedModelVersionException(
+                    caller.SpecificationVersion,
+                    caller.Provider,
+                    caller.ModelId
+                );
             }
 
             return caller;
@@ -1020,7 +1348,10 @@ public static class Transcribe
 
         if (modelId is { } id)
         {
-            return TranscriptionModels.Default?.Invoke(id) ?? throw new InvalidOperationException("The default provider does not support transcription models.");
+            return TranscriptionModels.Default?.Invoke(id)
+                ?? throw new InvalidOperationException(
+                    "The default provider does not support transcription models."
+                );
         }
 
         throw new InvalidArgumentException("model", null, "model is required");
@@ -1031,7 +1362,10 @@ public static class Transcribe
 public static class StreamTranscribe
 {
     /// <summary>Starts a transcription stream. <c>doStream</c> is invoked immediately.</summary>
-    public static StreamTranscribeResult Start(StreamTranscribeRequest request, CancellationToken cancellationToken = default)
+    public static StreamTranscribeResult Start(
+        StreamTranscribeRequest request,
+        CancellationToken cancellationToken = default
+    )
     {
         if (request == null)
         {
@@ -1042,11 +1376,16 @@ public static class StreamTranscribe
         if (request.Model is null && request.ModelId is { } id)
         {
             request.ModelWasString = true;
-            model = TranscriptionModels.Default?.Invoke(id) ?? throw StreamTranscribeResult.Unsupported(new MissingTranscriptionCaller(id), true);
+            model = TranscriptionModels.Default?.Invoke(id)
+                ?? throw StreamTranscribeResult.Unsupported(
+                    new MissingTranscriptionCaller(id),
+                    true
+                );
         }
         else
         {
-            model = request.Model ?? throw new InvalidArgumentException("model", null, "model is required");
+            model = request.Model
+                ?? throw new InvalidArgumentException("model", null, "model is required");
         }
 
         if (!model.CanStream)
@@ -1054,7 +1393,9 @@ public static class StreamTranscribe
             throw StreamTranscribeResult.Unsupported(model, request.ModelWasString);
         }
 
-        var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
+        var token = request.CancellationToken.CanBeCanceled
+            ? request.CancellationToken
+            : cancellationToken;
         return new StreamTranscribeResult(model, request, token);
     }
 
@@ -1065,20 +1406,35 @@ public static class StreamTranscribe
             ModelId = modelId;
         }
 
-        public string Provider { get { return "gateway"; } }
+        public string Provider
+        {
+            get { return "gateway"; }
+        }
 
         public string ModelId { get; }
 
-        public string SpecificationVersion { get { return "v4"; } }
+        public string SpecificationVersion
+        {
+            get { return "v4"; }
+        }
 
-        public bool CanStream { get { return false; } }
+        public bool CanStream
+        {
+            get { return false; }
+        }
 
-        public Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
+        public Task<TranscriptionModelResult> DoGenerateAsync(
+            TranscriptionModelCall call,
+            CancellationToken cancellationToken
+        )
         {
             throw new NotSupportedException();
         }
 
-        public Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+        public Task<TranscriptionStreamStart?> DoStreamAsync(
+            TranscriptionStreamCall call,
+            CancellationToken cancellationToken
+        )
         {
             return Task.FromResult<TranscriptionStreamStart?>(null);
         }

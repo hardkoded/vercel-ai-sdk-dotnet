@@ -17,7 +17,8 @@ public sealed class MCPClientErrorTests
             code: -32000,
             statusCode: 503,
             url: "https://example.com/mcp",
-            responseBody: "Service Unavailable");
+            responseBody: "Service Unavailable"
+        );
 
         Assert.True(MCPClientError.IsInstance(error));
         Assert.Equal("MCP request failed", error.Message);

@@ -9,7 +9,8 @@ namespace Vercel.AI.Tests.Upstream.ProviderUtils.EncodePathSegment;
 /// <summary>Port of <c>encode-path-segment.test.ts</c> &gt; <c>encodePathSegment</c>.</summary>
 public sealed class EncodePathSegmentTests
 {
-    private const string Prefix = "packages/provider-utils/src/encode-path-segment.test.ts::encodePathSegment::";
+    private const string Prefix =
+        "packages/provider-utils/src/encode-path-segment.test.ts::encodePathSegment::";
 
     [Theory]
     [InlineData("job-123", "job-123")]
@@ -23,7 +24,10 @@ public sealed class EncodePathSegmentTests
     [InlineData("café", "caf%C3%A9")]
     [InlineData("a b", "a%20b")]
     [InlineData("", "")]
-    [UpstreamTest(Prefix + "encodes %j without changing URL structure", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "encodes %j without changing URL structure",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Encodes_value_without_changing_URL_structure(string value, string expected)
     {
         var encoded = PathSegments.Encode(value);
@@ -36,11 +40,20 @@ public sealed class EncodePathSegmentTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "can encode resource paths one segment at a time", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "can encode resource paths one segment at a time",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Can_encode_resource_paths_one_segment_at_a_time()
     {
-        var path = string.Join("/", "operations/../internal?x#y".Split('/').Select(PathSegments.Encode));
+        var path = string.Join(
+            "/",
+            "operations/../internal?x#y".Split('/').Select(PathSegments.Encode)
+        );
 
-        Assert.Equal("/v1/operations/%252E%252E/internal%3Fx%23y", new Uri($"https://example.com/v1/{path}").AbsolutePath);
+        Assert.Equal(
+            "/v1/operations/%252E%252E/internal%3Fx%23y",
+            new Uri($"https://example.com/v1/{path}").AbsolutePath
+        );
     }
 }

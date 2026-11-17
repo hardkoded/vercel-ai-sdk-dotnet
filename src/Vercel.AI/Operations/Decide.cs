@@ -22,7 +22,11 @@ public class DecisionQuestion
     /// <see cref="DecisionChoiceCriteria"/> for a choice, <see cref="DecisionScoreCriteria"/> for a score, and an optional
     /// <see cref="DecisionBooleanCriteria"/> for a boolean. A box question has no criteria.
     /// </param>
-    public DecisionQuestion(string type, DecisionInput? instructions, DecisionCriteria? criteria = null)
+    public DecisionQuestion(
+        string type,
+        DecisionInput? instructions,
+        DecisionCriteria? criteria = null
+    )
     {
         Type = type ?? string.Empty;
         Instructions = instructions;
@@ -59,7 +63,14 @@ public class DecisionQuestion
 public class DecisionAnswer
 {
     /// <summary>Creates an answer.</summary>
-    public DecisionAnswer(string type, string? choice = null, double? score = null, double? probability = null, IReadOnlyDictionary<string, double>? probabilities = null, DecisionBox? box = null)
+    public DecisionAnswer(
+        string type,
+        string? choice = null,
+        double? score = null,
+        double? probability = null,
+        IReadOnlyDictionary<string, double>? probabilities = null,
+        DecisionBox? box = null
+    )
     {
         Type = type;
         Box = box;
@@ -134,7 +145,14 @@ public class DecisionRounding
 public class DecisionModelResult
 {
     /// <summary>Creates a model result.</summary>
-    public DecisionModelResult(IReadOnlyDictionary<string, DecisionAnswer> answers, IReadOnlyList<OperationWarning>? warnings = null, OperationUsage? usage = null, DecisionRounding? rounding = null, JsonElement? providerMetadata = null, ProviderResponse? response = null)
+    public DecisionModelResult(
+        IReadOnlyDictionary<string, DecisionAnswer> answers,
+        IReadOnlyList<OperationWarning>? warnings = null,
+        OperationUsage? usage = null,
+        DecisionRounding? rounding = null,
+        JsonElement? providerMetadata = null,
+        ProviderResponse? response = null
+    )
     {
         Answers = answers ?? new Dictionary<string, DecisionAnswer>();
         Warnings = warnings ?? Array.Empty<OperationWarning>();
@@ -167,7 +185,15 @@ public class DecisionModelResult
 public class DecisionModelCall
 {
     /// <summary>Creates a call.</summary>
-    public DecisionModelCall(IReadOnlyList<DecisionModelStatePart> state, IReadOnlyDictionary<string, DecisionQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken, double? maxOutputTokens = null, string? reasoning = null)
+    public DecisionModelCall(
+        IReadOnlyList<DecisionModelStatePart> state,
+        IReadOnlyDictionary<string, DecisionQuestion> questions,
+        JsonElement providerOptions,
+        IReadOnlyDictionary<string, string> headers,
+        CancellationToken cancellationToken,
+        double? maxOutputTokens = null,
+        string? reasoning = null
+    )
     {
         State = state;
         Questions = questions;
@@ -219,7 +245,10 @@ public interface IDecisionCaller
     IReadOnlyList<string> SupportedQuestionTypes { get; }
 
     /// <summary>Decides every question in one call.</summary>
-    Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken);
+    Task<DecisionModelResult> DoDecideAsync(
+        DecisionModelCall call,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>
@@ -236,7 +265,26 @@ public interface IDecisionProvider
 public class DecideEvent
 {
     /// <summary>Creates an event.</summary>
-    public DecideEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, DecisionState? state, IReadOnlyDictionary<string, DecisionQuestion> questions, int maxRetries, IReadOnlyDictionary<string, string>? headers, JsonElement providerOptions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, IReadOnlyList<OperationWarning>? warnings = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null, double? maxOutputTokens = null, string? reasoning = null)
+    public DecideEvent(
+        string callId,
+        string operationId,
+        IReadOnlyDictionary<string, object?> runtimeContext,
+        string provider,
+        string modelId,
+        DecisionState? state,
+        IReadOnlyDictionary<string, DecisionQuestion> questions,
+        int maxRetries,
+        IReadOnlyDictionary<string, string>? headers,
+        JsonElement providerOptions,
+        IReadOnlyDictionary<string, DecisionAnswer>? answers = null,
+        OperationUsage? usage = null,
+        IReadOnlyList<OperationWarning>? warnings = null,
+        bool? recordInputs = null,
+        bool? recordOutputs = null,
+        string? functionId = null,
+        double? maxOutputTokens = null,
+        string? reasoning = null
+    )
     {
         CallId = callId;
         OperationId = operationId;
@@ -317,7 +365,19 @@ public class DecideEvent
 public class DecisionModelEvent
 {
     /// <summary>Creates a model event.</summary>
-    public DecisionModelEvent(string callId, string operationId, string provider, string modelId, IReadOnlyList<DecisionModelStatePart>? state, IReadOnlyDictionary<string, DecisionQuestion> questions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
+    public DecisionModelEvent(
+        string callId,
+        string operationId,
+        string provider,
+        string modelId,
+        IReadOnlyList<DecisionModelStatePart>? state,
+        IReadOnlyDictionary<string, DecisionQuestion> questions,
+        IReadOnlyDictionary<string, DecisionAnswer>? answers = null,
+        OperationUsage? usage = null,
+        bool? recordInputs = null,
+        bool? recordOutputs = null,
+        string? functionId = null
+    )
     {
         CallId = callId;
         OperationId = operationId;
@@ -430,7 +490,14 @@ public class DecideTelemetry
 public class DecisionResult
 {
     /// <summary>Creates a result.</summary>
-    public DecisionResult(IReadOnlyDictionary<string, DecisionAnswer> answers, OperationUsage usage, IReadOnlyList<OperationWarning> warnings, DecisionRounding? rounding, JsonElement? providerMetadata, ProviderResponse response)
+    public DecisionResult(
+        IReadOnlyDictionary<string, DecisionAnswer> answers,
+        OperationUsage usage,
+        IReadOnlyList<OperationWarning> warnings,
+        DecisionRounding? rounding,
+        JsonElement? providerMetadata,
+        ProviderResponse response
+    )
     {
         Answers = answers;
         Usage = usage;
@@ -495,7 +562,10 @@ public sealed class DecideRequest : OperationRequest
     /// <see cref="Download.CreateDownload"/> with a DNS-protected transport for untrusted URLs. The model's fetch is not used.
     /// Without it a URL file throws <see cref="DownloadError"/>.
     /// </summary>
-    public Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>? Download { get; set; }
+    public Func<
+        IReadOnlyList<DownloadRequestItem>,
+        Task<IReadOnlyList<DownloadResult>>
+    >? Download { get; set; }
 
     /// <summary>Called when the decision begins. Receives the full runtime context.</summary>
     public Func<DecideEvent, Task>? OnStart { get; set; }
@@ -513,7 +583,10 @@ public static class Decide
     private const double Tolerance = 1e-6;
 
     /// <summary>Decides every question in one model call.</summary>
-    public static async Task<DecisionResult> DecideAsync(DecideRequest request, CancellationToken cancellationToken = default)
+    public static async Task<DecisionResult> DecideAsync(
+        DecideRequest request,
+        CancellationToken cancellationToken = default
+    )
     {
         if (request == null)
         {
@@ -522,7 +595,9 @@ public static class Decide
 
         var model = DecisionModels.Resolve(request.Model, request.ModelId);
 
-        LanguageModelCallPreparation.PrepareLanguageModelCallOptions(new LanguageModelCallOptionsInput { MaxOutputTokens = request.MaxOutputTokens });
+        LanguageModelCallPreparation.PrepareLanguageModelCallOptions(
+            new LanguageModelCallOptionsInput { MaxOutputTokens = request.MaxOutputTokens }
+        );
         var questions = request.Questions ?? new Dictionary<string, DecisionQuestion>();
         ValidateInput(request.State, questions);
         foreach (var pair in questions)
@@ -531,43 +606,112 @@ public static class Decide
             {
                 // The deprecated subclass lets both the old and the new catch clauses match.
 #pragma warning disable CS0618
-                throw new EvaluationUnsupportedQuestionTypeException(pair.Key, pair.Value.Type, model.Provider, model.ModelId);
+                throw new EvaluationUnsupportedQuestionTypeException(
+                    pair.Key,
+                    pair.Value.Type,
+                    model.Provider,
+                    model.ModelId
+                );
 #pragma warning restore CS0618
             }
         }
 
-        var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
+        var token = request.CancellationToken.CanBeCanceled
+            ? request.CancellationToken
+            : cancellationToken;
         var callId = (request.GenerateCallId ?? (() => "call-" + Guid.NewGuid().ToString("N")))();
         var maxRetries = OperationRetry.ResolveMaxRetries(request.MaxRetries);
         var context = request.RuntimeContext ?? new Dictionary<string, object?>();
         var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
         var telemetry = request.Telemetry;
         var enabled = telemetry == null || telemetry.IsEnabled;
-        var userStart = new DecideEvent(callId, "ai.decide", context, model.Provider, model.ModelId, request.State, questions, maxRetries, request.Headers, providerOptions, maxOutputTokens: request.MaxOutputTokens, reasoning: request.Reasoning);
+        var userStart = new DecideEvent(
+            callId,
+            "ai.decide",
+            context,
+            model.Provider,
+            model.ModelId,
+            request.State,
+            questions,
+            maxRetries,
+            request.Headers,
+            providerOptions,
+            maxOutputTokens: request.MaxOutputTokens,
+            reasoning: request.Reasoning
+        );
         await OperationCallbacks.NotifyAsync(userStart, request.OnStart).ConfigureAwait(false);
         if (enabled)
         {
-            await NotifyTelemetryAsync(WithTelemetry(userStart, Filter(context, telemetry?.IncludeRuntimeContext), telemetry), telemetry?.OnDecideStart, telemetry?.LegacyOnStart).ConfigureAwait(false);
+            await NotifyTelemetryAsync(
+                    WithTelemetry(
+                        userStart,
+                        Filter(context, telemetry?.IncludeRuntimeContext),
+                        telemetry
+                    ),
+                    telemetry?.OnDecideStart,
+                    telemetry?.LegacyOnStart
+                )
+                .ConfigureAwait(false);
         }
 
         try
         {
-            var preparedState = await DecisionState.PrepareDecisionStateAsync(request.State!, token, request.Download).ConfigureAwait(false);
-            var modelEvent = new DecisionModelEvent(callId, "ai.decide.doDecide", model.Provider, model.ModelId, preparedState, questions, recordInputs: telemetry?.RecordInputs, recordOutputs: telemetry?.RecordOutputs, functionId: telemetry?.FunctionId);
+            var preparedState = await DecisionState
+                .PrepareDecisionStateAsync(request.State!, token, request.Download)
+                .ConfigureAwait(false);
+            var modelEvent = new DecisionModelEvent(
+                callId,
+                "ai.decide.doDecide",
+                model.Provider,
+                model.ModelId,
+                preparedState,
+                questions,
+                recordInputs: telemetry?.RecordInputs,
+                recordOutputs: telemetry?.RecordOutputs,
+                functionId: telemetry?.FunctionId
+            );
             if (enabled)
             {
-                await NotifyTelemetryAsync(modelEvent, telemetry?.OnDecisionModelCallStart, telemetry?.LegacyOnModelStart).ConfigureAwait(false);
+                await NotifyTelemetryAsync(
+                        modelEvent,
+                        telemetry?.OnDecisionModelCallStart,
+                        telemetry?.LegacyOnModelStart
+                    )
+                    .ConfigureAwait(false);
             }
 
             var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
-            var result = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, async ct =>
-            {
-                OperationRetry.ThrowIfAborted(ct, request.AbortReason);
-                return await model.DoDecideAsync(new DecisionModelCall(preparedState, questions, providerOptions, headers, ct, request.MaxOutputTokens, request.Reasoning), ct).ConfigureAwait(false);
-            }, null).ConfigureAwait(false);
+            var result = await OperationRetry
+                .ExecuteAsync(
+                    request.MaxRetries,
+                    token,
+                    request.AbortReason,
+                    async ct =>
+                    {
+                        OperationRetry.ThrowIfAborted(ct, request.AbortReason);
+                        return await model
+                            .DoDecideAsync(
+                                new DecisionModelCall(
+                                    preparedState,
+                                    questions,
+                                    providerOptions,
+                                    headers,
+                                    ct,
+                                    request.MaxOutputTokens,
+                                    request.Reasoning
+                                ),
+                                ct
+                            )
+                            .ConfigureAwait(false);
+                    },
+                    null
+                )
+                .ConfigureAwait(false);
             OperationRetry.ThrowIfAborted(token, request.AbortReason);
             ValidateAnswers(questions, result.Answers, result.Rounding);
-            var refused = questions.Keys.Where(id => result.Answers[id].Type == "refusal").ToArray();
+            var refused = questions
+                .Keys.Where(id => result.Answers[id].Type == "refusal")
+                .ToArray();
             if (refused.Length > 0)
             {
                 throw new DecisionRefusalError(refused, model.Provider, model.ModelId);
@@ -575,21 +719,81 @@ public static class Decide
 
             if (enabled)
             {
-                await NotifyTelemetryAsync(new DecisionModelEvent(callId, "ai.decide.doDecide", model.Provider, model.ModelId, preparedState, questions, result.Answers, result.Usage, telemetry?.RecordInputs, telemetry?.RecordOutputs, telemetry?.FunctionId), telemetry?.OnDecisionModelCallEnd, telemetry?.LegacyOnModelEnd).ConfigureAwait(false);
+                await NotifyTelemetryAsync(
+                        new DecisionModelEvent(
+                            callId,
+                            "ai.decide.doDecide",
+                            model.Provider,
+                            model.ModelId,
+                            preparedState,
+                            questions,
+                            result.Answers,
+                            result.Usage,
+                            telemetry?.RecordInputs,
+                            telemetry?.RecordOutputs,
+                            telemetry?.FunctionId
+                        ),
+                        telemetry?.OnDecisionModelCallEnd,
+                        telemetry?.LegacyOnModelEnd
+                    )
+                    .ConfigureAwait(false);
             }
 
             WarningLog.Write(result.Warnings, model.Provider, model.ModelId);
             var input = result.Usage?.InputTokens;
             var output = result.Usage?.OutputTokens;
-            var usage = new OperationUsage(input, output, input != null && output != null ? input + output : null);
+            var usage = new OperationUsage(
+                input,
+                output,
+                input != null && output != null ? input + output : null
+            );
             var now = request.Now?.Invoke() ?? DateTime.UtcNow;
-            var response = new ProviderResponse(result.Response?.Headers, result.Response?.Body, result.Response?.Id, result.Response?.Timestamp ?? now, result.Response?.ModelId ?? model.ModelId, result.Response?.ProviderMetadata);
-            var decision = new DecisionResult(result.Answers, usage, result.Warnings, result.Rounding, result.ProviderMetadata, response);
-            var end = new DecideEvent(callId, "ai.decide", context, model.Provider, model.ModelId, request.State, questions, maxRetries, request.Headers, providerOptions, result.Answers, usage, result.Warnings, maxOutputTokens: request.MaxOutputTokens, reasoning: request.Reasoning);
+            var response = new ProviderResponse(
+                result.Response?.Headers,
+                result.Response?.Body,
+                result.Response?.Id,
+                result.Response?.Timestamp ?? now,
+                result.Response?.ModelId ?? model.ModelId,
+                result.Response?.ProviderMetadata
+            );
+            var decision = new DecisionResult(
+                result.Answers,
+                usage,
+                result.Warnings,
+                result.Rounding,
+                result.ProviderMetadata,
+                response
+            );
+            var end = new DecideEvent(
+                callId,
+                "ai.decide",
+                context,
+                model.Provider,
+                model.ModelId,
+                request.State,
+                questions,
+                maxRetries,
+                request.Headers,
+                providerOptions,
+                result.Answers,
+                usage,
+                result.Warnings,
+                maxOutputTokens: request.MaxOutputTokens,
+                reasoning: request.Reasoning
+            );
             await OperationCallbacks.NotifyAsync(end, request.OnEnd).ConfigureAwait(false);
             if (enabled)
             {
-                await NotifyTelemetryAsync(WithTelemetry(end, Filter(context, telemetry?.IncludeRuntimeContext), telemetry), telemetry?.OnDecideEnd, telemetry?.LegacyOnEnd).ConfigureAwait(false);
+                await NotifyTelemetryAsync(
+                        WithTelemetry(
+                            end,
+                            Filter(context, telemetry?.IncludeRuntimeContext),
+                            telemetry
+                        ),
+                        telemetry?.OnDecideEnd,
+                        telemetry?.LegacyOnEnd
+                    )
+                    .ConfigureAwait(false);
             }
 
             return decision;
@@ -613,13 +817,20 @@ public static class Decide
     }
 
     /// <summary>Validates state and questions before any model call.</summary>
-    public static void ValidateInput(DecisionState? state, IReadOnlyDictionary<string, DecisionQuestion>? questions)
+    public static void ValidateInput(
+        DecisionState? state,
+        IReadOnlyDictionary<string, DecisionQuestion>? questions
+    )
     {
         ValidateDecisionState(state);
 
         if (questions == null || questions.Count == 0)
         {
-            throw new InvalidArgumentException("questions", questions, "must be a nonempty question map");
+            throw new InvalidArgumentException(
+                "questions",
+                questions,
+                "must be a nonempty question map"
+            );
         }
 
         foreach (var pair in questions)
@@ -628,7 +839,11 @@ public static class Decide
             var question = pair.Value;
             if (question == null)
             {
-                throw new InvalidArgumentException(parameter, question, "question must not be null");
+                throw new InvalidArgumentException(
+                    parameter,
+                    question,
+                    "question must not be null"
+                );
             }
 
             var criteria = question.Criteria;
@@ -639,31 +854,58 @@ public static class Decide
                 case "choice":
                     if (criteria is not DecisionChoiceCriteria { Count: > 0 })
                     {
-                        throw new InvalidArgumentException(parameter, question, "choice criteria must be a nonempty option map");
+                        throw new InvalidArgumentException(
+                            parameter,
+                            question,
+                            "choice criteria must be a nonempty option map"
+                        );
                     }
 
                     break;
                 case "score":
                     if (criteria is not DecisionScoreCriteria { Count: >= 1 })
                     {
-                        throw new InvalidArgumentException(parameter, question, "score criteria must contain at least one ordered level");
+                        throw new InvalidArgumentException(
+                            parameter,
+                            question,
+                            "score criteria must contain at least one ordered level"
+                        );
                     }
 
                     break;
                 case "boolean":
-                    if (question.Instructions == null && !(criteria is DecisionBooleanCriteria { True: not null } or DecisionBooleanCriteria { False: not null }))
+                    if (
+                        question.Instructions == null
+                        && !(
+                            criteria
+                            is DecisionBooleanCriteria { True: not null }
+                                or DecisionBooleanCriteria { False: not null }
+                        )
+                    )
                     {
-                        throw new InvalidArgumentException(parameter, question, "boolean questions require instructions or at least one non-null criterion");
+                        throw new InvalidArgumentException(
+                            parameter,
+                            question,
+                            "boolean questions require instructions or at least one non-null criterion"
+                        );
                     }
 
                     if (criteria != null && criteria is not DecisionBooleanCriteria)
                     {
-                        throw new InvalidArgumentException(parameter, question, "boolean criteria may only describe true and false");
+                        throw new InvalidArgumentException(
+                            parameter,
+                            question,
+                            "boolean criteria may only describe true and false"
+                        );
                     }
 
                     break;
                 default:
-                    throw new InvalidArgumentException(parameter, question, "question type must be choice, score, boolean, or box");
+                    throw new InvalidArgumentException(
+                        parameter,
+                        question,
+                        "question type must be choice, score, boolean, or box"
+                    );
             }
         }
     }
@@ -678,7 +920,11 @@ public static class Decide
     }
 
     /// <summary>Validates answers without rewriting provider numbers.</summary>
-    public static void ValidateAnswers(IReadOnlyDictionary<string, DecisionQuestion> questions, IReadOnlyDictionary<string, DecisionAnswer>? answers, DecisionRounding? rounding)
+    public static void ValidateAnswers(
+        IReadOnlyDictionary<string, DecisionQuestion> questions,
+        IReadOnlyDictionary<string, DecisionAnswer>? answers,
+        DecisionRounding? rounding
+    )
     {
         double Error(int? decimals)
         {
@@ -689,7 +935,10 @@ public static class Decide
 
             if (decimals < 0 || decimals > 15)
             {
-                throw new InvalidResponseDataException(answers, "Decision rounding decimals must be integers between 0 and 15.");
+                throw new InvalidResponseDataException(
+                    answers,
+                    "Decision rounding decimals must be integers between 0 and 15."
+                );
             }
 
             return 0.5 * Math.Pow(10, -decimals.Value);
@@ -699,14 +948,24 @@ public static class Decide
         var scoreError = Error(rounding?.ScoreDecimals);
         if (answers == null || !SameKeys(answers.Keys, questions.Keys))
         {
-            throw new InvalidResponseDataException(answers, "Decision must return exactly one answer for every question.");
+            throw new InvalidResponseDataException(
+                answers,
+                "Decision must return exactly one answer for every question."
+            );
         }
 
         foreach (var pair in questions)
         {
-            if (!answers.TryGetValue(pair.Key, out var answer) || answer == null || (answer.Type != pair.Value.Type && answer.Type != "refusal"))
+            if (
+                !answers.TryGetValue(pair.Key, out var answer)
+                || answer == null
+                || (answer.Type != pair.Value.Type && answer.Type != "refusal")
+            )
             {
-                throw new InvalidResponseDataException(answers, "Question \"" + pair.Key + "\" returned an answer with the wrong type.");
+                throw new InvalidResponseDataException(
+                    answers,
+                    "Question \"" + pair.Key + "\" returned an answer with the wrong type."
+                );
             }
 
             if (answer.Type == "refusal")
@@ -720,54 +979,122 @@ public static class Decide
                     var options = ((DecisionChoiceCriteria)pair.Value.Criteria!).Options;
                     if (answer.Choice == null || !options.ContainsKey(answer.Choice))
                     {
-                        throw new InvalidResponseDataException(answers, "Question \"" + pair.Key + "\" selected an unknown option.");
+                        throw new InvalidResponseDataException(
+                            answers,
+                            "Question \"" + pair.Key + "\" selected an unknown option."
+                        );
                     }
 
                     if (answer.Probabilities != null)
                     {
-                        ValidateDistribution(answer.Probabilities, options.Keys, answers, pair.Key, probabilityError);
+                        ValidateDistribution(
+                            answer.Probabilities,
+                            options.Keys,
+                            answers,
+                            pair.Key,
+                            probabilityError
+                        );
                         var selected = answer.Probabilities[answer.Choice];
-                        if (answer.Probabilities.Values.Any(probability => probability > selected + Tolerance + (2 * probabilityError)))
+                        if (
+                            answer.Probabilities.Values.Any(probability =>
+                                probability > selected + Tolerance + (2 * probabilityError)
+                            )
+                        )
                         {
-                            throw new InvalidResponseDataException(answers, "Question \"" + pair.Key + "\" did not select a highest-probability option.");
+                            throw new InvalidResponseDataException(
+                                answers,
+                                "Question \""
+                                    + pair.Key
+                                    + "\" did not select a highest-probability option."
+                            );
                         }
                     }
 
                     break;
                 case "score":
                     var levels = ((DecisionScoreCriteria)pair.Value.Criteria!).Levels;
-                    if (answer.Score == null || double.IsNaN(answer.Score.Value) || double.IsInfinity(answer.Score.Value) || answer.Score < 0 || answer.Score > levels.Count - 1)
+                    if (
+                        answer.Score == null
+                        || double.IsNaN(answer.Score.Value)
+                        || double.IsInfinity(answer.Score.Value)
+                        || answer.Score < 0
+                        || answer.Score > levels.Count - 1
+                    )
                     {
-                        throw new InvalidResponseDataException(answers, "Question \"" + pair.Key + "\" score must be in [0, " + (levels.Count - 1).ToString(CultureInfo.InvariantCulture) + "].");
+                        throw new InvalidResponseDataException(
+                            answers,
+                            "Question \""
+                                + pair.Key
+                                + "\" score must be in [0, "
+                                + (levels.Count - 1).ToString(CultureInfo.InvariantCulture)
+                                + "]."
+                        );
                     }
 
                     if (answer.Probabilities != null)
                     {
-                        var keys = Enumerable.Range(0, levels.Count).Select(index => index.ToString(CultureInfo.InvariantCulture)).ToArray();
-                        ValidateDistribution(answer.Probabilities, keys, answers, pair.Key, probabilityError);
-                        var mean = answer.Probabilities.Sum(item => int.Parse(item.Key, CultureInfo.InvariantCulture) * item.Value);
-                        var meanError = keys.Sum(index => int.Parse(index, CultureInfo.InvariantCulture) * probabilityError);
-                        if (Math.Abs(mean - answer.Score.Value) > Tolerance + meanError + scoreError)
+                        var keys = Enumerable
+                            .Range(0, levels.Count)
+                            .Select(index => index.ToString(CultureInfo.InvariantCulture))
+                            .ToArray();
+                        ValidateDistribution(
+                            answer.Probabilities,
+                            keys,
+                            answers,
+                            pair.Key,
+                            probabilityError
+                        );
+                        var mean = answer.Probabilities.Sum(item =>
+                            int.Parse(item.Key, CultureInfo.InvariantCulture) * item.Value
+                        );
+                        var meanError = keys.Sum(index =>
+                            int.Parse(index, CultureInfo.InvariantCulture) * probabilityError
+                        );
+                        if (
+                            Math.Abs(mean - answer.Score.Value)
+                            > Tolerance + meanError + scoreError
+                        )
                         {
-                            throw new InvalidResponseDataException(answers, "Question \"" + pair.Key + "\" score must equal the probability-weighted mean within the declared rounding precision.");
+                            throw new InvalidResponseDataException(
+                                answers,
+                                "Question \""
+                                    + pair.Key
+                                    + "\" score must equal the probability-weighted mean within the declared rounding precision."
+                            );
                         }
                     }
 
                     break;
                 case "box":
                     var box = answer.Box;
-                    if (box == null
-                        || !IsProbability(box.Left) || !IsProbability(box.Right) || !IsProbability(box.Top) || !IsProbability(box.Bottom)
-                        || !(box.Left < box.Right) || !(box.Top < box.Bottom))
+                    if (
+                        box == null
+                        || !IsProbability(box.Left)
+                        || !IsProbability(box.Right)
+                        || !IsProbability(box.Top)
+                        || !IsProbability(box.Bottom)
+                        || !(box.Left < box.Right)
+                        || !(box.Top < box.Bottom)
+                    )
                     {
-                        throw new InvalidResponseDataException(answers, "Question \"" + pair.Key + "\" must return box edges in [0, 1] with left < right and top < bottom.");
+                        throw new InvalidResponseDataException(
+                            answers,
+                            "Question \""
+                                + pair.Key
+                                + "\" must return box edges in [0, 1] with left < right and top < bottom."
+                        );
                     }
 
                     break;
                 case "boolean":
                     if (answer.Probability == null || !IsProbability(answer.Probability.Value))
                     {
-                        throw new InvalidResponseDataException(answers, "Question \"" + pair.Key + "\" must return P(true) as a finite probability in [0, 1].");
+                        throw new InvalidResponseDataException(
+                            answers,
+                            "Question \""
+                                + pair.Key
+                                + "\" must return P(true) as a finite probability in [0, 1]."
+                        );
                     }
 
                     break;
@@ -775,18 +1102,37 @@ public static class Decide
         }
     }
 
-    private static void ValidateDistribution(IReadOnlyDictionary<string, double> value, IEnumerable<string> keys, object? answers, string id, double roundingError)
+    private static void ValidateDistribution(
+        IReadOnlyDictionary<string, double> value,
+        IEnumerable<string> keys,
+        object? answers,
+        string id,
+        double roundingError
+    )
     {
         var keyList = keys.ToArray();
-        if (!SameKeys(value.Keys, keyList) || value.Values.Any(probability => !IsProbability(probability)))
+        if (
+            !SameKeys(value.Keys, keyList)
+            || value.Values.Any(probability => !IsProbability(probability))
+        )
         {
-            throw new InvalidResponseDataException(answers, "Question \"" + id + "\" must have a complete distribution of finite probabilities in [0, 1].");
+            throw new InvalidResponseDataException(
+                answers,
+                "Question \""
+                    + id
+                    + "\" must have a complete distribution of finite probabilities in [0, 1]."
+            );
         }
 
         var sum = value.Values.Sum();
         if (Math.Abs(sum - 1) > Tolerance + (keyList.Length * roundingError))
         {
-            throw new InvalidResponseDataException(answers, "Question \"" + id + "\" probabilities must sum to 1 within the declared rounding precision.");
+            throw new InvalidResponseDataException(
+                answers,
+                "Question \""
+                    + id
+                    + "\" probabilities must sum to 1 within the declared rounding precision."
+            );
         }
     }
 
@@ -808,7 +1154,10 @@ public static class Decide
         return rightList.All(set.Contains);
     }
 
-    private static IReadOnlyDictionary<string, object?> Filter(IReadOnlyDictionary<string, object?> context, IReadOnlyDictionary<string, bool>? include)
+    private static IReadOnlyDictionary<string, object?> Filter(
+        IReadOnlyDictionary<string, object?> context,
+        IReadOnlyDictionary<string, bool>? include
+    )
     {
         if (include == null)
         {
@@ -828,20 +1177,57 @@ public static class Decide
     }
 
 #pragma warning disable CS0618
-    private static Task NotifyTelemetryAsync(DecideEvent source, Func<DecideEvent, Task>? current, Func<EvaluateEvent, Task>? deprecated)
+    private static Task NotifyTelemetryAsync(
+        DecideEvent source,
+        Func<DecideEvent, Task>? current,
+        Func<EvaluateEvent, Task>? deprecated
+    )
     {
-        return current != null ? OperationCallbacks.NotifyAsync(source, current) : deprecated != null ? OperationCallbacks.NotifyAsync(EvaluateEvent.From(source), deprecated) : Task.CompletedTask;
+        return current != null ? OperationCallbacks.NotifyAsync(source, current)
+            : deprecated != null
+                ? OperationCallbacks.NotifyAsync(EvaluateEvent.From(source), deprecated)
+            : Task.CompletedTask;
     }
 
-    private static Task NotifyTelemetryAsync(DecisionModelEvent source, Func<DecisionModelEvent, Task>? current, Func<EvaluateModelEvent, Task>? deprecated)
+    private static Task NotifyTelemetryAsync(
+        DecisionModelEvent source,
+        Func<DecisionModelEvent, Task>? current,
+        Func<EvaluateModelEvent, Task>? deprecated
+    )
     {
-        return current != null ? OperationCallbacks.NotifyAsync(source, current) : deprecated != null ? OperationCallbacks.NotifyAsync(EvaluateModelEvent.From(source), deprecated) : Task.CompletedTask;
+        return current != null ? OperationCallbacks.NotifyAsync(source, current)
+            : deprecated != null
+                ? OperationCallbacks.NotifyAsync(EvaluateModelEvent.From(source), deprecated)
+            : Task.CompletedTask;
     }
 
 #pragma warning restore CS0618
 
-    private static DecideEvent WithTelemetry(DecideEvent source, IReadOnlyDictionary<string, object?> context, DecideTelemetry? telemetry)
+    private static DecideEvent WithTelemetry(
+        DecideEvent source,
+        IReadOnlyDictionary<string, object?> context,
+        DecideTelemetry? telemetry
+    )
     {
-        return new DecideEvent(source.CallId, source.OperationId, context, source.Provider, source.ModelId, source.State, source.Questions, source.MaxRetries, source.Headers, source.ProviderOptions, source.Answers, source.Usage, source.Warnings, telemetry?.RecordInputs, telemetry?.RecordOutputs, telemetry?.FunctionId, source.MaxOutputTokens, source.Reasoning);
+        return new DecideEvent(
+            source.CallId,
+            source.OperationId,
+            context,
+            source.Provider,
+            source.ModelId,
+            source.State,
+            source.Questions,
+            source.MaxRetries,
+            source.Headers,
+            source.ProviderOptions,
+            source.Answers,
+            source.Usage,
+            source.Warnings,
+            telemetry?.RecordInputs,
+            telemetry?.RecordOutputs,
+            telemetry?.FunctionId,
+            source.MaxOutputTokens,
+            source.Reasoning
+        );
     }
 }

@@ -30,28 +30,50 @@ public sealed class DoStreamTests
     [InlineData("tool-call")]
     [UpstreamTest(
         "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doStream::only emits an interrupted finish after output (%s)",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Only_emits_an_interrupted_finish_after_output(string scenario)
     {
         static string Event(string json) => "data: " + json + "\n\n";
         static string MessageStart(string id, string content = "[]") =>
-            Event("{\"type\":\"message_start\",\"message\":{\"id\":\"" + id + "\",\"type\":\"message\",\"role\":\"assistant\",\"content\":" + content + ",\"model\":\"claude-3-haiku-20240307\",\"stop_reason\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}");
-        const string TextStart = "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n";
+            Event(
+                "{\"type\":\"message_start\",\"message\":{\"id\":\""
+                    + id
+                    + "\",\"type\":\"message\",\"role\":\"assistant\",\"content\":"
+                    + content
+                    + ",\"model\":\"claude-3-haiku-20240307\",\"stop_reason\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}"
+            );
+        const string TextStart =
+            "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n";
         static string TextDelta(string text) =>
-            Event("{\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"" + text + "\"}}");
+            Event(
+                "{\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\""
+                    + text
+                    + "\"}}"
+            );
 
         var sse = string.Empty;
         if (scenario == "later-message")
         {
-            sse += MessageStart("msg-previous") + TextStart + TextDelta("Previous answer") +
-                Event("{\"type\":\"content_block_stop\",\"index\":0}") +
-                Event("{\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":3}}") +
-                Event("{\"type\":\"message_stop\"}");
+            sse +=
+                MessageStart("msg-previous")
+                + TextStart
+                + TextDelta("Previous answer")
+                + Event("{\"type\":\"content_block_stop\",\"index\":0}")
+                + Event(
+                    "{\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":3}}"
+                )
+                + Event("{\"type\":\"message_stop\"}");
         }
 
         if (scenario != "empty")
         {
-            sse += MessageStart("msg-current", scenario == "tool-call" ? "[{\"type\":\"tool_use\",\"id\":\"tool-1\",\"name\":\"test-tool\",\"input\":{}}]" : "[]");
+            sse += MessageStart(
+                "msg-current",
+                scenario == "tool-call"
+                    ? "[{\"type\":\"tool_use\",\"id\":\"tool-1\",\"name\":\"test-tool\",\"input\":{}}]"
+                    : "[]"
+            );
         }
 
         if (scenario == "empty-text" || scenario == "partial-text")
@@ -61,25 +83,44 @@ public sealed class DoStreamTests
 
         if (scenario == "empty-reasoning" || scenario == "partial-reasoning")
         {
-            sse += Event("{\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}") +
-                Event("{\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"" + (scenario == "partial-reasoning" ? "Thinking" : string.Empty) + "\"}}");
+            sse +=
+                Event(
+                    "{\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}"
+                )
+                + Event(
+                    "{\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\""
+                        + (scenario == "partial-reasoning" ? "Thinking" : string.Empty)
+                        + "\"}}"
+                );
         }
 
         if (scenario == "empty-tool-input" || scenario == "partial-tool-input")
         {
-            sse += Event("{\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"tool_use\",\"id\":\"tool-1\",\"name\":\"test-tool\",\"input\":{}}}") +
-                Event("{\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"" + (scenario == "partial-tool-input" ? "{" : string.Empty) + "\"}}");
+            sse +=
+                Event(
+                    "{\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"tool_use\",\"id\":\"tool-1\",\"name\":\"test-tool\",\"input\":{}}}"
+                )
+                + Event(
+                    "{\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\""
+                        + (scenario == "partial-tool-input" ? "{" : string.Empty)
+                        + "\"}}"
+                );
         }
 
         var parts = await StreamAsync(sse);
 
         Assert.Empty(parts.OfType<ErrorStreamPart>());
-        var finishes = parts.OfType<FinishStreamPart>().Select(part => (part.FinishReason, part.RawFinishReason)).ToList();
+        var finishes = parts
+            .OfType<FinishStreamPart>()
+            .Select(part => (part.FinishReason, part.RawFinishReason))
+            .ToList();
         if (scenario == "later-message")
         {
             Assert.Equal(new[] { (FinishReason.Stop, (string?)"end_turn") }, finishes);
         }
-        else if (scenario is "partial-text" or "partial-reasoning" or "partial-tool-input" or "tool-call")
+        else if (
+            scenario is "partial-text" or "partial-reasoning" or "partial-tool-input" or "tool-call"
+        )
         {
             Assert.Equal(new[] { (FinishReason.Interrupted, (string?)null) }, finishes);
         }
@@ -92,19 +133,23 @@ public sealed class DoStreamTests
     [Fact]
     [UpstreamTest(
         "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doStream::reports interruption for a later message even when an earlier message completed",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Reports_interruption_for_a_later_message_even_when_an_earlier_message_completed()
     {
         static string MessageStart(string id) =>
-            "data: {\"type\":\"message_start\",\"message\":{\"id\":\"" + id + "\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-3-haiku-20240307\",\"stop_reason\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\n\n";
+            "data: {\"type\":\"message_start\",\"message\":{\"id\":\""
+            + id
+            + "\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-3-haiku-20240307\",\"stop_reason\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\n\n";
 
         var parts = await StreamAsync(
-            MessageStart("msg1") +
-            "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":3}}\n\n" +
-            "data: {\"type\":\"message_stop\"}\n\n" +
-            MessageStart("msg2") +
-            "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n" +
-            "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Partial answer\"}}\n\n");
+            MessageStart("msg1")
+                + "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":3}}\n\n"
+                + "data: {\"type\":\"message_stop\"}\n\n"
+                + MessageStart("msg2")
+                + "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n"
+                + "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Partial answer\"}}\n\n"
+        );
 
         Assert.Empty(parts.OfType<ErrorStreamPart>());
         var finishes = parts.OfType<FinishStreamPart>().ToList();
@@ -126,29 +171,50 @@ public sealed class DoStreamTests
     [InlineData("unknown_reason", true, "Other")]
     [UpstreamTest(
         "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doStream::maps stop_reason %j and message_stop %s to %s",
-        Coverage = UpstreamCoverage.Covered)]
-    public async Task Maps_stop_reason_and_message_stop_to_a_finish_reason(string? stopReason, bool messageStop, string unified)
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Maps_stop_reason_and_message_stop_to_a_finish_reason(
+        string? stopReason,
+        bool messageStop,
+        string unified
+    )
     {
         var sse =
-            "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-3-haiku-20240307\",\"stop_reason\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\n\n" +
-            "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n" +
-            "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Partial answer\"}}\n\n" +
-            (stopReason == Undefined
-                ? string.Empty
-                : "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":" + (stopReason == null ? "null" : "\"" + stopReason + "\"") + ",\"stop_sequence\":null},\"usage\":{\"output_tokens\":3}}\n\n") +
-            (messageStop ? "data: {\"type\":\"message_stop\"}\n\n" : string.Empty);
+            "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-3-haiku-20240307\",\"stop_reason\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\n\n"
+            + "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n"
+            + "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Partial answer\"}}\n\n"
+            + (
+                stopReason == Undefined
+                    ? string.Empty
+                    : "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":"
+                        + (stopReason == null ? "null" : "\"" + stopReason + "\"")
+                        + ",\"stop_sequence\":null},\"usage\":{\"output_tokens\":3}}\n\n"
+            )
+            + (messageStop ? "data: {\"type\":\"message_stop\"}\n\n" : string.Empty);
 
         var parts = await StreamAsync(sse);
 
-        Assert.Contains(parts, part => part is TextDeltaStreamPart delta && delta.Delta == "Partial answer");
+        Assert.Contains(parts, part =>
+            part is TextDeltaStreamPart delta && delta.Delta == "Partial answer"
+        );
         Assert.Empty(parts.OfType<ErrorStreamPart>());
         var finish = Assert.Single(parts.OfType<FinishStreamPart>());
         Assert.Equal(unified, finish.FinishReason.ToString());
-        Assert.Equal(messageStop && stopReason != Undefined ? stopReason : null, finish.RawFinishReason);
+        Assert.Equal(
+            messageStop && stopReason != Undefined ? stopReason : null,
+            finish.RawFinishReason
+        );
         Assert.Equal(messageStop ? 10 : null, finish.Usage.InputTokens);
         if (messageStop)
         {
-            Assert.Equal(10, finish.ProviderMetadata!.Value.GetProperty("anthropic").GetProperty("usage").GetProperty("input_tokens").GetInt32());
+            Assert.Equal(
+                10,
+                finish
+                    .ProviderMetadata!.Value.GetProperty("anthropic")
+                    .GetProperty("usage")
+                    .GetProperty("input_tokens")
+                    .GetInt32()
+            );
         }
         else
         {
@@ -160,53 +226,82 @@ public sealed class DoStreamTests
     public async Task Finish_part_carries_stop_sequence_and_container_metadata()
     {
         var parts = await StreamAsync(
-            "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-3-haiku-20240307\",\"stop_reason\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\n\n" +
-            "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"stop_sequence\",\"stop_sequence\":\"END\",\"container\":{\"id\":\"c1\",\"expires_at\":\"2030-01-01T00:00:00Z\",\"skills\":[{\"type\":\"anthropic\",\"skill_id\":\"pptx\",\"version\":\"1\"}]}},\"usage\":{\"output_tokens\":3}}\n\n" +
-            "data: {\"type\":\"message_stop\"}\n\n");
+            "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-3-haiku-20240307\",\"stop_reason\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\n\n"
+                + "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"stop_sequence\",\"stop_sequence\":\"END\",\"container\":{\"id\":\"c1\",\"expires_at\":\"2030-01-01T00:00:00Z\",\"skills\":[{\"type\":\"anthropic\",\"skill_id\":\"pptx\",\"version\":\"1\"}]}},\"usage\":{\"output_tokens\":3}}\n\n"
+                + "data: {\"type\":\"message_stop\"}\n\n"
+        );
 
         var finish = Assert.Single(parts.OfType<FinishStreamPart>());
         JsonAssert.Equal(
             finish.ProviderMetadata!.Value,
-            "{\"anthropic\":{\"usage\":{\"input_tokens\":10,\"output_tokens\":3},\"stopSequence\":\"END\",\"iterations\":null,\"container\":{\"expiresAt\":\"2030-01-01T00:00:00Z\",\"id\":\"c1\",\"skills\":[{\"type\":\"anthropic\",\"skillId\":\"pptx\",\"version\":\"1\"}]},\"contextManagement\":null}}");
+            "{\"anthropic\":{\"usage\":{\"input_tokens\":10,\"output_tokens\":3},\"stopSequence\":\"END\",\"iterations\":null,\"container\":{\"expiresAt\":\"2030-01-01T00:00:00Z\",\"id\":\"c1\",\"skills\":[{\"type\":\"anthropic\",\"skillId\":\"pptx\",\"version\":\"1\"}]},\"contextManagement\":null}}"
+        );
     }
 
     [Fact]
     [UpstreamTest(
         "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doStream::should stream compaction content blocks with provider metadata",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_stream_compaction_content_blocks_with_provider_metadata()
     {
-        var lines = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", "anthropic-compaction.1.chunks.txt")).Where(line => line.Trim().Length > 0);
-        var parts = await StreamAsync(string.Concat(lines.Select(line => "data: " + line + "\n\n")));
+        var lines = File.ReadAllLines(
+                Path.Combine(
+                    AppContext.BaseDirectory,
+                    "Fixtures",
+                    "anthropic-compaction.1.chunks.txt"
+                )
+            )
+            .Where(line => line.Trim().Length > 0);
+        var parts = await StreamAsync(
+            string.Concat(lines.Select(line => "data: " + line + "\n\n"))
+        );
 
-        var compactionStart = Assert.Single(parts.OfType<TextStartStreamPart>(), part => part.Id == "0");
-        JsonAssert.Equal(compactionStart.ProviderMetadata!.Value, "{\"anthropic\":{\"type\":\"compaction\"}}");
+        var compactionStart = Assert.Single(parts.OfType<TextStartStreamPart>(), part =>
+            part.Id == "0"
+        );
+        JsonAssert.Equal(
+            compactionStart.ProviderMetadata!.Value,
+            "{\"anthropic\":{\"type\":\"compaction\"}}"
+        );
 
-        var compactionText = string.Concat(parts.OfType<TextDeltaStreamPart>().Where(part => part.Id == "0").Select(part => part.Delta));
+        var compactionText = string.Concat(
+            parts
+                .OfType<TextDeltaStreamPart>()
+                .Where(part => part.Id == "0")
+                .Select(part => part.Delta)
+        );
         Assert.NotEmpty(compactionText);
         Assert.Contains("## Summary of Conversation", compactionText);
         Assert.Contains("React vs Vue.js", compactionText);
 
-        var regularStart = Assert.Single(parts.OfType<TextStartStreamPart>(), part => part.Id == "1");
+        var regularStart = Assert.Single(parts.OfType<TextStartStreamPart>(), part =>
+            part.Id == "1"
+        );
         Assert.Null(regularStart.ProviderMetadata);
     }
 
     [Fact]
     [UpstreamTest(
         "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doStream::should stream complete signed on-demand compaction blocks",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_stream_complete_signed_on_demand_compaction_blocks()
     {
         var parts = await StreamAsync(
-            "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_compaction\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-opus-5\",\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":0,\"output_tokens\":0}}}\n\n" +
-            "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"compaction\",\"content\":\"Summary of the conversation.\",\"signature\":\"compaction-signature\"}}\n\n" +
-            "data: {\"type\":\"content_block_stop\",\"index\":0}\n\n" +
-            "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"compaction\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":0,\"iterations\":[{\"type\":\"compaction\",\"input_tokens\":120,\"output_tokens\":30}]}}\n\n" +
-            "data: {\"type\":\"message_stop\"}\n\n");
+            "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_compaction\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-opus-5\",\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":0,\"output_tokens\":0}}}\n\n"
+                + "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"compaction\",\"content\":\"Summary of the conversation.\",\"signature\":\"compaction-signature\"}}\n\n"
+                + "data: {\"type\":\"content_block_stop\",\"index\":0}\n\n"
+                + "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"compaction\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":0,\"iterations\":[{\"type\":\"compaction\",\"input_tokens\":120,\"output_tokens\":30}]}}\n\n"
+                + "data: {\"type\":\"message_stop\"}\n\n"
+        );
 
         var start = Assert.Single(parts.OfType<TextStartStreamPart>());
         Assert.Equal("0", start.Id);
-        JsonAssert.Equal(start.ProviderMetadata!.Value, "{\"anthropic\":{\"type\":\"compaction\",\"signature\":\"compaction-signature\"}}");
+        JsonAssert.Equal(
+            start.ProviderMetadata!.Value,
+            "{\"anthropic\":{\"type\":\"compaction\",\"signature\":\"compaction-signature\"}}"
+        );
         var delta = Assert.Single(parts.OfType<TextDeltaStreamPart>());
         Assert.Equal("0", delta.Id);
         Assert.Equal("Summary of the conversation.", delta.Delta);
@@ -220,17 +315,19 @@ public sealed class DoStreamTests
     [Fact]
     [UpstreamTest(
         "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doStream::should handle compaction_delta with null content",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_handle_compaction_delta_with_null_content()
     {
         var parts = await StreamAsync(
-            "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_test\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-3-haiku-20240307\",\"stop_sequence\":null,\"usage\":{\"input_tokens\":100,\"output_tokens\":0},\"content\":[],\"stop_reason\":null}}\n\n" +
-            "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"compaction\",\"content\":null}}\n\n" +
-            "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"compaction_delta\",\"content\":null}}\n\n" +
-            "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"compaction_delta\",\"content\":\"Summary of conversation.\"}}\n\n" +
-            "data: {\"type\":\"content_block_stop\",\"index\":0}\n\n" +
-            "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":10}}\n\n" +
-            "data: {\"type\":\"message_stop\"}\n\n");
+            "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_test\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-3-haiku-20240307\",\"stop_sequence\":null,\"usage\":{\"input_tokens\":100,\"output_tokens\":0},\"content\":[],\"stop_reason\":null}}\n\n"
+                + "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"compaction\",\"content\":null}}\n\n"
+                + "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"compaction_delta\",\"content\":null}}\n\n"
+                + "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"compaction_delta\",\"content\":\"Summary of conversation.\"}}\n\n"
+                + "data: {\"type\":\"content_block_stop\",\"index\":0}\n\n"
+                + "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":10}}\n\n"
+                + "data: {\"type\":\"message_stop\"}\n\n"
+        );
 
         // No parsing errors should occur, and the null content delta is skipped.
         Assert.Empty(parts.OfType<ErrorStreamPart>());
@@ -254,25 +351,38 @@ public sealed class DoStreamTests
             new AnthropicStream(false, false, "custom", true),
             StartWithContainer,
             "{\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":3}}",
-            "{\"type\":\"message_stop\"}");
+            "{\"type\":\"message_stop\"}"
+        );
 
-        Assert.Equal(metadata.GetProperty("anthropic").GetRawText(), metadata.GetProperty("custom").GetRawText());
+        Assert.Equal(
+            metadata.GetProperty("anthropic").GetRawText(),
+            metadata.GetProperty("custom").GetRawText()
+        );
     }
 
     [Fact]
     public void Container_from_message_start_has_null_skills_and_is_cleared_by_a_delta_without_one()
     {
-        var withoutDelta = FinishMetadata(new AnthropicStream(false, false), StartWithContainer, "{\"type\":\"message_stop\"}");
+        var withoutDelta = FinishMetadata(
+            new AnthropicStream(false, false),
+            StartWithContainer,
+            "{\"type\":\"message_stop\"}"
+        );
         JsonAssert.Equal(
             withoutDelta.GetProperty("anthropic").GetProperty("container"),
-            "{\"expiresAt\":\"2030-01-01T00:00:00Z\",\"id\":\"c1\",\"skills\":null}");
+            "{\"expiresAt\":\"2030-01-01T00:00:00Z\",\"id\":\"c1\",\"skills\":null}"
+        );
 
         var withDelta = FinishMetadata(
             new AnthropicStream(false, false),
             StartWithContainer,
             "{\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":3}}",
-            "{\"type\":\"message_stop\"}");
-        Assert.Equal(JsonValueKind.Null, withDelta.GetProperty("anthropic").GetProperty("container").ValueKind);
+            "{\"type\":\"message_stop\"}"
+        );
+        Assert.Equal(
+            JsonValueKind.Null,
+            withDelta.GetProperty("anthropic").GetProperty("container").ValueKind
+        );
     }
 
     [Fact]
@@ -282,9 +392,13 @@ public sealed class DoStreamTests
             new AnthropicStream(false, false),
             StartWithContainer,
             "{\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":3}}",
-            "{\"type\":\"message_stop\"}");
+            "{\"type\":\"message_stop\"}"
+        );
 
-        Assert.Equal(JsonValueKind.Null, metadata.GetProperty("anthropic").GetProperty("stopSequence").ValueKind);
+        Assert.Equal(
+            JsonValueKind.Null,
+            metadata.GetProperty("anthropic").GetProperty("stopSequence").ValueKind
+        );
     }
 
     [Fact]
@@ -296,7 +410,8 @@ public sealed class DoStreamTests
             "{\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"stop_sequence\",\"stop_sequence\":\"END\",\"container\":{\"id\":\"c1\",\"expires_at\":\"2030-01-01T00:00:00Z\"}},\"usage\":{\"output_tokens\":3}}",
             "{\"type\":\"message_stop\"}",
             "{\"type\":\"message_start\",\"message\":{\"id\":\"msg2\",\"model\":\"m\",\"usage\":{\"input_tokens\":5,\"output_tokens\":1}}}",
-            "{\"type\":\"message_stop\"}");
+            "{\"type\":\"message_stop\"}"
+        );
 
         var anthropic = metadata.GetProperty("anthropic");
         Assert.Equal(JsonValueKind.Null, anthropic.GetProperty("stopSequence").ValueKind);
@@ -318,33 +433,52 @@ public sealed class DoStreamTests
     [InlineData(true, true, "vertex")]
     [UpstreamTest(
         "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doStream::only emits typed pings when enabled ($includePings, raw: $includeRawChunks, key: $providerKey)",
-        Coverage = UpstreamCoverage.Covered, Commit = "97540149254736e8d566d432ccb7abf7b1cebbb3")]
-    public async Task Only_emits_typed_pings_when_enabled(bool? includePings, bool includeRawChunks, string providerKey)
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "97540149254736e8d566d432ccb7abf7b1cebbb3"
+    )]
+    public async Task Only_emits_typed_pings_when_enabled(
+        bool? includePings,
+        bool includeRawChunks,
+        string providerKey
+    )
     {
         var handler = new CaptureHandler
         {
             ContentType = "text/event-stream",
             ResponseBody =
-                "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_01KfpJoAEabmH2iHRRFjQMAG\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-3-haiku-20240307\",\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":17,\"output_tokens\":1}}}\n\n" +
-                "data: {\"type\":\"ping\"}\n\n" +
-                "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n" +
-                "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello\"}}\n\n" +
-                "data: {\"type\":\"content_block_stop\",\"index\":0}\n\n" +
-                "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":2}}\n\n" +
-                "data: {\"type\":\"message_stop\"}\n\n",
+                "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_01KfpJoAEabmH2iHRRFjQMAG\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-3-haiku-20240307\",\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":17,\"output_tokens\":1}}}\n\n"
+                + "data: {\"type\":\"ping\"}\n\n"
+                + "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n"
+                + "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello\"}}\n\n"
+                + "data: {\"type\":\"content_block_stop\",\"index\":0}\n\n"
+                + "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":2}}\n\n"
+                + "data: {\"type\":\"message_stop\"}\n\n",
         };
         var provider = AnthropicProvider.Create(
-            new AnthropicOptions { ApiKey = "test-api-key", Name = providerKey == "anthropic" ? null : "vertex.anthropic" },
-            handler);
+            new AnthropicOptions
+            {
+                ApiKey = "test-api-key",
+                Name = providerKey == "anthropic" ? null : "vertex.anthropic",
+            },
+            handler
+        );
         var options = AnthropicParity.Hello();
         options.IncludeRawChunks = includeRawChunks;
         options.ProviderOptions = new Dictionary<string, JsonElement>
         {
-            [providerKey] = AnthropicParity.Json(includePings == null ? "{}" : "{\"includePings\":" + (includePings.Value ? "true" : "false") + "}"),
+            [providerKey] = AnthropicParity.Json(
+                includePings == null
+                    ? "{}"
+                    : "{\"includePings\":" + (includePings.Value ? "true" : "false") + "}"
+            ),
         };
 
         var parts = new List<LanguageModelStreamPart>();
-        await foreach (var part in await provider.LanguageModel("claude-3-haiku-20240307").DoStreamAsync(options, CancellationToken.None))
+        await foreach (
+            var part in await provider
+                .LanguageModel("claude-3-haiku-20240307")
+                .DoStreamAsync(options, CancellationToken.None)
+        )
         {
             parts.Add(part);
         }
@@ -354,14 +488,20 @@ public sealed class DoStreamTests
         Assert.False(body.RootElement.TryGetProperty("includePings", out _));
         Assert.Equal(
             includeRawChunks ? 1 : 0,
-            parts.OfType<RawStreamPart>().Count(raw => raw.RawJson == "{\"type\":\"ping\"}"));
+            parts.OfType<RawStreamPart>().Count(raw => raw.RawJson == "{\"type\":\"ping\"}")
+        );
     }
 
     private static async Task<List<LanguageModelStreamPart>> StreamAsync(string sse)
     {
         var handler = new CaptureHandler { ContentType = "text/event-stream", ResponseBody = sse };
         var parts = new List<LanguageModelStreamPart>();
-        await foreach (var part in await AnthropicParity.Client(handler).LanguageModel("claude-opus-5").DoStreamAsync(AnthropicParity.Hello(), CancellationToken.None))
+        await foreach (
+            var part in await AnthropicParity
+                .Client(handler)
+                .LanguageModel("claude-opus-5")
+                .DoStreamAsync(AnthropicParity.Hello(), CancellationToken.None)
+        )
         {
             parts.Add(part);
         }
@@ -369,7 +509,8 @@ public sealed class DoStreamTests
         return parts;
     }
 
-    private const string Prefix = "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doStream::";
+    private const string Prefix =
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doStream::";
 
     private static readonly string[] Chunks =
     {
@@ -382,10 +523,18 @@ public sealed class DoStreamTests
     };
 
     [Fact]
-    [UpstreamTest(Prefix + "should expose the raw response headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should expose the raw response headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_expose_the_raw_response_headers()
     {
-        var result = await Stream(new SseStreamHandler(Chunks, new Dictionary<string, string> { ["test-header"] = "test-value" }));
+        var result = await Stream(
+            new SseStreamHandler(
+                Chunks,
+                new Dictionary<string, string> { ["test-header"] = "test-value" }
+            )
+        );
 
         SseStreamHandler.AssertDefaultHeaders(result.Response!.Headers);
     }
@@ -394,66 +543,117 @@ public sealed class DoStreamTests
     [UpstreamTest(Prefix + "should send request body", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_send_request_body()
     {
-        var result = await Stream(new SseStreamHandler(Chunks, new Dictionary<string, string> { ["test-header"] = "test-value" }));
+        var result = await Stream(
+            new SseStreamHandler(
+                Chunks,
+                new Dictionary<string, string> { ["test-header"] = "test-value" }
+            )
+        );
 
-        var expected = JsonNode.Parse("""
+        var expected = JsonNode.Parse(
+            """
             {"model":"claude-3-haiku-20240307","max_tokens":4096,"messages":[{"role":"user","content":[{"type":"text","text":"Hello"}]}],"stream":true}
-            """);
-        Assert.True(JsonNode.DeepEquals(expected, JsonNode.Parse(result.Request!.Body!.Value.GetRawText())));
+            """
+        );
+        Assert.True(
+            JsonNode.DeepEquals(expected, JsonNode.Parse(result.Request!.Body!.Value.GetRawText()))
+        );
     }
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    [UpstreamTest(Prefix + "preserves startup error handling after pings (raw: %s)", Coverage = UpstreamCoverage.Covered, Commit = "97540149254736e8d566d432ccb7abf7b1cebbb3")]
+    [UpstreamTest(
+        Prefix + "preserves startup error handling after pings (raw: %s)",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "97540149254736e8d566d432ccb7abf7b1cebbb3"
+    )]
     public async Task Preserves_startup_error_handling_after_pings(bool includeRawChunks)
     {
-        var handler = new SseStreamHandler(new[]
-        {
-            "data: {\"type\":\"ping\"}\n\n",
-            "data: {\"type\":\"ping\"}\n\n",
-            "data: {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}}\n\n",
-        });
-        var provider = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-api-key" }, handler);
+        var handler = new SseStreamHandler(
+            new[]
+            {
+                "data: {\"type\":\"ping\"}\n\n",
+                "data: {\"type\":\"ping\"}\n\n",
+                "data: {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}}\n\n",
+            }
+        );
+        var provider = AnthropicProvider.Create(
+            new AnthropicOptions { ApiKey = "test-api-key" },
+            handler
+        );
         var options = AnthropicParity.WithProvider("{\"includePings\":true}");
         options.IncludeRawChunks = includeRawChunks;
 
-        var exception = await Assert.ThrowsAsync<InternalServerException>(() => provider.LanguageModel("claude-3-haiku-20240307").DoStreamAsync(options, CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<InternalServerException>(() =>
+            provider
+                .LanguageModel("claude-3-haiku-20240307")
+                .DoStreamAsync(options, CancellationToken.None)
+        );
 
         Assert.Equal("Overloaded", exception.Message);
         Assert.True(ProviderHttp.IsRetryable(exception.StatusCode));
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should throw an api error when the first stream chunk is an overloaded error", Coverage = UpstreamCoverage.Partial, Note = "The exception does not carry the request URL or the request body values.")]
+    [UpstreamTest(
+        Prefix + "should throw an api error when the first stream chunk is an overloaded error"
+    )]
     public async Task Should_throw_an_api_error_when_the_first_stream_chunk_is_an_overloaded_error()
     {
-        var handler = new SseStreamHandler(new[]
-        {
-            "event: error\n",
-            "data: {\"type\":\"error\",\"error\":{\"details\":null,\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}}\n",
-            "\n",
-        });
-        var provider = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-api-key" }, handler);
+        var handler = new SseStreamHandler(
+            new[]
+            {
+                "event: error\n",
+                "data: {\"type\":\"error\",\"error\":{\"details\":null,\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}}\n",
+                "\n",
+            }
+        );
+        var provider = AnthropicProvider.Create(
+            new AnthropicOptions { ApiKey = "test-api-key" },
+            handler
+        );
 
-        var exception = await Assert.ThrowsAsync<InternalServerException>(() => provider.LanguageModel("claude-3-haiku-20240307").DoStreamAsync(AnthropicParity.Hello(), CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<InternalServerException>(() =>
+            provider
+                .LanguageModel("claude-3-haiku-20240307")
+                .DoStreamAsync(AnthropicParity.Hello(), CancellationToken.None)
+        );
 
         Assert.Equal("Overloaded", exception.Message);
+        Assert.Equal("https://api.anthropic.com/v1/messages", exception.Url);
+        var requestBody = Assert.IsAssignableFrom<JsonNode>(exception.RequestBodyValues);
+        Assert.Equal("claude-3-haiku-20240307", (string?)requestBody["model"]);
+        Assert.Equal(4096, (int?)requestBody["max_tokens"]);
+        Assert.True((bool?)requestBody["stream"]);
+        Assert.Equal("Hello", (string?)requestBody["messages"]![0]!["content"]![0]!["text"]);
         Assert.Equal(529, exception.StatusCode);
         Assert.True(ProviderHttp.IsRetryable(exception.StatusCode));
-        Assert.True(JsonNode.DeepEquals(JsonNode.Parse("{\"details\":null,\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}"), JsonNode.Parse(exception.ResponseBody!)));
+        Assert.True(
+            JsonNode.DeepEquals(
+                JsonNode.Parse(
+                    "{\"details\":null,\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}"
+                ),
+                JsonNode.Parse(exception.ResponseBody!)
+            )
+        );
         Assert.Equal("no-cache", exception.ResponseHeaders!["cache-control"]);
         Assert.Equal("keep-alive", exception.ResponseHeaders["connection"]);
         Assert.Equal("text/event-stream", exception.ResponseHeaders["content-type"]);
     }
 
-    private static async Task<Vercel.AI.Provider.LanguageModelStreamResult> Stream(SseStreamHandler handler)
+    private static async Task<Vercel.AI.Provider.LanguageModelStreamResult> Stream(
+        SseStreamHandler handler
+    )
     {
-        var provider = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-api-key" }, handler);
-        var result = await provider.LanguageModel("claude-3-haiku-20240307").DoStreamAsync(AnthropicParity.Hello(), CancellationToken.None);
-        await foreach (var _ in result)
-        {
-        }
+        var provider = AnthropicProvider.Create(
+            new AnthropicOptions { ApiKey = "test-api-key" },
+            handler
+        );
+        var result = await provider
+            .LanguageModel("claude-3-haiku-20240307")
+            .DoStreamAsync(AnthropicParity.Hello(), CancellationToken.None);
+        await foreach (var _ in result) { }
 
         return result;
     }

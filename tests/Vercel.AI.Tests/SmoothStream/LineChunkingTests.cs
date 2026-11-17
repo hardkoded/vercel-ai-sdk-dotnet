@@ -19,16 +19,29 @@ public sealed class LineChunkingTests : SmoothStreamTestBase
     public async Task ShouldSplitTextByLinesWhenUsingLineChunkingMode()
     {
         await Run(
-            [Start, D("First line\nSecond line\nThird line with more text\n"), D("Partial line"), D(" continues\nFinal line\n"), End],
-            new SmoothStreamOptions { DelayInMs = 10, Chunking = SmoothStreamChunking.Line });
+            [
+                Start,
+                D("First line\nSecond line\nThird line with more text\n"),
+                D("Partial line"),
+                D(" continues\nFinal line\n"),
+                End,
+            ],
+            new SmoothStreamOptions { DelayInMs = 10, Chunking = SmoothStreamChunking.Line }
+        );
         Expect(
             Start,
-            D("First line\n"), Delay,
-            D("Second line\n"), Delay,
-            D("Third line with more text\n"), Delay,
-            D("Partial line continues\n"), Delay,
-            D("Final line\n"), Delay,
-            End);
+            D("First line\n"),
+            Delay,
+            D("Second line\n"),
+            Delay,
+            D("Third line with more text\n"),
+            Delay,
+            D("Partial line continues\n"),
+            Delay,
+            D("Final line\n"),
+            Delay,
+            End
+        );
     }
 
     [Fact]
@@ -36,7 +49,8 @@ public sealed class LineChunkingTests : SmoothStreamTestBase
     {
         await Run(
             [Start, D("Text without"), D(" any line"), D(" breaks"), End],
-            new SmoothStreamOptions { Chunking = SmoothStreamChunking.Line });
+            new SmoothStreamOptions { Chunking = SmoothStreamChunking.Line }
+        );
         Expect(Start, D("Text without any line breaks"), End);
     }
 }

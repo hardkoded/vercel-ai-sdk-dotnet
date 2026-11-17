@@ -8,7 +8,12 @@ namespace Vercel.AI.Anthropic;
 public sealed class AnthropicReasoningConfig
 {
     /// <summary>Creates a reasoning mapping.</summary>
-    public AnthropicReasoningConfig(string? thinkingType, int? budgetTokens, string? effort, string? display)
+    public AnthropicReasoningConfig(
+        string? thinkingType,
+        int? budgetTokens,
+        string? effort,
+        string? display
+    )
     {
         ThinkingType = thinkingType;
         BudgetTokens = budgetTokens;
@@ -43,7 +48,8 @@ public static class AnthropicReasoning
         string? reasoning,
         string modelId,
         AnthropicModelCapabilities capabilities,
-        IList<AnthropicWarning> warnings)
+        IList<AnthropicWarning> warnings
+    )
     {
         if (!IsCustom(reasoning))
         {
@@ -59,10 +65,15 @@ public static class AnthropicReasoning
 
             if (capabilities.RejectsThinkingDisabled)
             {
-                warnings.Add(new AnthropicWarning(
-                    "compatibility",
-                    "reasoning",
-                    "reasoning 'none' is not supported by " + modelId + "; it always uses adaptive thinking. Using effort 'low' to minimize thinking instead."));
+                warnings.Add(
+                    new AnthropicWarning(
+                        "compatibility",
+                        "reasoning",
+                        "reasoning 'none' is not supported by "
+                            + modelId
+                            + "; it always uses adaptive thinking. Using effort 'low' to minimize thinking instead."
+                    )
+                );
                 return new AnthropicReasoningConfig(null, null, "low", null);
             }
 
@@ -84,7 +95,11 @@ public static class AnthropicReasoning
         return new AnthropicReasoningConfig("enabled", budget, null, null);
     }
 
-    private static string? MapEffort(string reasoning, bool supportsXhigh, IList<AnthropicWarning> warnings)
+    private static string? MapEffort(
+        string reasoning,
+        bool supportsXhigh,
+        IList<AnthropicWarning> warnings
+    )
     {
         string? mapped;
         switch (reasoning)
@@ -108,23 +123,40 @@ public static class AnthropicReasoning
                 mapped = "max";
                 break;
             default:
-                warnings.Add(new AnthropicWarning("unsupported", "reasoning", "reasoning \"" + reasoning + "\" is not supported by this model."));
+                warnings.Add(
+                    new AnthropicWarning(
+                        "unsupported",
+                        "reasoning",
+                        "reasoning \"" + reasoning + "\" is not supported by this model."
+                    )
+                );
                 return null;
         }
 
         if (mapped != reasoning)
         {
-            warnings.Add(new AnthropicWarning(
-                "compatibility",
-                "reasoning",
-                "reasoning \"" + reasoning + "\" is not directly supported by this model. mapped to effort \"" + mapped + "\"."));
+            warnings.Add(
+                new AnthropicWarning(
+                    "compatibility",
+                    "reasoning",
+                    "reasoning \""
+                        + reasoning
+                        + "\" is not directly supported by this model. mapped to effort \""
+                        + mapped
+                        + "\"."
+                )
+            );
         }
 
         return mapped;
     }
 
     /// <summary>Token budget for budget-based thinking. Clamped to at least 1024.</summary>
-    public static int? MapBudget(string reasoning, int maxOutputTokens, IList<AnthropicWarning> warnings)
+    public static int? MapBudget(
+        string reasoning,
+        int maxOutputTokens,
+        IList<AnthropicWarning> warnings
+    )
     {
         double? percent;
         switch (reasoning)
@@ -148,11 +180,18 @@ public static class AnthropicReasoning
                 percent = 0.95;
                 break;
             default:
-                warnings.Add(new AnthropicWarning("unsupported", "reasoning", "reasoning \"" + reasoning + "\" is not supported by this model."));
+                warnings.Add(
+                    new AnthropicWarning(
+                        "unsupported",
+                        "reasoning",
+                        "reasoning \"" + reasoning + "\" is not supported by this model."
+                    )
+                );
                 return null;
         }
 
-        var budget = (int)Math.Round(maxOutputTokens * percent.Value, MidpointRounding.AwayFromZero);
+        var budget = (int)
+            Math.Round(maxOutputTokens * percent.Value, MidpointRounding.AwayFromZero);
         if (budget < 1024)
         {
             budget = 1024;

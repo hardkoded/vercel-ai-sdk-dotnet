@@ -14,14 +14,25 @@ public sealed class SystemMessagesTests
     private const string Prefix = TestFile + " > system messages::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should preserve multiple system messages in order", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "should preserve multiple system messages in order",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public void Should_preserve_multiple_system_messages_in_order()
     {
         var warnings = new List<CallWarning>();
 
-        var input = Convert(warnings, new SystemModelMessage("You are a helpful assistant."), new SystemModelMessage("Be concise."));
+        var input = Convert(
+            warnings,
+            new SystemModelMessage("You are a helpful assistant."),
+            new SystemModelMessage("Be concise.")
+        );
 
-        JsonAssert.Equal(input, """[{"role":"system","content":"You are a helpful assistant."},{"role":"system","content":"Be concise."}]""");
+        JsonAssert.Equal(
+            input,
+            """[{"role":"system","content":"You are a helpful assistant."},{"role":"system","content":"Be concise."}]"""
+        );
         Assert.Empty(warnings);
     }
 }

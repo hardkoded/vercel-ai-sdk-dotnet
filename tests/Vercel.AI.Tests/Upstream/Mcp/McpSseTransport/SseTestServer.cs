@@ -51,16 +51,21 @@ internal sealed class TestResponseController
             set => throw new NotSupportedException();
         }
 
-        public override void Flush()
-        {
-        }
+        public override void Flush() { }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            return ReadAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
+            return ReadAsync(buffer, offset, count, CancellationToken.None)
+                .GetAwaiter()
+                .GetResult();
         }
 
-        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(
+            byte[] buffer,
+            int offset,
+            int count,
+            CancellationToken cancellationToken
+        )
         {
             while (_offset >= _current.Length)
             {
@@ -82,23 +87,34 @@ internal sealed class TestResponseController
             return length;
         }
 
-        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask<int> ReadAsync(
+            Memory<byte> buffer,
+            CancellationToken cancellationToken = default
+        )
         {
             var temp = new byte[buffer.Length];
-            var count = await ReadAsync(temp, 0, temp.Length, cancellationToken).ConfigureAwait(false);
+            var count = await ReadAsync(temp, 0, temp.Length, cancellationToken)
+                .ConfigureAwait(false);
             temp.AsMemory(0, count).CopyTo(buffer);
             return count;
         }
 
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) =>
+            throw new NotSupportedException();
 
         public override void SetLength(long value) => throw new NotSupportedException();
 
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) =>
+            throw new NotSupportedException();
     }
 }
 
-internal sealed record RecordedCall(string Method, string Url, Dictionary<string, string> Headers, string Body);
+internal sealed record RecordedCall(
+    string Method,
+    string Url,
+    Dictionary<string, string> Headers,
+    string Body
+);
 
 /// <summary>Stands in for upstream's <c>createTestServer</c>: routes the SSE <c>GET</c> and the message <c>POST</c>.</summary>
 internal sealed class SseTestServer : HttpMessageHandler
@@ -110,11 +126,19 @@ internal sealed class SseTestServer : HttpMessageHandler
     public List<RecordedCall> Calls { get; } = new();
 
     /// <summary>Builds the response to the SSE <c>GET</c>.</summary>
-    public Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> SseResponse { get; set; } =
+    public Func<
+        HttpRequestMessage,
+        CancellationToken,
+        Task<HttpResponseMessage>
+    > SseResponse { get; set; } =
         (_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
 
     /// <summary>Builds the response to the message <c>POST</c>.</summary>
-    public Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> MessagesResponse { get; set; } =
+    public Func<
+        HttpRequestMessage,
+        CancellationToken,
+        Task<HttpResponseMessage>
+    > MessagesResponse { get; set; } =
         (_, _) => Task.FromResult(Json("{\"ok\":true,\"message\":\"Created\",\"code\":201}"));
 
     public static HttpResponseMessage Json(string body)
@@ -146,7 +170,10 @@ internal sealed class SseTestServer : HttpMessageHandler
         SseResponse = (_, _) => Task.FromResult(EventStream(controller));
     }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var header in request.Headers)
@@ -167,7 +194,14 @@ internal sealed class SseTestServer : HttpMessageHandler
 
         lock (Calls)
         {
-            Calls.Add(new RecordedCall(request.Method.Method, request.RequestUri!.AbsoluteUri, headers, body));
+            Calls.Add(
+                new RecordedCall(
+                    request.Method.Method,
+                    request.RequestUri!.AbsoluteUri,
+                    headers,
+                    body
+                )
+            );
         }
 
         return request.Method == HttpMethod.Get

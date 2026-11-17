@@ -30,13 +30,20 @@ public sealed class ValidateUIMessagesOptions
     /// Rebuilds the input of a tool call from its <c>inputSchemaInput</c>, by tool name, for an input schema whose parsed value
     /// differs from its input. Maps to <c>experimental_refineToolInput</c>.
     /// </summary>
-    public IReadOnlyDictionary<string, Func<JsonElement, Task<JsonElement>>>? ExperimentalRefineToolInput { get; set; }
+    public IReadOnlyDictionary<
+        string,
+        Func<JsonElement, Task<JsonElement>>
+    >? ExperimentalRefineToolInput { get; set; }
 }
 
 /// <summary>The result of <see cref="Ai.SafeValidateUIMessagesAsync"/>. Maps to <c>SafeValidateUIMessagesResult</c>.</summary>
 public sealed class SafeValidateUIMessagesResult
 {
-    private SafeValidateUIMessagesResult(bool success, IReadOnlyList<UIMessage>? data, Exception? error)
+    private SafeValidateUIMessagesResult(
+        bool success,
+        IReadOnlyList<UIMessage>? data,
+        Exception? error
+    )
     {
         Success = success;
         Data = data;
@@ -52,7 +59,8 @@ public sealed class SafeValidateUIMessagesResult
     /// <summary>The validation error. Null on success.</summary>
     public Exception? Error { get; }
 
-    internal static SafeValidateUIMessagesResult Ok(IReadOnlyList<UIMessage> data) => new(true, data, null);
+    internal static SafeValidateUIMessagesResult Ok(IReadOnlyList<UIMessage> data) =>
+        new(true, data, null);
 
     internal static SafeValidateUIMessagesResult Fail(Exception error) => new(false, null, error);
 }
@@ -61,47 +69,89 @@ public sealed class SafeValidateUIMessagesResult
 internal static class UIMessageValidation
 {
     /// <summary>Maps to <c>safeValidateUIMessages</c>.</summary>
-    internal static Task<SafeValidateUIMessagesResult> SafeValidateUIMessagesAsync(ValidateUIMessagesOptions options)
+    internal static Task<SafeValidateUIMessagesResult> SafeValidateUIMessagesAsync(
+        ValidateUIMessagesOptions options
+    )
     {
-        return SafeValidateUIMessagesInternalAsync(options, convertMissingTerminalToolsToDynamic: false);
+        return SafeValidateUIMessagesInternalAsync(
+            options,
+            convertMissingTerminalToolsToDynamic: false
+        );
     }
 
     /// <summary>Maps to <c>validateUIMessages</c>.</summary>
-    internal static async Task<IReadOnlyList<UIMessage>> ValidateUIMessagesAsync(ValidateUIMessagesOptions options)
+    internal static async Task<IReadOnlyList<UIMessage>> ValidateUIMessagesAsync(
+        ValidateUIMessagesOptions options
+    )
     {
         var response = await SafeValidateUIMessagesAsync(options).ConfigureAwait(false);
         return response.Success ? response.Data! : throw response.Error!;
     }
 
     /// <summary>Maps to <c>validateUIMessagesForAgent</c>.</summary>
-    internal static async Task<IReadOnlyList<UIMessage>> ValidateUIMessagesForAgentAsync(ValidateUIMessagesOptions options)
+    internal static async Task<IReadOnlyList<UIMessage>> ValidateUIMessagesForAgentAsync(
+        ValidateUIMessagesOptions options
+    )
     {
         // Agent tool sets can include ephemeral tools (for example, tools from a disconnected MCP server), so terminal
         // history is converted to dynamic tool parts when those tools are no longer registered.
-        var response = await SafeValidateUIMessagesInternalAsync(options, convertMissingTerminalToolsToDynamic: true).ConfigureAwait(false);
+        var response = await SafeValidateUIMessagesInternalAsync(
+                options,
+                convertMissingTerminalToolsToDynamic: true
+            )
+            .ConfigureAwait(false);
         return response.Success ? response.Data! : throw response.Error!;
     }
 
     private static async Task<SafeValidateUIMessagesResult> SafeValidateUIMessagesInternalAsync(
         ValidateUIMessagesOptions options,
-        bool convertMissingTerminalToolsToDynamic)
+        bool convertMissingTerminalToolsToDynamic
+    )
     {
         try
         {
             if (options.Messages == null)
             {
-                return SafeValidateUIMessagesResult.Fail(new InvalidArgumentException("messages", null, "messages parameter must be provided"));
+                return SafeValidateUIMessagesResult.Fail(
+                    new InvalidArgumentException(
+                        "messages",
+                        null,
+                        "messages parameter must be provided"
+                    )
+                );
             }
 
             if (options.Messages.Count == 0)
             {
-                return SafeValidateUIMessagesResult.Fail(new TypeValidationException(null, new Exception("Too small: expected array to have >=1 items"), new TypeValidationContext { Field = "messages" }));
+                return SafeValidateUIMessagesResult.Fail(
+                    new TypeValidationException(
+                        ToJsonElement(options.Messages),
+                        new Exception("Messages array must not be empty"),
+                        null
+                    )
+                );
+            }
+
+            foreach (var message in options.Messages)
+            {
+                // Only an assistant message can be empty, as the last message of a chat that is waiting for a response.
+                if (message.Role != UIMessageRole.Assistant && message.Parts.Count == 0)
+                {
+                    return SafeValidateUIMessagesResult.Fail(
+                        new TypeValidationException(
+                            ToJsonElement(options.Messages),
+                            new Exception("Message must contain at least one part"),
+                            null
+                        )
+                    );
+                }
             }
 
             UIMessageRawInputWarning.WarnIfUIMessageHasDeprecatedRawInput(options.Messages);
 
             var validatedMessages = new List<UIMessage>(options.Messages.Count);
-            var shouldValidateToolParts = options.Tools != null || convertMissingTerminalToolsToDynamic;
+            var shouldValidateToolParts =
+                options.Tools != null || convertMissingTerminalToolsToDynamic;
             for (var messageIndex = 0; messageIndex < options.Messages.Count; messageIndex++)
             {
                 var message = options.Messages[messageIndex];
@@ -111,7 +161,12 @@ internal static class UIMessageValidation
                     metadata = ValidateOptional(
                         message.Metadata,
                         options.MetadataSchema,
-                        new TypeValidationContext { Field = $"messages[{messageIndex}].metadata", EntityId = message.Id });
+                        new TypeValidationContext
+                        {
+                            Field = $"messages[{messageIndex}].metadata",
+                            EntityId = message.Id,
+                        }
+                    );
                 }
 
                 var parts = new List<UIMessagePart>(message.Parts.Count);
@@ -122,22 +177,45 @@ internal static class UIMessageValidation
                     {
                         if (!options.DataSchemas.TryGetValue(dataPart.Name, out var dataSchema))
                         {
-                            return SafeValidateUIMessagesResult.Fail(new TypeValidationException(
-                                dataPart.Data,
-                                new Exception($"No data schema found for data part {dataPart.Name}"),
-                                new TypeValidationContext { Field = $"messages[{messageIndex}].parts[{partIndex}].data", EntityName = dataPart.Name, EntityId = dataPart.Id }));
+                            return SafeValidateUIMessagesResult.Fail(
+                                new TypeValidationException(
+                                    dataPart.Data,
+                                    new Exception(
+                                        $"No data schema found for data part {dataPart.Name}"
+                                    ),
+                                    new TypeValidationContext
+                                    {
+                                        Field = $"messages[{messageIndex}].parts[{partIndex}].data",
+                                        EntityName = dataPart.Name,
+                                        EntityId = dataPart.Id,
+                                    }
+                                )
+                            );
                         }
 
                         var data = JsonParsing.ValidateTypes(
                             dataPart.Data,
                             dataSchema,
-                            new TypeValidationContext { Field = $"messages[{messageIndex}].parts[{partIndex}].data", EntityName = dataPart.Name, EntityId = dataPart.Id });
+                            new TypeValidationContext
+                            {
+                                Field = $"messages[{messageIndex}].parts[{partIndex}].data",
+                                EntityName = dataPart.Name,
+                                EntityId = dataPart.Id,
+                            }
+                        );
                         part = new DataUIPart(dataPart.Name, data) { Id = dataPart.Id };
                     }
 
                     if (shouldValidateToolParts && part is ToolUIPart { IsDynamic: false } toolPart)
                     {
-                        var result = await ValidateToolPartAsync(toolPart, options, convertMissingTerminalToolsToDynamic, messageIndex, partIndex).ConfigureAwait(false);
+                        var result = await ValidateToolPartAsync(
+                                toolPart,
+                                options,
+                                convertMissingTerminalToolsToDynamic,
+                                messageIndex,
+                                partIndex
+                            )
+                            .ConfigureAwait(false);
                         if (result.Error != null)
                         {
                             return SafeValidateUIMessagesResult.Fail(result.Error);
@@ -149,7 +227,9 @@ internal static class UIMessageValidation
                     parts.Add(part);
                 }
 
-                validatedMessages.Add(new UIMessage(message.Role, parts) { Id = message.Id, Metadata = metadata });
+                validatedMessages.Add(
+                    new UIMessage(message.Role, parts) { Id = message.Id, Metadata = metadata }
+                );
             }
 
             return SafeValidateUIMessagesResult.Ok(validatedMessages);
@@ -165,12 +245,17 @@ internal static class UIMessageValidation
         ValidateUIMessagesOptions options,
         bool convertMissingTerminalToolsToDynamic,
         int messageIndex,
-        int partIndex)
+        int partIndex
+    )
     {
         var toolName = toolPart.ToolName;
         Tool? tool = null;
         options.Tools?.TryGetValue(toolName, out tool);
-        var isTerminal = toolPart.State is ToolUIPartState.OutputAvailable or ToolUIPartState.OutputError or ToolUIPartState.OutputDenied;
+        var isTerminal =
+            toolPart.State
+            is ToolUIPartState.OutputAvailable
+                or ToolUIPartState.OutputError
+                or ToolUIPartState.OutputDenied;
 
         if (tool == null && isTerminal)
         {
@@ -183,10 +268,19 @@ internal static class UIMessageValidation
 
         if (tool == null)
         {
-            return (null, new TypeValidationException(
-                toolPart.Input,
-                new Exception($"No tool schema found for tool part {toolName}"),
-                new TypeValidationContext { Field = $"messages[{messageIndex}].parts[{partIndex}].input", EntityName = toolName, EntityId = toolPart.ToolCallId }));
+            return (
+                null,
+                new TypeValidationException(
+                    toolPart.Input,
+                    new Exception($"No tool schema found for tool part {toolName}"),
+                    new TypeValidationContext
+                    {
+                        Field = $"messages[{messageIndex}].parts[{partIndex}].input",
+                        EntityName = toolName,
+                        EntityId = toolPart.ToolCallId,
+                    }
+                )
+            );
         }
 
         var inputContext = new TypeValidationContext
@@ -200,14 +294,24 @@ internal static class UIMessageValidation
         var convertToDynamic = false;
 
         // Tool input validation
-        if (toolPart.State != ToolUIPartState.InputStreaming
-            && (toolPart.State != ToolUIPartState.OutputError || inputSchemaInput != null || toolPart.Input != null))
+        if (
+            toolPart.State != ToolUIPartState.InputStreaming
+            && (
+                toolPart.State != ToolUIPartState.OutputError
+                || inputSchemaInput != null
+                || toolPart.Input != null
+            )
+        )
         {
             Exception? inputError = null;
             JsonElement validatedInput = JsonSerializer.SerializeToElement<object?>(null);
             try
             {
-                validatedInput = ValidateOptional(inputToValidate, ToSchema(tool.InputSchema), inputContext) ?? validatedInput;
+                validatedInput = ValidateOptional(
+                    inputToValidate,
+                    ToSchema(tool.InputSchema),
+                    inputContext
+                ) ?? validatedInput;
             }
             catch (TypeValidationException error)
             {
@@ -219,13 +323,19 @@ internal static class UIMessageValidation
                 try
                 {
                     var refine = ExperimentalRefine(options, toolName);
-                    var reconstructedInput = refine == null ? validatedInput : await refine(validatedInput).ConfigureAwait(false);
+                    var reconstructedInput =
+                        refine == null
+                            ? validatedInput
+                            : await refine(validatedInput).ConfigureAwait(false);
                     if (toolPart.Input is not { } input || !IsDeepEqual(reconstructedInput, input))
                     {
                         inputError = new TypeValidationException(
                             toolPart.Input,
-                            new Exception("Tool input does not match the output reconstructed from inputSchemaInput."),
-                            inputContext);
+                            new Exception(
+                                "Tool input does not match the output reconstructed from inputSchemaInput."
+                            ),
+                            inputContext
+                        );
                     }
                 }
                 catch (Exception error) when (error is not OperationCanceledException)
@@ -238,8 +348,13 @@ internal static class UIMessageValidation
             {
                 // Failed calls and empty terminal inputs must remain loadable, but must not claim to match the current
                 // static input type.
-                if (toolPart.State == ToolUIPartState.OutputError
-                    || (toolPart.State == ToolUIPartState.OutputAvailable && IsEmptyObject(toolPart.Input)))
+                if (
+                    toolPart.State == ToolUIPartState.OutputError
+                    || (
+                        toolPart.State == ToolUIPartState.OutputAvailable
+                        && IsEmptyObject(toolPart.Input)
+                    )
+                )
                 {
                     convertToDynamic = true;
                 }
@@ -251,30 +366,63 @@ internal static class UIMessageValidation
         }
 
         // Tool output validation
-        if (toolPart.State == ToolUIPartState.OutputAvailable && tool.OutputSchema is { } outputSchema && ToSchema(outputSchema) is { } schema)
+        if (
+            toolPart.State == ToolUIPartState.OutputAvailable
+            && tool.OutputSchema is { } outputSchema
+            && ToSchema(outputSchema) is { } schema
+        )
         {
             JsonParsing.ValidateTypes(
                 toolPart.Output ?? default,
                 schema,
-                new TypeValidationContext { Field = $"messages[{messageIndex}].parts[{partIndex}].output", EntityName = toolName, EntityId = toolPart.ToolCallId });
+                new TypeValidationContext
+                {
+                    Field = $"messages[{messageIndex}].parts[{partIndex}].output",
+                    EntityName = toolName,
+                    EntityId = toolPart.ToolCallId,
+                }
+            );
         }
 
-        return (convertToDynamic ? UnavailableTool.MarkToolPartAsUnavailable(toolPart) : toolPart, null);
+        return (
+            convertToDynamic ? UnavailableTool.MarkToolPartAsUnavailable(toolPart) : toolPart,
+            null
+        );
     }
 
-    private static Func<JsonElement, Task<JsonElement>>? ExperimentalRefine(ValidateUIMessagesOptions options, string toolName)
+    private static Func<JsonElement, Task<JsonElement>>? ExperimentalRefine(
+        ValidateUIMessagesOptions options,
+        string toolName
+    )
     {
         Func<JsonElement, Task<JsonElement>>? refine = null;
         options.ExperimentalRefineToolInput?.TryGetValue(toolName, out refine);
         return refine;
     }
 
-    private static JsonNode? ToSchema(JsonElement schema)
+    private static JsonElement ToJsonElement(IReadOnlyList<UIMessage> messages)
     {
-        return schema.ValueKind == JsonValueKind.Undefined ? null : JsonNode.Parse(schema.GetRawText());
+        var array = new JsonArray();
+        foreach (var message in messages)
+        {
+            array.Add(UIMessageJson.ToJson(message));
+        }
+
+        return JsonSerializer.SerializeToElement(array);
     }
 
-    private static JsonElement? ValidateOptional(JsonElement? value, JsonNode? schema, TypeValidationContext context)
+    private static JsonNode? ToSchema(JsonElement schema)
+    {
+        return schema.ValueKind == JsonValueKind.Undefined
+            ? null
+            : JsonNode.Parse(schema.GetRawText());
+    }
+
+    private static JsonElement? ValidateOptional(
+        JsonElement? value,
+        JsonNode? schema,
+        TypeValidationContext context
+    )
     {
         if (schema == null)
         {
@@ -282,16 +430,24 @@ internal static class UIMessageValidation
         }
 
         // An undefined value is validated as null, which a schema rejects unless it allows null.
-        return JsonParsing.ValidateTypes(value ?? JsonSerializer.SerializeToElement<object?>(null), schema, context);
+        return JsonParsing.ValidateTypes(
+            value ?? JsonSerializer.SerializeToElement<object?>(null),
+            schema,
+            context
+        );
     }
 
     private static bool IsEmptyObject(JsonElement? value)
     {
-        return value is { ValueKind: JsonValueKind.Object } element && !element.EnumerateObject().Any();
+        return value is { ValueKind: JsonValueKind.Object } element
+            && !element.EnumerateObject().Any();
     }
 
     private static bool IsDeepEqual(JsonElement left, JsonElement right)
     {
-        return JsonNode.DeepEquals(JsonNode.Parse(left.GetRawText()), JsonNode.Parse(right.GetRawText()));
+        return JsonNode.DeepEquals(
+            JsonNode.Parse(left.GetRawText()),
+            JsonNode.Parse(right.GetRawText())
+        );
     }
 }

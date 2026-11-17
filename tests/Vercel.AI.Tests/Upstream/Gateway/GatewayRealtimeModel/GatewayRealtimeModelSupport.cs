@@ -18,7 +18,8 @@ internal static class GatewayRealtimeModelSupport
         string modelId = "openai/gpt-realtime",
         string baseUrl = "https://ai-gateway.vercel.sh/v4/ai",
         string token = "vcst_test-secret",
-        string? teamIdOrSlug = null)
+        string? teamIdOrSlug = null
+    )
     {
         return new Vercel.AI.Gateway.GatewayRealtimeModel(
             modelId,
@@ -27,7 +28,10 @@ internal static class GatewayRealtimeModelSupport
                 baseUrl,
                 _ =>
                 {
-                    var headers = new Dictionary<string, string?> { ["Authorization"] = "Bearer " + token };
+                    var headers = new Dictionary<string, string?>
+                    {
+                        ["Authorization"] = "Bearer " + token,
+                    };
                     if (teamIdOrSlug is not null)
                     {
                         headers["x-vercel-ai-gateway-team"] = teamIdOrSlug;
@@ -36,7 +40,9 @@ internal static class GatewayRealtimeModelSupport
                     return Task.FromResult<IReadOnlyDictionary<string, string?>>(headers);
                 },
                 (_, _, _) => Task.FromResult(new GatewayMintedClientSecret(token)),
-                teamIdOrSlug));
+                teamIdOrSlug
+            )
+        );
     }
 }
 
@@ -54,10 +60,20 @@ internal sealed class RealtimeMintCapture : HttpMessageHandler
 
     public List<string> Bodies { get; } = new();
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         Requests.Add(request);
-        Bodies.Add(request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false));
-        return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(_response, Encoding.UTF8, "application/json") };
+        Bodies.Add(
+            request.Content is null
+                ? string.Empty
+                : await request.Content.ReadAsStringAsync().ConfigureAwait(false)
+        );
+        return new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(_response, Encoding.UTF8, "application/json"),
+        };
     }
 }

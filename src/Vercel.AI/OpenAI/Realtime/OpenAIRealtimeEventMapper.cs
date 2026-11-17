@@ -61,7 +61,11 @@ internal static class OpenAIRealtimeEventMapper
 
             // Conversation items
             case "conversation.item.added":
-                var added = WithIds(Event("conversation-item-added"), null, GetString(item, "id") ?? itemId);
+                var added = WithIds(
+                    Event("conversation-item-added"),
+                    null,
+                    GetString(item, "id") ?? itemId
+                );
                 added.Item = item;
                 return added;
 
@@ -73,20 +77,36 @@ internal static class OpenAIRealtimeEventMapper
 
             // Response lifecycle
             case "response.created":
-                return WithIds(Event("response-created"), GetString(response, "id") ?? responseId, null);
+                return WithIds(
+                    Event("response-created"),
+                    GetString(response, "id") ?? responseId,
+                    null
+                );
 
             case "response.done":
-                var done = WithIds(Event("response-done"), GetString(response, "id") ?? responseId, null);
+                var done = WithIds(
+                    Event("response-done"),
+                    GetString(response, "id") ?? responseId,
+                    null
+                );
                 done.Status = GetString(response, "status") ?? "completed";
                 done.Usage = MapResponseUsage(GetObject(response, "usage"));
                 return done;
 
             // Output item lifecycle
             case "response.output_item.added":
-                return WithIds(Event("output-item-added"), responseId, GetString(item, "id") ?? itemId);
+                return WithIds(
+                    Event("output-item-added"),
+                    responseId,
+                    GetString(item, "id") ?? itemId
+                );
 
             case "response.output_item.done":
-                return WithIds(Event("output-item-done"), responseId, GetString(item, "id") ?? itemId);
+                return WithIds(
+                    Event("output-item-done"),
+                    responseId,
+                    GetString(item, "id") ?? itemId
+                );
 
             case "response.content_part.added":
                 return WithIds(Event("content-part-added"), responseId, itemId);
@@ -127,13 +147,21 @@ internal static class OpenAIRealtimeEventMapper
 
             // Function calling
             case "response.function_call_arguments.delta":
-                var argumentsDelta = WithIds(Event("function-call-arguments-delta"), responseId, itemId);
+                var argumentsDelta = WithIds(
+                    Event("function-call-arguments-delta"),
+                    responseId,
+                    itemId
+                );
                 argumentsDelta.CallId = GetString(raw, "call_id");
                 argumentsDelta.Delta = GetString(raw, "delta");
                 return argumentsDelta;
 
             case "response.function_call_arguments.done":
-                var argumentsDone = WithIds(Event("function-call-arguments-done"), responseId, itemId);
+                var argumentsDone = WithIds(
+                    Event("function-call-arguments-done"),
+                    responseId,
+                    itemId
+                );
                 argumentsDone.CallId = GetString(raw, "call_id");
                 argumentsDone.Name = GetString(raw, "name");
                 argumentsDone.Arguments = GetString(raw, "arguments");
@@ -143,7 +171,9 @@ internal static class OpenAIRealtimeEventMapper
             case "error":
                 var error = GetObject(raw, "error");
                 var errorEvent = Event("error");
-                errorEvent.Message = GetString(error, "message") ?? GetString(raw, "message") ?? "Unknown error";
+                errorEvent.Message = GetString(error, "message")
+                    ?? GetString(raw, "message")
+                    ?? "Unknown error";
                 errorEvent.Code = GetString(error, "code") ?? GetString(raw, "code");
                 errorEvent.ClientEventId = GetString(error, "event_id");
                 return errorEvent;
@@ -161,7 +191,8 @@ internal static class OpenAIRealtimeEventMapper
     public static JsonNode? SerializeOpenAIRealtimeClientEvent(
         RealtimeModelV4ClientEvent @event,
         string modelId,
-        OpenAIRealtimeSessionOptions? options = null)
+        OpenAIRealtimeSessionOptions? options = null
+    )
     {
         AssertSupportedOpenAIIntent(options?.Intent);
 
@@ -171,7 +202,11 @@ internal static class OpenAIRealtimeEventMapper
                 var update = new JsonObject
                 {
                     ["type"] = "session.update",
-                    ["session"] = BuildOpenAISessionConfig(@event.Config ?? new RealtimeModelV4SessionConfig(), modelId, options),
+                    ["session"] = BuildOpenAISessionConfig(
+                        @event.Config ?? new RealtimeModelV4SessionConfig(),
+                        modelId,
+                        options
+                    ),
                 };
                 AddEventId(update, @event);
                 return update;
@@ -240,7 +275,8 @@ internal static class OpenAIRealtimeEventMapper
     public static JsonObject BuildOpenAISessionConfig(
         RealtimeModelV4SessionConfig config,
         string modelId,
-        OpenAIRealtimeSessionOptions? options = null)
+        OpenAIRealtimeSessionOptions? options = null
+    )
     {
         var intent = options?.Intent ?? RealtimeModelV4SessionIntent.Conversation;
         AssertSupportedOpenAIIntent(intent);
@@ -248,19 +284,26 @@ internal static class OpenAIRealtimeEventMapper
         var conversation = intent == RealtimeModelV4SessionIntent.Conversation;
         if (transcription)
         {
-            foreach (var (key, present) in new (string, bool)[]
-            {
-                ("instructions", config.Instructions != null),
-                ("voice", config.Voice != null),
-                ("outputModalities", config.OutputModalities != null),
-                ("outputAudioFormat", config.OutputAudioFormatType != null || config.OutputAudioFormatRate != null),
-                ("outputAudioTranscription", config.OutputAudioTranscription != null),
-                ("tools", config.Tools != null),
-            })
+            foreach (
+                var (key, present) in new (string, bool)[]
+                {
+                    ("instructions", config.Instructions != null),
+                    ("voice", config.Voice != null),
+                    ("outputModalities", config.OutputModalities != null),
+                    (
+                        "outputAudioFormat",
+                        config.OutputAudioFormatType != null || config.OutputAudioFormatRate != null
+                    ),
+                    ("outputAudioTranscription", config.OutputAudioTranscription != null),
+                    ("tools", config.Tools != null),
+                }
+            )
             {
                 if (present)
                 {
-                    throw new InvalidOperationException("OpenAI realtime transcription sessions do not support '" + key + "'.");
+                    throw new InvalidOperationException(
+                        "OpenAI realtime transcription sessions do not support '" + key + "'."
+                    );
                 }
             }
         }
@@ -282,13 +325,22 @@ internal static class OpenAIRealtimeEventMapper
         }
 
         var audio = new JsonObject();
-        var inputFormat = config.InputAudioFormatType != null || config.InputAudioFormatRate != null;
-        if (transcription || inputFormat || config.InputAudioTranscription != null || config.TurnDetection != null)
+        var inputFormat =
+            config.InputAudioFormatType != null || config.InputAudioFormatRate != null;
+        if (
+            transcription
+            || inputFormat
+            || config.InputAudioTranscription != null
+            || config.TurnDetection != null
+        )
         {
             var input = new JsonObject();
             if (inputFormat)
             {
-                input["format"] = AudioFormat(config.InputAudioFormatType, config.InputAudioFormatRate);
+                input["format"] = AudioFormat(
+                    config.InputAudioFormatType,
+                    config.InputAudioFormatRate
+                );
             }
 
             if (config.TurnDetection != null)
@@ -301,7 +353,10 @@ internal static class OpenAIRealtimeEventMapper
                 {
                     var detection = new JsonObject
                     {
-                        ["type"] = config.TurnDetection.Type == "server-vad" ? "server_vad" : "semantic_vad",
+                        ["type"] =
+                            config.TurnDetection.Type == "server-vad"
+                                ? "server_vad"
+                                : "semantic_vad",
                     };
                     if (config.TurnDetection.Threshold != null)
                     {
@@ -324,23 +379,33 @@ internal static class OpenAIRealtimeEventMapper
 
             if (transcription)
             {
-                input["transcription"] = Transcription(config.InputAudioTranscription, config.InputAudioTranscription?.Model ?? modelId);
+                input["transcription"] = Transcription(
+                    config.InputAudioTranscription,
+                    config.InputAudioTranscription?.Model ?? modelId
+                );
             }
             else if (config.InputAudioTranscription != null)
             {
-                input["transcription"] = Transcription(config.InputAudioTranscription, config.InputAudioTranscription.Model ?? "gpt-realtime-whisper");
+                input["transcription"] = Transcription(
+                    config.InputAudioTranscription,
+                    config.InputAudioTranscription.Model ?? "gpt-realtime-whisper"
+                );
             }
 
             audio["input"] = input;
         }
 
-        var outputFormat = config.OutputAudioFormatType != null || config.OutputAudioFormatRate != null;
+        var outputFormat =
+            config.OutputAudioFormatType != null || config.OutputAudioFormatRate != null;
         if (conversation && (outputFormat || config.Voice != null))
         {
             var output = new JsonObject();
             if (outputFormat)
             {
-                output["format"] = AudioFormat(config.OutputAudioFormatType, config.OutputAudioFormatRate);
+                output["format"] = AudioFormat(
+                    config.OutputAudioFormatType,
+                    config.OutputAudioFormatRate
+                );
             }
 
             if (config.Voice != null)
@@ -398,9 +463,17 @@ internal static class OpenAIRealtimeEventMapper
 
     private static void AssertSupportedOpenAIIntent(RealtimeModelV4SessionIntent? intent)
     {
-        if (intent != null && intent != RealtimeModelV4SessionIntent.Conversation && intent != RealtimeModelV4SessionIntent.Transcription)
+        if (
+            intent != null
+            && intent != RealtimeModelV4SessionIntent.Conversation
+            && intent != RealtimeModelV4SessionIntent.Transcription
+        )
         {
-            throw new InvalidOperationException("OpenAI realtime session intent '" + IntentName(intent.Value) + "' is not supported.");
+            throw new InvalidOperationException(
+                "OpenAI realtime session intent '"
+                    + IntentName(intent.Value)
+                    + "' is not supported."
+            );
         }
     }
 
@@ -414,26 +487,36 @@ internal static class OpenAIRealtimeEventMapper
         switch (item.Type)
         {
             case "text-message":
-                return ItemCreate(new JsonObject
-                {
-                    ["type"] = "message",
-                    ["role"] = item.Role,
-                    ["content"] = new JsonArray(new JsonObject { ["type"] = "input_text", ["text"] = item.Text }),
-                });
+                return ItemCreate(
+                    new JsonObject
+                    {
+                        ["type"] = "message",
+                        ["role"] = item.Role,
+                        ["content"] = new JsonArray(
+                            new JsonObject { ["type"] = "input_text", ["text"] = item.Text }
+                        ),
+                    }
+                );
             case "audio-message":
-                return ItemCreate(new JsonObject
-                {
-                    ["type"] = "message",
-                    ["role"] = item.Role,
-                    ["content"] = new JsonArray(new JsonObject { ["type"] = "input_audio", ["audio"] = item.Audio }),
-                });
+                return ItemCreate(
+                    new JsonObject
+                    {
+                        ["type"] = "message",
+                        ["role"] = item.Role,
+                        ["content"] = new JsonArray(
+                            new JsonObject { ["type"] = "input_audio", ["audio"] = item.Audio }
+                        ),
+                    }
+                );
             case "function-call-output":
-                return ItemCreate(new JsonObject
-                {
-                    ["type"] = "function_call_output",
-                    ["call_id"] = item.CallId,
-                    ["output"] = item.Output,
-                });
+                return ItemCreate(
+                    new JsonObject
+                    {
+                        ["type"] = "function_call_output",
+                        ["call_id"] = item.CallId,
+                        ["output"] = item.Output,
+                    }
+                );
             default:
                 return null;
         }
@@ -490,7 +573,11 @@ internal static class OpenAIRealtimeEventMapper
         return array;
     }
 
-    private static RealtimeModelV4ServerEvent WithIds(RealtimeModelV4ServerEvent @event, string? responseId, string? itemId)
+    private static RealtimeModelV4ServerEvent WithIds(
+        RealtimeModelV4ServerEvent @event,
+        string? responseId,
+        string? itemId
+    )
     {
         @event.ResponseId = responseId;
         @event.ItemId = itemId;
@@ -511,18 +598,20 @@ internal static class OpenAIRealtimeEventMapper
         var input = GetObject(value, "input_token_details");
         var output = GetObject(value, "output_token_details");
         var cached = GetObject(input, "cached_tokens_details");
-        return CompactUsage(new RealtimeModelV4Usage
-        {
-            InputTokens = GetInt(value, "input_tokens"),
-            OutputTokens = GetInt(value, "output_tokens"),
-            CachedInputTokens = GetInt(input, "cached_tokens"),
-            InputAudioTokens = GetInt(input, "audio_tokens"),
-            InputTextTokens = GetInt(input, "text_tokens"),
-            OutputAudioTokens = GetInt(output, "audio_tokens"),
-            OutputTextTokens = GetInt(output, "text_tokens"),
-            CachedInputAudioTokens = GetInt(cached, "audio_tokens"),
-            CachedInputTextTokens = GetInt(cached, "text_tokens"),
-        });
+        return CompactUsage(
+            new RealtimeModelV4Usage
+            {
+                InputTokens = GetInt(value, "input_tokens"),
+                OutputTokens = GetInt(value, "output_tokens"),
+                CachedInputTokens = GetInt(input, "cached_tokens"),
+                InputAudioTokens = GetInt(input, "audio_tokens"),
+                InputTextTokens = GetInt(input, "text_tokens"),
+                OutputAudioTokens = GetInt(output, "audio_tokens"),
+                OutputTextTokens = GetInt(output, "text_tokens"),
+                CachedInputAudioTokens = GetInt(cached, "audio_tokens"),
+                CachedInputTextTokens = GetInt(cached, "text_tokens"),
+            }
+        );
     }
 
     /// <summary>
@@ -538,24 +627,29 @@ internal static class OpenAIRealtimeEventMapper
 
         if (GetString(value, "type") == "duration")
         {
-            return GetDouble(value, "seconds") is { } seconds ? new RealtimeModelV4Usage { Seconds = seconds } : null;
+            return GetDouble(value, "seconds") is { } seconds
+                ? new RealtimeModelV4Usage { Seconds = seconds }
+                : null;
         }
 
         var input = GetObject(value, "input_token_details");
-        return CompactUsage(new RealtimeModelV4Usage
-        {
-            InputTokens = GetInt(value, "input_tokens"),
-            OutputTokens = GetInt(value, "output_tokens"),
-            InputAudioTokens = GetInt(input, "audio_tokens"),
-            InputTextTokens = GetInt(input, "text_tokens"),
-            OutputTextTokens = GetInt(value, "output_tokens"),
-        });
+        return CompactUsage(
+            new RealtimeModelV4Usage
+            {
+                InputTokens = GetInt(value, "input_tokens"),
+                OutputTokens = GetInt(value, "output_tokens"),
+                InputAudioTokens = GetInt(input, "audio_tokens"),
+                InputTextTokens = GetInt(input, "text_tokens"),
+                OutputTextTokens = GetInt(value, "output_tokens"),
+            }
+        );
     }
 
     /// <summary>Returns <c>null</c> when nothing is observable. Maps to <c>compactUsage</c>.</summary>
     private static RealtimeModelV4Usage? CompactUsage(RealtimeModelV4Usage usage)
     {
-        var observable = usage.InputTokens != null
+        var observable =
+            usage.InputTokens != null
             || usage.OutputTokens != null
             || usage.CachedInputTokens != null
             || usage.InputTextTokens != null
@@ -570,9 +664,11 @@ internal static class OpenAIRealtimeEventMapper
 
     private static JsonElement? GetObject(JsonElement? parent, string name)
     {
-        if (parent is { ValueKind: JsonValueKind.Object } value
+        if (
+            parent is { ValueKind: JsonValueKind.Object } value
             && value.TryGetProperty(name, out var property)
-            && property.ValueKind == JsonValueKind.Object)
+            && property.ValueKind == JsonValueKind.Object
+        )
         {
             return property;
         }
@@ -582,9 +678,11 @@ internal static class OpenAIRealtimeEventMapper
 
     private static string? GetString(JsonElement? parent, string name)
     {
-        if (parent is { ValueKind: JsonValueKind.Object } value
+        if (
+            parent is { ValueKind: JsonValueKind.Object } value
             && value.TryGetProperty(name, out var property)
-            && property.ValueKind == JsonValueKind.String)
+            && property.ValueKind == JsonValueKind.String
+        )
         {
             return property.GetString();
         }
@@ -594,9 +692,11 @@ internal static class OpenAIRealtimeEventMapper
 
     private static double? GetDouble(JsonElement? parent, string name)
     {
-        if (parent is { ValueKind: JsonValueKind.Object } value
+        if (
+            parent is { ValueKind: JsonValueKind.Object } value
             && value.TryGetProperty(name, out var property)
-            && property.ValueKind == JsonValueKind.Number)
+            && property.ValueKind == JsonValueKind.Number
+        )
         {
             return property.GetDouble();
         }

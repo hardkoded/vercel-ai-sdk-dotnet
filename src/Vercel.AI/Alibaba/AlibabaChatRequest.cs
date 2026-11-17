@@ -17,7 +17,13 @@ internal static class AlibabaChatRequest
     private const int MaxThinkingBudget = 16384;
 
     // Alibaba options that map to their own wire fields. The shared chat model would copy them as extra body fields.
-    private static readonly string[] OptionNames = { "enableThinking", "thinkingBudget", "preserveThinking", "parallelToolCalls" };
+    private static readonly string[] OptionNames =
+    {
+        "enableThinking",
+        "thinkingBudget",
+        "preserveThinking",
+        "parallelToolCalls",
+    };
 
     private static readonly string[] PreservedThinkingModelIds =
     {
@@ -66,9 +72,15 @@ internal static class AlibabaChatRequest
         return false;
     }
 
-    public static JsonObject Transform(string modelId, LanguageModelCallOptions options, JsonObject body, IList<CallWarning> warnings)
+    public static JsonObject Transform(
+        string modelId,
+        LanguageModelCallOptions options,
+        JsonObject body,
+        IList<CallWarning> warnings
+    )
     {
-        var alibaba = options.ProviderOptions != null
+        var alibaba =
+            options.ProviderOptions != null
             && options.ProviderOptions.TryGetValue(AlibabaProvider.ProviderId, out var bag)
             && bag.ValueKind == JsonValueKind.Object
                 ? bag
@@ -100,9 +112,12 @@ internal static class AlibabaChatRequest
 
         // Preserved thinking defaults to on for models that support it. An explicit option always passes through.
         // Unsupported models without an explicit option omit the wire field.
-        var preserveThinking = ReadBool(alibaba, "preserveThinking") ?? (SupportsPreservedThinking(modelId) ? true : (bool?)null);
+        var preserveThinking = ReadBool(alibaba, "preserveThinking")
+            ?? (SupportsPreservedThinking(modelId) ? true : (bool?)null);
 
-        var hasSchema = options.JsonSchema is { ValueKind: not (JsonValueKind.Undefined or JsonValueKind.Null) };
+        var hasSchema =
+            options.JsonSchema is
+            { ValueKind: not (JsonValueKind.Undefined or JsonValueKind.Null) };
         var json = body.ContainsKey("response_format");
         var useJsonSchema = json && hasSchema && SupportsJsonSchemaOutput(modelId);
         var useJsonObject = json && !useJsonSchema;
@@ -126,24 +141,39 @@ internal static class AlibabaChatRequest
                 schema["description"] = options.JsonSchemaDescription;
             }
 
-            body["response_format"] = new JsonObject { ["type"] = "json_schema", ["json_schema"] = schema };
+            body["response_format"] = new JsonObject
+            {
+                ["type"] = "json_schema",
+                ["json_schema"] = schema,
+            };
         }
         else if (useJsonObject)
         {
             body["response_format"] = new JsonObject { ["type"] = "json_object" };
             if (hasSchema)
             {
-                warnings.Add(new CallWarning(
-                    "compatibility",
-                    "responseFormat JSON schema",
-                    "Alibaba does not support JSON Schema output for model " + modelId + ". "
-                    + "JSON Object mode is used instead. The schema was injected into the system message and will only be validated locally."));
+                warnings.Add(
+                    new CallWarning(
+                        "compatibility",
+                        "responseFormat JSON schema",
+                        "Alibaba does not support JSON Schema output for model "
+                            + modelId
+                            + ". "
+                            + "JSON Object mode is used instead. The schema was injected into the system message and will only be validated locally."
+                    )
+                );
             }
         }
 
-        var prompt = useJsonObject ? InjectJsonInstruction(options.Prompt, hasSchema ? options.JsonSchema : null) : options.Prompt;
+        var prompt = useJsonObject
+            ? InjectJsonInstruction(options.Prompt, hasSchema ? options.JsonSchema : null)
+            : options.Prompt;
         var cacheControlValidator = new AlibabaCacheControlValidator();
-        body["messages"] = AlibabaChatMessages.Convert(prompt, preserveThinking ?? false, cacheControlValidator);
+        body["messages"] = AlibabaChatMessages.Convert(
+            prompt,
+            preserveThinking ?? false,
+            cacheControlValidator
+        );
         foreach (var warning in cacheControlValidator.Warnings)
         {
             warnings.Add(warning);
@@ -189,8 +219,13 @@ internal static class AlibabaChatRequest
         var prompt = ReadNumber(usage, "prompt_tokens") ?? 0;
         var completion = ReadNumber(usage, "completion_tokens") ?? 0;
         var cacheRead = ReadNestedNumber(usage, "prompt_tokens_details", "cached_tokens") ?? 0;
-        var cacheWrite = ReadNestedNumber(usage, "prompt_tokens_details", "cache_creation_input_tokens") ?? 0;
-        var reasoning = ReadNestedNumber(usage, "completion_tokens_details", "reasoning_tokens") ?? 0;
+        var cacheWrite = ReadNestedNumber(
+            usage,
+            "prompt_tokens_details",
+            "cache_creation_input_tokens"
+        ) ?? 0;
+        var reasoning = ReadNestedNumber(usage, "completion_tokens_details", "reasoning_tokens")
+            ?? 0;
         return new LanguageModelUsage(
             prompt,
             completion,
@@ -201,14 +236,24 @@ internal static class AlibabaChatRequest
             raw: usage.Clone(),
             // Alibaba counts both cache reads and cache writes inside prompt_tokens.
             noCacheInputTokens: prompt - cacheRead - cacheWrite,
-            textTokens: Math.Max(0, completion - reasoning));
+            textTokens: Math.Max(0, completion - reasoning)
+        );
     }
 
-    private static IReadOnlyList<ModelMessage> InjectJsonInstruction(IReadOnlyList<ModelMessage> prompt, JsonElement? schema)
+    private static IReadOnlyList<ModelMessage> InjectJsonInstruction(
+        IReadOnlyList<ModelMessage> prompt,
+        JsonElement? schema
+    )
     {
         var first = prompt.Count > 0 ? prompt[0] as SystemModelMessage : null;
-        var instruction = Vercel.AI.GenerateText.JsonInstructions.InjectJsonInstruction(first?.Content, schema);
-        var messages = new List<ModelMessage>(prompt.Count + 1) { new SystemModelMessage(instruction) };
+        var instruction = Vercel.AI.GenerateText.JsonInstructions.InjectJsonInstruction(
+            first?.Content,
+            schema
+        );
+        var messages = new List<ModelMessage>(prompt.Count + 1)
+        {
+            new SystemModelMessage(instruction),
+        };
         for (var i = first == null ? 0 : 1; i < prompt.Count; i++)
         {
             messages.Add(prompt[i]);
@@ -217,13 +262,20 @@ internal static class AlibabaChatRequest
         return messages;
     }
 
-    private static List<KeyValuePair<string, JsonNode?>> ResolveThinking(string? reasoning, JsonElement? alibaba, IList<CallWarning> warnings)
+    private static List<KeyValuePair<string, JsonNode?>> ResolveThinking(
+        string? reasoning,
+        JsonElement? alibaba,
+        IList<CallWarning> warnings
+    )
     {
         var result = new List<KeyValuePair<string, JsonNode?>>();
         var enableThinking = ReadBool(alibaba, "enableThinking");
-        var budget = alibaba is { } options && options.TryGetProperty("thinkingBudget", out var budgetElement) && budgetElement.ValueKind == JsonValueKind.Number
-            ? JsonNode.Parse(budgetElement.GetRawText())
-            : null;
+        var budget =
+            alibaba is { } options
+            && options.TryGetProperty("thinkingBudget", out var budgetElement)
+            && budgetElement.ValueKind == JsonValueKind.Number
+                ? JsonNode.Parse(budgetElement.GetRawText())
+                : null;
         if (enableThinking != null || budget != null)
         {
             if (enableThinking != null)
@@ -251,7 +303,12 @@ internal static class AlibabaChatRequest
         }
 
         var modelWarnings = new List<ModelWarning>();
-        var thinkingBudget = ReasoningMap.MapReasoningToProviderBudget(reasoning!, MaxThinkingBudget, MaxThinkingBudget, modelWarnings);
+        var thinkingBudget = ReasoningMap.MapReasoningToProviderBudget(
+            reasoning!,
+            MaxThinkingBudget,
+            MaxThinkingBudget,
+            modelWarnings
+        );
         foreach (var warning in modelWarnings)
         {
             if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
@@ -271,26 +328,30 @@ internal static class AlibabaChatRequest
 
     private static bool? ReadBool(JsonElement? bag, string name)
     {
-        return bag is { } options
+        return
+            bag is { } options
             && options.TryGetProperty(name, out var value)
             && (value.ValueKind == JsonValueKind.True || value.ValueKind == JsonValueKind.False)
-                ? value.GetBoolean()
-                : null;
+            ? value.GetBoolean()
+            : null;
     }
 
     private static int? ReadNumber(JsonElement element, string name)
     {
-        return element.ValueKind == JsonValueKind.Object
+        return
+            element.ValueKind == JsonValueKind.Object
             && element.TryGetProperty(name, out var value)
             && value.ValueKind == JsonValueKind.Number
             && value.TryGetInt32(out var number)
-                ? number
-                : null;
+            ? number
+            : null;
     }
 
     private static int? ReadNestedNumber(JsonElement element, string outer, string name)
     {
-        return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(outer, out var inner)
+        return
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(outer, out var inner)
             ? ReadNumber(inner, name)
             : null;
     }

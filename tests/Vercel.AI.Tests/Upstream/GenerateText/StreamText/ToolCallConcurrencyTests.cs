@@ -18,7 +18,10 @@ public sealed class ToolCallConcurrencyTests
     private const string EmptySchema = "{\"type\":\"object\",\"properties\":{}}";
 
     [Fact]
-    [UpstreamTest("packages/ai/src/generate-text/stream-text.test.ts::streamText > toolCallConcurrency::should execute tool calls sequentially in model order with concurrency 1", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/stream-text.test.ts::streamText > toolCallConcurrency::should execute tool calls sequentially in model order with concurrency 1",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_execute_tool_calls_sequentially_in_model_order_with_concurrency_1()
     {
         var firstStarted = new DelayedPromise<bool>();
@@ -26,38 +29,40 @@ public sealed class ToolCallConcurrencyTests
         var releaseFirst = new DelayedPromise<bool>();
         var events = new ConcurrentQueue<string>();
 
-        var result = Client().StreamTextAsync(new StreamTextOptions
-        {
-            Model = new TestLanguageModel
-            {
-                StreamParts = new LanguageModelStreamPart[]
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
                 {
-                    new ToolCallStreamPart("call-1", "first", "{}"),
-                    new ToolCallStreamPart("call-2", "second", "{}"),
-                    new FinishStreamPart(FinishReason.ToolCalls, new LanguageModelUsage(3, 10, 13)),
-                },
-            },
-            Tools = new[]
-            {
-                Tool.Function("first", null, EmptySchema, async (_, _) =>
-                {
-                    events.Enqueue("first:start");
-                    firstStarted.Resolve(true);
-                    await releaseFirst.Promise;
-                    events.Enqueue("first:end");
-                    return "null";
-                }),
-                Tool.Function("second", null, EmptySchema, (_, _) =>
-                {
-                    events.Enqueue("second:start");
-                    secondStarted.Resolve(true);
-                    events.Enqueue("second:end");
-                    return Task.FromResult("null");
-                }),
-            },
-            Prompt = "test-input",
-            ToolCallConcurrency = 1,
-        });
+                    Model = new TestLanguageModel
+                    {
+                        StreamParts = new LanguageModelStreamPart[]
+                        {
+                            new ToolCallStreamPart("call-1", "first", "{}"),
+                            new ToolCallStreamPart("call-2", "second", "{}"),
+                            new FinishStreamPart(
+                                FinishReason.ToolCalls,
+                                new LanguageModelUsage(3, 10, 13)
+                            ),
+                        },
+                    },
+                    Tools = new[] { Tool.Function("first", null, EmptySchema, async (_, _) =>
+                        {
+                            events.Enqueue("first:start");
+                            firstStarted.Resolve(true);
+                            await releaseFirst.Promise;
+                            events.Enqueue("first:end");
+                            return "null";
+                        }), Tool.Function("second", null, EmptySchema, (_, _) =>
+                        {
+                            events.Enqueue("second:start");
+                            secondStarted.Resolve(true);
+                            events.Enqueue("second:end");
+                            return Task.FromResult("null");
+                        }) },
+                    Prompt = "test-input",
+                    ToolCallConcurrency = 1,
+                }
+            );
 
         var stepsTask = result.Steps;
 
@@ -70,17 +75,28 @@ public sealed class ToolCallConcurrencyTests
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/generate-text/stream-text.test.ts::streamText > toolCallConcurrency::should reject invalid concurrency synchronously", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/stream-text.test.ts::streamText > toolCallConcurrency::should reject invalid concurrency synchronously",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_reject_invalid_concurrency_synchronously()
     {
-        var error = Assert.Throws<InvalidArgumentError>(() => Client().StreamTextAsync(new StreamTextOptions
-        {
-            Model = new TestLanguageModel(),
-            Prompt = "test-input",
-            ToolCallConcurrency = 0,
-        }));
+        var error = Assert.Throws<InvalidArgumentError>(() =>
+            Client()
+                .StreamTextAsync(
+                    new StreamTextOptions
+                    {
+                        Model = new TestLanguageModel(),
+                        Prompt = "test-input",
+                        ToolCallConcurrency = 0,
+                    }
+                )
+        );
 
-        Assert.Equal("Invalid argument for parameter toolCallConcurrency: toolCallConcurrency must be >= 1", error.Message);
+        Assert.Equal(
+            "Invalid argument for parameter toolCallConcurrency: toolCallConcurrency must be >= 1",
+            error.Message
+        );
     }
 
     private static AiClient Client()

@@ -13,7 +13,8 @@ namespace Vercel.AI.Tests.OpenAIResponsesReasoningEffortUpdate;
 /// <summary>Shared request helpers for the ports of <c>openai-responses-reasoning-effort-update.test.ts</c>.</summary>
 internal static class ReasoningEffortUpdateSupport
 {
-    internal const string WireUser = "{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"Question\"}]}";
+    internal const string WireUser =
+        "{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"Question\"}]}";
 
     internal static string WireUpdate(string effort) =>
         "{\"type\":\"configuration_update\",\"reasoning\":{\"effort\":\"" + effort + "\"}}";
@@ -21,16 +22,24 @@ internal static class ReasoningEffortUpdateSupport
     internal static UserModelMessage User() => new("Question");
 
     internal static SystemModelMessage Update(string effort, string content = "") =>
-        new(content, new Dictionary<string, JsonElement>
-        {
-            ["openai"] = OpenAIUpstream.Json("{\"reasoningEffortUpdate\":\"" + effort + "\"}"),
-        });
+        new(
+            content,
+            new Dictionary<string, JsonElement>
+            {
+                ["openai"] = OpenAIUpstream.Json("{\"reasoningEffortUpdate\":\"" + effort + "\"}"),
+            }
+        );
 
     internal static AssistantModelMessage PreviousReasoning() =>
-        new(null, null, "Earlier reasoning", new Dictionary<string, JsonElement>
-        {
-            ["openai"] = OpenAIUpstream.Json("{\"itemId\":\"rs_previous\"}"),
-        });
+        new(
+            null,
+            null,
+            "Earlier reasoning",
+            new Dictionary<string, JsonElement>
+            {
+                ["openai"] = OpenAIUpstream.Json("{\"itemId\":\"rs_previous\"}"),
+            }
+        );
 
     internal static List<ModelMessage> Build(IEnumerable<string> kinds)
     {
@@ -51,9 +60,11 @@ internal static class ReasoningEffortUpdateSupport
         double? temperature = null,
         double? topP = null,
         OpenAICapture? capture = null,
-        string provider = "openai.responses")
+        string provider = "openai.responses"
+    )
     {
-        const string response = "{\"id\":\"resp_test\",\"created_at\":0,\"model\":\"m\",\"output\":[]}";
+        const string response =
+            "{\"id\":\"resp_test\",\"created_at\":0,\"model\":\"m\",\"output\":[]}";
         capture ??= new OpenAICapture();
         if (method == "generate")
         {
@@ -61,7 +72,10 @@ internal static class ReasoningEffortUpdateSupport
         }
         else
         {
-            capture.ServerSentEvents = "data: {\"type\":\"response.completed\",\"response\":" + response + "}\n\ndata: [DONE]\n\n";
+            capture.ServerSentEvents =
+                "data: {\"type\":\"response.completed\",\"response\":"
+                + response
+                + "}\n\ndata: [DONE]\n\n";
         }
 
         var callOptions = new LanguageModelCallOptions
@@ -69,11 +83,24 @@ internal static class ReasoningEffortUpdateSupport
             Prompt = prompt,
             Temperature = temperature,
             TopP = topP,
-            ProviderOptions = new Dictionary<string, JsonElement> { ["openai"] = OpenAIUpstream.Json(options.ToJsonString()) },
+            ProviderOptions = new Dictionary<string, JsonElement>
+            {
+                ["openai"] = OpenAIUpstream.Json(options.ToJsonString()),
+            },
         };
-        var model = provider == "azure.responses"
-            ? AzureOpenAIProvider.Create(new AzureOpenAIOptions { ApiKey = "test-api-key", ResourceName = "test-resource" }, capture).ResponsesModel(modelId)
-            : OpenAIUpstream.Provider(capture).ResponsesModel(modelId);
+        var model =
+            provider == "azure.responses"
+                ? AzureOpenAIProvider
+                    .Create(
+                        new AzureOpenAIOptions
+                        {
+                            ApiKey = "test-api-key",
+                            ResourceName = "test-resource",
+                        },
+                        capture
+                    )
+                    .ResponsesModel(modelId)
+                : OpenAIUpstream.Provider(capture).ResponsesModel(modelId);
         IReadOnlyList<CallWarning> warnings;
         if (method == "generate")
         {
@@ -82,7 +109,9 @@ internal static class ReasoningEffortUpdateSupport
         else
         {
             var parts = new List<LanguageModelStreamPart>();
-            await foreach (var part in (await model.DoStreamAsync(callOptions, CancellationToken.None)))
+            await foreach (
+                var part in (await model.DoStreamAsync(callOptions, CancellationToken.None))
+            )
             {
                 parts.Add(part);
             }

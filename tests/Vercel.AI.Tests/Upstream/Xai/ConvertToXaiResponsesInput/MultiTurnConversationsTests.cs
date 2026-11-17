@@ -13,64 +13,105 @@ public sealed class MultiTurnConversationsTests
     private const string Prefix = TestFile + " > multi-turn conversations::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should handle full conversation with client-side tool calls", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should handle full conversation with client-side tool calls",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_handle_full_conversation_with_client_side_tool_calls()
     {
         var input = Convert(
             new UserModelMessage("whats the weather"),
-            new AssistantModelMessage(null, new[] { new GeneratedToolCall("call_123", "weather", "{\"location\":\"sf\"}") }, null),
+            new AssistantModelMessage(
+                null,
+                new[] { new GeneratedToolCall("call_123", "weather", "{\"location\":\"sf\"}") },
+                null
+            ),
             new ToolModelMessage("call_123", "weather", "{\"temp\":72}", isError: false),
-            new AssistantModelMessage("its 72 degrees", null, null));
+            new AssistantModelMessage("its 72 degrees", null, null)
+        );
 
-        JsonAssert.Equal(input, """
+        JsonAssert.Equal(
+            input,
+            """
             [{"content":[{"text":"whats the weather","type":"input_text"}],"role":"user"},
              {"arguments":"{\"location\":\"sf\"}","call_id":"call_123","id":"call_123","name":"weather","status":"completed","type":"function_call"},
              {"call_id":"call_123","output":"{\"temp\":72}","type":"function_call_output"},
              {"content":"its 72 degrees","role":"assistant"}]
-            """);
+            """
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should handle conversation with server-side tool calls and item references", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should handle conversation with server-side tool calls and item references",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_handle_conversation_with_server_side_tool_calls_and_item_references()
     {
         var call = new GeneratedToolCall("ws_123", "web_search", "{}") { ProviderExecuted = true };
-        var result = new ToolModelMessage("ws_123", "web_search", "{}", isError: false, outputType: "json");
+        var result = new ToolModelMessage(
+            "ws_123",
+            "web_search",
+            "{}",
+            isError: false,
+            outputType: "json"
+        );
 
         var input = Convert(
             User(new TextContentPart("search for ai news")),
-            new AssistantModelMessage(new AssistantContentPart[]
-            {
-                new AssistantToolCallPart(call),
-                new AssistantToolResultPart("ws_123", "web_search", result),
-                new AssistantTextPart("here are the results"),
-            }));
+            new AssistantModelMessage(
+                new AssistantContentPart[]
+                {
+                    new AssistantToolCallPart(call),
+                    new AssistantToolResultPart("ws_123", "web_search", result),
+                    new AssistantTextPart("here are the results"),
+                }
+            )
+        );
 
-        JsonAssert.Equal(input, """
+        JsonAssert.Equal(
+            input,
+            """
             [{"content":[{"text":"search for ai news","type":"input_text"}],"role":"user"},
              {"content":"here are the results","role":"assistant"}]
-            """);
+            """
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should round-trip reasoning with encrypted content in multi-turn", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should round-trip reasoning with encrypted content in multi-turn",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_round_trip_reasoning_with_encrypted_content_in_multi_turn()
     {
         var warnings = new List<CallWarning>();
-        var reasoningOptions = UpstreamChat.Bag("xai", """{"itemId":"rs_789","reasoningEncryptedContent":"encrypted_xyz"}""");
+        var reasoningOptions = UpstreamChat.Bag(
+            "xai",
+            """{"itemId":"rs_789","reasoningEncryptedContent":"encrypted_xyz"}"""
+        );
 
         var input = Convert(
             warnings,
             new UserModelMessage("What is the capital of France?"),
-            new AssistantModelMessage("The capital of France is Paris.", null, "The user is asking about geography.", reasoningOptions),
-            new UserModelMessage("And what about Germany?"));
+            new AssistantModelMessage(
+                "The capital of France is Paris.",
+                null,
+                "The user is asking about geography.",
+                reasoningOptions
+            ),
+            new UserModelMessage("And what about Germany?")
+        );
 
-        JsonAssert.Equal(input, """
+        JsonAssert.Equal(
+            input,
+            """
             [{"content":[{"text":"What is the capital of France?","type":"input_text"}],"role":"user"},
              {"encrypted_content":"encrypted_xyz","id":"rs_789","status":"completed","summary":[{"text":"The user is asking about geography.","type":"summary_text"}],"type":"reasoning"},
              {"content":"The capital of France is Paris.","role":"assistant"},
              {"content":[{"text":"And what about Germany?","type":"input_text"}],"role":"user"}]
-            """);
+            """
+        );
         Assert.Empty(warnings);
     }
 }

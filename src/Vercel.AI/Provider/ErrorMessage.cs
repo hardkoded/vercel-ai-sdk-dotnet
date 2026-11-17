@@ -56,9 +56,7 @@ public class JsError : Exception
 {
     /// <summary>Creates an error with <paramref name="message"/>.</summary>
     public JsError(string? message)
-        : base(message ?? string.Empty)
-    {
-    }
+        : base(message ?? string.Empty) { }
 
     /// <summary>JavaScript <c>error.name</c>.</summary>
     public virtual string ErrorName
@@ -83,9 +81,7 @@ public class JsTypeError : JsError
 {
     /// <summary>Creates a type error.</summary>
     public JsTypeError(string message)
-        : base(message)
-    {
-    }
+        : base(message) { }
 
     /// <inheritdoc />
     public override string ErrorName
@@ -99,9 +95,7 @@ public class JsRangeError : JsError
 {
     /// <summary>Creates a range error.</summary>
     public JsRangeError(string message)
-        : base(message)
-    {
-    }
+        : base(message) { }
 
     /// <inheritdoc />
     public override string ErrorName

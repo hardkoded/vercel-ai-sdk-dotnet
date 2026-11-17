@@ -64,7 +64,10 @@ public sealed class RegexAndCultureRegressionTests
     [InlineData("Xé")]
     public void Mcp_header_name_rejects_trailing_newline_and_non_ascii(string name)
     {
-        var schema = "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"x-mcp-header\":" + JsonSerializer.Serialize(name) + "}}}";
+        var schema =
+            "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"x-mcp-header\":"
+            + JsonSerializer.Serialize(name)
+            + "}}}";
         using var document = JsonDocument.Parse(schema);
         Assert.False(McpToolHeaders.GetBindings(document.RootElement).Success);
     }
@@ -131,10 +134,16 @@ public sealed class RegexAndCultureRegressionTests
     [InlineData("claude-instant\n", false)]
     [InlineData("claude-3", true)]
     [InlineData("claude-instant", true)]
-    public void Anthropic_legacy_model_ids_must_end_at_the_end_of_the_string(string modelId, bool legacy)
+    public void Anthropic_legacy_model_ids_must_end_at_the_end_of_the_string(
+        string modelId,
+        bool legacy
+    )
     {
         // Legacy ids get a 4096 token limit; an unrecognized claude id gets 128000.
-        Assert.Equal(legacy ? 4096 : 128000, AnthropicModelCapabilities.Get(modelId).MaxOutputTokens);
+        Assert.Equal(
+            legacy ? 4096 : 128000,
+            AnthropicModelCapabilities.Get(modelId).MaxOutputTokens
+        );
     }
 
     [Theory]
@@ -159,16 +168,22 @@ public sealed class RegexAndCultureRegressionTests
     [Fact]
     public void QuiverAI_image_reference_scheme_is_ascii_only()
     {
-        Assert.Throws<InvalidArgumentException>(() => QuiverAI.QuiverAIImageReference.Prepare("a١://example.com/x.png"));
+        Assert.Throws<InvalidArgumentException>(() =>
+            QuiverAI.QuiverAIImageReference.Prepare("a١://example.com/x.png")
+        );
     }
 
     [Fact]
     public void QuiverAI_self_closing_svg_check_stops_at_the_match_timeout()
     {
         // Quadratic input for the self-closing check: many "<svg" openers and no ">".
-        var data = System.Text.Encoding.UTF8.GetBytes("<svg>" + string.Concat(Enumerable.Repeat("<svg ", 20000)));
+        var data = System.Text.Encoding.UTF8.GetBytes(
+            "<svg>" + string.Concat(Enumerable.Repeat("<svg ", 20000))
+        );
         var watch = System.Diagnostics.Stopwatch.StartNew();
-        Assert.Throws<InvalidArgumentException>(() => QuiverAI.QuiverAIImageReference.Prepare(data));
+        Assert.Throws<InvalidArgumentException>(() =>
+            QuiverAI.QuiverAIImageReference.Prepare(data)
+        );
         Assert.True(watch.Elapsed < TimeSpan.FromSeconds(30), watch.Elapsed.ToString());
     }
 
@@ -219,25 +234,37 @@ public sealed class RegexAndCultureRegressionTests
 
     private static string MinimumLevel(string modelId)
     {
-        var method = typeof(GoogleThinking).GetMethod("MinimumLevel", BindingFlags.NonPublic | BindingFlags.Static)!;
+        var method = typeof(GoogleThinking).GetMethod(
+            "MinimumLevel",
+            BindingFlags.NonPublic | BindingFlags.Static
+        )!;
         return (string)method.Invoke(null, new object[] { modelId })!;
     }
 
     private static bool HasValidXmlReferences(string value)
     {
-        var method = typeof(QuiverAI.QuiverAIImageModel).GetMethod("HasValidXmlReferences", BindingFlags.NonPublic | BindingFlags.Static)!;
+        var method = typeof(QuiverAI.QuiverAIImageModel).GetMethod(
+            "HasValidXmlReferences",
+            BindingFlags.NonPublic | BindingFlags.Static
+        )!;
         return (bool)method.Invoke(null, new object[] { value })!;
     }
 
     private static TimeSpan? ReadRetryAfter(HttpResponseMessage response)
     {
-        var method = typeof(ProviderHttp).GetMethod("ReadRetryAfter", BindingFlags.NonPublic | BindingFlags.Static)!;
+        var method = typeof(ProviderHttp).GetMethod(
+            "ReadRetryAfter",
+            BindingFlags.NonPublic | BindingFlags.Static
+        )!;
         return (TimeSpan?)method.Invoke(null, new object[] { response });
     }
 
     private static (int Width, int Height)? SplitSize(string size)
     {
-        var method = typeof(TogetherAI.TogetherAIImageModel).GetMethod("SplitSize", BindingFlags.NonPublic | BindingFlags.Static)!;
+        var method = typeof(TogetherAI.TogetherAIImageModel).GetMethod(
+            "SplitSize",
+            BindingFlags.NonPublic | BindingFlags.Static
+        )!;
         return ((int Width, int Height)?)method.Invoke(null, new object[] { size });
     }
 

@@ -12,17 +12,25 @@ namespace Vercel.AI.Tests.Upstream.GenerateText;
 /// <summary>Port of <c>generate-text.test.ts</c> &gt; <c>generateText &gt; tool execution errors</c>.</summary>
 public sealed class ToolExecutionErrorsTests
 {
-    private const string Prefix = "packages/ai/src/generate-text/generate-text.test.ts::generateText > tool execution errors::";
+    private const string Prefix =
+        "packages/ai/src/generate-text/generate-text.test.ts::generateText > tool execution errors::";
 
-    private const string ValueSchema = "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}";
+    private const string ValueSchema =
+        "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}";
 
     [Fact]
-    [UpstreamTest(Prefix + "should add tool error part to the content", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should add tool error part to the content",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_add_tool_error_part_to_the_content()
     {
         var result = await RunAsync();
 
-        Assert.Equal(new[] { "tool-call", "tool-result" }, result.Content.Select(part => part.Type));
+        Assert.Equal(
+            new[] { "tool-call", "tool-result" },
+            result.Content.Select(part => part.Type)
+        );
         var call = Assert.IsType<GeneratedToolCall>(result.Content[0]);
         Assert.Equal("{ \"value\": \"value\" }", call.ArgumentsJson);
         Assert.False(call.ProviderExecuted);
@@ -42,12 +50,18 @@ public sealed class ToolExecutionErrorsTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should include error result in response messages", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should include error result in response messages",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_include_error_result_in_response_messages()
     {
         var result = await RunAsync();
 
-        Assert.Equal(new[] { "assistant", "tool" }, result.ResponseMessages.Select(message => message.Role));
+        Assert.Equal(
+            new[] { "assistant", "tool" },
+            result.ResponseMessages.Select(message => message.Role)
+        );
         var assistant = Assert.IsType<AssistantModelMessage>(result.ResponseMessages[0]);
         var call = Assert.IsType<AssistantToolCallPart>(Assert.Single(assistant.Parts)).ToolCall;
         Assert.Equal("{ \"value\": \"value\" }", call.ArgumentsJson);
@@ -67,14 +81,19 @@ public sealed class ToolExecutionErrorsTests
         {
             OnGenerate = _ => ToolCallResponse("{ \"value\": \"value\" }", "tool1"),
         };
-        return Client().GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            Tools = new[]
-            {
-                Tool.Function("tool1", null, ValueSchema, (_, _) => throw new JsError("test error")),
-            },
-            Prompt = "test-input",
-        });
+        return Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = model,
+                    Tools = new[]
+                    {
+                        Tool.Function("tool1", null, ValueSchema, (_, _) =>
+                            throw new JsError("test error")
+                        ),
+                    },
+                    Prompt = "test-input",
+                }
+            );
     }
 }

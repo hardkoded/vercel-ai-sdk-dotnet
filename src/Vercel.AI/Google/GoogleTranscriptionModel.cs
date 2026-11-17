@@ -50,9 +50,18 @@ public sealed class GoogleTranscriptionModel : ITranscriptionModel, ITranscripti
     }
 
     /// <inheritdoc />
-    public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+    public async Task<TranscriptionResult> DoTranscribeAsync(
+        AudioInput audio,
+        CancellationToken cancellationToken
+    )
     {
-        var call = new TranscriptionModelCall(audio.Data, audio.MediaType, default, new Dictionary<string, string>(), cancellationToken);
+        var call = new TranscriptionModelCall(
+            audio.Data,
+            audio.MediaType,
+            default,
+            new Dictionary<string, string>(),
+            cancellationToken
+        );
         var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
         return new TranscriptionResult(result.Text ?? string.Empty, null);
     }
@@ -61,27 +70,42 @@ public sealed class GoogleTranscriptionModel : ITranscriptionModel, ITranscripti
     /// Transcribes audio through the Interactions API. <c>google</c> provider options become the
     /// <c>transcription_config</c>, and <c>word_info</c> annotations become word segments.
     /// </summary>
-    public async Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
+    public async Task<TranscriptionModelResult> DoGenerateAsync(
+        TranscriptionModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (IsLive(ModelId))
         {
-            throw new ArgumentException("Model '" + ModelId + "' only supports streaming transcription. Use a unary model such as 'gemini-3.5-transcribe'.", nameof(ModelId));
+            throw new ArgumentException(
+                "Model '"
+                    + ModelId
+                    + "' only supports streaming transcription. Use a unary model such as 'gemini-3.5-transcribe'.",
+                nameof(ModelId)
+            );
         }
 
         var timestamp = _provider.Clock();
-        var body = BuildRequest(ModelId, new AudioInput(call.Audio, call.MediaType, null), TranscriptionConfig(call.ProviderOptions));
+        var body = BuildRequest(
+            ModelId,
+            new AudioInput(call.Audio, call.MediaType, null),
+            TranscriptionConfig(call.ProviderOptions)
+        );
         var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
         foreach (var header in call.Headers)
         {
             headers[header.Key] = header.Value;
         }
 
-        var response = await _provider.Http.SendJsonStringAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "interactions"),
-            GoogleJson.Write(body),
-            headers,
-            cancellationToken).ConfigureAwait(false);
+        var response = await _provider
+            .Http.SendJsonStringAsync(
+                HttpMethod.Post,
+                ApiKeys.Combine(_provider.Options.BaseUrl, "interactions"),
+                GoogleJson.Write(body),
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         using var document = JsonDocument.Parse(response.Body);
         var root = document.RootElement;
         var text = string.Empty;
@@ -90,20 +114,29 @@ public sealed class GoogleTranscriptionModel : ITranscriptionModel, ITranscripti
         {
             foreach (var step in steps.EnumerateArray())
             {
-                if (!step.TryGetProperty("content", out var content) || content.ValueKind != JsonValueKind.Array)
+                if (
+                    !step.TryGetProperty("content", out var content)
+                    || content.ValueKind != JsonValueKind.Array
+                )
                 {
                     continue;
                 }
 
                 foreach (var part in content.EnumerateArray())
                 {
-                    if (GoogleJson.String(part, "type") != "text" || GoogleJson.String(part, "text") is not { } partText)
+                    if (
+                        GoogleJson.String(part, "type") != "text"
+                        || GoogleJson.String(part, "text") is not { } partText
+                    )
                     {
                         continue;
                     }
 
                     text += partText;
-                    if (!part.TryGetProperty("annotations", out var annotations) || annotations.ValueKind != JsonValueKind.Array)
+                    if (
+                        !part.TryGetProperty("annotations", out var annotations)
+                        || annotations.ValueKind != JsonValueKind.Array
+                    )
                     {
                         continue;
                     }
@@ -111,9 +144,18 @@ public sealed class GoogleTranscriptionModel : ITranscriptionModel, ITranscripti
                     foreach (var annotation in annotations.EnumerateArray())
                     {
                         var word = GoogleJson.String(annotation, "text");
-                        var start = GoogleVertexSpeechTranscriptionModel.ParseDuration(GoogleJson.String(annotation, "start_offset"));
-                        var end = GoogleVertexSpeechTranscriptionModel.ParseDuration(GoogleJson.String(annotation, "end_offset"));
-                        if (GoogleJson.String(annotation, "type") == "word_info" && word != null && start != null && end != null)
+                        var start = GoogleVertexSpeechTranscriptionModel.ParseDuration(
+                            GoogleJson.String(annotation, "start_offset")
+                        );
+                        var end = GoogleVertexSpeechTranscriptionModel.ParseDuration(
+                            GoogleJson.String(annotation, "end_offset")
+                        );
+                        if (
+                            GoogleJson.String(annotation, "type") == "word_info"
+                            && word != null
+                            && start != null
+                            && end != null
+                        )
                         {
                             segments.Add(new TranscriptSegment(word, start.Value, end.Value));
                         }
@@ -125,24 +167,42 @@ public sealed class GoogleTranscriptionModel : ITranscriptionModel, ITranscripti
         JsonElement? metadata = null;
         if (GoogleJson.TryObject(root, "usage", out var usage))
         {
-            metadata = JsonSerializer.SerializeToElement(new JsonObject { ["google"] = new JsonObject { ["usage"] = JsonNode.Parse(usage.GetRawText()) } });
+            metadata = JsonSerializer.SerializeToElement(
+                new JsonObject
+                {
+                    ["google"] = new JsonObject { ["usage"] = JsonNode.Parse(usage.GetRawText()) },
+                }
+            );
         }
 
         return new TranscriptionModelResult(
             text,
             segments,
             providerMetadata: metadata,
-            response: new ProviderResponse(response.Headers, root.Clone(), timestamp: timestamp.UtcDateTime, modelId: ModelId));
+            response: new ProviderResponse(
+                response.Headers,
+                root.Clone(),
+                timestamp: timestamp.UtcDateTime,
+                modelId: ModelId
+            )
+        );
     }
 
     /// <summary>Returns null. The Gemini Live WebSocket is not opened by this port.</summary>
-    public Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+    public Task<TranscriptionStreamStart?> DoStreamAsync(
+        TranscriptionStreamCall call,
+        CancellationToken cancellationToken
+    )
     {
         return Task.FromResult<TranscriptionStreamStart?>(null);
     }
 
     /// <summary>Builds the Interactions transcription body.</summary>
-    public static JsonObject BuildRequest(string modelId, AudioInput audio, JsonObject? transcriptionConfig)
+    public static JsonObject BuildRequest(
+        string modelId,
+        AudioInput audio,
+        JsonObject? transcriptionConfig
+    )
     {
         var body = new JsonObject
         {
@@ -159,7 +219,10 @@ public sealed class GoogleTranscriptionModel : ITranscriptionModel, ITranscripti
         };
         if (transcriptionConfig != null)
         {
-            body["generation_config"] = new JsonObject { ["transcription_config"] = transcriptionConfig };
+            body["generation_config"] = new JsonObject
+            {
+                ["transcription_config"] = transcriptionConfig,
+            };
         }
 
         return body;
@@ -170,7 +233,10 @@ public sealed class GoogleTranscriptionModel : ITranscriptionModel, ITranscripti
     {
         if (!IsLive(modelId))
         {
-            throw new ArgumentException("Model '" + modelId + "' does not support streaming transcription.", nameof(modelId));
+            throw new ArgumentException(
+                "Model '" + modelId + "' does not support streaming transcription.",
+                nameof(modelId)
+            );
         }
 
         return new JsonObject
@@ -200,8 +266,12 @@ public sealed class GoogleTranscriptionModel : ITranscriptionModel, ITranscripti
         }
 
         var mode = GoogleJson.String(options, "mode");
-        var diarization = options.TryGetProperty("diarization", out var diarizationValue) && diarizationValue.ValueKind == JsonValueKind.True;
-        var wordTimestamp = options.TryGetProperty("wordTimestamp", out var wordValue) && wordValue.ValueKind == JsonValueKind.True;
+        var diarization =
+            options.TryGetProperty("diarization", out var diarizationValue)
+            && diarizationValue.ValueKind == JsonValueKind.True;
+        var wordTimestamp =
+            options.TryGetProperty("wordTimestamp", out var wordValue)
+            && wordValue.ValueKind == JsonValueKind.True;
         if (mode != null || diarization || wordTimestamp)
         {
             var modeObject = new JsonObject { ["type"] = (mode ?? "VERBATIM").ToLowerInvariant() };
@@ -226,7 +296,8 @@ public sealed class GoogleTranscriptionModel : ITranscriptionModel, ITranscripti
 public static class GoogleSpeechTranslation
 {
     /// <summary>Live translation WebSocket path.</summary>
-    public const string LivePath = "google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
+    public const string LivePath =
+        "google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
 
     /// <summary>Builds a <c>wss</c> URL and strips a trailing <c>/v1beta</c> or <c>/v1alpha</c> segment.</summary>
     public static Uri WebSocketUrl(string baseUrl, string? apiKey)
@@ -245,7 +316,10 @@ public static class GoogleSpeechTranslation
     {
         var url = new Uri(baseUrl, UriKind.Absolute);
         var path = url.AbsolutePath.TrimEnd('/');
-        if (path.EndsWith("/v1beta", StringComparison.Ordinal) || path.EndsWith("/v1alpha", StringComparison.Ordinal))
+        if (
+            path.EndsWith("/v1beta", StringComparison.Ordinal)
+            || path.EndsWith("/v1alpha", StringComparison.Ordinal)
+        )
         {
             path = path.Substring(0, path.LastIndexOf('/'));
         }
@@ -263,7 +337,10 @@ public static class GoogleSpeechTranslation
     }
 
     /// <summary>Warnings for options the Live translation API does not accept.</summary>
-    public static IReadOnlyList<GoogleWarning> WarningsFor(string? sourceLanguage, string? outputAudioFormat)
+    public static IReadOnlyList<GoogleWarning> WarningsFor(
+        string? sourceLanguage,
+        string? outputAudioFormat
+    )
     {
         var warnings = new List<GoogleWarning>();
         if (!string.IsNullOrEmpty(sourceLanguage))

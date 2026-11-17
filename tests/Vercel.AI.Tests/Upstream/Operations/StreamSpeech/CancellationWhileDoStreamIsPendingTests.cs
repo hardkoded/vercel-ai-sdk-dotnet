@@ -10,7 +10,8 @@ namespace Vercel.AI.Tests.Upstream.Operations.StreamSpeech;
 /// <summary>Port of the <c>cancellation while doStream is pending</c> describe of <c>stream-speech.test.ts</c>.</summary>
 public sealed class CancellationWhileDoStreamIsPendingTests
 {
-    private const string Prefix = "packages/ai/src/generate-speech/stream-speech.test.ts::experimental_streamSpeech > cancellation while doStream is pending::";
+    private const string Prefix =
+        "packages/ai/src/generate-speech/stream-speech.test.ts::experimental_streamSpeech > cancellation while doStream is pending::";
 
     // A provider that never reacts to the cancellation token.
     private static (MockStreamingSpeechModel Model, Func<CancellationToken> Signal) HangingModel()
@@ -28,11 +29,16 @@ public sealed class CancellationWhileDoStreamIsPendingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should reject result promises when fullStream is cancelled", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should reject result promises when fullStream is cancelled",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_reject_result_promises_when_fullStream_is_cancelled()
     {
         var (model, signal) = HangingModel();
-        var result = StreamSpeechOperation.Start(new StreamSpeechRequest { Model = model, Text = "Hi" });
+        var result = StreamSpeechOperation.Start(
+            new StreamSpeechRequest { Model = model, Text = "Hi" }
+        );
 
         var stream = result.FullStream;
         var usage = result.Usage;
@@ -44,11 +50,16 @@ public sealed class CancellationWhileDoStreamIsPendingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should reject result promises when audioStream is cancelled", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should reject result promises when audioStream is cancelled",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_reject_result_promises_when_audioStream_is_cancelled()
     {
         var (model, signal) = HangingModel();
-        var result = StreamSpeechOperation.Start(new StreamSpeechRequest { Model = model, Text = "Hi" });
+        var result = StreamSpeechOperation.Start(
+            new StreamSpeechRequest { Model = model, Text = "Hi" }
+        );
 
         var stream = result.AudioStream;
         var usage = result.Usage;

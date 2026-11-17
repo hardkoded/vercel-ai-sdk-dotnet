@@ -11,11 +11,23 @@ public sealed class NoSuchToolError : AiSdkError
     public const string ErrorMarker = "vercel.ai.error.AI_NoSuchToolError";
 
     /// <summary>Creates the error. <paramref name="message"/> defaults to the upstream format.</summary>
-    public NoSuchToolError(string toolName, IReadOnlyList<string>? availableTools = null, string? message = null)
+    public NoSuchToolError(
+        string toolName,
+        IReadOnlyList<string>? availableTools = null,
+        string? message = null
+    )
         : base(
             "AI_NoSuchToolError",
-            message ?? "Model tried to call unavailable tool '" + toolName + "'. " +
-                (availableTools == null ? "No tools are available." : "Available tools: " + string.Join(", ", availableTools) + "."))
+            message
+                ?? "Model tried to call unavailable tool '"
+                    + toolName
+                    + "'. "
+                    + (
+                        availableTools == null
+                            ? "No tools are available."
+                            : "Available tools: " + string.Join(", ", availableTools) + "."
+                    )
+        )
     {
         ToolName = toolName;
         AvailableTools = availableTools;

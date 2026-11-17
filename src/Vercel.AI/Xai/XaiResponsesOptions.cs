@@ -11,7 +11,14 @@ namespace Vercel.AI.Xai;
 /// <summary>The <c>xai</c> provider options of a Responses call. Maps to <c>xaiLanguageModelResponsesOptions</c>.</summary>
 internal sealed class XaiResponsesOptions
 {
-    private static readonly string[] ReasoningEfforts = { "none", "low", "medium", "high", "xhigh" };
+    private static readonly string[] ReasoningEfforts =
+    {
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+    };
     private static readonly string[] ReasoningSummaries = { "auto", "concise", "detailed" };
     private static readonly string[] ServiceTiers = { "default", "priority" };
     private static readonly string[] IncludeValues =
@@ -51,10 +58,16 @@ internal sealed class XaiResponsesOptions
 
     /// <summary>Reads and validates the options under <paramref name="providerOptions"/>["xai"].</summary>
     /// <exception cref="InvalidArgumentError">An option has the wrong type or value.</exception>
-    public static XaiResponsesOptions Parse(IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    public static XaiResponsesOptions Parse(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
+    )
     {
         var options = new XaiResponsesOptions();
-        if (providerOptions == null || !providerOptions.TryGetValue(XaiProvider.ProviderId, out var source) || source.ValueKind == JsonValueKind.Null)
+        if (
+            providerOptions == null
+            || !providerOptions.TryGetValue(XaiProvider.ProviderId, out var source)
+            || source.ValueKind == JsonValueKind.Null
+        )
         {
             return options;
         }
@@ -146,7 +159,10 @@ internal sealed class XaiResponsesOptions
 
     private static bool Bool(JsonProperty property)
     {
-        if (property.Value.ValueKind != JsonValueKind.True && property.Value.ValueKind != JsonValueKind.False)
+        if (
+            property.Value.ValueKind != JsonValueKind.True
+            && property.Value.ValueKind != JsonValueKind.False
+        )
         {
             throw Invalid(property.Name, "expected a boolean.");
         }
@@ -156,7 +172,12 @@ internal sealed class XaiResponsesOptions
 
     private static int Int(JsonProperty property, int minimum, int maximum)
     {
-        if (property.Value.ValueKind != JsonValueKind.Number || !property.Value.TryGetInt32(out var number) || number < minimum || number > maximum)
+        if (
+            property.Value.ValueKind != JsonValueKind.Number
+            || !property.Value.TryGetInt32(out var number)
+            || number < minimum
+            || number > maximum
+        )
         {
             throw Invalid(property.Name, "expected an integer" + Range(minimum, maximum) + ".");
         }
@@ -166,9 +187,21 @@ internal sealed class XaiResponsesOptions
 
     private static double Number(JsonProperty property, double minimum, double maximum)
     {
-        if (property.Value.ValueKind != JsonValueKind.Number || !property.Value.TryGetDouble(out var number) || number < minimum || number > maximum)
+        if (
+            property.Value.ValueKind != JsonValueKind.Number
+            || !property.Value.TryGetDouble(out var number)
+            || number < minimum
+            || number > maximum
+        )
         {
-            throw Invalid(property.Name, "expected a number between " + minimum.ToString(CultureInfo.InvariantCulture) + " and " + maximum.ToString(CultureInfo.InvariantCulture) + ".");
+            throw Invalid(
+                property.Name,
+                "expected a number between "
+                    + minimum.ToString(CultureInfo.InvariantCulture)
+                    + " and "
+                    + maximum.ToString(CultureInfo.InvariantCulture)
+                    + "."
+            );
         }
 
         return number;
@@ -184,9 +217,15 @@ internal sealed class XaiResponsesOptions
         var values = new List<string>();
         foreach (var item in property.Value.EnumerateArray())
         {
-            if (item.ValueKind != JsonValueKind.String || Array.IndexOf(IncludeValues, item.GetString()) < 0)
+            if (
+                item.ValueKind != JsonValueKind.String
+                || Array.IndexOf(IncludeValues, item.GetString()) < 0
+            )
             {
-                throw Invalid(property.Name, "expected values from " + string.Join(", ", IncludeValues) + ".");
+                throw Invalid(
+                    property.Name,
+                    "expected values from " + string.Join(", ", IncludeValues) + "."
+                );
             }
 
             values.Add(item.GetString()!);
@@ -199,7 +238,10 @@ internal sealed class XaiResponsesOptions
     {
         return minimum == int.MinValue && maximum == int.MaxValue
             ? string.Empty
-            : " between " + minimum.ToString(CultureInfo.InvariantCulture) + " and " + maximum.ToString(CultureInfo.InvariantCulture);
+            : " between "
+                + minimum.ToString(CultureInfo.InvariantCulture)
+                + " and "
+                + maximum.ToString(CultureInfo.InvariantCulture);
     }
 
     private static InvalidArgumentError Invalid(string name, string message)

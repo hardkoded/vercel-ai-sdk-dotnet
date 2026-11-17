@@ -8,10 +8,14 @@ namespace Vercel.AI.Tests.Upstream.ProviderUtils.ValidateDownloadUrl;
 
 public sealed class AdditionalReservedIPv6RangesTests
 {
-    private const string Suite = "packages/provider-utils/src/validate-download-url.test.ts::validateDownloadUrl > additional reserved IPv6 ranges::";
+    private const string Suite =
+        "packages/provider-utils/src/validate-download-url.test.ts::validateDownloadUrl > additional reserved IPv6 ranges::";
 
     [Fact]
-    [UpstreamTest(Suite + "should block fec0::/10 (site-local)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Suite + "should block fec0::/10 (site-local)",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_block_fec0_10_site_local()
     {
         AssertBlocked("http://[fec0::1]/file");

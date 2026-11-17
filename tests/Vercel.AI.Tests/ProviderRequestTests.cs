@@ -47,13 +47,22 @@ public sealed class ProviderRequestTests
 {
     [Theory]
     [MemberData(nameof(Cases))]
-    public async Task Each_provider_posts_its_public_route(string path, string header, string expected, Func<HttpMessageHandler, ProviderBase> create, string kind)
+    public async Task Each_provider_posts_its_public_route(
+        string path,
+        string header,
+        string expected,
+        Func<HttpMessageHandler, ProviderBase> create,
+        string kind
+    )
     {
         var handler = new ScriptedHandler();
         var provider = create(handler);
         await Invoke(provider, kind);
         Assert.Contains(path, handler.Uri);
-        Assert.True(handler.Headers.TryGetValue(header, out var actual), "Missing header " + header);
+        Assert.True(
+            handler.Headers.TryGetValue(header, out var actual),
+            "Missing header " + header
+        );
         Assert.StartsWith(expected, actual);
     }
 
@@ -72,11 +81,11 @@ public sealed class ProviderRequestTests
     {
         var handler = new ScriptedHandler();
         var exception = Assert.Throws<ArgumentException>(() =>
-            AzureOpenAIProvider.Create(new AzureOpenAIOptions
-            {
-                ApiKey = "secret",
-                ResourceName = resourceName,
-            }, handler));
+            AzureOpenAIProvider.Create(
+                new AzureOpenAIOptions { ApiKey = "secret", ResourceName = resourceName },
+                handler
+            )
+        );
         Assert.Contains("DNS label", exception.Message);
         Assert.Contains("BaseUrl", exception.Message);
         Assert.Equal(0, handler.Calls);
@@ -86,11 +95,10 @@ public sealed class ProviderRequestTests
     public async Task AcceptsADnsLabelResourceName()
     {
         var handler = new ScriptedHandler();
-        var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions
-        {
-            ApiKey = "secret",
-            ResourceName = "my-resource",
-        }, handler);
+        var provider = AzureOpenAIProvider.Create(
+            new AzureOpenAIOptions { ApiKey = "secret", ResourceName = "my-resource" },
+            handler
+        );
         await provider.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
         Assert.Contains("https://my-resource.openai.azure.com/", handler.Uri);
         Assert.Equal(1, handler.Calls);
@@ -100,12 +108,15 @@ public sealed class ProviderRequestTests
     public async Task DoesNotValidateAnUnusedResourceNameWithACustomEndpoint()
     {
         var handler = new ScriptedHandler();
-        var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions
-        {
-            ApiKey = "secret",
-            ResourceName = "not a resource",
-            BaseUrl = "https://proxy.example/openai",
-        }, handler);
+        var provider = AzureOpenAIProvider.Create(
+            new AzureOpenAIOptions
+            {
+                ApiKey = "secret",
+                ResourceName = "not a resource",
+                BaseUrl = "https://proxy.example/openai",
+            },
+            handler
+        );
         await provider.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
         Assert.Contains("https://proxy.example/openai/", handler.Uri);
         Assert.Equal(1, handler.Calls);
@@ -115,7 +126,10 @@ public sealed class ProviderRequestTests
     public async Task Azure_defaults_a_null_resource_name()
     {
         var handler = new ScriptedHandler();
-        var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions { ApiKey = "secret" }, handler);
+        var provider = AzureOpenAIProvider.Create(
+            new AzureOpenAIOptions { ApiKey = "secret" },
+            handler
+        );
         await provider.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
         Assert.Contains("https://resource.openai.azure.com/", handler.Uri);
     }
@@ -124,7 +138,10 @@ public sealed class ProviderRequestTests
     public async Task Perplexity_sends_integration_attribution()
     {
         var handler = new ScriptedHandler();
-        var provider = PerplexityProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, handler);
+        var provider = PerplexityProvider.Create(
+            new OpenAICompatibleOptions { ApiKey = "secret" },
+            handler
+        );
         await provider.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
         Assert.Equal("vercel-ai-sdk", handler.Headers["X-Pplx-Integration"]);
 
@@ -147,12 +164,15 @@ public sealed class ProviderRequestTests
     [UpstreamTest(
         "packages/gateway/src/gateway-language-model.test.ts::GatewayLanguageModel > doGenerate::should pass headers correctly",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Checks the V4 specification header, model id, and prompt body.")]
+        Note = "Checks the V4 specification header, model id, and prompt body."
+    )]
     public async Task Gateway_sends_the_v4_specification_header()
     {
         var handler = new ScriptedHandler();
         var provider = GatewayProvider.Create(new GatewayOptions { ApiKey = "secret" }, handler);
-        var result = await provider.LanguageModel("openai/gpt-4.1-mini").DoGenerateAsync(Prompt(), CancellationToken.None);
+        var result = await provider
+            .LanguageModel("openai/gpt-4.1-mini")
+            .DoGenerateAsync(Prompt(), CancellationToken.None);
         Assert.Equal("ok", result.Text);
         Assert.Equal(FinishReason.Stop, result.FinishReason);
         Assert.Equal(1, result.Usage.InputTokens);
@@ -166,62 +186,300 @@ public sealed class ProviderRequestTests
 
     public static IEnumerable<object[]> Cases()
     {
-        yield return Chat("alibaba", "dashscope-intl.aliyuncs.com", h => AlibabaProvider.Create(Key(), h));
+        yield return Chat("alibaba", "dashscope-intl.aliyuncs.com", h =>
+            AlibabaProvider.Create(Key(), h)
+        );
         yield return Chat("baseten", "inference.baseten.co", h => BasetenProvider.Create(Key(), h));
         yield return Chat("cerebras", "api.cerebras.ai", h => CerebrasProvider.Create(Key(), h));
-        yield return Chat("deepinfra", "api.deepinfra.com", h => DeepInfraProvider.Create(Key(), h));
+        yield return Chat("deepinfra", "api.deepinfra.com", h =>
+            DeepInfraProvider.Create(Key(), h)
+        );
         yield return Chat("deepseek", "api.deepseek.com", h => DeepSeekProvider.Create(Key(), h));
         yield return Chat("fireworks", "api.fireworks.ai", h => FireworksProvider.Create(Key(), h));
         yield return Chat("groq", "api.groq.com", h => GroqProvider.Create(Key(), h));
-        yield return Chat("huggingface", "router.huggingface.co", h => HuggingFaceProvider.Create(Key(), h));
-        yield return Row("api.minimax.io/anthropic/v1/messages", "x-api-key", "secret", h => global::Vercel.AI.MiniMax.MiniMaxProvider.Create(new MiniMaxOptions { ApiKey = "secret" }, h), "chat");
+        yield return Chat("huggingface", "router.huggingface.co", h =>
+            HuggingFaceProvider.Create(Key(), h)
+        );
+        yield return Row(
+            "api.minimax.io/anthropic/v1/messages",
+            "x-api-key",
+            "secret",
+            h =>
+                global::Vercel.AI.MiniMax.MiniMaxProvider.Create(
+                    new MiniMaxOptions { ApiKey = "secret" },
+                    h
+                ),
+            "chat"
+        );
         yield return Chat("moonshot", "api.moonshot.ai", h => MoonshotProvider.Create(Key(), h));
-        yield return Chat("perplexity", "api.perplexity.ai", h => PerplexityProvider.Create(Key(), h));
+        yield return Chat("perplexity", "api.perplexity.ai", h =>
+            PerplexityProvider.Create(Key(), h)
+        );
         yield return Chat("together", "api.together.xyz", h => TogetherAIProvider.Create(Key(), h));
-        yield return Row("api.x.ai/v1/responses", "Authorization", "Bearer secret", h => XaiProvider.Create(Key(), h), "chat");
+        yield return Row(
+            "api.x.ai/v1/responses",
+            "Authorization",
+            "Bearer secret",
+            h => XaiProvider.Create(Key(), h),
+            "chat"
+        );
         yield return Chat("zai", "api.z.ai", h => ZaiProvider.Create(Key(), h));
-        yield return Chat("gmicloud", "api.gmi-serving.com", h => GmiCloudProvider.Create(Key(), h));
+        yield return Chat("gmicloud", "api.gmi-serving.com", h =>
+            GmiCloudProvider.Create(Key(), h)
+        );
         yield return Chat("mistral", "api.mistral.ai", h => MistralProvider.Create(Key(), h));
-        yield return Row("openai/v1/responses", "api-key", "secret", h => AzureOpenAIProvider.Create(new AzureOpenAIOptions { ApiKey = "secret", ResourceName = "demo" }, h), "chat");
-        yield return Row("/language-model", "Authorization", "Bearer secret", h => GatewayProvider.Create(new GatewayOptions { ApiKey = "secret" }, h), "chat");
-        yield return Row("/embedding-model", "Authorization", "Bearer secret", h => GatewayProvider.Create(new GatewayOptions { ApiKey = "secret" }, h), "gateway-embed");
-        yield return Row("/image-model", "Authorization", "Bearer secret", h => GatewayProvider.Create(new GatewayOptions { ApiKey = "secret" }, h), "gateway-image");
-        yield return Row("/chat/completions", "Authorization", "Bearer secret", h => OpenAIProvider.Create(new OpenAIOptions { ApiKey = "secret" }, h), "chat");
-        yield return Row("/responses", "Authorization", "Bearer secret", h => OpenAIProvider.Create(new OpenAIOptions { ApiKey = "secret", UseResponsesApi = true }, h), "chat");
-        yield return Row("/audio/speech", "Authorization", "Bearer secret", h => OpenAIProvider.Create(new OpenAIOptions { ApiKey = "secret" }, h), "speech");
-        yield return Row("/v1/messages", "x-api-key", "secret", h => AnthropicProvider.Create(new AnthropicOptions { ApiKey = "secret" }, h), "chat");
-        yield return Row("aws-external-anthropic", "x-api-key", "secret", h => AnthropicAwsProvider.Create(new AnthropicOptions { ApiKey = "secret", BaseUrl = "https://aws-external-anthropic.us-east-1.api.aws" }, h), "chat");
-        yield return Row(":generateContent", "x-goog-api-key", "secret", h => GoogleProvider.Create(new GoogleOptions { ApiKey = "secret" }, h), "chat");
-        yield return Row("us-central1-aiplatform.googleapis.com/v1/projects/demo/locations/us-central1/publishers/google", "Authorization", "Bearer secret", h => GoogleVertexProvider.Create(new VertexOptions { ApiKey = "secret", Project = "demo", Region = "us-central1" }, h), "chat");
-        yield return Row("bedrock-runtime.us-east-1.amazonaws.com", "Authorization", "AWS4-HMAC-SHA256", h => AmazonBedrockProvider.Create(new AmazonBedrockOptions { AccessKeyId = "AKIA", SecretAccessKey = "secret", UtcNow = () => new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero) }, h), "chat");
-        yield return Row("api.cohere.com/v2/chat", "Authorization", "Bearer secret", h => CohereProvider.Create(new CohereOptions { ApiKey = "secret" }, h), "chat");
-        yield return Row("/rerank", "Authorization", "Bearer secret", h => CohereProvider.Create(new CohereOptions { ApiKey = "secret" }, h), "rerank");
-        yield return Row("/responses", "Authorization", "Bearer secret", h => OpenResponsesProvider.Create(new OpenResponsesOptions { ApiKey = "secret" }, h), "chat");
-        yield return Media("/v2/transcript", "Authorization", "secret", h => AssemblyAIProvider.Create(Key(), h), "transcription");
-        yield return Media("/images/generations", "Authorization", "Bearer secret", h => ByteDanceProvider.Create(Key(), h), "image");
-        yield return Media("/tts/bytes", "Authorization", "Bearer secret", h => CartesiaProvider.Create(Key(), h), "speech");
-        yield return Media("/v1/listen", "Authorization", "Token secret", h => DeepgramProvider.Create(Key(), h), "transcription");
-        yield return Media("/v1/text-to-speech/", "xi-api-key", "secret", h => ElevenLabsProvider.Create(Key(), h), "speech");
-        yield return Media("/v1/tts", "Authorization", "Bearer secret", h => FishAudioProvider.Create(Key(), h), "speech");
-        yield return Media("/v2/upload", "x-gladia-key", "secret", h => GladiaProvider.Create(Key(), h), "transcription");
-        yield return Media("/v0/tts", "X-Hume-Api-Key", "secret", h => HumeProvider.Create(Key(), h), "speech");
-        yield return Media("/job", "Authorization", "Bearer secret", h => ProdiaProvider.Create(Key(), h), "image");
-        yield return Media("api.quiver.ai", "Authorization", "Bearer secret", h => QuiverAIProvider.Create(Key(), h), "image");
-        yield return Media("/speechtotext/v1/jobs", "Authorization", "Bearer secret", h => RevAIProvider.Create(Key(), h), "transcription");
-        yield return Media("/embeddings", "Authorization", "Bearer secret", h => VoyageProvider.Create(Key(), h), "embedding");
+        yield return Row(
+            "openai/v1/responses",
+            "api-key",
+            "secret",
+            h =>
+                AzureOpenAIProvider.Create(
+                    new AzureOpenAIOptions { ApiKey = "secret", ResourceName = "demo" },
+                    h
+                ),
+            "chat"
+        );
+        yield return Row(
+            "/language-model",
+            "Authorization",
+            "Bearer secret",
+            h => GatewayProvider.Create(new GatewayOptions { ApiKey = "secret" }, h),
+            "chat"
+        );
+        yield return Row(
+            "/embedding-model",
+            "Authorization",
+            "Bearer secret",
+            h => GatewayProvider.Create(new GatewayOptions { ApiKey = "secret" }, h),
+            "gateway-embed"
+        );
+        yield return Row(
+            "/image-model",
+            "Authorization",
+            "Bearer secret",
+            h => GatewayProvider.Create(new GatewayOptions { ApiKey = "secret" }, h),
+            "gateway-image"
+        );
+        yield return Row(
+            "/chat/completions",
+            "Authorization",
+            "Bearer secret",
+            h => OpenAIProvider.Create(new OpenAIOptions { ApiKey = "secret" }, h),
+            "chat"
+        );
+        yield return Row(
+            "/responses",
+            "Authorization",
+            "Bearer secret",
+            h =>
+                OpenAIProvider.Create(
+                    new OpenAIOptions { ApiKey = "secret", UseResponsesApi = true },
+                    h
+                ),
+            "chat"
+        );
+        yield return Row(
+            "/audio/speech",
+            "Authorization",
+            "Bearer secret",
+            h => OpenAIProvider.Create(new OpenAIOptions { ApiKey = "secret" }, h),
+            "speech"
+        );
+        yield return Row(
+            "/v1/messages",
+            "x-api-key",
+            "secret",
+            h => AnthropicProvider.Create(new AnthropicOptions { ApiKey = "secret" }, h),
+            "chat"
+        );
+        yield return Row(
+            "aws-external-anthropic",
+            "x-api-key",
+            "secret",
+            h =>
+                AnthropicAwsProvider.Create(
+                    new AnthropicOptions
+                    {
+                        ApiKey = "secret",
+                        BaseUrl = "https://aws-external-anthropic.us-east-1.api.aws",
+                    },
+                    h
+                ),
+            "chat"
+        );
+        yield return Row(
+            ":generateContent",
+            "x-goog-api-key",
+            "secret",
+            h => GoogleProvider.Create(new GoogleOptions { ApiKey = "secret" }, h),
+            "chat"
+        );
+        yield return Row(
+            "us-central1-aiplatform.googleapis.com/v1/projects/demo/locations/us-central1/publishers/google",
+            "Authorization",
+            "Bearer secret",
+            h =>
+                GoogleVertexProvider.Create(
+                    new VertexOptions
+                    {
+                        ApiKey = "secret",
+                        Project = "demo",
+                        Region = "us-central1",
+                    },
+                    h
+                ),
+            "chat"
+        );
+        yield return Row(
+            "bedrock-runtime.us-east-1.amazonaws.com",
+            "Authorization",
+            "AWS4-HMAC-SHA256",
+            h =>
+                AmazonBedrockProvider.Create(
+                    new AmazonBedrockOptions
+                    {
+                        AccessKeyId = "AKIA",
+                        SecretAccessKey = "secret",
+                        UtcNow = () => new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                    },
+                    h
+                ),
+            "chat"
+        );
+        yield return Row(
+            "api.cohere.com/v2/chat",
+            "Authorization",
+            "Bearer secret",
+            h => CohereProvider.Create(new CohereOptions { ApiKey = "secret" }, h),
+            "chat"
+        );
+        yield return Row(
+            "/rerank",
+            "Authorization",
+            "Bearer secret",
+            h => CohereProvider.Create(new CohereOptions { ApiKey = "secret" }, h),
+            "rerank"
+        );
+        yield return Row(
+            "/responses",
+            "Authorization",
+            "Bearer secret",
+            h => OpenResponsesProvider.Create(new OpenResponsesOptions { ApiKey = "secret" }, h),
+            "chat"
+        );
+        yield return Media(
+            "/v2/transcript",
+            "Authorization",
+            "secret",
+            h => AssemblyAIProvider.Create(Key(), h),
+            "transcription"
+        );
+        yield return Media(
+            "/images/generations",
+            "Authorization",
+            "Bearer secret",
+            h => ByteDanceProvider.Create(Key(), h),
+            "image"
+        );
+        yield return Media(
+            "/tts/bytes",
+            "Authorization",
+            "Bearer secret",
+            h => CartesiaProvider.Create(Key(), h),
+            "speech"
+        );
+        yield return Media(
+            "/v1/listen",
+            "Authorization",
+            "Token secret",
+            h => DeepgramProvider.Create(Key(), h),
+            "transcription"
+        );
+        yield return Media(
+            "/v1/text-to-speech/",
+            "xi-api-key",
+            "secret",
+            h => ElevenLabsProvider.Create(Key(), h),
+            "speech"
+        );
+        yield return Media(
+            "/v1/tts",
+            "Authorization",
+            "Bearer secret",
+            h => FishAudioProvider.Create(Key(), h),
+            "speech"
+        );
+        yield return Media(
+            "/v2/upload",
+            "x-gladia-key",
+            "secret",
+            h => GladiaProvider.Create(Key(), h),
+            "transcription"
+        );
+        yield return Media(
+            "/v0/tts",
+            "X-Hume-Api-Key",
+            "secret",
+            h => HumeProvider.Create(Key(), h),
+            "speech"
+        );
+        yield return Media(
+            "/job",
+            "Authorization",
+            "Bearer secret",
+            h => ProdiaProvider.Create(Key(), h),
+            "image"
+        );
+        yield return Media(
+            "api.quiver.ai",
+            "Authorization",
+            "Bearer secret",
+            h => QuiverAIProvider.Create(Key(), h),
+            "image"
+        );
+        yield return Media(
+            "/speechtotext/v1/jobs",
+            "Authorization",
+            "Bearer secret",
+            h => RevAIProvider.Create(Key(), h),
+            "transcription"
+        );
+        yield return Media(
+            "/embeddings",
+            "Authorization",
+            "Bearer secret",
+            h => VoyageProvider.Create(Key(), h),
+            "embedding"
+        );
     }
 
-    private static object[] Chat(string name, string host, Func<HttpMessageHandler, ProviderBase> create)
+    private static object[] Chat(
+        string name,
+        string host,
+        Func<HttpMessageHandler, ProviderBase> create
+    )
     {
         return Row(host, "Authorization", "Bearer secret", create, "chat");
     }
 
-    private static object[] Media(string path, string header, string expected, Func<HttpMessageHandler, ProviderBase> create, string kind)
+    private static object[] Media(
+        string path,
+        string header,
+        string expected,
+        Func<HttpMessageHandler, ProviderBase> create,
+        string kind
+    )
     {
         return Row(path, header, expected, create, kind);
     }
 
-    private static object[] Row(string path, string header, string expected, Func<HttpMessageHandler, ProviderBase> create, string kind)
+    private static object[] Row(
+        string path,
+        string header,
+        string expected,
+        Func<HttpMessageHandler, ProviderBase> create,
+        string kind
+    )
     {
         return new object[] { path, header, expected, create, kind };
     }
@@ -233,7 +491,10 @@ public sealed class ProviderRequestTests
 
     private static LanguageModelCallOptions Prompt()
     {
-        return new LanguageModelCallOptions { Prompt = new ModelMessage[] { new UserModelMessage("hi") } };
+        return new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[] { new UserModelMessage("hi") },
+        };
     }
 
     private static async Task Invoke(ProviderBase provider, string kind)
@@ -241,31 +502,64 @@ public sealed class ProviderRequestTests
         switch (kind)
         {
             case "chat":
-                await provider.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None).ConfigureAwait(false);
+                await provider
+                    .LanguageModel("m")
+                    .DoGenerateAsync(Prompt(), CancellationToken.None)
+                    .ConfigureAwait(false);
                 break;
             case "speech":
-                await provider.SpeechModel("m").DoGenerateAsync(new SpeechCallOptions("hello") { Voice = "default" }, CancellationToken.None).ConfigureAwait(false);
+                await provider
+                    .SpeechModel("m")
+                    .DoGenerateAsync(
+                        new SpeechCallOptions("hello") { Voice = "default" },
+                        CancellationToken.None
+                    )
+                    .ConfigureAwait(false);
                 break;
             case "transcription":
-                await provider.TranscriptionModel("m").DoTranscribeAsync(new AudioInput(new byte[] { 1, 2 }, "audio/wav", "a.wav"), CancellationToken.None).ConfigureAwait(false);
+                await provider
+                    .TranscriptionModel("m")
+                    .DoTranscribeAsync(
+                        new AudioInput(new byte[] { 1, 2 }, "audio/wav", "a.wav"),
+                        CancellationToken.None
+                    )
+                    .ConfigureAwait(false);
                 break;
             case "image":
-                await provider.ImageModel("m").DoGenerateAsync(new ImageCallOptions("a cat"), CancellationToken.None).ConfigureAwait(false);
+                await provider
+                    .ImageModel("m")
+                    .DoGenerateAsync(new ImageCallOptions("a cat"), CancellationToken.None)
+                    .ConfigureAwait(false);
                 break;
             case "video":
-                await provider.VideoModel("m").DoGenerateAsync(new VideoCallOptions("a wave"), CancellationToken.None).ConfigureAwait(false);
+                await provider
+                    .VideoModel("m")
+                    .DoGenerateAsync(new VideoCallOptions("a wave"), CancellationToken.None)
+                    .ConfigureAwait(false);
                 break;
             case "embedding":
-                await provider.EmbeddingModel("m").DoEmbedAsync(new[] { "hello" }, null, CancellationToken.None).ConfigureAwait(false);
+                await provider
+                    .EmbeddingModel("m")
+                    .DoEmbedAsync(new[] { "hello" }, null, CancellationToken.None)
+                    .ConfigureAwait(false);
                 break;
             case "gateway-embed":
-                await provider.EmbeddingModel("m").DoEmbedAsync(new[] { "hello" }, null, CancellationToken.None).ConfigureAwait(false);
+                await provider
+                    .EmbeddingModel("m")
+                    .DoEmbedAsync(new[] { "hello" }, null, CancellationToken.None)
+                    .ConfigureAwait(false);
                 break;
             case "gateway-image":
-                await provider.ImageModel("m").DoGenerateAsync(new ImageCallOptions("a cat"), CancellationToken.None).ConfigureAwait(false);
+                await provider
+                    .ImageModel("m")
+                    .DoGenerateAsync(new ImageCallOptions("a cat"), CancellationToken.None)
+                    .ConfigureAwait(false);
                 break;
             case "rerank":
-                await provider.RerankingModel("m").DoRerankAsync("query", new[] { "doc" }, null, CancellationToken.None).ConfigureAwait(false);
+                await provider
+                    .RerankingModel("m")
+                    .DoRerankAsync("query", new[] { "doc" }, null, CancellationToken.None)
+                    .ConfigureAwait(false);
                 break;
             default:
                 throw new InvalidOperationException(kind);

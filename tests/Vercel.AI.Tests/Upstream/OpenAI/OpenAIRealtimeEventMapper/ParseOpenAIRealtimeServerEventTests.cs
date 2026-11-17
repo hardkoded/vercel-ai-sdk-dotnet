@@ -17,20 +17,31 @@ public sealed class ParseOpenAIRealtimeServerEventTests
     [InlineData("\"\"")]
     [InlineData("null")]
     [InlineData((string?)null)]
-    [UpstreamTest(Prefix + "normalizes nested error.event_id %j as clientEventId", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "normalizes nested error.event_id %j as clientEventId",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Normalizes_nested_error_event_id_as_clientEventId(string? eventIdJson)
     {
         // A null argument is the upstream `undefined`: the property is omitted.
         var eventId = eventIdJson != null ? "\"event_id\":" + eventIdJson + "," : string.Empty;
         var raw = RealtimeMapperSupport.Json(
-            "{\"type\":\"error\",\"event_id\":\"server-event\",\"error\":{\"message\":\"Invalid audio\",\"code\":\"invalid_audio\"," + eventId + "\"client_event_id\":\"live-client-event\"}}");
+            "{\"type\":\"error\",\"event_id\":\"server-event\",\"error\":{\"message\":\"Invalid audio\",\"code\":\"invalid_audio\","
+                + eventId
+                + "\"client_event_id\":\"live-client-event\"}}"
+        );
 
         var evt = Mapper.ParseOpenAIRealtimeServerEvent(raw);
 
         Assert.Equal("error", evt.Type);
         Assert.Equal("Invalid audio", evt.Message);
         Assert.Equal("invalid_audio", evt.Code);
-        Assert.Equal(eventIdJson == "\"client-event\"" ? "client-event" : eventIdJson == "\"\"" ? string.Empty : null, evt.ClientEventId);
+        Assert.Equal(
+            eventIdJson == "\"client-event\"" ? "client-event"
+                : eventIdJson == "\"\"" ? string.Empty
+                : null,
+            evt.ClientEventId
+        );
         Assert.True(JsonElement.DeepEquals(raw, evt.Raw!.Value));
     }
 
@@ -39,12 +50,17 @@ public sealed class ParseOpenAIRealtimeServerEventTests
     [InlineData("null")]
     [InlineData("{}")]
     [InlineData("{\"message\":null,\"code\":null,\"event_id\":null}")]
-    [UpstreamTest(Prefix + "handles missing or null optional error fields (%j)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "handles missing or null optional error fields (%j)",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Handles_missing_or_null_optional_error_fields(string? errorJson)
     {
         // A null argument is the upstream `undefined`: the property is omitted.
         var error = errorJson != null ? ",\"error\":" + errorJson : string.Empty;
-        var raw = RealtimeMapperSupport.Json("{\"type\":\"error\",\"event_id\":\"server-event\"" + error + "}");
+        var raw = RealtimeMapperSupport.Json(
+            "{\"type\":\"error\",\"event_id\":\"server-event\"" + error + "}"
+        );
 
         var evt = Mapper.ParseOpenAIRealtimeServerEvent(raw);
 
@@ -56,11 +72,15 @@ public sealed class ParseOpenAIRealtimeServerEventTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves top-level message and code fallbacks", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "preserves top-level message and code fallbacks",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Preserves_top_level_message_and_code_fallbacks()
     {
         var raw = RealtimeMapperSupport.Json(
-            "{\"type\":\"error\",\"message\":\"Invalid request\",\"code\":\"invalid_request\",\"error\":{\"message\":null,\"code\":null}}");
+            "{\"type\":\"error\",\"message\":\"Invalid request\",\"code\":\"invalid_request\",\"error\":{\"message\":null,\"code\":null}}"
+        );
 
         var evt = Mapper.ParseOpenAIRealtimeServerEvent(raw);
 

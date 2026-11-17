@@ -12,7 +12,8 @@ namespace Vercel.AI.Tests;
 
 public sealed class JsonResponseToolStreamTests
 {
-    private const string Schema = "{\"type\":\"object\",\"properties\":{\"date\":{\"type\":\"string\"}},\"required\":[\"date\"],\"additionalProperties\":false}";
+    private const string Schema =
+        "{\"type\":\"object\",\"properties\":{\"date\":{\"type\":\"string\"}},\"required\":[\"date\"],\"additionalProperties\":false}";
     private const string EmptyObject = "{\"type\":\"object\",\"properties\":{}}";
 
     [Fact]
@@ -22,29 +23,69 @@ public sealed class JsonResponseToolStreamTests
         {
             MediaType = "text/event-stream",
             ResponseBody = UpstreamChat.Sse(
-                GroqChunk(new JsonObject { ["index"] = 0, ["id"] = "call-1", ["type"] = "function", ["function"] = new JsonObject { ["name"] = "json", ["arguments"] = "{\"date\"" } }),
-                GroqChunk(new JsonObject { ["index"] = 0, ["function"] = new JsonObject { ["arguments"] = ":\"2031-" } }),
-                GroqChunk(new JsonObject { ["index"] = 0, ["function"] = new JsonObject { ["arguments"] = "06-17\"}" } }),
-                "{\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"tool_calls\"}]}"),
+                GroqChunk(
+                    new JsonObject
+                    {
+                        ["index"] = 0,
+                        ["id"] = "call-1",
+                        ["type"] = "function",
+                        ["function"] = new JsonObject
+                        {
+                            ["name"] = "json",
+                            ["arguments"] = "{\"date\"",
+                        },
+                    }
+                ),
+                GroqChunk(
+                    new JsonObject
+                    {
+                        ["index"] = 0,
+                        ["function"] = new JsonObject { ["arguments"] = ":\"2031-" },
+                    }
+                ),
+                GroqChunk(
+                    new JsonObject
+                    {
+                        ["index"] = 0,
+                        ["function"] = new JsonObject { ["arguments"] = "06-17\"}" },
+                    }
+                ),
+                "{\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"tool_calls\"}]}"
+            ),
         };
         var options = new LanguageModelCallOptions
         {
             Prompt = new ModelMessage[] { new UserModelMessage("Find the date.") },
             JsonSchema = UpstreamChat.Json(Schema),
-            Tools = new[] { new LanguageModelTool("resolveDate", null, UpstreamChat.Json(EmptyObject)) },
+            Tools = new[]
+            {
+                new LanguageModelTool("resolveDate", null, UpstreamChat.Json(EmptyObject)),
+            },
             IncludeRawChunks = true,
         };
 
-        var parts = await UpstreamChat.Read((await GroqProvider.Create(new OpenAICompatibleOptions { ApiKey = "test" }, capture)
-            .LanguageModel("openai/gpt-oss-120b")
-            .DoStreamAsync(options, CancellationToken.None)));
+        var parts = await UpstreamChat.Read(
+            (
+                await GroqProvider
+                    .Create(new OpenAICompatibleOptions { ApiKey = "test" }, capture)
+                    .LanguageModel("openai/gpt-oss-120b")
+                    .DoStreamAsync(options, CancellationToken.None)
+            )
+        );
 
         var deltas = parts.OfType<TextDeltaStreamPart>().ToList();
-        Assert.Equal(new[] { "{\"date\"", ":\"2031-", "06-17\"}" }, deltas.Select(part => part.Delta));
+        Assert.Equal(
+            new[] { "{\"date\"", ":\"2031-", "06-17\"}" },
+            deltas.Select(part => part.Delta)
+        );
         Assert.All(deltas, part => Assert.Equal("call-1", part.Id));
 
         // Each text delta follows the raw chunk that carried it, before the next chunk is read.
-        var raw = parts.Select((part, index) => (part, index)).Where(item => item.part is RawStreamPart).Select(item => item.index).ToList();
+        var raw = parts
+            .Select((part, index) => (part, index))
+            .Where(item => item.part is RawStreamPart)
+            .Select(item => item.index)
+            .ToList();
         var text = deltas.Select(part => parts.IndexOf(part)).ToList();
         Assert.Equal(4, raw.Count);
         for (var i = 0; i < text.Count; i++)
@@ -53,7 +94,10 @@ public sealed class JsonResponseToolStreamTests
         }
 
         Assert.IsType<TextEndStreamPart>(parts[parts.Count - 2]);
-        Assert.Equal(FinishReason.Stop, Assert.IsType<FinishStreamPart>(parts[parts.Count - 1]).FinishReason);
+        Assert.Equal(
+            FinishReason.Stop,
+            Assert.IsType<FinishStreamPart>(parts[parts.Count - 1]).FinishReason
+        );
     }
 
     [Fact]
@@ -62,12 +106,23 @@ public sealed class JsonResponseToolStreamTests
         var reasoning = new JsonObject { ["text"] = "Thinking.", ["thought"] = true };
         var call = new JsonObject
         {
-            ["functionCall"] = new JsonObject { ["id"] = "call-1", ["name"] = "json", ["args"] = new JsonObject { ["date"] = "2031-06-17" } },
+            ["functionCall"] = new JsonObject
+            {
+                ["id"] = "call-1",
+                ["name"] = "json",
+                ["args"] = new JsonObject { ["date"] = "2031-06-17" },
+            },
         };
         var handler = new RecordingHandler
         {
             MediaType = "text/event-stream",
-            ResponseText = "data: " + GoogleChunk(reasoning, null) + "\n\n" + "data: " + GoogleChunk(call, "STOP") + "\n\n",
+            ResponseText =
+                "data: "
+                + GoogleChunk(reasoning, null)
+                + "\n\n"
+                + "data: "
+                + GoogleChunk(call, "STOP")
+                + "\n\n",
         };
         var options = new LanguageModelCallOptions
         {
@@ -76,14 +131,35 @@ public sealed class JsonResponseToolStreamTests
             Tools = new[] { GoogleUpstream.Function("resolveDate", EmptyObject, null) },
         };
 
-        var parts = await GoogleUpstream.Collect((await GoogleUpstream.Client(handler).LanguageModel("gemini-2.5-flash-lite").DoStreamAsync(options, CancellationToken.None)));
+        var parts = await GoogleUpstream.Collect(
+            (
+                await GoogleUpstream
+                    .Client(handler)
+                    .LanguageModel("gemini-2.5-flash-lite")
+                    .DoStreamAsync(options, CancellationToken.None)
+            )
+        );
 
         Assert.Equal(
-            new[] { "stream-start", "reasoning-start", "reasoning-delta", "text-start", "text-delta", "text-end", "reasoning-end", "finish" },
-            parts.Select(part => part.Type));
+            new[]
+            {
+                "stream-start",
+                "reasoning-start",
+                "reasoning-delta",
+                "text-start",
+                "text-delta",
+                "text-end",
+                "reasoning-end",
+                "finish",
+            },
+            parts.Select(part => part.Type)
+        );
         Assert.Equal("Thinking.", Assert.IsType<ReasoningDeltaStreamPart>(parts[2]).Delta);
         Assert.Equal("call-1", Assert.IsType<TextStartStreamPart>(parts[3]).Id);
-        Assert.Equal("{\"date\":\"2031-06-17\"}", Assert.IsType<TextDeltaStreamPart>(parts[4]).Delta);
+        Assert.Equal(
+            "{\"date\":\"2031-06-17\"}",
+            Assert.IsType<TextDeltaStreamPart>(parts[4]).Delta
+        );
         Assert.Equal(FinishReason.Stop, Assert.IsType<FinishStreamPart>(parts[7]).FinishReason);
     }
 
@@ -93,14 +169,25 @@ public sealed class JsonResponseToolStreamTests
         {
             ["choices"] = new JsonArray
             {
-                new JsonObject { ["index"] = 0, ["delta"] = new JsonObject { ["tool_calls"] = new JsonArray { toolCall } } },
+                new JsonObject
+                {
+                    ["index"] = 0,
+                    ["delta"] = new JsonObject { ["tool_calls"] = new JsonArray { toolCall } },
+                },
             },
         }.ToJsonString();
     }
 
     private static string GoogleChunk(JsonObject part, string? finishReason)
     {
-        var candidate = new JsonObject { ["content"] = new JsonObject { ["role"] = "model", ["parts"] = new JsonArray { part } } };
+        var candidate = new JsonObject
+        {
+            ["content"] = new JsonObject
+            {
+                ["role"] = "model",
+                ["parts"] = new JsonArray { part },
+            },
+        };
         if (finishReason != null)
         {
             candidate["finishReason"] = finishReason;

@@ -16,104 +16,200 @@ namespace Vercel.AI.Tests;
 /// <summary>Embeddings, images, speech, transcription, files, skills, completions, and realtime client secrets.</summary>
 public sealed class OpenAIMediaUpstreamTests
 {
-    private const string EmbeddingFixtureJson = "{\"object\":\"list\",\"data\":[{\"object\":\"embedding\",\"index\":0,\"embedding\":[0.0057293195,-0.012727811,0.020042092,-0.013437585,0.022833068]},{\"object\":\"embedding\",\"index\":1,\"embedding\":[-0.037104916,-0.05178114,-0.008340587,0.001164541,-0.0035253682]}],\"model\":\"text-embedding-3-small\",\"usage\":{\"prompt_tokens\":12,\"total_tokens\":12}}";
+    private const string EmbeddingFixtureJson =
+        "{\"object\":\"list\",\"data\":[{\"object\":\"embedding\",\"index\":0,\"embedding\":[0.0057293195,-0.012727811,0.020042092,-0.013437585,0.022833068]},{\"object\":\"embedding\",\"index\":1,\"embedding\":[-0.037104916,-0.05178114,-0.008340587,0.001164541,-0.0035253682]}],\"model\":\"text-embedding-3-small\",\"usage\":{\"prompt_tokens\":12,\"total_tokens\":12}}";
 
-    private const string SkillCreateJson = "{\"id\":\"skill_699fc58f408c8191825d8d06ae75fd5c06de7b381a5db7f5\",\"object\":\"skill\",\"name\":\"test-capture-skill\",\"description\":\"A test skill for fixture capture\",\"default_version\":\"1\",\"latest_version\":\"1\",\"created_at\":1772078479}";
+    private const string SkillCreateJson =
+        "{\"id\":\"skill_699fc58f408c8191825d8d06ae75fd5c06de7b381a5db7f5\",\"object\":\"skill\",\"name\":\"test-capture-skill\",\"description\":\"A test skill for fixture capture\",\"default_version\":\"1\",\"latest_version\":\"1\",\"created_at\":1772078479}";
 
     private const string ImageTests = "packages/openai/src/image/openai-image-model.test.ts::";
 
-    private static readonly string[] EmbeddingValues = { "sunny day at the beach", "rainy day in the city" };
+    private static readonly string[] EmbeddingValues =
+    {
+        "sunny day at the beach",
+        "rainy day in the city",
+    };
 
     [Fact]
-    [UpstreamTest("packages/openai/src/embedding/openai-embedding-model.test.ts::model limits::should expose the aggregate token limit", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/embedding/openai-embedding-model.test.ts::model limits::should expose the aggregate token limit",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void ExposesEmbeddingByteLimit()
     {
-        Assert.Equal(300000, new OpenAIEmbeddingModel(OpenAIUpstream.Provider(new OpenAICapture()), "text-embedding-3-large").MaxInputBytesPerCall);
+        Assert.Equal(
+            300000,
+            new OpenAIEmbeddingModel(
+                OpenAIUpstream.Provider(new OpenAICapture()),
+                "text-embedding-3-large"
+            ).MaxInputBytesPerCall
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should extract embedding", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should extract embedding",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ExtractsEmbeddings()
     {
-        const string json = "{\"data\":[{\"embedding\":[0.0057293195,-0.012727811,0.020042092,-0.013437585,0.022833068]},{\"embedding\":[-0.037104916,-0.05178114,-0.008340587,0.001164541,-0.0035253682]}],\"usage\":{\"prompt_tokens\":12}}";
-        var result = await Embed(json, "text-embedding-3-large", new[] { "sunny day at the beach", "rainy day in the city" });
+        const string json =
+            "{\"data\":[{\"embedding\":[0.0057293195,-0.012727811,0.020042092,-0.013437585,0.022833068]},{\"embedding\":[-0.037104916,-0.05178114,-0.008340587,0.001164541,-0.0035253682]}],\"usage\":{\"prompt_tokens\":12}}";
+        var result = await Embed(
+            json,
+            "text-embedding-3-large",
+            new[] { "sunny day at the beach", "rainy day in the city" }
+        );
         Assert.Equal(2, result.Result.Embeddings.Count);
         var root = JsonNode.Parse(json)!;
-        Assert.Equal(root["data"]![0]!["embedding"]![0]!.GetValue<float>(), result.Result.Embeddings[0][0]);
-        Assert.Equal(root["data"]![1]!["embedding"]![4]!.GetValue<float>(), result.Result.Embeddings[1][4]);
+        Assert.Equal(
+            root["data"]![0]!["embedding"]![0]!.GetValue<float>(),
+            result.Result.Embeddings[0][0]
+        );
+        Assert.Equal(
+            root["data"]![1]!["embedding"]![4]!.GetValue<float>(),
+            result.Result.Embeddings[1][4]
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should extract usage", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should extract usage",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ExtractsEmbeddingUsage()
     {
-        var result = await Embed("{\"data\":[{\"embedding\":[0.5]}],\"usage\":{\"prompt_tokens\":12}}", "text-embedding-3-large", new[] { "sunny day at the beach" });
+        var result = await Embed(
+            "{\"data\":[{\"embedding\":[0.5]}],\"usage\":{\"prompt_tokens\":12}}",
+            "text-embedding-3-large",
+            new[] { "sunny day at the beach" }
+        );
         Assert.Equal(12, result.Result.Tokens);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should pass the model and the values", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should pass the model and the values",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesEmbeddingModelAndValues()
     {
-        var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"embedding\":[0.5]},{\"embedding\":[0.25]}],\"usage\":{\"prompt_tokens\":12}}" };
-        await new OpenAIEmbeddingModel(OpenAIUpstream.Provider(capture), "text-embedding-3-large").EmbedAsync(new[] { "sunny day at the beach", "rainy day in the city" }, null, null, null, CancellationToken.None);
-        OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"model\":\"text-embedding-3-large\",\"input\":[\"sunny day at the beach\",\"rainy day in the city\"],\"encoding_format\":\"float\"}");
+        var capture = new OpenAICapture
+        {
+            ResponseJson =
+                "{\"data\":[{\"embedding\":[0.5]},{\"embedding\":[0.25]}],\"usage\":{\"prompt_tokens\":12}}",
+        };
+        await new OpenAIEmbeddingModel(
+            OpenAIUpstream.Provider(capture),
+            "text-embedding-3-large"
+        ).EmbedAsync(
+            new[] { "sunny day at the beach", "rainy day in the city" },
+            null,
+            null,
+            null,
+            CancellationToken.None
+        );
+        OpenAIUpstream.Equal(
+            JsonNode.Parse(capture.Body),
+            "{\"model\":\"text-embedding-3-large\",\"input\":[\"sunny day at the beach\",\"rainy day in the city\"],\"encoding_format\":\"float\"}"
+        );
         Assert.EndsWith("/embeddings", capture.Uri, StringComparison.Ordinal);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should pass the dimensions setting", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should pass the dimensions setting",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesEmbeddingDimensions()
     {
-        var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"embedding\":[0.5]}],\"usage\":{\"prompt_tokens\":1}}" };
-        await new OpenAIEmbeddingModel(OpenAIUpstream.Provider(capture), "text-embedding-3-large").EmbedAsync(new[] { "hello" }, 64, "user-1", null, CancellationToken.None);
+        var capture = new OpenAICapture
+        {
+            ResponseJson = "{\"data\":[{\"embedding\":[0.5]}],\"usage\":{\"prompt_tokens\":1}}",
+        };
+        await new OpenAIEmbeddingModel(
+            OpenAIUpstream.Provider(capture),
+            "text-embedding-3-large"
+        ).EmbedAsync(new[] { "hello" }, 64, "user-1", null, CancellationToken.None);
         var body = JsonNode.Parse(capture.Body)!;
         Assert.Equal(64, body["dimensions"]!.GetValue<int>());
         Assert.Equal("user-1", body["user"]!.GetValue<string>());
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate > %s quality::should pass %s quality", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/image/openai-image-model.test.ts::doGenerate > %s quality::should pass %s quality",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesGptImageQualities()
     {
         foreach (var modelId in new[] { "gpt-image-2.5-flare", "gpt-image-2.5-sunburst" })
         {
             foreach (var quality in new[] { "xhigh", "max" })
             {
-                var capture = await Image(modelId, new OpenAIImageCall("A cute baby sea otter")
-                {
-                    Count = 1,
-                    Size = "1024x1024",
-                    ProviderOptions = OpenAIUpstream.Json("{\"openai\":{\"quality\":\"" + quality + "\"}}"),
-                });
-                OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"model\":\"" + modelId + "\",\"prompt\":\"A cute baby sea otter\",\"n\":1,\"size\":\"1024x1024\",\"quality\":\"" + quality + "\"}");
+                var capture = await Image(
+                    modelId,
+                    new OpenAIImageCall("A cute baby sea otter")
+                    {
+                        Count = 1,
+                        Size = "1024x1024",
+                        ProviderOptions = OpenAIUpstream.Json(
+                            "{\"openai\":{\"quality\":\"" + quality + "\"}}"
+                        ),
+                    }
+                );
+                OpenAIUpstream.Equal(
+                    JsonNode.Parse(capture.Body),
+                    "{\"model\":\""
+                        + modelId
+                        + "\",\"prompt\":\"A cute baby sea otter\",\"n\":1,\"size\":\"1024x1024\",\"quality\":\""
+                        + quality
+                        + "\"}"
+                );
             }
         }
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate::should pass the model and the settings", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/image/openai-image-model.test.ts::doGenerate::should pass the model and the settings",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesDallESettings()
     {
-        var capture = await Image("dall-e-3", new OpenAIImageCall("A cute baby sea otter")
-        {
-            Count = 1,
-            Size = "1024x1024",
-            ProviderOptions = OpenAIUpstream.Json("{\"openai\":{\"style\":\"vivid\"}}"),
-        });
-        OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"model\":\"dall-e-3\",\"prompt\":\"A cute baby sea otter\",\"n\":1,\"size\":\"1024x1024\",\"style\":\"vivid\",\"response_format\":\"b64_json\"}");
+        var capture = await Image(
+            "dall-e-3",
+            new OpenAIImageCall("A cute baby sea otter")
+            {
+                Count = 1,
+                Size = "1024x1024",
+                ProviderOptions = OpenAIUpstream.Json("{\"openai\":{\"style\":\"vivid\"}}"),
+            }
+        );
+        OpenAIUpstream.Equal(
+            JsonNode.Parse(capture.Body),
+            "{\"model\":\"dall-e-3\",\"prompt\":\"A cute baby sea otter\",\"n\":1,\"size\":\"1024x1024\",\"style\":\"vivid\",\"response_format\":\"b64_json\"}"
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate::should map provider options to snake_case for /images/generations", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/image/openai-image-model.test.ts::doGenerate::should map provider options to snake_case for /images/generations",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task MapsImageProviderOptions()
     {
-        var capture = await Image("gpt-image-1", new OpenAIImageCall("A cute baby sea otter")
-        {
-            Count = 1,
-            Size = "1024x1024",
-            ProviderOptions = OpenAIUpstream.Json("{\"quality\":\"high\",\"background\":\"transparent\",\"moderation\":\"low\",\"outputFormat\":\"webp\",\"outputCompression\":80,\"user\":\"user-123\"}"),
-        });
+        var capture = await Image(
+            "gpt-image-1",
+            new OpenAIImageCall("A cute baby sea otter")
+            {
+                Count = 1,
+                Size = "1024x1024",
+                ProviderOptions = OpenAIUpstream.Json(
+                    "{\"quality\":\"high\",\"background\":\"transparent\",\"moderation\":\"low\",\"outputFormat\":\"webp\",\"outputCompression\":80,\"user\":\"user-123\"}"
+                ),
+            }
+        );
         var body = JsonNode.Parse(capture.Body)!;
         Assert.Equal("high", body["quality"]!.GetValue<string>());
         Assert.Equal("transparent", body["background"]!.GetValue<string>());
@@ -125,34 +221,58 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate::should extract the generated images", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/image/openai-image-model.test.ts::doGenerate::should extract the generated images",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ExtractsGeneratedImages()
     {
-        var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"},{\"b64_json\":\"BAUG\"}]}" };
-        var result = await new OpenAIImageModel(OpenAIUpstream.Provider(capture), "dall-e-3").GenerateAsync(new OpenAIImageCall("A cute baby sea otter"), CancellationToken.None);
+        var capture = new OpenAICapture
+        {
+            ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"},{\"b64_json\":\"BAUG\"}]}",
+        };
+        var result = await new OpenAIImageModel(
+            OpenAIUpstream.Provider(capture),
+            "dall-e-3"
+        ).GenerateAsync(new OpenAIImageCall("A cute baby sea otter"), CancellationToken.None);
         Assert.Equal(new byte[] { 1, 2, 3 }, result.Images[0].Data!);
         Assert.Equal(new byte[] { 4, 5, 6 }, result.Images[1].Data!);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate::should return warnings for unsupported settings", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/image/openai-image-model.test.ts::doGenerate::should return warnings for unsupported settings",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task WarnsForImageAspectRatioAndSeed()
     {
         var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"}]}" };
-        var result = await new OpenAIImageModel(OpenAIUpstream.Provider(capture), "dall-e-3").GenerateAsync(new OpenAIImageCall("A cute baby sea otter")
-        {
-            Size = "1024x1024",
-            AspectRatio = "1:1",
-            Seed = 123,
-        }, CancellationToken.None);
+        var result = await new OpenAIImageModel(
+            OpenAIUpstream.Provider(capture),
+            "dall-e-3"
+        ).GenerateAsync(
+            new OpenAIImageCall("A cute baby sea otter")
+            {
+                Size = "1024x1024",
+                AspectRatio = "1:1",
+                Seed = 123,
+            },
+            CancellationToken.None
+        );
         Assert.Equal("aspectRatio", result.Warnings[0].Feature);
-        Assert.Equal("This model does not support aspect ratio. Use `size` instead.", result.Warnings[0].Details);
+        Assert.Equal(
+            "This model does not support aspect ratio. Use `size` instead.",
+            result.Warnings[0].Details
+        );
         Assert.Equal("seed", result.Warnings[1].Feature);
         Assert.Null(result.Warnings[1].Details);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate::should respect maxImagesPerCall setting", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/image/openai-image-model.test.ts::doGenerate::should respect maxImagesPerCall setting",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void RespectsMaxImages()
     {
         var provider = OpenAIUpstream.Provider(new OpenAICapture());
@@ -162,43 +282,68 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate::should not include response_format for gpt-image-1", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/image/openai-image-model.test.ts::doGenerate::should not include response_format for gpt-image-1",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task OmitsResponseFormatForGptImage1()
     {
         await AssertNoResponseFormat("gpt-image-1");
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate::should not include response_format for gpt-image-2", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/image/openai-image-model.test.ts::doGenerate::should not include response_format for gpt-image-2",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task OmitsResponseFormatForGptImage2()
     {
         await AssertNoResponseFormat("gpt-image-2");
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate::should not include response_format for chatgpt-image-latest", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/image/openai-image-model.test.ts::doGenerate::should not include response_format for chatgpt-image-latest",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task OmitsResponseFormatForChatgptImage()
     {
         await AssertNoResponseFormat("chatgpt-image-latest");
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate::should include response_format for dall-e-3", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/image/openai-image-model.test.ts::doGenerate::should include response_format for dall-e-3",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task IncludesResponseFormatForDallE3()
     {
-        var capture = await Image("dall-e-3", new OpenAIImageCall("A cute baby sea otter") { Count = 1, Size = "1024x1024" });
-        Assert.Equal("b64_json", JsonNode.Parse(capture.Body)!["response_format"]!.GetValue<string>());
+        var capture = await Image(
+            "dall-e-3",
+            new OpenAIImageCall("A cute baby sea otter") { Count = 1, Size = "1024x1024" }
+        );
+        Assert.Equal(
+            "b64_json",
+            JsonNode.Parse(capture.Body)!["response_format"]!.GetValue<string>()
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate::should distribute input token details evenly across images", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/image/openai-image-model.test.ts::doGenerate::should distribute input token details evenly across images",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task DistributesImageTokens()
     {
         var capture = new OpenAICapture
         {
-            ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"},{\"b64_json\":\"AQID\"},{\"b64_json\":\"AQID\"}],\"usage\":{\"input_tokens\":222,\"output_tokens\":10,\"total_tokens\":232,\"input_tokens_details\":{\"image_tokens\":194,\"text_tokens\":28}}}",
+            ResponseJson =
+                "{\"data\":[{\"b64_json\":\"AQID\"},{\"b64_json\":\"AQID\"},{\"b64_json\":\"AQID\"}],\"usage\":{\"input_tokens\":222,\"output_tokens\":10,\"total_tokens\":232,\"input_tokens_details\":{\"image_tokens\":194,\"text_tokens\":28}}}",
         };
-        var result = await new OpenAIImageModel(OpenAIUpstream.Provider(capture), "gpt-image-1").GenerateAsync(new OpenAIImageCall("otter") { Count = 3 }, CancellationToken.None);
+        var result = await new OpenAIImageModel(
+            OpenAIUpstream.Provider(capture),
+            "gpt-image-1"
+        ).GenerateAsync(new OpenAIImageCall("otter") { Count = 3 }, CancellationToken.None);
         var images = result.ProviderMetadata.GetProperty("openai").GetProperty("images");
         Assert.Equal(64, images[0].GetProperty("imageTokens").GetInt32());
         Assert.Equal(64, images[1].GetProperty("imageTokens").GetInt32());
@@ -209,79 +354,136 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate - image editing::should call /images/edits endpoint when files are provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/image/openai-image-model.test.ts::doGenerate - image editing::should call /images/edits endpoint when files are provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task CallsImageEdits()
     {
         var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"}]}" };
-        await new OpenAIImageModel(OpenAIUpstream.Provider(capture), "gpt-image-1").GenerateAsync(new OpenAIImageCall("edit")
-        {
-            Files = new[] { new OpenAIImageFile(new byte[] { 1, 2, 3 }, "image/png", "otter.png") },
-        }, CancellationToken.None);
+        await new OpenAIImageModel(OpenAIUpstream.Provider(capture), "gpt-image-1").GenerateAsync(
+            new OpenAIImageCall("edit")
+            {
+                Files = new[]
+                {
+                    new OpenAIImageFile(new byte[] { 1, 2, 3 }, "image/png", "otter.png"),
+                },
+            },
+            CancellationToken.None
+        );
         Assert.Contains("/images/edits", capture.Uri, StringComparison.Ordinal);
-        Assert.Contains(capture.Parts, part => part.Name == "image" && part.FileName == "otter.png");
-        Assert.Contains(capture.Parts, part => part.Name == "prompt" && Encoding.UTF8.GetString(part.Data) == "edit");
+        Assert.Contains(capture.Parts, part =>
+            part.Name == "image" && part.FileName == "otter.png"
+        );
+        Assert.Contains(capture.Parts, part =>
+            part.Name == "prompt" && Encoding.UTF8.GetString(part.Data) == "edit"
+        );
     }
 
     [Fact]
-    [UpstreamTest(ImageTests + "doGenerate::should pass headers", Coverage = UpstreamCoverage.Partial, Note = "Request headers match. The user-agent suffix is ai-sdk/openai/4.0.73, and content-type includes a charset.")]
+    [UpstreamTest(
+        ImageTests + "doGenerate::should pass headers",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Request headers match. The user-agent suffix is ai-sdk/openai/4.0.73, and content-type includes a charset."
+    )]
     public async Task PassesImageHeaders()
     {
         var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"}]}" };
-        await new OpenAIImageModel(StandardProvider(capture), "dall-e-3").GenerateAsync(new OpenAIImageCall("A cute baby sea otter")
-        {
-            Size = "1024x1024",
-            ProviderOptions = OpenAIUpstream.Json("{\"openai\":{\"style\":\"vivid\"}}"),
-            Headers = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" },
-        }, CancellationToken.None);
+        await new OpenAIImageModel(StandardProvider(capture), "dall-e-3").GenerateAsync(
+            new OpenAIImageCall("A cute baby sea otter")
+            {
+                Size = "1024x1024",
+                ProviderOptions = OpenAIUpstream.Json("{\"openai\":{\"style\":\"vivid\"}}"),
+                Headers = new Dictionary<string, string?>
+                {
+                    ["Custom-Request-Header"] = "request-header-value",
+                },
+            },
+            CancellationToken.None
+        );
         OpenAIUpstream.AssertStandardHeaders(capture);
-        Assert.Contains(OpenAIProvider.UserAgentSuffix, OpenAIUpstream.Header(capture, "user-agent"), StringComparison.Ordinal);
+        Assert.Contains(
+            OpenAIProvider.UserAgentSuffix,
+            OpenAIUpstream.Header(capture, "user-agent"),
+            StringComparison.Ordinal
+        );
     }
 
     [Fact]
-    [UpstreamTest(ImageTests + "doGenerate::should use real date when no custom date provider is specified", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        ImageTests + "doGenerate::should use real date when no custom date provider is specified",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task UsesTheCurrentTimeForImages()
     {
         var before = DateTimeOffset.UtcNow;
-        var result = await ImageResult("dall-e-3", "{\"data\":[{\"b64_json\":\"AQID\"}]}", new OpenAIImageCall("A cute baby sea otter") { Size = "1024x1024" });
+        var result = await ImageResult(
+            "dall-e-3",
+            "{\"data\":[{\"b64_json\":\"AQID\"}]}",
+            new OpenAIImageCall("A cute baby sea otter") { Size = "1024x1024" }
+        );
         Assert.InRange(result.Timestamp, before, DateTimeOffset.UtcNow);
         Assert.Equal("dall-e-3", result.ModelId);
     }
 
     [Fact]
-    [UpstreamTest(ImageTests + "doGenerate::should handle null revised_prompt responses", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        ImageTests + "doGenerate::should handle null revised_prompt responses",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task IgnoresNullRevisedPrompts()
     {
-        var result = await ImageResult("gpt-image-1", "{\"created\":1733837122,\"data\":[{\"revised_prompt\":null,\"b64_json\":\"AQID\"}]}", new OpenAIImageCall("A cute baby sea otter") { Size = "1024x1024" });
+        var result = await ImageResult(
+            "gpt-image-1",
+            "{\"created\":1733837122,\"data\":[{\"revised_prompt\":null,\"b64_json\":\"AQID\"}]}",
+            new OpenAIImageCall("A cute baby sea otter") { Size = "1024x1024" }
+        );
         Assert.Equal(new byte[] { 1, 2, 3 }, result.Images.Single().Data!);
         Assert.Empty(result.Warnings);
-        OpenAIUpstream.Equal(JsonNode.Parse(result.ProviderMetadata.GetRawText()), "{\"openai\":{\"images\":[{\"created\":1733837122}]}}");
+        OpenAIUpstream.Equal(
+            JsonNode.Parse(result.ProviderMetadata.GetRawText()),
+            "{\"openai\":{\"images\":[{\"created\":1733837122}]}}"
+        );
     }
 
     [Fact]
-    [UpstreamTest(ImageTests + "doGenerate::should return image meta data", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        ImageTests + "doGenerate::should return image meta data",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ReturnsImageMetadata()
     {
-        const string json = "{\"created\":1770935200,\"size\":\"1024x1024\",\"quality\":\"high\",\"background\":\"opaque\",\"output_format\":\"png\",\"data\":[{\"revised_prompt\":\"A small and adorable baby sea otter.\",\"b64_json\":\"AQID\"},{\"b64_json\":\"BAUG\"}]}";
-        var result = await ImageResult("dall-e-3", json, new OpenAIImageCall("A cute baby sea otter")
-        {
-            Size = "1024x1024",
-            ProviderOptions = OpenAIUpstream.Json("{\"openai\":{\"style\":\"vivid\"}}"),
-        });
+        const string json =
+            "{\"created\":1770935200,\"size\":\"1024x1024\",\"quality\":\"high\",\"background\":\"opaque\",\"output_format\":\"png\",\"data\":[{\"revised_prompt\":\"A small and adorable baby sea otter.\",\"b64_json\":\"AQID\"},{\"b64_json\":\"BAUG\"}]}";
+        var result = await ImageResult(
+            "dall-e-3",
+            json,
+            new OpenAIImageCall("A cute baby sea otter")
+            {
+                Size = "1024x1024",
+                ProviderOptions = OpenAIUpstream.Json("{\"openai\":{\"style\":\"vivid\"}}"),
+            }
+        );
         OpenAIUpstream.Equal(
             JsonNode.Parse(result.ProviderMetadata.GetRawText()),
             "{\"openai\":{\"images\":["
                 + "{\"revisedPrompt\":\"A small and adorable baby sea otter.\",\"created\":1770935200,\"size\":\"1024x1024\",\"quality\":\"high\",\"background\":\"opaque\",\"outputFormat\":\"png\"},"
-                + "{\"created\":1770935200,\"size\":\"1024x1024\",\"quality\":\"high\",\"background\":\"opaque\",\"outputFormat\":\"png\"}]}}");
+                + "{\"created\":1770935200,\"size\":\"1024x1024\",\"quality\":\"high\",\"background\":\"opaque\",\"outputFormat\":\"png\"}]}}"
+        );
     }
 
     [Fact]
-    [UpstreamTest(ImageTests + "doGenerate::should map OpenAI usage to usage", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        ImageTests + "doGenerate::should map OpenAI usage to usage",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task MapsImageUsage()
     {
         var result = await ImageResult(
             "gpt-image-1",
             "{\"created\":1733837122,\"data\":[{\"b64_json\":\"AQID\"}],\"usage\":{\"input_tokens\":12,\"output_tokens\":0,\"total_tokens\":12,\"input_tokens_details\":{\"image_tokens\":7,\"text_tokens\":5}}}",
-            new OpenAIImageCall("A cute baby sea otter") { Size = "1024x1024" });
+            new OpenAIImageCall("A cute baby sea otter") { Size = "1024x1024" }
+        );
         Assert.Equal(12, result.InputTokens);
         Assert.Equal(0, result.OutputTokens);
         Assert.Equal(12, result.TotalTokens);
@@ -289,27 +491,46 @@ public sealed class OpenAIMediaUpstreamTests
         Assert.Equal(7, image.GetProperty("imageTokens").GetInt32());
         Assert.Equal(5, image.GetProperty("textTokens").GetInt32());
 
-        var generated = await new OpenAIImageModel(OpenAIUpstream.Provider(new OpenAICapture { ResponseJson = "{\"created\":1733837122,\"data\":[{\"b64_json\":\"AQID\"}],\"usage\":{\"input_tokens\":12,\"output_tokens\":0,\"total_tokens\":12}}" }), "gpt-image-1")
-            .DoGenerateAsync(new ImageCallOptions("A cute baby sea otter") { Size = "1024x1024" }, CancellationToken.None);
+        var generated = await new OpenAIImageModel(
+            OpenAIUpstream.Provider(
+                new OpenAICapture
+                {
+                    ResponseJson =
+                        "{\"created\":1733837122,\"data\":[{\"b64_json\":\"AQID\"}],\"usage\":{\"input_tokens\":12,\"output_tokens\":0,\"total_tokens\":12}}",
+                }
+            ),
+            "gpt-image-1"
+        ).DoGenerateAsync(
+            new ImageCallOptions("A cute baby sea otter") { Size = "1024x1024" },
+            CancellationToken.None
+        );
         Assert.Equal(12, generated.Usage!.InputTokens);
         Assert.Equal(0, generated.Usage.OutputTokens);
         Assert.Equal(12, generated.Usage.TotalTokens);
     }
 
     [Fact]
-    [UpstreamTest(ImageTests + "doGenerate - image editing > %s quality::should pass %s quality", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        ImageTests + "doGenerate - image editing > %s quality::should pass %s quality",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesGptImageEditQualities()
     {
         foreach (var modelId in new[] { "gpt-image-2.5-flare", "gpt-image-2.5-sunburst" })
         {
             foreach (var quality in new[] { "xhigh", "max" })
             {
-                var fields = await EditFields(modelId, new OpenAIImageCall("A cute baby sea otter")
-                {
-                    Size = "1024x1024",
-                    Files = new[] { Png() },
-                    ProviderOptions = OpenAIUpstream.Json("{\"openai\":{\"quality\":\"" + quality + "\"}}"),
-                });
+                var fields = await EditFields(
+                    modelId,
+                    new OpenAIImageCall("A cute baby sea otter")
+                    {
+                        Size = "1024x1024",
+                        Files = new[] { Png() },
+                        ProviderOptions = OpenAIUpstream.Json(
+                            "{\"openai\":{\"quality\":\"" + quality + "\"}}"
+                        ),
+                    }
+                );
                 Assert.Equal(modelId, fields["model"]);
                 Assert.Equal(quality, fields["quality"]);
             }
@@ -317,11 +538,22 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(ImageTests + "doGenerate - image editing::should send image as form data with Uint8Array input", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        ImageTests
+            + "doGenerate - image editing::should send image as form data with Uint8Array input",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task SendsEditFormFields()
     {
         var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"}]}" };
-        await new OpenAIImageModel(OpenAIUpstream.Provider(capture), "gpt-image-1").GenerateAsync(new OpenAIImageCall("A cute baby sea otter") { Size = "1024x1024", Files = new[] { Png() } }, CancellationToken.None);
+        await new OpenAIImageModel(OpenAIUpstream.Provider(capture), "gpt-image-1").GenerateAsync(
+            new OpenAIImageCall("A cute baby sea otter")
+            {
+                Size = "1024x1024",
+                Files = new[] { Png() },
+            },
+            CancellationToken.None
+        );
         var fields = Fields(capture);
         Assert.Equal("gpt-image-1", fields["model"]);
         Assert.Equal("A cute baby sea otter", fields["prompt"]);
@@ -333,42 +565,73 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(ImageTests + "doGenerate - image editing::should send multiple images as form data array", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        ImageTests + "doGenerate - image editing::should send multiple images as form data array",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task SendsSeveralEditImagesAsAnArray()
     {
         var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"}]}" };
-        await new OpenAIImageModel(OpenAIUpstream.Provider(capture), "gpt-image-1").GenerateAsync(new OpenAIImageCall("A cute baby sea otter")
-        {
-            Files = new[] { Png(), new OpenAIImageFile(new byte[] { 255, 216, 255, 224 }, "image/jpeg", "image.jpg") },
-        }, CancellationToken.None);
+        await new OpenAIImageModel(OpenAIUpstream.Provider(capture), "gpt-image-1").GenerateAsync(
+            new OpenAIImageCall("A cute baby sea otter")
+            {
+                Files = new[]
+                {
+                    Png(),
+                    new OpenAIImageFile(
+                        new byte[] { 255, 216, 255, 224 },
+                        "image/jpeg",
+                        "image.jpg"
+                    ),
+                },
+            },
+            CancellationToken.None
+        );
         Assert.Equal(2, capture.Parts.Count(part => part.Name == "image[]"));
         Assert.DoesNotContain(capture.Parts, part => part.Name == "image");
     }
 
     [Fact]
-    [UpstreamTest(ImageTests + "doGenerate - image editing::should pass provider options in form data", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        ImageTests + "doGenerate - image editing::should pass provider options in form data",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesEditProviderOptions()
     {
-        var fields = await EditFields("gpt-image-1", new OpenAIImageCall("A cute baby sea otter")
-        {
-            Size = "1024x1024",
-            Files = new[] { Png() },
-            ProviderOptions = OpenAIUpstream.Json("{\"openai\":{\"quality\":\"high\",\"background\":\"transparent\"}}"),
-        });
+        var fields = await EditFields(
+            "gpt-image-1",
+            new OpenAIImageCall("A cute baby sea otter")
+            {
+                Size = "1024x1024",
+                Files = new[] { Png() },
+                ProviderOptions = OpenAIUpstream.Json(
+                    "{\"openai\":{\"quality\":\"high\",\"background\":\"transparent\"}}"
+                ),
+            }
+        );
         Assert.Equal("high", fields["quality"]);
         Assert.Equal("transparent", fields["background"]);
     }
 
     [Fact]
-    [UpstreamTest(ImageTests + "doGenerate - image editing::should map provider options to snake_case for /images/edits", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        ImageTests
+            + "doGenerate - image editing::should map provider options to snake_case for /images/edits",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task MapsEditProviderOptions()
     {
-        var fields = await EditFields("gpt-image-1", new OpenAIImageCall("A cute baby sea otter")
-        {
-            Size = "1024x1024",
-            Files = new[] { Png() },
-            ProviderOptions = OpenAIUpstream.Json("{\"openai\":{\"inputFidelity\":\"high\",\"outputFormat\":\"webp\",\"outputCompression\":80,\"user\":\"user-123\"}}"),
-        });
+        var fields = await EditFields(
+            "gpt-image-1",
+            new OpenAIImageCall("A cute baby sea otter")
+            {
+                Size = "1024x1024",
+                Files = new[] { Png() },
+                ProviderOptions = OpenAIUpstream.Json(
+                    "{\"openai\":{\"inputFidelity\":\"high\",\"outputFormat\":\"webp\",\"outputCompression\":80,\"user\":\"user-123\"}}"
+                ),
+            }
+        );
         Assert.Equal("high", fields["input_fidelity"]);
         Assert.Equal("webp", fields["output_format"]);
         Assert.Equal("80", fields["output_compression"]);
@@ -376,122 +639,202 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(ImageTests + "doGenerate - image editing::should extract the edited images from response", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        ImageTests + "doGenerate - image editing::should extract the edited images from response",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ExtractsEditedImages()
     {
-        var result = await ImageResult("gpt-image-1", "{\"data\":[{\"b64_json\":\"BAUG\"}]}", new OpenAIImageCall("A cute baby sea otter") { Files = new[] { Png() } });
+        var result = await ImageResult(
+            "gpt-image-1",
+            "{\"data\":[{\"b64_json\":\"BAUG\"}]}",
+            new OpenAIImageCall("A cute baby sea otter") { Files = new[] { Png() } }
+        );
         Assert.Equal(new byte[] { 4, 5, 6 }, result.Images.Single().Data!);
     }
 
     [Fact]
-    [UpstreamTest(ImageTests + "doGenerate - image editing::should include response metadata for edited images", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        ImageTests
+            + "doGenerate - image editing::should include response metadata for edited images",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task RecordsEditResponseMetadata()
     {
         var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"}]}" };
         capture.ResponseHeaders["x-request-id"] = "edit-request-id";
         var stamp = new DateTimeOffset(2024, 3, 15, 12, 0, 0, TimeSpan.Zero);
-        var result = await new OpenAIImageModel(OpenAIUpstream.Provider(capture), "gpt-image-1", () => stamp).GenerateAsync(new OpenAIImageCall("A cute baby sea otter") { Files = new[] { Png() } }, CancellationToken.None);
+        var result = await new OpenAIImageModel(
+            OpenAIUpstream.Provider(capture),
+            "gpt-image-1",
+            () => stamp
+        ).GenerateAsync(
+            new OpenAIImageCall("A cute baby sea otter") { Files = new[] { Png() } },
+            CancellationToken.None
+        );
         Assert.Equal(stamp, result.Timestamp);
         Assert.Equal("gpt-image-1", result.ModelId);
         Assert.Equal("edit-request-id", result.Headers["x-request-id"]);
     }
 
     [Fact]
-    [UpstreamTest(ImageTests + "doGenerate - image editing::should return warnings for unsupported settings in edit mode", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        ImageTests
+            + "doGenerate - image editing::should return warnings for unsupported settings in edit mode",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task WarnsForEditAspectRatioAndSeed()
     {
-        var result = await ImageResult("gpt-image-1", "{\"data\":[{\"b64_json\":\"AQID\"}]}", new OpenAIImageCall("A cute baby sea otter")
-        {
-            Size = "1024x1024",
-            AspectRatio = "16:9",
-            Seed = 42,
-            Files = new[] { Png() },
-        });
+        var result = await ImageResult(
+            "gpt-image-1",
+            "{\"data\":[{\"b64_json\":\"AQID\"}]}",
+            new OpenAIImageCall("A cute baby sea otter")
+            {
+                Size = "1024x1024",
+                AspectRatio = "16:9",
+                Seed = 42,
+                Files = new[] { Png() },
+            }
+        );
         Assert.Equal(2, result.Warnings.Count);
         Assert.Equal("aspectRatio", result.Warnings[0].Feature);
-        Assert.Equal("This model does not support aspect ratio. Use `size` instead.", result.Warnings[0].Details);
+        Assert.Equal(
+            "This model does not support aspect ratio. Use `size` instead.",
+            result.Warnings[0].Details
+        );
         Assert.Equal("seed", result.Warnings[1].Feature);
         Assert.Null(result.Warnings[1].Details);
     }
 
     [Fact]
-    [UpstreamTest(ImageTests + "doGenerate - image editing::should return usage information for edited images", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        ImageTests
+            + "doGenerate - image editing::should return usage information for edited images",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task MapsEditUsage()
     {
         var result = await ImageResult(
             "gpt-image-1",
             "{\"created\":1733837122,\"data\":[{\"b64_json\":\"AQID\"}],\"usage\":{\"input_tokens\":25,\"output_tokens\":0,\"total_tokens\":25}}",
-            new OpenAIImageCall("A cute baby sea otter") { Files = new[] { Png() } });
+            new OpenAIImageCall("A cute baby sea otter") { Files = new[] { Png() } }
+        );
         Assert.Equal(25, result.InputTokens);
         Assert.Equal(0, result.OutputTokens);
         Assert.Equal(25, result.TotalTokens);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should pass the model and text", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should pass the model and text",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void PassesSpeechModelAndText()
     {
-        var prepared = OpenAISpeechModel.Prepare("tts-1", new OpenAISpeechCall("Hello from the AI SDK!"));
-        OpenAIUpstream.Equal(prepared.Body, "{\"model\":\"tts-1\",\"input\":\"Hello from the AI SDK!\",\"voice\":\"alloy\",\"response_format\":\"mp3\"}");
+        var prepared = OpenAISpeechModel.Prepare(
+            "tts-1",
+            new OpenAISpeechCall("Hello from the AI SDK!")
+        );
+        OpenAIUpstream.Equal(
+            prepared.Body,
+            "{\"model\":\"tts-1\",\"input\":\"Hello from the AI SDK!\",\"voice\":\"alloy\",\"response_format\":\"mp3\"}"
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should pass options", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should pass options",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void PassesSpeechOptions()
     {
-        var prepared = OpenAISpeechModel.Prepare("tts-1", new OpenAISpeechCall("Hello from the AI SDK!")
-        {
-            Voice = "nova",
-            Speed = 1.5,
-            OutputFormat = "opus",
-        });
+        var prepared = OpenAISpeechModel.Prepare(
+            "tts-1",
+            new OpenAISpeechCall("Hello from the AI SDK!")
+            {
+                Voice = "nova",
+                Speed = 1.5,
+                OutputFormat = "opus",
+            }
+        );
         Assert.Equal("nova", prepared.Body["voice"]!.GetValue<string>());
         Assert.Equal(1.5, prepared.Body["speed"]!.GetValue<double>());
         Assert.Equal("opus", prepared.Body["response_format"]!.GetValue<string>());
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should preserve top-level options that provider options do not override", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should preserve top-level options that provider options do not override",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void PreservesSpeechSpeed()
     {
-        var prepared = OpenAISpeechModel.Prepare("tts-1", new OpenAISpeechCall("Hello")
-        {
-            Speed = 1.5,
-            ProviderOptions = OpenAIUpstream.Json("{\"instructions\":\"speak slowly\"}"),
-        });
+        var prepared = OpenAISpeechModel.Prepare(
+            "tts-1",
+            new OpenAISpeechCall("Hello")
+            {
+                Speed = 1.5,
+                ProviderOptions = OpenAIUpstream.Json("{\"instructions\":\"speak slowly\"}"),
+            }
+        );
         Assert.Equal(1.5, prepared.Body["speed"]!.GetValue<double>());
         Assert.Equal("speak slowly", prepared.Body["instructions"]!.GetValue<string>());
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should return audio data with correct content type", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should return audio data with correct content type",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ReturnsSpeechAudio()
     {
         var audio = new byte[100];
         var capture = new OpenAICapture { ResponseBytes = audio, ResponseMediaType = "audio/mpeg" };
-        var result = await new OpenAISpeechModel(OpenAIUpstream.Provider(capture), "tts-1").GenerateAsync(new OpenAISpeechCall("Hello"), CancellationToken.None);
+        var result = await new OpenAISpeechModel(
+            OpenAIUpstream.Provider(capture),
+            "tts-1"
+        ).GenerateAsync(new OpenAISpeechCall("Hello"), CancellationToken.None);
         Assert.Equal(audio, result.Audio);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should include warnings if any are generated", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should include warnings if any are generated",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task IncludesEmptySpeechWarnings()
     {
         var capture = new OpenAICapture { ResponseBytes = new byte[] { 1 } };
-        var result = await new OpenAISpeechModel(OpenAIUpstream.Provider(capture), "tts-1").GenerateAsync(new OpenAISpeechCall("Hello"), CancellationToken.None);
+        var result = await new OpenAISpeechModel(
+            OpenAIUpstream.Provider(capture),
+            "tts-1"
+        ).GenerateAsync(new OpenAISpeechCall("Hello"), CancellationToken.None);
         Assert.Empty(result.Warnings);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should reject gpt-realtime-whisper for non-streaming transcription", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should reject gpt-realtime-whisper for non-streaming transcription",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task RejectsRealtimeWhisper()
     {
         await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() =>
-            new OpenAITranscriptionModel(OpenAIUpstream.Provider(new OpenAICapture()), "gpt-realtime-whisper").TranscribeAsync(new OpenAITranscriptionCall(new AudioInput(new byte[] { 1 }, "audio/wav", "a.wav")), CancellationToken.None));
+            new OpenAITranscriptionModel(
+                OpenAIUpstream.Provider(new OpenAICapture()),
+                "gpt-realtime-whisper"
+            ).TranscribeAsync(
+                new OpenAITranscriptionCall(new AudioInput(new byte[] { 1 }, "audio/wav", "a.wav")),
+                CancellationToken.None
+            )
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should default whisper-1 to verbose_json response format", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should default whisper-1 to verbose_json response format",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task DefaultsWhisperVerboseJson()
     {
         var fields = await TranscriptionFields("whisper-1", null);
@@ -502,17 +845,26 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should pass response_format when `providerOptions.openai.timestampGranularities` is set", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should pass response_format when `providerOptions.openai.timestampGranularities` is set",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesWhisperTimestampGranularity()
     {
-        var fields = await TranscriptionFields("whisper-1", "{\"timestampGranularities\":[\"word\"]}");
+        var fields = await TranscriptionFields(
+            "whisper-1",
+            "{\"timestampGranularities\":[\"word\"]}"
+        );
         Assert.Equal("verbose_json", fields["response_format"][0]);
         Assert.Equal("0", fields["temperature"][0]);
         Assert.Equal("word", fields["timestamp_granularities[]"][0]);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should support gpt-4o-transcribe-diarize", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should support gpt-4o-transcribe-diarize",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task SupportsDiarizeRequest()
     {
         var fields = await TranscriptionFields("gpt-4o-transcribe-diarize", null);
@@ -522,25 +874,42 @@ public sealed class OpenAIMediaUpstreamTests
 
         var capture = new OpenAICapture
         {
-            ResponseJson = "{\"task\":\"transcribe\",\"duration\":3.2,\"text\":\"Hello from Alice. Hello from Bob.\",\"segments\":["
+            ResponseJson =
+                "{\"task\":\"transcribe\",\"duration\":3.2,\"text\":\"Hello from Alice. Hello from Bob.\",\"segments\":["
                 + "{\"type\":\"transcript.text.segment\",\"id\":\"seg_1\",\"start\":0,\"end\":1.5,\"text\":\"Hello from Alice.\",\"speaker\":\"A\"},"
                 + "{\"type\":\"transcript.text.segment\",\"id\":\"seg_2\",\"start\":1.5,\"end\":3.2,\"text\":\"Hello from Bob.\",\"speaker\":\"B\"}]}",
         };
-        var call = new OpenAITranscriptionCall(new AudioInput(new byte[] { 1, 2, 3 }, "audio/mpeg", "audio.mp3"));
-        var result = await new OpenAITranscriptionModel(OpenAIUpstream.Provider(capture), "gpt-4o-transcribe-diarize").TranscribeAsync(call, CancellationToken.None);
+        var call = new OpenAITranscriptionCall(
+            new AudioInput(new byte[] { 1, 2, 3 }, "audio/mpeg", "audio.mp3")
+        );
+        var result = await new OpenAITranscriptionModel(
+            OpenAIUpstream.Provider(capture),
+            "gpt-4o-transcribe-diarize"
+        ).TranscribeAsync(call, CancellationToken.None);
         Assert.Equal("Hello from Alice. Hello from Bob.", result.Text);
         Assert.Equal(3.2, result.DurationInSeconds);
-        AssertSegments(result.Segments, ("Hello from Alice.", 0, 1.5), ("Hello from Bob.", 1.5, 3.2));
+        AssertSegments(
+            result.Segments,
+            ("Hello from Alice.", 0, 1.5),
+            ("Hello from Bob.", 1.5, 3.2)
+        );
         OpenAIUpstream.Equal(
             JsonNode.Parse(result.ProviderMetadata!.Value.GetRawText()),
-            "{\"openai\":{\"segments\":[{\"text\":\"Hello from Alice.\",\"startSecond\":0,\"endSecond\":1.5,\"speaker\":\"A\"},{\"text\":\"Hello from Bob.\",\"startSecond\":1.5,\"endSecond\":3.2,\"speaker\":\"B\"}]}}");
+            "{\"openai\":{\"segments\":[{\"text\":\"Hello from Alice.\",\"startSecond\":0,\"endSecond\":1.5,\"speaker\":\"A\"},{\"text\":\"Hello from Bob.\",\"startSecond\":1.5,\"endSecond\":3.2,\"speaker\":\"B\"}]}}"
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should pass diarization response format and chunking strategy provider options", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should pass diarization response format and chunking strategy provider options",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesDiarizeOptions()
     {
-        var fields = await TranscriptionFields("gpt-4o-transcribe-diarize", "{\"responseFormat\":\"json\",\"chunkingStrategy\":\"auto\"}");
+        var fields = await TranscriptionFields(
+            "gpt-4o-transcribe-diarize",
+            "{\"responseFormat\":\"json\",\"chunkingStrategy\":\"auto\"}"
+        );
         Assert.Equal("json", fields["response_format"][0]);
         Assert.Equal("auto", fields["chunking_strategy"][0]);
         Assert.Equal("0", fields["temperature"][0]);
@@ -548,31 +917,63 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should serialize a server VAD chunking strategy", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should serialize a server VAD chunking strategy",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task SerializesServerVad()
     {
-        var fields = await TranscriptionFields("gpt-4o-transcribe-diarize", "{\"chunkingStrategy\":{\"type\":\"server_vad\",\"threshold\":0.7,\"prefixPaddingMs\":400,\"silenceDurationMs\":300}}");
-        Assert.Equal("{\"type\":\"server_vad\",\"threshold\":0.7,\"prefix_padding_ms\":400,\"silence_duration_ms\":300}", fields["chunking_strategy"][0]);
+        var fields = await TranscriptionFields(
+            "gpt-4o-transcribe-diarize",
+            "{\"chunkingStrategy\":{\"type\":\"server_vad\",\"threshold\":0.7,\"prefixPaddingMs\":400,\"silenceDurationMs\":300}}"
+        );
+        Assert.Equal(
+            "{\"type\":\"server_vad\",\"threshold\":0.7,\"prefix_padding_ms\":400,\"silence_duration_ms\":300}",
+            fields["chunking_strategy"][0]
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should pass headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should pass headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task TranscriptionPassesHeaders()
     {
         var capture = new OpenAICapture { ResponseJson = "{\"text\":\"Hello\"}" };
-        var call = new OpenAITranscriptionCall(TranscriptionAudio()) { Headers = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" } };
-        await new OpenAITranscriptionModel(StandardProvider(capture), "whisper-1").TranscribeAsync(call, CancellationToken.None);
+        var call = new OpenAITranscriptionCall(TranscriptionAudio())
+        {
+            Headers = new Dictionary<string, string?>
+            {
+                ["Custom-Request-Header"] = "request-header-value",
+            },
+        };
+        await new OpenAITranscriptionModel(StandardProvider(capture), "whisper-1").TranscribeAsync(
+            call,
+            CancellationToken.None
+        );
         Assert.Equal("Bearer test-api-key", capture.Headers["Authorization"]);
-        Assert.StartsWith("multipart/form-data; boundary=", capture.Headers["Content-Type"], StringComparison.Ordinal);
+        Assert.StartsWith(
+            "multipart/form-data; boundary=",
+            capture.Headers["Content-Type"],
+            StringComparison.Ordinal
+        );
         Assert.Equal("provider-header-value", capture.Headers["Custom-Provider-Header"]);
         Assert.Equal("request-header-value", capture.Headers["Custom-Request-Header"]);
         Assert.Equal("test-organization", capture.Headers["OpenAI-Organization"]);
         Assert.Equal("test-project", capture.Headers["OpenAI-Project"]);
-        Assert.Contains(OpenAIProvider.UserAgentSuffix, capture.Headers["User-Agent"], StringComparison.Ordinal);
+        Assert.Contains(
+            OpenAIProvider.UserAgentSuffix,
+            capture.Headers["User-Agent"],
+            StringComparison.Ordinal
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should include response data with timestamp, modelId and headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should include response data with timestamp, modelId and headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task TranscriptionRecordsTimestampModelAndHeaders()
     {
         var capture = new OpenAICapture { ResponseJson = "{\"text\":\"Hello\"}" };
@@ -581,26 +982,45 @@ public sealed class OpenAIMediaUpstreamTests
         var result = await Transcribe(capture, null);
         Assert.Equal(DateTimeOffset.UnixEpoch, result.Response.Timestamp);
         Assert.Equal("whisper-1", result.Response.ModelId);
-        Assert.StartsWith("application/json", result.Response.Headers["content-type"], StringComparison.Ordinal);
+        Assert.StartsWith(
+            "application/json",
+            result.Response.Headers["content-type"],
+            StringComparison.Ordinal
+        );
         Assert.Equal("test-request-id", result.Response.Headers["x-request-id"]);
         Assert.Equal("123", result.Response.Headers["x-ratelimit-remaining"]);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should use real date when no custom date provider is specified", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should use real date when no custom date provider is specified",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task TranscriptionUsesTheInjectedClock()
     {
-        var result = await Transcribe(new OpenAICapture { ResponseJson = "{\"text\":\"Hello\"}" }, null);
+        var result = await Transcribe(
+            new OpenAICapture { ResponseJson = "{\"text\":\"Hello\"}" },
+            null
+        );
         Assert.Equal(DateTimeOffset.UnixEpoch, result.Response.Timestamp);
         Assert.Equal("whisper-1", result.Response.ModelId);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should pass timestamp_granularities when specified", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should pass timestamp_granularities when specified",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesSegmentTimestampGranularity()
     {
-        var fields = await TranscriptionFields("whisper-1", "{\"timestampGranularities\":[\"segment\"]}");
-        Assert.Equal(new[] { "model", "response_format", "temperature", "timestamp_granularities[]" }, fields.Keys.Where(key => key != "file").OrderBy(key => key, StringComparer.Ordinal));
+        var fields = await TranscriptionFields(
+            "whisper-1",
+            "{\"timestampGranularities\":[\"segment\"]}"
+        );
+        Assert.Equal(
+            new[] { "model", "response_format", "temperature", "timestamp_granularities[]" },
+            fields.Keys.Where(key => key != "file").OrderBy(key => key, StringComparer.Ordinal)
+        );
         Assert.Equal("whisper-1", fields["model"][0]);
         Assert.Equal("verbose_json", fields["response_format"][0]);
         Assert.Equal("0", fields["temperature"][0]);
@@ -608,10 +1028,14 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should work when no words, language, or duration are returned", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should work when no words, language, or duration are returned",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task TranscriptionWorksWithOnlyText()
     {
-        const string Body = "{\"task\":\"transcribe\",\"text\":\"Hello from the Vercel AI SDK!\",\"_request_id\":\"req_1234\"}";
+        const string Body =
+            "{\"task\":\"transcribe\",\"text\":\"Hello from the Vercel AI SDK!\",\"_request_id\":\"req_1234\"}";
         var result = await Transcribe(new OpenAICapture { ResponseJson = Body }, null);
         Assert.Equal("Hello from the Vercel AI SDK!", result.Text);
         Assert.Empty(result.Segments);
@@ -619,19 +1043,30 @@ public sealed class OpenAIMediaUpstreamTests
         Assert.Null(result.DurationInSeconds);
         Assert.Null(result.ProviderMetadata);
         Assert.Equal(Body, result.Response.Body);
-        Assert.Equal(Encoding.UTF8.GetByteCount(Body).ToString(CultureInfo.InvariantCulture), result.Response.Headers["content-length"]);
-        Assert.StartsWith("application/json", result.Response.Headers["content-type"], StringComparison.Ordinal);
+        Assert.Equal(
+            Encoding.UTF8.GetByteCount(Body).ToString(CultureInfo.InvariantCulture),
+            result.Response.Headers["content-length"]
+        );
+        Assert.StartsWith(
+            "application/json",
+            result.Response.Headers["content-type"],
+            StringComparison.Ordinal
+        );
         Assert.Equal("whisper-1", result.Response.ModelId);
         Assert.Equal(DateTimeOffset.UnixEpoch, result.Response.Timestamp);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should parse segments when provided in response", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should parse segments when provided in response",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task TranscriptionParsesSegments()
     {
         var capture = new OpenAICapture
         {
-            ResponseJson = "{\"task\":\"transcribe\",\"text\":\"Hello world. How are you?\",\"segments\":["
+            ResponseJson =
+                "{\"task\":\"transcribe\",\"text\":\"Hello world. How are you?\",\"segments\":["
                 + "{\"id\":0,\"seek\":0,\"start\":0.0,\"end\":2.5,\"text\":\"Hello world.\",\"tokens\":[1234,5678],\"temperature\":0.0,\"avg_logprob\":-0.5,\"compression_ratio\":1.2,\"no_speech_prob\":0.1},"
                 + "{\"id\":1,\"seek\":250,\"start\":2.5,\"end\":5.0,\"text\":\" How are you?\",\"tokens\":[9012,3456],\"temperature\":0.0,\"avg_logprob\":-0.6,\"compression_ratio\":1.1,\"no_speech_prob\":0.05}],"
                 + "\"language\":\"en\",\"duration\":5.0,\"_request_id\":\"req_1234\"}",
@@ -643,12 +1078,16 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should fallback to words when segments are not available", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should fallback to words when segments are not available",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task TranscriptionFallsBackToWords()
     {
         var capture = new OpenAICapture
         {
-            ResponseJson = "{\"task\":\"transcribe\",\"text\":\"Hello world\",\"words\":[{\"word\":\"Hello\",\"start\":0.0,\"end\":1.0},{\"word\":\"world\",\"start\":1.0,\"end\":2.0}],\"language\":\"en\",\"duration\":2.0,\"_request_id\":\"req_1234\"}",
+            ResponseJson =
+                "{\"task\":\"transcribe\",\"text\":\"Hello world\",\"words\":[{\"word\":\"Hello\",\"start\":0.0,\"end\":1.0},{\"word\":\"world\",\"start\":1.0,\"end\":2.0}],\"language\":\"en\",\"duration\":2.0,\"_request_id\":\"req_1234\"}",
         };
         var result = await Transcribe(capture, "{\"timestampGranularities\":[\"word\"]}");
         AssertSegments(result.Segments, ("Hello", 0, 1), ("world", 1, 2));
@@ -656,22 +1095,33 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should handle empty segments array", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should handle empty segments array",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task TranscriptionHandlesEmptySegments()
     {
-        var capture = new OpenAICapture { ResponseJson = "{\"task\":\"transcribe\",\"text\":\"Hello world\",\"segments\":[],\"language\":\"en\",\"duration\":2.0,\"_request_id\":\"req_1234\"}" };
+        var capture = new OpenAICapture
+        {
+            ResponseJson =
+                "{\"task\":\"transcribe\",\"text\":\"Hello world\",\"segments\":[],\"language\":\"en\",\"duration\":2.0,\"_request_id\":\"req_1234\"}",
+        };
         var result = await Transcribe(capture, null);
         Assert.Empty(result.Segments);
         Assert.Equal("Hello world", result.Text);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should handle segments with missing optional fields", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should handle segments with missing optional fields",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task TranscriptionHandlesSegmentsWithoutLanguageOrDuration()
     {
         var capture = new OpenAICapture
         {
-            ResponseJson = "{\"task\":\"transcribe\",\"text\":\"Test\",\"segments\":[{\"id\":0,\"seek\":0,\"start\":0.0,\"end\":1.0,\"text\":\"Test\",\"tokens\":[1234],\"temperature\":0.0,\"avg_logprob\":-0.5,\"compression_ratio\":1.0,\"no_speech_prob\":0.1}],\"_request_id\":\"req_1234\"}",
+            ResponseJson =
+                "{\"task\":\"transcribe\",\"text\":\"Test\",\"segments\":[{\"id\":0,\"seek\":0,\"start\":0.0,\"end\":1.0,\"text\":\"Test\",\"tokens\":[1234],\"temperature\":0.0,\"avg_logprob\":-0.5,\"compression_ratio\":1.0,\"no_speech_prob\":0.1}],\"_request_id\":\"req_1234\"}",
         };
         var result = await Transcribe(capture, null);
         AssertSegments(result.Segments, ("Test", 0, 1));
@@ -682,31 +1132,58 @@ public sealed class OpenAIMediaUpstreamTests
     [Fact]
     public async Task TranscriptionMapsKnownLanguageNames()
     {
-        var result = await Transcribe(new OpenAICapture { ResponseJson = "{\"text\":\"Hola\",\"language\":\"spanish\"}" }, null);
+        var result = await Transcribe(
+            new OpenAICapture { ResponseJson = "{\"text\":\"Hola\",\"language\":\"spanish\"}" },
+            null
+        );
         Assert.Equal("es", result.Language);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should extract the transcription text", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should extract the transcription text",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ExtractsTranscriptionText()
     {
-        var capture = new OpenAICapture { ResponseBytes = System.Text.Encoding.UTF8.GetBytes("{\"text\":\"Hello\"}"), ResponseMediaType = "application/json" };
-        var result = await new OpenAITranscriptionModel(OpenAIUpstream.Provider(capture), "whisper-1").TranscribeAsync(new OpenAITranscriptionCall(new AudioInput(new byte[] { 1 }, "audio/wav", "a.wav")), CancellationToken.None);
+        var capture = new OpenAICapture
+        {
+            ResponseBytes = System.Text.Encoding.UTF8.GetBytes("{\"text\":\"Hello\"}"),
+            ResponseMediaType = "application/json",
+        };
+        var result = await new OpenAITranscriptionModel(
+            OpenAIUpstream.Provider(capture),
+            "whisper-1"
+        ).TranscribeAsync(
+            new OpenAITranscriptionCall(new AudioInput(new byte[] { 1 }, "audio/wav", "a.wav")),
+            CancellationToken.None
+        );
         Assert.Equal("Hello", result.Text);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should default purpose to assistants when not provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should default purpose to assistants when not provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task DefaultsFilePurpose()
     {
         var capture = await Upload(null, null);
-        Assert.Equal("assistants", Encoding.UTF8.GetString(Assert.Single(capture.Parts, part => part.Name == "purpose").Data));
+        Assert.Equal(
+            "assistants",
+            Encoding.UTF8.GetString(
+                Assert.Single(capture.Parts, part => part.Name == "purpose").Data
+            )
+        );
         Assert.DoesNotContain("expires_after", capture.Body, StringComparison.Ordinal);
         Assert.EndsWith("/files", capture.Uri, StringComparison.Ordinal);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should pass expires_after as bracketed multipart fields", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should pass expires_after as bracketed multipart fields",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesFileExpiry()
     {
         var capture = await Upload("assistants", 3600);
@@ -717,7 +1194,10 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should set specificationVersion and provider", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should set specificationVersion and provider",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void SetsFileProviderIdentity()
     {
         var store = new OpenAIFileStore(OpenAIUpstream.Provider(new OpenAICapture()));
@@ -726,36 +1206,67 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should return providerReference with openai key", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should return providerReference with openai key",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ReturnsUploadedFileId()
     {
-        var capture = new OpenAICapture { ResponseBytes = System.Text.Encoding.UTF8.GetBytes("{\"id\":\"file-abc\",\"filename\":\"notes.txt\",\"purpose\":\"assistants\"}"), ResponseMediaType = "application/json" };
-        var file = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).UploadFileAsync("notes.txt", new byte[] { 1 }, "text/plain", CancellationToken.None);
+        var capture = new OpenAICapture
+        {
+            ResponseBytes = System.Text.Encoding.UTF8.GetBytes(
+                "{\"id\":\"file-abc\",\"filename\":\"notes.txt\",\"purpose\":\"assistants\"}"
+            ),
+            ResponseMediaType = "application/json",
+        };
+        var file = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).UploadFileAsync(
+            "notes.txt",
+            new byte[] { 1 },
+            "text/plain",
+            CancellationToken.None
+        );
         Assert.Equal("file-abc", file.Id);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - getFileMetadata::should reject a blank openai file id (%j)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - getFileMetadata::should reject a blank openai file id (%j)",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void RejectsBlankFileIds()
     {
         foreach (var id in new[] { string.Empty, "   " })
         {
-            var exception = Assert.Throws<ArgumentException>(() => OpenAIFileStore.RequireId(new OpenAIFileReference(id)));
-            Assert.StartsWith("file reference is missing an 'openai' file id.", exception.Message, StringComparison.Ordinal);
+            var exception = Assert.Throws<ArgumentException>(() =>
+                OpenAIFileStore.RequireId(new OpenAIFileReference(id))
+            );
+            Assert.StartsWith(
+                "file reference is missing an 'openai' file id.",
+                exception.Message,
+                StringComparison.Ordinal
+            );
             Assert.Equal("file", exception.ParamName);
         }
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - getFileMetadata::should reject a reference without an openai file id", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - getFileMetadata::should reject a reference without an openai file id",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void RejectsMissingFileId()
     {
-        var exception = Assert.Throws<ArgumentException>(() => OpenAIFileStore.RequireId(new OpenAIFileReference(null)));
+        var exception = Assert.Throws<ArgumentException>(() =>
+            OpenAIFileStore.RequireId(new OpenAIFileReference(null))
+        );
         Assert.Equal("file", exception.ParamName);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - getFileMetadata::should preserve dot-segment file id $fileId as a URL path segment", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - getFileMetadata::should preserve dot-segment file id $fileId as a URL path segment",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PreservesDotSegmentFileIds()
     {
         Assert.Equal("%252E", PathSegments.Encode("."));
@@ -763,44 +1274,76 @@ public sealed class OpenAIMediaUpstreamTests
         foreach (var pair in new[] { (".", "%252E"), ("..", "%252E%252E") })
         {
             var capture = new OpenAICapture { ResponseJson = "{\"id\":\"file\"}" };
-            await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).GetMetadataAsync(new OpenAIFileReference(pair.Item1), CancellationToken.None);
+            await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).GetMetadataAsync(
+                new OpenAIFileReference(pair.Item1),
+                CancellationToken.None
+            );
             Assert.Contains("/files/" + pair.Item2, capture.Uri, StringComparison.Ordinal);
         }
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - getFileMetadata::should omit expiresAt when the provider reports none", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - getFileMetadata::should omit expiresAt when the provider reports none",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task OmitsMissingExpiry()
     {
-        var capture = new OpenAICapture { ResponseJson = "{\"id\":\"file-abc\",\"filename\":\"notes.txt\",\"bytes\":4,\"created_at\":1700000000,\"status\":\"processed\",\"expires_at\":0}" };
-        var metadata = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).GetMetadataAsync(new OpenAIFileReference("file-abc"), CancellationToken.None);
+        var capture = new OpenAICapture
+        {
+            ResponseJson =
+                "{\"id\":\"file-abc\",\"filename\":\"notes.txt\",\"bytes\":4,\"created_at\":1700000000,\"status\":\"processed\",\"expires_at\":0}",
+        };
+        var metadata = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).GetMetadataAsync(
+            new OpenAIFileReference("file-abc"),
+            CancellationToken.None
+        );
         Assert.Null(metadata.ExpiresAt);
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1700000000), metadata.CreatedAt);
         Assert.Equal(4, metadata.Bytes);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - downloadFile::should expose the response content type as mediaType (parameters stripped)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - downloadFile::should expose the response content type as mediaType (parameters stripped)",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task StripsContentTypeParameters()
     {
-        var capture = new OpenAICapture { ResponseBytes = new byte[] { 9 }, ResponseMediaType = "application/octet-stream; charset=utf-8" };
-        var download = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).DownloadAsync(new OpenAIFileReference("file-abc"), CancellationToken.None);
+        var capture = new OpenAICapture
+        {
+            ResponseBytes = new byte[] { 9 },
+            ResponseMediaType = "application/octet-stream; charset=utf-8",
+        };
+        var download = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).DownloadAsync(
+            new OpenAIFileReference("file-abc"),
+            CancellationToken.None
+        );
         Assert.Equal("application/octet-stream", download.MediaType);
         Assert.Equal(new byte[] { 9 }, download.Data!);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - deleteFile::should delete a file via DELETE", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - deleteFile::should delete a file via DELETE",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task DeletesFile()
     {
         var capture = new OpenAICapture { ResponseJson = "{\"id\":\"file-abc\",\"deleted\":true}" };
-        await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).DeleteAsync(new OpenAIFileReference("file-abc"), CancellationToken.None);
+        await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).DeleteAsync(
+            new OpenAIFileReference("file-abc"),
+            CancellationToken.None
+        );
         Assert.Equal("DELETE", capture.Method);
         Assert.EndsWith("/files/file-abc", capture.Uri, StringComparison.Ordinal);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should send correct multipart request with purpose", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should send correct multipart request with purpose",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task SendsFileMultipart()
     {
         var capture = await UploadBytes("assistants", null);
@@ -811,11 +1354,21 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should return providerMetadata from response", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should return providerMetadata from response",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ReturnsUploadMetadata()
     {
         var capture = new OpenAICapture { ResponseJson = UploadResponse };
-        var metadata = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).UploadAsync("data.bin", new byte[] { 1, 2, 3 }, "application/octet-stream", "assistants", null, CancellationToken.None);
+        var metadata = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).UploadAsync(
+            "data.bin",
+            new byte[] { 1, 2, 3 },
+            "application/octet-stream",
+            "assistants",
+            null,
+            CancellationToken.None
+        );
         Assert.Equal("file-abc123", metadata.Id);
         Assert.Equal("test.csv", metadata.Filename);
         Assert.Equal("assistants", metadata.Purpose);
@@ -825,15 +1378,23 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should omit expires_after fields when no expiry is requested", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should omit expires_after fields when no expiry is requested",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task OmitsFileExpiryFields()
     {
         var capture = await UploadBytes("assistants", null);
-        Assert.DoesNotContain(capture.Parts, part => part.Name.StartsWith("expires_after", StringComparison.Ordinal));
+        Assert.DoesNotContain(capture.Parts, part =>
+            part.Name.StartsWith("expires_after", StringComparison.Ordinal)
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should pass auth headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should pass auth headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesFileAuthHeaders()
     {
         var capture = new OpenAICapture { ResponseJson = UploadResponse };
@@ -843,7 +1404,14 @@ public sealed class OpenAIMediaUpstreamTests
             options.Project = "test-project";
             options.Headers["Custom-Header"] = "custom-value";
         });
-        await new OpenAIFileStore(provider).UploadAsync("data.bin", new byte[] { 1, 2, 3 }, "application/octet-stream", "assistants", null, CancellationToken.None);
+        await new OpenAIFileStore(provider).UploadAsync(
+            "data.bin",
+            new byte[] { 1, 2, 3 },
+            "application/octet-stream",
+            "assistants",
+            null,
+            CancellationToken.None
+        );
         Assert.Equal("Bearer test-api-key", OpenAIUpstream.Header(capture, "Authorization"));
         Assert.Equal("test-org", OpenAIUpstream.Header(capture, "OpenAI-Organization"));
         Assert.Equal("test-project", OpenAIUpstream.Header(capture, "OpenAI-Project"));
@@ -851,16 +1419,40 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile (stream data)::should stream a multipart upload with fields preceding the file part", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile (stream data)::should stream a multipart upload with fields preceding the file part",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task StreamsFileUploadAfterFields()
     {
-        var capture = new OpenAICapture { ResponseJson = UploadResponse.Replace("file-abc123", "file-stream1") };
+        var capture = new OpenAICapture
+        {
+            ResponseJson = UploadResponse.Replace("file-abc123", "file-stream1"),
+        };
         using var data = new MemoryStream(Encoding.UTF8.GetBytes("{\"a\":1}\n{\"b\":2}\n"));
-        var metadata = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).UploadAsync(data, "batch.jsonl", "application/jsonl", "batch", 172800, CancellationToken.None);
+        var metadata = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).UploadAsync(
+            data,
+            "batch.jsonl",
+            "application/jsonl",
+            "batch",
+            172800,
+            CancellationToken.None
+        );
         Assert.Equal("file-stream1", metadata.Id);
-        Assert.StartsWith("multipart/form-data; boundary=", OpenAIUpstream.Header(capture, "Content-Type"), StringComparison.Ordinal);
-        Assert.Contains("boundary=\"ai-sdk-multipart-", OpenAIUpstream.Header(capture, "Content-Type"), StringComparison.Ordinal);
-        Assert.Equal(new[] { "purpose", "expires_after[anchor]", "expires_after[seconds]", "file" }, capture.Parts.Select(part => part.Name));
+        Assert.StartsWith(
+            "multipart/form-data; boundary=",
+            OpenAIUpstream.Header(capture, "Content-Type"),
+            StringComparison.Ordinal
+        );
+        Assert.Contains(
+            "boundary=\"ai-sdk-multipart-",
+            OpenAIUpstream.Header(capture, "Content-Type"),
+            StringComparison.Ordinal
+        );
+        Assert.Equal(
+            new[] { "purpose", "expires_after[anchor]", "expires_after[seconds]", "file" },
+            capture.Parts.Select(part => part.Name)
+        );
         Assert.Equal("batch", PartText(capture, "purpose"));
         Assert.Equal("created_at", PartText(capture, "expires_after[anchor]"));
         Assert.Equal("172800", PartText(capture, "expires_after[seconds]"));
@@ -869,7 +1461,10 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile (stream data)::should default the filename to \"blob\" on filename-less stream uploads", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile (stream data)::should default the filename to \"blob\" on filename-less stream uploads",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task DefaultsStreamFileNameToBlob()
     {
         var capture = await UploadStream(null);
@@ -877,51 +1472,111 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile (stream data)::should omit expiry fields on stream uploads without expiresAfter", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile (stream data)::should omit expiry fields on stream uploads without expiresAfter",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task OmitsStreamFileExpiryFields()
     {
         var capture = await UploadStream("batch.jsonl");
-        Assert.DoesNotContain(capture.Parts, part => part.Name.StartsWith("expires_after", StringComparison.Ordinal));
+        Assert.DoesNotContain(capture.Parts, part =>
+            part.Name.StartsWith("expires_after", StringComparison.Ordinal)
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile (result fields)::should expose byteSize/createdAt/expiresAt from the upload response", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile (result fields)::should expose byteSize/createdAt/expiresAt from the upload response",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ExposesUploadResultFields()
     {
-        var capture = new OpenAICapture { ResponseJson = "{\"id\":\"file-exp1\",\"object\":\"file\",\"bytes\":2048,\"created_at\":1700000000,\"filename\":\"batch.jsonl\",\"purpose\":\"batch\",\"status\":\"processed\",\"expires_at\":1700172800}" };
-        var metadata = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).UploadAsync("batch.jsonl", new byte[] { 1, 2, 3 }, "application/jsonl", "batch", 172800, CancellationToken.None);
+        var capture = new OpenAICapture
+        {
+            ResponseJson =
+                "{\"id\":\"file-exp1\",\"object\":\"file\",\"bytes\":2048,\"created_at\":1700000000,\"filename\":\"batch.jsonl\",\"purpose\":\"batch\",\"status\":\"processed\",\"expires_at\":1700172800}",
+        };
+        var metadata = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).UploadAsync(
+            "batch.jsonl",
+            new byte[] { 1, 2, 3 },
+            "application/jsonl",
+            "batch",
+            172800,
+            CancellationToken.None
+        );
         Assert.Equal(2048, metadata.Bytes);
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1700000000), metadata.CreatedAt);
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1700172800), metadata.ExpiresAt);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - downloadFile::should download file content as a stream", Coverage = UpstreamCoverage.Partial, Note = "The GET request and the content match. DownloadAsync returns the bytes, not a stream.")]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - downloadFile::should download file content as a stream",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The GET request and the content match. DownloadAsync returns the bytes, not a stream."
+    )]
     public async Task DownloadsFileContent()
     {
-        var capture = new OpenAICapture { ResponseBytes = Encoding.UTF8.GetBytes("{\"result\":\"ok\"}\n"), ResponseMediaType = "application/octet-stream" };
-        var download = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).DownloadAsync(new OpenAIFileReference("file-abc123"), CancellationToken.None);
+        var capture = new OpenAICapture
+        {
+            ResponseBytes = Encoding.UTF8.GetBytes("{\"result\":\"ok\"}\n"),
+            ResponseMediaType = "application/octet-stream",
+        };
+        var download = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).DownloadAsync(
+            new OpenAIFileReference("file-abc123"),
+            CancellationToken.None
+        );
         Assert.Equal("GET", capture.Method);
         Assert.EndsWith("/files/file-abc123/content", capture.Uri, StringComparison.Ordinal);
         Assert.Equal("{\"result\":\"ok\"}\n", Encoding.UTF8.GetString(download.Data));
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/skills/openai-skills.test.ts::OpenAISkills > uploadSkill::should send files as multipart form data", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/skills/openai-skills.test.ts::OpenAISkills > uploadSkill::should send files as multipart form data",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task UploadsSkillFiles()
     {
-        var capture = new OpenAICapture { ResponseBytes = System.Text.Encoding.UTF8.GetBytes("{\"id\":\"skill_1\",\"name\":\"test\"}"), ResponseMediaType = "application/json" };
-        await new OpenAISkillStore(OpenAIUpstream.Provider(capture)).UploadAsync(new[] { new OpenAISkillFile("SKILL.md", System.Text.Encoding.UTF8.GetBytes("# Skill"), "text/markdown") }, null, CancellationToken.None);
+        var capture = new OpenAICapture
+        {
+            ResponseBytes = System.Text.Encoding.UTF8.GetBytes(
+                "{\"id\":\"skill_1\",\"name\":\"test\"}"
+            ),
+            ResponseMediaType = "application/json",
+        };
+        await new OpenAISkillStore(OpenAIUpstream.Provider(capture)).UploadAsync(
+            new[]
+            {
+                new OpenAISkillFile(
+                    "SKILL.md",
+                    System.Text.Encoding.UTF8.GetBytes("# Skill"),
+                    "text/markdown"
+                ),
+            },
+            null,
+            CancellationToken.None
+        );
         Assert.Contains("/skills", capture.Uri, StringComparison.Ordinal);
-        Assert.Equal("SKILL.md", Assert.Single(capture.Parts, part => part.Name == "files[]").FileName);
+        Assert.Equal(
+            "SKILL.md",
+            Assert.Single(capture.Parts, part => part.Name == "files[]").FileName
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/skills/openai-skills.test.ts::OpenAISkills > uploadSkill::should emit unsupported warning for displayTitle", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/skills/openai-skills.test.ts::OpenAISkills > uploadSkill::should emit unsupported warning for displayTitle",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task WarnsForSkillDisplayTitle()
     {
         var capture = SkillFixture();
-        var result = await new OpenAISkillStore(OpenAIUpstream.Provider(capture)).UploadAsync(new[] { new OpenAISkillFile("SKILL.md", new byte[] { 1 }, "text/markdown") }, "Title", CancellationToken.None);
+        var result = await new OpenAISkillStore(OpenAIUpstream.Provider(capture)).UploadAsync(
+            new[] { new OpenAISkillFile("SKILL.md", new byte[] { 1 }, "text/markdown") },
+            "Title",
+            CancellationToken.None
+        );
         Assert.Equal("displayTitle", result.Warnings[0].Feature);
         Assert.Equal("skill_699fc58f408c8191825d8d06ae75fd5c06de7b381a5db7f5", result.Id);
         Assert.Equal("1", result.LatestVersion);
@@ -929,28 +1584,51 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/skills/openai-skills.test.ts::OpenAISkills > uploadSkill::should return no warnings when displayTitle is not set", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/skills/openai-skills.test.ts::OpenAISkills > uploadSkill::should return no warnings when displayTitle is not set",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task OmitsSkillWarnings()
     {
-        var capture = new OpenAICapture { ResponseBytes = System.Text.Encoding.UTF8.GetBytes("{\"id\":\"skill_1\"}"), ResponseMediaType = "application/json" };
-        var result = await new OpenAISkillStore(OpenAIUpstream.Provider(capture)).UploadAsync(new[] { new OpenAISkillFile("SKILL.md", new byte[] { 1 }, "text/markdown") }, null, CancellationToken.None);
+        var capture = new OpenAICapture
+        {
+            ResponseBytes = System.Text.Encoding.UTF8.GetBytes("{\"id\":\"skill_1\"}"),
+            ResponseMediaType = "application/json",
+        };
+        var result = await new OpenAISkillStore(OpenAIUpstream.Provider(capture)).UploadAsync(
+            new[] { new OpenAISkillFile("SKILL.md", new byte[] { 1 }, "text/markdown") },
+            null,
+            CancellationToken.None
+        );
         Assert.Empty(result.Warnings);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/skills/openai-skills.test.ts::OpenAISkills > uploadSkill::should pass authorization headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/skills/openai-skills.test.ts::OpenAISkills > uploadSkill::should pass authorization headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesSkillAuthorization()
     {
         var capture = SkillFixture();
-        await new OpenAISkillStore(OpenAIUpstream.Provider(capture)).UploadAsync(new[] { SkillSourceFile() }, null, CancellationToken.None);
+        await new OpenAISkillStore(OpenAIUpstream.Provider(capture)).UploadAsync(
+            new[] { SkillSourceFile() },
+            null,
+            CancellationToken.None
+        );
         Assert.Equal("Bearer test-api-key", OpenAIUpstream.Header(capture, "Authorization"));
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/skills/openai-skills.test.ts::OpenAISkills > uploadSkill::should map response to providerReference", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/skills/openai-skills.test.ts::OpenAISkills > uploadSkill::should map response to providerReference",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task MapsSkillUploadResponse()
     {
-        var result = await new OpenAISkillStore(OpenAIUpstream.Provider(SkillFixture())).UploadAsync(new[] { SkillSourceFile() }, null, CancellationToken.None);
+        var result = await new OpenAISkillStore(
+            OpenAIUpstream.Provider(SkillFixture())
+        ).UploadAsync(new[] { SkillSourceFile() }, null, CancellationToken.None);
         Assert.Equal("skill_699fc58f408c8191825d8d06ae75fd5c06de7b381a5db7f5", result.Id);
         Assert.Equal("test-capture-skill", result.Name);
         Assert.Equal("A test skill for fixture capture", result.Description);
@@ -960,14 +1638,25 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/skills/openai-skills.test.ts::OpenAISkills > uploadSkill::should handle Uint8Array file content", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/skills/openai-skills.test.ts::OpenAISkills > uploadSkill::should handle Uint8Array file content",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task UploadsBinarySkillFiles()
     {
         var capture = SkillFixture();
         var result = await new OpenAISkillStore(OpenAIUpstream.Provider(capture)).UploadAsync(
-            new[] { new OpenAISkillFile("data.bin", new byte[] { 0x48, 0x65, 0x6c, 0x6c, 0x6f }, "application/octet-stream") },
+            new[]
+            {
+                new OpenAISkillFile(
+                    "data.bin",
+                    new byte[] { 0x48, 0x65, 0x6c, 0x6c, 0x6f },
+                    "application/octet-stream"
+                ),
+            },
             null,
-            CancellationToken.None);
+            CancellationToken.None
+        );
         Assert.Equal("skill_699fc58f408c8191825d8d06ae75fd5c06de7b381a5db7f5", result.Id);
         var part = Assert.Single(capture.Parts, part => part.Name == "files[]");
         Assert.Equal("data.bin", part.FileName);
@@ -975,11 +1664,21 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should pass the model and the prompt", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should pass the model and the prompt",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesCompletionPrompt()
     {
-        var capture = new OpenAICapture { ResponseJson = "{\"id\":\"cmpl\",\"created\":1,\"model\":\"gpt-3.5-turbo-instruct\",\"choices\":[{\"text\":\"ok\",\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}" };
-        await OpenAIUpstream.Provider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoGenerateAsync(OpenAIUpstream.Hello(), CancellationToken.None);
+        var capture = new OpenAICapture
+        {
+            ResponseJson =
+                "{\"id\":\"cmpl\",\"created\":1,\"model\":\"gpt-3.5-turbo-instruct\",\"choices\":[{\"text\":\"ok\",\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}",
+        };
+        await OpenAIUpstream
+            .Provider(capture)
+            .CompletionModel("gpt-3.5-turbo-instruct")
+            .DoGenerateAsync(OpenAIUpstream.Hello(), CancellationToken.None);
         var body = JsonNode.Parse(capture.Body)!;
         Assert.Equal("gpt-3.5-turbo-instruct", body["model"]!.GetValue<string>());
         Assert.Equal("user:\nHello\n\nassistant:\n", body["prompt"]!.GetValue<string>());
@@ -988,20 +1687,42 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should extract text response", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should extract text response",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ExtractsCompletionText()
     {
-        var capture = new OpenAICapture { ResponseJson = "{\"choices\":[{\"text\":\"Hello, World!\",\"finish_reason\":\"stop\"}]}" };
-        var result = await OpenAIUpstream.Provider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoGenerateAsync(OpenAIUpstream.Hello(), CancellationToken.None);
+        var capture = new OpenAICapture
+        {
+            ResponseJson =
+                "{\"choices\":[{\"text\":\"Hello, World!\",\"finish_reason\":\"stop\"}]}",
+        };
+        var result = await OpenAIUpstream
+            .Provider(capture)
+            .CompletionModel("gpt-3.5-turbo-instruct")
+            .DoGenerateAsync(OpenAIUpstream.Hello(), CancellationToken.None);
         Assert.Equal("Hello, World!", result.Text);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should extract usage", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should extract usage",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ExtractsCompletionUsage()
     {
-        var capture = new OpenAICapture { ResponseJson = "{\"choices\":[{\"text\":\"\",\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":20,\"completion_tokens\":5,\"total_tokens\":25}}" };
-        var usage = (await OpenAIUpstream.Provider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoGenerateAsync(OpenAIUpstream.Hello(), CancellationToken.None)).Usage;
+        var capture = new OpenAICapture
+        {
+            ResponseJson =
+                "{\"choices\":[{\"text\":\"\",\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":20,\"completion_tokens\":5,\"total_tokens\":25}}",
+        };
+        var usage = (
+            await OpenAIUpstream
+                .Provider(capture)
+                .CompletionModel("gpt-3.5-turbo-instruct")
+                .DoGenerateAsync(OpenAIUpstream.Hello(), CancellationToken.None)
+        ).Usage;
         Assert.Equal(20, usage.InputTokens);
         Assert.Equal(20, usage.NoCacheInputTokens);
         Assert.Null(usage.CacheReadTokens);
@@ -1009,56 +1730,101 @@ public sealed class OpenAIMediaUpstreamTests
         Assert.Equal(5, usage.OutputTokens);
         Assert.Equal(5, usage.TextTokens);
         Assert.Null(usage.ReasoningTokens);
-        Assert.Equal("{\"prompt_tokens\":20,\"completion_tokens\":5,\"total_tokens\":25}", usage.Raw!.Value.GetRawText());
+        Assert.Equal(
+            "{\"prompt_tokens\":20,\"completion_tokens\":5,\"total_tokens\":25}",
+            usage.Raw!.Value.GetRawText()
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should support unknown finish reason", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should support unknown finish reason",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task SupportsUnknownCompletionFinish()
     {
-        var capture = new OpenAICapture { ResponseJson = "{\"choices\":[{\"text\":\"\",\"finish_reason\":\"eos\"}]}" };
-        var result = await OpenAIUpstream.Provider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoGenerateAsync(OpenAIUpstream.Hello(), CancellationToken.None);
+        var capture = new OpenAICapture
+        {
+            ResponseJson = "{\"choices\":[{\"text\":\"\",\"finish_reason\":\"eos\"}]}",
+        };
+        var result = await OpenAIUpstream
+            .Provider(capture)
+            .CompletionModel("gpt-3.5-turbo-instruct")
+            .DoGenerateAsync(OpenAIUpstream.Hello(), CancellationToken.None);
         Assert.Equal(FinishReason.Other, result.FinishReason);
         Assert.Equal("eos", result.RawFinishReason);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should expose the raw response headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should expose the raw response headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ExposesEmbeddingResponseHeaders()
     {
         var capture = EmbeddingFixture();
         capture.ResponseHeaders["test-header"] = "test-value";
-        var result = await new OpenAIEmbeddingModel(OpenAIUpstream.Provider(capture), "text-embedding-3-large").EmbedAsync(EmbeddingValues, null, null, null, CancellationToken.None);
+        var result = await new OpenAIEmbeddingModel(
+            OpenAIUpstream.Provider(capture),
+            "text-embedding-3-large"
+        ).EmbedAsync(EmbeddingValues, null, null, null, CancellationToken.None);
         Assert.Equal(
-            new Dictionary<string, string> { ["content-length"] = "327", ["content-type"] = "application/json", ["test-header"] = "test-value" },
-            result.Headers.ToDictionary(pair => pair.Key.ToLowerInvariant(), pair => pair.Value));
+            new Dictionary<string, string>
+            {
+                ["content-length"] = "327",
+                ["content-type"] = "application/json",
+                ["test-header"] = "test-value",
+            },
+            result.Headers.ToDictionary(pair => pair.Key.ToLowerInvariant(), pair => pair.Value)
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should expose the raw response body", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should expose the raw response body",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ExposesEmbeddingResponseBody()
     {
-        var result = await new OpenAIEmbeddingModel(OpenAIUpstream.Provider(EmbeddingFixture()), "text-embedding-3-large").EmbedAsync(EmbeddingValues, null, null, null, CancellationToken.None);
+        var result = await new OpenAIEmbeddingModel(
+            OpenAIUpstream.Provider(EmbeddingFixture()),
+            "text-embedding-3-large"
+        ).EmbedAsync(EmbeddingValues, null, null, null, CancellationToken.None);
         OpenAIUpstream.Equal(JsonNode.Parse(result.RawBody), EmbeddingFixtureJson);
         Assert.Equal(
-            new Dictionary<string, string> { ["content-length"] = "327", ["content-type"] = "application/json" },
-            result.Headers.ToDictionary(pair => pair.Key.ToLowerInvariant(), pair => pair.Value));
+            new Dictionary<string, string>
+            {
+                ["content-length"] = "327",
+                ["content-type"] = "application/json",
+            },
+            result.Headers.ToDictionary(pair => pair.Key.ToLowerInvariant(), pair => pair.Value)
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should pass headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should pass headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesEmbeddingHeaders()
     {
         var capture = EmbeddingFixture();
-        await new OpenAIEmbeddingModel(StandardProvider(capture), "text-embedding-3-large").EmbedAsync(
+        await new OpenAIEmbeddingModel(
+            StandardProvider(capture),
+            "text-embedding-3-large"
+        ).EmbedAsync(
             EmbeddingValues,
             null,
             null,
             new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" },
-            CancellationToken.None);
+            CancellationToken.None
+        );
         // HttpClient adds Content-Length and a UTF-8 charset; the upstream test server reports neither.
-        var headers = capture.Headers
-            .Where(pair => !pair.Key.Equals("User-Agent", StringComparison.OrdinalIgnoreCase) && !pair.Key.Equals("Content-Length", StringComparison.OrdinalIgnoreCase))
+        var headers = capture
+            .Headers.Where(pair =>
+                !pair.Key.Equals("User-Agent", StringComparison.OrdinalIgnoreCase)
+                && !pair.Key.Equals("Content-Length", StringComparison.OrdinalIgnoreCase)
+            )
             .ToDictionary(pair => pair.Key.ToLowerInvariant(), pair => pair.Value);
         headers["content-type"] = MediaTypeHeaderValue.Parse(headers["content-type"]).MediaType!;
         Assert.Equal(
@@ -1071,28 +1837,54 @@ public sealed class OpenAIMediaUpstreamTests
                 ["openai-organization"] = "test-organization",
                 ["openai-project"] = "test-project",
             },
-            headers);
-        Assert.Contains(OpenAIProvider.UserAgentSuffix, OpenAIUpstream.Header(capture, "user-agent"), StringComparison.Ordinal);
+            headers
+        );
+        Assert.Contains(
+            OpenAIProvider.UserAgentSuffix,
+            OpenAIUpstream.Header(capture, "user-agent"),
+            StringComparison.Ordinal
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate::should not include response_format for future gpt-image models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/image/openai-image-model.test.ts::doGenerate::should not include response_format for future gpt-image models",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task OmitsResponseFormatForFutureGptImage()
     {
-        var capture = await Image("gpt-image-99", new OpenAIImageCall("A cute baby sea otter") { Count = 1, Size = "1024x1024" });
-        OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"model\":\"gpt-image-99\",\"prompt\":\"A cute baby sea otter\",\"n\":1,\"size\":\"1024x1024\"}");
+        var capture = await Image(
+            "gpt-image-99",
+            new OpenAIImageCall("A cute baby sea otter") { Count = 1, Size = "1024x1024" }
+        );
+        OpenAIUpstream.Equal(
+            JsonNode.Parse(capture.Body),
+            "{\"model\":\"gpt-image-99\",\"prompt\":\"A cute baby sea otter\",\"n\":1,\"size\":\"1024x1024\"}"
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate::should not include response_format for date-suffixed gpt-image model IDs (Azure deployment names)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/image/openai-image-model.test.ts::doGenerate::should not include response_format for date-suffixed gpt-image model IDs (Azure deployment names)",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task OmitsResponseFormatForDatedGptImage()
     {
-        var capture = await Image("gpt-image-1.5-2025-12-16", new OpenAIImageCall("A cute baby sea otter") { Count = 1, Size = "1024x1024" });
-        OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"model\":\"gpt-image-1.5-2025-12-16\",\"prompt\":\"A cute baby sea otter\",\"n\":1,\"size\":\"1024x1024\"}");
+        var capture = await Image(
+            "gpt-image-1.5-2025-12-16",
+            new OpenAIImageCall("A cute baby sea otter") { Count = 1, Size = "1024x1024" }
+        );
+        OpenAIUpstream.Equal(
+            JsonNode.Parse(capture.Body),
+            "{\"model\":\"gpt-image-1.5-2025-12-16\",\"prompt\":\"A cute baby sea otter\",\"n\":1,\"size\":\"1024x1024\"}"
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate::should include response data with timestamp, modelId and headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/image/openai-image-model.test.ts::doGenerate::should include response data with timestamp, modelId and headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task RecordsImageTimestamp()
     {
         var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"}]}" };
@@ -1100,14 +1892,24 @@ public sealed class OpenAIMediaUpstreamTests
         capture.ResponseHeaders["x-ratelimit-remaining"] = "123";
         var stamp = new DateTimeOffset(2024, 3, 15, 12, 0, 0, TimeSpan.Zero);
         var model = new OpenAIImageModel(OpenAIUpstream.Provider(capture), "dall-e-3", () => stamp);
-        var result = await model.GenerateAsync(new OpenAIImageCall("A cute baby sea otter") { Count = 1, Size = "1024x1024" }, CancellationToken.None);
+        var result = await model.GenerateAsync(
+            new OpenAIImageCall("A cute baby sea otter") { Count = 1, Size = "1024x1024" },
+            CancellationToken.None
+        );
         Assert.Equal(stamp, result.Timestamp);
         Assert.Equal("dall-e-3", result.ModelId);
-        Assert.Contains("application/json", result.Headers["content-type"], StringComparison.Ordinal);
+        Assert.Contains(
+            "application/json",
+            result.Headers["content-type"],
+            StringComparison.Ordinal
+        );
         Assert.Equal("test-request-id", result.Headers["x-request-id"]);
         Assert.Equal("123", result.Headers["x-ratelimit-remaining"]);
 
-        var generated = await model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter") { Size = "1024x1024" }, CancellationToken.None);
+        var generated = await model.DoGenerateAsync(
+            new ImageCallOptions("A cute baby sea otter") { Size = "1024x1024" },
+            CancellationToken.None
+        );
         Assert.Equal(stamp, generated.Response!.Timestamp);
         Assert.Equal("dall-e-3", generated.Response.ModelId);
         Assert.Equal("test-request-id", generated.Response.Headers["x-request-id"]);
@@ -1115,40 +1917,70 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should pass provider options", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should pass provider options",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void PassesSpeechProviderOptions()
     {
-        var prepared = OpenAISpeechModel.Prepare("tts-1", new OpenAISpeechCall("Hello from the AI SDK!")
-        {
-            Speed = 1.5,
-            ProviderOptions = OpenAIUpstream.Json("{\"speed\":0.75,\"instructions\":\"Speak slowly.\"}"),
-        });
+        var prepared = OpenAISpeechModel.Prepare(
+            "tts-1",
+            new OpenAISpeechCall("Hello from the AI SDK!")
+            {
+                Speed = 1.5,
+                ProviderOptions = OpenAIUpstream.Json(
+                    "{\"speed\":0.75,\"instructions\":\"Speak slowly.\"}"
+                ),
+            }
+        );
         Assert.Equal(0.75, prepared.Body["speed"]!.GetValue<double>());
         Assert.Equal("Speak slowly.", prepared.Body["instructions"]!.GetValue<string>());
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should pass headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should pass headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesSpeechHeaders()
     {
         var capture = new OpenAICapture { ResponseBytes = new byte[] { 1 } };
-        await new OpenAISpeechModel(StandardProvider(capture), "tts-1").GenerateAsync(new OpenAISpeechCall("Hello from the AI SDK!")
-        {
-            Headers = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" },
-        }, CancellationToken.None);
+        await new OpenAISpeechModel(StandardProvider(capture), "tts-1").GenerateAsync(
+            new OpenAISpeechCall("Hello from the AI SDK!")
+            {
+                Headers = new Dictionary<string, string?>
+                {
+                    ["Custom-Request-Header"] = "request-header-value",
+                },
+            },
+            CancellationToken.None
+        );
         OpenAIUpstream.AssertStandardHeaders(capture);
-        Assert.Contains(OpenAIProvider.UserAgentSuffix, OpenAIUpstream.Header(capture, "user-agent"), StringComparison.Ordinal);
+        Assert.Contains(
+            OpenAIProvider.UserAgentSuffix,
+            OpenAIUpstream.Header(capture, "user-agent"),
+            StringComparison.Ordinal
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should include response data with timestamp, modelId and headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should include response data with timestamp, modelId and headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task IncludesSpeechResponseData()
     {
         var stamp = DateTimeOffset.UnixEpoch;
-        var capture = new OpenAICapture { ResponseBytes = new byte[100], ResponseMediaType = "audio/mp3" };
+        var capture = new OpenAICapture
+        {
+            ResponseBytes = new byte[100],
+            ResponseMediaType = "audio/mp3",
+        };
         capture.ResponseHeaders["x-request-id"] = "test-request-id";
         capture.ResponseHeaders["x-ratelimit-remaining"] = "123";
-        var result = await new OpenAISpeechModel(OpenAIUpstream.Provider(capture), "tts-1", () => stamp).GenerateAsync(new OpenAISpeechCall("Hello from the AI SDK!"), CancellationToken.None);
+        var result = await new OpenAISpeechModel(OpenAIUpstream.Provider(capture), "tts-1", () =>
+            stamp
+        ).GenerateAsync(new OpenAISpeechCall("Hello from the AI SDK!"), CancellationToken.None);
         Assert.Equal(stamp, result.Timestamp);
         Assert.Equal("tts-1", result.ModelId);
         Assert.Equal("test-request-id", result.Headers["x-request-id"]);
@@ -1157,34 +1989,57 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should use real date when no custom date provider is specified", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should use real date when no custom date provider is specified",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task UsesInjectedSpeechClock()
     {
         var stamp = DateTimeOffset.UnixEpoch;
         var capture = new OpenAICapture { ResponseBytes = new byte[1] };
-        var result = await new OpenAISpeechModel(OpenAIUpstream.Provider(capture), "tts-1", () => stamp).GenerateAsync(new OpenAISpeechCall("Hello from the AI SDK!"), CancellationToken.None);
+        var result = await new OpenAISpeechModel(OpenAIUpstream.Provider(capture), "tts-1", () =>
+            stamp
+        ).GenerateAsync(new OpenAISpeechCall("Hello from the AI SDK!"), CancellationToken.None);
         Assert.Equal(stamp, result.Timestamp);
         Assert.Equal("tts-1", result.ModelId);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should handle different audio formats", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should handle different audio formats",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ReturnsAudioForEachFormat()
     {
         foreach (var format in new[] { "mp3", "opus", "aac", "flac", "wav", "pcm" })
         {
             var audio = new byte[100];
-            var capture = new OpenAICapture { ResponseBytes = audio, ResponseMediaType = "audio/" + format };
-            var result = await new OpenAISpeechModel(OpenAIUpstream.Provider(capture), "tts-1").GenerateAsync(new OpenAISpeechCall("Hello from the AI SDK!")
+            var capture = new OpenAICapture
             {
-                ProviderOptions = OpenAIUpstream.Json("{\"response_format\":\"" + format + "\"}"),
-            }, CancellationToken.None);
+                ResponseBytes = audio,
+                ResponseMediaType = "audio/" + format,
+            };
+            var result = await new OpenAISpeechModel(
+                OpenAIUpstream.Provider(capture),
+                "tts-1"
+            ).GenerateAsync(
+                new OpenAISpeechCall("Hello from the AI SDK!")
+                {
+                    ProviderOptions = OpenAIUpstream.Json(
+                        "{\"response_format\":\"" + format + "\"}"
+                    ),
+                },
+                CancellationToken.None
+            );
             Assert.Equal(audio, result.Audio);
         }
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should pass the model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should pass the model",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesTranscriptionModel()
     {
         var fields = await TranscriptionFields("whisper-1", null);
@@ -1192,11 +2047,21 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - getFileMetadata::should retrieve file metadata via GET", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/files/openai-files.test.ts::OpenAI Files - getFileMetadata::should retrieve file metadata via GET",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task RetrievesFileMetadata()
     {
-        var capture = new OpenAICapture { ResponseJson = "{\"id\":\"file-abc123\",\"bytes\":1024,\"created_at\":1700000000,\"filename\":\"test.jsonl\",\"purpose\":\"batch\",\"status\":\"processed\",\"expires_at\":1700172800}" };
-        var metadata = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).GetMetadataAsync(new OpenAIFileReference("file-abc123"), CancellationToken.None);
+        var capture = new OpenAICapture
+        {
+            ResponseJson =
+                "{\"id\":\"file-abc123\",\"bytes\":1024,\"created_at\":1700000000,\"filename\":\"test.jsonl\",\"purpose\":\"batch\",\"status\":\"processed\",\"expires_at\":1700172800}",
+        };
+        var metadata = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).GetMetadataAsync(
+            new OpenAIFileReference("file-abc123"),
+            CancellationToken.None
+        );
         Assert.Equal("GET", capture.Method);
         Assert.EndsWith("/files/file-abc123", capture.Uri, StringComparison.Ordinal);
         Assert.Equal("file-abc123", metadata.Id);
@@ -1209,97 +2074,212 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should send request body", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should send request body",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void SendsCompletionRequestBody()
     {
-        var prepared = OpenAICompletionLanguageModel.Prepare("gpt-3.5-turbo-instruct", OpenAIUpstream.Hello(), false);
-        OpenAIUpstream.Equal(prepared.Body, "{\"model\":\"gpt-3.5-turbo-instruct\",\"prompt\":\"user:\\nHello\\n\\nassistant:\\n\",\"stop\":[\"\\nuser:\"]}");
+        var prepared = OpenAICompletionLanguageModel.Prepare(
+            "gpt-3.5-turbo-instruct",
+            OpenAIUpstream.Hello(),
+            false
+        );
+        OpenAIUpstream.Equal(
+            prepared.Body,
+            "{\"model\":\"gpt-3.5-turbo-instruct\",\"prompt\":\"user:\\nHello\\n\\nassistant:\\n\",\"stop\":[\"\\nuser:\"]}"
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should send additional response information", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should send additional response information",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task SendsCompletionResponseInformation()
     {
-        var capture = new OpenAICapture { ResponseJson = "{\"id\":\"test-id\",\"created\":123,\"model\":\"test-model\",\"choices\":[{\"text\":\"\",\"finish_reason\":\"stop\"}]}" };
-        var result = await OpenAIUpstream.Provider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoGenerateAsync(OpenAIUpstream.Hello(), CancellationToken.None);
+        var capture = new OpenAICapture
+        {
+            ResponseJson =
+                "{\"id\":\"test-id\",\"created\":123,\"model\":\"test-model\",\"choices\":[{\"text\":\"\",\"finish_reason\":\"stop\"}]}",
+        };
+        var result = await OpenAIUpstream
+            .Provider(capture)
+            .CompletionModel("gpt-3.5-turbo-instruct")
+            .DoGenerateAsync(OpenAIUpstream.Hello(), CancellationToken.None);
         Assert.Equal("test-id", result.ResponseId);
         Assert.Equal("test-model", result.ResponseModelId);
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(123), result.ResponseTimestamp);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should extract finish reason", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should extract finish reason",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ExtractsCompletionFinishReason()
     {
-        var capture = new OpenAICapture { ResponseJson = "{\"choices\":[{\"text\":\"\",\"finish_reason\":\"stop\"}]}" };
-        var result = await OpenAIUpstream.Provider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoGenerateAsync(OpenAIUpstream.Hello(), CancellationToken.None);
+        var capture = new OpenAICapture
+        {
+            ResponseJson = "{\"choices\":[{\"text\":\"\",\"finish_reason\":\"stop\"}]}",
+        };
+        var result = await OpenAIUpstream
+            .Provider(capture)
+            .CompletionModel("gpt-3.5-turbo-instruct")
+            .DoGenerateAsync(OpenAIUpstream.Hello(), CancellationToken.None);
         Assert.Equal(FinishReason.Stop, result.FinishReason);
         Assert.Equal("stop", result.RawFinishReason);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should extract logprobs", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should extract logprobs",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ExtractsCompletionLogprobs()
     {
         const string logprobs = "{\"tokens\":[\"Hi\"],\"token_logprobs\":[-0.1]}";
-        var capture = new OpenAICapture { ResponseJson = "{\"choices\":[{\"text\":\"Hi\",\"logprobs\":" + logprobs + ",\"finish_reason\":\"stop\"}]}" };
-        var result = await OpenAIUpstream.Provider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoGenerateAsync(
-            new LanguageModelCallOptions
-            {
-                Prompt = OpenAIUpstream.Hello().Prompt,
-                ProviderOptions = OpenAIUpstream.OpenAIOptionsJson("{\"logprobs\":1}"),
-            },
-            CancellationToken.None);
-        OpenAIUpstream.Equal(JsonNode.Parse(result.ProviderMetadata!.Value.GetProperty("openai").GetProperty("logprobs").GetRawText()), logprobs);
+        var capture = new OpenAICapture
+        {
+            ResponseJson =
+                "{\"choices\":[{\"text\":\"Hi\",\"logprobs\":"
+                + logprobs
+                + ",\"finish_reason\":\"stop\"}]}",
+        };
+        var result = await OpenAIUpstream
+            .Provider(capture)
+            .CompletionModel("gpt-3.5-turbo-instruct")
+            .DoGenerateAsync(
+                new LanguageModelCallOptions
+                {
+                    Prompt = OpenAIUpstream.Hello().Prompt,
+                    ProviderOptions = OpenAIUpstream.OpenAIOptionsJson("{\"logprobs\":1}"),
+                },
+                CancellationToken.None
+            );
+        OpenAIUpstream.Equal(
+            JsonNode.Parse(
+                result
+                    .ProviderMetadata!.Value.GetProperty("openai")
+                    .GetProperty("logprobs")
+                    .GetRawText()
+            ),
+            logprobs
+        );
         Assert.Equal(1, JsonNode.Parse(capture.Body)!["logprobs"]!.GetValue<int>());
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should expose the raw response headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should expose the raw response headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ExposesCompletionResponseHeaders()
     {
-        const string json = "{\"id\":\"cmpl-96cAM1v77r4jXa4qb2NSmRREV5oWB\",\"object\":\"text_completion\",\"created\":1711363706,\"model\":\"gpt-3.5-turbo-instruct\",\"choices\":[{\"text\":\"\",\"index\":0,\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":4,\"total_tokens\":34,\"completion_tokens\":30}}";
-        var capture = new OpenAICapture { ResponseBytes = System.Text.Encoding.UTF8.GetBytes(json) };
+        const string json =
+            "{\"id\":\"cmpl-96cAM1v77r4jXa4qb2NSmRREV5oWB\",\"object\":\"text_completion\",\"created\":1711363706,\"model\":\"gpt-3.5-turbo-instruct\",\"choices\":[{\"text\":\"\",\"index\":0,\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":4,\"total_tokens\":34,\"completion_tokens\":30}}";
+        var capture = new OpenAICapture
+        {
+            ResponseBytes = System.Text.Encoding.UTF8.GetBytes(json),
+        };
         capture.ResponseHeaders["test-header"] = "test-value";
-        var result = await OpenAIUpstream.Provider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoGenerateAsync(OpenAIUpstream.Hello(), CancellationToken.None);
+        var result = await OpenAIUpstream
+            .Provider(capture)
+            .CompletionModel("gpt-3.5-turbo-instruct")
+            .DoGenerateAsync(OpenAIUpstream.Hello(), CancellationToken.None);
         Assert.Equal(
-            new Dictionary<string, string> { ["content-length"] = "250", ["content-type"] = "application/json", ["test-header"] = "test-value" },
-            result.ResponseHeaders.ToDictionary(pair => pair.Key.ToLowerInvariant(), pair => pair.Value));
+            new Dictionary<string, string>
+            {
+                ["content-length"] = "250",
+                ["content-type"] = "application/json",
+                ["test-header"] = "test-value",
+            },
+            result.ResponseHeaders.ToDictionary(
+                pair => pair.Key.ToLowerInvariant(),
+                pair => pair.Value
+            )
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should pass headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should pass headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesCompletionHeaders()
     {
-        var capture = new OpenAICapture { ResponseJson = "{\"choices\":[{\"text\":\"\",\"finish_reason\":\"stop\"}]}" };
-        await StandardProvider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoGenerateAsync(CompletionCall(), CancellationToken.None);
+        var capture = new OpenAICapture
+        {
+            ResponseJson = "{\"choices\":[{\"text\":\"\",\"finish_reason\":\"stop\"}]}",
+        };
+        await StandardProvider(capture)
+            .CompletionModel("gpt-3.5-turbo-instruct")
+            .DoGenerateAsync(CompletionCall(), CancellationToken.None);
         AssertCompletionHeaders(capture);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should stream text deltas", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should stream text deltas",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task StreamsCompletionTextDeltas()
     {
-        const string logprobs = "{\"tokens\":[\" ever\",\" after\",\".\\n\\n\",\"The\",\" end\",\".\"],\"token_logprobs\":[-0.0664508,-0.014520033,-1.3820221,-0.7890417,-0.5323165,-0.10247037],\"top_logprobs\":[{\" ever\":-0.0664508},{\" after\":-0.014520033},{\".\\n\\n\":-1.3820221},{\"The\":-0.7890417},{\" end\":-0.5323165},{\".\":-0.10247037}]}";
+        const string logprobs =
+            "{\"tokens\":[\" ever\",\" after\",\".\\n\\n\",\"The\",\" end\",\".\"],\"token_logprobs\":[-0.0664508,-0.014520033,-1.3820221,-0.7890417,-0.5323165,-0.10247037],\"top_logprobs\":[{\" ever\":-0.0664508},{\" after\":-0.014520033},{\".\\n\\n\":-1.3820221},{\"The\":-0.7890417},{\" end\":-0.5323165},{\".\":-0.10247037}]}";
         var parts = await StreamCompletion(
-            "data: {\"id\":\"cmpl-96c64EdfhOw8pjFFgVpLuT8k2MtdT\",\"object\":\"text_completion\",\"created\":1711363440,\"choices\":[{\"text\":\"Hello\",\"index\":0,\"logprobs\":" + logprobs + ",\"finish_reason\":null}],\"model\":\"gpt-3.5-turbo-instruct\"}\n\n"
-            + "data: {\"id\":\"cmpl-96c64EdfhOw8pjFFgVpLuT8k2MtdT\",\"object\":\"text_completion\",\"created\":1711363440,\"choices\":[{\"text\":\", \",\"index\":0,\"logprobs\":" + logprobs + ",\"finish_reason\":null}],\"model\":\"gpt-3.5-turbo-instruct\"}\n\n"
-            + "data: {\"id\":\"cmpl-96c64EdfhOw8pjFFgVpLuT8k2MtdT\",\"object\":\"text_completion\",\"created\":1711363440,\"choices\":[{\"text\":\"World!\",\"index\":0,\"logprobs\":" + logprobs + ",\"finish_reason\":null}],\"model\":\"gpt-3.5-turbo-instruct\"}\n\n"
-            + "data: {\"id\":\"cmpl-96c3yLQE1TtZCd6n6OILVmzev8M8H\",\"object\":\"text_completion\",\"created\":1711363310,\"choices\":[{\"text\":\"\",\"index\":0,\"logprobs\":" + logprobs + ",\"finish_reason\":\"stop\"}],\"model\":\"gpt-3.5-turbo-instruct\"}\n\n"
-            + "data: {\"id\":\"cmpl-96c3yLQE1TtZCd6n6OILVmzev8M8H\",\"object\":\"text_completion\",\"created\":1711363310,\"model\":\"gpt-3.5-turbo-instruct\",\"usage\":{\"prompt_tokens\":10,\"total_tokens\":372,\"completion_tokens\":362},\"choices\":[]}\n\n"
-            + "data: [DONE]\n\n");
-        Assert.Equal(new[] { "stream-start", "response-metadata", "text-start", "text-delta", "text-delta", "text-delta", "text-end", "finish" }, parts.Select(part => part.Type));
+            "data: {\"id\":\"cmpl-96c64EdfhOw8pjFFgVpLuT8k2MtdT\",\"object\":\"text_completion\",\"created\":1711363440,\"choices\":[{\"text\":\"Hello\",\"index\":0,\"logprobs\":"
+                + logprobs
+                + ",\"finish_reason\":null}],\"model\":\"gpt-3.5-turbo-instruct\"}\n\n"
+                + "data: {\"id\":\"cmpl-96c64EdfhOw8pjFFgVpLuT8k2MtdT\",\"object\":\"text_completion\",\"created\":1711363440,\"choices\":[{\"text\":\", \",\"index\":0,\"logprobs\":"
+                + logprobs
+                + ",\"finish_reason\":null}],\"model\":\"gpt-3.5-turbo-instruct\"}\n\n"
+                + "data: {\"id\":\"cmpl-96c64EdfhOw8pjFFgVpLuT8k2MtdT\",\"object\":\"text_completion\",\"created\":1711363440,\"choices\":[{\"text\":\"World!\",\"index\":0,\"logprobs\":"
+                + logprobs
+                + ",\"finish_reason\":null}],\"model\":\"gpt-3.5-turbo-instruct\"}\n\n"
+                + "data: {\"id\":\"cmpl-96c3yLQE1TtZCd6n6OILVmzev8M8H\",\"object\":\"text_completion\",\"created\":1711363310,\"choices\":[{\"text\":\"\",\"index\":0,\"logprobs\":"
+                + logprobs
+                + ",\"finish_reason\":\"stop\"}],\"model\":\"gpt-3.5-turbo-instruct\"}\n\n"
+                + "data: {\"id\":\"cmpl-96c3yLQE1TtZCd6n6OILVmzev8M8H\",\"object\":\"text_completion\",\"created\":1711363310,\"model\":\"gpt-3.5-turbo-instruct\",\"usage\":{\"prompt_tokens\":10,\"total_tokens\":372,\"completion_tokens\":362},\"choices\":[]}\n\n"
+                + "data: [DONE]\n\n"
+        );
+        Assert.Equal(
+            new[]
+            {
+                "stream-start",
+                "response-metadata",
+                "text-start",
+                "text-delta",
+                "text-delta",
+                "text-delta",
+                "text-end",
+                "finish",
+            },
+            parts.Select(part => part.Type)
+        );
         Assert.Empty(Assert.IsType<StreamStartStreamPart>(parts[0]).Warnings);
         var metadata = Assert.IsType<ResponseMetadataStreamPart>(parts[1]);
         Assert.Equal("cmpl-96c64EdfhOw8pjFFgVpLuT8k2MtdT", metadata.Id);
         Assert.Equal("gpt-3.5-turbo-instruct", metadata.ModelId);
-        Assert.Equal(DateTimeOffset.Parse("2024-03-25T10:44:00Z", System.Globalization.CultureInfo.InvariantCulture), metadata.Timestamp);
-        Assert.Equal(new[] { "Hello", ", ", "World!" }, parts.OfType<TextDeltaStreamPart>().Select(part => part.Delta));
+        Assert.Equal(
+            DateTimeOffset.Parse(
+                "2024-03-25T10:44:00Z",
+                System.Globalization.CultureInfo.InvariantCulture
+            ),
+            metadata.Timestamp
+        );
+        Assert.Equal(
+            new[] { "Hello", ", ", "World!" },
+            parts.OfType<TextDeltaStreamPart>().Select(part => part.Delta)
+        );
         Assert.All(parts.OfType<TextDeltaStreamPart>(), part => Assert.Equal("0", part.Id));
         var finish = Assert.IsType<FinishStreamPart>(parts[7]);
         Assert.Equal(FinishReason.Stop, finish.FinishReason);
         Assert.Equal("stop", finish.RawFinishReason);
-        OpenAIUpstream.Equal(JsonNode.Parse(finish.ProviderMetadata!.Value.GetRawText()), "{\"openai\":{\"logprobs\":" + logprobs + "}}");
+        OpenAIUpstream.Equal(
+            JsonNode.Parse(finish.ProviderMetadata!.Value.GetRawText()),
+            "{\"openai\":{\"logprobs\":" + logprobs + "}}"
+        );
         Assert.Equal(10, finish.Usage.InputTokens);
         Assert.Equal(10, finish.Usage.NoCacheInputTokens);
         Assert.Equal(362, finish.Usage.OutputTokens);
@@ -1307,55 +2287,111 @@ public sealed class OpenAIMediaUpstreamTests
         Assert.Null(finish.Usage.CacheReadTokens);
         Assert.Null(finish.Usage.CacheWriteTokens);
         Assert.Null(finish.Usage.ReasoningTokens);
-        OpenAIUpstream.Equal(JsonNode.Parse(finish.Usage.Raw!.Value.GetRawText()), "{\"prompt_tokens\":10,\"total_tokens\":372,\"completion_tokens\":362}");
+        OpenAIUpstream.Equal(
+            JsonNode.Parse(finish.Usage.Raw!.Value.GetRawText()),
+            "{\"prompt_tokens\":10,\"total_tokens\":372,\"completion_tokens\":362}"
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should throw an api error when the first stream chunk is an error", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should throw an api error when the first stream chunk is an error",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ThrowsEarlyCompletionStreamError()
     {
-        const string message = "The server had an error processing your request. Sorry about that! You can retry your request, or contact us through our help center at help.openai.com if you keep seeing this error.";
-        var exception = await Assert.ThrowsAsync<InternalServerException>(() => StreamCompletion("data: {\"error\":{\"message\":\"" + message + "\",\"type\":\"server_error\",\"param\":null,\"code\":null}}\n\ndata: [DONE]\n\n"));
+        const string message =
+            "The server had an error processing your request. Sorry about that! You can retry your request, or contact us through our help center at help.openai.com if you keep seeing this error.";
+        var exception = await Assert.ThrowsAsync<InternalServerException>(() =>
+            StreamCompletion(
+                "data: {\"error\":{\"message\":\""
+                    + message
+                    + "\",\"type\":\"server_error\",\"param\":null,\"code\":null}}\n\ndata: [DONE]\n\n"
+            )
+        );
         Assert.Equal(message, exception.Message);
         Assert.Equal(500, exception.StatusCode);
         Assert.True(ProviderHttp.IsRetryable(exception.StatusCode));
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should forward error stream parts after output has started", Coverage = UpstreamCoverage.Partial, Note = "The error part carries the message string. Upstream wraps a structured error object.")]
+    [UpstreamTest(
+        "packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should forward error stream parts after output has started",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The error part carries the message string. Upstream wraps a structured error object."
+    )]
     public async Task ForwardsCompletionErrorAfterOutput()
     {
         var parts = await StreamCompletion(
             "data: {\"id\":\"cmpl-error-after-output\",\"object\":\"text_completion\",\"created\":1711363440,\"choices\":[{\"text\":\"Hello\",\"index\":0,\"logprobs\":null,\"finish_reason\":null}],\"model\":\"gpt-3.5-turbo-instruct\"}\n\n"
-            + "data: {\"error\":{\"message\":\"stream failed after output\",\"type\":\"server_error\",\"param\":null,\"code\":null}}\n\n"
-            + "data: [DONE]\n\n");
-        Assert.Equal(new[] { "stream-start", "response-metadata", "text-start", "text-delta", "error", "text-end", "finish" }, parts.Select(part => part.Type));
-        Assert.Equal("cmpl-error-after-output", Assert.IsType<ResponseMetadataStreamPart>(parts[1]).Id);
+                + "data: {\"error\":{\"message\":\"stream failed after output\",\"type\":\"server_error\",\"param\":null,\"code\":null}}\n\n"
+                + "data: [DONE]\n\n"
+        );
+        Assert.Equal(
+            new[]
+            {
+                "stream-start",
+                "response-metadata",
+                "text-start",
+                "text-delta",
+                "error",
+                "text-end",
+                "finish",
+            },
+            parts.Select(part => part.Type)
+        );
+        Assert.Equal(
+            "cmpl-error-after-output",
+            Assert.IsType<ResponseMetadataStreamPart>(parts[1]).Id
+        );
         Assert.Equal("Hello", Assert.IsType<TextDeltaStreamPart>(parts[3]).Delta);
-        Assert.Equal("stream failed after output", Assert.IsType<ErrorStreamPart>(parts[4]).Message);
+        Assert.Equal(
+            "stream failed after output",
+            Assert.IsType<ErrorStreamPart>(parts[4]).Message
+        );
         AssertCompletionErrorFinish(parts[6]);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should handle unparsable stream parts", Coverage = UpstreamCoverage.Partial, Note = "The error message is JSON parsing failed: Text: {data}. Upstream also appends a SyntaxError.")]
+    [UpstreamTest(
+        "packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should handle unparsable stream parts",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The error message is JSON parsing failed: Text: {data}. Upstream also appends a SyntaxError."
+    )]
     public async Task HandlesUnparsableCompletionStreamParts()
     {
         var parts = await StreamCompletion("data: {unparsable}\n\ndata: [DONE]\n\n");
         Assert.Equal(new[] { "stream-start", "error", "finish" }, parts.Select(part => part.Type));
-        Assert.Equal("JSON parsing failed: Text: {unparsable}.", Assert.IsType<ErrorStreamPart>(parts[1]).Message);
+        Assert.Equal(
+            "JSON parsing failed: Text: {unparsable}.",
+            Assert.IsType<ErrorStreamPart>(parts[1]).Message
+        );
         AssertCompletionErrorFinish(parts[2]);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should send request body", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should send request body",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void SendsCompletionStreamRequestBody()
     {
-        var prepared = OpenAICompletionLanguageModel.Prepare("gpt-3.5-turbo-instruct", OpenAIUpstream.Hello(), true);
-        OpenAIUpstream.Equal(prepared.Body, "{\"model\":\"gpt-3.5-turbo-instruct\",\"prompt\":\"user:\\nHello\\n\\nassistant:\\n\",\"stop\":[\"\\nuser:\"],\"stream\":true,\"stream_options\":{\"include_usage\":true}}");
+        var prepared = OpenAICompletionLanguageModel.Prepare(
+            "gpt-3.5-turbo-instruct",
+            OpenAIUpstream.Hello(),
+            true
+        );
+        OpenAIUpstream.Equal(
+            prepared.Body,
+            "{\"model\":\"gpt-3.5-turbo-instruct\",\"prompt\":\"user:\\nHello\\n\\nassistant:\\n\",\"stop\":[\"\\nuser:\"],\"stream\":true,\"stream_options\":{\"include_usage\":true}}"
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should expose the raw response headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should expose the raw response headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ExposesCompletionStreamResponseHeaders()
     {
         var handler = new SseStreamHandler(
@@ -1365,47 +2401,91 @@ public sealed class OpenAIMediaUpstreamTests
                 "data: {\"id\":\"cmpl-96c3yLQE1TtZCd6n6OILVmzev8M8H\",\"object\":\"text_completion\",\"created\":1711363310,\"model\":\"gpt-3.5-turbo-instruct\",\"usage\":{\"prompt_tokens\":10,\"total_tokens\":372,\"completion_tokens\":362},\"choices\":[]}\n\n",
                 "data: [DONE]\n\n",
             },
-            new Dictionary<string, string> { ["test-header"] = "test-value" });
-        var provider = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key" }, handler);
+            new Dictionary<string, string> { ["test-header"] = "test-value" }
+        );
+        var provider = OpenAIProvider.Create(
+            new OpenAIOptions { ApiKey = "test-api-key" },
+            handler
+        );
 
-        var result = await provider.CompletionModel("gpt-3.5-turbo-instruct").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None);
+        var result = await provider
+            .CompletionModel("gpt-3.5-turbo-instruct")
+            .DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None);
 
         SseStreamHandler.AssertDefaultHeaders(result.Response!.Headers);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should pass the model and the prompt", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should pass the model and the prompt",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesCompletionStreamPrompt()
     {
         var capture = new OpenAICapture { ServerSentEvents = CompletionStreamOk };
-        await OpenAIUpstream.Read((await OpenAIUpstream.Provider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None)));
-        OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"model\":\"gpt-3.5-turbo-instruct\",\"prompt\":\"user:\\nHello\\n\\nassistant:\\n\",\"stop\":[\"\\nuser:\"],\"stream\":true,\"stream_options\":{\"include_usage\":true}}");
+        await OpenAIUpstream.Read(
+            (
+                await OpenAIUpstream
+                    .Provider(capture)
+                    .CompletionModel("gpt-3.5-turbo-instruct")
+                    .DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None)
+            )
+        );
+        OpenAIUpstream.Equal(
+            JsonNode.Parse(capture.Body),
+            "{\"model\":\"gpt-3.5-turbo-instruct\",\"prompt\":\"user:\\nHello\\n\\nassistant:\\n\",\"stop\":[\"\\nuser:\"],\"stream\":true,\"stream_options\":{\"include_usage\":true}}"
+        );
         Assert.EndsWith("/completions", capture.Uri, StringComparison.Ordinal);
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should pass headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should pass headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PassesCompletionStreamHeaders()
     {
         var capture = new OpenAICapture { ServerSentEvents = CompletionStreamOk };
-        await OpenAIUpstream.Read((await StandardProvider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoStreamAsync(CompletionCall(), CancellationToken.None)));
+        await OpenAIUpstream.Read(
+            (
+                await StandardProvider(capture)
+                    .CompletionModel("gpt-3.5-turbo-instruct")
+                    .DoStreamAsync(CompletionCall(), CancellationToken.None)
+            )
+        );
         AssertCompletionHeaders(capture);
-        Assert.Contains(OpenAIProvider.UserAgentSuffix, OpenAIUpstream.Header(capture, "user-agent"), StringComparison.Ordinal);
+        Assert.Contains(
+            OpenAIProvider.UserAgentSuffix,
+            OpenAIUpstream.Header(capture, "user-agent"),
+            StringComparison.Ordinal
+        );
     }
 
     private static OpenAICapture EmbeddingFixture()
     {
-        return new OpenAICapture { ResponseBytes = Encoding.UTF8.GetBytes(EmbeddingFixtureJson), ResponseMediaType = "application/json" };
+        return new OpenAICapture
+        {
+            ResponseBytes = Encoding.UTF8.GetBytes(EmbeddingFixtureJson),
+            ResponseMediaType = "application/json",
+        };
     }
 
     private static OpenAICapture SkillFixture()
     {
-        return new OpenAICapture { ResponseBytes = Encoding.UTF8.GetBytes(SkillCreateJson), ResponseMediaType = "application/json" };
+        return new OpenAICapture
+        {
+            ResponseBytes = Encoding.UTF8.GetBytes(SkillCreateJson),
+            ResponseMediaType = "application/json",
+        };
     }
 
     private static OpenAISkillFile SkillSourceFile()
     {
-        return new OpenAISkillFile("index.ts", Encoding.UTF8.GetBytes("console.log(\"hello\")"), "application/octet-stream");
+        return new OpenAISkillFile(
+            "index.ts",
+            Encoding.UTF8.GetBytes("console.log(\"hello\")"),
+            "application/octet-stream"
+        );
     }
 
     private static OpenAIProvider StandardProvider(OpenAICapture capture)
@@ -1424,15 +2504,18 @@ public sealed class OpenAIMediaUpstreamTests
     private static LanguageModelCallOptions CompletionCall()
     {
         var call = OpenAIUpstream.Hello();
-        call.Headers = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" };
+        call.Headers = new Dictionary<string, string?>
+        {
+            ["Custom-Request-Header"] = "request-header-value",
+        };
         return call;
     }
 
     private static void AssertCompletionHeaders(OpenAICapture capture)
     {
         // Upstream reads the user agent separately, and HttpClient adds Content-Length at the transport.
-        var headers = capture.Headers
-            .Where(pair => pair.Key is not ("User-Agent" or "Content-Length"))
+        var headers = capture
+            .Headers.Where(pair => pair.Key is not ("User-Agent" or "Content-Length"))
             .ToDictionary(pair => pair.Key.ToLowerInvariant(), pair => pair.Value);
         headers["content-type"] = headers["content-type"].Split(';')[0];
         Assert.Equal(
@@ -1445,7 +2528,8 @@ public sealed class OpenAIMediaUpstreamTests
                 ["openai-organization"] = "test-organization",
                 ["openai-project"] = "test-project",
             },
-            headers);
+            headers
+        );
     }
 
     private static void AssertCompletionErrorFinish(LanguageModelStreamPart part)
@@ -1453,7 +2537,10 @@ public sealed class OpenAIMediaUpstreamTests
         var finish = Assert.IsType<FinishStreamPart>(part);
         Assert.Equal(FinishReason.Error, finish.FinishReason);
         Assert.Null(finish.RawFinishReason);
-        OpenAIUpstream.Equal(JsonNode.Parse(finish.ProviderMetadata!.Value.GetRawText()), "{\"openai\":{}}");
+        OpenAIUpstream.Equal(
+            JsonNode.Parse(finish.ProviderMetadata!.Value.GetRawText()),
+            "{\"openai\":{}}"
+        );
         Assert.Null(finish.Usage.InputTokens);
         Assert.Null(finish.Usage.OutputTokens);
         Assert.Null(finish.Usage.Raw);
@@ -1462,29 +2549,55 @@ public sealed class OpenAIMediaUpstreamTests
     private static async Task<List<LanguageModelStreamPart>> StreamCompletion(string events)
     {
         var capture = new OpenAICapture { ServerSentEvents = events };
-        return await OpenAIUpstream.Read((await OpenAIUpstream.Provider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None))).ConfigureAwait(false);
+        return await OpenAIUpstream
+            .Read(
+                (
+                    await OpenAIUpstream
+                        .Provider(capture)
+                        .CompletionModel("gpt-3.5-turbo-instruct")
+                        .DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None)
+                )
+            )
+            .ConfigureAwait(false);
     }
 
-    private static async Task<OpenAIEmbeddingCallResult> Embed(string json, string modelId, IReadOnlyList<string> values)
+    private static async Task<OpenAIEmbeddingCallResult> Embed(
+        string json,
+        string modelId,
+        IReadOnlyList<string> values
+    )
     {
         var capture = new OpenAICapture { ResponseJson = json };
-        return await new OpenAIEmbeddingModel(OpenAIUpstream.Provider(capture), modelId).EmbedAsync(values, null, null, null, CancellationToken.None).ConfigureAwait(false);
+        return await new OpenAIEmbeddingModel(OpenAIUpstream.Provider(capture), modelId)
+            .EmbedAsync(values, null, null, null, CancellationToken.None)
+            .ConfigureAwait(false);
     }
 
     private static async Task<OpenAICapture> Image(string modelId, OpenAIImageCall call)
     {
         var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"}]}" };
-        await new OpenAIImageModel(OpenAIUpstream.Provider(capture), modelId).GenerateAsync(call, CancellationToken.None).ConfigureAwait(false);
+        await new OpenAIImageModel(OpenAIUpstream.Provider(capture), modelId)
+            .GenerateAsync(call, CancellationToken.None)
+            .ConfigureAwait(false);
         return capture;
     }
 
-    private static async Task<OpenAIImageGeneration> ImageResult(string modelId, string json, OpenAIImageCall call)
+    private static async Task<OpenAIImageGeneration> ImageResult(
+        string modelId,
+        string json,
+        OpenAIImageCall call
+    )
     {
         var capture = new OpenAICapture { ResponseJson = json };
-        return await new OpenAIImageModel(OpenAIUpstream.Provider(capture), modelId).GenerateAsync(call, CancellationToken.None).ConfigureAwait(false);
+        return await new OpenAIImageModel(OpenAIUpstream.Provider(capture), modelId)
+            .GenerateAsync(call, CancellationToken.None)
+            .ConfigureAwait(false);
     }
 
-    private static async Task<Dictionary<string, string>> EditFields(string modelId, OpenAIImageCall call)
+    private static async Task<Dictionary<string, string>> EditFields(
+        string modelId,
+        OpenAIImageCall call
+    )
     {
         var capture = await Image(modelId, call).ConfigureAwait(false);
         return Fields(capture);
@@ -1492,7 +2605,9 @@ public sealed class OpenAIMediaUpstreamTests
 
     private static Dictionary<string, string> Fields(OpenAICapture capture)
     {
-        return capture.Parts.Where(part => part.FileName == null).ToDictionary(part => part.Name, part => Encoding.UTF8.GetString(part.Data));
+        return capture
+            .Parts.Where(part => part.FileName == null)
+            .ToDictionary(part => part.Name, part => Encoding.UTF8.GetString(part.Data));
     }
 
     private static OpenAIImageFile Png()
@@ -1502,7 +2617,10 @@ public sealed class OpenAIMediaUpstreamTests
 
     private static async Task AssertNoResponseFormat(string modelId)
     {
-        var capture = await Image(modelId, new OpenAIImageCall("A cute baby sea otter") { Count = 1, Size = "1024x1024" });
+        var capture = await Image(
+            modelId,
+            new OpenAIImageCall("A cute baby sea otter") { Count = 1, Size = "1024x1024" }
+        );
         Assert.Null(JsonNode.Parse(capture.Body)!["response_format"]);
     }
 
@@ -1511,7 +2629,10 @@ public sealed class OpenAIMediaUpstreamTests
         return new AudioInput(new byte[] { 1, 2, 3 }, "audio/wav", "audio.wav");
     }
 
-    private static async Task<OpenAITranscriptionResult> Transcribe(OpenAICapture capture, string? openai)
+    private static async Task<OpenAITranscriptionResult> Transcribe(
+        OpenAICapture capture,
+        string? openai
+    )
     {
         var call = new OpenAITranscriptionCall(TranscriptionAudio());
         if (openai != null)
@@ -1519,10 +2640,19 @@ public sealed class OpenAIMediaUpstreamTests
             call.ProviderOptions = OpenAIUpstream.Json("{\"openai\":" + openai + "}");
         }
 
-        return await new OpenAITranscriptionModel(OpenAIUpstream.Provider(capture), "whisper-1", () => DateTimeOffset.UnixEpoch).TranscribeAsync(call, CancellationToken.None).ConfigureAwait(false);
+        return await new OpenAITranscriptionModel(
+            OpenAIUpstream.Provider(capture),
+            "whisper-1",
+            () => DateTimeOffset.UnixEpoch
+        )
+            .TranscribeAsync(call, CancellationToken.None)
+            .ConfigureAwait(false);
     }
 
-    private static void AssertSegments(IReadOnlyList<TranscriptSegment> actual, params (string Text, double Start, double End)[] expected)
+    private static void AssertSegments(
+        IReadOnlyList<TranscriptSegment> actual,
+        params (string Text, double Start, double End)[] expected
+    )
     {
         Assert.Equal(expected.Length, actual.Count);
         for (var i = 0; i < expected.Length; i++)
@@ -1533,10 +2663,18 @@ public sealed class OpenAIMediaUpstreamTests
         }
     }
 
-    private static async Task<Dictionary<string, List<string>>> TranscriptionFields(string modelId, string? openai)
+    private static async Task<Dictionary<string, List<string>>> TranscriptionFields(
+        string modelId,
+        string? openai
+    )
     {
-        var model = new OpenAITranscriptionModel(OpenAIUpstream.Provider(new OpenAICapture()), modelId);
-        var call = new OpenAITranscriptionCall(new AudioInput(new byte[] { 1, 2, 3 }, "audio/wav", "audio.wav"));
+        var model = new OpenAITranscriptionModel(
+            OpenAIUpstream.Provider(new OpenAICapture()),
+            modelId
+        );
+        var call = new OpenAITranscriptionCall(
+            new AudioInput(new byte[] { 1, 2, 3 }, "audio/wav", "audio.wav")
+        );
         if (openai != null)
         {
             call.ProviderOptions = OpenAIUpstream.Json("{\"openai\":" + openai + "}");
@@ -1550,13 +2688,24 @@ public sealed class OpenAIMediaUpstreamTests
 
     private static string PartText(OpenAICapture capture, string name)
     {
-        return Encoding.UTF8.GetString(Assert.Single(capture.Parts, part => part.Name == name).Data);
+        return Encoding.UTF8.GetString(
+            Assert.Single(capture.Parts, part => part.Name == name).Data
+        );
     }
 
     private static async Task<OpenAICapture> UploadBytes(string? purpose, int? seconds)
     {
         var capture = new OpenAICapture { ResponseJson = UploadResponse };
-        await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).UploadAsync("data.bin", new byte[] { 1, 2, 3 }, "application/octet-stream", purpose, seconds, CancellationToken.None).ConfigureAwait(false);
+        await new OpenAIFileStore(OpenAIUpstream.Provider(capture))
+            .UploadAsync(
+                "data.bin",
+                new byte[] { 1, 2, 3 },
+                "application/octet-stream",
+                purpose,
+                seconds,
+                CancellationToken.None
+            )
+            .ConfigureAwait(false);
         return capture;
     }
 
@@ -1564,14 +2713,29 @@ public sealed class OpenAIMediaUpstreamTests
     {
         var capture = new OpenAICapture { ResponseJson = UploadResponse };
         using var data = new MemoryStream(Encoding.UTF8.GetBytes("x"));
-        await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).UploadAsync(data, fileName, "application/jsonl", "batch", null, CancellationToken.None).ConfigureAwait(false);
+        await new OpenAIFileStore(OpenAIUpstream.Provider(capture))
+            .UploadAsync(data, fileName, "application/jsonl", "batch", null, CancellationToken.None)
+            .ConfigureAwait(false);
         return capture;
     }
 
     private static async Task<OpenAICapture> Upload(string? purpose, int? seconds)
     {
-        var capture = new OpenAICapture { ResponseBytes = System.Text.Encoding.UTF8.GetBytes("{\"id\":\"file-abc\"}"), ResponseMediaType = "application/json" };
-        await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).UploadAsync("notes.txt", new byte[] { 1, 2, 3, 4 }, "text/plain", purpose, seconds, CancellationToken.None).ConfigureAwait(false);
+        var capture = new OpenAICapture
+        {
+            ResponseBytes = System.Text.Encoding.UTF8.GetBytes("{\"id\":\"file-abc\"}"),
+            ResponseMediaType = "application/json",
+        };
+        await new OpenAIFileStore(OpenAIUpstream.Provider(capture))
+            .UploadAsync(
+                "notes.txt",
+                new byte[] { 1, 2, 3, 4 },
+                "text/plain",
+                purpose,
+                seconds,
+                CancellationToken.None
+            )
+            .ConfigureAwait(false);
         return capture;
     }
 }

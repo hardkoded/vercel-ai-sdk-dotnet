@@ -14,10 +14,18 @@ public sealed class RedirectsTests
     private const string Prefix = FilePath + "::createWebFetchTool > redirects::";
 
     [Fact]
-    [UpstreamTest(Prefix + "follows redirects and reports the final URL", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "follows redirects and reports the final URL",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task FollowsRedirectsAndReportsTheFinalUrl()
     {
-        var fetch = new RecordingFetch((url, _) => url == "https://example.com/old" ? Redirect(301, "/new") : DownloadResponse.Text("moved content"));
+        var fetch = new RecordingFetch(
+            (url, _) =>
+                url == "https://example.com/old"
+                    ? Redirect(301, "/new")
+                    : DownloadResponse.Text("moved content")
+        );
         var webFetch = WebFetchTools.Create(new WebFetchToolOptions { Fetch = fetch.Fetch });
 
         var output = await ExecuteAsync(webFetch, "https://example.com/old");
@@ -30,21 +38,36 @@ public sealed class RedirectsTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "applies the domain filter to redirects", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "applies the domain filter to redirects",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task AppliesTheDomainFilterToRedirects()
     {
         var fetch = new RecordingFetch((_, _) => Redirect(302, "https://evil.org/"));
-        var webFetch = WebFetchTools.Create(new WebFetchToolOptions { Fetch = fetch.Fetch, AllowedDomains = new[] { "example.com" } });
+        var webFetch = WebFetchTools.Create(
+            new WebFetchToolOptions
+            {
+                Fetch = fetch.Fetch,
+                AllowedDomains = new[] { "example.com" },
+            }
+        );
 
         var output = await ExecuteAsync(webFetch, "https://example.com/");
 
         Assert.Equal("url_not_allowed", ErrorCode(output));
-        Assert.Equal("The URL redirected to a domain that is not allowed.", output.GetProperty("message").GetString());
+        Assert.Equal(
+            "The URL redirected to a domain that is not allowed.",
+            output.GetProperty("message").GetString()
+        );
         Assert.Single(fetch.Calls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "blocks redirects to private addresses", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "blocks redirects to private addresses",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task BlocksRedirectsToPrivateAddresses()
     {
         var fetch = new RecordingFetch((_, _) => Redirect(307, "http://169.254.169.254/"));

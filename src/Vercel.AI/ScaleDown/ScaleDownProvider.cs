@@ -40,18 +40,25 @@ public sealed class ScaleDownProvider
     /// <summary>Environment variable for the API key.</summary>
     public const string ApiKeyEnvironmentVariable = "SCALEDOWN_API_KEY";
 
-    private static readonly Lazy<ScaleDownProvider> DefaultProvider = new(() => new ScaleDownProvider());
+    private static readonly Lazy<ScaleDownProvider> DefaultProvider = new(() =>
+        new ScaleDownProvider()
+    );
 
     private readonly ScaleDownProviderSettings _options;
     private readonly HttpClient? _httpClient;
     private readonly string _baseUrl;
 
     /// <summary>Creates a provider. Maps to <c>createScaleDown</c>.</summary>
-    public ScaleDownProvider(ScaleDownProviderSettings? options = null, HttpClient? httpClient = null)
+    public ScaleDownProvider(
+        ScaleDownProviderSettings? options = null,
+        HttpClient? httpClient = null
+    )
     {
         _options = options ?? new ScaleDownProviderSettings();
         _httpClient = httpClient;
-        _baseUrl = string.IsNullOrEmpty(_options.BaseUrl) ? DefaultBaseUrl : _options.BaseUrl!.TrimEnd('/');
+        _baseUrl = string.IsNullOrEmpty(_options.BaseUrl)
+            ? DefaultBaseUrl
+            : _options.BaseUrl!.TrimEnd('/');
     }
 
     /// <summary>Provider that reads <c>SCALEDOWN_API_KEY</c> when a request is made. Maps to <c>scaledown</c> and <c>scaleDown</c>.</summary>
@@ -61,35 +68,47 @@ public sealed class ScaleDownProvider
     public string SpecificationVersion => "v4";
 
     /// <summary>Creates a provider. Pass a handler from tests. Maps to <c>createScaleDown</c>.</summary>
-    public static ScaleDownProvider Create(ScaleDownProviderSettings? options = null, HttpMessageHandler? handler = null)
+    public static ScaleDownProvider Create(
+        ScaleDownProviderSettings? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        return new ScaleDownProvider(options, handler is null ? null : new HttpClient(handler, disposeHandler: false));
+        return new ScaleDownProvider(
+            options,
+            handler is null ? null : new HttpClient(handler, disposeHandler: false)
+        );
     }
 
     /// <summary>Creates a model for ScaleDown's experimental Decisions API. The id may be one this library does not know yet.</summary>
     public DecisionScaleDownModel DecisionModel(string modelId)
     {
-        return new DecisionScaleDownModel(modelId, new ScaleDownDecisionModelConfig
-        {
-            Provider = DecisionProviderId,
-            BaseUrl = _baseUrl,
-            Headers = _options.ApiKeyProvider is null ? Headers : null,
-            HeadersAsync = _options.ApiKeyProvider is null ? null : HeadersAsync,
-            HttpClient = _httpClient,
-        });
+        return new DecisionScaleDownModel(
+            modelId,
+            new ScaleDownDecisionModelConfig
+            {
+                Provider = DecisionProviderId,
+                BaseUrl = _baseUrl,
+                Headers = _options.ApiKeyProvider is null ? Headers : null,
+                HeadersAsync = _options.ApiKeyProvider is null ? null : HeadersAsync,
+                HttpClient = _httpClient,
+            }
+        );
     }
 
     /// <summary>Creates a model for ScaleDown's experimental Extract API. The id may be one this library does not know yet. Maps to <c>extractionModel</c>.</summary>
     public ScaleDownExtractionModel ExtractionModel(string modelId)
     {
-        return new ScaleDownExtractionModel(modelId, new ScaleDownExtractionModelConfig
-        {
-            Provider = ExtractionProviderId,
-            BaseUrl = _baseUrl,
-            Headers = _options.ApiKeyProvider is null ? Headers : null,
-            HeadersAsync = _options.ApiKeyProvider is null ? null : HeadersAsync,
-            HttpClient = _httpClient,
-        });
+        return new ScaleDownExtractionModel(
+            modelId,
+            new ScaleDownExtractionModelConfig
+            {
+                Provider = ExtractionProviderId,
+                BaseUrl = _baseUrl,
+                Headers = _options.ApiKeyProvider is null ? Headers : null,
+                HeadersAsync = _options.ApiKeyProvider is null ? null : HeadersAsync,
+                HttpClient = _httpClient,
+            }
+        );
     }
 
     /// <summary>ScaleDown has no language models.</summary>
@@ -110,7 +129,9 @@ public sealed class ScaleDownProvider
         throw new NoSuchModelError(modelId, "imageModel");
     }
 
-    private async Task<IReadOnlyDictionary<string, string>> HeadersAsync(CancellationToken cancellationToken)
+    private async Task<IReadOnlyDictionary<string, string>> HeadersAsync(
+        CancellationToken cancellationToken
+    )
     {
         var apiKey = await _options.ApiKeyProvider!(cancellationToken).ConfigureAwait(false);
         return BuildHeaders(apiKey);
@@ -144,7 +165,10 @@ public sealed class ScaleDownProvider
 public static class ScaleDownServiceCollectionExtensions
 {
     /// <summary>Registers <see cref="ScaleDownProvider"/>.</summary>
-    public static IServiceCollection AddScaleDown(this IServiceCollection services, Action<ScaleDownProviderSettings>? configure = null)
+    public static IServiceCollection AddScaleDown(
+        this IServiceCollection services,
+        Action<ScaleDownProviderSettings>? configure = null
+    )
     {
         if (services is null)
         {
@@ -156,7 +180,10 @@ public static class ScaleDownServiceCollectionExtensions
         {
             var options = new ScaleDownProviderSettings();
             configure?.Invoke(options);
-            return new ScaleDownProvider(options, sp.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(ScaleDownProvider)));
+            return new ScaleDownProvider(
+                options,
+                sp.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(ScaleDownProvider))
+            );
         });
         return services;
     }

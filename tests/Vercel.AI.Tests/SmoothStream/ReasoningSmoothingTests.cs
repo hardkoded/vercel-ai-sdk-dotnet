@@ -28,9 +28,31 @@ public sealed class ReasoningSmoothingTests : SmoothStreamTestBase
         await Run([Start, R("First I need to analyze the problem. Then I will solve it."), End]);
         Expect(
             Start,
-            R("First "), Delay, R("I "), Delay, R("need "), Delay, R("to "), Delay, R("analyze "), Delay, R("the "), Delay,
-            R("problem. "), Delay, R("Then "), Delay, R("I "), Delay, R("will "), Delay, R("solve "), Delay, R("it."),
-            End);
+            R("First "),
+            Delay,
+            R("I "),
+            Delay,
+            R("need "),
+            Delay,
+            R("to "),
+            Delay,
+            R("analyze "),
+            Delay,
+            R("the "),
+            Delay,
+            R("problem. "),
+            Delay,
+            R("Then "),
+            Delay,
+            R("I "),
+            Delay,
+            R("will "),
+            Delay,
+            R("solve "),
+            Delay,
+            R("it."),
+            End
+        );
     }
 
     [Fact]
@@ -38,7 +60,20 @@ public sealed class ReasoningSmoothingTests : SmoothStreamTestBase
     {
         var call = new ToolCallPart(new GeneratedToolCall("1", "weather", "{\"city\":\"London\"}"));
         await Run([Start, R("I should check the"), R(" weather"), call, End]);
-        Expect(Start, R("I "), Delay, R("should "), Delay, R("check "), Delay, R("the "), Delay, R("weather"), call, End);
+        Expect(
+            Start,
+            R("I "),
+            Delay,
+            R("should "),
+            Delay,
+            R("check "),
+            Delay,
+            R("the "),
+            Delay,
+            R("weather"),
+            call,
+            End
+        );
     }
 
     [Fact]
@@ -46,7 +81,8 @@ public sealed class ReasoningSmoothingTests : SmoothStreamTestBase
     {
         await Run(
             [Start, R("Step 1: Analyze\nStep 2: Solve\n"), End],
-            new SmoothStreamOptions { DelayInMs = 10, Chunking = SmoothStreamChunking.Line });
+            new SmoothStreamOptions { DelayInMs = 10, Chunking = SmoothStreamChunking.Line }
+        );
         Expect(Start, R("Step 1: Analyze\n"), Delay, R("Step 2: Solve\n"), Delay, End);
     }
 }

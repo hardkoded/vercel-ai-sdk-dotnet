@@ -18,27 +18,41 @@ namespace Vercel.AI.Mcp;
 public interface IMcpTransport
 {
     /// <summary>Calls <paramref name="method"/> and returns the JSON-RPC result.</summary>
-    Task<JsonElement> CallAsync(string method, JsonElement parameters, CancellationToken cancellationToken);
+    Task<JsonElement> CallAsync(
+        string method,
+        JsonElement parameters,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>Lists MCP tools and adapts them to <see cref="Tool"/>.</summary>
 public static class McpClient
 {
     /// <summary>Calls <c>initialize</c>, then <c>tools/list</c>.</summary>
-    public static async Task<IReadOnlyList<Tool>> ConnectAsync(IMcpTransport transport, CancellationToken cancellationToken = default)
+    public static async Task<IReadOnlyList<Tool>> ConnectAsync(
+        IMcpTransport transport,
+        CancellationToken cancellationToken = default
+    )
     {
         if (transport is null)
         {
             throw new ArgumentNullException(nameof(transport));
         }
 
-        using var init = JsonDocument.Parse("{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"Vercel.AI.Mcp\",\"version\":\"0.1.0\"}}");
-        await transport.CallAsync("initialize", init.RootElement, cancellationToken).ConfigureAwait(false);
+        using var init = JsonDocument.Parse(
+            "{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"Vercel.AI.Mcp\",\"version\":\"0.1.0\"}}"
+        );
+        await transport
+            .CallAsync("initialize", init.RootElement, cancellationToken)
+            .ConfigureAwait(false);
         return await ListToolsAsync(transport, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Maps <c>tools/list</c> onto SDK tools. Execution calls <c>tools/call</c>.</summary>
-    public static async Task<IReadOnlyList<Tool>> ListToolsAsync(IMcpTransport transport, CancellationToken cancellationToken = default)
+    public static async Task<IReadOnlyList<Tool>> ListToolsAsync(
+        IMcpTransport transport,
+        CancellationToken cancellationToken = default
+    )
     {
         if (transport is null)
         {
@@ -46,20 +60,33 @@ public static class McpClient
         }
 
         using var empty = JsonDocument.Parse("{}");
-        var listed = await transport.CallAsync("tools/list", empty.RootElement, cancellationToken).ConfigureAwait(false);
+        var listed = await transport
+            .CallAsync("tools/list", empty.RootElement, cancellationToken)
+            .ConfigureAwait(false);
         var tools = new List<Tool>();
-        if (!listed.TryGetProperty("tools", out var array) || array.ValueKind != JsonValueKind.Array)
+        if (
+            !listed.TryGetProperty("tools", out var array)
+            || array.ValueKind != JsonValueKind.Array
+        )
         {
             return tools;
         }
 
         foreach (var item in array.EnumerateArray())
         {
-            var name = item.TryGetProperty("name", out var nameElement) ? nameElement.GetString() ?? "tool" : "tool";
-            var description = item.TryGetProperty("description", out var descriptionElement) ? descriptionElement.GetString() : null;
-            var schema = item.TryGetProperty("inputSchema", out var schemaElement) ? schemaElement.GetRawText() : "{}";
+            var name = item.TryGetProperty("name", out var nameElement)
+                ? nameElement.GetString() ?? "tool"
+                : "tool";
+            var description = item.TryGetProperty("description", out var descriptionElement)
+                ? descriptionElement.GetString()
+                : null;
+            var schema = item.TryGetProperty("inputSchema", out var schemaElement)
+                ? schemaElement.GetRawText()
+                : "{}";
             var toolName = name;
-            var tool = Tool.Function(toolName, description, schema, (arguments, token) => CallToolAsync(transport, toolName, arguments, token));
+            var tool = Tool.Function(toolName, description, schema, (arguments, token) =>
+                CallToolAsync(transport, toolName, arguments, token)
+            );
             tool.ToModelOutput = McpToModelOutput;
             tools.Add(tool);
         }
@@ -67,7 +94,12 @@ public static class McpClient
         return tools;
     }
 
-    private static async Task<string> CallToolAsync(IMcpTransport transport, string name, JsonElement arguments, CancellationToken cancellationToken)
+    private static async Task<string> CallToolAsync(
+        IMcpTransport transport,
+        string name,
+        JsonElement arguments,
+        CancellationToken cancellationToken
+    )
     {
         var parameters = new JsonObject
         {
@@ -75,9 +107,14 @@ public static class McpClient
             ["arguments"] = JsonNode.Parse(arguments.GetRawText()),
         };
         using var document = JsonDocument.Parse(parameters.ToJsonString());
-        var result = await transport.CallAsync("tools/call", document.RootElement, cancellationToken).ConfigureAwait(false);
+        var result = await transport
+            .CallAsync("tools/call", document.RootElement, cancellationToken)
+            .ConfigureAwait(false);
         var normalized = CallToolResults.Normalize(result);
-        if (normalized.TryGetProperty("isError", out var isError) && isError.ValueKind == JsonValueKind.True)
+        if (
+            normalized.TryGetProperty("isError", out var isError)
+            && isError.ValueKind == JsonValueKind.True
+        )
         {
             throw new AiSdkException(ReadText(normalized));
         }
@@ -121,9 +158,11 @@ public static class McpClient
             return new TextToolModelOutput(root.GetString()!);
         }
 
-        if (root.ValueKind != JsonValueKind.Object
+        if (
+            root.ValueKind != JsonValueKind.Object
             || !root.TryGetProperty("content", out var content)
-            || content.ValueKind != JsonValueKind.Array)
+            || content.ValueKind != JsonValueKind.Array
+        )
         {
             return new JsonToolModelOutput(root.Clone());
         }
@@ -132,23 +171,31 @@ public static class McpClient
         foreach (var part in content.EnumerateArray())
         {
             JsonElement type = default;
-            var hasType = part.ValueKind == JsonValueKind.Object
+            var hasType =
+                part.ValueKind == JsonValueKind.Object
                 && part.TryGetProperty("type", out type)
                 && type.ValueKind == JsonValueKind.String;
-            if (part.ValueKind == JsonValueKind.Object
-                && hasType && type.GetString() == "text"
-                && part.TryGetProperty("text", out var textValue) && textValue.ValueKind == JsonValueKind.String)
+            if (
+                part.ValueKind == JsonValueKind.Object
+                && hasType
+                && type.GetString() == "text"
+                && part.TryGetProperty("text", out var textValue)
+                && textValue.ValueKind == JsonValueKind.String
+            )
             {
                 parts.Add(new ToolModelContentPart("text", textValue.GetString()!));
             }
-            else if (part.ValueKind == JsonValueKind.Object
-                && hasType && type.GetString() == "image"
-                && part.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.String
-                && part.TryGetProperty("mimeType", out var mimeType) && mimeType.ValueKind == JsonValueKind.String)
+            else if (
+                part.ValueKind == JsonValueKind.Object
+                && hasType
+                && type.GetString() == "image"
+                && part.TryGetProperty("data", out var data)
+                && data.ValueKind == JsonValueKind.String
+                && part.TryGetProperty("mimeType", out var mimeType)
+                && mimeType.ValueKind == JsonValueKind.String
+            )
             {
-                parts.Add(new FileToolModelContentPart(
-                    mimeType.GetString()!,
-                    data.GetString()!));
+                parts.Add(new FileToolModelContentPart(mimeType.GetString()!, data.GetString()!));
             }
             else
             {
@@ -161,7 +208,10 @@ public static class McpClient
 
     private static string ReadText(JsonElement result)
     {
-        if (result.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
+        if (
+            result.TryGetProperty("content", out var content)
+            && content.ValueKind == JsonValueKind.Array
+        )
         {
             var builder = new StringBuilder();
             foreach (var part in content.EnumerateArray())
@@ -243,7 +293,8 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
     public int ProcessId => _process?.Id ?? 0;
 
     /// <summary>The child's stderr, when <see cref="StdioMcpOptions.RedirectStandardError"/> is true.</summary>
-    public StreamReader? StandardError => _process?.StartInfo.RedirectStandardError == true ? _process.StandardError : null;
+    public StreamReader? StandardError =>
+        _process?.StartInfo.RedirectStandardError == true ? _process.StandardError : null;
 
     /// <summary>Starts <paramref name="fileName"/> and speaks MCP on its stdin and stdout.</summary>
     public static StdioMcpTransport Start(string fileName, IReadOnlyList<string>? arguments = null)
@@ -262,10 +313,15 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
         }
         catch (Win32Exception exception)
         {
-            throw new AiSdkException("Failed to start MCP process: " + exception.Message, exception);
+            throw new AiSdkException(
+                "Failed to start MCP process: " + exception.Message,
+                exception
+            );
         }
 
-        return new StdioMcpTransport(process ?? throw new AiSdkException("Failed to start MCP process."));
+        return new StdioMcpTransport(
+            process ?? throw new AiSdkException("Failed to start MCP process.")
+        );
     }
 
     /// <summary>
@@ -308,8 +364,11 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
             }
             else
             {
-                start.FileName = string.IsNullOrEmpty(options.ShellPath) ? "/bin/sh" : options.ShellPath!;
-                start.Arguments = "-c \"" + commandLine.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+                start.FileName = string.IsNullOrEmpty(options.ShellPath)
+                    ? "/bin/sh"
+                    : options.ShellPath!;
+                start.Arguments =
+                    "-c \"" + commandLine.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
             }
         }
         else if (options.Arguments is { Count: > 0 } arguments)
@@ -333,7 +392,11 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
     }
 
     /// <inheritdoc />
-    public async Task<JsonElement> CallAsync(string method, JsonElement parameters, CancellationToken cancellationToken)
+    public async Task<JsonElement> CallAsync(
+        string method,
+        JsonElement parameters,
+        CancellationToken cancellationToken
+    )
     {
         var id = Interlocked.Increment(ref _id);
         var request = new JsonObject
@@ -348,7 +411,9 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
         {
             using (var document = JsonDocument.Parse(request.ToJsonString()))
             {
-                await McpNdjson.WriteAsync(_input, document.RootElement, cancellationToken).ConfigureAwait(false);
+                await McpNdjson
+                    .WriteAsync(_input, document.RootElement, cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             await _input.FlushAsync(cancellationToken).ConfigureAwait(false);
@@ -356,17 +421,20 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
             // Servers may send notifications and requests before the response, so skip other messages.
             while (true)
             {
-                var line = await ReadLineAsync(cancellationToken).ConfigureAwait(false) ?? throw new MCPClientError("MCP process closed the stream.");
+                var line = await ReadLineAsync(cancellationToken).ConfigureAwait(false)
+                    ?? throw new MCPClientError("MCP process closed the stream.");
                 if (line.Trim().Length == 0)
                 {
                     continue;
                 }
 
                 var message = JsonRpcMessages.Parse(line);
-                if (message.TryGetProperty("id", out var responseId)
+                if (
+                    message.TryGetProperty("id", out var responseId)
                     && responseId.ValueKind == JsonValueKind.Number
                     && responseId.GetInt32() == id
-                    && !message.TryGetProperty("method", out _))
+                    && !message.TryGetProperty("method", out _)
+                )
                 {
                     return Unwrap(message);
                 }
@@ -398,9 +466,17 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
     {
         if (root.TryGetProperty("error", out var error))
         {
-            var message = error.TryGetProperty("message", out var text) ? text.GetString() : error.ToString();
-            int? code = error.TryGetProperty("code", out var codeElement) && codeElement.TryGetInt32(out var value) ? value : null;
-            JsonElement? data = error.TryGetProperty("data", out var dataElement) ? dataElement.Clone() : null;
+            var message = error.TryGetProperty("message", out var text)
+                ? text.GetString()
+                : error.ToString();
+            int? code =
+                error.TryGetProperty("code", out var codeElement)
+                && codeElement.TryGetInt32(out var value)
+                    ? value
+                    : null;
+            JsonElement? data = error.TryGetProperty("data", out var dataElement)
+                ? dataElement.Clone()
+                : null;
             throw new MCPClientError(message ?? "MCP call failed.", code: code, data: data);
         }
 
@@ -422,7 +498,9 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
                 return line;
             }
 
-            var count = await _output.ReadAsync(chunk, 0, chunk.Length, cancellationToken).ConfigureAwait(false);
+            var count = await _output
+                .ReadAsync(chunk, 0, chunk.Length, cancellationToken)
+                .ConfigureAwait(false);
             if (count == 0)
             {
                 return null;
@@ -450,7 +528,11 @@ public sealed class HttpMcpTransport : IMcpTransport
     }
 
     /// <inheritdoc />
-    public async Task<JsonElement> CallAsync(string method, JsonElement parameters, CancellationToken cancellationToken)
+    public async Task<JsonElement> CallAsync(
+        string method,
+        JsonElement parameters,
+        CancellationToken cancellationToken
+    )
     {
         var id = Interlocked.Increment(ref _id);
         var request = new JsonObject
@@ -466,39 +548,55 @@ public sealed class HttpMcpTransport : IMcpTransport
         };
         message.Headers.Accept.ParseAdd("application/json");
         message.Headers.Accept.ParseAdd("text/event-stream");
-        using var response = await _httpClient.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-        var isEventStream = response.IsSuccessStatusCode
-            && response.Content.Headers.ContentType?.MediaType?.IndexOf("event-stream", StringComparison.OrdinalIgnoreCase) >= 0;
+        using var response = await _httpClient
+            .SendAsync(message, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+            .ConfigureAwait(false);
+        var isEventStream =
+            response.IsSuccessStatusCode
+            && response.Content.Headers.ContentType?.MediaType?.IndexOf(
+                "event-stream",
+                StringComparison.OrdinalIgnoreCase
+            ) >= 0;
         if (isEventStream)
         {
             // Servers may keep the stream open and send notifications first, so read events until the response for this id.
             using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            await foreach (var data in SseParser.ReadDataAsync(stream, cancellationToken).ConfigureAwait(false))
+            await foreach (
+                var data in SseParser.ReadDataAsync(stream, cancellationToken).ConfigureAwait(false)
+            )
             {
                 using var sseEvent = JsonDocument.Parse(data);
                 var root = sseEvent.RootElement;
-                if (root.ValueKind == JsonValueKind.Object
+                if (
+                    root.ValueKind == JsonValueKind.Object
                     && root.TryGetProperty("id", out var responseId)
                     && responseId.ValueKind == JsonValueKind.Number
                     && responseId.TryGetInt32(out var responseNumber)
                     && responseNumber == id
-                    && !root.TryGetProperty("method", out _))
+                    && !root.TryGetProperty("method", out _)
+                )
                 {
                     return StdioMcpTransport.Unwrap(root);
                 }
             }
 
-            throw new MCPClientError("MCP HTTP stream ended without a response.", url: _endpoint.ToString());
+            throw new MCPClientError(
+                "MCP HTTP stream ended without a response.",
+                url: _endpoint.ToString()
+            );
         }
 
-        var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
+        var body = await CancellableReads
+            .ReadAsStringAsync(response.Content, cancellationToken)
+            .ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             throw new MCPClientError(
                 "MCP HTTP call failed with status " + (int)response.StatusCode + ".",
                 statusCode: (int)response.StatusCode,
                 url: _endpoint.ToString(),
-                responseBody: body);
+                responseBody: body
+            );
         }
 
         using var document = JsonDocument.Parse(body);

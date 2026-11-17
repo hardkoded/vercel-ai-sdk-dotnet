@@ -164,7 +164,11 @@ public sealed class GladiaTranscriptionSegment
 public sealed class GladiaTranscriptionResponse
 {
     /// <summary>Creates response metadata.</summary>
-    public GladiaTranscriptionResponse(DateTimeOffset timestamp, string modelId, IReadOnlyDictionary<string, string> headers)
+    public GladiaTranscriptionResponse(
+        DateTimeOffset timestamp,
+        string modelId,
+        IReadOnlyDictionary<string, string> headers
+    )
     {
         Timestamp = timestamp;
         ModelId = modelId ?? string.Empty;
@@ -192,7 +196,8 @@ public sealed class GladiaTranscriptionResult
         double? durationInSeconds,
         JsonElement providerMetadata,
         IReadOnlyList<ModelWarning> warnings,
-        GladiaTranscriptionResponse response)
+        GladiaTranscriptionResponse response
+    )
     {
         Text = text ?? string.Empty;
         Segments = segments ?? Array.Empty<GladiaTranscriptionSegment>();
@@ -247,9 +252,14 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider.</summary>
-    public static new GladiaProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new GladiaProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new GladiaProvider(client, options);
     }
 
@@ -268,7 +278,10 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
     /// <inheritdoc />
     public override ITranscriptionModel TranscriptionModel(string modelId)
     {
-        return new GladiaTranscriptionModel(this, string.IsNullOrEmpty(modelId) ? "default" : modelId);
+        return new GladiaTranscriptionModel(
+            this,
+            string.IsNullOrEmpty(modelId) ? "default" : modelId
+        );
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
@@ -280,7 +293,10 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
         }
 
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
+        options.BaseUrl =
+            string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
+                ? DefaultBaseUrl
+                : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "GLADIA_API_KEY";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
@@ -305,7 +321,11 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
     {
         if (value is int milliseconds && milliseconds <= 0)
         {
-            throw new InvalidArgumentError(parameter, value, parameter + " must be a positive integer number of milliseconds");
+            throw new InvalidArgumentError(
+                parameter,
+                value,
+                parameter + " must be a positive integer number of milliseconds"
+            );
         }
     }
 
@@ -361,7 +381,11 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
         /// <param name="serialized">The serialized model id and config.</param>
         /// <param name="apiKey">API key. Defaults to the <c>GLADIA_API_KEY</c> environment variable.</param>
         /// <param name="handler">HTTP handler. Pass one from tests.</param>
-        public static GladiaTranscriptionModel Deserialize(SerializedModelOptions serialized, string? apiKey = null, HttpMessageHandler? handler = null)
+        public static GladiaTranscriptionModel Deserialize(
+            SerializedModelOptions serialized,
+            string? apiKey = null,
+            HttpMessageHandler? handler = null
+        )
         {
             if (serialized is null)
             {
@@ -385,18 +409,27 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
 
             options.PollIntervalMs = ReadInt(serialized.Config, "pollIntervalMs");
             options.PollTimeoutMs = ReadInt(serialized.Config, "pollTimeoutMs");
-            return (GladiaTranscriptionModel)GladiaProvider.Create(options, handler).TranscriptionModel(serialized.ModelId);
+            return (GladiaTranscriptionModel)
+                GladiaProvider.Create(options, handler).TranscriptionModel(serialized.ModelId);
         }
 
         /// <inheritdoc />
-        public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+        public async Task<TranscriptionResult> DoTranscribeAsync(
+            AudioInput audio,
+            CancellationToken cancellationToken
+        )
         {
-            var result = await TranscribeAsync(audio, null, cancellationToken).ConfigureAwait(false);
+            var result = await TranscribeAsync(audio, null, cancellationToken)
+                .ConfigureAwait(false);
             return new TranscriptionResult(result.Text);
         }
 
         /// <summary>Transcribes audio through upload, pre-recorded init, and result polling.</summary>
-        public async Task<GladiaTranscriptionResult> TranscribeAsync(AudioInput audio, GladiaTranscriptionRequest? request, CancellationToken cancellationToken)
+        public async Task<GladiaTranscriptionResult> TranscribeAsync(
+            AudioInput audio,
+            GladiaTranscriptionRequest? request,
+            CancellationToken cancellationToken
+        )
         {
             if (audio == null)
             {
@@ -418,14 +451,21 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
             }
 
             form.Add(media, "audio", "audio." + Extension(audio.MediaType));
-            var upload = await ProviderExchange.SendAsync(
-                _provider._httpClient,
-                HttpMethod.Post,
-                ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/upload"),
-                form,
-                headers,
-                cancellationToken).ConfigureAwait(false);
-            using (var uploaded = JsonDocument.Parse(string.IsNullOrWhiteSpace(upload.Body) ? "{}" : upload.Body))
+            var upload = await ProviderExchange
+                .SendAsync(
+                    _provider._httpClient,
+                    HttpMethod.Post,
+                    ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/upload"),
+                    form,
+                    headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+            using (
+                var uploaded = JsonDocument.Parse(
+                    string.IsNullOrWhiteSpace(upload.Body) ? "{}" : upload.Body
+                )
+            )
             {
                 var audioUrl = ReadString(uploaded.RootElement, "audio_url");
                 if (string.IsNullOrEmpty(audioUrl))
@@ -438,7 +478,8 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                         null,
                         uploaded.RootElement.Clone(),
                         warnings,
-                        new GladiaTranscriptionResponse(started, ModelId, upload.Headers));
+                        new GladiaTranscriptionResponse(started, ModelId, upload.Headers)
+                    );
                 }
 
                 var body = args;
@@ -452,14 +493,21 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
 
                 body["audio_url"] = audioUrl;
 
-                var initiated = await ProviderExchange.SendAsync(
-                    _provider._httpClient,
-                    HttpMethod.Post,
-                    ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/pre-recorded"),
-                    ProviderExchange.Json(body.ToJsonString()),
-                    headers,
-                    cancellationToken).ConfigureAwait(false);
-                using (var initDocument = JsonDocument.Parse(string.IsNullOrWhiteSpace(initiated.Body) ? "{}" : initiated.Body))
+                var initiated = await ProviderExchange
+                    .SendAsync(
+                        _provider._httpClient,
+                        HttpMethod.Post,
+                        ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/pre-recorded"),
+                        ProviderExchange.Json(body.ToJsonString()),
+                        headers,
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
+                using (
+                    var initDocument = JsonDocument.Parse(
+                        string.IsNullOrWhiteSpace(initiated.Body) ? "{}" : initiated.Body
+                    )
+                )
                 {
                     var resultUrl = ReadString(initDocument.RootElement, "result_url");
                     if (string.IsNullOrEmpty(resultUrl))
@@ -467,13 +515,16 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                         throw new AiSdkException("Gladia did not return a result URL.");
                     }
 
-                    var result = await PollAsync(resultUrl!, headers, request, cancellationToken).ConfigureAwait(false);
+                    var result = await PollAsync(resultUrl!, headers, request, cancellationToken)
+                        .ConfigureAwait(false);
                     return Parse(result.Body, result.Headers, started, warnings);
                 }
             }
         }
 
-        private (JsonObject Body, List<ModelWarning> Warnings) GetArgs(GladiaTranscriptionRequest? request)
+        private (JsonObject Body, List<ModelWarning> Warnings) GetArgs(
+            GladiaTranscriptionRequest? request
+        )
         {
             var warnings = new List<ModelWarning>();
             var body = new JsonObject();
@@ -485,17 +536,26 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                 body["model"] = ModelId;
             }
 
-            JsonElement? gladia = request?.ProviderOptions != null
+            JsonElement? gladia =
+                request?.ProviderOptions != null
                 && request.ProviderOptions.TryGetValue(ProviderId, out var provided)
                 && provided.ValueKind != JsonValueKind.Null
                     ? provided
                     : null;
             if (gladia is { } options)
             {
-                var error = ProviderOptionShape.Validate(options, GladiaTranscriptionModelOptions.GladiaTranscriptionModelOptionsShape(), false);
+                var error = ProviderOptionShape.Validate(
+                    options,
+                    GladiaTranscriptionModelOptions.GladiaTranscriptionModelOptionsShape(),
+                    false
+                );
                 if (error != null)
                 {
-                    throw new InvalidArgumentError("providerOptions", options.GetRawText(), "invalid gladia provider options: " + error);
+                    throw new InvalidArgumentError(
+                        "providerOptions",
+                        options.GetRawText(),
+                        "invalid gladia provider options: " + error
+                    );
                 }
 
                 AddOptions(body, options, warnings);
@@ -506,48 +566,96 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                 var languageConfig = body["language_config"] as JsonObject;
                 if ((languageConfig?["languages"] as JsonArray)?.Count != 1)
                 {
-                    warnings.Add(new OtherWarning(
-                        "The \"solaria-3\" model supports a single language only. Pass exactly one language in languageConfig.languages; Gladia may reject the request."));
+                    warnings.Add(
+                        new OtherWarning(
+                            "The \"solaria-3\" model supports a single language only. Pass exactly one language in languageConfig.languages; Gladia may reject the request."
+                        )
+                    );
                 }
 
                 if (languageConfig?["code_switching"]?.GetValue<bool>() == true)
                 {
-                    warnings.Add(new OtherWarning(
-                        "The \"solaria-3\" model does not support code switching; Gladia may reject the request."));
+                    warnings.Add(
+                        new OtherWarning(
+                            "The \"solaria-3\" model does not support code switching; Gladia may reject the request."
+                        )
+                    );
                 }
             }
 
             return (body, warnings);
         }
 
-        private static void AddOptions(JsonObject body, JsonElement options, List<ModelWarning> warnings)
+        private static void AddOptions(
+            JsonObject body,
+            JsonElement options,
+            List<ModelWarning> warnings
+        )
         {
-            foreach (var feature in new[] { "contextPrompt", "moderation", "chapterization", "nameConsistency", "structuredDataExtraction", "structuredDataExtractionConfig", "displayMode" })
+            foreach (
+                var feature in new[]
+                {
+                    "contextPrompt",
+                    "moderation",
+                    "chapterization",
+                    "nameConsistency",
+                    "structuredDataExtraction",
+                    "structuredDataExtractionConfig",
+                    "displayMode",
+                }
+            )
             {
                 if (Has(options, feature))
                 {
-                    warnings.Add(new UnsupportedWarning(feature, "No longer supported by the Gladia v2 pre-recorded API; ignored."));
+                    warnings.Add(
+                        new UnsupportedWarning(
+                            feature,
+                            "No longer supported by the Gladia v2 pre-recorded API; ignored."
+                        )
+                    );
                 }
             }
 
-            if (Has(options, "diarizationConfig") && Has(options.GetProperty("diarizationConfig"), "enhanced"))
+            if (
+                Has(options, "diarizationConfig")
+                && Has(options.GetProperty("diarizationConfig"), "enhanced")
+            )
             {
-                warnings.Add(new UnsupportedWarning("diarizationConfig.enhanced", "No longer supported by the Gladia v2 pre-recorded API; ignored."));
+                warnings.Add(
+                    new UnsupportedWarning(
+                        "diarizationConfig.enhanced",
+                        "No longer supported by the Gladia v2 pre-recorded API; ignored."
+                    )
+                );
             }
 
-            foreach (var setting in new[] { "language", "detectLanguage", "enableCodeSwitching", "codeSwitchingConfig" })
+            foreach (
+                var setting in new[]
+                {
+                    "language",
+                    "detectLanguage",
+                    "enableCodeSwitching",
+                    "codeSwitchingConfig",
+                }
+            )
             {
                 if (Has(options, setting))
                 {
-                    warnings.Add(new DeprecatedWarning(
-                        setting,
-                        Has(options, "languageConfig")
-                            ? "Ignored because languageConfig is provided; remove this deprecated option."
-                            : "Use languageConfig instead."));
+                    warnings.Add(
+                        new DeprecatedWarning(
+                            setting,
+                            Has(options, "languageConfig")
+                                ? "Ignored because languageConfig is provided; remove this deprecated option."
+                                : "Use languageConfig instead."
+                        )
+                    );
                 }
             }
 
-            var resolved = GladiaTranscriptionOptionsResolution.ResolveCustomVocabulary(options, warnings);
+            var resolved = GladiaTranscriptionOptionsResolution.ResolveCustomVocabulary(
+                options,
+                warnings
+            );
             if (resolved.CustomVocabulary is { } customVocabulary)
             {
                 body["custom_vocabulary"] = customVocabulary;
@@ -568,7 +676,9 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
             Copy(body, options, "punctuationEnhanced", "punctuation_enhanced");
 
             JsonNode? vocabulary = null;
-            JsonElement? vocabularyConfig = Has(options, "customVocabularyConfig") ? options.GetProperty("customVocabularyConfig") : null;
+            JsonElement? vocabularyConfig = Has(options, "customVocabularyConfig")
+                ? options.GetProperty("customVocabularyConfig")
+                : null;
             if (vocabularyConfig is { } configured && Has(configured, "vocabulary"))
             {
                 vocabulary = JsonNode.Parse(configured.GetProperty("vocabulary").GetRawText());
@@ -589,13 +699,19 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                 body["custom_vocabulary_config"] = config;
             }
 
-            var languageConfig = GladiaTranscriptionOptionsResolution.ResolveLanguageConfig(options);
+            var languageConfig = GladiaTranscriptionOptionsResolution.ResolveLanguageConfig(
+                options
+            );
             if (languageConfig != null)
             {
                 var language = new JsonObject();
                 if (languageConfig.Languages != null)
                 {
-                    language["languages"] = new JsonArray(languageConfig.Languages.Select(item => (JsonNode?)JsonValue.Create(item)).ToArray());
+                    language["languages"] = new JsonArray(
+                        languageConfig
+                            .Languages.Select(item => (JsonNode?)JsonValue.Create(item))
+                            .ToArray()
+                    );
                 }
 
                 if (languageConfig.CodeSwitching is { } codeSwitching)
@@ -606,7 +722,14 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                 body["language_config"] = language;
             }
 
-            Nested(body, options, "callbackConfig", "callback_config", ["url", "url"], ["method", "method"]);
+            Nested(
+                body,
+                options,
+                "callbackConfig",
+                "callback_config",
+                ["url", "url"],
+                ["method", "method"]
+            );
             Nested(
                 body,
                 options,
@@ -617,8 +740,17 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                 ["maximumDuration", "maximum_duration"],
                 ["maximumCharactersPerRow", "maximum_characters_per_row"],
                 ["maximumRowsPerCaption", "maximum_rows_per_caption"],
-                ["style", "style"]);
-            Nested(body, options, "diarizationConfig", "diarization_config", ["numberOfSpeakers", "number_of_speakers"], ["minSpeakers", "min_speakers"], ["maxSpeakers", "max_speakers"]);
+                ["style", "style"]
+            );
+            Nested(
+                body,
+                options,
+                "diarizationConfig",
+                "diarization_config",
+                ["numberOfSpeakers", "number_of_speakers"],
+                ["minSpeakers", "min_speakers"],
+                ["maxSpeakers", "max_speakers"]
+            );
             Nested(
                 body,
                 options,
@@ -630,19 +762,49 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                 ["lipsync", "lipsync"],
                 ["contextAdaptation", "context_adaptation"],
                 ["context", "context"],
-                ["informal", "informal"]);
+                ["informal", "informal"]
+            );
             Nested(body, options, "summarizationConfig", "summarization_config", ["type", "type"]);
-            Nested(body, options, "customSpellingConfig", "custom_spelling_config", ["spellingDictionary", "spelling_dictionary"]);
-            Nested(body, options, "audioToLlmConfig", "audio_to_llm_config", ["prompts", "prompts"], ["model", "model"]);
+            Nested(
+                body,
+                options,
+                "customSpellingConfig",
+                "custom_spelling_config",
+                ["spellingDictionary", "spelling_dictionary"]
+            );
+            Nested(
+                body,
+                options,
+                "audioToLlmConfig",
+                "audio_to_llm_config",
+                ["prompts", "prompts"],
+                ["model", "model"]
+            );
 
             if (Has(options, "piiRedactionConfig"))
             {
-                if (!(Has(options, "piiRedaction") && options.GetProperty("piiRedaction").GetBoolean()))
+                if (
+                    !(
+                        Has(options, "piiRedaction")
+                        && options.GetProperty("piiRedaction").GetBoolean()
+                    )
+                )
                 {
-                    warnings.Add(new OtherWarning("piiRedactionConfig has no effect unless piiRedaction is true."));
+                    warnings.Add(
+                        new OtherWarning(
+                            "piiRedactionConfig has no effect unless piiRedaction is true."
+                        )
+                    );
                 }
 
-                Nested(body, options, "piiRedactionConfig", "pii_redaction_config", ["entityTypes", "entity_types"], ["processedTextType", "processed_text_type"]);
+                Nested(
+                    body,
+                    options,
+                    "piiRedactionConfig",
+                    "pii_redaction_config",
+                    ["entityTypes", "entity_types"],
+                    ["processedTextType", "processed_text_type"]
+                );
             }
         }
 
@@ -661,7 +823,13 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
             }
         }
 
-        private static void Nested(JsonObject body, JsonElement options, string name, string key, params string[][] fields)
+        private static void Nested(
+            JsonObject body,
+            JsonElement options,
+            string name,
+            string key,
+            params string[][] fields
+        )
         {
             if (!Has(options, name))
             {
@@ -678,7 +846,12 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
             body[key] = nested;
         }
 
-        private GladiaTranscriptionResult Parse(string body, IReadOnlyDictionary<string, string> headers, DateTimeOffset started, IReadOnlyList<ModelWarning> warnings)
+        private GladiaTranscriptionResult Parse(
+            string body,
+            IReadOnlyDictionary<string, string> headers,
+            DateTimeOffset started,
+            IReadOnlyList<ModelWarning> warnings
+        )
         {
             using (var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body))
             {
@@ -687,33 +860,60 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                 string? language = null;
                 double? duration = null;
                 var segments = new List<GladiaTranscriptionSegment>();
-                if (root.TryGetProperty("result", out var result) && result.ValueKind == JsonValueKind.Object)
+                if (
+                    root.TryGetProperty("result", out var result)
+                    && result.ValueKind == JsonValueKind.Object
+                )
                 {
-                    if (result.TryGetProperty("metadata", out var metadata)
+                    if (
+                        result.TryGetProperty("metadata", out var metadata)
                         && metadata.TryGetProperty("audio_duration", out var audioDuration)
-                        && audioDuration.TryGetDouble(out var seconds))
+                        && audioDuration.TryGetDouble(out var seconds)
+                    )
                     {
                         duration = seconds;
                     }
 
-                    if (result.TryGetProperty("transcription", out var transcription) && transcription.ValueKind == JsonValueKind.Object)
+                    if (
+                        result.TryGetProperty("transcription", out var transcription)
+                        && transcription.ValueKind == JsonValueKind.Object
+                    )
                     {
                         text = ReadString(transcription, "full_transcript") ?? string.Empty;
-                        if (transcription.TryGetProperty("languages", out var languages)
+                        if (
+                            transcription.TryGetProperty("languages", out var languages)
                             && languages.ValueKind == JsonValueKind.Array
                             && languages.GetArrayLength() > 0
-                            && languages[0].ValueKind == JsonValueKind.String)
+                            && languages[0].ValueKind == JsonValueKind.String
+                        )
                         {
                             language = languages[0].GetString();
                         }
 
-                        if (transcription.TryGetProperty("utterances", out var utterances) && utterances.ValueKind == JsonValueKind.Array)
+                        if (
+                            transcription.TryGetProperty("utterances", out var utterances)
+                            && utterances.ValueKind == JsonValueKind.Array
+                        )
                         {
                             foreach (var utterance in utterances.EnumerateArray())
                             {
-                                var start = utterance.TryGetProperty("start", out var startValue) && startValue.TryGetDouble(out var startSecond) ? startSecond : 0;
-                                var end = utterance.TryGetProperty("end", out var endValue) && endValue.TryGetDouble(out var endSecond) ? endSecond : start;
-                                segments.Add(new GladiaTranscriptionSegment(ReadString(utterance, "text") ?? string.Empty, start, end));
+                                var start =
+                                    utterance.TryGetProperty("start", out var startValue)
+                                    && startValue.TryGetDouble(out var startSecond)
+                                        ? startSecond
+                                        : 0;
+                                var end =
+                                    utterance.TryGetProperty("end", out var endValue)
+                                    && endValue.TryGetDouble(out var endSecond)
+                                        ? endSecond
+                                        : start;
+                                segments.Add(
+                                    new GladiaTranscriptionSegment(
+                                        ReadString(utterance, "text") ?? string.Empty,
+                                        start,
+                                        end
+                                    )
+                                );
                             }
                         }
                     }
@@ -728,12 +928,18 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                         duration,
                         wrapped.RootElement.Clone(),
                         warnings,
-                        new GladiaTranscriptionResponse(started, ModelId, headers));
+                        new GladiaTranscriptionResponse(started, ModelId, headers)
+                    );
                 }
             }
         }
 
-        private async Task<ProviderExchangeResult> PollAsync(string resultUrl, IReadOnlyDictionary<string, string?> headers, GladiaTranscriptionRequest? request, CancellationToken cancellationToken)
+        private async Task<ProviderExchangeResult> PollAsync(
+            string resultUrl,
+            IReadOnlyDictionary<string, string?> headers,
+            GladiaTranscriptionRequest? request,
+            CancellationToken cancellationToken
+        )
         {
             var options = _provider.Options as GladiaOptions;
             var origin = new Uri(_provider.Options.BaseUrl, UriKind.Absolute);
@@ -744,8 +950,10 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                 var stripped = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
                 foreach (var pair in headers)
                 {
-                    if (pair.Key.Equals("x-gladia-key", StringComparison.OrdinalIgnoreCase)
-                        || pair.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
+                    if (
+                        pair.Key.Equals("x-gladia-key", StringComparison.OrdinalIgnoreCase)
+                        || pair.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)
+                    )
                     {
                         continue;
                     }
@@ -756,8 +964,14 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                 callHeaders = stripped;
             }
 
-            var timeoutMs = request?.PollTimeoutMs ?? ProviderPollSetting(request, "pollTimeoutMs") ?? options?.PollTimeoutMs ?? DefaultPollTimeoutMs;
-            var intervalMs = request?.PollIntervalMs ?? ProviderPollSetting(request, "pollIntervalMs") ?? options?.PollIntervalMs ?? DefaultPollIntervalMs;
+            var timeoutMs = request?.PollTimeoutMs
+                ?? ProviderPollSetting(request, "pollTimeoutMs")
+                ?? options?.PollTimeoutMs
+                ?? DefaultPollTimeoutMs;
+            var intervalMs = request?.PollIntervalMs
+                ?? ProviderPollSetting(request, "pollIntervalMs")
+                ?? options?.PollIntervalMs
+                ?? DefaultPollIntervalMs;
             var started = Now(options);
             while (true)
             {
@@ -768,37 +982,57 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                 {
                     throw new AiSdkError(
                         "TranscriptionJobPollingTimedOut",
-                        "Transcription job polling timed out after " + timeoutMs.ToString(CultureInfo.InvariantCulture) + " ms");
+                        "Transcription job polling timed out after "
+                            + timeoutMs.ToString(CultureInfo.InvariantCulture)
+                            + " ms"
+                    );
                 }
 
-                var response = await ProviderExchange.SendAsync(
-                    _provider._httpClient,
-                    HttpMethod.Get,
-                    target,
-                    null,
-                    callHeaders,
-                    cancellationToken).ConfigureAwait(false);
-                using (var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body))
+                var response = await ProviderExchange
+                    .SendAsync(
+                        _provider._httpClient,
+                        HttpMethod.Get,
+                        target,
+                        null,
+                        callHeaders,
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
+                using (
+                    var document = JsonDocument.Parse(
+                        string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+                    )
+                )
                 {
                     var status = ReadString(document.RootElement, "status");
                     if (string.Equals(status, "error", StringComparison.Ordinal))
                     {
-                        var errorCode = document.RootElement.TryGetProperty("error_code", out var code) && code.ValueKind == JsonValueKind.Number && code.TryGetInt32(out var number)
-                            ? number
-                            : (int?)null;
+                        var errorCode =
+                            document.RootElement.TryGetProperty("error_code", out var code)
+                            && code.ValueKind == JsonValueKind.Number
+                            && code.TryGetInt32(out var number)
+                                ? number
+                                : (int?)null;
                         var message = errorCode is null
                             ? "Transcription job failed"
-                            : "Transcription job failed with error code " + errorCode.Value.ToString(CultureInfo.InvariantCulture);
+                            : "Transcription job failed with error code "
+                                + errorCode.Value.ToString(CultureInfo.InvariantCulture);
                         throw new AiSdkError(
                             "TranscriptionJobFailed",
                             message,
                             new GladiaTranscriptionJobResultException(
                                 message,
-                                JsonNode.Parse(document.RootElement.GetRawText()) as JsonObject ?? [],
-                                errorCode));
+                                JsonNode.Parse(document.RootElement.GetRawText()) as JsonObject
+                                    ?? [],
+                                errorCode
+                            )
+                        );
                     }
 
-                    if (string.Equals(status, "done", StringComparison.Ordinal) || string.IsNullOrEmpty(status))
+                    if (
+                        string.Equals(status, "done", StringComparison.Ordinal)
+                        || string.IsNullOrEmpty(status)
+                    )
                     {
                         return response;
                     }
@@ -817,13 +1051,14 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
 
         private static int? ProviderPollSetting(GladiaTranscriptionRequest? request, string name)
         {
-            return request?.ProviderOptions != null
+            return
+                request?.ProviderOptions != null
                 && request.ProviderOptions.TryGetValue(ProviderId, out var gladia)
                 && gladia.ValueKind == JsonValueKind.Object
                 && gladia.TryGetProperty(name, out var value)
                 && value.ValueKind == JsonValueKind.Number
-                    ? value.GetInt32()
-                    : null;
+                ? value.GetInt32()
+                : null;
         }
 
         private static DateTimeOffset Now(GladiaOptions? options)
@@ -831,7 +1066,10 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
             return options?.Clock != null ? options.Clock() : DateTimeOffset.UtcNow;
         }
 
-        private Dictionary<string, string?> Headers(GladiaTranscriptionRequest? request, bool includeKey)
+        private Dictionary<string, string?> Headers(
+            GladiaTranscriptionRequest? request,
+            bool includeKey
+        )
         {
             var headers = ProviderExchange.Merge(_provider.CreateHeaders(), request?.Headers);
             if (!includeKey)
@@ -910,9 +1148,11 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
 
     private static string? ReadString(JsonElement element, string name)
     {
-        if (element.ValueKind == JsonValueKind.Object
+        if (
+            element.ValueKind == JsonValueKind.Object
             && element.TryGetProperty(name, out var value)
-            && value.ValueKind == JsonValueKind.String)
+            && value.ValueKind == JsonValueKind.String
+        )
         {
             return value.GetString();
         }
@@ -933,7 +1173,10 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
             return "wav";
         }
 
-        if (value.IndexOf("mpeg", StringComparison.OrdinalIgnoreCase) >= 0 || value.IndexOf("mp3", StringComparison.OrdinalIgnoreCase) >= 0)
+        if (
+            value.IndexOf("mpeg", StringComparison.OrdinalIgnoreCase) >= 0
+            || value.IndexOf("mp3", StringComparison.OrdinalIgnoreCase) >= 0
+        )
         {
             return "mp3";
         }
@@ -946,14 +1189,20 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
 public static class GladiaServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddGladia(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddGladia(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(GladiaProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new GladiaProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(GladiaProvider.ProviderId), options);
+            return new GladiaProvider(
+                sp.GetRequiredService<IHttpClientFactory>().CreateClient(GladiaProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

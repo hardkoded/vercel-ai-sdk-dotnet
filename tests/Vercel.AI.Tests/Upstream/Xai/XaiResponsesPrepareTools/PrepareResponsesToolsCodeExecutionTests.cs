@@ -14,10 +14,16 @@ public sealed class PrepareResponsesToolsCodeExecutionTests
     private const string Prefix = TestFile + " > code_execution::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should prepare code_execution tool as code_interpreter", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should prepare code_execution tool as code_interpreter",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_prepare_code_execution_tool_as_code_interpreter()
     {
-        var result = XaiResponsesTools.Prepare(new[] { ProviderTool("xai.code_execution", "code_execution") }, null);
+        var result = XaiResponsesTools.Prepare(
+            new[] { ProviderTool("xai.code_execution", "code_execution") },
+            null
+        );
 
         JsonAssert.Equal(result.Tools, """[{"type":"code_interpreter"}]""");
     }

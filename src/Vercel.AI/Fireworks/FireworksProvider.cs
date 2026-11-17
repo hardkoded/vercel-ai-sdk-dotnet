@@ -24,9 +24,7 @@ public sealed class FireworksProvider : OpenAICompatibleProvider
 
     /// <summary>Creates a provider.</summary>
     public FireworksProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
-        : base(Prepare(options), httpClient)
-    {
-    }
+        : base(Prepare(options), httpClient) { }
 
     /// <inheritdoc />
     public override IImageModel ImageModel(string modelId)
@@ -35,13 +33,23 @@ public sealed class FireworksProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static new FireworksProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new FireworksProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new FireworksProvider(client, options);
     }
 
-    private static string? ResolveReasoningEffort(string modelId, string? reasoning, string? providerEffort, IList<CallWarning> warnings)
+    private static string? ResolveReasoningEffort(
+        string modelId,
+        string? reasoning,
+        string? providerEffort,
+        IList<CallWarning> warnings
+    )
     {
         if (providerEffort != null)
         {
@@ -54,7 +62,11 @@ public sealed class FireworksProvider : OpenAICompatibleProvider
         }
 
         var mappingWarnings = new List<ModelWarning>();
-        var effort = ReasoningMap.MapReasoningToProviderEffort(reasoning!, FireworksModelCatalog.GetFireworksReasoningEffortMap(modelId), mappingWarnings);
+        var effort = ReasoningMap.MapReasoningToProviderEffort(
+            reasoning!,
+            FireworksModelCatalog.GetFireworksReasoningEffortMap(modelId),
+            mappingWarnings
+        );
         foreach (var warning in mappingWarnings)
         {
             if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
@@ -69,7 +81,10 @@ public sealed class FireworksProvider : OpenAICompatibleProvider
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
-        if (string.IsNullOrEmpty(options.ProviderName) || options.ProviderName == "openai-compatible")
+        if (
+            string.IsNullOrEmpty(options.ProviderName)
+            || options.ProviderName == "openai-compatible"
+        )
         {
             options.ProviderName = ProviderId;
         }
@@ -103,14 +118,21 @@ public sealed class FireworksProvider : OpenAICompatibleProvider
 public static class FireworksServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddFireworks(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddFireworks(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(FireworksProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new FireworksProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(FireworksProvider.ProviderId), options);
+            return new FireworksProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(FireworksProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

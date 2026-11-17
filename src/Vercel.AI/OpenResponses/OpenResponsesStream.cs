@@ -17,9 +17,17 @@ internal static class OpenResponsesResults
     public static LanguageModelUsage Usage(JsonElement usage)
     {
         var inputTokens = OpenAIJson.Int(usage, "input_tokens");
-        var cachedInputTokens = OpenAIJson.NestedInt(usage, "input_tokens_details", "cached_tokens");
+        var cachedInputTokens = OpenAIJson.NestedInt(
+            usage,
+            "input_tokens_details",
+            "cached_tokens"
+        );
         var outputTokens = OpenAIJson.Int(usage, "output_tokens");
-        var reasoningTokens = OpenAIJson.NestedInt(usage, "output_tokens_details", "reasoning_tokens");
+        var reasoningTokens = OpenAIJson.NestedInt(
+            usage,
+            "output_tokens_details",
+            "reasoning_tokens"
+        );
         return new LanguageModelUsage(
             inputTokens,
             outputTokens,
@@ -28,25 +36,37 @@ internal static class OpenResponsesResults
             reasoningTokens: reasoningTokens,
             raw: usage.Clone(),
             noCacheInputTokens: (inputTokens ?? 0) - (cachedInputTokens ?? 0),
-            textTokens: (outputTokens ?? 0) - (reasoningTokens ?? 0));
+            textTokens: (outputTokens ?? 0) - (reasoningTokens ?? 0)
+        );
     }
 
     /// <summary>
     /// Metadata of a reasoning item: its id, summary, content (null when the item has none), and encrypted content.
     /// <paramref name="reasoningContent"/> replaces the item content when the caller splits the item into parts.
     /// </summary>
-    public static JsonElement ReasoningMetadata(string providerOptionsName, JsonElement item, IEnumerable<JsonElement>? reasoningContent = null)
+    public static JsonElement ReasoningMetadata(
+        string providerOptionsName,
+        JsonElement item,
+        IEnumerable<JsonElement>? reasoningContent = null
+    )
     {
         var summary = new JsonArray();
         if (OpenAIJson.Child(item, "summary") is { ValueKind: JsonValueKind.Array } summaryParts)
         {
             foreach (var part in summaryParts.EnumerateArray())
             {
-                summary.Add(new JsonObject { ["type"] = "summary_text", ["text"] = OpenAIJson.String(part, "text") });
+                summary.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "summary_text",
+                        ["text"] = OpenAIJson.String(part, "text"),
+                    }
+                );
             }
         }
 
-        reasoningContent ??= OpenAIJson.Child(item, "content") is { ValueKind: JsonValueKind.Array } contentParts
+        reasoningContent ??= OpenAIJson.Child(item, "content")
+            is { ValueKind: JsonValueKind.Array } contentParts
             ? contentParts.EnumerateArray()
             : null;
         JsonArray? content = null;
@@ -55,7 +75,13 @@ internal static class OpenResponsesResults
             content = new JsonArray();
             foreach (var part in reasoningContent)
             {
-                content.Add(new JsonObject { ["type"] = "reasoning_text", ["text"] = OpenAIJson.String(part, "text") });
+                content.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "reasoning_text",
+                        ["text"] = OpenAIJson.String(part, "text"),
+                    }
+                );
             }
         }
 
@@ -74,7 +100,11 @@ internal static class OpenResponsesResults
     }
 
     /// <summary>Metadata of a message item, with its <c>url_citation</c> annotations when every content part has valid ones.</summary>
-    public static JsonElement MessageMetadata(string providerOptionsName, string? itemId, JsonArray annotations)
+    public static JsonElement MessageMetadata(
+        string providerOptionsName,
+        string? itemId,
+        JsonArray annotations
+    )
     {
         var data = new JsonObject { ["itemId"] = itemId };
         if (annotations.Count > 0)
@@ -89,30 +119,39 @@ internal static class OpenResponsesResults
     public static JsonArray Annotations(JsonElement contentPart)
     {
         var result = new JsonArray();
-        if (OpenAIJson.Child(contentPart, "annotations") is not { ValueKind: JsonValueKind.Array } annotations)
+        if (
+            OpenAIJson.Child(contentPart, "annotations")
+            is not { ValueKind: JsonValueKind.Array } annotations
+        )
         {
             return result;
         }
 
         foreach (var annotation in annotations.EnumerateArray())
         {
-            if (OpenAIJson.String(annotation, "type") != "url_citation"
-                || OpenAIJson.Child(annotation, "start_index") is not { ValueKind: JsonValueKind.Number } start
-                || OpenAIJson.Child(annotation, "end_index") is not { ValueKind: JsonValueKind.Number } end
+            if (
+                OpenAIJson.String(annotation, "type") != "url_citation"
+                || OpenAIJson.Child(annotation, "start_index")
+                    is not { ValueKind: JsonValueKind.Number } start
+                || OpenAIJson.Child(annotation, "end_index")
+                    is not { ValueKind: JsonValueKind.Number } end
                 || OpenAIJson.String(annotation, "url") is not { } url
-                || OpenAIJson.String(annotation, "title") is not { } title)
+                || OpenAIJson.String(annotation, "title") is not { } title
+            )
             {
                 return new JsonArray();
             }
 
-            result.Add(new JsonObject
-            {
-                ["type"] = "url_citation",
-                ["start_index"] = OpenAIJson.Node(start),
-                ["end_index"] = OpenAIJson.Node(end),
-                ["url"] = url,
-                ["title"] = title,
-            });
+            result.Add(
+                new JsonObject
+                {
+                    ["type"] = "url_citation",
+                    ["start_index"] = OpenAIJson.Node(start),
+                    ["end_index"] = OpenAIJson.Node(end),
+                    ["url"] = url,
+                    ["title"] = title,
+                }
+            );
         }
 
         return result;
@@ -120,7 +159,9 @@ internal static class OpenResponsesResults
 
     public static JsonElement ItemMetadata(string providerOptionsName, string? itemId)
     {
-        return OpenAIJson.Element(new JsonObject { [providerOptionsName] = new JsonObject { ["itemId"] = itemId } });
+        return OpenAIJson.Element(
+            new JsonObject { [providerOptionsName] = new JsonObject { ["itemId"] = itemId } }
+        );
     }
 }
 
@@ -131,9 +172,12 @@ internal sealed class OpenResponsesStream
     private readonly OpenResponsesExtensionRegistry _registry;
     private readonly Func<JsonElement, OpenResponsesErrorMetadata?>? _getResponseErrorMetadata;
     private readonly Dictionary<string, object?> _extensionState = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, ToolCallState> _toolCallsByItemId = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, ToolCallState> _toolCallsByItemId = new(
+        StringComparer.Ordinal
+    );
     private string? _activeReasoningId;
     private bool _hasToolCalls;
+
     // A clean end without the provider's completion signal is interrupted.
     private FinishReason _finishReason = FinishReason.Interrupted;
     private string? _rawFinishReason;
@@ -142,7 +186,8 @@ internal sealed class OpenResponsesStream
     public OpenResponsesStream(
         string providerOptionsName,
         OpenResponsesExtensionRegistry registry,
-        Func<JsonElement, OpenResponsesErrorMetadata?>? getResponseErrorMetadata = null)
+        Func<JsonElement, OpenResponsesErrorMetadata?>? getResponseErrorMetadata = null
+    )
     {
         _providerOptionsName = providerOptionsName;
         _registry = registry;
@@ -211,22 +256,34 @@ internal sealed class OpenResponsesStream
                 };
                 break;
             case "response.function_call_arguments.delta":
-                AppendArguments(OpenAIJson.String(chunk, "item_id") ?? string.Empty, OpenAIJson.String(chunk, "delta") ?? string.Empty, replace: false);
+                AppendArguments(
+                    OpenAIJson.String(chunk, "item_id") ?? string.Empty,
+                    OpenAIJson.String(chunk, "delta") ?? string.Empty,
+                    replace: false
+                );
                 break;
             case "response.function_call_arguments.done":
-                AppendArguments(OpenAIJson.String(chunk, "item_id") ?? string.Empty, OpenAIJson.String(chunk, "arguments") ?? string.Empty, replace: true);
+                AppendArguments(
+                    OpenAIJson.String(chunk, "item_id") ?? string.Empty,
+                    OpenAIJson.String(chunk, "arguments") ?? string.Empty,
+                    replace: true
+                );
                 break;
             case "response.output_item.done" when itemType == "function_call":
                 _toolCallsByItemId.TryGetValue(itemId, out var toolCall);
-                parts.Add(new ToolCallStreamPart(
-                    toolCall?.ToolCallId ?? OpenAIJson.String(item, "call_id") ?? string.Empty,
-                    toolCall?.ToolName ?? OpenAIJson.String(item, "name") ?? string.Empty,
-                    toolCall?.Arguments ?? OpenAIJson.String(item, "arguments") ?? string.Empty,
-                    OpenResponsesResults.ItemMetadata(_providerOptionsName, itemId)));
+                parts.Add(
+                    new ToolCallStreamPart(
+                        toolCall?.ToolCallId ?? OpenAIJson.String(item, "call_id") ?? string.Empty,
+                        toolCall?.ToolName ?? OpenAIJson.String(item, "name") ?? string.Empty,
+                        toolCall?.Arguments ?? OpenAIJson.String(item, "arguments") ?? string.Empty,
+                        OpenResponsesResults.ItemMetadata(_providerOptionsName, itemId)
+                    )
+                );
                 _hasToolCalls = true;
                 _toolCallsByItemId.Remove(itemId);
                 break;
-            case "response.output_item.done" when itemType != null && _registry.ByItemType.ContainsKey(itemType):
+            case "response.output_item.done"
+                when itemType != null && _registry.ByItemType.ContainsKey(itemType):
                 AcceptExtensionItem(item!.Value, parts);
                 break;
             case "response.output_item.added" when itemType == "reasoning":
@@ -236,10 +293,20 @@ internal sealed class OpenResponsesStream
             case "response.reasoning_summary_text.delta":
             case "response.reasoning_text.delta":
                 // response.reasoning_text.delta is an LM Studio extension, not part of the Open Responses specification.
-                parts.Add(new ReasoningDeltaStreamPart(OpenAIJson.String(chunk, "item_id") ?? string.Empty, OpenAIJson.String(chunk, "delta") ?? string.Empty));
+                parts.Add(
+                    new ReasoningDeltaStreamPart(
+                        OpenAIJson.String(chunk, "item_id") ?? string.Empty,
+                        OpenAIJson.String(chunk, "delta") ?? string.Empty
+                    )
+                );
                 break;
             case "response.output_item.done" when itemType == "reasoning":
-                parts.Add(new ReasoningEndStreamPart(itemId, OpenResponsesResults.ReasoningMetadata(_providerOptionsName, item!.Value)));
+                parts.Add(
+                    new ReasoningEndStreamPart(
+                        itemId,
+                        OpenResponsesResults.ReasoningMetadata(_providerOptionsName, item!.Value)
+                    )
+                );
                 if (_activeReasoningId == itemId)
                 {
                     _activeReasoningId = null;
@@ -250,7 +317,12 @@ internal sealed class OpenResponsesStream
                 parts.Add(new TextStartStreamPart(itemId));
                 break;
             case "response.output_text.delta":
-                parts.Add(new TextDeltaStreamPart(OpenAIJson.String(chunk, "item_id") ?? string.Empty, OpenAIJson.String(chunk, "delta") ?? string.Empty));
+                parts.Add(
+                    new TextDeltaStreamPart(
+                        OpenAIJson.String(chunk, "item_id") ?? string.Empty,
+                        OpenAIJson.String(chunk, "delta") ?? string.Empty
+                    )
+                );
                 break;
             case "response.output_item.done" when itemType == "message":
                 var annotations = new JsonArray();
@@ -265,12 +337,24 @@ internal sealed class OpenResponsesStream
                     }
                 }
 
-                parts.Add(new TextEndStreamPart(itemId, providerMetadata: OpenResponsesResults.MessageMetadata(_providerOptionsName, itemId, annotations)));
+                parts.Add(
+                    new TextEndStreamPart(
+                        itemId,
+                        providerMetadata: OpenResponsesResults.MessageMetadata(
+                            _providerOptionsName,
+                            itemId,
+                            annotations
+                        )
+                    )
+                );
                 break;
             case "response.completed":
             case "response.incomplete":
                 var response = OpenAIJson.Child(chunk, "response");
-                _rawFinishReason = OpenAIJson.String(OpenAIJson.Child(response, "incomplete_details"), "reason");
+                _rawFinishReason = OpenAIJson.String(
+                    OpenAIJson.Child(response, "incomplete_details"),
+                    "reason"
+                );
                 _finishReason = OpenResponsesFinishReason.Map(_rawFinishReason, _hasToolCalls);
                 UpdateUsage(response);
                 break;
@@ -278,11 +362,14 @@ internal sealed class OpenResponsesStream
                 var failed = OpenAIJson.Child(chunk, "response");
                 var failedError = OpenAIJson.Child(failed, "error");
                 _finishReason = FinishReason.Error;
-                _rawFinishReason = OpenAIJson.String(failedError, "code") ?? OpenAIJson.String(failed, "status");
+                _rawFinishReason = OpenAIJson.String(failedError, "code")
+                    ?? OpenAIJson.String(failed, "status");
                 UpdateUsage(failed);
                 if (failedError is { ValueKind: JsonValueKind.Object } responseError)
                 {
-                    parts.Add(new ErrorStreamPart(StreamError("response.failed", responseError, chunk)));
+                    parts.Add(
+                        new ErrorStreamPart(StreamError("response.failed", responseError, chunk))
+                    );
                 }
 
                 break;
@@ -290,9 +377,11 @@ internal sealed class OpenResponsesStream
                 var error = OpenAIJson.Child(chunk, "error");
                 _finishReason = FinishReason.Error;
                 _rawFinishReason = OpenAIJson.String(error, "code");
-                parts.Add(error is { } streamError
-                    ? new ErrorStreamPart(StreamError("error", streamError, chunk))
-                    : new ErrorStreamPart(string.Empty));
+                parts.Add(
+                    error is { } streamError
+                        ? new ErrorStreamPart(StreamError("error", streamError, chunk))
+                        : new ErrorStreamPart(string.Empty)
+                );
                 break;
         }
     }
@@ -307,7 +396,8 @@ internal sealed class OpenResponsesStream
             type,
             ErrorCode(error),
             metadata?.StatusCode,
-            metadata?.IsRetryable);
+            metadata?.IsRetryable
+        );
     }
 
     private static object? ErrorCode(JsonElement error)
@@ -316,18 +406,26 @@ internal sealed class OpenResponsesStream
             ? code.ValueKind switch
             {
                 JsonValueKind.String => code.GetString(),
-                JsonValueKind.Number => code.TryGetInt64(out var number) ? (object)number : code.GetDouble(),
+                JsonValueKind.Number => code.TryGetInt64(out var number)
+                    ? (object)number
+                    : code.GetDouble(),
                 _ => null,
             }
             : null;
     }
 
-    private bool AcceptExtensionEvent(string type, JsonElement chunk, List<LanguageModelStreamPart> parts)
+    private bool AcceptExtensionEvent(
+        string type,
+        JsonElement chunk,
+        List<LanguageModelStreamPart> parts
+    )
     {
-        if (OpenAIJson.Node(chunk) is not JsonObject @event
+        if (
+            OpenAIJson.Node(chunk) is not JsonObject @event
             || !OpenResponsesJson.IsExtensionEvent(@event)
             || !_registry.ByEventType.TryGetValue(type, out var extension)
-            || extension.DecodeEvent == null)
+            || extension.DecodeEvent == null
+        )
         {
             return false;
         }
@@ -335,7 +433,9 @@ internal sealed class OpenResponsesStream
         IReadOnlyList<LanguageModelStreamPart>? decoded;
         try
         {
-            decoded = extension.DecodeEvent(new OpenResponsesDecodeEventContext(@event, _extensionState));
+            decoded = extension.DecodeEvent(
+                new OpenResponsesDecodeEventContext(@event, _extensionState)
+            );
         }
         catch (Exception exception)
         {
@@ -355,7 +455,10 @@ internal sealed class OpenResponsesStream
 
     private void AcceptExtensionItem(JsonElement item, List<LanguageModelStreamPart> parts)
     {
-        if (OpenAIJson.Node(item) is not JsonObject extensionItem || !OpenResponsesJson.IsExtensionItem(extensionItem))
+        if (
+            OpenAIJson.Node(item) is not JsonObject extensionItem
+            || !OpenResponsesJson.IsExtensionItem(extensionItem)
+        )
         {
             return;
         }
@@ -363,7 +466,12 @@ internal sealed class OpenResponsesStream
         List<GeneratedContent>? decoded;
         try
         {
-            decoded = OpenResponsesExtensionItems.Decode(_registry, _providerOptionsName, extensionItem, OpenResponsesItemMode.Stream);
+            decoded = OpenResponsesExtensionItems.Decode(
+                _registry,
+                _providerOptionsName,
+                extensionItem,
+                OpenResponsesItemMode.Stream
+            );
         }
         catch (Exception exception)
         {

@@ -25,7 +25,8 @@ public static class TelemetrySpan
         Func<Activity?, Task<T>> action,
         Task<IReadOnlyDictionary<string, object?>>? attributes = null,
         bool endWhenDone = true,
-        ActivitySource? activitySource = null)
+        ActivitySource? activitySource = null
+    )
     {
         if (name is null)
         {
@@ -43,7 +44,10 @@ public static class TelemetrySpan
             tags = await attributes.ConfigureAwait(false);
         }
 
-        var activity = (activitySource ?? OpenTelemetryAiTelemetry.ActivitySource).StartActivity(name, ActivityKind.Internal);
+        var activity = (activitySource ?? OpenTelemetryAiTelemetry.ActivitySource).StartActivity(
+            name,
+            ActivityKind.Internal
+        );
         if (activity != null && tags != null)
         {
             foreach (var pair in tags)
@@ -98,14 +102,17 @@ public static class TelemetrySpan
         if (error is Exception exception)
         {
 #if NET
-            activity.AddEvent(new ActivityEvent(
-                "exception",
-                tags: new ActivityTagsCollection
-                {
-                    { "exception.type", exception.GetType().FullName ?? "Exception" },
-                    { "exception.message", exception.Message ?? string.Empty },
-                    { "exception.stacktrace", exception.StackTrace ?? string.Empty },
-                }));
+            activity.AddEvent(
+                new ActivityEvent(
+                    "exception",
+                    tags: new ActivityTagsCollection
+                    {
+                        { "exception.type", exception.GetType().FullName ?? "Exception" },
+                        { "exception.message", exception.Message ?? string.Empty },
+                        { "exception.stacktrace", exception.StackTrace ?? string.Empty },
+                    }
+                )
+            );
 #endif
             activity.SetStatus(ActivityStatusCode.Error, exception.Message);
             if (exception is ApiException api)

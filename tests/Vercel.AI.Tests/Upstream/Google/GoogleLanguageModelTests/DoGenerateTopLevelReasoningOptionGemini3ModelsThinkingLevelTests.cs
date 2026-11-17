@@ -11,7 +11,10 @@ namespace Vercel.AI.Tests.GoogleLanguageModelTests;
 public sealed class DoGenerateTopLevelReasoningOptionGemini3ModelsThinkingLevelTests
 {
     [Fact]
-    [UpstreamTest("packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > Gemini 3 models (thinkingLevel)::should coerce reasoning \"max\" to \"high\" with compatibility warning", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > Gemini 3 models (thinkingLevel)::should coerce reasoning \"max\" to \"high\" with compatibility warning",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_coerce_reasoning_max_to_high_with_compatibility_warning()
     {
         var options = new LanguageModelCallOptions
@@ -20,9 +23,24 @@ public sealed class DoGenerateTopLevelReasoningOptionGemini3ModelsThinkingLevelT
             Reasoning = "max",
         };
 
-        var prepared = GoogleRequest.Prepare("gemini-3-pro-preview", "google.generative-ai", options, false);
+        var prepared = GoogleRequest.Prepare(
+            "gemini-3-pro-preview",
+            "google.generative-ai",
+            options,
+            false
+        );
 
-        Assert.Equal("high", prepared.Body["generationConfig"]!["thinkingConfig"]!["thinkingLevel"]!.GetValue<string>());
-        Assert.Contains(prepared.Warnings, warning => warning.Type == "compatibility" && warning.Feature == "reasoning" && warning.Details == "reasoning \"max\" is not directly supported by this model. mapped to effort \"high\".");
+        Assert.Equal(
+            "high",
+            prepared.Body["generationConfig"]!["thinkingConfig"]![
+                "thinkingLevel"
+            ]!.GetValue<string>()
+        );
+        Assert.Contains(prepared.Warnings, warning =>
+            warning.Type == "compatibility"
+            && warning.Feature == "reasoning"
+            && warning.Details
+                == "reasoning \"max\" is not directly supported by this model. mapped to effort \"high\"."
+        );
     }
 }

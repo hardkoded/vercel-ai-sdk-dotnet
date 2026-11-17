@@ -13,7 +13,8 @@ public static class AmazonBedrockEndpoints
     public const string RuntimeEndpointEnvironmentVariable = "AWS_ENDPOINT_URL_BEDROCK_RUNTIME";
 
     /// <summary>Environment variable that overrides the Bedrock Agent Runtime endpoint.</summary>
-    public const string AgentRuntimeEndpointEnvironmentVariable = "AWS_ENDPOINT_URL_BEDROCK_AGENT_RUNTIME";
+    public const string AgentRuntimeEndpointEnvironmentVariable =
+        "AWS_ENDPOINT_URL_BEDROCK_AGENT_RUNTIME";
 
     /// <summary>Environment variable that overrides every AWS service endpoint.</summary>
     public const string GlobalEndpointEnvironmentVariable = "AWS_ENDPOINT_URL";
@@ -39,9 +40,10 @@ public static class AmazonBedrockEndpoints
     /// </summary>
     public static string Resolve(string? baseUrl, Func<string> getRegion, string service)
     {
-        var serviceVariable = service == "bedrock-agent-runtime"
-            ? AgentRuntimeEndpointEnvironmentVariable
-            : RuntimeEndpointEnvironmentVariable;
+        var serviceVariable =
+            service == "bedrock-agent-runtime"
+                ? AgentRuntimeEndpointEnvironmentVariable
+                : RuntimeEndpointEnvironmentVariable;
         var resolved = FirstSet(baseUrl)
             ?? FirstSet(Environment.GetEnvironmentVariable(serviceVariable))
             ?? FirstSet(Environment.GetEnvironmentVariable(GlobalEndpointEnvironmentVariable));
@@ -53,7 +55,10 @@ public static class AmazonBedrockEndpoints
         var region = getRegion();
         if (!HostnameParts.IsValidHostnamePart(region))
         {
-            throw new ArgumentException("An AWS region must be a single DNS label.", nameof(region));
+            throw new ArgumentException(
+                "An AWS region must be a single DNS label.",
+                nameof(region)
+            );
         }
 
         return "https://" + service + "." + region + "." + DnsSuffix(region);

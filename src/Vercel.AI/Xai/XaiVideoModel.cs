@@ -69,27 +69,49 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
     }
 
     /// <summary>Starts a request and polls it until the video is ready.</summary>
-    public async Task<VideoResult> DoGenerateAsync(VideoCallOptions options, CancellationToken cancellationToken)
+    public async Task<VideoResult> DoGenerateAsync(
+        VideoCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
-        var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest { Model = this, Prompt = new VideoPrompt(options.Prompt), Duration = options.DurationSeconds }, cancellationToken).ConfigureAwait(false);
+        var result = await GenerateVideo
+            .GenerateVideoAsync(
+                new GenerateVideoRequest
+                {
+                    Model = this,
+                    Prompt = new VideoPrompt(options.Prompt),
+                    Duration = options.DurationSeconds,
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return new VideoResult(null, result.Video.Data, result.Video.MediaType);
     }
 
     /// <inheritdoc />
-    public Task<VideoModelResult> DoGenerateAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public Task<VideoModelResult> DoGenerateAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         throw new NotSupportedException("xAI generates videos with doStart and doStatus.");
     }
 
     /// <inheritdoc />
-    public Task<VideoWebhook> HandleWebhookAsync(Func<Task<VideoWebhook>> webhook, CancellationToken cancellationToken)
+    public Task<VideoWebhook> HandleWebhookAsync(
+        Func<Task<VideoWebhook>> webhook,
+        CancellationToken cancellationToken
+    )
     {
         throw new NotSupportedException("xAI does not handle webhooks.");
     }
 
     /// <inheritdoc />
-    public async Task<VideoStartResult> DoStartAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public async Task<VideoStartResult> DoStartAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var timestamp = _clock();
@@ -98,18 +120,26 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
         var baseUrl = _provider.Options.BaseUrl;
 
         // Determine the endpoint from the mode.
-        var endpoint = ApiKeys.Combine(baseUrl, isEdit ? "/videos/edits" : isExtension ? "/videos/extensions" : "/videos/generations");
+        var endpoint = ApiKeys.Combine(
+            baseUrl,
+            isEdit ? "/videos/edits"
+                : isExtension ? "/videos/extensions"
+                : "/videos/generations"
+        );
 
         ProviderExchangeResult response;
         try
         {
-            response = await ProviderExchange.SendAsync(
-                _provider.SharedHttpClient,
-                HttpMethod.Post,
-                endpoint,
-                ProviderExchange.Json(body.ToJsonString()),
-                ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers),
-                cancellationToken).ConfigureAwait(false);
+            response = await ProviderExchange
+                .SendAsync(
+                    _provider.SharedHttpClient,
+                    HttpMethod.Post,
+                    endpoint,
+                    ProviderExchange.Json(body.ToJsonString()),
+                    ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
         catch (ApiException exception) when (xaiOptions?.OutputUploadUrl != null)
         {
@@ -137,22 +167,37 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
             operation["hasUploadUrl"] = true;
         }
 
-        return new VideoStartResult(OperationJson.Parse(operation.ToJsonString()), warnings, response: Response(response, timestamp));
+        return new VideoStartResult(
+            OperationJson.Parse(operation.ToJsonString()),
+            warnings,
+            response: Response(response, timestamp)
+        );
     }
 
     /// <inheritdoc />
-    public async Task<VideoStatusResult> DoStatusAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public async Task<VideoStatusResult> DoStatusAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var timestamp = _clock();
-        var requestId = call.Operation is JsonElement { ValueKind: JsonValueKind.Object } operation ? String(operation, "requestId") : null;
+        var requestId = call.Operation is JsonElement { ValueKind: JsonValueKind.Object } operation
+            ? String(operation, "requestId")
+            : null;
         if (string.IsNullOrEmpty(requestId))
         {
-            throw new InvalidArgumentException("operation", call.Operation, "xAI operations are objects with a requestId.");
+            throw new InvalidArgumentException(
+                "operation",
+                call.Operation,
+                "xAI operations are objects with a requestId."
+            );
         }
 
-        var hasUploadUrl = call.Operation is JsonElement { ValueKind: JsonValueKind.Object } source
-            && source.TryGetProperty("hasUploadUrl", out var upload) && upload.ValueKind == JsonValueKind.True;
+        var hasUploadUrl =
+            call.Operation is JsonElement { ValueKind: JsonValueKind.Object } source
+            && source.TryGetProperty("hasUploadUrl", out var upload)
+            && upload.ValueKind == JsonValueKind.True;
 
         var baseUrl = _provider.Options.BaseUrl;
         var url = ApiKeys.Combine(baseUrl, "/videos/" + PathSegments.Encode(requestId!));
@@ -160,19 +205,26 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
         try
         {
             var headers = ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers);
-            response = await ProviderExchange.GetResponseUrlAsync(
-                _provider.SharedHttpClient,
-                url.AbsoluteUri,
-                baseUrl,
-                _ => { },
-                headers,
-                cancellationToken,
-                ProviderExchange.DownloadClient(_provider.Options),
-                ProviderExchange.UserAgentOnly(headers)).ConfigureAwait(false);
+            response = await ProviderExchange
+                .GetResponseUrlAsync(
+                    _provider.SharedHttpClient,
+                    url.AbsoluteUri,
+                    baseUrl,
+                    _ => { },
+                    headers,
+                    cancellationToken,
+                    ProviderExchange.DownloadClient(_provider.Options),
+                    ProviderExchange.UserAgentOnly(headers)
+                )
+                .ConfigureAwait(false);
         }
         catch (ApiException exception) when (hasUploadUrl)
         {
-            throw new ApiException("xAI video upload status request failed.", exception.StatusCode, null)
+            throw new ApiException(
+                "xAI video upload status request failed.",
+                exception.StatusCode,
+                null
+            )
             {
                 Url = url.AbsoluteUri,
                 IsRetryable = exception.IsRetryable,
@@ -182,7 +234,11 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
         var status = ReadStatus(response);
         if (status.Status == "expired")
         {
-            return new VideoStatusResult("error", error: "Video generation request expired.", response: Response(response, timestamp));
+            return new VideoStatusResult(
+                "error",
+                error: "Video generation request expired.",
+                response: Response(response, timestamp)
+            );
         }
 
         if (status.Status == "failed")
@@ -190,24 +246,38 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
             var details = status.ErrorMessage ?? status.ErrorCode;
             return new VideoStatusResult(
                 "error",
-                error: !hasUploadUrl && details != null ? "Video generation failed: " + details : "Video generation failed.",
-                response: Response(response, timestamp));
+                error: !hasUploadUrl && details != null
+                    ? "Video generation failed: " + details
+                    : "Video generation failed.",
+                response: Response(response, timestamp)
+            );
         }
 
-        if (status.Status == "done" || (status.Status == null && !string.IsNullOrEmpty(status.Video?.Url)))
+        if (
+            status.Status == "done"
+            || (status.Status == null && !string.IsNullOrEmpty(status.Video?.Url))
+        )
         {
             var video = status.Video;
 
             // Terminal outcomes, so they are reported the same way as an upstream failed.
             if (video?.RespectModeration == false)
             {
-                return new VideoStatusResult("error", error: "Video generation was blocked due to a content policy violation.", response: Response(response, timestamp));
+                return new VideoStatusResult(
+                    "error",
+                    error: "Video generation was blocked due to a content policy violation.",
+                    response: Response(response, timestamp)
+                );
             }
 
             var videoUrl = video?.Url ?? video?.FileOutput?.PublicUrl;
             if (!hasUploadUrl && string.IsNullOrEmpty(videoUrl))
             {
-                return new VideoStatusResult("error", error: "Video generation completed but no video URL was returned.", response: Response(response, timestamp));
+                return new VideoStatusResult(
+                    "error",
+                    error: "Video generation completed but no video URL was returned.",
+                    response: Response(response, timestamp)
+                );
             }
 
             var videos = hasUploadUrl
@@ -237,7 +307,11 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
 
             if (video?.FileOutput is { } fileOutput)
             {
-                var output = new JsonObject { ["fileId"] = fileOutput.FileId, ["filename"] = fileOutput.Filename };
+                var output = new JsonObject
+                {
+                    ["fileId"] = fileOutput.FileId,
+                    ["filename"] = fileOutput.Filename,
+                };
                 if (fileOutput.ExpiresAt != null)
                 {
                     output["expiresAt"] = fileOutput.ExpiresAt.DeepClone();
@@ -270,8 +344,11 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
                 "completed",
                 videos,
                 warnings: [],
-                providerMetadata: OperationJson.Parse(new JsonObject { ["xai"] = metadata }.ToJsonString()),
-                response: Response(response, timestamp));
+                providerMetadata: OperationJson.Parse(
+                    new JsonObject { ["xai"] = metadata }.ToJsonString()
+                ),
+                response: Response(response, timestamp)
+            );
         }
 
         // Pending status.
@@ -313,13 +390,20 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
     {
         return file.Type == "url"
             ? file.Url!
-            : "data:" + file.MediaType + ";base64," + Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
+            : "data:"
+                + file.MediaType
+                + ";base64,"
+                + Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
     }
 
     // Resolves the reference images for R2V generation. First-class inputReferences win over the legacy
     // referenceImageUrls provider option. Video references are not supported for reference-to-video and
     // are skipped with a warning. Audio references are handled separately.
-    private static JsonArray? ResolveReferences(VideoModelCall call, XaiVideoModelOptions? xaiOptions, List<OperationWarning> warnings)
+    private static JsonArray? ResolveReferences(
+        VideoModelCall call,
+        XaiVideoModelOptions? xaiOptions,
+        List<OperationWarning> warnings
+    )
     {
         if (call.InputReferences is { Count: > 0 } references)
         {
@@ -333,9 +417,12 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
 
                 if (!IsImageReference(reference))
                 {
-                    warnings.Add(OperationWarning.Unsupported(
-                        "inputReferences",
-                        "xAI reference-to-video does not accept video references. The video reference was ignored. Use providerOptions.xai.mode \"extend-video\" to continue from a video."));
+                    warnings.Add(
+                        OperationWarning.Unsupported(
+                            "inputReferences",
+                            "xAI reference-to-video does not accept video references. The video reference was ignored. Use providerOptions.xai.mode \"extend-video\" to continue from a video."
+                        )
+                    );
                     continue;
                 }
 
@@ -361,7 +448,9 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
 
     private static List<JsonObject> ResolveReferenceAudios(VideoModelCall call)
     {
-        return call.InputReferences?.Where(IsAudioReference).Select(reference => new JsonObject { ["url"] = FileToXaiUrl(reference) }).ToList()
+        return call.InputReferences?.Where(IsAudioReference)
+            .Select(reference => new JsonObject { ["url"] = FileToXaiUrl(reference) })
+            .ToList()
             ?? new List<JsonObject>();
     }
 
@@ -444,12 +533,21 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
 
     private static string? String(JsonElement element, string name)
     {
-        return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+        return
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.String
             ? value.GetString()
             : null;
     }
 
-    private (JsonObject Body, List<OperationWarning> Warnings, XaiVideoModelOptions? XaiOptions, bool IsEdit, bool IsExtension) BuildRequestBody(VideoModelCall call)
+    private (
+        JsonObject Body,
+        List<OperationWarning> Warnings,
+        XaiVideoModelOptions? XaiOptions,
+        bool IsEdit,
+        bool IsExtension
+    ) BuildRequestBody(VideoModelCall call)
     {
         var warnings = new List<OperationWarning>();
         var xaiOptions = XaiVideoModelOptions.Parse(call.ProviderOptions);
@@ -461,44 +559,78 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
 
         if (call.Fps != null)
         {
-            warnings.Add(OperationWarning.Unsupported("fps", "xAI video models do not support custom FPS."));
+            warnings.Add(
+                OperationWarning.Unsupported("fps", "xAI video models do not support custom FPS.")
+            );
         }
 
         if (call.Seed != null)
         {
-            warnings.Add(OperationWarning.Unsupported("seed", "xAI video models do not support seed."));
+            warnings.Add(
+                OperationWarning.Unsupported("seed", "xAI video models do not support seed.")
+            );
         }
 
         if (call.N > 1)
         {
-            warnings.Add(OperationWarning.Unsupported("n", "xAI video models do not support generating multiple videos per call. Only 1 video will be generated."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "n",
+                    "xAI video models do not support generating multiple videos per call. Only 1 video will be generated."
+                )
+            );
         }
 
         // Edit mode: duration, aspectRatio, resolution not supported.
         if (isEdit && call.Duration != null)
         {
-            warnings.Add(OperationWarning.Unsupported("duration", "xAI video editing does not support custom duration."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "duration",
+                    "xAI video editing does not support custom duration."
+                )
+            );
         }
 
         if (isEdit && call.AspectRatio != null)
         {
-            warnings.Add(OperationWarning.Unsupported("aspectRatio", "xAI video editing does not support custom aspect ratio."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "aspectRatio",
+                    "xAI video editing does not support custom aspect ratio."
+                )
+            );
         }
 
         if (isEdit && (xaiOptions?.Resolution != null || call.Resolution != null))
         {
-            warnings.Add(OperationWarning.Unsupported("resolution", "xAI video editing does not support custom resolution."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "resolution",
+                    "xAI video editing does not support custom resolution."
+                )
+            );
         }
 
         // Extension mode: aspectRatio and resolution not supported.
         if (isExtension && call.AspectRatio != null)
         {
-            warnings.Add(OperationWarning.Unsupported("aspectRatio", "xAI video extension does not support custom aspect ratio."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "aspectRatio",
+                    "xAI video extension does not support custom aspect ratio."
+                )
+            );
         }
 
         if (isExtension && (xaiOptions?.Resolution != null || call.Resolution != null))
         {
-            warnings.Add(OperationWarning.Unsupported("resolution", "xAI video extension does not support custom resolution."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "resolution",
+                    "xAI video extension does not support custom resolution."
+                )
+            );
         }
 
         var body = new JsonObject { ["model"] = ModelId, ["prompt"] = call.Prompt };
@@ -534,9 +666,14 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
             }
             else
             {
-                warnings.Add(OperationWarning.Unsupported(
-                    "resolution",
-                    "Unrecognized resolution \"" + call.Resolution + "\". Use providerOptions.xai.resolution with \"480p\", \"720p\", or \"1080p\" instead."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "resolution",
+                        "Unrecognized resolution \""
+                            + call.Resolution
+                            + "\". Use providerOptions.xai.resolution with \"480p\", \"720p\", or \"1080p\" instead."
+                    )
+                );
             }
         }
 
@@ -546,7 +683,14 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
         }
         else if (call.GenerateAudio != null)
         {
-            warnings.Add(OperationWarning.Unsupported("generateAudio", "xAI " + (isEdit ? "video editing" : "video extension") + " does not support generateAudio."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "generateAudio",
+                    "xAI "
+                        + (isEdit ? "video editing" : "video extension")
+                        + " does not support generateAudio."
+                )
+            );
         }
 
         if (xaiOptions?.StorageOptions is { } storage)
@@ -579,22 +723,29 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
         {
             if (ModelId != Grok15 || isEdit || isExtension)
             {
-                warnings.Add(OperationWarning.Unsupported(
-                    "keyframes",
-                    ModelId != Grok15
-                        ? "xAI only supports keyframes with \"grok-imagine-video-1.5\"."
-                        : "xAI " + (isEdit ? "video editing" : "video extension") + " does not support keyframes."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "keyframes",
+                        ModelId != Grok15
+                            ? "xAI only supports keyframes with \"grok-imagine-video-1.5\"."
+                            : "xAI "
+                                + (isEdit ? "video editing" : "video extension")
+                                + " does not support keyframes."
+                    )
+                );
             }
             else
             {
                 var entries = new JsonArray();
                 foreach (var keyframe in keyframes)
                 {
-                    entries.Add(new JsonObject
-                    {
-                        ["image"] = new JsonObject { ["url"] = keyframe.ImageUrl },
-                        ["timestamp_s"] = keyframe.TimestampSeconds,
-                    });
+                    entries.Add(
+                        new JsonObject
+                        {
+                            ["image"] = new JsonObject { ["url"] = keyframe.ImageUrl },
+                            ["timestamp_s"] = keyframe.TimestampSeconds,
+                        }
+                    );
                 }
 
                 body["keyframes"] = entries;
@@ -613,9 +764,12 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
             if (IsVideoFile(startImage))
             {
                 var fromFrameImages = GetFirstFrameImage(call) != null;
-                warnings.Add(OperationWarning.Unsupported(
-                    fromFrameImages ? "frameImages" : "image",
-                    "xAI does not accept a video as a start/frame image. The video was ignored. Use providerOptions.xai.mode \"extend-video\" to continue from a video instead."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        fromFrameImages ? "frameImages" : "image",
+                        "xAI does not accept a video as a start/frame image. The video was ignored. Use providerOptions.xai.mode \"extend-video\" to continue from a video instead."
+                    )
+                );
             }
             else
             {
@@ -628,11 +782,14 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
         {
             if (ModelId != Grok15 || isEdit || isExtension || IsVideoFile(lastFrameImage))
             {
-                warnings.Add(OperationWarning.Unsupported(
-                    "frameImages",
-                    ModelId != Grok15
-                        ? "xAI only supports last_frame with \"grok-imagine-video-1.5\". The last frame was ignored."
-                        : "xAI only accepts an image last_frame for video generation. The last frame was ignored."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "frameImages",
+                        ModelId != Grok15
+                            ? "xAI only supports last_frame with \"grok-imagine-video-1.5\". The last frame was ignored."
+                            : "xAI only accepts an image last_frame for video generation. The last frame was ignored."
+                    )
+                );
             }
             else
             {
@@ -654,31 +811,48 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
             {
                 // Explicit R2V with no usable image references would silently send a plain generations
                 // request; tell the user it is no longer R2V.
-                warnings.Add(OperationWarning.Unsupported(
-                    "referenceImages",
-                    "xAI reference-to-video requires at least one image reference. The video will be generated without reference images."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "referenceImages",
+                        "xAI reference-to-video requires at least one image reference. The video will be generated without reference images."
+                    )
+                );
             }
 
             var referenceAudioInputs = new List<JsonObject>(referenceAudios);
             if (xaiOptions?.ReferenceVoiceIds is { } voiceIds)
             {
-                referenceAudioInputs.AddRange(voiceIds.Select(voiceId => new JsonObject { ["voice_id"] = voiceId }));
+                referenceAudioInputs.AddRange(
+                    voiceIds.Select(voiceId => new JsonObject { ["voice_id"] = voiceId })
+                );
             }
 
             if (referenceAudioInputs.Count > 0)
             {
                 if (referenceAudioInputs.Count > 3)
                 {
-                    warnings.Add(OperationWarning.Unsupported("inputReferences", "xAI reference-to-video supports at most 3 audio references. Only the first 3 were used."));
+                    warnings.Add(
+                        OperationWarning.Unsupported(
+                            "inputReferences",
+                            "xAI reference-to-video supports at most 3 audio references. Only the first 3 were used."
+                        )
+                    );
                 }
 
-                body["reference_audios"] = new JsonArray(referenceAudioInputs.Take(3).Select(entry => (JsonNode)entry).ToArray());
+                body["reference_audios"] = new JsonArray(
+                    referenceAudioInputs.Take(3).Select(entry => (JsonNode)entry).ToArray()
+                );
             }
 
             // Reference-to-video is capped at 720p; downgrade a 1080p request.
             if (body["resolution"]?.GetValue<string>() == "1080p")
             {
-                warnings.Add(OperationWarning.Unsupported("resolution", "xAI reference-to-video is limited to 720p. The request was downgraded from 1080p to 720p."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "resolution",
+                        "xAI reference-to-video is limited to 720p. The request was downgraded from 1080p to 720p."
+                    )
+                );
                 body["resolution"] = "720p";
             }
         }
@@ -686,28 +860,37 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
         // 1080p requires grok-imagine-video-1.5; the original grok-imagine-video rejects it. Warn, but send the request as the user asked.
         if (body["resolution"]?.GetValue<string>() == "1080p" && ModelId == "grok-imagine-video")
         {
-            warnings.Add(OperationWarning.Unsupported(
-                "resolution",
-                "xAI model \"grok-imagine-video\" does not support 1080p. Use \"grok-imagine-video-1.5\" for 1080p, or a lower resolution. The request was sent with 1080p."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "resolution",
+                    "xAI model \"grok-imagine-video\" does not support 1080p. Use \"grok-imagine-video-1.5\" for 1080p, or a lower resolution. The request was sent with 1080p."
+                )
+            );
         }
 
         // Warn when references were provided but cannot be used in the resolved mode (for example alongside
         // frameImages, in edit/extend modes, or when the references carried no usable image to drive reference-to-video).
         if (call.InputReferences is { Count: > 0 } && !hasReferenceImages)
         {
-            warnings.Add(OperationWarning.Unsupported(
-                "inputReferences",
-                HasImageInputReference(call) || HasAudioInputReference(call)
-                    ? "xAI only supports inputReferences for reference-to-video generation. The references were ignored."
-                    : "xAI reference-to-video requires at least one image or audio reference. The references were ignored."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "inputReferences",
+                    HasImageInputReference(call) || HasAudioInputReference(call)
+                        ? "xAI only supports inputReferences for reference-to-video generation. The references were ignored."
+                        : "xAI reference-to-video requires at least one image or audio reference. The references were ignored."
+                )
+            );
         }
 
         // Preset reference voices only apply to reference-to-video generation.
         if (xaiOptions?.ReferenceVoiceIds is { Count: > 0 } && !hasReferenceImages)
         {
-            warnings.Add(OperationWarning.Unsupported(
-                "referenceVoiceIds",
-                "xAI only supports reference voices for reference-to-video generation. The reference voices were ignored."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "referenceVoiceIds",
+                    "xAI only supports reference voices for reference-to-video generation. The reference voices were ignored."
+                )
+            );
         }
 
         if (!isExtension && xaiOptions?.User != null)
@@ -728,7 +911,11 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
 
     private ProviderResponse Response(ProviderExchangeResult response, DateTimeOffset timestamp)
     {
-        return new ProviderResponse(response.Headers, timestamp: timestamp.UtcDateTime, modelId: ModelId);
+        return new ProviderResponse(
+            response.Headers,
+            timestamp: timestamp.UtcDateTime,
+            modelId: ModelId
+        );
     }
 
     // The xAI video status response. Every field is nullish, as in upstream.
@@ -753,7 +940,10 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
                 Status = String(root, "status"),
                 Progress = Number(root, "progress"),
             };
-            if (root.TryGetProperty("video", out var video) && video.ValueKind == JsonValueKind.Object)
+            if (
+                root.TryGetProperty("video", out var video)
+                && video.ValueKind == JsonValueKind.Object
+            )
             {
                 response.Video = StatusVideo.From(video);
             }
@@ -763,7 +953,10 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
                 response.CostInUsdTicks = Number(usage, "cost_in_usd_ticks");
             }
 
-            if (root.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
+            if (
+                root.TryGetProperty("error", out var error)
+                && error.ValueKind == JsonValueKind.Object
+            )
             {
                 response.ErrorCode = String(error, "code");
                 response.ErrorMessage = String(error, "message");
@@ -793,12 +986,18 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
                 Duration = Number(video, "duration"),
                 StorageError = String(video, "storage_error"),
             };
-            if (video.TryGetProperty("respect_moderation", out var moderation) && moderation.ValueKind is JsonValueKind.True or JsonValueKind.False)
+            if (
+                video.TryGetProperty("respect_moderation", out var moderation)
+                && moderation.ValueKind is JsonValueKind.True or JsonValueKind.False
+            )
             {
                 result.RespectModeration = moderation.GetBoolean();
             }
 
-            if (video.TryGetProperty("file_output", out var fileOutput) && fileOutput.ValueKind == JsonValueKind.Object)
+            if (
+                video.TryGetProperty("file_output", out var fileOutput)
+                && fileOutput.ValueKind == JsonValueKind.Object
+            )
             {
                 result.FileOutput = new StatusFileOutput
                 {
@@ -832,7 +1031,10 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
 
     private static JsonNode? Number(JsonElement element, string name)
     {
-        return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number
+        return
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Number
             ? JsonNode.Parse(value.GetRawText())
             : null;
     }

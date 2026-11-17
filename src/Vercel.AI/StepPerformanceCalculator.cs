@@ -13,7 +13,8 @@ internal static class StepPerformanceCalculator
         double responseTimeMs,
         IReadOnlyList<double> outputChunkTimesMs,
         IReadOnlyDictionary<string, double> toolExecutionMs,
-        LanguageModelUsage usage)
+        LanguageModelUsage usage
+    )
     {
         double inputTokens = usage.InputTokens ?? 0;
         double outputTokens = usage.OutputTokens ?? 0;
@@ -24,7 +25,8 @@ internal static class StepPerformanceCalculator
         if (timeToFirstOutputMs is double first)
         {
             var outputStreamSeconds = (responseTimeMs - first) / 1000;
-            outputTokensPerSecond = outputStreamSeconds > 0 ? outputTokens / outputStreamSeconds : 0;
+            outputTokensPerSecond =
+                outputStreamSeconds > 0 ? outputTokens / outputStreamSeconds : 0;
             inputTokensPerSecond = first > 0 ? inputTokens / (first / 1000) : 0;
         }
 
@@ -34,7 +36,8 @@ internal static class StepPerformanceCalculator
             ResponseTimeMs = responseTimeMs,
             ToolExecutionMs = toolExecutionMs,
             EffectiveOutputTokensPerSecond = requestSeconds > 0 ? outputTokens / requestSeconds : 0,
-            EffectiveTotalTokensPerSecond = requestSeconds > 0 ? (inputTokens + outputTokens) / requestSeconds : 0,
+            EffectiveTotalTokensPerSecond =
+                requestSeconds > 0 ? (inputTokens + outputTokens) / requestSeconds : 0,
             OutputTokensPerSecond = outputTokensPerSecond,
             InputTokensPerSecond = inputTokensPerSecond,
             TimeToFirstOutputMs = timeToFirstOutputMs,
@@ -56,7 +59,14 @@ internal static class StepPerformanceCalculator
         }
 
         Array.Sort(gaps);
-        return new OutputChunkTimingStats(gaps[0], gaps[gaps.Length - 1], gaps.Average(), Percentile(gaps, 0.5), Percentile(gaps, 0.1), Percentile(gaps, 0.9));
+        return new OutputChunkTimingStats(
+            gaps[0],
+            gaps[gaps.Length - 1],
+            gaps.Average(),
+            Percentile(gaps, 0.5),
+            Percentile(gaps, 0.1),
+            Percentile(gaps, 0.9)
+        );
     }
 
     private static double Percentile(double[] sorted, double fraction)

@@ -24,32 +24,55 @@ internal sealed class ProdiaMultipartPart
 
     public byte[] Body { get; }
 
-    public string ContentDisposition => Headers.TryGetValue("content-disposition", out var value) ? value : string.Empty;
+    public string ContentDisposition =>
+        Headers.TryGetValue("content-disposition", out var value) ? value : string.Empty;
 
-    public string ContentType => Headers.TryGetValue("content-type", out var value) ? value : string.Empty;
+    public string ContentType =>
+        Headers.TryGetValue("content-type", out var value) ? value : string.Empty;
 }
 
 /// <summary>Job submission and multipart response parsing shared by the Prodia models.</summary>
 internal static class ProdiaApi
 {
-    private static readonly Regex Boundary = new Regex("boundary=([^\\s;]+)", RegexOptions.CultureInvariant);
+    private static readonly Regex Boundary = new Regex(
+        "boundary=([^\\s;]+)",
+        RegexOptions.CultureInvariant
+    );
 
     /// <summary>Posts a job to <c>/job?price=true</c> and splits the multipart response.</summary>
-    public static async Task<(IReadOnlyList<ProdiaMultipartPart> Parts, IReadOnlyDictionary<string, string> Headers)> PostJobAsync(
+    public static async Task<(
+        IReadOnlyList<ProdiaMultipartPart> Parts,
+        IReadOnlyDictionary<string, string> Headers
+    )> PostJobAsync(
         ProdiaProvider provider,
         HttpContent content,
         string accept,
         IEnumerable<KeyValuePair<string, string>>? callHeaders,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var headers = ProviderExchange.Merge(provider.CreateHeaders(), callHeaders);
         headers["Accept"] = accept;
-        var response = await ProviderExchange.SendAsync(provider.HttpClient, HttpMethod.Post, JobUri(provider), content, headers, cancellationToken).ConfigureAwait(false);
-        var contentType = response.Headers.TryGetValue("Content-Type", out var value) ? value : string.Empty;
+        var response = await ProviderExchange
+            .SendAsync(
+                provider.HttpClient,
+                HttpMethod.Post,
+                JobUri(provider),
+                content,
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        var contentType = response.Headers.TryGetValue("Content-Type", out var value)
+            ? value
+            : string.Empty;
         var boundary = Boundary.Match(contentType);
         if (!boundary.Success)
         {
-            throw new InvalidResponseDataException(contentType, "Prodia response missing multipart boundary in content-type: " + contentType);
+            throw new InvalidResponseDataException(
+                contentType,
+                "Prodia response missing multipart boundary in content-type: " + contentType
+            );
         }
 
         return (ParseMultipart(response.Bytes, boundary.Groups[1].Value), response.Headers);
@@ -135,7 +158,12 @@ internal static class ProdiaApi
             var headerEnd = -1;
             for (var j = 0; j < part.Length - 3; j++)
             {
-                if (part[j] == 0x0d && part[j + 1] == 0x0a && part[j + 2] == 0x0d && part[j + 3] == 0x0a)
+                if (
+                    part[j] == 0x0d
+                    && part[j + 1] == 0x0a
+                    && part[j + 2] == 0x0d
+                    && part[j + 3] == 0x0a
+                )
                 {
                     headerEnd = j;
                     break;
@@ -159,7 +187,10 @@ internal static class ProdiaApi
                 var colon = line.IndexOf(':');
                 if (colon > 0)
                 {
-                    headers[line.Substring(0, colon).Trim().ToLowerInvariant()] = line.Substring(colon + 1).Trim();
+                    headers[line.Substring(0, colon).Trim().ToLowerInvariant()] = line.Substring(
+                            colon + 1
+                        )
+                        .Trim();
                 }
             }
 
@@ -171,16 +202,25 @@ internal static class ProdiaApi
     }
 
     /// <summary>Builds the multipart request with the <c>job</c> part and an optional <c>input</c> file.</summary>
-    public static MultipartFormDataContent Form(string job, byte[]? input, string? inputMediaType, string inputExtension)
+    public static MultipartFormDataContent Form(
+        string job,
+        byte[]? input,
+        string? inputMediaType,
+        string inputExtension
+    )
     {
         var form = new MultipartFormDataContent();
         var jobContent = new ByteArrayContent(Encoding.UTF8.GetBytes(job));
-        jobContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+        jobContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+            "application/json"
+        );
         form.Add(jobContent, "job", "job.json");
         if (input != null)
         {
             var inputContent = new ByteArrayContent(input);
-            inputContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(inputMediaType!);
+            inputContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+                inputMediaType!
+            );
             form.Add(inputContent, "input", "input" + inputExtension);
         }
 
@@ -192,12 +232,20 @@ internal static class ProdiaApi
         return new Uri(provider.Options.BaseUrl + "/job?price=true");
     }
 
-    private static void Copy(JsonObject target, string name, JsonElement source, params string[] path)
+    private static void Copy(
+        JsonObject target,
+        string name,
+        JsonElement source,
+        params string[] path
+    )
     {
         var current = source;
         foreach (var segment in path)
         {
-            if (current.ValueKind != JsonValueKind.Object || !current.TryGetProperty(segment, out current))
+            if (
+                current.ValueKind != JsonValueKind.Object
+                || !current.TryGetProperty(segment, out current)
+            )
             {
                 return;
             }

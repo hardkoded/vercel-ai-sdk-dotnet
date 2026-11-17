@@ -25,9 +25,20 @@ internal static class SupportsNativeStructuredOutputSchemaChecker
         "then",
     ];
 
-    private static readonly string[] SubschemaListKeywords = ["allOf", "anyOf", "oneOf", "prefixItems"];
+    private static readonly string[] SubschemaListKeywords =
+    [
+        "allOf",
+        "anyOf",
+        "oneOf",
+        "prefixItems",
+    ];
 
-    private static readonly string[] SubschemaMapKeywords = ["dependentSchemas", "patternProperties", "properties"];
+    private static readonly string[] SubschemaMapKeywords =
+    [
+        "dependentSchemas",
+        "patternProperties",
+        "properties",
+    ];
 
     /// <summary>
     /// Whether Anthropic's native structured outputs (<c>output_config.format</c>) can
@@ -44,11 +55,19 @@ internal static class SupportsNativeStructuredOutputSchemaChecker
             return false;
         }
 
-        var stats = GetSchemaStats(schema, schema, new Dictionary<string, SchemaStats>(StringComparer.Ordinal));
+        var stats = GetSchemaStats(
+            schema,
+            schema,
+            new Dictionary<string, SchemaStats>(StringComparer.Ordinal)
+        );
         return !stats.HasOpenObject && stats.OptionalProperties <= MaxOptionalProperties;
     }
 
-    private static SchemaStats GetSchemaStats(JsonElement node, JsonElement root, Dictionary<string, SchemaStats> refStats)
+    private static SchemaStats GetSchemaStats(
+        JsonElement node,
+        JsonElement root,
+        Dictionary<string, SchemaStats> refStats
+    )
     {
         var stats = new SchemaStats();
         if (node.ValueKind != JsonValueKind.Object)
@@ -64,15 +83,20 @@ internal static class SupportsNativeStructuredOutputSchemaChecker
         }
 
         // references are counted at every use; the schema has no cycles here:
-        if (node.TryGetProperty("$ref", out var reference)
+        if (
+            node.TryGetProperty("$ref", out var reference)
             && reference.ValueKind == JsonValueKind.String
-            && reference.GetString()!.StartsWith("#", StringComparison.Ordinal))
+            && reference.GetString()!.StartsWith("#", StringComparison.Ordinal)
+        )
         {
             var pointer = reference.GetString()!;
             if (!refStats.TryGetValue(pointer, out var resolved))
             {
                 var target = HasCircularSchemaReferenceChecker.ResolveSchemaPointer(root, pointer);
-                resolved = target == null ? new SchemaStats() : GetSchemaStats(target.Value, root, refStats);
+                resolved =
+                    target == null
+                        ? new SchemaStats()
+                        : GetSchemaStats(target.Value, root, refStats);
                 refStats[pointer] = resolved;
             }
 
@@ -85,10 +109,16 @@ internal static class SupportsNativeStructuredOutputSchemaChecker
             stats.HasOpenObject = true;
         }
 
-        if (node.TryGetProperty("properties", out var properties) && properties.ValueKind == JsonValueKind.Object)
+        if (
+            node.TryGetProperty("properties", out var properties)
+            && properties.ValueKind == JsonValueKind.Object
+        )
         {
             var required = new HashSet<string>(StringComparer.Ordinal);
-            if (node.TryGetProperty("required", out var requiredValue) && requiredValue.ValueKind == JsonValueKind.Array)
+            if (
+                node.TryGetProperty("required", out var requiredValue)
+                && requiredValue.ValueKind == JsonValueKind.Array
+            )
             {
                 foreach (var name in requiredValue.EnumerateArray())
                 {
@@ -99,7 +129,9 @@ internal static class SupportsNativeStructuredOutputSchemaChecker
                 }
             }
 
-            stats.OptionalProperties += properties.EnumerateObject().Count(property => !required.Contains(property.Name));
+            stats.OptionalProperties += properties
+                .EnumerateObject()
+                .Count(property => !required.Contains(property.Name));
         }
 
         foreach (var keyword in SubschemaKeywords)
@@ -124,7 +156,10 @@ internal static class SupportsNativeStructuredOutputSchemaChecker
 
         foreach (var keyword in SubschemaListKeywords)
         {
-            if (node.TryGetProperty(keyword, out var value) && value.ValueKind == JsonValueKind.Array)
+            if (
+                node.TryGetProperty(keyword, out var value)
+                && value.ValueKind == JsonValueKind.Array
+            )
             {
                 foreach (var item in value.EnumerateArray())
                 {
@@ -135,7 +170,10 @@ internal static class SupportsNativeStructuredOutputSchemaChecker
 
         foreach (var keyword in SubschemaMapKeywords)
         {
-            if (node.TryGetProperty(keyword, out var value) && value.ValueKind == JsonValueKind.Object)
+            if (
+                node.TryGetProperty(keyword, out var value)
+                && value.ValueKind == JsonValueKind.Object
+            )
             {
                 foreach (var entry in value.EnumerateObject())
                 {
@@ -149,25 +187,45 @@ internal static class SupportsNativeStructuredOutputSchemaChecker
 
     private static bool IsOpenObject(JsonElement node)
     {
-        var hasAdditionalProperties = node.TryGetProperty("additionalProperties", out var additionalProperties);
-        if (hasAdditionalProperties
-            && (additionalProperties.ValueKind == JsonValueKind.True || additionalProperties.ValueKind == JsonValueKind.Object))
+        var hasAdditionalProperties = node.TryGetProperty(
+            "additionalProperties",
+            out var additionalProperties
+        );
+        if (
+            hasAdditionalProperties
+            && (
+                additionalProperties.ValueKind == JsonValueKind.True
+                || additionalProperties.ValueKind == JsonValueKind.Object
+            )
+        )
         {
             return true;
         }
 
-        if (node.TryGetProperty("patternProperties", out var patternProperties)
+        if (
+            node.TryGetProperty("patternProperties", out var patternProperties)
             && patternProperties.ValueKind == JsonValueKind.Object
-            && patternProperties.EnumerateObject().Any())
+            && patternProperties.EnumerateObject().Any()
+        )
         {
             return true;
         }
 
-        var hasProperties = node.TryGetProperty("properties", out var properties) && properties.ValueKind != JsonValueKind.Null;
-        var isObjectType = node.TryGetProperty("type", out var type)
-            && (type.ValueKind == JsonValueKind.String && type.GetString() == "object"
-                || type.ValueKind == JsonValueKind.Array && type.EnumerateArray().Any(item => item.ValueKind == JsonValueKind.String && item.GetString() == "object"));
-        var closed = hasAdditionalProperties && additionalProperties.ValueKind == JsonValueKind.False;
+        var hasProperties =
+            node.TryGetProperty("properties", out var properties)
+            && properties.ValueKind != JsonValueKind.Null;
+        var isObjectType =
+            node.TryGetProperty("type", out var type)
+            && (
+                type.ValueKind == JsonValueKind.String && type.GetString() == "object"
+                || type.ValueKind == JsonValueKind.Array
+                    && type.EnumerateArray()
+                        .Any(item =>
+                            item.ValueKind == JsonValueKind.String && item.GetString() == "object"
+                        )
+            );
+        var closed =
+            hasAdditionalProperties && additionalProperties.ValueKind == JsonValueKind.False;
         return isObjectType && !hasProperties && !closed;
     }
 

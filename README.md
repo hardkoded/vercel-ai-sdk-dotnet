@@ -41,13 +41,15 @@ By default, string model ids go to the [Vercel AI Gateway](https://vercel.com/do
 ```cs
 var client = new AiClient(GatewayProvider.Create());
 
-var result = await client.GenerateTextAsync(new GenerateTextOptions
-{
-    ModelId = "anthropic/claude-opus-5.5", // or "openai/gpt-6-astra", "google/gemini-3.8-flash", etc.
-    Prompt = "Hello!",
-});
+var result = await client.GenerateTextAsync(
+    new GenerateTextOptions
+    {
+        ModelId = "anthropic/claude-opus-5.5", // or "openai/gpt-6-astra", "google/gemini-3.8-flash", etc.
+        Prompt = "Hello!",
+    }
+);
 ```
-<sup><a href='/examples/Providers/Program.cs#L19-L27' title='Snippet source file'>snippet source</a> | <a href='#snippet-gateway-model' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/examples/Providers/Program.cs#L19-L29' title='Snippet source file'>snippet source</a> | <a href='#snippet-gateway-model' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 You can also connect to a provider directly. Each provider has a `Create()` method that reads its API key from the same environment variable as the JavaScript provider:
@@ -58,13 +60,15 @@ You can also connect to a provider directly. Each provider has a `Create()` meth
 var client = new AiClient(GatewayProvider.Create());
 var anthropic = AnthropicProvider.Create(); // or OpenAIProvider.Create(), GoogleProvider.Create(), etc.
 
-var result = await client.GenerateTextAsync(new GenerateTextOptions
-{
-    Model = anthropic.LanguageModel("claude-opus-5-5"),
-    Prompt = "Hello!",
-});
+var result = await client.GenerateTextAsync(
+    new GenerateTextOptions
+    {
+        Model = anthropic.LanguageModel("claude-opus-5-5"),
+        Prompt = "Hello!",
+    }
+);
 ```
-<sup><a href='/examples/Providers/Program.cs#L34-L43' title='Snippet source file'>snippet source</a> | <a href='#snippet-provider-model' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/examples/Providers/Program.cs#L36-L47' title='Snippet source file'>snippet source</a> | <a href='#snippet-provider-model' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Usage
@@ -76,15 +80,17 @@ var result = await client.GenerateTextAsync(new GenerateTextOptions
 ```cs
 var client = new AiClient(GatewayProvider.Create());
 
-var result = await client.GenerateTextAsync(new GenerateTextOptions
-{
-    ModelId = "openai/gpt-6-astra", // use Vercel AI Gateway
-    Prompt = "What is an agent?",
-});
+var result = await client.GenerateTextAsync(
+    new GenerateTextOptions
+    {
+        ModelId = "openai/gpt-6-astra", // use Vercel AI Gateway
+        Prompt = "What is an agent?",
+    }
+);
 
 Console.WriteLine(result.Text);
 ```
-<sup><a href='/examples/GenerateText/Program.cs#L14-L24' title='Snippet source file'>snippet source</a> | <a href='#snippet-generate-text' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/examples/GenerateText/Program.cs#L14-L26' title='Snippet source file'>snippet source</a> | <a href='#snippet-generate-text' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Generating Structured Data
@@ -94,45 +100,49 @@ Console.WriteLine(result.Text);
 ```cs
 var client = new AiClient(GatewayProvider.Create());
 
-var result = await client.GenerateTextAsync(new GenerateTextOptions
-{
-    ModelId = "openai/gpt-6-astra",
-    Output = OutputSpec.Object("""
-        {
-          "type": "object",
-          "properties": {
-            "recipe": {
+var result = await client.GenerateTextAsync(
+    new GenerateTextOptions
+    {
+        ModelId = "openai/gpt-6-astra",
+        Output = OutputSpec.Object(
+            """
+            {
               "type": "object",
               "properties": {
-                "name": { "type": "string" },
-                "ingredients": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "name": { "type": "string" },
-                      "amount": { "type": "string" }
+                "recipe": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "ingredients": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": { "type": "string" },
+                          "amount": { "type": "string" }
+                        },
+                        "required": ["name", "amount"],
+                        "additionalProperties": false
+                      }
                     },
-                    "required": ["name", "amount"],
-                    "additionalProperties": false
-                  }
-                },
-                "steps": { "type": "array", "items": { "type": "string" } }
+                    "steps": { "type": "array", "items": { "type": "string" } }
+                  },
+                  "required": ["name", "ingredients", "steps"],
+                  "additionalProperties": false
+                }
               },
-              "required": ["name", "ingredients", "steps"],
+              "required": ["recipe"],
               "additionalProperties": false
             }
-          },
-          "required": ["recipe"],
-          "additionalProperties": false
-        }
-        """),
-    Prompt = "Generate a lasagna recipe.",
-});
+            """
+        ),
+        Prompt = "Generate a lasagna recipe.",
+    }
+);
 
 Console.WriteLine(result.Output);
 ```
-<sup><a href='/examples/GenerateStructuredData/Program.cs#L14-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-generate-structured-data' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/examples/GenerateStructuredData/Program.cs#L14-L58' title='Snippet source file'>snippet source</a> | <a href='#snippet-generate-structured-data' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Agents
@@ -140,28 +150,40 @@ Console.WriteLine(result.Output);
 <!-- snippet: agent -->
 <a id='snippet-agent'></a>
 ```cs
-var weatherAgent = new Agent(new AgentOptions
-{
-    ModelId = "openai/gpt-6-astra",
-    Instructions = "You are an agent that answers questions about the weather.",
-    Tools = new[]
+var weatherAgent = new Agent(
+    new AgentOptions
     {
-        Tool.Function(
-            "weather",
-            "Returns the weather in a city.",
-            """{ "type": "object", "properties": { "city": { "type": "string" } }, "required": ["city"] }""",
-            (arguments, cancellationToken) =>
-            {
-                var city = arguments.GetProperty("city").GetString();
-                return Task.FromResult(JsonSerializer.Serialize(new { city, forecast = "sunny", temperature = 22 }));
-            }),
-    },
-});
+        ModelId = "openai/gpt-6-astra",
+        Instructions = "You are an agent that answers questions about the weather.",
+        Tools = new[]
+        {
+            Tool.Function(
+                "weather",
+                "Returns the weather in a city.",
+                """{ "type": "object", "properties": { "city": { "type": "string" } }, "required": ["city"] }""",
+                (arguments, cancellationToken) =>
+                {
+                    var city = arguments.GetProperty("city").GetString();
+                    return Task.FromResult(
+                        JsonSerializer.Serialize(
+                            new
+                            {
+                                city,
+                                forecast = "sunny",
+                                temperature = 22,
+                            }
+                        )
+                    );
+                }
+            ),
+        },
+    }
+);
 
 var result = await weatherAgent.GenerateAsync("What is the weather in Lisbon?");
 Console.WriteLine(result.Text);
 ```
-<sup><a href='/examples/Agent/Program.cs#L14-L35' title='Snippet source file'>snippet source</a> | <a href='#snippet-agent' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/examples/Agent/Program.cs#L14-L47' title='Snippet source file'>snippet source</a> | <a href='#snippet-agent' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Examples

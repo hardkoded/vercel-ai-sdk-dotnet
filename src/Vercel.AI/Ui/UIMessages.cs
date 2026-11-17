@@ -226,9 +226,7 @@ public sealed class StepStartUIPart : UIMessagePart
 {
     /// <summary>Creates a step-start part.</summary>
     public StepStartUIPart()
-        : base("step-start")
-    {
-    }
+        : base("step-start") { }
 }
 
 /// <summary>A data part. Its type is <c>data-{name}</c>. Maps to <c>DataUIPart</c>.</summary>
@@ -318,8 +316,17 @@ public sealed class ToolUIApproval
 public sealed class ToolUIPart : UIMessagePart
 {
     /// <summary>Creates a tool part for the tool <paramref name="toolName"/>.</summary>
-    public ToolUIPart(string toolName, string toolCallId, ToolUIPartState state, bool isDynamic = false)
-        : base(isDynamic ? "dynamic-tool" : "tool-" + (toolName ?? throw new ArgumentNullException(nameof(toolName))))
+    public ToolUIPart(
+        string toolName,
+        string toolCallId,
+        ToolUIPartState state,
+        bool isDynamic = false
+    )
+        : base(
+            isDynamic
+                ? "dynamic-tool"
+                : "tool-" + (toolName ?? throw new ArgumentNullException(nameof(toolName)))
+        )
     {
         ToolName = toolName ?? throw new ArgumentNullException(nameof(toolName));
         ToolCallId = toolCallId ?? throw new ArgumentNullException(nameof(toolCallId));

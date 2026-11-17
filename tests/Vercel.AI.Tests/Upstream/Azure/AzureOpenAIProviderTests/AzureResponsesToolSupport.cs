@@ -15,14 +15,22 @@ internal static class AzureResponsesToolSupport
 {
     internal const string Url = "https://test-resource.openai.azure.com/openai/v1/responses";
 
-    internal static string Fixture(string name) => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", name));
+    internal static string Fixture(string name) =>
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", name));
 
     internal static JsonElement Json(string json) => OpenAIUpstream.Json(json);
 
     internal static AzureOpenAIProvider Provider(OpenAICapture capture) =>
-        AzureOpenAIProvider.Create(new AzureOpenAIOptions { ApiKey = "test-api-key", ResourceName = "test-resource" }, capture);
+        AzureOpenAIProvider.Create(
+            new AzureOpenAIOptions { ApiKey = "test-api-key", ResourceName = "test-resource" },
+            capture
+        );
 
-    internal static LanguageModelCallOptions Call(IReadOnlyList<LanguageModelTool>? tools = null, IReadOnlyList<ModelMessage>? extra = null, string? azureOptions = null)
+    internal static LanguageModelCallOptions Call(
+        IReadOnlyList<LanguageModelTool>? tools = null,
+        IReadOnlyList<ModelMessage>? extra = null,
+        string? azureOptions = null
+    )
     {
         var prompt = new List<ModelMessage> { new UserModelMessage("Hello") };
         if (extra != null)
@@ -34,20 +42,38 @@ internal static class AzureResponsesToolSupport
         {
             Prompt = prompt,
             Tools = tools,
-            ProviderOptions = azureOptions == null ? null : new Dictionary<string, JsonElement> { ["azure"] = Json(azureOptions) },
+            ProviderOptions =
+                azureOptions == null
+                    ? null
+                    : new Dictionary<string, JsonElement> { ["azure"] = Json(azureOptions) },
         };
     }
 
-    internal static async Task<LanguageModelGenerateResult> Generate(OpenAICapture capture, LanguageModelCallOptions options) =>
-        await Provider(capture).ResponsesModel("test-deployment").DoGenerateAsync(options, CancellationToken.None);
+    internal static async Task<LanguageModelGenerateResult> Generate(
+        OpenAICapture capture,
+        LanguageModelCallOptions options
+    ) =>
+        await Provider(capture)
+            .ResponsesModel("test-deployment")
+            .DoGenerateAsync(options, CancellationToken.None);
 
-    internal static async Task<List<LanguageModelStreamPart>> Stream(OpenAICapture capture, LanguageModelCallOptions options) =>
-        await OpenAIUpstream.Read(await Provider(capture).ResponsesModel("test-deployment").DoStreamAsync(options, CancellationToken.None));
+    internal static async Task<List<LanguageModelStreamPart>> Stream(
+        OpenAICapture capture,
+        LanguageModelCallOptions options
+    ) =>
+        await OpenAIUpstream.Read(
+            await Provider(capture)
+                .ResponsesModel("test-deployment")
+                .DoStreamAsync(options, CancellationToken.None)
+        );
 
     internal static JsonNode RequestBody(OpenAICapture capture) => JsonNode.Parse(capture.Body)!;
 
     internal static void AssertTools(OpenAICapture capture, string expected) =>
-        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expected), RequestBody(capture)["tools"]), RequestBody(capture)["tools"]!.ToJsonString());
+        Assert.True(
+            JsonNode.DeepEquals(JsonNode.Parse(expected), RequestBody(capture)["tools"]),
+            RequestBody(capture)["tools"]!.ToJsonString()
+        );
 
     internal static string Sse(IEnumerable<JsonNode> events) =>
         string.Concat(events.Select(@event => "data: " + @event.ToJsonString() + "\n\n"));

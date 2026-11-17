@@ -14,7 +14,12 @@ namespace Vercel.AI.Anthropic;
 public sealed class AnthropicPromptResult
 {
     /// <summary>Creates a converted prompt.</summary>
-    public AnthropicPromptResult(JsonArray? system, JsonArray messages, IReadOnlyList<string> betas, IReadOnlyList<AnthropicWarning> warnings)
+    public AnthropicPromptResult(
+        JsonArray? system,
+        JsonArray messages,
+        IReadOnlyList<string> betas,
+        IReadOnlyList<AnthropicWarning> warnings
+    )
     {
         System = system;
         Messages = messages;
@@ -35,14 +40,19 @@ public sealed class AnthropicPromptResult
     public IReadOnlyList<AnthropicWarning> Warnings { get; }
 
     /// <summary>The by-value tool definitions that ended up in <see cref="Messages"/>.</summary>
-    internal IReadOnlyList<JsonObject> InlineToolDefinitions { get; set; } = Array.Empty<JsonObject>();
+    internal IReadOnlyList<JsonObject> InlineToolDefinitions { get; set; } =
+        Array.Empty<JsonObject>();
 }
 
 /// <summary>The Anthropic form of a tool that a mid-conversation tool change defines by value.</summary>
 public sealed class AnthropicInlineToolResult
 {
     /// <summary>Creates a converted inline tool.</summary>
-    public AnthropicInlineToolResult(JsonObject? definition, IReadOnlyList<AnthropicWarning>? warnings = null, IReadOnlyList<string>? betas = null)
+    public AnthropicInlineToolResult(
+        JsonObject? definition,
+        IReadOnlyList<AnthropicWarning>? warnings = null,
+        IReadOnlyList<string>? betas = null
+    )
     {
         Definition = definition;
         Warnings = warnings ?? Array.Empty<AnthropicWarning>();
@@ -76,14 +86,23 @@ public static class AnthropicPrompt
         IReadOnlyDictionary<string, string>? providerToolNames = null,
         IReadOnlyDictionary<string, string>? toolsetNames = null,
         AnthropicMediaPartConverter? convertMediaPart = null,
-        AnthropicInlineToolConverter? convertInlineTool = null)
+        AnthropicInlineToolConverter? convertInlineTool = null
+    )
     {
         if (prompt == null)
         {
             throw new ArgumentNullException(nameof(prompt));
         }
 
-        return ConvertJson(ToJson(prompt), sendReasoning, cacheControl, providerToolNames, toolsetNames, convertMediaPart, convertInlineTool);
+        return ConvertJson(
+            ToJson(prompt),
+            sendReasoning,
+            cacheControl,
+            providerToolNames,
+            toolsetNames,
+            convertMediaPart,
+            convertInlineTool
+        );
     }
 
     /// <summary>Converts a prompt JSON array that uses the SDK message shape.</summary>
@@ -94,7 +113,8 @@ public static class AnthropicPrompt
         IReadOnlyDictionary<string, string>? providerToolNames = null,
         IReadOnlyDictionary<string, string>? toolsetNames = null,
         AnthropicMediaPartConverter? convertMediaPart = null,
-        AnthropicInlineToolConverter? convertInlineTool = null)
+        AnthropicInlineToolConverter? convertInlineTool = null
+    )
     {
         var warnings = new List<AnthropicWarning>();
         var betas = new List<string>();
@@ -113,15 +133,48 @@ public static class AnthropicPrompt
             var isLast = i == blocks.Count - 1;
             if (block.Role == "system")
             {
-                ConvertSystem(block, i == 0, ref system, messages, warnings, betas, validator, names, convertInlineTool, emittedInlineDefinitions);
+                ConvertSystem(
+                    block,
+                    i == 0,
+                    ref system,
+                    messages,
+                    warnings,
+                    betas,
+                    validator,
+                    names,
+                    convertInlineTool,
+                    emittedInlineDefinitions
+                );
             }
             else if (block.Role == "user")
             {
-                messages.Add(new JsonObject { ["role"] = "user", ["content"] = ConvertUser(block, warnings, betas, validator, convertMediaPart, toolsets) });
+                messages.Add(
+                    new JsonObject
+                    {
+                        ["role"] = "user",
+                        ["content"] = ConvertUser(
+                            block,
+                            warnings,
+                            betas,
+                            validator,
+                            convertMediaPart,
+                            toolsets
+                        ),
+                    }
+                );
             }
             else
             {
-                var content = ConvertAssistant(block, isLast, sendReasoning, warnings, betas, validator, names, toolsets);
+                var content = ConvertAssistant(
+                    block,
+                    isLast,
+                    sendReasoning,
+                    warnings,
+                    betas,
+                    validator,
+                    names,
+                    toolsets
+                );
                 if (content.Count > 0)
                 {
                     messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = content });
@@ -137,7 +190,10 @@ public static class AnthropicPrompt
             }
         }
 
-        return new AnthropicPromptResult(system, messages, betas, warnings) { InlineToolDefinitions = emittedInlineDefinitions };
+        return new AnthropicPromptResult(system, messages, betas, warnings)
+        {
+            InlineToolDefinitions = emittedInlineDefinitions,
+        };
     }
 
     private static void ConvertSystem(
@@ -150,7 +206,8 @@ public static class AnthropicPrompt
         AnthropicCacheControlValidator validator,
         IReadOnlyDictionary<string, string> names,
         AnthropicInlineToolConverter? convertInlineTool,
-        List<JsonObject> emittedInlineDefinitions)
+        List<JsonObject> emittedInlineDefinitions
+    )
     {
         var converted = new List<JsonObject>();
         var inlineDefinitions = new Dictionary<JsonObject, List<JsonObject>>();
@@ -158,20 +215,29 @@ public static class AnthropicPrompt
         var hasInlineOptions = false;
         foreach (var message in block.Messages)
         {
-            var text = message.ValueKind == JsonValueKind.String
-                ? message.GetString() ?? string.Empty
-                : AnthropicJson.String(message, "content") ?? string.Empty;
+            var text =
+                message.ValueKind == JsonValueKind.String
+                    ? message.GetString() ?? string.Empty
+                    : AnthropicJson.String(message, "content") ?? string.Empty;
             var options = Provider(message);
-            var toolChanges = options == null ? default : AnthropicJson.Property(options.Value, "toolChanges");
+            var toolChanges =
+                options == null ? default : AnthropicJson.Property(options.Value, "toolChanges");
             var clearAt = options == null ? null : AnthropicJson.String(options.Value, "clearAt");
             var effort = options == null ? null : AnthropicJson.String(options.Value, "effort");
-            var changes = toolChanges != null && toolChanges.Value.ValueKind == JsonValueKind.Array ? toolChanges.Value.GetArrayLength() : 0;
+            var changes =
+                toolChanges != null && toolChanges.Value.ValueKind == JsonValueKind.Array
+                    ? toolChanges.Value.GetArrayLength()
+                    : 0;
 
             var content = new JsonArray();
             if (text.Length > 0 || (changes == 0 && clearAt == null && effort == null))
             {
                 var part = new JsonObject { ["type"] = "text", ["text"] = text };
-                AnthropicJson.Set(part, "cache_control", validator.Get(Metadata(message), "system message", true));
+                AnthropicJson.Set(
+                    part,
+                    "cache_control",
+                    validator.Get(Metadata(message), "system message", true)
+                );
                 content.Add(part);
             }
 
@@ -181,20 +247,29 @@ public static class AnthropicPrompt
             {
                 foreach (var change in toolChanges.Value.EnumerateArray())
                 {
-                    if (change.ValueKind == JsonValueKind.Object && change.TryGetProperty("tool", out var inlineTool))
+                    if (
+                        change.ValueKind == JsonValueKind.Object
+                        && change.TryGetProperty("tool", out var inlineTool)
+                    )
                     {
                         if (convertInlineTool == null)
                         {
                             throw new UnsupportedFunctionalityException(
                                 "tool additions by value in mid-conversation tool changes",
-                                "'tool additions by value in mid-conversation tool changes' functionality not supported.");
+                                "'tool additions by value in mid-conversation tool changes' functionality not supported."
+                            );
                         }
 
                         if (IsComputerTool(inlineTool))
                         {
-                            warnings.Add(new AnthropicWarning(
-                                "other",
-                                message: "The tool '" + (AnthropicJson.String(inlineTool, "name") ?? string.Empty) + "' cannot be added by value in a tool change. Declare it in the tools option and add it by reference with toolName. The tool change has been ignored."));
+                            warnings.Add(
+                                new AnthropicWarning(
+                                    "other",
+                                    message: "The tool '"
+                                        + (AnthropicJson.String(inlineTool, "name") ?? string.Empty)
+                                        + "' cannot be added by value in a tool change. Declare it in the tools option and add it by reference with toolName. The tool change has been ignored."
+                                )
+                            );
                             continue;
                         }
 
@@ -210,22 +285,34 @@ public static class AnthropicPrompt
                             continue;
                         }
 
-                        content.Add(new JsonObject
-                        {
-                            ["type"] = "tool_addition",
-                            ["tool"] = new JsonObject { ["type"] = "tool_definition", ["definition"] = inline.Definition },
-                        });
+                        content.Add(
+                            new JsonObject
+                            {
+                                ["type"] = "tool_addition",
+                                ["tool"] = new JsonObject
+                                {
+                                    ["type"] = "tool_definition",
+                                    ["definition"] = inline.Definition,
+                                },
+                            }
+                        );
                         messageDefinitions.Add(inline.Definition);
                         messageChangeCount++;
                         continue;
                     }
 
                     var toolName = AnthropicJson.String(change, "toolName") ?? string.Empty;
-                    content.Add(new JsonObject
-                    {
-                        ["type"] = AnthropicJson.String(change, "type"),
-                        ["tool"] = new JsonObject { ["type"] = "tool_reference", ["name"] = ToProviderName(names, toolName) },
-                    });
+                    content.Add(
+                        new JsonObject
+                        {
+                            ["type"] = AnthropicJson.String(change, "type"),
+                            ["tool"] = new JsonObject
+                            {
+                                ["type"] = "tool_reference",
+                                ["name"] = ToProviderName(names, toolName),
+                            },
+                        }
+                    );
                     messageChangeCount++;
                 }
             }
@@ -266,9 +353,12 @@ public static class AnthropicPrompt
         {
             if (toolChangeCount > 0)
             {
-                warnings.Add(new AnthropicWarning(
-                    "other",
-                    message: "tool changes on the initial system message are not supported by Anthropic. Configure the initial tool set via the tools option instead. The tool changes have been ignored."));
+                warnings.Add(
+                    new AnthropicWarning(
+                        "other",
+                        message: "tool changes on the initial system message are not supported by Anthropic. Configure the initial tool set via the tools option instead. The tool changes have been ignored."
+                    )
+                );
             }
 
             var parts = system ?? new JsonArray();
@@ -276,16 +366,30 @@ public static class AnthropicPrompt
             {
                 // Effort-only messages stay in the messages array.
                 var contentParts = message["content"] as JsonArray;
-                if ((contentParts?.Count ?? 0) == 0 && message["clear_at"] == null && message["output_config"] != null)
+                if (
+                    (contentParts?.Count ?? 0) == 0
+                    && message["clear_at"] == null
+                    && message["output_config"] != null
+                )
                 {
-                    messages.Add(new JsonObject { ["role"] = "system", ["content"] = new JsonArray(), ["output_config"] = message["output_config"]!.DeepClone() });
+                    messages.Add(
+                        new JsonObject
+                        {
+                            ["role"] = "system",
+                            ["content"] = new JsonArray(),
+                            ["output_config"] = message["output_config"]!.DeepClone(),
+                        }
+                    );
                     AddBeta(betas, "mid-conversation-output-config-2026-07-01");
                 }
                 else if (message["clear_at"] != null || message["output_config"] != null)
                 {
-                    warnings.Add(new AnthropicWarning(
-                        "other",
-                        message: "clearAt and effort on this initial system message are not supported by Anthropic. Use a separate effort-only system message with empty content to set effort. These options have been ignored."));
+                    warnings.Add(
+                        new AnthropicWarning(
+                            "other",
+                            message: "clearAt and effort on this initial system message are not supported by Anthropic. Use a separate effort-only system message with empty content to set effort. These options have been ignored."
+                        )
+                    );
                 }
 
                 if (contentParts != null)
@@ -307,7 +411,11 @@ public static class AnthropicPrompt
         AddBeta(betas, "mid-conversation-system-2026-04-07");
         foreach (var message in converted)
         {
-            var inline = new JsonObject { ["role"] = "system", ["content"] = message["content"]!.DeepClone() };
+            var inline = new JsonObject
+            {
+                ["role"] = "system",
+                ["content"] = message["content"]!.DeepClone(),
+            };
             if (message["clear_at"] != null)
             {
                 inline["clear_at"] = message["clear_at"]!.DeepClone();
@@ -347,7 +455,10 @@ public static class AnthropicPrompt
         // The computer use tools cannot be defined in a message (the API rejects
         // them), they must be declared in `tools` and added by reference.
         return AnthropicJson.String(tool, "type") == "provider"
-            && (AnthropicJson.String(tool, "id") ?? string.Empty).StartsWith("anthropic.computer_", StringComparison.Ordinal);
+            && (AnthropicJson.String(tool, "id") ?? string.Empty).StartsWith(
+                "anthropic.computer_",
+                StringComparison.Ordinal
+            );
     }
 
     /// <summary>
@@ -364,13 +475,17 @@ public static class AnthropicPrompt
 
         foreach (var message in prompt.EnumerateArray())
         {
-            if (message.ValueKind != JsonValueKind.Object || AnthropicJson.String(message, "role") != "system")
+            if (
+                message.ValueKind != JsonValueKind.Object
+                || AnthropicJson.String(message, "role") != "system"
+            )
             {
                 continue;
             }
 
             var options = Provider(message);
-            var changes = options == null ? default : AnthropicJson.Property(options.Value, "toolChanges");
+            var changes =
+                options == null ? default : AnthropicJson.Property(options.Value, "toolChanges");
             if (changes == null || changes.Value.ValueKind != JsonValueKind.Array)
             {
                 continue;
@@ -378,7 +493,11 @@ public static class AnthropicPrompt
 
             foreach (var change in changes.Value.EnumerateArray())
             {
-                if (change.ValueKind == JsonValueKind.Object && change.TryGetProperty("tool", out var tool) && !IsComputerTool(tool))
+                if (
+                    change.ValueKind == JsonValueKind.Object
+                    && change.TryGetProperty("tool", out var tool)
+                    && !IsComputerTool(tool)
+                )
                 {
                     tools.Add(tool);
                 }
@@ -394,7 +513,12 @@ public static class AnthropicPrompt
         return ToJson(prompt);
     }
 
-    private static bool IsInitial(bool firstBlock, JsonArray? system, int toolChanges, bool inlineOptions)
+    private static bool IsInitial(
+        bool firstBlock,
+        JsonArray? system,
+        int toolChanges,
+        bool inlineOptions
+    )
     {
         if (firstBlock)
         {
@@ -404,7 +528,14 @@ public static class AnthropicPrompt
         return system == null && toolChanges == 0 && !inlineOptions;
     }
 
-    private static JsonArray ConvertUser(PromptBlock block, List<AnthropicWarning> warnings, List<string> betas, AnthropicCacheControlValidator validator, AnthropicMediaPartConverter? convertMediaPart, IReadOnlyDictionary<string, string> toolsets)
+    private static JsonArray ConvertUser(
+        PromptBlock block,
+        List<AnthropicWarning> warnings,
+        List<string> betas,
+        AnthropicCacheControlValidator validator,
+        AnthropicMediaPartConverter? convertMediaPart,
+        IReadOnlyDictionary<string, string> toolsets
+    )
     {
         var content = new JsonArray();
         foreach (var message in block.Messages)
@@ -416,7 +547,10 @@ public static class AnthropicPrompt
                 continue;
             }
 
-            if (!message.TryGetProperty("content", out var parts) || parts.ValueKind != JsonValueKind.Array)
+            if (
+                !message.TryGetProperty("content", out var parts)
+                || parts.ValueKind != JsonValueKind.Array
+            )
             {
                 continue;
             }
@@ -432,7 +566,11 @@ public static class AnthropicPrompt
                 var type = AnthropicJson.String(part, "type");
                 if (type == "text")
                 {
-                    var text = new JsonObject { ["type"] = "text", ["text"] = AnthropicJson.String(part, "text") ?? string.Empty };
+                    var text = new JsonObject
+                    {
+                        ["type"] = "text",
+                        ["text"] = AnthropicJson.String(part, "text") ?? string.Empty,
+                    };
                     AnthropicJson.Set(text, "cache_control", cache);
                     content.Add(text);
                 }
@@ -454,9 +592,19 @@ public static class AnthropicPrompt
         return content;
     }
 
-    private static void AppendToolResults(JsonElement message, JsonArray content, List<AnthropicWarning> warnings, List<string> betas, AnthropicCacheControlValidator validator, IReadOnlyDictionary<string, string> toolsets)
+    private static void AppendToolResults(
+        JsonElement message,
+        JsonArray content,
+        List<AnthropicWarning> warnings,
+        List<string> betas,
+        AnthropicCacheControlValidator validator,
+        IReadOnlyDictionary<string, string> toolsets
+    )
     {
-        if (!message.TryGetProperty("content", out var parts) || parts.ValueKind != JsonValueKind.Array)
+        if (
+            !message.TryGetProperty("content", out var parts)
+            || parts.ValueKind != JsonValueKind.Array
+        )
         {
             return;
         }
@@ -474,10 +622,17 @@ public static class AnthropicPrompt
             var isLast = index == count - 1;
             index++;
             JsonElement? outputOptions = null;
-            if (part.TryGetProperty("output", out var output) && output.ValueKind == JsonValueKind.Object)
+            if (
+                part.TryGetProperty("output", out var output)
+                && output.ValueKind == JsonValueKind.Object
+            )
             {
                 outputOptions = Metadata(output);
-                if (outputOptions == null && output.TryGetProperty("value", out var value) && value.ValueKind == JsonValueKind.Array)
+                if (
+                    outputOptions == null
+                    && output.TryGetProperty("value", out var value)
+                    && value.ValueKind == JsonValueKind.Array
+                )
                 {
                     foreach (var item in value.EnumerateArray())
                     {
@@ -512,7 +667,11 @@ public static class AnthropicPrompt
                     result["is_error"] = true;
                 }
 
-                if (outputType == "content" && body.TryGetProperty("value", out var value) && value.ValueKind == JsonValueKind.Array)
+                if (
+                    outputType == "content"
+                    && body.TryGetProperty("value", out var value)
+                    && value.ValueKind == JsonValueKind.Array
+                )
                 {
                     var nested = new JsonArray();
                     foreach (var item in value.EnumerateArray())
@@ -520,11 +679,24 @@ public static class AnthropicPrompt
                         var itemType = AnthropicJson.String(item, "type");
                         if (itemType == "text")
                         {
-                            nested.Add(new JsonObject { ["type"] = "text", ["text"] = AnthropicJson.String(item, "text") ?? string.Empty });
+                            nested.Add(
+                                new JsonObject
+                                {
+                                    ["type"] = "text",
+                                    ["text"] = AnthropicJson.String(item, "text") ?? string.Empty,
+                                }
+                            );
                         }
-                        else if (itemType == "file" || itemType == "tool-reference" || itemType == "custom")
+                        else if (
+                            itemType == "file"
+                            || itemType == "tool-reference"
+                            || itemType == "custom"
+                        )
                         {
-                            if (itemType == "custom" || AnthropicJson.String(item, "type") == "tool-reference")
+                            if (
+                                itemType == "custom"
+                                || AnthropicJson.String(item, "type") == "tool-reference"
+                            )
                             {
                                 nested.Add(JsonNode.Parse(item.GetRawText()));
                             }
@@ -539,7 +711,10 @@ public static class AnthropicPrompt
                 }
                 else if (body.TryGetProperty("value", out var jsonValue))
                 {
-                    result["content"] = jsonValue.ValueKind == JsonValueKind.String ? jsonValue.GetString() : jsonValue.GetRawText();
+                    result["content"] =
+                        jsonValue.ValueKind == JsonValueKind.String
+                            ? jsonValue.GetString()
+                            : jsonValue.GetRawText();
                 }
                 else if (AnthropicJson.String(body, "text") != null)
                 {
@@ -557,10 +732,14 @@ public static class AnthropicPrompt
         var mediaType = AnthropicJson.String(part, "mediaType") ?? string.Empty;
         var filename = AnthropicJson.String(part, "filename");
         var options = Provider(part);
-        var citations = options != null && AnthropicJson.Property(options.Value, "citations") is { } citation && AnthropicJson.Bool(citation, "enabled") == true;
+        var citations =
+            options != null
+            && AnthropicJson.Property(options.Value, "citations") is { } citation
+            && AnthropicJson.Bool(citation, "enabled") == true;
         var title = options == null ? null : AnthropicJson.String(options.Value, "title");
         var context = options == null ? null : AnthropicJson.String(options.Value, "context");
-        var container = options != null && AnthropicJson.Bool(options.Value, "containerUpload") == true;
+        var container =
+            options != null && AnthropicJson.Bool(options.Value, "containerUpload") == true;
         if (!part.TryGetProperty("data", out var data))
         {
             throw new AiSdkException("Unsupported media type: " + mediaType);
@@ -569,16 +748,28 @@ public static class AnthropicPrompt
         var dataType = AnthropicJson.String(data, "type");
         if (dataType == "reference")
         {
-            var reference = data.TryGetProperty("reference", out var referenceValue) ? referenceValue : default;
-            if (reference.ValueKind != JsonValueKind.Object || !reference.TryGetProperty("anthropic", out var fileId) || fileId.ValueKind != JsonValueKind.String)
+            var reference = data.TryGetProperty("reference", out var referenceValue)
+                ? referenceValue
+                : default;
+            if (
+                reference.ValueKind != JsonValueKind.Object
+                || !reference.TryGetProperty("anthropic", out var fileId)
+                || fileId.ValueKind != JsonValueKind.String
+            )
             {
-                throw new AiSdkException("Provider reference does not contain an anthropic file id.");
+                throw new AiSdkException(
+                    "Provider reference does not contain an anthropic file id."
+                );
             }
 
             AddBeta(betas, "files-api-2025-04-14");
             if (container)
             {
-                return new JsonObject { ["type"] = "container_upload", ["file_id"] = fileId.GetString() };
+                return new JsonObject
+                {
+                    ["type"] = "container_upload",
+                    ["file_id"] = fileId.GetString(),
+                };
             }
 
             var kind = TopLevel(mediaType) == "image" ? "image" : "document";
@@ -593,12 +784,18 @@ public static class AnthropicPrompt
 
         if (dataType == "text")
         {
-            var node = Document(new JsonObject
-            {
-                ["type"] = "text",
-                ["media_type"] = "text/plain",
-                ["data"] = AnthropicJson.String(data, "text") ?? string.Empty,
-            }, title ?? filename, context, citations, cache);
+            var node = Document(
+                new JsonObject
+                {
+                    ["type"] = "text",
+                    ["media_type"] = "text/plain",
+                    ["data"] = AnthropicJson.String(data, "text") ?? string.Empty,
+                },
+                title ?? filename,
+                context,
+                citations,
+                cache
+            );
             return node;
         }
 
@@ -606,11 +803,17 @@ public static class AnthropicPrompt
         string? base64 = null;
         if (dataType == "url")
         {
-            url = data.TryGetProperty("url", out var urlValue) ? urlValue.ToString().Trim('"') : null;
+            url = data.TryGetProperty("url", out var urlValue)
+                ? urlValue.ToString().Trim('"')
+                : null;
         }
         else
         {
-            base64 = data.TryGetProperty("data", out var raw) ? raw.ValueKind == JsonValueKind.String ? raw.GetString() : raw.GetRawText() : null;
+            base64 = data.TryGetProperty("data", out var raw)
+                ? raw.ValueKind == JsonValueKind.String
+                    ? raw.GetString()
+                    : raw.GetRawText()
+                : null;
             if (base64 != null && AnthropicJson.LooksLikeUrl(base64))
             {
                 url = base64;
@@ -621,21 +824,36 @@ public static class AnthropicPrompt
         var top = TopLevel(mediaType);
         if (top == "image")
         {
-            var source = url != null
-                ? new JsonObject { ["type"] = "url", ["url"] = url }
-                : new JsonObject { ["type"] = "base64", ["media_type"] = ResolveMedia(mediaType, base64), ["data"] = base64 ?? string.Empty };
+            var source =
+                url != null
+                    ? new JsonObject { ["type"] = "url", ["url"] = url }
+                    : new JsonObject
+                    {
+                        ["type"] = "base64",
+                        ["media_type"] = ResolveMedia(mediaType, base64),
+                        ["data"] = base64 ?? string.Empty,
+                    };
             var image = new JsonObject { ["type"] = "image", ["source"] = source };
             AnthropicJson.Set(image, "cache_control", cache);
             return image;
         }
 
         var resolved = url != null ? mediaType : ResolveMedia(mediaType, base64);
-        if (top == "application" && (url != null ? mediaType == "application/pdf" : resolved == "application/pdf"))
+        if (
+            top == "application"
+            && (url != null ? mediaType == "application/pdf" : resolved == "application/pdf")
+        )
         {
             AddBeta(betas, "pdfs-2024-09-25");
-            var source = url != null
-                ? new JsonObject { ["type"] = "url", ["url"] = url }
-                : new JsonObject { ["type"] = "base64", ["media_type"] = "application/pdf", ["data"] = base64 ?? string.Empty };
+            var source =
+                url != null
+                    ? new JsonObject { ["type"] = "url", ["url"] = url }
+                    : new JsonObject
+                    {
+                        ["type"] = "base64",
+                        ["media_type"] = "application/pdf",
+                        ["data"] = base64 ?? string.Empty,
+                    };
             return Document(source, title ?? filename, context, citations, cache);
         }
 
@@ -648,16 +866,30 @@ public static class AnthropicPrompt
             }
             else
             {
-                source = new JsonObject { ["type"] = "text", ["media_type"] = "text/plain", ["data"] = DecodeText(base64) };
+                source = new JsonObject
+                {
+                    ["type"] = "text",
+                    ["media_type"] = "text/plain",
+                    ["data"] = DecodeText(base64),
+                };
             }
 
             return Document(source, title ?? filename, context, citations, cache);
         }
 
-        throw new UnsupportedFunctionalityException("media type: " + mediaType, "Unsupported functionality: media type: " + mediaType);
+        throw new UnsupportedFunctionalityException(
+            "media type: " + mediaType,
+            "Unsupported functionality: media type: " + mediaType
+        );
     }
 
-    private static JsonObject Document(JsonObject source, string? title, string? context, bool citations, JsonObject? cache)
+    private static JsonObject Document(
+        JsonObject source,
+        string? title,
+        string? context,
+        bool citations,
+        JsonObject? cache
+    )
     {
         var node = new JsonObject { ["type"] = "document", ["source"] = source };
         AnthropicJson.Set(node, "title", title);
@@ -679,14 +911,18 @@ public static class AnthropicPrompt
         List<string> betas,
         AnthropicCacheControlValidator validator,
         IReadOnlyDictionary<string, string> names,
-        IReadOnlyDictionary<string, string> toolsets)
+        IReadOnlyDictionary<string, string> toolsets
+    )
     {
         var content = new JsonArray();
         for (var j = 0; j < block.Messages.Count; j++)
         {
             var message = block.Messages[j];
             var isLastMessage = j == block.Messages.Count - 1;
-            if (!message.TryGetProperty("content", out var parts) || parts.ValueKind != JsonValueKind.Array)
+            if (
+                !message.TryGetProperty("content", out var parts)
+                || parts.ValueKind != JsonValueKind.Array
+            )
             {
                 continue;
             }
@@ -702,12 +938,17 @@ public static class AnthropicPrompt
                 if (type != "reasoning")
                 {
                     cache = validator.Get(Metadata(part), "assistant message part", true)
-                        ?? (isLastPart ? validator.Get(Metadata(message), "assistant message", true) : null);
+                        ?? (
+                            isLastPart
+                                ? validator.Get(Metadata(message), "assistant message", true)
+                                : null
+                        );
                 }
                 if (type == "text")
                 {
                     var metadata = Provider(part);
-                    var metaType = metadata == null ? null : AnthropicJson.String(metadata.Value, "type");
+                    var metaType =
+                        metadata == null ? null : AnthropicJson.String(metadata.Value, "type");
                     if (metaType == "compaction")
                     {
                         var text = AnthropicJson.String(part, "text") ?? string.Empty;
@@ -716,8 +957,15 @@ public static class AnthropicPrompt
                             continue;
                         }
 
-                        var compaction = new JsonObject { ["type"] = "compaction", ["content"] = text };
-                        if (AnthropicJson.String(metadata!.Value, "signature") is { } compactionSignature)
+                        var compaction = new JsonObject
+                        {
+                            ["type"] = "compaction",
+                            ["content"] = text,
+                        };
+                        if (
+                            AnthropicJson.String(metadata!.Value, "signature") is
+                            { } compactionSignature
+                        )
                         {
                             AddBeta(betas, "compact-2026-09-04");
                             compaction["signature"] = compactionSignature;
@@ -735,7 +983,10 @@ public static class AnthropicPrompt
                         }
 
                         var node = new JsonObject { ["type"] = "text", ["text"] = text };
-                        if (metadata != null && AnthropicJson.Property(metadata.Value, "citations") is { } citations)
+                        if (
+                            metadata != null
+                            && AnthropicJson.Property(metadata.Value, "citations") is { } citations
+                        )
                         {
                             node["citations"] = AnthropicJson.Node(citations);
                         }
@@ -748,31 +999,46 @@ public static class AnthropicPrompt
                 {
                     if (!sendReasoning)
                     {
-                        warnings.Add(new AnthropicWarning("other", message: "sending reasoning content is disabled for this model"));
+                        warnings.Add(
+                            new AnthropicWarning(
+                                "other",
+                                message: "sending reasoning content is disabled for this model"
+                            )
+                        );
                         continue;
                     }
 
                     var metadata = Provider(part);
-                    var signature = metadata == null ? null : AnthropicJson.String(metadata.Value, "signature");
-                    var redacted = metadata == null ? null : AnthropicJson.String(metadata.Value, "redactedData");
+                    var signature =
+                        metadata == null ? null : AnthropicJson.String(metadata.Value, "signature");
+                    var redacted =
+                        metadata == null
+                            ? null
+                            : AnthropicJson.String(metadata.Value, "redactedData");
                     if (signature != null)
                     {
                         validator.Get(Metadata(part), "thinking block", false);
-                        content.Add(new JsonObject
-                        {
-                            ["type"] = "thinking",
-                            ["thinking"] = AnthropicJson.String(part, "text") ?? string.Empty,
-                            ["signature"] = signature,
-                        });
+                        content.Add(
+                            new JsonObject
+                            {
+                                ["type"] = "thinking",
+                                ["thinking"] = AnthropicJson.String(part, "text") ?? string.Empty,
+                                ["signature"] = signature,
+                            }
+                        );
                     }
                     else if (redacted != null)
                     {
                         validator.Get(Metadata(part), "redacted thinking block", false);
-                        content.Add(new JsonObject { ["type"] = "redacted_thinking", ["data"] = redacted });
+                        content.Add(
+                            new JsonObject { ["type"] = "redacted_thinking", ["data"] = redacted }
+                        );
                     }
                     else
                     {
-                        warnings.Add(new AnthropicWarning("other", message: "unsupported reasoning metadata"));
+                        warnings.Add(
+                            new AnthropicWarning("other", message: "unsupported reasoning metadata")
+                        );
                     }
                 }
                 else if (type == "tool-call")
@@ -790,7 +1056,8 @@ public static class AnthropicPrompt
         JsonObject? cache,
         List<AnthropicWarning> warnings,
         IReadOnlyDictionary<string, string> names,
-        IReadOnlyDictionary<string, string> toolsets)
+        IReadOnlyDictionary<string, string> toolsets
+    )
     {
         var toolName = AnthropicJson.String(part, "toolName") ?? string.Empty;
         var id = AnthropicJson.String(part, "toolCallId") ?? string.Empty;
@@ -801,10 +1068,19 @@ public static class AnthropicPrompt
         {
             // The member call keeps its input as is. The `action` is the member tool name.
             var rawInput = input as JsonObject ?? new JsonObject();
-            var action = rawInput["action"] is JsonValue actionValue && actionValue.TryGetValue<string>(out var actionText) ? actionText : null;
+            var action =
+                rawInput["action"] is JsonValue actionValue
+                && actionValue.TryGetValue<string>(out var actionText)
+                    ? actionText
+                    : null;
             if (action == null)
             {
-                warnings.Add(new AnthropicWarning("other", message: "toolset tool call for tool " + toolName + " is missing the action"));
+                warnings.Add(
+                    new AnthropicWarning(
+                        "other",
+                        message: "toolset tool call for tool " + toolName + " is missing the action"
+                    )
+                );
             }
 
             var toolsetCall = new JsonObject
@@ -955,7 +1231,13 @@ public static class AnthropicPrompt
             return null;
         }
 
-        if (bytes.Length >= 8 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47)
+        if (
+            bytes.Length >= 8
+            && bytes[0] == 0x89
+            && bytes[1] == 0x50
+            && bytes[2] == 0x4E
+            && bytes[3] == 0x47
+        )
         {
             return "image/png";
         }
@@ -965,7 +1247,13 @@ public static class AnthropicPrompt
             return "image/jpeg";
         }
 
-        if (bytes.Length >= 4 && bytes[0] == 0x25 && bytes[1] == 0x50 && bytes[2] == 0x44 && bytes[3] == 0x46)
+        if (
+            bytes.Length >= 4
+            && bytes[0] == 0x25
+            && bytes[1] == 0x50
+            && bytes[2] == 0x44
+            && bytes[3] == 0x46
+        )
         {
             return "application/pdf";
         }
@@ -990,7 +1278,10 @@ public static class AnthropicPrompt
         }
     }
 
-    private static string? ToolsetName(JsonElement part, IReadOnlyDictionary<string, string> toolsets)
+    private static string? ToolsetName(
+        JsonElement part,
+        IReadOnlyDictionary<string, string> toolsets
+    )
     {
         var toolName = AnthropicJson.String(part, "toolName") ?? string.Empty;
         if (toolsets.TryGetValue(toolName, out var mapped))
@@ -1014,7 +1305,9 @@ public static class AnthropicPrompt
             return null;
         }
 
-        return element.TryGetProperty("providerOptions", out var options) ? options : (JsonElement?)null;
+        return element.TryGetProperty("providerOptions", out var options)
+            ? options
+            : (JsonElement?)null;
     }
 
     private static void AddBeta(List<string> betas, string beta)
@@ -1045,7 +1338,11 @@ public static class AnthropicPrompt
                     if (part is TextContentPart text)
                     {
                         var textNode = new JsonObject { ["type"] = "text", ["text"] = text.Text };
-                        AnthropicJson.Set(textNode, "providerOptions", Options(text.ProviderOptions));
+                        AnthropicJson.Set(
+                            textNode,
+                            "providerOptions",
+                            Options(text.ProviderOptions)
+                        );
                         parts.Add(textNode);
                     }
                     else if (part is FileContentPart file)
@@ -1065,8 +1362,16 @@ public static class AnthropicPrompt
                 {
                     JsonObject? node = part switch
                     {
-                        AssistantTextPart text => new JsonObject { ["type"] = "text", ["text"] = text.Text },
-                        AssistantReasoningPart reasoning => new JsonObject { ["type"] = "reasoning", ["text"] = reasoning.Text },
+                        AssistantTextPart text => new JsonObject
+                        {
+                            ["type"] = "text",
+                            ["text"] = text.Text,
+                        },
+                        AssistantReasoningPart reasoning => new JsonObject
+                        {
+                            ["type"] = "reasoning",
+                            ["text"] = reasoning.Text,
+                        },
                         AssistantToolCallPart call => new JsonObject
                         {
                             ["type"] = "tool-call",
@@ -1097,8 +1402,18 @@ public static class AnthropicPrompt
                     value = JsonValue.Create(tool.OutputJson)!;
                 }
 
-                var output = new JsonObject { ["type"] = tool.IsError ? "error-json" : "json", ["value"] = value };
-                AnthropicJson.Set(output, "providerOptions", tool.OutputProviderOptions is { } outputOptions ? AnthropicJson.Node(outputOptions) : null);
+                var output = new JsonObject
+                {
+                    ["type"] = tool.IsError ? "error-json" : "json",
+                    ["value"] = value,
+                };
+                AnthropicJson.Set(
+                    output,
+                    "providerOptions",
+                    tool.OutputProviderOptions is { } outputOptions
+                        ? AnthropicJson.Node(outputOptions)
+                        : null
+                );
                 var result = new JsonObject
                 {
                     ["type"] = "tool-result",
@@ -1106,8 +1421,18 @@ public static class AnthropicPrompt
                     ["toolCallId"] = tool.ToolCallId,
                     ["output"] = output,
                 };
-                AnthropicJson.Set(result, "providerOptions", tool.ProviderMetadata is { } metadata ? AnthropicJson.Node(metadata) : null);
-                messages.Add(new JsonObject { ["role"] = "tool", ["content"] = new JsonArray { result } });
+                AnthropicJson.Set(
+                    result,
+                    "providerOptions",
+                    tool.ProviderMetadata is { } metadata ? AnthropicJson.Node(metadata) : null
+                );
+                messages.Add(
+                    new JsonObject
+                    {
+                        ["role"] = "tool",
+                        ["content"] = new JsonArray { result },
+                    }
+                );
             }
         }
 
@@ -1140,7 +1465,12 @@ public static class AnthropicPrompt
             data["data"] = System.Convert.ToBase64String(file.Data);
         }
 
-        var node = new JsonObject { ["type"] = "file", ["mediaType"] = file.MediaType, ["data"] = data };
+        var node = new JsonObject
+        {
+            ["type"] = "file",
+            ["mediaType"] = file.MediaType,
+            ["data"] = data,
+        };
         AnthropicJson.Set(node, "filename", file.FileName);
         AnthropicJson.Set(node, "providerOptions", Options(file.ProviderOptions));
         return node;
@@ -1150,7 +1480,8 @@ public static class AnthropicPrompt
     {
         try
         {
-            return JsonNode.Parse(string.IsNullOrWhiteSpace(argumentsJson) ? "{}" : argumentsJson) ?? new JsonObject();
+            return JsonNode.Parse(string.IsNullOrWhiteSpace(argumentsJson) ? "{}" : argumentsJson)
+                ?? new JsonObject();
         }
         catch (JsonException)
         {
@@ -1185,8 +1516,15 @@ public static class AnthropicPrompt
 
         foreach (var message in prompt.EnumerateArray())
         {
-            var role = message.ValueKind == JsonValueKind.String ? "system" : AnthropicJson.String(message, "role");
-            var blockRole = role == "tool" ? "user" : role == "assistant" ? "assistant" : role == "system" ? "system" : "user";
+            var role =
+                message.ValueKind == JsonValueKind.String
+                    ? "system"
+                    : AnthropicJson.String(message, "role");
+            var blockRole =
+                role == "tool" ? "user"
+                : role == "assistant" ? "assistant"
+                : role == "system" ? "system"
+                : "user";
             if (current == null || current.Role != blockRole)
             {
                 current = new PromptBlock(blockRole);

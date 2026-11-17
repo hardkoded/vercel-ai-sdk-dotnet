@@ -61,21 +61,50 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
     }
 
     /// <inheritdoc />
-    public async Task<VideoResult> DoGenerateAsync(VideoCallOptions options, CancellationToken cancellationToken)
+    public async Task<VideoResult> DoGenerateAsync(
+        VideoCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
-        var call = new VideoModelCall(options.Prompt, 1, null, null, options.DurationSeconds, null, null, null, null, null, null, OperationJson.Parse("{}"), new Dictionary<string, string>(), cancellationToken);
-        var video = (await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false)).Videos[0];
+        var call = new VideoModelCall(
+            options.Prompt,
+            1,
+            null,
+            null,
+            options.DurationSeconds,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            OperationJson.Parse("{}"),
+            new Dictionary<string, string>(),
+            cancellationToken
+        );
+        var video = (await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false)).Videos[
+            0
+        ];
         return video.Type switch
         {
             "url" => new VideoResult(video.Url, null, video.MediaType!),
-            "base64" => new VideoResult(null, Convert.FromBase64String((string)video.Data!), video.MediaType!),
-            _ => throw new AiSdkException("The Gateway delivered the video to caller-managed storage. It has no URL or bytes to return."),
+            "base64" => new VideoResult(
+                null,
+                Convert.FromBase64String((string)video.Data!),
+                video.MediaType!
+            ),
+            _ => throw new AiSdkException(
+                "The Gateway delivered the video to caller-managed storage. It has no URL or bytes to return."
+            ),
         };
     }
 
     /// <summary>Sends the call and reads the first data event of the SSE response.</summary>
-    public async Task<VideoModelResult> DoGenerateAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public async Task<VideoModelResult> DoGenerateAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
 
@@ -86,7 +115,9 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
         var body = BuildRequestBody(call).ToJsonString();
         try
         {
-            var sse = await _provider.Http.OpenSseResponseAsync(url, body, headers, cancellationToken).ConfigureAwait(false);
+            var sse = await _provider
+                .Http.OpenSseResponseAsync(url, body, headers, cancellationToken)
+                .ConfigureAwait(false);
             using (sse.Resource)
             {
                 var enumerator = sse.Events.GetAsyncEnumerator(cancellationToken);
@@ -94,11 +125,21 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
                 {
                     if (!await enumerator.MoveNextAsync().ConfigureAwait(false))
                     {
-                        throw new Util.ApiCallError("SSE stream ended without a data event", url.AbsoluteUri, body, 200);
+                        throw new Util.ApiCallError(
+                            "SSE stream ended without a data event",
+                            url.AbsoluteUri,
+                            body,
+                            200
+                        );
                     }
 
                     var result = ReadEvent(enumerator.Current, url.AbsoluteUri, body, sse.Headers);
-                    return new VideoModelResult(result.Videos, result.Warnings, result.ProviderMetadata, ResponseInfo(sse.Headers));
+                    return new VideoModelResult(
+                        result.Videos,
+                        result.Warnings,
+                        result.ProviderMetadata,
+                        ResponseInfo(sse.Headers)
+                    );
                 }
                 finally
                 {
@@ -116,13 +157,19 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
     // factory's URL and received task pass straight through.
 
     /// <inheritdoc />
-    public Task<VideoWebhook> HandleWebhookAsync(Func<Task<VideoWebhook>> webhook, CancellationToken cancellationToken)
+    public Task<VideoWebhook> HandleWebhookAsync(
+        Func<Task<VideoWebhook>> webhook,
+        CancellationToken cancellationToken
+    )
     {
         return (webhook ?? throw new ArgumentNullException(nameof(webhook)))();
     }
 
     /// <inheritdoc />
-    public async Task<VideoStartResult> DoStartAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public async Task<VideoStartResult> DoStartAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var headers = Headers(call.Headers);
@@ -136,7 +183,13 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
 
         try
         {
-            var root = await PostJsonAsync("video-model/start", body.ToJsonString(), headers, cancellationToken).ConfigureAwait(false);
+            var root = await PostJsonAsync(
+                    "video-model/start",
+                    body.ToJsonString(),
+                    headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             using (root.Document)
             {
                 var element = root.Element;
@@ -147,7 +200,8 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
                     operation,
                     ReadWarnings(element),
                     ReadProviderMetadata(element),
-                    ResponseInfo(root.Headers));
+                    ResponseInfo(root.Headers)
+                );
             }
         }
         catch (JsonException exception)
@@ -157,14 +211,26 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
     }
 
     /// <inheritdoc />
-    public async Task<VideoStatusResult> DoStatusAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public async Task<VideoStatusResult> DoStatusAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var headers = Headers(call.Headers);
-        var body = new JsonObject { ["operation"] = JsonSerializer.SerializeToNode(call.Operation) };
+        var body = new JsonObject
+        {
+            ["operation"] = JsonSerializer.SerializeToNode(call.Operation),
+        };
         try
         {
-            var root = await PostJsonAsync("video-model/status", body.ToJsonString(), headers, cancellationToken).ConfigureAwait(false);
+            var root = await PostJsonAsync(
+                    "video-model/status",
+                    body.ToJsonString(),
+                    headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             using (root.Document)
             {
                 var element = root.Element;
@@ -173,18 +239,48 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
                 switch (ReadString(element, "status"))
                 {
                     case "completed":
-                        return new VideoStatusResult("completed", ReadVideos(element), warnings: ReadWarnings(element), providerMetadata: providerMetadata, response: response);
+                        return new VideoStatusResult(
+                            "completed",
+                            ReadVideos(element),
+                            warnings: ReadWarnings(element),
+                            providerMetadata: providerMetadata,
+                            response: response
+                        );
                     case "error":
-                        return new VideoStatusResult("error", error: ReadString(element, "error"), providerMetadata: providerMetadata, response: response);
+                        return new VideoStatusResult(
+                            "error",
+                            error: ReadString(element, "error"),
+                            providerMetadata: providerMetadata,
+                            response: response
+                        );
 
                     // The Gateway reports cooperative cancellation as its own terminal status. The operation union has
                     // no cancelled state, so it surfaces as a terminal error rather than polling forever.
                     case "cancelled":
-                        return new VideoStatusResult("error", error: "Video generation was cancelled.", providerMetadata: providerMetadata, response: response);
+                        return new VideoStatusResult(
+                            "error",
+                            error: "Video generation was cancelled.",
+                            providerMetadata: providerMetadata,
+                            response: response
+                        );
                     case "pending":
-                        return new VideoStatusResult("pending", warnings: ReadWarnings(element), providerMetadata: providerMetadata, response: response);
+                        return new VideoStatusResult(
+                            "pending",
+                            warnings: ReadWarnings(element),
+                            providerMetadata: providerMetadata,
+                            response: response
+                        );
                     default:
-                        throw GatewayProvider.MapFailure(new Util.ApiCallError("Invalid video status response", _provider.Route("video-model/status").AbsoluteUri, body.ToJsonString(), 200, root.Headers, element.GetRawText()));
+                        throw GatewayProvider.MapFailure(
+                            new Util.ApiCallError(
+                                "Invalid video status response",
+                                _provider.Route("video-model/status").AbsoluteUri,
+                                body.ToJsonString(),
+                                200,
+                                root.Headers,
+                                element.GetRawText()
+                            )
+                        );
                 }
             }
         }
@@ -196,11 +292,7 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
 
     private static JsonObject BuildRequestBody(VideoModelCall call)
     {
-        var body = new JsonObject
-        {
-            ["prompt"] = call.Prompt,
-            ["n"] = call.N,
-        };
+        var body = new JsonObject { ["prompt"] = call.Prompt, ["n"] = call.N };
         if (!string.IsNullOrEmpty(call.AspectRatio))
         {
             body["aspectRatio"] = call.AspectRatio;
@@ -247,11 +339,13 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
             var frames = new JsonArray();
             foreach (var frame in call.FrameImages)
             {
-                frames.Add(new JsonObject
-                {
-                    ["frameType"] = frame.FrameType,
-                    ["image"] = MaybeEncodeVideoFile(frame.Image),
-                });
+                frames.Add(
+                    new JsonObject
+                    {
+                        ["frameType"] = frame.FrameType,
+                        ["image"] = MaybeEncodeVideoFile(frame.Image),
+                    }
+                );
             }
 
             body["frameImages"] = frames;
@@ -299,24 +393,35 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
 
     private static JsonNode Number(double value)
     {
-        return value == Math.Floor(value) && Math.Abs(value) < long.MaxValue ? JsonValue.Create((long)value) : JsonValue.Create(value);
+        return value == Math.Floor(value) && Math.Abs(value) < long.MaxValue
+            ? JsonValue.Create((long)value)
+            : JsonValue.Create(value);
     }
 
     private static string ReadString(JsonElement element, string name)
     {
-        return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+        return
+            element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
             ? value.GetString()!
-            : throw new JsonException("Invalid Gateway video response: \"" + name + "\" must be a string.");
+            : throw new JsonException(
+                "Invalid Gateway video response: \"" + name + "\" must be a string."
+            );
     }
 
     private static string? ReadOptionalString(JsonElement element, string name)
     {
-        return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        return
+            element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
     }
 
     private static IReadOnlyList<VideoOutput> ReadVideos(JsonElement element)
     {
-        if (!element.TryGetProperty("videos", out var array) || array.ValueKind != JsonValueKind.Array)
+        if (
+            !element.TryGetProperty("videos", out var array)
+            || array.ValueKind != JsonValueKind.Array
+        )
         {
             throw new JsonException("Invalid Gateway video response: \"videos\" must be an array.");
         }
@@ -325,13 +430,21 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
         foreach (var video in array.EnumerateArray())
         {
             var mediaType = ReadString(video, "mediaType");
-            videos.Add(ReadString(video, "type") switch
-            {
-                "uploaded" => new VideoOutput("uploaded", mediaType: mediaType),
-                "url" => new VideoOutput("url", ReadString(video, "url"), mediaType: mediaType),
-                "base64" => new VideoOutput("base64", data: ReadString(video, "data"), mediaType: mediaType),
-                _ => throw new JsonException("Invalid Gateway video response: unknown video type."),
-            });
+            videos.Add(
+                ReadString(video, "type") switch
+                {
+                    "uploaded" => new VideoOutput("uploaded", mediaType: mediaType),
+                    "url" => new VideoOutput("url", ReadString(video, "url"), mediaType: mediaType),
+                    "base64" => new VideoOutput(
+                        "base64",
+                        data: ReadString(video, "data"),
+                        mediaType: mediaType
+                    ),
+                    _ => throw new JsonException(
+                        "Invalid Gateway video response: unknown video type."
+                    ),
+                }
+            );
         }
 
         return videos;
@@ -340,26 +453,43 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
     private static IReadOnlyList<OperationWarning> ReadWarnings(JsonElement element)
     {
         var warnings = new List<OperationWarning>();
-        if (!element.TryGetProperty("warnings", out var array) || array.ValueKind == JsonValueKind.Null)
+        if (
+            !element.TryGetProperty("warnings", out var array)
+            || array.ValueKind == JsonValueKind.Null
+        )
         {
             return warnings;
         }
 
         if (array.ValueKind != JsonValueKind.Array)
         {
-            throw new JsonException("Invalid Gateway video response: \"warnings\" must be an array.");
+            throw new JsonException(
+                "Invalid Gateway video response: \"warnings\" must be an array."
+            );
         }
 
         foreach (var warning in array.EnumerateArray())
         {
             var type = ReadString(warning, "type");
-            warnings.Add(type switch
-            {
-                "unsupported" or "compatibility" => new OperationWarning(type, feature: ReadString(warning, "feature"), details: ReadOptionalString(warning, "details")),
-                "deprecated" => new OperationWarning(type, message: ReadString(warning, "message"), setting: ReadString(warning, "setting")),
-                "other" => new OperationWarning(type, message: ReadString(warning, "message")),
-                _ => throw new JsonException("Invalid Gateway video response: unknown warning type."),
-            });
+            warnings.Add(
+                type switch
+                {
+                    "unsupported" or "compatibility" => new OperationWarning(
+                        type,
+                        feature: ReadString(warning, "feature"),
+                        details: ReadOptionalString(warning, "details")
+                    ),
+                    "deprecated" => new OperationWarning(
+                        type,
+                        message: ReadString(warning, "message"),
+                        setting: ReadString(warning, "setting")
+                    ),
+                    "other" => new OperationWarning(type, message: ReadString(warning, "message")),
+                    _ => throw new JsonException(
+                        "Invalid Gateway video response: unknown warning type."
+                    ),
+                }
+            );
         }
 
         return warnings;
@@ -367,17 +497,31 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
 
     private static JsonElement? ReadProviderMetadata(JsonElement element)
     {
-        if (!element.TryGetProperty("providerMetadata", out var metadata) || metadata.ValueKind == JsonValueKind.Null)
+        if (
+            !element.TryGetProperty("providerMetadata", out var metadata)
+            || metadata.ValueKind == JsonValueKind.Null
+        )
         {
             return null;
         }
 
         return metadata.ValueKind == JsonValueKind.Object
             ? metadata.Clone()
-            : throw new JsonException("Invalid Gateway video response: \"providerMetadata\" must be an object.");
+            : throw new JsonException(
+                "Invalid Gateway video response: \"providerMetadata\" must be an object."
+            );
     }
 
-    private (IReadOnlyList<VideoOutput> Videos, IReadOnlyList<OperationWarning> Warnings, JsonElement? ProviderMetadata) ReadEvent(string data, string url, string requestBody, IReadOnlyDictionary<string, string> responseHeaders)
+    private (
+        IReadOnlyList<VideoOutput> Videos,
+        IReadOnlyList<OperationWarning> Warnings,
+        JsonElement? ProviderMetadata
+    ) ReadEvent(
+        string data,
+        string url,
+        string requestBody,
+        IReadOnlyDictionary<string, string> responseHeaders
+    )
     {
         using var document = ParseEvent(data, url, requestBody);
         var root = document.RootElement;
@@ -387,23 +531,33 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
             {
                 case "error":
                     var message = ReadString(root, "message");
-                    var param = root.TryGetProperty("param", out var found) ? JsonNode.Parse(found.GetRawText()) : null;
+                    var param = root.TryGetProperty("param", out var found)
+                        ? JsonNode.Parse(found.GetRawText())
+                        : null;
                     throw new Util.ApiCallError(
                         message,
                         url,
                         requestBody,
-                        root.TryGetProperty("statusCode", out var status) && status.ValueKind == JsonValueKind.Number ? status.GetInt32() : throw new JsonException("Invalid Gateway video event: \"statusCode\" must be a number."),
+                        root.TryGetProperty("statusCode", out var status)
+                        && status.ValueKind == JsonValueKind.Number
+                            ? status.GetInt32()
+                            : throw new JsonException(
+                                "Invalid Gateway video event: \"statusCode\" must be a number."
+                            ),
                         responseHeaders,
                         root.GetRawText(),
-                        data: JsonSerializer.SerializeToElement(new JsonObject
-                        {
-                            ["error"] = new JsonObject
+                        data: JsonSerializer.SerializeToElement(
+                            new JsonObject
                             {
-                                ["message"] = message,
-                                ["type"] = ReadString(root, "errorType"),
-                                ["param"] = param,
-                            },
-                        }));
+                                ["error"] = new JsonObject
+                                {
+                                    ["message"] = message,
+                                    ["type"] = ReadString(root, "errorType"),
+                                    ["param"] = param,
+                                },
+                            }
+                        )
+                    );
                 case "result":
                     return (ReadVideos(root), ReadWarnings(root), ReadProviderMetadata(root));
                 default:
@@ -412,7 +566,14 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
         }
         catch (JsonException exception)
         {
-            throw new Util.ApiCallError("Failed to parse video SSE event", url, requestBody, 200, responseHeaders, cause: exception);
+            throw new Util.ApiCallError(
+                "Failed to parse video SSE event",
+                url,
+                requestBody,
+                200,
+                responseHeaders,
+                cause: exception
+            );
         }
     }
 
@@ -424,7 +585,13 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
         }
         catch (JsonException exception)
         {
-            throw new Util.ApiCallError("Failed to parse video SSE event", url, requestBody, 200, cause: exception);
+            throw new Util.ApiCallError(
+                "Failed to parse video SSE event",
+                url,
+                requestBody,
+                200,
+                cause: exception
+            );
         }
     }
 
@@ -441,15 +608,41 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
             extra[pair.Key] = pair.Value;
         }
 
-        return _provider.Headers("ai-video-model-specification-version", "4", "ai-model-id", ModelId, null, extra);
+        return _provider.Headers(
+            "ai-video-model-specification-version",
+            "4",
+            "ai-model-id",
+            ModelId,
+            null,
+            extra
+        );
     }
 
-    private async Task<(JsonDocument Document, JsonElement Element, IReadOnlyDictionary<string, string> Headers)> PostJsonAsync(string path, string body, Dictionary<string, string?> headers, CancellationToken cancellationToken)
+    private async Task<(
+        JsonDocument Document,
+        JsonElement Element,
+        IReadOnlyDictionary<string, string> Headers
+    )> PostJsonAsync(
+        string path,
+        string body,
+        Dictionary<string, string?> headers,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
-            var response = await _provider.Http.SendJsonStringAsync(HttpMethod.Post, _provider.Route(path), body, headers, cancellationToken).ConfigureAwait(false);
-            var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
+            var response = await _provider
+                .Http.SendJsonStringAsync(
+                    HttpMethod.Post,
+                    _provider.Route(path),
+                    body,
+                    headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+            var document = JsonDocument.Parse(
+                string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+            );
             return (document, document.RootElement, response.Headers);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)

@@ -27,16 +27,23 @@ public sealed class HeyGenProvider : OpenAICompatibleProvider, Operations.IDecis
     }
 
     /// <summary>Creates a provider.</summary>
-    public static new HeyGenProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new HeyGenProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new HeyGenProvider(client, options);
     }
 
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
-        throw new AiSdkException("Provider 'heygen' does not support language model '" + modelId + "'.");
+        throw new AiSdkException(
+            "Provider 'heygen' does not support language model '" + modelId + "'."
+        );
     }
 
     /// <inheritdoc />
@@ -46,15 +53,20 @@ public sealed class HeyGenProvider : OpenAICompatibleProvider, Operations.IDecis
     public IVideoModel Video(string modelId) => VideoModel(modelId);
 
     /// <summary>Creates an experimental decision model using the HeyGen Decision API. The provider id is <c>heygen.decision</c>. Maps to <c>decisionModel</c>.</summary>
-    public DecisionHeyGenModel DecisionModel(string modelId) => new DecisionHeyGenModel(this, modelId);
+    public DecisionHeyGenModel DecisionModel(string modelId) =>
+        new DecisionHeyGenModel(this, modelId);
 
-    Operations.IDecisionCaller? Operations.IDecisionProvider.DecisionModel(string modelId) => DecisionModel(modelId);
+    Operations.IDecisionCaller? Operations.IDecisionProvider.DecisionModel(string modelId) =>
+        DecisionModel(modelId);
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl.TrimEnd('/');
+        options.BaseUrl =
+            string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
+                ? DefaultBaseUrl
+                : options.BaseUrl.TrimEnd('/');
         options.ApiKeyEnvironmentVariable = "HEYGEN_API_KEY";
         options.RequireApiKey = true;
         options.SupportsEmbeddings = false;
@@ -70,14 +82,20 @@ public sealed class HeyGenProvider : OpenAICompatibleProvider, Operations.IDecis
 public static class HeyGenServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddHeyGen(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddHeyGen(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(HeyGenProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new HeyGenProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(HeyGenProvider.ProviderId), options);
+            return new HeyGenProvider(
+                sp.GetRequiredService<IHttpClientFactory>().CreateClient(HeyGenProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

@@ -96,7 +96,8 @@ public sealed class XaiVideoModelOptions
     public string? Resolution { get; set; }
 
     /// <summary>Options this class does not model. They are sent to the API as they are. Upstream <c>z.looseObject</c>.</summary>
-    public IReadOnlyDictionary<string, JsonElement> AdditionalProperties { get; set; } = new Dictionary<string, JsonElement>();
+    public IReadOnlyDictionary<string, JsonElement> AdditionalProperties { get; set; } =
+        new Dictionary<string, JsonElement>();
 
     /// <summary>
     /// Reads <c>providerOptions.xai</c>. Returns null when absent. An invalid value throws <see cref="InvalidArgumentException"/>.
@@ -104,9 +105,11 @@ public sealed class XaiVideoModelOptions
     /// </summary>
     public static XaiVideoModelOptions? Parse(JsonElement providerOptions)
     {
-        if (providerOptions.ValueKind != JsonValueKind.Object
+        if (
+            providerOptions.ValueKind != JsonValueKind.Object
             || !providerOptions.TryGetProperty(XaiProvider.ProviderId, out var raw)
-            || raw.ValueKind == JsonValueKind.Null)
+            || raw.ValueKind == JsonValueKind.Null
+        )
         {
             return null;
         }
@@ -121,10 +124,18 @@ public sealed class XaiVideoModelOptions
             // including errors about other options.
             if (raw.ValueKind == JsonValueKind.Object && raw.TryGetProperty("output", out _))
             {
-                throw new InvalidArgumentException("providerOptions.xai", null, "Invalid xAI video provider options for upload delivery.");
+                throw new InvalidArgumentException(
+                    "providerOptions.xai",
+                    null,
+                    "Invalid xAI video provider options for upload delivery."
+                );
             }
 
-            throw new InvalidArgumentException("providerOptions.xai", null, "Invalid xAI video provider options: " + exception.Message);
+            throw new InvalidArgumentException(
+                "providerOptions.xai",
+                null,
+                "Invalid xAI video provider options: " + exception.Message
+            );
         }
     }
 
@@ -161,7 +172,10 @@ public sealed class XaiVideoModelOptions
                     options.StorageOptions = ReadStorage(value, property.Name);
                     break;
                 case "user":
-                    options.User = value.ValueKind == JsonValueKind.String ? value.GetString() : throw Wrong(property.Name);
+                    options.User =
+                        value.ValueKind == JsonValueKind.String
+                            ? value.GetString()
+                            : throw Wrong(property.Name);
                     break;
                 case "output":
                     options.OutputUploadUrl = Output(value);
@@ -173,7 +187,8 @@ public sealed class XaiVideoModelOptions
                     options.PollTimeoutMs = NullablePositive(property);
                     break;
                 case "resolution":
-                    options.Resolution = value.ValueKind == JsonValueKind.Null ? null : Enum(property, Resolutions);
+                    options.Resolution =
+                        value.ValueKind == JsonValueKind.Null ? null : Enum(property, Resolutions);
                     break;
                 default:
                     additional[property.Name] = value.Clone();
@@ -187,14 +202,20 @@ public sealed class XaiVideoModelOptions
 
     private static string Enum(JsonProperty property, string[] allowed)
     {
-        return property.Value.ValueKind == JsonValueKind.String && Array.IndexOf(allowed, property.Value.GetString()) >= 0
+        return
+            property.Value.ValueKind == JsonValueKind.String
+            && Array.IndexOf(allowed, property.Value.GetString()) >= 0
             ? property.Value.GetString()!
-            : throw new FormatException(property.Name + " must be one of " + string.Join(", ", allowed) + ".");
+            : throw new FormatException(
+                property.Name + " must be one of " + string.Join(", ", allowed) + "."
+            );
     }
 
     private static string NonEmptyString(JsonProperty property)
     {
-        return property.Value.ValueKind == JsonValueKind.String && property.Value.GetString() is { Length: > 0 } text
+        return
+            property.Value.ValueKind == JsonValueKind.String
+            && property.Value.GetString() is { Length: > 0 } text
             ? text
             : throw new FormatException(property.Name + " must be a non-empty string.");
     }
@@ -209,14 +230,20 @@ public sealed class XaiVideoModelOptions
         var items = new List<string>();
         foreach (var item in property.Value.EnumerateArray())
         {
-            items.Add(item.ValueKind == JsonValueKind.String && item.GetString() is { Length: > 0 } text
-                ? text
-                : throw new FormatException(property.Name + " entries must be non-empty strings."));
+            items.Add(
+                item.ValueKind == JsonValueKind.String && item.GetString() is { Length: > 0 } text
+                    ? text
+                    : throw new FormatException(
+                        property.Name + " entries must be non-empty strings."
+                    )
+            );
         }
 
         return items.Count >= min && items.Count <= max
             ? items
-            : throw new FormatException(property.Name + " must have between " + min + " and " + max + " entries.");
+            : throw new FormatException(
+                property.Name + " must have between " + min + " and " + max + " entries."
+            );
     }
 
     private static List<XaiVideoKeyframe> ReadKeyframes(JsonProperty property)
@@ -229,14 +256,28 @@ public sealed class XaiVideoModelOptions
         var keyframes = new List<XaiVideoKeyframe>();
         foreach (var item in property.Value.EnumerateArray())
         {
-            if (item.ValueKind != JsonValueKind.Object
-                || !item.TryGetProperty("imageUrl", out var imageUrl) || imageUrl.ValueKind != JsonValueKind.String || imageUrl.GetString() is not { Length: > 0 }
-                || !item.TryGetProperty("timestampSeconds", out var timestamp) || timestamp.ValueKind != JsonValueKind.Number || timestamp.GetDouble() <= 0)
+            if (
+                item.ValueKind != JsonValueKind.Object
+                || !item.TryGetProperty("imageUrl", out var imageUrl)
+                || imageUrl.ValueKind != JsonValueKind.String
+                || imageUrl.GetString() is not { Length: > 0 }
+                || !item.TryGetProperty("timestampSeconds", out var timestamp)
+                || timestamp.ValueKind != JsonValueKind.Number
+                || timestamp.GetDouble() <= 0
+            )
             {
-                throw new FormatException("keyframes entries need an imageUrl and a positive timestampSeconds.");
+                throw new FormatException(
+                    "keyframes entries need an imageUrl and a positive timestampSeconds."
+                );
             }
 
-            keyframes.Add(new XaiVideoKeyframe { ImageUrl = imageUrl.GetString()!, TimestampSeconds = timestamp.GetDouble() });
+            keyframes.Add(
+                new XaiVideoKeyframe
+                {
+                    ImageUrl = imageUrl.GetString()!,
+                    TimestampSeconds = timestamp.GetDouble(),
+                }
+            );
         }
 
         return keyframes;
@@ -244,8 +285,12 @@ public sealed class XaiVideoModelOptions
 
     private static XaiVideoStorageOptions ReadStorage(JsonElement raw, string name)
     {
-        if (raw.ValueKind != JsonValueKind.Object
-            || !raw.TryGetProperty("filename", out var filename) || filename.ValueKind != JsonValueKind.String || filename.GetString() is not { Length: > 0 })
+        if (
+            raw.ValueKind != JsonValueKind.Object
+            || !raw.TryGetProperty("filename", out var filename)
+            || filename.ValueKind != JsonValueKind.String
+            || filename.GetString() is not { Length: > 0 }
+        )
         {
             throw new FormatException(name + " needs a non-empty filename.");
         }
@@ -268,7 +313,12 @@ public sealed class XaiVideoModelOptions
                     storage.PublicUrlIsObject = true;
                     if (publicUrl.TryGetProperty("expiresAfter", out var publicExpiresAfter))
                     {
-                        storage.PublicUrlExpiresAfter = Integer(publicExpiresAfter, 3_600, 2_592_000, name + ".publicUrl.expiresAfter");
+                        storage.PublicUrlExpiresAfter = Integer(
+                            publicExpiresAfter,
+                            3_600,
+                            2_592_000,
+                            name + ".publicUrl.expiresAfter"
+                        );
                     }
 
                     break;
@@ -282,26 +332,37 @@ public sealed class XaiVideoModelOptions
 
     private static int Integer(JsonElement value, int min, int max, string name)
     {
-        return value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number) && number >= min && number <= max
+        return
+            value.ValueKind == JsonValueKind.Number
+            && value.TryGetInt32(out var number)
+            && number >= min
+            && number <= max
             ? number
-            : throw new FormatException(name + " must be an integer from " + min + " to " + max + ".");
+            : throw new FormatException(
+                name + " must be an integer from " + min + " to " + max + "."
+            );
     }
 
     private static string Output(JsonElement value)
     {
         // An HTTPS URL without credentials or a fragment.
-        if (value.ValueKind == JsonValueKind.Object
-            && value.TryGetProperty("uploadUrl", out var uploadUrl) && uploadUrl.ValueKind == JsonValueKind.String
+        if (
+            value.ValueKind == JsonValueKind.Object
+            && value.TryGetProperty("uploadUrl", out var uploadUrl)
+            && uploadUrl.ValueKind == JsonValueKind.String
             && uploadUrl.GetString() is { Length: > 0 } text
             && Uri.TryCreate(text, UriKind.Absolute, out var uri)
             && uri.Scheme == Uri.UriSchemeHttps
             && uri.UserInfo.Length == 0
-            && uri.Fragment.Length == 0)
+            && uri.Fragment.Length == 0
+        )
         {
             return text;
         }
 
-        throw new FormatException("output.uploadUrl must be an HTTPS URL without credentials or a fragment.");
+        throw new FormatException(
+            "output.uploadUrl must be an HTTPS URL without credentials or a fragment."
+        );
     }
 
     private static double? NullablePositive(JsonProperty property)

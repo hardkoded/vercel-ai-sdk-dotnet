@@ -14,7 +14,8 @@ namespace Vercel.AI.Tests.Upstream.KlingAI.KlingAIProvider;
 [Collection(KlingAIEnvironmentCollection.Name)]
 public sealed class CreateKlingAIVideoTests : IDisposable
 {
-    private const string Prefix = "packages/klingai/src/klingai-provider.test.ts::createKlingAI > video::";
+    private const string Prefix =
+        "packages/klingai/src/klingai-provider.test.ts::createKlingAI > video::";
 
     private readonly KlingAIEnvironment _env = new();
 
@@ -24,7 +25,10 @@ public sealed class CreateKlingAIVideoTests : IDisposable
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should construct a video model with default configuration", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should construct a video model with default configuration",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_construct_a_video_model_with_default_configuration()
     {
         var provider = KlingAIProviderType.Create(new KlingAIOptions { ApiKey = "test-api-key" });
@@ -35,20 +39,35 @@ public sealed class CreateKlingAIVideoTests : IDisposable
         Assert.Equal("klingai.video", model.Provider);
         // The base URL is observed through the request the model sends.
         var call = await SendAsync(new KlingAIOptions { ApiKey = "test-api-key" });
-        Assert.Equal("https://api-singapore.klingai.com/v1/videos/text2video/task-abc-123", call.Uri.ToString());
+        Assert.Equal(
+            "https://api-singapore.klingai.com/v1/videos/text2video/task-abc-123",
+            call.Uri.ToString()
+        );
     }
 
     [Fact]
     [UpstreamTest(Prefix + "should respect custom baseURL", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_respect_custom_baseURL()
     {
-        var call = await SendAsync(new KlingAIOptions { ApiKey = "test-api-key", BaseUrl = "https://custom.klingai.example.com" });
+        var call = await SendAsync(
+            new KlingAIOptions
+            {
+                ApiKey = "test-api-key",
+                BaseUrl = "https://custom.klingai.example.com",
+            }
+        );
 
-        Assert.Equal("https://custom.klingai.example.com/v1/videos/text2video/task-abc-123", call.Uri.ToString());
+        Assert.Equal(
+            "https://custom.klingai.example.com/v1/videos/text2video/task-abc-123",
+            call.Uri.ToString()
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should pass custom fetch function", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should pass custom fetch function",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_pass_custom_fetch_function()
     {
         // The custom handler is the port's fetch: every request must go through it.
@@ -60,7 +79,10 @@ public sealed class CreateKlingAIVideoTests : IDisposable
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should pass headers as async function", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should pass headers as async function",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_pass_headers_as_async_function()
     {
         // Headers are computed per request, not when the model is created: the key is set after the model exists.

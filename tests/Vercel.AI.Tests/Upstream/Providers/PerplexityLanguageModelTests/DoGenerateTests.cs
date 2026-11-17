@@ -15,22 +15,37 @@ public sealed class DoGenerateTests
         "{\"id\":\"resp-123\",\"created_at\":1784292159,\"model\":\"openai/gpt-5.1\",\"object\":\"response\",\"output\":[{\"id\":\"msg-123\",\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"Hello from Perplexity.\",\"annotations\":[]}]}],\"status\":\"completed\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}";
 
     [Fact]
-    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::doGenerate::coerces top-level max reasoning to xhigh with a warning", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/perplexity/src/perplexity-language-model.test.ts::doGenerate::coerces top-level max reasoning to xhigh with a warning",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Coerces_top_level_max_reasoning_to_xhigh_with_a_warning()
     {
         var capture = new UpstreamCapture { ResponseBody = AgentResponse };
-        var model = PerplexityProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture).LanguageModel("low");
+        var model = PerplexityProvider
+            .Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture)
+            .LanguageModel("low");
         var options = UpstreamChat.Prompt();
         options.Reasoning = "max";
 
         var result = await model.DoGenerateAsync(options, CancellationToken.None);
 
-        Assert.Equal("xhigh", UpstreamChat.Body(capture)["reasoning"]!["effort"]!.GetValue<string>());
-        Assert.Contains(result.Warnings, warning => warning.Type == "compatibility" && warning.Message == "reasoning \"max\" is not directly supported by this model. mapped to effort \"xhigh\".");
+        Assert.Equal(
+            "xhigh",
+            UpstreamChat.Body(capture)["reasoning"]!["effort"]!.GetValue<string>()
+        );
+        Assert.Contains(result.Warnings, warning =>
+            warning.Type == "compatibility"
+            && warning.Message
+                == "reasoning \"max\" is not directly supported by this model. mapped to effort \"xhigh\"."
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::doGenerate::passes request and provider headers and exposes response headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/perplexity/src/perplexity-language-model.test.ts::doGenerate::passes request and provider headers and exposes response headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Passes_request_and_provider_headers_and_exposes_response_headers()
     {
         var capture = new UpstreamCapture { ResponseBody = AgentResponse };
@@ -39,7 +54,10 @@ public sealed class DoGenerateTests
         options.Headers["custom-provider-header"] = "provider-value";
         var model = PerplexityProvider.Create(options, capture).LanguageModel("fast");
         var call = UpstreamChat.Prompt();
-        call.Headers = new Dictionary<string, string?> { ["custom-request-header"] = "request-value" };
+        call.Headers = new Dictionary<string, string?>
+        {
+            ["custom-request-header"] = "request-value",
+        };
 
         var result = await model.DoGenerateAsync(call, CancellationToken.None);
 

@@ -31,13 +31,29 @@ public sealed class ProviderHttp
         Uri uri,
         string? jsonBody,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        using var response = await SendAsync(method, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
-        var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
+        using var response = await SendAsync(
+                method,
+                uri,
+                jsonBody,
+                "application/json",
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        var body = await CancellableReads
+            .ReadAsStringAsync(response.Content, cancellationToken)
+            .ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            throw MapStatusWithHeaders((int)response.StatusCode, JsonValues.ExtractErrorMessage(body, (int)response.StatusCode), body, CopyHeaders(response));
+            throw MapStatusWithHeaders(
+                (int)response.StatusCode,
+                JsonValues.ExtractErrorMessage(body, (int)response.StatusCode),
+                body,
+                CopyHeaders(response)
+            );
         }
 
         if (string.IsNullOrWhiteSpace(body))
@@ -54,15 +70,31 @@ public sealed class ProviderHttp
         Uri uri,
         string? jsonBody,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        var response = await SendAsync(method, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
+        var response = await SendAsync(
+                method,
+                uri,
+                jsonBody,
+                "application/json",
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         try
         {
-            var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
+            var body = await CancellableReads
+                .ReadAsStringAsync(response.Content, cancellationToken)
+                .ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
-                throw MapStatusWithHeaders((int)response.StatusCode, JsonValues.ExtractErrorMessage(body, (int)response.StatusCode), body, CopyHeaders(response));
+                throw MapStatusWithHeaders(
+                    (int)response.StatusCode,
+                    JsonValues.ExtractErrorMessage(body, (int)response.StatusCode),
+                    body,
+                    CopyHeaders(response)
+                );
             }
 
             return new ProviderTextResponse(body ?? string.Empty, CopyHeaders(response));
@@ -79,9 +111,13 @@ public sealed class ProviderHttp
         Uri uri,
         HttpContent content,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        return (await SendBinaryAsync(method, uri, content, headers, cancellationToken).ConfigureAwait(false)).Body;
+        return (
+            await SendBinaryAsync(method, uri, content, headers, cancellationToken)
+                .ConfigureAwait(false)
+        ).Body;
     }
 
     /// <summary>Sends a request, with retries, and returns the raw bytes, headers, and media type. A null <paramref name="content"/> sends no body.</summary>
@@ -90,13 +126,16 @@ public sealed class ProviderHttp
         Uri uri,
         HttpContent? content,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         // A retry needs a fresh body, so keep the bytes and rebuild the content for each attempt.
         Func<HttpContent>? rebuild = null;
         if (content != null && _retry.MaxRetries > 0)
         {
-            var body = await CancellableReads.ReadAsByteArrayAsync(content, cancellationToken).ConfigureAwait(false);
+            var body = await CancellableReads
+                .ReadAsByteArrayAsync(content, cancellationToken)
+                .ConfigureAwait(false);
             var contentHeaders = content.Headers.ToList();
             rebuild = () =>
             {
@@ -110,15 +149,34 @@ public sealed class ProviderHttp
             };
         }
 
-        using var response = await SendRawAsync(method, uri, content, headers, cancellationToken, rebuild).ConfigureAwait(false);
-        var bytes = await CancellableReads.ReadAsByteArrayAsync(response.Content, cancellationToken).ConfigureAwait(false);
+        using var response = await SendRawAsync(
+                method,
+                uri,
+                content,
+                headers,
+                cancellationToken,
+                rebuild
+            )
+            .ConfigureAwait(false);
+        var bytes = await CancellableReads
+            .ReadAsByteArrayAsync(response.Content, cancellationToken)
+            .ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             var text = Encoding.UTF8.GetString(bytes);
-            throw MapStatusWithHeaders((int)response.StatusCode, JsonValues.ExtractErrorMessage(text, (int)response.StatusCode), text, CopyHeaders(response));
+            throw MapStatusWithHeaders(
+                (int)response.StatusCode,
+                JsonValues.ExtractErrorMessage(text, (int)response.StatusCode),
+                text,
+                CopyHeaders(response)
+            );
         }
 
-        return new ProviderBinaryResponse(bytes, CopyHeaders(response), response.Content.Headers.ContentType?.MediaType);
+        return new ProviderBinaryResponse(
+            bytes,
+            CopyHeaders(response),
+            response.Content.Headers.ContentType?.MediaType
+        );
     }
 
     /// <summary>
@@ -129,19 +187,31 @@ public sealed class ProviderHttp
         HttpMethod method,
         Uri uri,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        var response = await SendRawAsync(method, uri, null, headers, cancellationToken).ConfigureAwait(false);
+        var response = await SendRawAsync(method, uri, null, headers, cancellationToken)
+            .ConfigureAwait(false);
         try
         {
             if (!response.IsSuccessStatusCode)
             {
-                var text = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
-                throw MapStatusWithHeaders((int)response.StatusCode, JsonValues.ExtractErrorMessage(text, (int)response.StatusCode), text, CopyHeaders(response));
+                var text = await CancellableReads
+                    .ReadAsStringAsync(response.Content, cancellationToken)
+                    .ConfigureAwait(false);
+                throw MapStatusWithHeaders(
+                    (int)response.StatusCode,
+                    JsonValues.ExtractErrorMessage(text, (int)response.StatusCode),
+                    text,
+                    CopyHeaders(response)
+                );
             }
 
             var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            return new ProviderStreamResponse(new ResponseOwningStream(stream, response, cancellationToken), CopyHeaders(response));
+            return new ProviderStreamResponse(
+                new ResponseOwningStream(stream, response, cancellationToken),
+                CopyHeaders(response)
+            );
         }
         catch
         {
@@ -155,9 +225,11 @@ public sealed class ProviderHttp
         Uri uri,
         string jsonBody,
         IReadOnlyDictionary<string, string?>? headers,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
-        var events = await OpenSseAsync(uri, jsonBody, headers, cancellationToken).ConfigureAwait(false);
+        var events = await OpenSseAsync(uri, jsonBody, headers, cancellationToken)
+            .ConfigureAwait(false);
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             yield return data;
@@ -172,21 +244,30 @@ public sealed class ProviderHttp
         Uri uri,
         string jsonBody,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        return (await OpenSseWithResourceAsync(uri, jsonBody, headers, cancellationToken).ConfigureAwait(false)).Events;
+        return (
+            await OpenSseWithResourceAsync(uri, jsonBody, headers, cancellationToken)
+                .ConfigureAwait(false)
+        ).Events;
     }
 
     /// <summary>
     /// Like <see cref="OpenSseAsync"/>, and also returns the response so a caller that never enumerates the events can release it.
     /// </summary>
-    public async Task<(IAsyncEnumerable<string> Events, IDisposable Resource)> OpenSseWithResourceAsync(
+    public async Task<(
+        IAsyncEnumerable<string> Events,
+        IDisposable Resource
+    )> OpenSseWithResourceAsync(
         Uri uri,
         string jsonBody,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        var opened = await OpenSseResponseAsync(uri, jsonBody, headers, cancellationToken).ConfigureAwait(false);
+        var opened = await OpenSseResponseAsync(uri, jsonBody, headers, cancellationToken)
+            .ConfigureAwait(false);
         return (opened.Events, opened.Resource);
     }
 
@@ -198,7 +279,8 @@ public sealed class ProviderHttp
         Uri uri,
         string jsonBody,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         return OpenSseResponseAsync(HttpMethod.Post, uri, jsonBody, headers, cancellationToken);
     }
@@ -209,19 +291,39 @@ public sealed class ProviderHttp
         Uri uri,
         string? jsonBody,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        var response = await SendAsync(method, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
+        var response = await SendAsync(
+                method,
+                uri,
+                jsonBody,
+                "application/json",
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         try
         {
             if (!response.IsSuccessStatusCode)
             {
-                var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
-                throw MapStatusWithHeaders((int)response.StatusCode, JsonValues.ExtractErrorMessage(body, (int)response.StatusCode), body, CopyHeaders(response));
+                var body = await CancellableReads
+                    .ReadAsStringAsync(response.Content, cancellationToken)
+                    .ConfigureAwait(false);
+                throw MapStatusWithHeaders(
+                    (int)response.StatusCode,
+                    JsonValues.ExtractErrorMessage(body, (int)response.StatusCode),
+                    body,
+                    CopyHeaders(response)
+                );
             }
 
             var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            return new ProviderSseResponse(ReadSseAsync(response, stream, cancellationToken), response, CopyHeaders(response));
+            return new ProviderSseResponse(
+                ReadSseAsync(response, stream, cancellationToken),
+                response,
+                CopyHeaders(response)
+            );
         }
         catch
         {
@@ -233,12 +335,15 @@ public sealed class ProviderHttp
     private static async IAsyncEnumerable<string> ReadSseAsync(
         HttpResponseMessage response,
         Stream stream,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         using (response)
         using (stream)
         {
-            await foreach (var data in SseParser.ReadDataAsync(stream, cancellationToken).ConfigureAwait(false))
+            await foreach (
+                var data in SseParser.ReadDataAsync(stream, cancellationToken).ConfigureAwait(false)
+            )
             {
                 yield return data;
             }
@@ -255,9 +360,18 @@ public sealed class ProviderHttp
         string? jsonBody,
         IReadOnlyDictionary<string, string?>? headers,
         int? maxLineBytes,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
-        var lines = await OpenJsonLinesAsync(method, uri, jsonBody, headers, maxLineBytes, cancellationToken).ConfigureAwait(false);
+        var lines = await OpenJsonLinesAsync(
+                method,
+                uri,
+                jsonBody,
+                headers,
+                maxLineBytes,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         await foreach (var value in lines.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             yield return value;
@@ -275,21 +389,41 @@ public sealed class ProviderHttp
         string? jsonBody,
         IReadOnlyDictionary<string, string?>? headers,
         int? maxLineBytes,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var limit = maxLineBytes ?? JsonStreams.DefaultMaxLineBytes;
         if (limit <= 0)
         {
-            throw new Util.InvalidArgumentError("maxLineBytes", limit, "maxLineBytes must be a positive safe integer.");
+            throw new Util.InvalidArgumentError(
+                "maxLineBytes",
+                limit,
+                "maxLineBytes must be a positive safe integer."
+            );
         }
 
-        var response = await SendAsync(method, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
+        var response = await SendAsync(
+                method,
+                uri,
+                jsonBody,
+                "application/json",
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         try
         {
             if (!response.IsSuccessStatusCode)
             {
-                var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
-                throw MapStatusWithHeaders((int)response.StatusCode, JsonValues.ExtractErrorMessage(body, (int)response.StatusCode), body, CopyHeaders(response));
+                var body = await CancellableReads
+                    .ReadAsStringAsync(response.Content, cancellationToken)
+                    .ConfigureAwait(false);
+                throw MapStatusWithHeaders(
+                    (int)response.StatusCode,
+                    JsonValues.ExtractErrorMessage(body, (int)response.StatusCode),
+                    body,
+                    CopyHeaders(response)
+                );
             }
 
             var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
@@ -307,12 +441,24 @@ public sealed class ProviderHttp
         Stream stream,
         int maxLineBytes,
         Uri uri,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         using (response)
         using (stream)
         {
-            await foreach (var value in JsonStreams.ReadJsonLinesAsync(stream, null, null, cancellationToken, maxLineBytes, uri.ToString()).ConfigureAwait(false))
+            await foreach (
+                var value in JsonStreams
+                    .ReadJsonLinesAsync(
+                        stream,
+                        null,
+                        null,
+                        cancellationToken,
+                        maxLineBytes,
+                        uri.ToString()
+                    )
+                    .ConfigureAwait(false)
+            )
             {
                 yield return value;
             }
@@ -332,18 +478,65 @@ public sealed class ProviderHttp
     }
 
     /// <summary>Like the public overloads, and keeps <paramref name="responseHeaders"/> on the exception.</summary>
-    internal static ApiException MapStatusWithHeaders(int statusCode, string message, string? body, IReadOnlyDictionary<string, string>? responseHeaders)
+    internal static ApiException MapStatusWithHeaders(
+        int statusCode,
+        string message,
+        string? body,
+        IReadOnlyDictionary<string, string>? responseHeaders,
+        string? url = null,
+        object? requestBodyValues = null
+    )
     {
         return statusCode switch
         {
-            400 => new BadRequestException(message, body) { ResponseHeaders = responseHeaders },
-            401 => new AuthenticationException(message, body) { ResponseHeaders = responseHeaders },
-            403 => new PermissionDeniedException(message, body) { ResponseHeaders = responseHeaders },
-            404 => new NotFoundException(message, body) { ResponseHeaders = responseHeaders },
-            422 => new UnprocessableEntityException(message, body) { ResponseHeaders = responseHeaders },
-            429 => new RateLimitException(message, body) { ResponseHeaders = responseHeaders },
-            >= 500 and <= 599 => new InternalServerException(message, statusCode, body) { ResponseHeaders = responseHeaders },
-            _ => new ApiException(message, statusCode, body) { ResponseHeaders = responseHeaders },
+            400 => new BadRequestException(message, body)
+            {
+                ResponseHeaders = responseHeaders,
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+            },
+            401 => new AuthenticationException(message, body)
+            {
+                ResponseHeaders = responseHeaders,
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+            },
+            403 => new PermissionDeniedException(message, body)
+            {
+                ResponseHeaders = responseHeaders,
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+            },
+            404 => new NotFoundException(message, body)
+            {
+                ResponseHeaders = responseHeaders,
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+            },
+            422 => new UnprocessableEntityException(message, body)
+            {
+                ResponseHeaders = responseHeaders,
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+            },
+            429 => new RateLimitException(message, body)
+            {
+                ResponseHeaders = responseHeaders,
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+            },
+            >= 500 and <= 599 => new InternalServerException(message, statusCode, body)
+            {
+                ResponseHeaders = responseHeaders,
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+            },
+            _ => new ApiException(message, statusCode, body)
+            {
+                ResponseHeaders = responseHeaders,
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+            },
         };
     }
 
@@ -359,14 +552,23 @@ public sealed class ProviderHttp
         string? jsonBody,
         string mediaType,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         HttpContent Content()
         {
             return new StringContent(jsonBody ?? string.Empty, Encoding.UTF8, mediaType);
         }
 
-        return await SendRawAsync(method, uri, jsonBody is null && method == HttpMethod.Get ? null : Content(), headers, cancellationToken, Content).ConfigureAwait(false);
+        return await SendRawAsync(
+                method,
+                uri,
+                jsonBody is null && method == HttpMethod.Get ? null : Content(),
+                headers,
+                cancellationToken,
+                Content
+            )
+            .ConfigureAwait(false);
     }
 
     private async Task<HttpResponseMessage> SendRawAsync(
@@ -375,7 +577,8 @@ public sealed class ProviderHttp
         HttpContent? content,
         IReadOnlyDictionary<string, string?>? headers,
         CancellationToken cancellationToken,
-        Func<HttpContent>? rebuild = null)
+        Func<HttpContent>? rebuild = null
+    )
     {
         Exception? last = null;
         for (var attempt = 0; ; attempt++)
@@ -387,17 +590,25 @@ public sealed class ProviderHttp
                 using var request = new HttpRequestMessage(method, uri);
                 ApplyHeaders(request, headers);
                 request.Content = attempt == 0 ? content : rebuild?.Invoke();
-                var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
-                if (response.IsSuccessStatusCode || !IsRetryable((int)response.StatusCode) || attempt >= _retry.MaxRetries)
+                var response = await _httpClient
+                    .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token)
+                    .ConfigureAwait(false);
+                if (
+                    response.IsSuccessStatusCode
+                    || !IsRetryable((int)response.StatusCode)
+                    || attempt >= _retry.MaxRetries
+                )
                 {
                     return response;
                 }
 
                 var retryAfter = ReadRetryAfter(response);
                 response.Dispose();
-                await DelayAsync(_retry.GetDelay(attempt, retryAfter), cancellationToken).ConfigureAwait(false);
+                await DelayAsync(_retry.GetDelay(attempt, retryAfter), cancellationToken)
+                    .ConfigureAwait(false);
             }
-            catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException exception)
+                when (cancellationToken.IsCancellationRequested)
             {
                 throw new ApiUserAbortException(exception, cancellationToken);
             }
@@ -409,17 +620,22 @@ public sealed class ProviderHttp
                     throw (Exception)last;
                 }
 
-                await DelayAsync(_retry.GetDelay(attempt, null), cancellationToken).ConfigureAwait(false);
+                await DelayAsync(_retry.GetDelay(attempt, null), cancellationToken)
+                    .ConfigureAwait(false);
             }
             catch (HttpRequestException exception)
             {
-                last = new ApiConnectionException("The connection to the provider failed.", exception);
+                last = new ApiConnectionException(
+                    "The connection to the provider failed.",
+                    exception
+                );
                 if (attempt >= _retry.MaxRetries)
                 {
                     throw (Exception)last;
                 }
 
-                await DelayAsync(_retry.GetDelay(attempt, null), cancellationToken).ConfigureAwait(false);
+                await DelayAsync(_retry.GetDelay(attempt, null), cancellationToken)
+                    .ConfigureAwait(false);
             }
         }
     }
@@ -430,7 +646,8 @@ public sealed class ProviderHttp
         {
             await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException exception)
+            when (cancellationToken.IsCancellationRequested)
         {
             throw new ApiUserAbortException(exception, cancellationToken);
         }
@@ -448,7 +665,10 @@ public sealed class ProviderHttp
         return source;
     }
 
-    private static void ApplyHeaders(HttpRequestMessage request, IReadOnlyDictionary<string, string?>? headers)
+    private static void ApplyHeaders(
+        HttpRequestMessage request,
+        IReadOnlyDictionary<string, string?>? headers
+    )
     {
         if (headers is null)
         {
@@ -475,7 +695,8 @@ public sealed class ProviderHttp
                 {
                     request.Headers.Authorization = new AuthenticationHeaderValue(
                         value.Substring(0, space),
-                        value.Substring(space + 1));
+                        value.Substring(space + 1)
+                    );
                 }
                 else
                 {
@@ -513,7 +734,14 @@ public sealed class ProviderHttp
         if (response.Headers.TryGetValues("retry-after-ms", out var millisecondsValues))
         {
             var raw = millisecondsValues.FirstOrDefault();
-            if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var milliseconds))
+            if (
+                int.TryParse(
+                    raw,
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out var milliseconds
+                )
+            )
             {
                 return TimeSpan.FromMilliseconds(milliseconds);
             }
@@ -548,7 +776,11 @@ public sealed class ProviderTextResponse
 /// <summary>An open SSE response: the data payloads, the response headers, and the response to release.</summary>
 internal sealed class ProviderSseResponse
 {
-    public ProviderSseResponse(IAsyncEnumerable<string> events, IDisposable resource, IReadOnlyDictionary<string, string> headers)
+    public ProviderSseResponse(
+        IAsyncEnumerable<string> events,
+        IDisposable resource,
+        IReadOnlyDictionary<string, string> headers
+    )
     {
         Events = events;
         Resource = resource;
@@ -565,7 +797,10 @@ internal sealed class ProviderSseResponse
     /// Wraps the parts read from this response into a stream result with the request body and the response headers.
     /// The result releases the response when it is disposed or when the stream ends. The response is released here if building the result throws.
     /// </summary>
-    public LanguageModelStreamResult ToStreamResult(IAsyncEnumerable<LanguageModelStreamPart> stream, string requestJson)
+    public LanguageModelStreamResult ToStreamResult(
+        IAsyncEnumerable<LanguageModelStreamPart> stream,
+        string requestJson
+    )
     {
         try
         {
@@ -573,7 +808,8 @@ internal sealed class ProviderSseResponse
                 new ReleasingAsyncEnumerable<LanguageModelStreamPart>(stream, Resource),
                 LanguageModelStreamRequest.FromJson(requestJson),
                 new LanguageModelStreamResponse(Headers),
-                Resource);
+                Resource
+            );
         }
         catch
         {
@@ -586,7 +822,11 @@ internal sealed class ProviderSseResponse
 /// <summary>Response body bytes, headers, and media type.</summary>
 internal sealed class ProviderBinaryResponse
 {
-    public ProviderBinaryResponse(byte[] body, IReadOnlyDictionary<string, string> headers, string? mediaType)
+    public ProviderBinaryResponse(
+        byte[] body,
+        IReadOnlyDictionary<string, string> headers,
+        string? mediaType
+    )
     {
         Body = body;
         Headers = headers;
@@ -620,7 +860,11 @@ internal sealed class ResponseOwningStream : Stream
     private readonly HttpResponseMessage _response;
     private readonly CancellationToken _callToken;
 
-    public ResponseOwningStream(Stream inner, HttpResponseMessage response, CancellationToken callToken)
+    public ResponseOwningStream(
+        Stream inner,
+        HttpResponseMessage response,
+        CancellationToken callToken
+    )
     {
         _inner = inner;
         _response = response;
@@ -641,38 +885,54 @@ internal sealed class ResponseOwningStream : Stream
         set => throw new NotSupportedException();
     }
 
-    public override void Flush()
-    {
-    }
+    public override void Flush() { }
 
     public override int Read(byte[] buffer, int offset, int count)
     {
         return _inner.Read(buffer, offset, count);
     }
 
-    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    public override async Task<int> ReadAsync(
+        byte[] buffer,
+        int offset,
+        int count,
+        CancellationToken cancellationToken
+    )
     {
         // The call token that opened the response also cancels body reads.
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(_callToken, cancellationToken);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            _callToken,
+            cancellationToken
+        );
         try
         {
-            return await _inner.ReadAsync(buffer, offset, count, linked.Token).ConfigureAwait(false);
+            return await _inner
+                .ReadAsync(buffer, offset, count, linked.Token)
+                .ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (_callToken.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException)
+            when (_callToken.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
             throw new OperationCanceledException(_callToken);
         }
     }
 
 #if NET
-    public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+    public override async ValueTask<int> ReadAsync(
+        Memory<byte> buffer,
+        CancellationToken cancellationToken = default
+    )
     {
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(_callToken, cancellationToken);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            _callToken,
+            cancellationToken
+        );
         try
         {
             return await _inner.ReadAsync(buffer, linked.Token).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (_callToken.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException)
+            when (_callToken.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
             throw new OperationCanceledException(_callToken);
         }

@@ -37,14 +37,18 @@ internal sealed class HandleUIMessageStreamFinishHarness
     }
 
     /// <summary>Maps to <c>expect(result).toEqual(inputChunks)</c>.</summary>
-    public static void AssertChunks(IReadOnlyList<string> expected, IReadOnlyList<JsonObject> actual)
+    public static void AssertChunks(
+        IReadOnlyList<string> expected,
+        IReadOnlyList<JsonObject> actual
+    )
     {
         Assert.Equal(expected.Count, actual.Count);
         for (var i = 0; i < expected.Count; i++)
         {
             Assert.True(
                 JsonNode.DeepEquals(JsonNode.Parse(expected[i]), actual[i]),
-                $"Chunk {i}: expected {expected[i]}, actual {actual[i].ToJsonString()}");
+                $"Chunk {i}: expected {expected[i]}, actual {actual[i].ToJsonString()}"
+            );
         }
     }
 
@@ -57,8 +61,9 @@ internal sealed class HandleUIMessageStreamFinishHarness
         Func<UIMessageStreamOnEndEvent, Task>? onEnd = null,
         Func<UIMessageStreamOutcome>? getOutcome = null,
         Func<UIMessageStreamOnStepEndEvent, Task>? onStepFinish = null,
-        Func<UIMessageStreamOnEndEvent, Task>? onFinish = null)
-        => UIMessageStreamConverter.HandleUIMessageStreamFinish(
+        Func<UIMessageStreamOnEndEvent, Task>? onFinish = null
+    ) =>
+        UIMessageStreamConverter.HandleUIMessageStreamFinish(
             stream,
             messageId,
             originalMessages,
@@ -67,9 +72,10 @@ internal sealed class HandleUIMessageStreamFinishHarness
             Errors.Add,
             getOutcome,
             onStepFinish,
-            onFinish);
+            onFinish
+        );
 
     /// <summary>A message with one text part.</summary>
-    public static UIMessage TextMessage(string id, UIMessageRole role, string text)
-        => new(role, [new TextUIPart(text)]) { Id = id };
+    public static UIMessage TextMessage(string id, UIMessageRole role, string text) =>
+        new(role, [new TextUIPart(text)]) { Id = id };
 }

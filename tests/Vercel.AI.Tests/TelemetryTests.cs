@@ -23,19 +23,26 @@ public sealed class TelemetryTests
     [Theory]
     [InlineData(FinishReason.Error, ActivityStatusCode.Error)]
     [InlineData(FinishReason.Stop, ActivityStatusCode.Unset)]
-    public async Task Generate_span_status_follows_the_finish_reason(FinishReason finishReason, ActivityStatusCode expected)
+    public async Task Generate_span_status_follows_the_finish_reason(
+        FinishReason finishReason,
+        ActivityStatusCode expected
+    )
     {
-        var stopped = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stopped = new TaskCompletionSource<Activity>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         using var listener = Listen(started: null, stopped);
         var model = new TestLanguageModel
         {
             OnGenerate = _ => new LanguageModelGenerateResult(
                 new GeneratedContent[] { new GeneratedText("response") },
                 finishReason,
-                LanguageModelUsage.Empty),
+                LanguageModelUsage.Empty
+            ),
         };
 
-        var result = await Client().GenerateTextAsync(new GenerateTextOptions { Model = model, Prompt = "hi" });
+        var result = await Client()
+            .GenerateTextAsync(new GenerateTextOptions { Model = model, Prompt = "hi" });
 
         Assert.Equal(finishReason, result.FinishReason);
         var activity = await stopped.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -46,12 +53,23 @@ public sealed class TelemetryTests
     [Theory]
     [InlineData(FinishReason.Error, ActivityStatusCode.Error)]
     [InlineData(FinishReason.Stop, ActivityStatusCode.Unset)]
-    public async Task Stream_span_stays_open_until_finish_and_status_follows_the_finish_reason(FinishReason finishReason, ActivityStatusCode expected)
+    public async Task Stream_span_stays_open_until_finish_and_status_follows_the_finish_reason(
+        FinishReason finishReason,
+        ActivityStatusCode expected
+    )
     {
-        var started = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var stopped = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var stepReached = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var started = new TaskCompletionSource<Activity>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var stopped = new TaskCompletionSource<Activity>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var stepReached = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var release = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         using var listener = Listen(started, stopped);
         var model = new TestLanguageModel
         {
@@ -65,16 +83,19 @@ public sealed class TelemetryTests
         StreamTextResult stream;
         try
         {
-            stream = Client().StreamTextAsync(new StreamTextOptions
-            {
-                Model = model,
-                Prompt = "hi",
-                OnStepEnd = async (_, _) =>
-                {
-                    stepReached.TrySetResult(true);
-                    await release.Task;
-                },
-            });
+            stream = Client()
+                .StreamTextAsync(
+                    new StreamTextOptions
+                    {
+                        Model = model,
+                        Prompt = "hi",
+                        OnStepEnd = async (_, _) =>
+                        {
+                            stepReached.TrySetResult(true);
+                            await release.Task;
+                        },
+                    }
+                );
 
             Assert.True(await stepReached.Task.WaitAsync(TimeSpan.FromSeconds(5)));
             var activity = await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -96,15 +117,21 @@ public sealed class TelemetryTests
         Assert.Equal("streamText", stoppedActivity.OperationName);
         Assert.Equal(expected, stoppedActivity.Status);
         Assert.Equal(finishReason, await stream.FinishReason);
-        Assert.Contains(parts, part => part is FinishPart finish && finish.FinishReason == finishReason);
+        Assert.Contains(parts, part =>
+            part is FinishPart finish && finish.FinishReason == finishReason
+        );
     }
 
     [Fact]
     public async Task GenerateSpeechAsync_records_generateSpeech_and_disposes_after_the_model_call()
     {
         var telemetry = new RecordingTelemetry();
-        var started = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var started = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var release = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         var model = new StubSpeechModel("tts-1")
         {
             OnGenerate = async (_, _) =>
@@ -115,12 +142,15 @@ public sealed class TelemetryTests
                 return new SpeechResult(new byte[] { 1 }, "audio/mpeg");
             },
         };
-        var pending = Client(telemetry).GenerateSpeechAsync(new GenerateSpeechOptions
-        {
-            Model = model,
-            Text = "hello",
-            Voice = "alloy",
-        });
+        var pending = Client(telemetry)
+            .GenerateSpeechAsync(
+                new GenerateSpeechOptions
+                {
+                    Model = model,
+                    Text = "hello",
+                    Voice = "alloy",
+                }
+            );
 
         await started.Task;
         Assert.False(telemetry.Disposed);
@@ -139,11 +169,14 @@ public sealed class TelemetryTests
     {
         var telemetry = new RecordingTelemetry();
         var model = new StubTranscriptionModel("whisper-1");
-        var result = await Client(telemetry).TranscribeAsync(new TranscribeOptions
-        {
-            Model = model,
-            Audio = new AudioInput(new byte[] { 9 }, "audio/wav", "a.wav"),
-        });
+        var result = await Client(telemetry)
+            .TranscribeAsync(
+                new TranscribeOptions
+                {
+                    Model = model,
+                    Audio = new AudioInput(new byte[] { 9 }, "audio/wav", "a.wav"),
+                }
+            );
 
         Assert.Equal("noted", result.Text);
         Assert.Equal("transcribe", telemetry.Operation);
@@ -158,8 +191,12 @@ public sealed class TelemetryTests
         var telemetry = new RecordingTelemetry();
         var client = Client(telemetry);
 
-        var speech = await Assert.ThrowsAsync<AiSdkException>(() => client.GenerateSpeechAsync(new GenerateSpeechOptions()));
-        var transcription = await Assert.ThrowsAsync<AiSdkException>(() => client.TranscribeAsync(new TranscribeOptions()));
+        var speech = await Assert.ThrowsAsync<AiSdkException>(() =>
+            client.GenerateSpeechAsync(new GenerateSpeechOptions())
+        );
+        var transcription = await Assert.ThrowsAsync<AiSdkException>(() =>
+            client.TranscribeAsync(new TranscribeOptions())
+        );
 
         Assert.Contains("speech", speech.Message, StringComparison.Ordinal);
         Assert.Contains("transcription", transcription.Message, StringComparison.Ordinal);
@@ -181,7 +218,9 @@ public sealed class TelemetryTests
     [Fact]
     public async Task OnUsage_omits_absent_token_counts()
     {
-        var stopped = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stopped = new TaskCompletionSource<Activity>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         using var listener = Listen(null, stopped);
         var telemetry = new OpenTelemetryAiTelemetry();
         using (var span = telemetry.Begin("generateText", "test"))
@@ -200,7 +239,9 @@ public sealed class TelemetryTests
     [Fact]
     public async Task Stream_records_token_usage()
     {
-        var stopped = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stopped = new TaskCompletionSource<Activity>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         using var listener = Listen(null, stopped);
         var model = new TestLanguageModel
         {
@@ -211,10 +252,9 @@ public sealed class TelemetryTests
             },
         };
 
-        var stream = Client().StreamTextAsync(new StreamTextOptions { Model = model, Prompt = "hi" });
-        await foreach (var _ in stream.Stream())
-        {
-        }
+        var stream = Client()
+            .StreamTextAsync(new StreamTextOptions { Model = model, Prompt = "hi" });
+        await foreach (var _ in stream.Stream()) { }
 
         var activity = await stopped.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(new LanguageModelUsage(3, 5, 8).InputTokens, (await stream.Usage).InputTokens);
@@ -227,7 +267,9 @@ public sealed class TelemetryTests
     [Fact]
     public async Task GenerateSpeech_records_character_usage_and_leaves_token_tags_unset()
     {
-        var activity = await StoppedSpeech(new SpeechResult(new byte[] { 1 }, "audio/mpeg", new AudioUsage(characters: 12)));
+        var activity = await StoppedSpeech(
+            new SpeechResult(new byte[] { 1 }, "audio/mpeg", new AudioUsage(characters: 12))
+        );
 
         AssertIdentity(activity, "generateSpeech", "tts-1");
         Assert.Equal(12, activity.GetTagItem("gen_ai.usage.characters"));
@@ -240,10 +282,13 @@ public sealed class TelemetryTests
     [Fact]
     public async Task GenerateSpeech_records_token_usage()
     {
-        var activity = await StoppedSpeech(new SpeechResult(
-            new byte[] { 1 },
-            "audio/mpeg",
-            new AudioUsage(inputTokens: 3, outputTokens: 5, totalTokens: 8)));
+        var activity = await StoppedSpeech(
+            new SpeechResult(
+                new byte[] { 1 },
+                "audio/mpeg",
+                new AudioUsage(inputTokens: 3, outputTokens: 5, totalTokens: 8)
+            )
+        );
 
         Assert.Equal(3, activity.GetTagItem("gen_ai.usage.input_tokens"));
         Assert.Equal(5, activity.GetTagItem("gen_ai.usage.output_tokens"));
@@ -255,13 +300,18 @@ public sealed class TelemetryTests
     [Fact]
     public async Task Transcribe_records_duration_usage()
     {
-        var stopped = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stopped = new TaskCompletionSource<Activity>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         using var listener = Listen(null, stopped);
-        var result = await Client().TranscribeAsync(new TranscribeOptions
-        {
-            Model = new StubTranscriptionModel("whisper-1", new AudioUsage(seconds: 1.5)),
-            Audio = new AudioInput(new byte[] { 9 }, "audio/wav", "a.wav"),
-        });
+        var result = await Client()
+            .TranscribeAsync(
+                new TranscribeOptions
+                {
+                    Model = new StubTranscriptionModel("whisper-1", new AudioUsage(seconds: 1.5)),
+                    Audio = new AudioInput(new byte[] { 9 }, "audio/wav", "a.wav"),
+                }
+            );
 
         var activity = await stopped.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal("noted", result.Text);
@@ -281,13 +331,18 @@ public sealed class TelemetryTests
         AssertNoUsageTags(speech);
         AssertIdentity(speech, "generateSpeech", "tts-1");
 
-        var stopped = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stopped = new TaskCompletionSource<Activity>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         using var listener = Listen(null, stopped);
-        var result = await Client().TranscribeAsync(new TranscribeOptions
-        {
-            Model = new StubTranscriptionModel("whisper-1"),
-            Audio = new AudioInput(new byte[] { 9 }, "audio/wav", "a.wav"),
-        });
+        var result = await Client()
+            .TranscribeAsync(
+                new TranscribeOptions
+                {
+                    Model = new StubTranscriptionModel("whisper-1"),
+                    Audio = new AudioInput(new byte[] { 9 }, "audio/wav", "a.wav"),
+                }
+            );
 
         var transcription = await stopped.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Null(result.Usage);
@@ -301,7 +356,9 @@ public sealed class TelemetryTests
     [InlineData(double.NegativeInfinity)]
     public async Task Non_finite_duration_stays_off_the_span(double seconds)
     {
-        var activity = await StoppedSpeech(new SpeechResult(new byte[] { 1 }, "audio/mpeg", new AudioUsage(seconds: seconds)));
+        var activity = await StoppedSpeech(
+            new SpeechResult(new byte[] { 1 }, "audio/mpeg", new AudioUsage(seconds: seconds))
+        );
 
         Assert.Null(activity.GetTagItem("gen_ai.usage.seconds"));
         AssertNoUsageTags(activity);
@@ -310,18 +367,19 @@ public sealed class TelemetryTests
     [Fact]
     public async Task Thrown_speech_call_disposes_the_span_without_usage_tags()
     {
-        var stopped = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stopped = new TaskCompletionSource<Activity>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         using var listener = Listen(null, stopped);
         var model = new StubSpeechModel("tts-1")
         {
             OnGenerate = (_, _) => throw new InvalidOperationException("fail"),
         };
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => Client().GenerateSpeechAsync(new GenerateSpeechOptions
-        {
-            Model = model,
-            Text = "hello",
-        }));
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Client()
+                .GenerateSpeechAsync(new GenerateSpeechOptions { Model = model, Text = "hello" })
+        );
 
         var activity = await stopped.Task.WaitAsync(TimeSpan.FromSeconds(5));
         AssertIdentity(activity, "generateSpeech", "tts-1");
@@ -330,17 +388,21 @@ public sealed class TelemetryTests
 
     private static async Task<Activity> StoppedGenerate(LanguageModelUsage usage)
     {
-        var stopped = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stopped = new TaskCompletionSource<Activity>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         using var listener = Listen(null, stopped);
         var model = new TestLanguageModel
         {
             OnGenerate = _ => new LanguageModelGenerateResult(
                 new GeneratedContent[] { new GeneratedText("response") },
                 FinishReason.Stop,
-                usage),
+                usage
+            ),
         };
 
-        var result = await Client().GenerateTextAsync(new GenerateTextOptions { Model = model, Prompt = "hi" });
+        var result = await Client()
+            .GenerateTextAsync(new GenerateTextOptions { Model = model, Prompt = "hi" });
         Assert.Equal(usage.InputTokens, result.Usage.InputTokens);
         Assert.Equal(usage.OutputTokens, result.Usage.OutputTokens);
         Assert.Equal(usage.TotalTokens, result.Usage.TotalTokens);
@@ -349,13 +411,13 @@ public sealed class TelemetryTests
 
     private static async Task<Activity> StoppedSpeech(SpeechResult speech)
     {
-        var stopped = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stopped = new TaskCompletionSource<Activity>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         using var listener = Listen(null, stopped);
-        var model = new StubSpeechModel("tts-1")
-        {
-            OnGenerate = (_, _) => Task.FromResult(speech),
-        };
-        var result = await Client().GenerateSpeechAsync(new GenerateSpeechOptions { Model = model, Text = "hello" });
+        var model = new StubSpeechModel("tts-1") { OnGenerate = (_, _) => Task.FromResult(speech) };
+        var result = await Client()
+            .GenerateSpeechAsync(new GenerateSpeechOptions { Model = model, Text = "hello" });
         Assert.Same(speech, result);
         return await stopped.Task.WaitAsync(TimeSpan.FromSeconds(5));
     }
@@ -377,21 +439,32 @@ public sealed class TelemetryTests
 
     private static AiClient Client()
     {
-        return new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }), new OpenTelemetryAiTelemetry());
+        return new AiClient(
+            GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }),
+            new OpenTelemetryAiTelemetry()
+        );
     }
 
     private static AiClient Client(IAiTelemetry telemetry)
     {
-        return new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }), telemetry);
+        return new AiClient(
+            GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }),
+            telemetry
+        );
     }
 
-    private static ActivityListener Listen(TaskCompletionSource<Activity>? started, TaskCompletionSource<Activity> stopped)
+    private static ActivityListener Listen(
+        TaskCompletionSource<Activity>? started,
+        TaskCompletionSource<Activity> stopped
+    )
     {
         var listener = new ActivityListener
         {
             ShouldListenTo = source => source.Name == OpenTelemetryAiTelemetry.SourceName,
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-            SampleUsingParentId = (ref ActivityCreationOptions<string> _) => ActivitySamplingResult.AllDataAndRecorded,
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) =>
+                ActivitySamplingResult.AllDataAndRecorded,
+            SampleUsingParentId = (ref ActivityCreationOptions<string> _) =>
+                ActivitySamplingResult.AllDataAndRecorded,
             ActivityStarted = activity => started?.TrySetResult(activity),
             ActivityStopped = activity => stopped.TrySetResult(activity),
         };
@@ -417,17 +490,11 @@ public sealed class TelemetryTests
             return new Scope(this);
         }
 
-        public void OnFinish(IDisposable span, FinishReason finishReason)
-        {
-        }
+        public void OnFinish(IDisposable span, FinishReason finishReason) { }
 
-        public void OnUsage(IDisposable span, LanguageModelUsage usage)
-        {
-        }
+        public void OnUsage(IDisposable span, LanguageModelUsage usage) { }
 
-        public void OnUsage(IDisposable span, AudioUsage? usage)
-        {
-        }
+        public void OnUsage(IDisposable span, AudioUsage? usage) { }
 
         private sealed class Scope : IDisposable
         {
@@ -456,9 +523,16 @@ public sealed class TelemetryTests
 
         public string ModelId { get; }
 
-        public Func<SpeechCallOptions, CancellationToken, Task<SpeechResult>>? OnGenerate { get; set; }
+        public Func<
+            SpeechCallOptions,
+            CancellationToken,
+            Task<SpeechResult>
+        >? OnGenerate { get; set; }
 
-        public Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
+        public Task<SpeechResult> DoGenerateAsync(
+            SpeechCallOptions options,
+            CancellationToken cancellationToken
+        )
         {
             if (OnGenerate != null)
             {
@@ -483,7 +557,10 @@ public sealed class TelemetryTests
 
         public string ModelId { get; }
 
-        public Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+        public Task<TranscriptionResult> DoTranscribeAsync(
+            AudioInput audio,
+            CancellationToken cancellationToken
+        )
         {
             return Task.FromResult(new TranscriptionResult("noted", _usage));
         }

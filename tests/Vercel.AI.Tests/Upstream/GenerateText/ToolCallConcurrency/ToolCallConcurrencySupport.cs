@@ -21,12 +21,18 @@ internal static class ToolCallConcurrencySupport
         }
     }
 
-    internal static async Task WaitForEvents(System.Collections.Concurrent.ConcurrentQueue<string> events, params string[] expected)
+    internal static async Task WaitForEvents(
+        System.Collections.Concurrent.ConcurrentQueue<string> events,
+        params string[] expected
+    )
     {
         await WaitFor(() => events.ToArray().SequenceEqual(expected));
     }
 
-    internal static async Task WaitForStarted(System.Collections.Concurrent.ConcurrentQueue<int> started, params int[] expected)
+    internal static async Task WaitForStarted(
+        System.Collections.Concurrent.ConcurrentQueue<int> started,
+        params int[] expected
+    )
     {
         await WaitFor(() => started.ToArray().SequenceEqual(expected));
     }

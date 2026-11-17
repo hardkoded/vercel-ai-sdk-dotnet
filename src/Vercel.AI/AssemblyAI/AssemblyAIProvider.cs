@@ -86,11 +86,16 @@ public static class AssemblyAIError
         {
             using (var document = JsonDocument.Parse(json))
             {
-                if (document.RootElement.ValueKind == JsonValueKind.Object
+                if (
+                    document.RootElement.ValueKind == JsonValueKind.Object
                     && document.RootElement.TryGetProperty("error", out var error)
-                    && error.ValueKind == JsonValueKind.String)
+                    && error.ValueKind == JsonValueKind.String
+                )
                 {
-                    return new AssemblyAIErrorParseResult(true, new AssemblyAIErrorData(error.GetString() ?? string.Empty));
+                    return new AssemblyAIErrorParseResult(
+                        true,
+                        new AssemblyAIErrorData(error.GetString() ?? string.Empty)
+                    );
                 }
             }
         }
@@ -132,23 +137,73 @@ public static class AssemblyAIFailedResponseHandler
         string url,
         object? requestBodyValues,
         IReadOnlyDictionary<string, string>? responseHeaders = null,
-        string? statusText = null)
+        string? statusText = null
+    )
     {
         var data = AssemblyAIError.Parse(responseBody).Value;
-        var message = data != null
-            ? AssemblyAIError.ToMessage(data)
-            : !string.IsNullOrEmpty(statusText) ? statusText! : JsonValues.ExtractErrorMessage(responseBody, statusCode);
+        var message =
+            data != null ? AssemblyAIError.ToMessage(data)
+            : !string.IsNullOrEmpty(statusText) ? statusText!
+            : JsonValues.ExtractErrorMessage(responseBody, statusCode);
 
         return statusCode switch
         {
-            400 => new BadRequestException(message, responseBody) { Url = url, RequestBodyValues = requestBodyValues, ResponseHeaders = responseHeaders, ErrorData = data },
-            401 => new AuthenticationException(message, responseBody) { Url = url, RequestBodyValues = requestBodyValues, ResponseHeaders = responseHeaders, ErrorData = data },
-            403 => new PermissionDeniedException(message, responseBody) { Url = url, RequestBodyValues = requestBodyValues, ResponseHeaders = responseHeaders, ErrorData = data },
-            404 => new NotFoundException(message, responseBody) { Url = url, RequestBodyValues = requestBodyValues, ResponseHeaders = responseHeaders, ErrorData = data },
-            422 => new UnprocessableEntityException(message, responseBody) { Url = url, RequestBodyValues = requestBodyValues, ResponseHeaders = responseHeaders, ErrorData = data },
-            429 => new RateLimitException(message, responseBody) { Url = url, RequestBodyValues = requestBodyValues, ResponseHeaders = responseHeaders, ErrorData = data },
-            >= 500 and <= 599 => new InternalServerException(message, statusCode, responseBody) { Url = url, RequestBodyValues = requestBodyValues, ResponseHeaders = responseHeaders, ErrorData = data },
-            _ => new ApiException(message, statusCode, responseBody) { Url = url, RequestBodyValues = requestBodyValues, ResponseHeaders = responseHeaders, ErrorData = data },
+            400 => new BadRequestException(message, responseBody)
+            {
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+                ResponseHeaders = responseHeaders,
+                ErrorData = data,
+            },
+            401 => new AuthenticationException(message, responseBody)
+            {
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+                ResponseHeaders = responseHeaders,
+                ErrorData = data,
+            },
+            403 => new PermissionDeniedException(message, responseBody)
+            {
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+                ResponseHeaders = responseHeaders,
+                ErrorData = data,
+            },
+            404 => new NotFoundException(message, responseBody)
+            {
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+                ResponseHeaders = responseHeaders,
+                ErrorData = data,
+            },
+            422 => new UnprocessableEntityException(message, responseBody)
+            {
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+                ResponseHeaders = responseHeaders,
+                ErrorData = data,
+            },
+            429 => new RateLimitException(message, responseBody)
+            {
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+                ResponseHeaders = responseHeaders,
+                ErrorData = data,
+            },
+            >= 500 and <= 599 => new InternalServerException(message, statusCode, responseBody)
+            {
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+                ResponseHeaders = responseHeaders,
+                ErrorData = data,
+            },
+            _ => new ApiException(message, statusCode, responseBody)
+            {
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+                ResponseHeaders = responseHeaders,
+                ErrorData = data,
+            },
         };
     }
 }
@@ -188,7 +243,12 @@ public sealed class AssemblyAITranscriptionSegment
 public sealed class AssemblyAITranscriptionResponse
 {
     /// <summary>Creates response metadata.</summary>
-    public AssemblyAITranscriptionResponse(DateTimeOffset timestamp, string modelId, IReadOnlyDictionary<string, string> headers, string body)
+    public AssemblyAITranscriptionResponse(
+        DateTimeOffset timestamp,
+        string modelId,
+        IReadOnlyDictionary<string, string> headers,
+        string body
+    )
     {
         Timestamp = timestamp;
         ModelId = modelId ?? string.Empty;
@@ -220,7 +280,8 @@ public sealed class AssemblyAITranscriptionResult
         double? durationInSeconds,
         IReadOnlyList<ModelWarning> warnings,
         JsonElement? providerMetadata,
-        AssemblyAITranscriptionResponse response)
+        AssemblyAITranscriptionResponse response
+    )
     {
         Text = text ?? string.Empty;
         Segments = segments ?? Array.Empty<AssemblyAITranscriptionSegment>();
@@ -281,9 +342,14 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider.</summary>
-    public static new AssemblyAIProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new AssemblyAIProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new AssemblyAIProvider(client, options);
     }
 
@@ -291,7 +357,10 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
+        options.BaseUrl =
+            string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
+                ? DefaultBaseUrl
+                : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "ASSEMBLYAI_API_KEY";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
@@ -301,34 +370,82 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
     }
 
     /// <inheritdoc />
-    public override ITranscriptionModel TranscriptionModel(string modelId) => Transcription(modelId);
+    public override ITranscriptionModel TranscriptionModel(string modelId) =>
+        Transcription(modelId);
 
     /// <summary>Creates the typed transcription model.</summary>
-    public AssemblyAITranscriptionModel Transcription(string modelId) => new AssemblyAITranscriptionModel(this, modelId);
+    public AssemblyAITranscriptionModel Transcription(string modelId) =>
+        new AssemblyAITranscriptionModel(this, modelId);
 
     /// <summary>Uploads audio, submits a transcript, and polls until it completes.</summary>
     public sealed class AssemblyAITranscriptionModel : ITranscriptionModel
     {
-        private const string SpeechModelDocs = "https://www.assemblyai.com/docs/pre-recorded-audio/select-the-speech-model";
+        private const string SpeechModelDocs =
+            "https://www.assemblyai.com/docs/pre-recorded-audio/select-the-speech-model";
 
         // Provider options copied to the request with snake_case names. Nested objects list their own keys.
         private static readonly string[] FlatOptions =
         {
-            "audioEndAt", "audioStartFrom", "autoChapters", "autoHighlights", "boostParam", "contentSafety",
-            "contentSafetyConfidence", "customSpelling", "disfluencies", "entityDetection", "filterProfanity",
-            "formatText", "iabCategories", "languageCode", "languageConfidenceThreshold", "languageDetection",
-            "multichannel", "punctuate", "redactPii", "redactPiiAudio", "redactPiiAudioQuality", "redactPiiPolicies",
-            "redactPiiSub", "sentimentAnalysis", "speakerLabels", "speakersExpected", "speechThreshold", "summarization",
-            "summaryModel", "summaryType", "webhookAuthHeaderName", "webhookAuthHeaderValue", "webhookUrl", "wordBoost",
-            "keytermsPrompt", "prompt", "temperature", "removeAudioTags", "domain", "redactPiiReturnUnredacted",
+            "audioEndAt",
+            "audioStartFrom",
+            "autoChapters",
+            "autoHighlights",
+            "boostParam",
+            "contentSafety",
+            "contentSafetyConfidence",
+            "customSpelling",
+            "disfluencies",
+            "entityDetection",
+            "filterProfanity",
+            "formatText",
+            "iabCategories",
+            "languageCode",
+            "languageConfidenceThreshold",
+            "languageDetection",
+            "multichannel",
+            "punctuate",
+            "redactPii",
+            "redactPiiAudio",
+            "redactPiiAudioQuality",
+            "redactPiiPolicies",
+            "redactPiiSub",
+            "sentimentAnalysis",
+            "speakerLabels",
+            "speakersExpected",
+            "speechThreshold",
+            "summarization",
+            "summaryModel",
+            "summaryType",
+            "webhookAuthHeaderName",
+            "webhookAuthHeaderValue",
+            "webhookUrl",
+            "wordBoost",
+            "keytermsPrompt",
+            "prompt",
+            "temperature",
+            "removeAudioTags",
+            "domain",
+            "redactPiiReturnUnredacted",
             "redactStaticEntities",
         };
 
         private static readonly KeyValuePair<string, string[]>[] NestedOptions =
         {
             new("speakerOptions", new[] { "minSpeakersExpected", "maxSpeakersExpected" }),
-            new("languageDetectionOptions", new[] { "expectedLanguages", "fallbackLanguage", "codeSwitching", "codeSwitchingConfidenceThreshold" }),
-            new("redactPiiAudioOptions", new[] { "returnRedactedNoSpeechAudio", "overrideAudioRedactionMethod" }),
+            new(
+                "languageDetectionOptions",
+                new[]
+                {
+                    "expectedLanguages",
+                    "fallbackLanguage",
+                    "codeSwitching",
+                    "codeSwitchingConfidenceThreshold",
+                }
+            ),
+            new(
+                "redactPiiAudioOptions",
+                new[] { "returnRedactedNoSpeechAudio", "overrideAudioRedactionMethod" }
+            ),
         };
 
         // Transcript fields that the segment shape cannot carry, surfaced as provider metadata.
@@ -358,14 +475,22 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
         public string ModelId { get; }
 
         /// <inheritdoc />
-        public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+        public async Task<TranscriptionResult> DoTranscribeAsync(
+            AudioInput audio,
+            CancellationToken cancellationToken
+        )
         {
-            var result = await TranscribeAsync(audio, null, cancellationToken).ConfigureAwait(false);
+            var result = await TranscribeAsync(audio, null, cancellationToken)
+                .ConfigureAwait(false);
             return new TranscriptionResult(result.Text);
         }
 
         /// <summary>Uploads audio, submits a transcript, and polls until it completes.</summary>
-        public async Task<AssemblyAITranscriptionResult> TranscribeAsync(AudioInput audio, AssemblyAITranscriptionRequest? request, CancellationToken cancellationToken)
+        public async Task<AssemblyAITranscriptionResult> TranscribeAsync(
+            AudioInput audio,
+            AssemblyAITranscriptionRequest? request,
+            CancellationToken cancellationToken
+        )
         {
             if (audio == null)
             {
@@ -376,8 +501,18 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
             var started = options?.Clock != null ? options.Clock() : DateTimeOffset.UtcNow;
             var headers = ProviderExchange.Merge(_provider.CreateHeaders(), request?.Headers);
             var uploadContent = new ByteArrayContent(audio.Data);
-            uploadContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-            var uploaded = await SendAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/upload"), uploadContent, headers, null, cancellationToken).ConfigureAwait(false);
+            uploadContent.Headers.ContentType = new MediaTypeHeaderValue(
+                "application/octet-stream"
+            );
+            var uploaded = await SendAsync(
+                    HttpMethod.Post,
+                    ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/upload"),
+                    uploadContent,
+                    headers,
+                    null,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             string uploadUrl;
             using (var uploadDocument = JsonDocument.Parse(uploaded.Body))
             {
@@ -387,32 +522,55 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
             var warnings = new List<ModelWarning>();
             var body = Body(AssemblyAIObject(request?.ProviderOptions), warnings);
             body["audio_url"] = uploadUrl;
-            var submitted = await SendAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/transcript"), ProviderExchange.Json(body.ToJsonString()), headers, body, cancellationToken).ConfigureAwait(false);
+            var submitted = await SendAsync(
+                    HttpMethod.Post,
+                    ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/transcript"),
+                    ProviderExchange.Json(body.ToJsonString()),
+                    headers,
+                    body,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             string transcriptId;
             using (var submitDocument = JsonDocument.Parse(submitted.Body))
             {
                 transcriptId = RequiredString(submitDocument.RootElement, "id");
             }
 
-            var completed = await WaitForCompletionAsync(transcriptId, headers, options, cancellationToken).ConfigureAwait(false);
+            var completed = await WaitForCompletionAsync(
+                    transcriptId,
+                    headers,
+                    options,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             using (var document = JsonDocument.Parse(completed.Body))
             {
                 var root = document.RootElement;
                 var segments = new List<AssemblyAITranscriptionSegment>();
-                if (root.TryGetProperty("words", out var words) && words.ValueKind == JsonValueKind.Array)
+                if (
+                    root.TryGetProperty("words", out var words)
+                    && words.ValueKind == JsonValueKind.Array
+                )
                 {
                     foreach (var word in words.EnumerateArray())
                     {
-                        segments.Add(new AssemblyAITranscriptionSegment(
-                            ReadString(word, "text") ?? string.Empty,
-                            word.GetProperty("start").GetDouble() / 1000,
-                            word.GetProperty("end").GetDouble() / 1000));
+                        segments.Add(
+                            new AssemblyAITranscriptionSegment(
+                                ReadString(word, "text") ?? string.Empty,
+                                word.GetProperty("start").GetDouble() / 1000,
+                                word.GetProperty("end").GetDouble() / 1000
+                            )
+                        );
                     }
                 }
 
-                double? duration = root.TryGetProperty("audio_duration", out var audioDuration) && audioDuration.ValueKind == JsonValueKind.Number
-                    ? audioDuration.GetDouble()
-                    : segments.Count > 0 ? segments[segments.Count - 1].EndSecond : (double?)null;
+                double? duration =
+                    root.TryGetProperty("audio_duration", out var audioDuration)
+                    && audioDuration.ValueKind == JsonValueKind.Number
+                        ? audioDuration.GetDouble()
+                    : segments.Count > 0 ? segments[segments.Count - 1].EndSecond
+                    : (double?)null;
                 return new AssemblyAITranscriptionResult(
                     ReadString(root, "text") ?? string.Empty,
                     segments,
@@ -420,28 +578,73 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
                     duration,
                     warnings,
                     Metadata(root),
-                    new AssemblyAITranscriptionResponse(started, ModelId, completed.Headers, completed.Body));
+                    new AssemblyAITranscriptionResponse(
+                        started,
+                        ModelId,
+                        completed.Headers,
+                        completed.Body
+                    )
+                );
             }
         }
 
-        private async Task<ProviderExchangeResult> SendAsync(HttpMethod method, Uri uri, HttpContent? content, IReadOnlyDictionary<string, string?> headers, object? requestBodyValues, CancellationToken cancellationToken)
+        private async Task<ProviderExchangeResult> SendAsync(
+            HttpMethod method,
+            Uri uri,
+            HttpContent? content,
+            IReadOnlyDictionary<string, string?> headers,
+            object? requestBodyValues,
+            CancellationToken cancellationToken
+        )
         {
             try
             {
-                return await ProviderExchange.SendAsync(_provider._httpClient, method, uri, content, headers, cancellationToken).ConfigureAwait(false);
+                return await ProviderExchange
+                    .SendAsync(
+                        _provider._httpClient,
+                        method,
+                        uri,
+                        content,
+                        headers,
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
             }
-            catch (ApiException exception) when (AssemblyAIError.Parse(exception.ResponseBody).Success)
+            catch (ApiException exception)
+                when (AssemblyAIError.Parse(exception.ResponseBody).Success)
             {
-                throw AssemblyAIFailedResponseHandler.Handle(exception.ResponseBody!, exception.StatusCode, uri.ToString(), requestBodyValues, exception.ResponseHeaders);
+                throw AssemblyAIFailedResponseHandler.Handle(
+                    exception.ResponseBody!,
+                    exception.StatusCode,
+                    uri.ToString(),
+                    requestBodyValues,
+                    exception.ResponseHeaders
+                );
             }
         }
 
-        private async Task<ProviderExchangeResult> WaitForCompletionAsync(string transcriptId, IReadOnlyDictionary<string, string?> headers, AssemblyAIOptions? options, CancellationToken cancellationToken)
+        private async Task<ProviderExchangeResult> WaitForCompletionAsync(
+            string transcriptId,
+            IReadOnlyDictionary<string, string?> headers,
+            AssemblyAIOptions? options,
+            CancellationToken cancellationToken
+        )
         {
-            var url = ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/transcript/" + Uri.EscapeDataString(transcriptId));
+            var url = ApiKeys.Combine(
+                _provider.Options.BaseUrl,
+                "/v2/transcript/" + Uri.EscapeDataString(transcriptId)
+            );
             while (true)
             {
-                var response = await SendAsync(HttpMethod.Get, url, null, headers, null, cancellationToken).ConfigureAwait(false);
+                var response = await SendAsync(
+                        HttpMethod.Get,
+                        url,
+                        null,
+                        headers,
+                        null,
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
                 using (var document = JsonDocument.Parse(response.Body))
                 {
                     var status = ReadString(document.RootElement, "status");
@@ -450,12 +653,19 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
                         case "completed":
                             return response;
                         case "error":
-                            throw new AiSdkException("Transcription failed: " + (ReadString(document.RootElement, "error") ?? "Unknown error"));
+                            throw new AiSdkException(
+                                "Transcription failed: "
+                                    + (ReadString(document.RootElement, "error") ?? "Unknown error")
+                            );
                         case "queued":
                         case "processing":
                             break;
                         default:
-                            throw new AiSdkException("Unexpected AssemblyAI transcript status: " + (status ?? "missing") + ".");
+                            throw new AiSdkException(
+                                "Unexpected AssemblyAI transcript status: "
+                                    + (status ?? "missing")
+                                    + "."
+                            );
                     }
                 }
 
@@ -478,20 +688,34 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
             if (ModelId == "best")
             {
                 body["speech_model"] = ModelId;
-                warnings.Add(new DeprecatedWarning(
-                    "model 'best'",
-                    "The 'best' model is a legacy AssemblyAI model. Use 'universal-3-5-pro' instead. See documentation: " + SpeechModelDocs));
+                warnings.Add(
+                    new DeprecatedWarning(
+                        "model 'best'",
+                        "The 'best' model is a legacy AssemblyAI model. Use 'universal-3-5-pro' instead. See documentation: "
+                            + SpeechModelDocs
+                    )
+                );
             }
             else
             {
                 body["speech_models"] = new JsonArray(ModelId);
                 if (ModelId == "universal-3-pro")
                 {
-                    warnings.Add(new OtherWarning("'universal-3-5-pro' is AssemblyAI's latest flagship model and is set to replace 'universal-3-pro'. See " + SpeechModelDocs));
+                    warnings.Add(
+                        new OtherWarning(
+                            "'universal-3-5-pro' is AssemblyAI's latest flagship model and is set to replace 'universal-3-pro'. See "
+                                + SpeechModelDocs
+                        )
+                    );
                 }
                 else if (ModelId == "universal-2")
                 {
-                    warnings.Add(new OtherWarning("'universal-3-5-pro' is AssemblyAI's latest flagship model. See " + SpeechModelDocs));
+                    warnings.Add(
+                        new OtherWarning(
+                            "'universal-3-5-pro' is AssemblyAI's latest flagship model. See "
+                                + SpeechModelDocs
+                        )
+                    );
                 }
             }
 
@@ -541,25 +765,47 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
 
             if (deprecatedBoost.Count > 0)
             {
-                warnings.Add(new DeprecatedWarning(
-                    string.Join(", ", deprecatedBoost),
-                    "'wordBoost' and 'boostParam' are deprecated and are rejected by 'universal-3-pro' / 'universal-3-5-pro' and 'slam-1'. Use 'keytermsPrompt' instead."));
+                warnings.Add(
+                    new DeprecatedWarning(
+                        string.Join(", ", deprecatedBoost),
+                        "'wordBoost' and 'boostParam' are deprecated and are rejected by 'universal-3-pro' / 'universal-3-5-pro' and 'slam-1'. Use 'keytermsPrompt' instead."
+                    )
+                );
             }
 
             // These options only work alongside a prerequisite option. Warn rather than change the request.
-            if ((Present(source, "redactPiiReturnUnredacted", out _) || Present(source, "redactStaticEntities", out _)) && !IsTrue(source, "redactPii"))
+            if (
+                (
+                    Present(source, "redactPiiReturnUnredacted", out _)
+                    || Present(source, "redactStaticEntities", out _)
+                ) && !IsTrue(source, "redactPii")
+            )
             {
-                warnings.Add(new OtherWarning("'redactPiiReturnUnredacted' and 'redactStaticEntities' require 'redactPii' to be enabled; AssemblyAI rejects the request otherwise."));
+                warnings.Add(
+                    new OtherWarning(
+                        "'redactPiiReturnUnredacted' and 'redactStaticEntities' require 'redactPii' to be enabled; AssemblyAI rejects the request otherwise."
+                    )
+                );
             }
 
-            if (Present(source, "redactPiiAudioOptions", out _) && !IsTrue(source, "redactPiiAudio"))
+            if (
+                Present(source, "redactPiiAudioOptions", out _) && !IsTrue(source, "redactPiiAudio")
+            )
             {
-                warnings.Add(new OtherWarning("'redactPiiAudioOptions' only applies when 'redactPiiAudio' is enabled; it is otherwise ignored."));
+                warnings.Add(
+                    new OtherWarning(
+                        "'redactPiiAudioOptions' only applies when 'redactPiiAudio' is enabled; it is otherwise ignored."
+                    )
+                );
             }
 
             if (Present(source, "languageCode", out _) && IsTrue(source, "languageDetection"))
             {
-                warnings.Add(new OtherWarning("'languageDetection' cannot be combined with an explicit 'languageCode'; AssemblyAI rejects requests that set both."));
+                warnings.Add(
+                    new OtherWarning(
+                        "'languageDetection' cannot be combined with an explicit 'languageCode'; AssemblyAI rejects requests that set both."
+                    )
+                );
             }
 
             return body;
@@ -581,15 +827,24 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
                 return null;
             }
 
-            using (var document = JsonDocument.Parse(new JsonObject { ["assemblyai"] = assemblyai }.ToJsonString()))
+            using (
+                var document = JsonDocument.Parse(
+                    new JsonObject { ["assemblyai"] = assemblyai }.ToJsonString()
+                )
+            )
             {
                 return document.RootElement.Clone();
             }
         }
 
-        private static JsonElement? AssemblyAIObject(IReadOnlyDictionary<string, JsonElement>? providerOptions)
+        private static JsonElement? AssemblyAIObject(
+            IReadOnlyDictionary<string, JsonElement>? providerOptions
+        )
         {
-            return providerOptions != null && providerOptions.TryGetValue(ProviderId, out var value) && value.ValueKind == JsonValueKind.Object
+            return
+                providerOptions != null
+                && providerOptions.TryGetValue(ProviderId, out var value)
+                && value.ValueKind == JsonValueKind.Object
                 ? value
                 : null;
         }
@@ -601,7 +856,8 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
 
         private static bool IsTrue(JsonElement element, string name)
         {
-            return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.True;
+            return element.TryGetProperty(name, out var value)
+                && value.ValueKind == JsonValueKind.True;
         }
 
         private static string SnakeCase(string name)
@@ -624,12 +880,17 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
 
         private static string RequiredString(JsonElement element, string name)
         {
-            return ReadString(element, name) ?? throw new AiSdkException("AssemblyAI response is missing '" + name + "'.");
+            return ReadString(element, name)
+                ?? throw new AiSdkException("AssemblyAI response is missing '" + name + "'.");
         }
 
         private static string? ReadString(JsonElement element, string name)
         {
-            if (element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String)
+            if (
+                element.ValueKind == JsonValueKind.Object
+                && element.TryGetProperty(name, out var value)
+                && value.ValueKind == JsonValueKind.String
+            )
             {
                 return value.GetString();
             }
@@ -643,14 +904,21 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
 public static class AssemblyAIServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddAssemblyAI(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddAssemblyAI(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(AssemblyAIProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new AssemblyAIProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(AssemblyAIProvider.ProviderId), options);
+            return new AssemblyAIProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(AssemblyAIProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

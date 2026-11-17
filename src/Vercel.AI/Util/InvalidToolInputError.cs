@@ -11,8 +11,21 @@ public sealed class InvalidToolInputError : AiSdkError
     public const string ErrorMarker = "vercel.ai.error.AI_InvalidToolInputError";
 
     /// <summary>Creates the error. <paramref name="message"/> defaults to the upstream format.</summary>
-    public InvalidToolInputError(string toolName, string toolInput, Exception? cause = null, string? message = null)
-        : base("AI_InvalidToolInputError", message ?? "Invalid input for tool " + toolName + ": " + (cause?.Message ?? "unknown error"), cause)
+    public InvalidToolInputError(
+        string toolName,
+        string toolInput,
+        Exception? cause = null,
+        string? message = null
+    )
+        : base(
+            "AI_InvalidToolInputError",
+            message
+                ?? "Invalid input for tool "
+                    + toolName
+                    + ": "
+                    + (cause?.Message ?? "unknown error"),
+            cause
+        )
     {
         ToolName = toolName;
         ToolInput = toolInput;

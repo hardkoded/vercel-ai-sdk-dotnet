@@ -16,7 +16,8 @@ public sealed class PrepareResponsesToolsTests
     {
         var result = OpenAIResponsesLanguageModel.PrepareResponsesTools(
             new[] { FunctionTool("testFunction", "A test function", true) },
-            toolChoice: null);
+            toolChoice: null
+        );
 
         AssertPrepared(result);
         var tool = Assert.Single(result.Tools!);
@@ -28,7 +29,8 @@ public sealed class PrepareResponsesToolsTests
     {
         var result = OpenAIResponsesLanguageModel.PrepareResponsesTools(
             new[] { FunctionTool("testFunction", "A test function", false) },
-            toolChoice: null);
+            toolChoice: null
+        );
 
         AssertPrepared(result);
         var tool = Assert.Single(result.Tools!);
@@ -40,7 +42,8 @@ public sealed class PrepareResponsesToolsTests
     {
         var result = OpenAIResponsesLanguageModel.PrepareResponsesTools(
             new[] { FunctionTool("testFunction", "A test function", null) },
-            toolChoice: null);
+            toolChoice: null
+        );
 
         AssertPrepared(result);
         var tool = Assert.Single(result.Tools!);
@@ -57,7 +60,8 @@ public sealed class PrepareResponsesToolsTests
                 FunctionTool("nonStrictTool", "A non-strict tool", false),
                 FunctionTool("defaultTool", "A tool without strict setting", null),
             },
-            toolChoice: null);
+            toolChoice: null
+        );
 
         AssertPrepared(result);
         Assert.Equal(3, result.Tools!.Count);
@@ -72,7 +76,12 @@ public sealed class PrepareResponsesToolsTests
         Assert.Empty(result.ToolWarnings);
     }
 
-    private static void AssertFunctionTool(JsonNode? node, string name, string description, bool strict)
+    private static void AssertFunctionTool(
+        JsonNode? node,
+        string name,
+        string description,
+        bool strict
+    )
     {
         var tool = Assert.IsType<JsonObject>(node);
         Assert.Equal(5, tool.Count);

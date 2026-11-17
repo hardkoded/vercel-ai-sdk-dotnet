@@ -32,9 +32,14 @@ internal sealed class AlibabaCacheControlValidator
         _breakpointCount++;
         if (_breakpointCount > MaxCacheBreakpoints)
         {
-            _warnings.Add(new CallWarning(
-                "other",
-                "Max breakpoint limit exceeded. Only the last " + MaxCacheBreakpoints + " cache markers will take effect."));
+            _warnings.Add(
+                new CallWarning(
+                    "other",
+                    "Max breakpoint limit exceeded. Only the last "
+                        + MaxCacheBreakpoints
+                        + " cache markers will take effect."
+                )
+            );
         }
 
         return value;
@@ -43,14 +48,19 @@ internal sealed class AlibabaCacheControlValidator
     // The value passes through as is. The Alibaba API validates it.
     private static JsonNode? Read(IReadOnlyDictionary<string, JsonElement>? providerOptions)
     {
-        if (providerOptions == null
+        if (
+            providerOptions == null
             || !providerOptions.TryGetValue(AlibabaProvider.ProviderId, out var alibaba)
-            || alibaba.ValueKind != JsonValueKind.Object)
+            || alibaba.ValueKind != JsonValueKind.Object
+        )
         {
             return null;
         }
 
-        if (!alibaba.TryGetProperty("cacheControl", out var value) || value.ValueKind == JsonValueKind.Null)
+        if (
+            !alibaba.TryGetProperty("cacheControl", out var value)
+            || value.ValueKind == JsonValueKind.Null
+        )
         {
             if (!alibaba.TryGetProperty("cache_control", out value))
             {

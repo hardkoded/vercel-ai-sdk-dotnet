@@ -12,7 +12,12 @@ namespace Vercel.AI.Operations;
 public sealed class BatchTool
 {
     /// <summary>Creates a tool definition.</summary>
-    public BatchTool(string name, JsonElement inputSchema, string? description = null, Func<JsonElement, CancellationToken, Task<object?>>? execute = null)
+    public BatchTool(
+        string name,
+        JsonElement inputSchema,
+        string? description = null,
+        Func<JsonElement, CancellationToken, Task<object?>>? execute = null
+    )
     {
         Name = name ?? string.Empty;
         InputSchema = inputSchema;
@@ -134,7 +139,16 @@ public sealed class NormalizedBatchRequest
 public sealed class BatchModelUsage
 {
     /// <summary>Creates provider usage.</summary>
-    public BatchModelUsage(int? inputTotal = null, int? noCache = null, int? cacheRead = null, int? cacheWrite = null, int? outputTotal = null, int? text = null, int? reasoning = null, JsonElement? raw = null)
+    public BatchModelUsage(
+        int? inputTotal = null,
+        int? noCache = null,
+        int? cacheRead = null,
+        int? cacheWrite = null,
+        int? outputTotal = null,
+        int? text = null,
+        int? reasoning = null,
+        JsonElement? raw = null
+    )
     {
         InputTotal = inputTotal;
         NoCache = noCache;
@@ -175,7 +189,17 @@ public sealed class BatchModelUsage
 public sealed class BatchUsage
 {
     /// <summary>Creates caller usage.</summary>
-    public BatchUsage(int? inputTokens, int? noCacheTokens, int? cacheReadTokens, int? cacheWriteTokens, int? outputTokens, int? textTokens, int? reasoningTokens, int? totalTokens, JsonElement? raw)
+    public BatchUsage(
+        int? inputTokens,
+        int? noCacheTokens,
+        int? cacheReadTokens,
+        int? cacheWriteTokens,
+        int? outputTokens,
+        int? textTokens,
+        int? reasoningTokens,
+        int? totalTokens,
+        JsonElement? raw
+    )
     {
         InputTokens = inputTokens;
         NoCacheTokens = noCacheTokens;
@@ -218,8 +242,21 @@ public sealed class BatchUsage
     /// <summary>Maps provider usage the way <c>asLanguageModelUsage</c> does.</summary>
     public static BatchUsage FromModel(BatchModelUsage usage)
     {
-        int? total = usage.InputTotal == null && usage.OutputTotal == null ? null : (usage.InputTotal ?? 0) + (usage.OutputTotal ?? 0);
-        return new BatchUsage(usage.InputTotal, usage.NoCache, usage.CacheRead, usage.CacheWrite, usage.OutputTotal, usage.Text, usage.Reasoning, total, usage.Raw);
+        int? total =
+            usage.InputTotal == null && usage.OutputTotal == null
+                ? null
+                : (usage.InputTotal ?? 0) + (usage.OutputTotal ?? 0);
+        return new BatchUsage(
+            usage.InputTotal,
+            usage.NoCache,
+            usage.CacheRead,
+            usage.CacheWrite,
+            usage.OutputTotal,
+            usage.Text,
+            usage.Reasoning,
+            total,
+            usage.Raw
+        );
     }
 }
 
@@ -544,7 +581,8 @@ public sealed class BatchStartResult : BatchStatus
     public string Provider { get; set; } = string.Empty;
 
     /// <summary>Warnings.</summary>
-    public IReadOnlyList<BatchRequestWarning> Warnings { get; set; } = Array.Empty<BatchRequestWarning>();
+    public IReadOnlyList<BatchRequestWarning> Warnings { get; set; } =
+        Array.Empty<BatchRequestWarning>();
 }
 
 /// <summary>One listed batch.</summary>
@@ -564,7 +602,11 @@ public sealed class ListedBatch : BatchStatus
 public sealed class BatchListResult
 {
     /// <summary>Creates a page.</summary>
-    public BatchListResult(IReadOnlyList<ListedBatch> batches, string? nextCursor = null, JsonElement? providerMetadata = null)
+    public BatchListResult(
+        IReadOnlyList<ListedBatch> batches,
+        string? nextCursor = null,
+        JsonElement? providerMetadata = null
+    )
     {
         Batches = batches ?? Array.Empty<ListedBatch>();
         NextCursor = nextCursor;
@@ -595,7 +637,16 @@ public sealed class BatchCancelResult
 public sealed class BatchOperationCall
 {
     /// <summary>Creates a call.</summary>
-    public BatchOperationCall(string? batchId, JsonElement? providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken, int? limit = null, string? cursor = null, string? webhookUrl = null, IReadOnlyList<NormalizedBatchRequest>? requests = null)
+    public BatchOperationCall(
+        string? batchId,
+        JsonElement? providerOptions,
+        IReadOnlyDictionary<string, string> headers,
+        CancellationToken cancellationToken,
+        int? limit = null,
+        string? cursor = null,
+        string? webhookUrl = null,
+        IReadOnlyList<NormalizedBatchRequest>? requests = null
+    )
     {
         BatchId = batchId;
         ProviderOptions = providerOptions;
@@ -648,19 +699,31 @@ public interface IBatchApi
     bool CanList { get; }
 
     /// <summary>Starts a batch.</summary>
-    Task<BatchStartResult> DoStartAsync(BatchOperationCall call, CancellationToken cancellationToken);
+    Task<BatchStartResult> DoStartAsync(
+        BatchOperationCall call,
+        CancellationToken cancellationToken
+    );
 
     /// <summary>Reads status.</summary>
-    Task<BatchStatus> DoGetStatusAsync(BatchOperationCall call, CancellationToken cancellationToken);
+    Task<BatchStatus> DoGetStatusAsync(
+        BatchOperationCall call,
+        CancellationToken cancellationToken
+    );
 
     /// <summary>
     /// Opens the result stream. Errors found while opening, such as a batch that is not complete, throw from the task.
     /// Errors found while reading, such as a malformed row, throw from the stream.
     /// </summary>
-    Task<IAsyncEnumerable<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken);
+    Task<IAsyncEnumerable<BatchItem>> DoGetResultsAsync(
+        BatchOperationCall call,
+        CancellationToken cancellationToken
+    );
 
     /// <summary>Cancels a batch.</summary>
-    Task<BatchCancelResult> DoCancelAsync(BatchOperationCall call, CancellationToken cancellationToken);
+    Task<BatchCancelResult> DoCancelAsync(
+        BatchOperationCall call,
+        CancellationToken cancellationToken
+    );
 
     /// <summary>Lists batches. The implementation is invoked on this instance.</summary>
     Task<BatchListResult> DoListAsync(BatchOperationCall call, CancellationToken cancellationToken);
@@ -715,35 +778,56 @@ public sealed class BatchRequestOptions : OperationRequest
 public static class Batch
 {
     /// <summary>Requests cancellation.</summary>
-    public static async Task<BatchCancelResult> CancelBatchAsync(BatchRequestOptions request, CancellationToken cancellationToken = default)
+    public static async Task<BatchCancelResult> CancelBatchAsync(
+        BatchRequestOptions request,
+        CancellationToken cancellationToken = default
+    )
     {
         var api = Resolve(request);
         ValidateReference(api, request.Batch);
         if (!api.CanCancel)
         {
-            throw new UnsupportedFunctionalityException("batch cancellation", "The provider does not support batch cancellation.");
+            throw new UnsupportedFunctionalityException(
+                "batch cancellation",
+                "The provider does not support batch cancellation."
+            );
         }
 
         using var scope = Token(request, cancellationToken);
         var token = scope.Token;
-        return await api.DoCancelAsync(Call(api, request, token, request.Batch!.Id), token).ConfigureAwait(false);
+        return await api.DoCancelAsync(Call(api, request, token, request.Batch!.Id), token)
+            .ConfigureAwait(false);
     }
 
     /// <summary>Lists one page. <c>doListBatches</c> is invoked on the batch API instance.</summary>
-    public static async Task<BatchListResult> ListBatchesAsync(BatchRequestOptions request, CancellationToken cancellationToken = default)
+    public static async Task<BatchListResult> ListBatchesAsync(
+        BatchRequestOptions request,
+        CancellationToken cancellationToken = default
+    )
     {
         request ??= new BatchRequestOptions();
         var api = Resolve(request);
         if (!api.CanList)
         {
-            throw new UnsupportedFunctionalityException("batch listing", "The provider does not support listing batches.");
+            throw new UnsupportedFunctionalityException(
+                "batch listing",
+                "The provider does not support listing batches."
+            );
         }
 
         using var scope = Token(request, cancellationToken);
         var token = scope.Token;
         var call = Call(api, request, token, null);
         call.Receiver = api;
-        var page = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, ct => api.DoListAsync(call, ct), null).ConfigureAwait(false);
+        var page = await OperationRetry
+            .ExecuteAsync(
+                request.MaxRetries,
+                token,
+                request.AbortReason,
+                ct => api.DoListAsync(call, ct),
+                null
+            )
+            .ConfigureAwait(false);
         var batches = new List<ListedBatch>();
         foreach (var batch in page.Batches)
         {
@@ -756,7 +840,10 @@ public static class Batch
     }
 
     /// <summary>Validates and starts a batch.</summary>
-    public static async Task<BatchStartResult> StartBatchAsync(BatchRequestOptions request, CancellationToken cancellationToken = default)
+    public static async Task<BatchStartResult> StartBatchAsync(
+        BatchRequestOptions request,
+        CancellationToken cancellationToken = default
+    )
     {
         if (request == null)
         {
@@ -780,28 +867,53 @@ public static class Batch
                     var signature = tool.GetRawText();
                     if (tools.TryGetValue(NameOf(tool), out var previous) && previous != signature)
                     {
-                        throw new InvalidArgumentException("requests", item.Id, "tool \"" + NameOf(tool) + "\" must have the same definition in every batch request");
+                        throw new InvalidArgumentException(
+                            "requests",
+                            item.Id,
+                            "tool \""
+                                + NameOf(tool)
+                                + "\" must have the same definition in every batch request"
+                        );
                     }
 
                     tools[NameOf(tool)] = signature;
                 }
 
-                normalized.Add(new NormalizedBatchRequest(item.Id, item.Type, item.Model, TextOptions(item, prepared)));
+                normalized.Add(
+                    new NormalizedBatchRequest(
+                        item.Id,
+                        item.Type,
+                        item.Model,
+                        TextOptions(item, prepared)
+                    )
+                );
             }
             else if (item.Type == "image")
             {
                 var parts = GenerateImage.NormalizePrompt(item.ImagePrompt, item.Prompt);
-                normalized.Add(new NormalizedBatchRequest(item.Id, item.Type, item.Model, ImageOptions(item, parts)));
+                normalized.Add(
+                    new NormalizedBatchRequest(
+                        item.Id,
+                        item.Type,
+                        item.Model,
+                        ImageOptions(item, parts)
+                    )
+                );
             }
             else
             {
-                throw new InvalidArgumentException("requests", item.Type, "Unsupported batch request type \"" + item.Type + "\".");
+                throw new InvalidArgumentException(
+                    "requests",
+                    item.Type,
+                    "Unsupported batch request type \"" + item.Type + "\"."
+                );
             }
 
             OperationRetry.ThrowIfAborted(token, request.AbortReason);
         }
 
-        var started = await api.DoStartAsync(Call(api, request, token, null, normalized), token).ConfigureAwait(false);
+        var started = await api.DoStartAsync(Call(api, request, token, null, normalized), token)
+            .ConfigureAwait(false);
         var models = new Dictionary<string, string>();
         foreach (var item in normalized)
         {
@@ -811,7 +923,11 @@ public static class Batch
         foreach (var warning in started.Warnings)
         {
             models.TryGetValue(warning.RequestId ?? string.Empty, out var modelId);
-            WarningLog.Write(new[] { warning.Warning }, api.Provider, warning.RequestId == null ? null : modelId);
+            WarningLog.Write(
+                new[] { warning.Warning },
+                api.Provider,
+                warning.RequestId == null ? null : modelId
+            );
         }
 
         started.Version = 2;
@@ -820,34 +936,59 @@ public static class Batch
     }
 
     /// <summary>Reads the latest status.</summary>
-    public static async Task<BatchStatus> GetBatchStatusAsync(BatchRequestOptions request, CancellationToken cancellationToken = default)
+    public static async Task<BatchStatus> GetBatchStatusAsync(
+        BatchRequestOptions request,
+        CancellationToken cancellationToken = default
+    )
     {
         var api = Resolve(request);
         ValidateReference(api, request.Batch);
         using var scope = Token(request, cancellationToken);
         var token = scope.Token;
-        return await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, ct => api.DoGetStatusAsync(Call(api, request, token, request.Batch!.Id), ct), null).ConfigureAwait(false);
+        return await OperationRetry
+            .ExecuteAsync(
+                request.MaxRetries,
+                token,
+                request.AbortReason,
+                ct => api.DoGetStatusAsync(Call(api, request, token, request.Batch!.Id), ct),
+                null
+            )
+            .ConfigureAwait(false);
     }
 
     /// <summary>
     /// Opens results immediately and normalizes them as they are read. Each item is read from the provider only when
     /// the caller asks for it. Use <see cref="GetAllBatchResultsAsync"/> to read every result into a list.
     /// </summary>
-    public static IAsyncEnumerable<BatchItemResult> GetBatchResults(BatchRequestOptions request, CancellationToken cancellationToken = default)
+    public static IAsyncEnumerable<BatchItemResult> GetBatchResults(
+        BatchRequestOptions request,
+        CancellationToken cancellationToken = default
+    )
     {
         var api = Resolve(request);
         ValidateReference(api, request.Batch);
         var scope = Token(request, cancellationToken);
         var token = scope.Token;
-        var opening = OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, ct => api.DoGetResultsAsync(Call(api, request, ct, request.Batch!.Id), ct), null);
+        var opening = OperationRetry.ExecuteAsync(
+            request.MaxRetries,
+            token,
+            request.AbortReason,
+            ct => api.DoGetResultsAsync(Call(api, request, ct, request.Batch!.Id), ct),
+            null
+        );
         return ReadResults(opening, request, scope, token);
     }
 
     /// <summary>Reads every result of <see cref="GetBatchResults"/> into a list.</summary>
-    public static async Task<IReadOnlyList<BatchItemResult>> GetAllBatchResultsAsync(BatchRequestOptions request, CancellationToken cancellationToken = default)
+    public static async Task<IReadOnlyList<BatchItemResult>> GetAllBatchResultsAsync(
+        BatchRequestOptions request,
+        CancellationToken cancellationToken = default
+    )
     {
         var results = new List<BatchItemResult>();
-        await foreach (var result in GetBatchResults(request, cancellationToken).ConfigureAwait(false))
+        await foreach (
+            var result in GetBatchResults(request, cancellationToken).ConfigureAwait(false)
+        )
         {
             results.Add(result);
         }
@@ -855,14 +996,22 @@ public static class Batch
         return results;
     }
 
-    private static async IAsyncEnumerable<BatchItemResult> ReadResults(Task<IAsyncEnumerable<BatchItem>> opening, BatchRequestOptions request, BatchTokenScope scope, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    private static async IAsyncEnumerable<BatchItemResult> ReadResults(
+        Task<IAsyncEnumerable<BatchItem>> opening,
+        BatchRequestOptions request,
+        BatchTokenScope scope,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         try
         {
             var items = await opening.ConfigureAwait(false);
-            await foreach (var item in items.WithCancellation(cancellationToken).ConfigureAwait(false))
+            await foreach (
+                var item in items.WithCancellation(cancellationToken).ConfigureAwait(false)
+            )
             {
-                yield return await ConvertAsync(item, request, cancellationToken).ConfigureAwait(false);
+                yield return await ConvertAsync(item, request, cancellationToken)
+                    .ConfigureAwait(false);
             }
         }
         finally
@@ -871,9 +1020,23 @@ public static class Batch
         }
     }
 
-    private static async Task<BatchItemResult> ConvertAsync(BatchItem item, BatchRequestOptions request, CancellationToken cancellationToken)
+    private static async Task<BatchItemResult> ConvertAsync(
+        BatchItem item,
+        BatchRequestOptions request,
+        CancellationToken cancellationToken
+    )
     {
-        var result = new BatchItemResult { Type = item.Type, Id = item.Id, Status = item.Status, ErrorMessage = item.ErrorMessage, ErrorCode = item.ErrorCode, ErrorType = item.ErrorType, ErrorStatusCode = item.ErrorStatusCode, ProviderMetadata = item.ProviderMetadata };
+        var result = new BatchItemResult
+        {
+            Type = item.Type,
+            Id = item.Id,
+            Status = item.Status,
+            ErrorMessage = item.ErrorMessage,
+            ErrorCode = item.ErrorCode,
+            ErrorType = item.ErrorType,
+            ErrorStatusCode = item.ErrorStatusCode,
+            ProviderMetadata = item.ProviderMetadata,
+        };
         if (item.Status != "succeeded")
         {
             return result;
@@ -885,7 +1048,13 @@ public static class Batch
             for (var index = 0; index < item.Image.Images.Count; index++)
             {
                 var bytes = MediaTypeDetector.ToBytes(item.Image.Images[index]);
-                images.Add(new GeneratedImage(bytes, MediaTypeDetector.Detect(bytes, "image") ?? "image/png", ImageMetadata(item.Image.ProviderMetadata, index)));
+                images.Add(
+                    new GeneratedImage(
+                        bytes,
+                        MediaTypeDetector.Detect(bytes, "image") ?? "image/png",
+                        ImageMetadata(item.Image.ProviderMetadata, index)
+                    )
+                );
             }
 
             result.Images = images;
@@ -933,10 +1102,16 @@ public static class Batch
                     {
                         if (request.Download == null)
                         {
-                            throw new InvalidArgumentException("download", null, "download is required for file results");
+                            throw new InvalidArgumentException(
+                                "download",
+                                null,
+                                "download is required for file results"
+                            );
                         }
 
-                        var downloaded = await request.Download(part.FileUrl, cancellationToken).ConfigureAwait(false);
+                        var downloaded = await request
+                            .Download(part.FileUrl, cancellationToken)
+                            .ConfigureAwait(false);
                         part.FileBytes = downloaded.Data;
                     }
 
@@ -982,7 +1157,12 @@ public static class Batch
         var collected = new Dictionary<string, JsonElement>();
         foreach (var provider in root.EnumerateObject())
         {
-            if (provider.Value.TryGetProperty("images", out var images) && images.ValueKind == JsonValueKind.Array && index < images.GetArrayLength() && images[index].ValueKind == JsonValueKind.Object)
+            if (
+                provider.Value.TryGetProperty("images", out var images)
+                && images.ValueKind == JsonValueKind.Array
+                && index < images.GetArrayLength()
+                && images[index].ValueKind == JsonValueKind.Object
+            )
             {
                 collected[provider.Name] = images[index];
             }
@@ -1003,12 +1183,20 @@ public static class Batch
         {
             if (request.Id.Trim().Length == 0)
             {
-                throw new InvalidArgumentException("requests", requests, "request IDs must not be empty");
+                throw new InvalidArgumentException(
+                    "requests",
+                    requests,
+                    "request IDs must not be empty"
+                );
             }
 
             if (!ids.Add(request.Id))
             {
-                throw new InvalidArgumentException("requests", requests, "request IDs must be unique; duplicate ID \"" + request.Id + "\"");
+                throw new InvalidArgumentException(
+                    "requests",
+                    requests,
+                    "request IDs must be unique; duplicate ID \"" + request.Id + "\""
+                );
             }
         }
     }
@@ -1017,21 +1205,40 @@ public static class Batch
     {
         if (batch == null || batch.Version != 2)
         {
-            throw new InvalidArgumentException("batch", batch, "batch must be a supported batch reference");
+            throw new InvalidArgumentException(
+                "batch",
+                batch,
+                "batch must be a supported batch reference"
+            );
         }
 
         if (batch.Provider != api.Provider)
         {
-            throw new InvalidArgumentException("provider", api, "provider " + api.Provider + " is not compatible with batch provider " + batch.Provider);
+            throw new InvalidArgumentException(
+                "provider",
+                api,
+                "provider "
+                    + api.Provider
+                    + " is not compatible with batch provider "
+                    + batch.Provider
+            );
         }
     }
 
     private static IBatchApi Resolve(BatchRequestOptions request)
     {
-        var selected = request.Provider ?? (BatchModels.Default?.Invoke() is IBatchProvider fallback ? ApiOrProvider<IBatchApi, IBatchProvider>.FromProvider(fallback) : null);
+        var selected = request.Provider
+            ?? (
+                BatchModels.Default?.Invoke() is IBatchProvider fallback
+                    ? ApiOrProvider<IBatchApi, IBatchProvider>.FromProvider(fallback)
+                    : null
+            );
         if (selected == null)
         {
-            throw new UnsupportedFunctionalityException("batch processing", "The provider does not support batch processing. Make sure it exposes an experimental_batch() method.");
+            throw new UnsupportedFunctionalityException(
+                "batch processing",
+                "The provider does not support batch processing. Make sure it exposes an experimental_batch() method."
+            );
         }
 
         if (selected.Api != null)
@@ -1045,13 +1252,23 @@ public static class Batch
             return created;
         }
 
-        throw new UnsupportedFunctionalityException("batch processing", "The provider does not support batch processing. Make sure it exposes an experimental_batch() method.");
+        throw new UnsupportedFunctionalityException(
+            "batch processing",
+            "The provider does not support batch processing. Make sure it exposes an experimental_batch() method."
+        );
     }
 
-    private static BatchTokenScope Token(BatchRequestOptions request, CancellationToken cancellationToken)
+    private static BatchTokenScope Token(
+        BatchRequestOptions request,
+        CancellationToken cancellationToken
+    )
     {
-        var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
-        return request.TimeoutMs is int timeout ? new BatchTokenScope(token, timeout) : new BatchTokenScope(token);
+        var token = request.CancellationToken.CanBeCanceled
+            ? request.CancellationToken
+            : cancellationToken;
+        return request.TimeoutMs is int timeout
+            ? new BatchTokenScope(token, timeout)
+            : new BatchTokenScope(token);
     }
 
     // Owns the timeout and linked sources of one call, so the timer and the registration on the caller's token are released.
@@ -1081,9 +1298,27 @@ public static class Batch
         }
     }
 
-    private static BatchOperationCall Call(IBatchApi api, BatchRequestOptions request, CancellationToken cancellationToken, string? batchId, IReadOnlyList<NormalizedBatchRequest>? requests = null)
+    private static BatchOperationCall Call(
+        IBatchApi api,
+        BatchRequestOptions request,
+        CancellationToken cancellationToken,
+        string? batchId,
+        IReadOnlyList<NormalizedBatchRequest>? requests = null
+    )
     {
-        return new BatchOperationCall(batchId, request.ProviderOptions, OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent), cancellationToken, request.Limit, request.Cursor, request.WebhookUrl, requests) { Receiver = api };
+        return new BatchOperationCall(
+            batchId,
+            request.ProviderOptions,
+            OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent),
+            cancellationToken,
+            request.Limit,
+            request.Cursor,
+            request.WebhookUrl,
+            requests
+        )
+        {
+            Receiver = api,
+        };
     }
 
     private static List<JsonElement> PrepareTools(IReadOnlyList<BatchTool>? tools)
@@ -1111,12 +1346,18 @@ public static class Batch
 
     private static string NameOf(JsonElement tool)
     {
-        return tool.TryGetProperty("name", out var name) ? name.GetString() ?? string.Empty : string.Empty;
+        return tool.TryGetProperty("name", out var name)
+            ? name.GetString() ?? string.Empty
+            : string.Empty;
     }
 
     private static JsonElement TextOptions(BatchRequest request, List<JsonElement> tools)
     {
-        var prompt = OperationJson.Parse("[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":" + JsonSerializer.Serialize(request.Prompt ?? string.Empty) + "}]}]");
+        var prompt = OperationJson.Parse(
+            "[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":"
+                + JsonSerializer.Serialize(request.Prompt ?? string.Empty)
+                + "}]}]"
+        );
         var options = new Dictionary<string, object?>
         {
             ["prompt"] = prompt,
@@ -1134,7 +1375,12 @@ public static class Batch
         if (tools.Count > 0)
         {
             options["tools"] = tools;
-            options["toolChoice"] = request.ToolChoice == null ? null : OperationJson.Parse("{\"type\":" + JsonSerializer.Serialize(request.ToolChoice) + "}");
+            options["toolChoice"] =
+                request.ToolChoice == null
+                    ? null
+                    : OperationJson.Parse(
+                        "{\"type\":" + JsonSerializer.Serialize(request.ToolChoice) + "}"
+                    );
         }
 
         return OperationJson.Serialize(options);
@@ -1142,16 +1388,18 @@ public static class Batch
 
     private static JsonElement ImageOptions(BatchRequest request, ImagePromptParts parts)
     {
-        return OperationJson.Serialize(new Dictionary<string, object?>
-        {
-            ["prompt"] = parts.Prompt,
-            ["n"] = request.N ?? 1,
-            ["size"] = request.Size,
-            ["aspectRatio"] = request.AspectRatio,
-            ["seed"] = request.Seed,
-            ["files"] = parts.Files,
-            ["mask"] = parts.Mask,
-            ["providerOptions"] = request.ProviderOptions ?? OperationJson.Parse("{}"),
-        });
+        return OperationJson.Serialize(
+            new Dictionary<string, object?>
+            {
+                ["prompt"] = parts.Prompt,
+                ["n"] = request.N ?? 1,
+                ["size"] = request.Size,
+                ["aspectRatio"] = request.AspectRatio,
+                ["seed"] = request.Seed,
+                ["files"] = parts.Files,
+                ["mask"] = parts.Mask,
+                ["providerOptions"] = request.ProviderOptions ?? OperationJson.Parse("{}"),
+            }
+        );
     }
 }

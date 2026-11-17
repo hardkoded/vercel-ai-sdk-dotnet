@@ -12,19 +12,26 @@ namespace Vercel.AI.Tests.Upstream.ProcessUiMessageStream;
 /// <summary>Port of <c>process-ui-message-stream.test.ts</c> &gt; <c>processUIMessageStream</c> &gt; <c>message metadata</c>.</summary>
 public sealed class MessageMetadataTests
 {
-    private const string Prefix = "packages/ai/src/ui/process-ui-message-stream.test.ts::processUIMessageStream > ";
+    private const string Prefix =
+        "packages/ai/src/ui/process-ui-message-stream.test.ts::processUIMessageStream > ";
 
     [Fact]
-    [UpstreamTest(Prefix + "message metadata::should call the update function with the correct arguments", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "message metadata::should call the update function with the correct arguments",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_call_the_update_function_with_the_correct_arguments()
     {
         var harness = new ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
-        await harness.ProcessAsync("""
+        await harness.ProcessAsync(
+            """
             [{"type":"start","messageId":"msg-123","messageMetadata":{"start":"start-1","shared":{"key1":"value-1a","key2":"value-2a"}}},{"type":"start-step"},{"type":"text-start","id":"text-1"},{"type":"text-delta","id":"text-1","delta":"t1"},{"type":"message-metadata","messageMetadata":{"metadata":"metadata-1"}},{"type":"text-delta","id":"text-1","delta":"t2"},{"type":"text-end","id":"text-1"},{"type":"finish-step"},{"type":"finish","messageMetadata":{"finish":"finish-1","shared":{"key1":"value-1e","key6":"value-6e"}}}]
-            """);
+            """
+        );
 
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             [
               {
                 "message": {
@@ -185,20 +192,28 @@ public sealed class MessageMetadataTests
                 }
               }
             ]
-            """, harness.WriteCalls);
+            """,
+            harness.WriteCalls
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "message metadata::should have the correct final message state", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "message metadata::should have the correct final message state",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_have_the_correct_final_message_state()
     {
         var harness = new ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
-        await harness.ProcessAsync("""
+        await harness.ProcessAsync(
+            """
             [{"type":"start","messageId":"msg-123","messageMetadata":{"start":"start-1","shared":{"key1":"value-1a","key2":"value-2a"}}},{"type":"start-step"},{"type":"text-start","id":"text-1"},{"type":"text-delta","id":"text-1","delta":"t1"},{"type":"message-metadata","messageMetadata":{"metadata":"metadata-1"}},{"type":"text-delta","id":"text-1","delta":"t2"},{"type":"text-end","id":"text-1"},{"type":"finish-step"},{"type":"finish","messageMetadata":{"finish":"finish-1","shared":{"key1":"value-1e","key6":"value-6e"}}}]
-            """);
+            """
+        );
 
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             {
               "id": "msg-123",
               "metadata": {
@@ -223,6 +238,8 @@ public sealed class MessageMetadataTests
               ],
               "role": "assistant"
             }
-            """, harness.Message);
+            """,
+            harness.Message
+        );
     }
 }

@@ -10,7 +10,10 @@ namespace Vercel.AI.Tests.MiniMaxProvider;
 public sealed class VideoTests
 {
     [Fact]
-    [UpstreamTest("packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > video::should construct a video model with the video provider id", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > video::should construct a video model with the video provider id",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_construct_a_video_model_with_the_video_provider_id()
     {
         var provider = Vercel.AI.MiniMax.MiniMaxProvider.Create();
@@ -22,7 +25,10 @@ public sealed class VideoTests
     }
 
     [Fact]
-    [UpstreamTest("packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > video::should use the default video base URL, which has no version suffix", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > video::should use the default video base URL, which has no version suffix",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_use_the_default_video_base_URL_which_has_no_version_suffix()
     {
         var provider = Vercel.AI.MiniMax.MiniMaxProvider.Create();
@@ -31,28 +37,43 @@ public sealed class VideoTests
     }
 
     [Fact]
-    [UpstreamTest("packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > video::should use a custom videoBaseURL", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > video::should use a custom videoBaseURL",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_use_a_custom_videoBaseURL()
     {
-        var provider = Vercel.AI.MiniMax.MiniMaxProvider.Create(new MiniMaxOptions { VideoBaseUrl = "https://api.minimaxi.com" });
+        var provider = Vercel.AI.MiniMax.MiniMaxProvider.Create(
+            new MiniMaxOptions { VideoBaseUrl = "https://api.minimaxi.com" }
+        );
 
         Assert.Equal("https://api.minimaxi.com", provider.Video("MiniMax-H3").Config.BaseUrl);
     }
 
     [Fact]
-    [UpstreamTest("packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > video::should not derive the video base URL from the chat baseURL", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > video::should not derive the video base URL from the chat baseURL",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_not_derive_the_video_base_URL_from_the_chat_baseURL()
     {
-        var provider = Vercel.AI.MiniMax.MiniMaxProvider.Create(new MiniMaxOptions { BaseUrl = "https://custom.url/anthropic/v1" });
+        var provider = Vercel.AI.MiniMax.MiniMaxProvider.Create(
+            new MiniMaxOptions { BaseUrl = "https://custom.url/anthropic/v1" }
+        );
 
         Assert.Equal("https://api.minimax.io", provider.Video("MiniMax-H3").Config.BaseUrl);
     }
 
     [Fact]
-    [UpstreamTest("packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > video::should send a bearer token rather than the Anthropic x-api-key header", Coverage = UpstreamCoverage.Partial)]
+    [UpstreamTest(
+        "packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > video::should send a bearer token rather than the Anthropic x-api-key header",
+        Coverage = UpstreamCoverage.Partial
+    )]
     public void Should_send_a_bearer_token_rather_than_the_Anthropic_x_api_key_header()
     {
-        var provider = Vercel.AI.MiniMax.MiniMaxProvider.Create(new MiniMaxOptions { ApiKey = "test-key" });
+        var provider = Vercel.AI.MiniMax.MiniMaxProvider.Create(
+            new MiniMaxOptions { ApiKey = "test-key" }
+        );
         var headers = provider.Video("MiniMax-H3").Config.Headers();
 
         Assert.Equal("Bearer test-key", headers["authorization"]);
@@ -63,7 +84,10 @@ public sealed class VideoTests
     }
 
     [Fact]
-    [UpstreamTest("packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > video::should merge custom headers into the video headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > video::should merge custom headers into the video headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_merge_custom_headers_into_the_video_headers()
     {
         var options = new MiniMaxOptions { ApiKey = "test-key" };
@@ -76,7 +100,10 @@ public sealed class VideoTests
     }
 
     [Fact]
-    [UpstreamTest("packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > video::should pass a custom fetch to the video model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > video::should pass a custom fetch to the video model",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_pass_a_custom_fetch_to_the_video_model()
     {
         using var customClient = new HttpClient();

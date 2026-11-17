@@ -13,7 +13,10 @@ internal static class TranscribeSupport
 {
     internal static ModelStreamPart[] Finish(string text)
     {
-        return new[] { new ModelStreamPart { Type = "finish", Text = text } };
+        return new[]
+        {
+            new ModelStreamPart { Type = "finish", Text = text },
+        };
     }
 
     internal static async Task<List<ModelStreamPart>> Read(IAsyncEnumerable<ModelStreamPart> stream)
@@ -36,7 +39,10 @@ internal static class TranscribeSupport
 
     internal sealed class TranscriptFake : ITranscriptionUrlCaller
     {
-        public Func<TranscriptionModelUrlCall, Task<TranscriptionModelResult?>>? FromUrl { get; set; }
+        public Func<
+            TranscriptionModelUrlCall,
+            Task<TranscriptionModelResult?>
+        >? FromUrl { get; set; }
 
         public TranscriptionModelUrlCall? UrlGenerated { get; private set; }
 
@@ -46,11 +52,15 @@ internal static class TranscribeSupport
 
         public Func<TranscriptionModelCall, Task<TranscriptionModelResult>>? Generate { get; set; }
 
-        public Task<TranscriptionModelResult?> DoGenerateFromUrlAsync(TranscriptionModelUrlCall call, CancellationToken cancellationToken)
+        public Task<TranscriptionModelResult?> DoGenerateFromUrlAsync(
+            TranscriptionModelUrlCall call,
+            CancellationToken cancellationToken
+        )
         {
             UrlGenerated = call;
             UrlCalls++;
-            return FromUrl?.Invoke(call) ?? throw new InvalidOperationException("The fake has no native URL handler.");
+            return FromUrl?.Invoke(call)
+                ?? throw new InvalidOperationException("The fake has no native URL handler.");
         }
 
         public string Provider { get; set; } = "test-provider";
@@ -99,9 +109,13 @@ internal static class TranscribeSupport
 
         public TaskCompletionSource<bool> Started { get; } = new TaskCompletionSource<bool>();
 
-        public TaskCompletionSource<bool> SetupCancelled { get; } = new TaskCompletionSource<bool>();
+        public TaskCompletionSource<bool> SetupCancelled { get; } =
+            new TaskCompletionSource<bool>();
 
-        public Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
+        public Task<TranscriptionModelResult> DoGenerateAsync(
+            TranscriptionModelCall call,
+            CancellationToken cancellationToken
+        )
         {
             Generated = call;
             GenerateCalls++;
@@ -110,10 +124,25 @@ internal static class TranscribeSupport
                 return Generate(call);
             }
 
-            return Task.FromResult(new TranscriptionModelResult(Text, Segments, Language, Duration, Warnings, Metadata, Response, Words, Usage));
+            return Task.FromResult(
+                new TranscriptionModelResult(
+                    Text,
+                    Segments,
+                    Language,
+                    Duration,
+                    Warnings,
+                    Metadata,
+                    Response,
+                    Words,
+                    Usage
+                )
+            );
         }
 
-        public async Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+        public async Task<TranscriptionStreamStart?> DoStreamAsync(
+            TranscriptionStreamCall call,
+            CancellationToken cancellationToken
+        )
         {
             Call = call;
             Started.TrySetResult(true);

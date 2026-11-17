@@ -14,108 +14,197 @@ namespace Vercel.AI.Tests.Upstream.Mistral.ConvertToMistralConversationInputs;
 /// <summary>Port of <c>convert-to-mistral-conversation-inputs.test.ts</c> &gt; <c>convertToMistralConversationInputs</c>.</summary>
 public sealed class ConvertToMistralConversationInputsTests
 {
-    private const string Prefix = "packages/mistral/src/convert-to-mistral-conversation-inputs.test.ts::convertToMistralConversationInputs::";
+    private const string Prefix =
+        "packages/mistral/src/convert-to-mistral-conversation-inputs.test.ts::convertToMistralConversationInputs::";
 
-    private static readonly ToolNameMapping Mapping = Vercel.AI.Mistral.MistralConversationPrepareTools.CreateToolNameMapping(
-        new[] { Search("mistral.web_search_premium", "news") });
+    private static readonly ToolNameMapping Mapping =
+        Vercel.AI.Mistral.MistralConversationPrepareTools.CreateToolNameMapping(
+            new[] { Search("mistral.web_search_premium", "news") }
+        );
 
     private static JsonArray Convert(params ModelMessage[] prompt)
     {
         return Vercel.AI.Mistral.ConvertToMistralConversationInputs.Convert(prompt, Mapping).Inputs;
     }
 
-    private static IReadOnlyDictionary<string, System.Text.Json.JsonElement> MistralFunction(string name)
+    private static IReadOnlyDictionary<string, System.Text.Json.JsonElement> MistralFunction(
+        string name
+    )
     {
         return MistralOptions("{\"function\":\"" + name + "\"}");
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "omits entry IDs on replay while preserving function tool-call IDs", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "omits entry IDs on replay while preserving function tool-call IDs",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Omits_entry_IDs_on_replay_while_preserving_function_tool_call_IDs()
     {
         var inputs = Convert(
-            new AssistantModelMessage(new AssistantContentPart[]
-            {
-                new AssistantToolCallPart(
-                    new GeneratedToolCall("tool_exec_search", "news", "{\"arguments\":\"{\\\"query\\\":\\\"news\\\"}\"}") { ProviderExecuted = true },
-                    MistralFunction("web_search")),
-                new AssistantToolResultPart(
-                    "tool_exec_search",
-                    "news",
-                    new ToolModelMessage("tool_exec_search", "news", "{\"info\":{\"result\":\"search context\"}}", false, "json")),
-                new AssistantToolCallPart(new GeneratedToolCall("function-1", "weather", "{\"city\":\"Paris\"}")),
-            }),
-            new ToolModelMessage("function-1", "weather", "Sunny", false, "text"));
+            new AssistantModelMessage(
+                new AssistantContentPart[]
+                {
+                    new AssistantToolCallPart(
+                        new GeneratedToolCall(
+                            "tool_exec_search",
+                            "news",
+                            "{\"arguments\":\"{\\\"query\\\":\\\"news\\\"}\"}"
+                        )
+                        {
+                            ProviderExecuted = true,
+                        },
+                        MistralFunction("web_search")
+                    ),
+                    new AssistantToolResultPart(
+                        "tool_exec_search",
+                        "news",
+                        new ToolModelMessage(
+                            "tool_exec_search",
+                            "news",
+                            "{\"info\":{\"result\":\"search context\"}}",
+                            false,
+                            "json"
+                        )
+                    ),
+                    new AssistantToolCallPart(
+                        new GeneratedToolCall("function-1", "weather", "{\"city\":\"Paris\"}")
+                    ),
+                }
+            ),
+            new ToolModelMessage("function-1", "weather", "Sunny", false, "text")
+        );
 
         foreach (var input in inputs)
         {
             Assert.Null(input!["id"]);
         }
 
-        AssertJson("{\"type\":\"function.call\",\"tool_call_id\":\"tool_exec_search\",\"name\":\"web_search\",\"arguments\":\"{\\\"query\\\":\\\"news\\\"}\"}", inputs[0]);
-        AssertJson("{\"type\":\"function.result\",\"tool_call_id\":\"tool_exec_search\",\"result\":\"search context\"}", inputs[1]);
+        AssertJson(
+            "{\"type\":\"function.call\",\"tool_call_id\":\"tool_exec_search\",\"name\":\"web_search\",\"arguments\":\"{\\\"query\\\":\\\"news\\\"}\"}",
+            inputs[0]
+        );
+        AssertJson(
+            "{\"type\":\"function.result\",\"tool_call_id\":\"tool_exec_search\",\"result\":\"search context\"}",
+            inputs[1]
+        );
         AssertMatches("{\"type\":\"function.call\",\"tool_call_id\":\"function-1\"}", inputs[2]);
         AssertMatches("{\"type\":\"function.result\",\"tool_call_id\":\"function-1\"}", inputs[3]);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves message order, reasoning, and function results within assistant messages", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "preserves message order, reasoning, and function results within assistant messages",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Preserves_message_order_reasoning_and_function_results_within_assistant_messages()
     {
         var inputs = Convert(
-            new AssistantModelMessage(new AssistantContentPart[]
-            {
-                new AssistantTextPart("Before"),
-                new AssistantReasoningPart("Think"),
-                new AssistantToolCallPart(new GeneratedToolCall("function-1", "weather", "{\"city\":\"Paris\"}")),
-                new AssistantToolResultPart("function-1", "weather", new ToolModelMessage("function-1", "weather", "Sunny", false, "text")),
-                new AssistantTextPart("After"),
-            }));
+            new AssistantModelMessage(
+                new AssistantContentPart[]
+                {
+                    new AssistantTextPart("Before"),
+                    new AssistantReasoningPart("Think"),
+                    new AssistantToolCallPart(
+                        new GeneratedToolCall("function-1", "weather", "{\"city\":\"Paris\"}")
+                    ),
+                    new AssistantToolResultPart(
+                        "function-1",
+                        "weather",
+                        new ToolModelMessage("function-1", "weather", "Sunny", false, "text")
+                    ),
+                    new AssistantTextPart("After"),
+                }
+            )
+        );
 
         AssertJson(
             "[{\"type\":\"message.input\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Before\"},{\"type\":\"thinking\",\"thinking\":[{\"type\":\"text\",\"text\":\"Think\"}],\"closed\":true}]},{\"type\":\"function.call\",\"tool_call_id\":\"function-1\",\"name\":\"weather\",\"arguments\":\"{\\\"city\\\":\\\"Paris\\\"}\"},{\"type\":\"function.result\",\"tool_call_id\":\"function-1\",\"result\":\"Sunny\"},{\"type\":\"message.input\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"After\"}]}]",
-            inputs);
+            inputs
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "replays renamed premium search as function calls and results", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "replays renamed premium search as function calls and results",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Replays_renamed_premium_search_as_function_calls_and_results()
     {
         var inputs = Convert(
-            new AssistantModelMessage(new AssistantContentPart[]
-            {
-                new AssistantToolCallPart(new GeneratedToolCall("search-1", "news", "{\"arguments\":\"news query\"}") { ProviderExecuted = true }),
-            }),
-            new ToolModelMessage("search-1", "news", "{\"info\":{\"documents\":[\"result\"]}}", false, "json"),
-            new AssistantModelMessage("The news", null, null));
+            new AssistantModelMessage(
+                new AssistantContentPart[]
+                {
+                    new AssistantToolCallPart(
+                        new GeneratedToolCall("search-1", "news", "{\"arguments\":\"news query\"}")
+                        {
+                            ProviderExecuted = true,
+                        }
+                    ),
+                }
+            ),
+            new ToolModelMessage(
+                "search-1",
+                "news",
+                "{\"info\":{\"documents\":[\"result\"]}}",
+                false,
+                "json"
+            ),
+            new AssistantModelMessage("The news", null, null)
+        );
 
         AssertJson(
             "[{\"type\":\"function.call\",\"tool_call_id\":\"search-1\",\"name\":\"web_search_premium\",\"arguments\":\"news query\"},{\"type\":\"function.result\",\"tool_call_id\":\"search-1\",\"result\":\"{\\\"documents\\\":[\\\"result\\\"]}\"},{\"type\":\"message.input\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"The news\"}]}]",
-            inputs);
+            inputs
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "keeps images and PDFs in user messages", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "keeps images and PDFs in user messages",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Keeps_images_and_PDFs_in_user_messages()
     {
         var inputs = Convert(
-            new UserModelMessage(new UserContentPart[]
-            {
-                new TextContentPart("Search for context"),
-                new FileContentPart("image/png", "https://example.com/image.png", null, null),
-                new FileContentPart("application/pdf", "https://example.com/document.pdf", null, null),
-            }));
+            new UserModelMessage(
+                new UserContentPart[]
+                {
+                    new TextContentPart("Search for context"),
+                    new FileContentPart("image/png", "https://example.com/image.png", null, null),
+                    new FileContentPart(
+                        "application/pdf",
+                        "https://example.com/document.pdf",
+                        null,
+                        null
+                    ),
+                }
+            )
+        );
 
         AssertJson(
             "[{\"type\":\"message.input\",\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"Search for context\"},{\"type\":\"image_url\",\"image_url\":\"https://example.com/image.png\"},{\"type\":\"document_url\",\"document_url\":\"https://example.com/document.pdf\"}]}]",
-            inputs);
+            inputs
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "does not silently drop unsupported assistant content", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "does not silently drop unsupported assistant content",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Does_not_silently_drop_unsupported_assistant_content()
     {
-        Assert.Throws<UnsupportedFunctionalityException>(() => Convert(
-            new AssistantModelMessage(new AssistantContentPart[] { new AssistantFilePart("image/png", null, Array.Empty<byte>()) })));
+        Assert.Throws<UnsupportedFunctionalityException>(() =>
+            Convert(
+                new AssistantModelMessage(
+                    new AssistantContentPart[]
+                    {
+                        new AssistantFilePart("image/png", null, Array.Empty<byte>()),
+                    }
+                )
+            )
+        );
     }
 }

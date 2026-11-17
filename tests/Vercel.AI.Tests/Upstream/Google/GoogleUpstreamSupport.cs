@@ -37,7 +37,12 @@ internal static class GoogleUpstream
         return map;
     }
 
-    public static LanguageModelTool Function(string name, string schema, string? description = "", bool? strict = null)
+    public static LanguageModelTool Function(
+        string name,
+        string schema,
+        string? description = "",
+        bool? strict = null
+    )
     {
         using var document = JsonDocument.Parse(schema);
         return new LanguageModelTool(name, description, document.RootElement.Clone(), strict);
@@ -71,15 +76,27 @@ internal static class GoogleUpstream
         JsonAssert.Equal(actual, expected);
     }
 
-    public static GooglePreparedRequest Prepare(string modelId, string provider, LanguageModelCallOptions options, bool streaming = false)
+    public static GooglePreparedRequest Prepare(
+        string modelId,
+        string provider,
+        LanguageModelCallOptions options,
+        bool streaming = false
+    )
     {
         return GoogleRequest.Prepare(modelId, provider, options, streaming);
     }
 
-    public static LanguageModelGenerateResult Parse(string json, string? provider = null, Func<string>? generateId = null)
+    public static LanguageModelGenerateResult Parse(
+        string json,
+        string? provider = null,
+        Func<string>? generateId = null
+    )
     {
         using var document = JsonDocument.Parse(json);
-        return GoogleResponse.Parse(document.RootElement, new GoogleParseContext(provider, generateId));
+        return GoogleResponse.Parse(
+            document.RootElement,
+            new GoogleParseContext(provider, generateId)
+        );
     }
 
     public static GoogleProvider Client(RecordingHandler handler, GoogleOptions? options = null)
@@ -93,7 +110,9 @@ internal static class GoogleUpstream
         return GoogleProvider.Create(options, handler);
     }
 
-    public static async Task<List<LanguageModelStreamPart>> Collect(IAsyncEnumerable<LanguageModelStreamPart> parts)
+    public static async Task<List<LanguageModelStreamPart>> Collect(
+        IAsyncEnumerable<LanguageModelStreamPart> parts
+    )
     {
         var list = new List<LanguageModelStreamPart>();
         await foreach (var part in parts.ConfigureAwait(false))
@@ -114,26 +133,34 @@ internal sealed class RecordingHandler : HttpMessageHandler
 
     public string Body { get; private set; } = string.Empty;
 
-    public Dictionary<string, string> RequestHeaders { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string> RequestHeaders { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
 
-    public string ResponseText { get; set; } = "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"ok\"}]},\"finishReason\":\"STOP\"}]}";
+    public string ResponseText { get; set; } =
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"ok\"}]},\"finishReason\":\"STOP\"}]}";
 
     public string MediaType { get; set; } = "application/json";
 
     public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
 
-    public Dictionary<string, string> ResponseHeaders { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string> ResponseHeaders { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
 
     public int Calls
     {
         get { return Uris.Count; }
     }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         Uris.Add(request.RequestUri?.AbsoluteUri ?? string.Empty);
         Method = request.Method.Method;
-        Body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+        Body = request.Content is null
+            ? string.Empty
+            : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
         RequestHeaders.Clear();
         foreach (var header in request.Headers)
         {
@@ -169,7 +196,13 @@ internal sealed class RecordingHandler : HttpMessageHandler
 /// <summary>Returns scripted responses in order and records every request. The last response repeats.</summary>
 internal sealed class SequencedHandler : HttpMessageHandler
 {
-    private readonly List<(string Body, string MediaType, HttpStatusCode Status, bool Hang, bool Fail)> _responses = new();
+    private readonly List<(
+        string Body,
+        string MediaType,
+        HttpStatusCode Status,
+        bool Hang,
+        bool Fail
+    )> _responses = new();
 
     public List<string> Uris { get; } = new();
 
@@ -178,7 +211,8 @@ internal sealed class SequencedHandler : HttpMessageHandler
     public List<string> Bodies { get; } = new();
 
     /// <summary>Headers added to every response.</summary>
-    public Dictionary<string, string> ResponseHeaders { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string> ResponseHeaders { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
 
     public SequencedHandler Json(string body, HttpStatusCode status = HttpStatusCode.OK)
     {
@@ -206,24 +240,37 @@ internal sealed class SequencedHandler : HttpMessageHandler
         return this;
     }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         var index = Uris.Count;
         Uris.Add(request.RequestUri?.AbsoluteUri ?? string.Empty);
         Methods.Add(request.Method.Method);
-        Bodies.Add(request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false));
+        Bodies.Add(
+            request.Content is null
+                ? string.Empty
+                : await request.Content.ReadAsStringAsync().ConfigureAwait(false)
+        );
         var response = _responses[Math.Min(index, _responses.Count - 1)];
         if (response.Hang || response.Fail)
         {
-            var content = new StreamContent(new HangingStream(Encoding.UTF8.GetBytes(response.Body), response.Fail));
-            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(response.MediaType);
+            var content = new StreamContent(
+                new HangingStream(Encoding.UTF8.GetBytes(response.Body), response.Fail)
+            );
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+                response.MediaType
+            );
             return WithHeaders(new HttpResponseMessage(response.Status) { Content = content });
         }
 
-        return WithHeaders(new HttpResponseMessage(response.Status)
-        {
-            Content = new StringContent(response.Body, Encoding.UTF8, response.MediaType),
-        });
+        return WithHeaders(
+            new HttpResponseMessage(response.Status)
+            {
+                Content = new StringContent(response.Body, Encoding.UTF8, response.MediaType),
+            }
+        );
     }
 
     private HttpResponseMessage WithHeaders(HttpResponseMessage message)
@@ -264,7 +311,12 @@ internal sealed class SequencedHandler : HttpMessageHandler
             set => throw new NotSupportedException();
         }
 
-        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(
+            byte[] buffer,
+            int offset,
+            int count,
+            CancellationToken cancellationToken
+        )
         {
             if (_position < _bytes.Length)
             {
@@ -283,16 +335,17 @@ internal sealed class SequencedHandler : HttpMessageHandler
             return 0;
         }
 
-        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override int Read(byte[] buffer, int offset, int count) =>
+            throw new NotSupportedException();
 
-        public override void Flush()
-        {
-        }
+        public override void Flush() { }
 
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) =>
+            throw new NotSupportedException();
 
         public override void SetLength(long value) => throw new NotSupportedException();
 
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) =>
+            throw new NotSupportedException();
     }
 }

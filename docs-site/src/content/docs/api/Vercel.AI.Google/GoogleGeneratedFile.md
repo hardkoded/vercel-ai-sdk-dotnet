@@ -1,6 +1,6 @@
 ---
 title: "GoogleGeneratedFile"
-description: "A generated file, including thought images."
+description: "A generated file. Files the model marks as thoughts are GeneratedReasoningFile instead."
 editUrl: false
 prev: false
 next: false
@@ -19,7 +19,7 @@ public sealed class GoogleGeneratedFile : GeneratedFile
 ```
 
 
-A generated file, including thought images.
+A generated file. Files the model marks as thoughts are GeneratedReasoningFile instead.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [GeneratedContent](/api/Vercel.AI.Provider/GeneratedContent/) → [GeneratedFile](/api/Vercel.AI.Provider/GeneratedFile/)
 
@@ -34,7 +34,7 @@ A generated file, including thought images.
 
 
 ```csharp
-public GoogleGeneratedFile(byte[] data, string mediaType, bool thought, JsonElement? providerMetadata)
+public GoogleGeneratedFile(byte[] data, string mediaType, JsonElement? providerMetadata)
 ```
 
 
@@ -46,7 +46,6 @@ Creates a file.
 | --- | --- | --- |
 | `data` | [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte) |  |
 | `mediaType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
-| `thought` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L509)
@@ -69,20 +68,3 @@ Provider metadata.
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L520)
-
-<a id="Vercel_AI_Google_GoogleGeneratedFile_Thought_"></a>
-<a id="Vercel_AI_Google_GoogleGeneratedFile_Thought"></a>
-
-### Thought
-
-
-```csharp
-public bool Thought { get; }
-```
-
-
-True when the file was part of the model's thoughts.
-
-**Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
-
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleResponse.cs#L517)

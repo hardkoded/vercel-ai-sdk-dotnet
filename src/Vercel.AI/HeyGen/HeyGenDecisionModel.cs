@@ -37,7 +37,8 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
     public string SpecificationVersion => "v4";
 
     /// <inheritdoc />
-    public IReadOnlyList<string> SupportedQuestionTypes => HeyGenModelCatalog.DecisionSupportedQuestionTypes;
+    public IReadOnlyList<string> SupportedQuestionTypes =>
+        HeyGenModelCatalog.DecisionSupportedQuestionTypes;
 
     /// <summary>
     /// Serializes the model id, the endpoint, and the resolved request headers (including authentication) for a workflow boundary.
@@ -67,7 +68,10 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
     /// Restores a model from <see cref="Serialize"/>. Maps to <c>[WORKFLOW_DESERIALIZE]</c>. Pass <paramref name="httpClient"/> to
     /// send the requests through a custom handler.
     /// </summary>
-    public static DecisionHeyGenModel Deserialize(SerializedModelOptions options, HttpClient? httpClient = null)
+    public static DecisionHeyGenModel Deserialize(
+        SerializedModelOptions options,
+        HttpClient? httpClient = null
+    )
     {
         if (options == null)
         {
@@ -107,20 +111,34 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
             }
         }
 
-        return new HeyGenProvider(httpClient ?? new HttpClient(), providerOptions).DecisionModel(options.ModelId);
+        return new HeyGenProvider(httpClient ?? new HttpClient(), providerOptions).DecisionModel(
+            options.ModelId
+        );
     }
 
     /// <summary>Sends every question in one Decision request.</summary>
-    public async Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken = default)
+    public async Task<DecisionModelResult> DoDecideAsync(
+        DecisionModelCall call,
+        CancellationToken cancellationToken = default
+    )
     {
         if (call == null)
         {
             throw new ArgumentNullException(nameof(call));
         }
 
-        if (call.Questions.Count == 0 || call.Questions.Count > HeyGenModelCatalog.DecisionMaxQuestions)
+        if (
+            call.Questions.Count == 0
+            || call.Questions.Count > HeyGenModelCatalog.DecisionMaxQuestions
+        )
         {
-            throw new InvalidArgumentException("questions", call.Questions, "HeyGen Decision supports 1 to " + HeyGenModelCatalog.DecisionMaxQuestions + " questions per request.");
+            throw new InvalidArgumentException(
+                "questions",
+                call.Questions,
+                "HeyGen Decision supports 1 to "
+                    + HeyGenModelCatalog.DecisionMaxQuestions
+                    + " questions per request."
+            );
         }
 
         var nativeQuestions = new JsonObject();
@@ -130,11 +148,7 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
         }
 
         var (nativeState, assets) = ConvertToHeyGenDecisionInput(call.State);
-        var body = new JsonObject
-        {
-            ["model"] = ModelId,
-            ["state"] = nativeState,
-        };
+        var body = new JsonObject { ["model"] = ModelId, ["state"] = nativeState };
         if (assets != null)
         {
             body["assets"] = assets;
@@ -145,15 +159,19 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
         ProviderExchangeResult response;
         try
         {
-            response = await ProviderExchange.SendAsync(
-                _provider._httpClient,
-                HttpMethod.Post,
-                ApiKeys.Combine(_provider.Options.BaseUrl, "v3/models/decisions"),
-                ProviderExchange.Json(body.ToJsonString()),
-                ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers),
-                cancellationToken).ConfigureAwait(false);
+            response = await ProviderExchange
+                .SendAsync(
+                    _provider._httpClient,
+                    HttpMethod.Post,
+                    ApiKeys.Combine(_provider.Options.BaseUrl, "v3/models/decisions"),
+                    ProviderExchange.Json(body.ToJsonString()),
+                    ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
-        catch (ApiException exception) when (HeyGenError.ErrorMessage(exception.ResponseBody) is { } message)
+        catch (ApiException exception)
+            when (HeyGenError.ErrorMessage(exception.ResponseBody) is { } message)
         {
             throw ProviderHttp.MapStatus(exception.StatusCode, message, exception.ResponseBody);
         }
@@ -161,7 +179,9 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
         JsonElement root;
         try
         {
-            using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
+            using var document = JsonDocument.Parse(
+                string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+            );
             root = document.RootElement.Clone();
         }
         catch (JsonException exception)
@@ -170,9 +190,15 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
         }
 
         var data = ParseResponse(root, response.Body);
-        if (data.Answers.Count != call.Questions.Count || call.Questions.Keys.Any(id => !data.Answers.Any(answer => answer.Name == id)))
+        if (
+            data.Answers.Count != call.Questions.Count
+            || call.Questions.Keys.Any(id => !data.Answers.Any(answer => answer.Name == id))
+        )
         {
-            throw new InvalidResponseDataException(root, "HeyGen Decision must return exactly one answer for every question.");
+            throw new InvalidResponseDataException(
+                root,
+                "HeyGen Decision must return exactly one answer for every question."
+            );
         }
 
         var answers = new Dictionary<string, DecisionAnswer>();
@@ -184,8 +210,16 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
             answers[answer.Name] = answer.Type switch
             {
                 "noul" => new DecisionAnswer("boolean", probability: answer.Probability),
-                "choice" => new DecisionAnswer("choice", choice: answer.Choice, probabilities: answer.Probabilities),
-                _ => new DecisionAnswer("score", score: answer.Score, probabilities: answer.Probabilities),
+                "choice" => new DecisionAnswer(
+                    "choice",
+                    choice: answer.Choice,
+                    probabilities: answer.Probabilities
+                ),
+                _ => new DecisionAnswer(
+                    "score",
+                    score: answer.Score,
+                    probabilities: answer.Probabilities
+                ),
             };
             if (answer.Type != "noul" && answer.Confidence != null)
             {
@@ -214,13 +248,20 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
             warnings.Add(new OperationWarning("unsupported", feature: "reasoning"));
         }
 
-        if (call.ProviderOptions.ValueKind == JsonValueKind.Object
+        if (
+            call.ProviderOptions.ValueKind == JsonValueKind.Object
             && call.ProviderOptions.TryGetProperty(HeyGenProvider.ProviderId, out var options)
-            && options.ValueKind == JsonValueKind.Object)
+            && options.ValueKind == JsonValueKind.Object
+        )
         {
             foreach (var option in options.EnumerateObject())
             {
-                warnings.Add(new OperationWarning("unsupported", feature: "providerOptions.heygen." + option.Name));
+                warnings.Add(
+                    new OperationWarning(
+                        "unsupported",
+                        feature: "providerOptions.heygen." + option.Name
+                    )
+                );
             }
         }
 
@@ -233,7 +274,9 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
         heygen["confidence"] = confidence;
         heygen["legend"] = legend;
         heygen["answerWarnings"] = answerWarnings;
-        var metadata = JsonSerializer.SerializeToElement(new JsonObject { [HeyGenProvider.ProviderId] = heygen });
+        var metadata = JsonSerializer.SerializeToElement(
+            new JsonObject { [HeyGenProvider.ProviderId] = heygen }
+        );
 
         // HeyGen returns full-precision probabilities, so no rounding is declared.
         return new DecisionModelResult(
@@ -242,7 +285,13 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
             data.Usage,
             null,
             metadata,
-            new ProviderResponse(response.Headers, root, id: data.Id, modelId: data.Model ?? ModelId));
+            new ProviderResponse(
+                response.Headers,
+                root,
+                id: data.Id,
+                modelId: data.Model ?? ModelId
+            )
+        );
     }
 
     private static void Restore(OpenAICompatibleOptions options, string name, string value)
@@ -268,7 +317,9 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
     }
 
     // Maps to convertToHeyGenDecisionInput.
-    private static (JsonNode? State, JsonObject? Assets) ConvertToHeyGenDecisionInput(IReadOnlyList<DecisionModelStatePart> state)
+    private static (JsonNode? State, JsonObject? Assets) ConvertToHeyGenDecisionInput(
+        IReadOnlyList<DecisionModelStatePart> state
+    )
     {
         var values = new List<JsonNode?>();
         var images = new JsonObject();
@@ -289,7 +340,10 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
                     {
                         throw new UnsupportedFunctionalityException(
                             "HeyGen decision file media type: " + file.MediaType,
-                            "'HeyGen decision file media type: " + file.MediaType + "' functionality not supported.");
+                            "'HeyGen decision file media type: "
+                                + file.MediaType
+                                + "' functionality not supported."
+                        );
                     }
 
                     // Asset names are not shown to the model; it reads images, then videos, then state, each in request order.
@@ -299,14 +353,31 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
             }
         }
 
-        if (images.Count > HeyGenModelCatalog.DecisionMaxImages || videos.Count > HeyGenModelCatalog.DecisionMaxVideos)
+        if (
+            images.Count > HeyGenModelCatalog.DecisionMaxImages
+            || videos.Count > HeyGenModelCatalog.DecisionMaxVideos
+        )
         {
-            throw new InvalidArgumentException("state", state, "HeyGen Decision supports at most " + HeyGenModelCatalog.DecisionMaxImages + " images and " + HeyGenModelCatalog.DecisionMaxVideos + " video per request.");
+            throw new InvalidArgumentException(
+                "state",
+                state,
+                "HeyGen Decision supports at most "
+                    + HeyGenModelCatalog.DecisionMaxImages
+                    + " images and "
+                    + HeyGenModelCatalog.DecisionMaxVideos
+                    + " video per request."
+            );
         }
 
         // A single string, object, or array is sent as native state. Other values stay in an array because the API rejects a root number, boolean, or null.
         JsonNode? nativeState;
-        if (values.Count == 1 && (values[0] is JsonObject or JsonArray || (values[0] is JsonValue single && single.GetValueKind() == JsonValueKind.String)))
+        if (
+            values.Count == 1
+            && (
+                values[0] is JsonObject or JsonArray
+                || (values[0] is JsonValue single && single.GetValueKind() == JsonValueKind.String)
+            )
+        )
         {
             nativeState = values[0];
         }
@@ -342,7 +413,11 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
             case "url":
                 if (data.Url == null || data.Url.Scheme != Uri.UriSchemeHttps)
                 {
-                    throw new InvalidArgumentException("state", data.Url?.ToString(), "HeyGen decision media URLs must use HTTPS.");
+                    throw new InvalidArgumentException(
+                        "state",
+                        data.Url?.ToString(),
+                        "HeyGen decision media URLs must use HTTPS."
+                    );
                 }
 
                 return new JsonObject { ["type"] = "url", ["url"] = data.Url.AbsoluteUri };
@@ -350,25 +425,41 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
                 return new JsonObject
                 {
                     ["type"] = "asset_id",
-                    ["asset_id"] = ProviderReferences.ResolveProviderReference(data.Reference ?? new Dictionary<string, string>(), HeyGenProvider.ProviderId),
+                    ["asset_id"] = ProviderReferences.ResolveProviderReference(
+                        data.Reference ?? new Dictionary<string, string>(),
+                        HeyGenProvider.ProviderId
+                    ),
                 };
             case "data":
-                var mediaType = MediaTypes.IsFullMediaType(file.MediaType)
-                    ? file.MediaType
-                    : data.Bytes != null ? MediaTypes.DetectMediaType(data.Bytes, kind) : MediaTypes.DetectMediaType(data.Base64 ?? string.Empty, kind);
+                var mediaType =
+                    MediaTypes.IsFullMediaType(file.MediaType) ? file.MediaType
+                    : data.Bytes != null ? MediaTypes.DetectMediaType(data.Bytes, kind)
+                    : MediaTypes.DetectMediaType(data.Base64 ?? string.Empty, kind);
                 if (mediaType == null)
                 {
-                    throw new InvalidArgumentException("state", file.MediaType, "Could not detect the " + kind + " media type. Specify a full mediaType such as " + (kind == "image" ? "image/png" : "video/mp4") + ".");
+                    throw new InvalidArgumentException(
+                        "state",
+                        file.MediaType,
+                        "Could not detect the "
+                            + kind
+                            + " media type. Specify a full mediaType such as "
+                            + (kind == "image" ? "image/png" : "video/mp4")
+                            + "."
+                    );
                 }
 
                 return new JsonObject
                 {
                     ["type"] = "base64",
                     ["media_type"] = mediaType,
-                    ["data"] = data.Bytes != null ? Convert.ToBase64String(data.Bytes) : data.Base64,
+                    ["data"] =
+                        data.Bytes != null ? Convert.ToBase64String(data.Bytes) : data.Base64,
                 };
             default:
-                throw new UnsupportedFunctionalityException("HeyGen decision inline text files", "'HeyGen decision inline text files' functionality not supported.");
+                throw new UnsupportedFunctionalityException(
+                    "HeyGen decision inline text files",
+                    "'HeyGen decision inline text files' functionality not supported."
+                );
         }
     }
 
@@ -376,7 +467,11 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
     {
         if (id.Length == 0 || id.Trim() != id || id.IndexOfAny([':', '\r', '\n']) >= 0)
         {
-            throw new InvalidArgumentException("questions", id, "HeyGen Decision question names must be nonempty, contain no colon or newline, and have no leading or trailing whitespace.");
+            throw new InvalidArgumentException(
+                "questions",
+                id,
+                "HeyGen Decision question names must be nonempty, contain no colon or newline, and have no leading or trailing whitespace."
+            );
         }
 
         switch (question.Type)
@@ -387,20 +482,41 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
                 var count = question.Criteria?.Count ?? 0;
                 if (count == 0 || count > HeyGenModelCatalog.DecisionMaxChoiceOptions)
                 {
-                    throw new InvalidArgumentException("questions." + id + ".criteria", question.Criteria, "HeyGen Choice questions support 1 to " + HeyGenModelCatalog.DecisionMaxChoiceOptions + " options.");
+                    throw new InvalidArgumentException(
+                        "questions." + id + ".criteria",
+                        question.Criteria,
+                        "HeyGen Choice questions support 1 to "
+                            + HeyGenModelCatalog.DecisionMaxChoiceOptions
+                            + " options."
+                    );
                 }
 
                 return Native("choice", question);
             case "score":
                 var levels = (question.Criteria as DecisionScoreCriteria)?.Levels ?? [];
-                if (levels.Count == 0 || levels.Count > HeyGenModelCatalog.DecisionMaxScoreLevels || levels.Any(level => level == null))
+                if (
+                    levels.Count == 0
+                    || levels.Count > HeyGenModelCatalog.DecisionMaxScoreLevels
+                    || levels.Any(level => level == null)
+                )
                 {
-                    throw new InvalidArgumentException("questions." + id + ".criteria", question.Criteria, "HeyGen Score questions require 1 to " + HeyGenModelCatalog.DecisionMaxScoreLevels + " non-null levels.");
+                    throw new InvalidArgumentException(
+                        "questions." + id + ".criteria",
+                        question.Criteria,
+                        "HeyGen Score questions require 1 to "
+                            + HeyGenModelCatalog.DecisionMaxScoreLevels
+                            + " non-null levels."
+                    );
                 }
 
                 return Native("score", question);
             default:
-                throw new DecisionUnsupportedQuestionTypeException(id, question.Type, Provider, ModelId);
+                throw new DecisionUnsupportedQuestionTypeException(
+                    id,
+                    question.Type,
+                    Provider,
+                    ModelId
+                );
         }
     }
 
@@ -430,17 +546,27 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
 
         string? Text(JsonElement parent, string property)
         {
-            if (!parent.TryGetProperty(property, out var value) || value.ValueKind == JsonValueKind.Null)
+            if (
+                !parent.TryGetProperty(property, out var value)
+                || value.ValueKind == JsonValueKind.Null
+            )
             {
                 return null;
             }
 
-            return value.ValueKind == JsonValueKind.String ? value.GetString() : throw Malformed(property + " must be a string.");
+            return value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : throw Malformed(property + " must be a string.");
         }
 
         double Probability(JsonElement element, string what)
         {
-            if (element.ValueKind != JsonValueKind.Number || !element.TryGetDouble(out var value) || value < 0 || value > 1)
+            if (
+                element.ValueKind != JsonValueKind.Number
+                || !element.TryGetDouble(out var value)
+                || value < 0
+                || value > 1
+            )
             {
                 throw Malformed(what + " must be a number from 0 to 1.");
             }
@@ -450,12 +576,19 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
 
         double? NullableProbability(JsonElement parent, string property)
         {
-            return parent.TryGetProperty(property, out var value) && value.ValueKind != JsonValueKind.Null ? Probability(value, property) : null;
+            return
+                parent.TryGetProperty(property, out var value)
+                && value.ValueKind != JsonValueKind.Null
+                ? Probability(value, property)
+                : null;
         }
 
         Dictionary<string, double> Distribution(JsonElement parent)
         {
-            if (!parent.TryGetProperty("probabilities", out var map) || map.ValueKind != JsonValueKind.Object)
+            if (
+                !parent.TryGetProperty("probabilities", out var map)
+                || map.ValueKind != JsonValueKind.Object
+            )
             {
                 throw Malformed("probabilities must be an object.");
             }
@@ -469,7 +602,11 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
             return result;
         }
 
-        if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Object)
+        if (
+            root.ValueKind != JsonValueKind.Object
+            || !root.TryGetProperty("data", out var data)
+            || data.ValueKind != JsonValueKind.Object
+        )
         {
             throw Malformed("data must be an object.");
         }
@@ -479,23 +616,42 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
             throw Malformed("answers must be an object.");
         }
 
-        var parsed = new ParsedResponse { Id = Text(data, "id"), RequestId = Text(data, "request_id"), Model = Text(data, "model") };
+        var parsed = new ParsedResponse
+        {
+            Id = Text(data, "id"),
+            RequestId = Text(data, "request_id"),
+            Model = Text(data, "model"),
+        };
         foreach (var item in list.EnumerateObject())
         {
             var element = item.Value;
-            if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty("type", out var type) || type.ValueKind != JsonValueKind.String)
+            if (
+                element.ValueKind != JsonValueKind.Object
+                || !element.TryGetProperty("type", out var type)
+                || type.ValueKind != JsonValueKind.String
+            )
             {
                 throw Malformed("answer type must be noul, choice, or score.");
             }
 
-            var answer = new ParsedAnswer { Name = item.Name, Type = type.GetString()!, Warning = Text(element, "warning") };
+            var answer = new ParsedAnswer
+            {
+                Name = item.Name,
+                Type = type.GetString()!,
+                Warning = Text(element, "warning"),
+            };
             switch (answer.Type)
             {
                 case "noul":
-                    answer.Probability = element.TryGetProperty("noul", out var noul) ? Probability(noul, "noul") : throw Malformed("noul is required.");
+                    answer.Probability = element.TryGetProperty("noul", out var noul)
+                        ? Probability(noul, "noul")
+                        : throw Malformed("noul is required.");
                     break;
                 case "choice":
-                    if (!element.TryGetProperty("choice", out var choice) || choice.ValueKind != JsonValueKind.String)
+                    if (
+                        !element.TryGetProperty("choice", out var choice)
+                        || choice.ValueKind != JsonValueKind.String
+                    )
                     {
                         throw Malformed("choice must be a string.");
                     }
@@ -505,7 +661,11 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
                     answer.Confidence = NullableProbability(element, "confidence");
                     break;
                 case "score":
-                    if (!element.TryGetProperty("score", out var score) || score.ValueKind != JsonValueKind.Number || !score.TryGetDouble(out var scoreValue))
+                    if (
+                        !element.TryGetProperty("score", out var score)
+                        || score.ValueKind != JsonValueKind.Number
+                        || !score.TryGetDouble(out var scoreValue)
+                    )
                     {
                         throw Malformed("score must be a number.");
                     }
@@ -513,9 +673,15 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
                     answer.Score = scoreValue;
                     answer.Probabilities = Distribution(element);
                     answer.Confidence = NullableProbability(element, "confidence");
-                    if (element.TryGetProperty("legend", out var legend) && legend.ValueKind != JsonValueKind.Null)
+                    if (
+                        element.TryGetProperty("legend", out var legend)
+                        && legend.ValueKind != JsonValueKind.Null
+                    )
                     {
-                        answer.Legend = legend.ValueKind == JsonValueKind.Object ? legend : throw Malformed("legend must be an object.");
+                        answer.Legend =
+                            legend.ValueKind == JsonValueKind.Object
+                                ? legend
+                                : throw Malformed("legend must be an object.");
                     }
 
                     break;
@@ -533,19 +699,27 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
                 throw Malformed("usage must be an object.");
             }
 
-            parsed.Usage = new OperationUsage(Count(usage, "input_tokens"), Count(usage, "output_tokens"));
+            parsed.Usage = new OperationUsage(
+                Count(usage, "input_tokens"),
+                Count(usage, "output_tokens")
+            );
         }
 
         return parsed;
 
         int? Count(JsonElement parent, string name)
         {
-            if (!parent.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null)
+            if (
+                !parent.TryGetProperty(name, out var value)
+                || value.ValueKind == JsonValueKind.Null
+            )
             {
                 return null;
             }
 
-            return value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var count) ? count : throw Malformed(name + " must be a number.");
+            return value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var count)
+                ? count
+                : throw Malformed(name + " must be a number.");
         }
     }
 

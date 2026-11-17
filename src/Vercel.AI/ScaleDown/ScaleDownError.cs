@@ -10,7 +10,14 @@ namespace Vercel.AI.ScaleDown;
 /// <summary>Maps to <c>scaledownFailedResponseHandler</c>: reads the <c>detail</c> of a failed ScaleDown response.</summary>
 internal static class ScaleDownError
 {
-    internal static ApiCallError FailedResponse(string url, object requestBody, int status, string? statusText, IReadOnlyDictionary<string, string> headers, string text)
+    internal static ApiCallError FailedResponse(
+        string url,
+        object requestBody,
+        int status,
+        string? statusText,
+        IReadOnlyDictionary<string, string> headers,
+        string text
+    )
     {
         var message = statusText ?? string.Empty;
         object? data = null;
@@ -23,9 +30,7 @@ internal static class ScaleDownError
                 data = document.RootElement.Clone();
             }
         }
-        catch (JsonException)
-        {
-        }
+        catch (JsonException) { }
 
         return new ApiCallError(message, url, requestBody, status, headers, text, data: data);
     }
@@ -34,7 +39,10 @@ internal static class ScaleDownError
     private static bool TryReadDetail(JsonElement root, out string message)
     {
         message = string.Empty;
-        if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("detail", out var detail))
+        if (
+            root.ValueKind != JsonValueKind.Object
+            || !root.TryGetProperty("detail", out var detail)
+        )
         {
             return false;
         }
@@ -53,7 +61,11 @@ internal static class ScaleDownError
         var messages = new List<string>();
         foreach (var item in detail.EnumerateArray())
         {
-            if (item.ValueKind != JsonValueKind.Object || !item.TryGetProperty("msg", out var msg) || msg.ValueKind != JsonValueKind.String)
+            if (
+                item.ValueKind != JsonValueKind.Object
+                || !item.TryGetProperty("msg", out var msg)
+                || msg.ValueKind != JsonValueKind.String
+            )
             {
                 return false;
             }

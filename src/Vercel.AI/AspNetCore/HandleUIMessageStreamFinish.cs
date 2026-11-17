@@ -24,7 +24,8 @@ public static partial class UIMessageStreamConverter
         Func<UIMessageStreamOutcome>? getOutcome,
         Func<UIMessageStreamOnStepEndEvent, Task>? onStepFinish = null,
         Func<UIMessageStreamOnEndEvent, Task>? onFinish = null,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
     {
         originalMessages ??= [];
 
@@ -33,7 +34,8 @@ public static partial class UIMessageStreamConverter
         onEnd ??= onFinish;
 
         // last message is only relevant for assistant messages
-        UIMessage? lastMessage = originalMessages.Count > 0 ? originalMessages[originalMessages.Count - 1] : null;
+        UIMessage? lastMessage =
+            originalMessages.Count > 0 ? originalMessages[originalMessages.Count - 1] : null;
         if (lastMessage?.Role != UIMessageRole.Assistant)
         {
             lastMessage = null;
@@ -54,14 +56,20 @@ public static partial class UIMessageStreamConverter
             processingError = error;
         }
 
-        async IAsyncEnumerable<JsonObject> InjectId([EnumeratorCancellation] CancellationToken token)
+        async IAsyncEnumerable<JsonObject> InjectId(
+            [EnumeratorCancellation] CancellationToken token
+        )
         {
             await foreach (var chunk in stream.WithCancellation(token).ConfigureAwait(false))
             {
                 var outputChunk = chunk;
 
                 // when there is no messageId in the start chunk, but the user checked for persistence, inject the messageId into the chunk
-                if ((string?)chunk["type"] == "start" && chunk["messageId"] == null && messageId != null)
+                if (
+                    (string?)chunk["type"] == "start"
+                    && chunk["messageId"] == null
+                    && messageId != null
+                )
                 {
                     outputChunk = (JsonObject)chunk.DeepClone();
                     outputChunk["messageId"] = messageId;
@@ -91,7 +99,8 @@ public static partial class UIMessageStreamConverter
 
         var state = UIMessageStreamProcessing.CreateStreamingUIMessageState(
             lastMessage != null ? UIMessageJson.ToJson(lastMessage) : null,
-            messageId ?? string.Empty); // will be overridden by the stream
+            messageId ?? string.Empty
+        ); // will be overridden by the stream
 
         async Task RunUpdateMessageJob(Func<UpdateMessageJobContext, Task> job)
         {
@@ -118,25 +127,35 @@ public static partial class UIMessageStreamConverter
             endCalled = true;
 
             var isContinuation = (string?)state.Message["id"] == lastMessage?.Id;
-            var declaredOutcome = getOutcome?.Invoke() ?? new UIMessageStreamOutcome(UIMessageStreamOutcomeStatus.Unknown);
-            var outcome = hasProcessingFailure
-                ? new UIMessageStreamOutcome(UIMessageStreamOutcomeStatus.Failed, processingError)
+            var declaredOutcome = getOutcome?.Invoke()
+                ?? new UIMessageStreamOutcome(UIMessageStreamOutcomeStatus.Unknown);
+            var outcome =
+                hasProcessingFailure
+                    ? new UIMessageStreamOutcome(
+                        UIMessageStreamOutcomeStatus.Failed,
+                        processingError
+                    )
                 : declaredOutcome.Status == UIMessageStreamOutcomeStatus.Unknown && isAborted
                     ? new UIMessageStreamOutcome(UIMessageStreamOutcomeStatus.Aborted)
-                    : declaredOutcome;
-            var isConsumerCancellation = isCancelled && outcome.Status == UIMessageStreamOutcomeStatus.Unknown;
+                : declaredOutcome;
+            var isConsumerCancellation =
+                isCancelled && outcome.Status == UIMessageStreamOutcomeStatus.Unknown;
 
             var responseMessage = UIMessageJson.FromJson(state.Message);
-            await onEnd(new UIMessageStreamOnEndEvent(
-                MessagesWith(originalMessages, isContinuation, responseMessage),
-                isContinuation,
-                isAborted || outcome.Status == UIMessageStreamOutcomeStatus.Aborted,
-                outcome,
-                responseMessage)
-            {
-                IsCancelled = isConsumerCancellation,
-                FinishReason = state.FinishReason,
-            }).ConfigureAwait(false);
+            await onEnd(
+                    new UIMessageStreamOnEndEvent(
+                        MessagesWith(originalMessages, isContinuation, responseMessage),
+                        isContinuation,
+                        isAborted || outcome.Status == UIMessageStreamOutcomeStatus.Aborted,
+                        outcome,
+                        responseMessage
+                    )
+                    {
+                        IsCancelled = isConsumerCancellation,
+                        FinishReason = state.FinishReason,
+                    }
+                )
+                .ConfigureAwait(false);
         }
 
         async Task CallOnStepEnd()
@@ -152,10 +171,14 @@ public static partial class UIMessageStreamConverter
             {
                 // a snapshot, because the state keeps changing
                 var responseMessage = UIMessageJson.FromJson(state.Message);
-                await onStepEnd(new UIMessageStreamOnStepEndEvent(
-                    MessagesWith(originalMessages, isContinuation, responseMessage),
-                    isContinuation,
-                    responseMessage)).ConfigureAwait(false);
+                await onStepEnd(
+                        new UIMessageStreamOnStepEndEvent(
+                            MessagesWith(originalMessages, isContinuation, responseMessage),
+                            isContinuation,
+                            responseMessage
+                        )
+                    )
+                    .ConfigureAwait(false);
             }
             catch (Exception error) when (error is not OperationCanceledException)
             {
@@ -166,10 +189,15 @@ public static partial class UIMessageStreamConverter
         var completed = false;
         try
         {
-            await foreach (var chunk in UIMessageStreamProcessing.ProcessUIMessageStream(
-                idInjectedStream,
-                new ProcessUIMessageStreamOptions(RunUpdateMessageJob, onError),
-                cancellationToken).ConfigureAwait(false))
+            await foreach (
+                var chunk in UIMessageStreamProcessing
+                    .ProcessUIMessageStream(
+                        idInjectedStream,
+                        new ProcessUIMessageStreamOptions(RunUpdateMessageJob, onError),
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false)
+            )
             {
                 if ((string?)chunk["type"] == "finish-step")
                 {
@@ -188,7 +216,11 @@ public static partial class UIMessageStreamConverter
         }
     }
 
-    private static List<UIMessage> MessagesWith(IReadOnlyList<UIMessage> originalMessages, bool isContinuation, UIMessage responseMessage)
+    private static List<UIMessage> MessagesWith(
+        IReadOnlyList<UIMessage> originalMessages,
+        bool isContinuation,
+        UIMessage responseMessage
+    )
     {
         var messages = new List<UIMessage>(originalMessages);
         if (isContinuation && messages.Count > 0)

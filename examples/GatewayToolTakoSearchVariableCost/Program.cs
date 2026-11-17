@@ -14,25 +14,29 @@ if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AI_GATEWAY_API_KEY"
 
 var client = new AiClient(GatewayProvider.Create());
 
-var result = await client.GenerateTextAsync(new GenerateTextOptions
-{
-    ModelId = "openai/gpt-5.4-nano",
-    Prompt = "How much monthly web traffic does vercel.com get?",
-    Tools = new[]
+var result = await client.GenerateTextAsync(
+    new GenerateTextOptions
     {
-        GatewayTakoSearch.Create(new GatewayTakoSearchConfig
+        ModelId = "openai/gpt-5.4-nano",
+        Prompt = "How much monthly web traffic does vercel.com get?",
+        Tools = new[]
         {
-            // Keep the data index in every search so variable-cost cards can appear.
-            Sources = new TakoSearchSourcesConfig
-            {
-                Data = new TakoDataSourceConfig { Count = 5 },
-                Web = new TakoWebSourceConfig { Count = 3 },
-            },
-            MaxVariableCostUsd = 0.1,
-        }),
-    },
-    StopWhen = StopWhen.IsStepCount(4),
-});
+            GatewayTakoSearch.Create(
+                new GatewayTakoSearchConfig
+                {
+                    // Keep the data index in every search so variable-cost cards can appear.
+                    Sources = new TakoSearchSourcesConfig
+                    {
+                        Data = new TakoDataSourceConfig { Count = 5 },
+                        Web = new TakoWebSourceConfig { Count = 3 },
+                    },
+                    MaxVariableCostUsd = 0.1,
+                }
+            ),
+        },
+        StopWhen = StopWhen.IsStepCount(4),
+    }
+);
 
 Console.WriteLine("Text: " + result.Text);
 Console.WriteLine();
@@ -64,7 +68,9 @@ foreach (var toolResult in result.ToolResults)
     {
         if (card.Placeholder is { } placeholder)
         {
-            Console.WriteLine($"[placeholder:{placeholder.Reason ?? "not_served"}] {card.Title} ({placeholder.WithheldSource})");
+            Console.WriteLine(
+                $"[placeholder:{placeholder.Reason ?? "not_served"}] {card.Title} ({placeholder.WithheldSource})"
+            );
             continue;
         }
 

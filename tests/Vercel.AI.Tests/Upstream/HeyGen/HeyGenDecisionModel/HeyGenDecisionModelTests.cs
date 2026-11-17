@@ -32,11 +32,17 @@ public sealed class HeyGenDecisionModelTests
     public static TheoryData<int> MalformedAnswers => new() { 0, 1, 2 };
 
     [Fact]
-    [UpstreamTest(Prefix + "sends one native request with all question types and configured headers", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "sends one native request with all question types and configured headers",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Sends_one_native_request_with_all_question_types_and_configured_headers()
     {
         var (_, model, capture) = Setup();
-        await model.DoDecideAsync(Call(headers: new Dictionary<string, string> { ["shared"] = "call" }));
+        await model.DoDecideAsync(
+            Call(headers: new Dictionary<string, string> { ["shared"] = "call" })
+        );
         Assert.Equal("v4", model.SpecificationVersion);
         Assert.Equal("heygen.decision", model.Provider);
         Assert.Equal("heygen-decision-1", model.ModelId);
@@ -68,11 +74,17 @@ public sealed class HeyGenDecisionModelTests
                 }
               }
             }
-            """);
+            """
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "maps answers and preserves confidence, legends, warnings, usage and response metadata", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix
+            + "maps answers and preserves confidence, legends, warnings, usage and response metadata",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Maps_answers_and_preserves_confidence_legends_warnings_usage_and_response_metadata()
     {
         var body = Fixture();
@@ -85,18 +97,35 @@ public sealed class HeyGenDecisionModelTests
         var team = result.Answers["team"];
         Assert.Equal("choice", team.Type);
         Assert.Equal("video", team.Choice);
-        Assert.Equal(new Dictionary<string, double> { ["video"] = 0.8, ["account"] = 0.15, ["billing"] = 0.05 }, team.Probabilities);
+        Assert.Equal(
+            new Dictionary<string, double>
+            {
+                ["video"] = 0.8,
+                ["account"] = 0.15,
+                ["billing"] = 0.05,
+            },
+            team.Probabilities
+        );
         var impact = result.Answers["impact"];
         Assert.Equal("score", impact.Type);
         Assert.Equal(1.75, impact.Score);
-        Assert.Equal(new Dictionary<string, double> { ["0"] = 0.05, ["1"] = 0.15, ["2"] = 0.8 }, impact.Probabilities);
+        Assert.Equal(
+            new Dictionary<string, double>
+            {
+                ["0"] = 0.05,
+                ["1"] = 0.15,
+                ["2"] = 0.8,
+            },
+            impact.Probabilities
+        );
         Assert.Null(result.Rounding);
         Assert.Equal(1200, result.Usage!.InputTokens);
         Assert.Equal(0, result.Usage.OutputTokens);
         Assert.Empty(result.Warnings);
         JsonAssert.Equal(
             result.ProviderMetadata!.Value,
-            """{"heygen":{"requestId":"0123456789abcdef0123456789abcdef","confidence":{"team":0.7,"impact":0.625},"legend":{"impact":{"0":"Cosmetic","1":"Slower","2":"Blocked"}},"answerWarnings":{"blocked":"Low evidence"}}}""");
+            """{"heygen":{"requestId":"0123456789abcdef0123456789abcdef","confidence":{"team":0.7,"impact":0.625},"legend":{"impact":{"0":"Cosmetic","1":"Slower","2":"Blocked"}},"answerWarnings":{"blocked":"Low evidence"}}}"""
+        );
         Assert.Equal("decision-0123456789abcdef", result.Response!.Id);
         Assert.Equal("heygen-decision-1", result.Response.ModelId);
         Assert.Equal("trace-1", result.Response.Headers!["x-trace"]);
@@ -104,32 +133,71 @@ public sealed class HeyGenDecisionModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "tolerates absent ancillary response fields", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "tolerates absent ancillary response fields",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Tolerates_absent_ancillary_response_fields()
     {
-        var result = await Setup(new JsonObject { ["data"] = new JsonObject { ["answers"] = Fixture()["data"]!["answers"]!.DeepClone() } }).Model.DoDecideAsync(Call());
+        var result = await Setup(
+            new JsonObject
+            {
+                ["data"] = new JsonObject
+                {
+                    ["answers"] = Fixture()["data"]!["answers"]!.DeepClone(),
+                },
+            }
+        )
+            .Model.DoDecideAsync(Call());
         Assert.Null(result.Usage);
         Assert.Null(result.Response!.Id);
         Assert.Equal("heygen-decision-1", result.Response.ModelId);
-        Assert.False(result.ProviderMetadata!.Value.GetProperty("heygen").TryGetProperty("requestId", out _));
+        Assert.False(
+            result.ProviderMetadata!.Value.GetProperty("heygen").TryGetProperty("requestId", out _)
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "sends file parts as ordered image and video assets and keeps text and JSON in state", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix
+            + "sends file parts as ordered image and video assets and keeps text and JSON in state",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Sends_file_parts_as_ordered_image_and_video_assets_and_keeps_text_and_JSON_in_state()
     {
-        var (_, model, capture) = Setup(new JsonObject { ["data"] = new JsonObject { ["answers"] = new JsonObject { ["blocked"] = Fixture()["data"]!["answers"]!["blocked"]!.DeepClone() } } });
-        await model.DoDecideAsync(Call(
-            new Dictionary<string, DecisionQuestion> { ["blocked"] = Blocked() },
-            [
-                new DecisionModelTextPart("Compare the first image with the video."),
-                Data("image", PngHeader),
-                Url("video/mp4", "https://example.com/clip.mp4"),
-                Reference("image/jpeg", "heygen", "asset-123"),
-                new DecisionModelJsonPart(JsonDocument.Parse("""{"product":"vase"}""").RootElement.Clone()),
-            ]));
+        var (_, model, capture) = Setup(
+            new JsonObject
+            {
+                ["data"] = new JsonObject
+                {
+                    ["answers"] = new JsonObject
+                    {
+                        ["blocked"] = Fixture()["data"]!["answers"]!["blocked"]!.DeepClone(),
+                    },
+                },
+            }
+        );
+        await model.DoDecideAsync(
+            Call(
+                new Dictionary<string, DecisionQuestion> { ["blocked"] = Blocked() },
+                [
+                    new DecisionModelTextPart("Compare the first image with the video."),
+                    Data("image", PngHeader),
+                    Url("video/mp4", "https://example.com/clip.mp4"),
+                    Reference("image/jpeg", "heygen", "asset-123"),
+                    new DecisionModelJsonPart(
+                        JsonDocument.Parse("""{"product":"vase"}""").RootElement.Clone()
+                    ),
+                ]
+            )
+        );
         var body = RequestBody(capture);
-        JsonAssert.Equal(body["state"], """["Compare the first image with the video.",{"product":"vase"}]""");
+        JsonAssert.Equal(
+            body["state"],
+            """["Compare the first image with the video.",{"product":"vase"}]"""
+        );
         JsonAssert.Equal(
             body["assets"],
             """
@@ -140,33 +208,66 @@ public sealed class HeyGenDecisionModelTests
               },
               "videos": { "video-1": { "type": "url", "url": "https://example.com/clip.mp4" } }
             }
-            """);
+            """
+        );
     }
 
-    private static (IReadOnlyList<DecisionModelStatePart> State, Type Error) RejectedInput(int index)
+    private static (IReadOnlyList<DecisionModelStatePart> State, Type Error) RejectedInput(
+        int index
+    )
     {
         switch (index)
         {
             case 0:
-                return (Enumerable.Range(0, 5).Select(_ => (DecisionModelStatePart)Base64("image/png", "iVBORw0KGgo=")).ToList(), typeof(InvalidArgumentException));
+                return (
+                    Enumerable
+                        .Range(0, 5)
+                        .Select(_ => (DecisionModelStatePart)Base64("image/png", "iVBORw0KGgo="))
+                        .ToList(),
+                    typeof(InvalidArgumentException)
+                );
             case 1:
-                return (Enumerable.Range(0, 2).Select(_ => (DecisionModelStatePart)Url("video/mp4", "https://example.com/a.mp4")).ToList(), typeof(InvalidArgumentException));
+                return (
+                    Enumerable
+                        .Range(0, 2)
+                        .Select(_ =>
+                            (DecisionModelStatePart)Url("video/mp4", "https://example.com/a.mp4")
+                        )
+                        .ToList(),
+                    typeof(InvalidArgumentException)
+                );
             case 2:
-                return ([Url("image/png", "http://example.com/a.png")], typeof(InvalidArgumentException));
+                return (
+                    [Url("image/png", "http://example.com/a.png")],
+                    typeof(InvalidArgumentException)
+                );
             case 3:
                 return ([Data("image", [1, 2, 3])], typeof(InvalidArgumentException));
             case 4:
-                return ([Base64("application/pdf", "JVBERi0=")], typeof(UnsupportedFunctionalityException));
+                return (
+                    [Base64("application/pdf", "JVBERi0=")],
+                    typeof(UnsupportedFunctionalityException)
+                );
             case 5:
-                return ([InlineText("image/png", "not an image")], typeof(UnsupportedFunctionalityException));
+                return (
+                    [InlineText("image/png", "not an image")],
+                    typeof(UnsupportedFunctionalityException)
+                );
             default:
-                return ([Reference("image/png", "other", "file-1")], typeof(NoSuchProviderReferenceError));
+                return (
+                    [Reference("image/png", "other", "file-1")],
+                    typeof(NoSuchProviderReferenceError)
+                );
         }
     }
 
     [Theory]
     [MemberData(nameof(RejectedInputs))]
-    [UpstreamTest(Prefix + "rejects %s before HTTP", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "rejects %s before HTTP",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Rejects_input_before_HTTP(int index)
     {
         var (state, error) = RejectedInput(index);
@@ -177,11 +278,21 @@ public sealed class HeyGenDecisionModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "warns about unsupported settings without adding fields to the request", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "warns about unsupported settings without adding fields to the request",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Warns_about_unsupported_settings_without_adding_fields_to_the_request()
     {
         var (_, model, capture) = Setup();
-        var result = await model.DoDecideAsync(Call(providerOptions: "{\"heygen\":{\"temperature\":0}}", maxOutputTokens: 10, reasoning: "low"));
+        var result = await model.DoDecideAsync(
+            Call(
+                providerOptions: "{\"heygen\":{\"temperature\":0}}",
+                maxOutputTokens: 10,
+                reasoning: "low"
+            )
+        );
         Assert.Collection(
             result.Warnings,
             warning =>
@@ -198,13 +309,21 @@ public sealed class HeyGenDecisionModelTests
             {
                 Assert.Equal("unsupported", warning.Type);
                 Assert.Equal("providerOptions.heygen.temperature", warning.Feature);
-            });
-        Assert.Equal(new[] { "model", "state", "questions" }, RequestBody(capture).Select(pair => pair.Key));
+            }
+        );
+        Assert.Equal(
+            new[] { "model", "state", "questions" },
+            RequestBody(capture).Select(pair => pair.Key)
+        );
     }
 
     [Theory]
     [MemberData(nameof(BadAnswerSets))]
-    [UpstreamTest(Prefix + "rejects missing and unexpected answers", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "rejects missing and unexpected answers",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Rejects_missing_and_unexpected_answers(int index)
     {
         var answers = (JsonObject)Fixture()["data"]!["answers"]!.DeepClone();
@@ -221,12 +340,19 @@ public sealed class HeyGenDecisionModelTests
                 break;
         }
 
-        await Assert.ThrowsAsync<InvalidResponseDataException>(() => Setup(new JsonObject { ["data"] = new JsonObject { ["answers"] = answers } }).Model.DoDecideAsync(Call()));
+        await Assert.ThrowsAsync<InvalidResponseDataException>(() =>
+            Setup(new JsonObject { ["data"] = new JsonObject { ["answers"] = answers } })
+                .Model.DoDecideAsync(Call())
+        );
     }
 
     [Theory]
     [MemberData(nameof(MalformedAnswers))]
-    [UpstreamTest(Prefix + "rejects malformed native responses", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "rejects malformed native responses",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Rejects_malformed_native_responses(int index)
     {
         var answers = (JsonObject)Fixture()["data"]!["answers"]!.DeepClone();
@@ -243,31 +369,54 @@ public sealed class HeyGenDecisionModelTests
                 break;
         }
 
-        await Assert.ThrowsAnyAsync<ApiException>(() => Setup(new JsonObject { ["data"] = new JsonObject { ["answers"] = answers } }).Model.DoDecideAsync(Call()));
+        await Assert.ThrowsAnyAsync<ApiException>(() =>
+            Setup(new JsonObject { ["data"] = new JsonObject { ["answers"] = answers } })
+                .Model.DoDecideAsync(Call())
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves HeyGen error codes and parameters", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "preserves HeyGen error codes and parameters",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Preserves_HeyGen_error_codes_and_parameters()
     {
         var body = new JsonObject
         {
-            ["error"] = new JsonObject { ["code"] = "invalid_parameter", ["message"] = "Invalid question.", ["param"] = "questions.team.criteria" },
+            ["error"] = new JsonObject
+            {
+                ["code"] = "invalid_parameter",
+                ["message"] = "Invalid question.",
+                ["param"] = "questions.team.criteria",
+            },
         };
-        var exception = await Assert.ThrowsAsync<BadRequestException>(() => Setup(body, HttpStatusCode.BadRequest).Model.DoDecideAsync(Call()));
-        Assert.Equal("Invalid question. (invalid_parameter) [questions.team.criteria]", exception.Message);
+        var exception = await Assert.ThrowsAsync<BadRequestException>(() =>
+            Setup(body, HttpStatusCode.BadRequest).Model.DoDecideAsync(Call())
+        );
+        Assert.Equal(
+            "Invalid question. (invalid_parameter) [questions.team.criteria]",
+            exception.Message
+        );
         Assert.Equal(400, exception.StatusCode);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "loads environment authentication lazily and uses the default endpoint", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "loads environment authentication lazily and uses the default endpoint",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Loads_environment_authentication_lazily_and_uses_the_default_endpoint()
     {
         var capture = new OpenAICapture { ResponseJson = Fixture().ToJsonString() };
         var previous = Environment.GetEnvironmentVariable("HEYGEN_API_KEY");
         try
         {
-            var model = HeyGenProviderType.Create(null, capture).DecisionModel("heygen-decision-1-turbo");
+            var model = HeyGenProviderType
+                .Create(null, capture)
+                .DecisionModel("heygen-decision-1-turbo");
             Environment.SetEnvironmentVariable("HEYGEN_API_KEY", "environment-key");
             await model.DoDecideAsync(Call());
         }
@@ -282,26 +431,48 @@ public sealed class HeyGenDecisionModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "restores the endpoint and authentication across workflow serialization", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(
+        Prefix + "restores the endpoint and authentication across workflow serialization",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public async Task Restores_the_endpoint_and_authentication_across_workflow_serialization()
     {
         var (_, model, _) = Setup();
         var serialized = model.Serialize();
         Assert.False(serialized.Config.ContainsKey("fetch"));
         Assert.False(serialized.Config.ContainsKey("httpClient"));
-        var headers = Assert.IsAssignableFrom<IDictionary<string, object?>>(serialized.Config["headers"]);
-        Assert.Equal("test-key", Assert.Single(headers, pair => pair.Key.Equals("x-api-key", StringComparison.OrdinalIgnoreCase)).Value);
+        var headers = Assert.IsAssignableFrom<IDictionary<string, object?>>(
+            serialized.Config["headers"]
+        );
+        Assert.Equal(
+            "test-key",
+            Assert
+                .Single(headers, pair =>
+                    pair.Key.Equals("x-api-key", StringComparison.OrdinalIgnoreCase)
+                )
+                .Value
+        );
         var capture = new OpenAICapture { ResponseJson = Fixture().ToJsonString() };
-        await DecisionHeyGenModel.Deserialize(serialized, new HttpClient(capture)).DoDecideAsync(Call());
+        await DecisionHeyGenModel
+            .Deserialize(serialized, new HttpClient(capture))
+            .DoDecideAsync(Call());
         Assert.Equal("https://example.com/v3/models/decisions", capture.Uri);
         Assert.Equal("test-key", capture.Headers["x-api-key"]);
 
         // A workflow runtime rehydrates the config from JSON, so values arrive as JsonElement.
         var rehydrated = new SerializedModelOptions(
             serialized.ModelId,
-            JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(JsonSerializer.Serialize(serialized.Config))!.ToDictionary(pair => pair.Key, pair => (object?)pair.Value));
+            JsonSerializer
+                .Deserialize<Dictionary<string, JsonElement>>(
+                    JsonSerializer.Serialize(serialized.Config)
+                )!
+                .ToDictionary(pair => pair.Key, pair => (object?)pair.Value)
+        );
         var second = new OpenAICapture { ResponseJson = Fixture().ToJsonString() };
-        await DecisionHeyGenModel.Deserialize(rehydrated, new HttpClient(second)).DoDecideAsync(Call());
+        await DecisionHeyGenModel
+            .Deserialize(rehydrated, new HttpClient(second))
+            .DoDecideAsync(Call());
         Assert.Equal("https://example.com/v3/models/decisions", second.Uri);
         Assert.Equal("test-key", second.Headers["x-api-key"]);
     }

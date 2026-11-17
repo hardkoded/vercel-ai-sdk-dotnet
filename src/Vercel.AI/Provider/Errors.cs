@@ -11,15 +11,11 @@ public class AiSdkException : Exception
 {
     /// <summary>Creates an exception with a message.</summary>
     public AiSdkException(string message)
-        : base(message)
-    {
-    }
+        : base(message) { }
 
     /// <summary>Creates an exception with a message and an inner exception.</summary>
     public AiSdkException(string message, Exception innerException)
-        : base(message, innerException)
-    {
-    }
+        : base(message, innerException) { }
 }
 
 /// <summary>The provider returned a non-success HTTP status after retries.</summary>
@@ -34,7 +30,12 @@ public class ApiException : AiSdkException
     }
 
     /// <summary>Creates an API exception caused by <paramref name="innerException"/>.</summary>
-    public ApiException(string message, int statusCode, string? responseBody, Exception innerException)
+    public ApiException(
+        string message,
+        int statusCode,
+        string? responseBody,
+        Exception innerException
+    )
         : base(message, innerException)
     {
         StatusCode = statusCode;
@@ -77,9 +78,7 @@ public sealed class BadRequestException : ApiException
 {
     /// <summary>Creates the exception.</summary>
     public BadRequestException(string message, string? responseBody)
-        : base(message, 400, responseBody)
-    {
-    }
+        : base(message, 400, responseBody) { }
 }
 
 /// <summary>HTTP 401.</summary>
@@ -87,9 +86,7 @@ public sealed class AuthenticationException : ApiException
 {
     /// <summary>Creates the exception.</summary>
     public AuthenticationException(string message, string? responseBody)
-        : base(message, 401, responseBody)
-    {
-    }
+        : base(message, 401, responseBody) { }
 }
 
 /// <summary>HTTP 403.</summary>
@@ -97,9 +94,7 @@ public sealed class PermissionDeniedException : ApiException
 {
     /// <summary>Creates the exception.</summary>
     public PermissionDeniedException(string message, string? responseBody)
-        : base(message, 403, responseBody)
-    {
-    }
+        : base(message, 403, responseBody) { }
 }
 
 /// <summary>HTTP 404.</summary>
@@ -107,9 +102,7 @@ public sealed class NotFoundException : ApiException
 {
     /// <summary>Creates the exception.</summary>
     public NotFoundException(string message, string? responseBody)
-        : base(message, 404, responseBody)
-    {
-    }
+        : base(message, 404, responseBody) { }
 }
 
 /// <summary>HTTP 422.</summary>
@@ -117,9 +110,7 @@ public sealed class UnprocessableEntityException : ApiException
 {
     /// <summary>Creates the exception.</summary>
     public UnprocessableEntityException(string message, string? responseBody)
-        : base(message, 422, responseBody)
-    {
-    }
+        : base(message, 422, responseBody) { }
 }
 
 /// <summary>HTTP 429.</summary>
@@ -127,9 +118,7 @@ public sealed class RateLimitException : ApiException
 {
     /// <summary>Creates the exception.</summary>
     public RateLimitException(string message, string? responseBody)
-        : base(message, 429, responseBody)
-    {
-    }
+        : base(message, 429, responseBody) { }
 }
 
 /// <summary>HTTP 500-599.</summary>
@@ -137,9 +126,7 @@ public sealed class InternalServerException : ApiException
 {
     /// <summary>Creates the exception.</summary>
     public InternalServerException(string message, int statusCode, string? responseBody)
-        : base(message, statusCode, responseBody)
-    {
-    }
+        : base(message, statusCode, responseBody) { }
 }
 
 /// <summary>The connection to the provider failed.</summary>
@@ -147,9 +134,7 @@ public class ApiConnectionException : AiSdkException
 {
     /// <summary>Creates the exception.</summary>
     public ApiConnectionException(string message, Exception? innerException = null)
-        : base(message, innerException ?? new Exception(message))
-    {
-    }
+        : base(message, innerException ?? new Exception(message)) { }
 }
 
 /// <summary>The provider call timed out.</summary>
@@ -157,9 +142,7 @@ public sealed class ApiTimeoutException : ApiConnectionException
 {
     /// <summary>Creates the exception.</summary>
     public ApiTimeoutException(string message, Exception? innerException = null)
-        : base(message, innerException)
-    {
-    }
+        : base(message, innerException) { }
 }
 
 /// <summary>
@@ -170,15 +153,11 @@ public sealed class ApiUserAbortException : OperationCanceledException
 {
     /// <summary>Creates the exception.</summary>
     public ApiUserAbortException()
-        : base("The operation was cancelled.")
-    {
-    }
+        : base("The operation was cancelled.") { }
 
     /// <summary>Creates the exception for a cancelled <paramref name="cancellationToken"/>, with the original cancel as the cause.</summary>
     public ApiUserAbortException(Exception? innerException, CancellationToken cancellationToken)
-        : base("The operation was cancelled.", innerException, cancellationToken)
-    {
-    }
+        : base("The operation was cancelled.", innerException, cancellationToken) { }
 }
 
 /// <summary>A UI message could not be converted to a model message. Maps to <c>MessageConversionError</c>.</summary>

@@ -42,9 +42,14 @@ public sealed class AlibabaProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static new AlibabaProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new AlibabaProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new AlibabaProvider(client, options);
     }
 
@@ -56,7 +61,10 @@ public sealed class AlibabaProvider : OpenAICompatibleProvider
             ["image/*"] = "^https?://.*\\z",
         };
 
-        if (string.IsNullOrEmpty(options.ProviderName) || options.ProviderName == "openai-compatible")
+        if (
+            string.IsNullOrEmpty(options.ProviderName)
+            || options.ProviderName == "openai-compatible"
+        )
         {
             options.ProviderName = ProviderId;
         }
@@ -74,7 +82,10 @@ public sealed class AlibabaProvider : OpenAICompatibleProvider
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
         options.InterruptedWithoutFinish = true;
-        if (options.AdditionalApiKeyEnvironmentVariables == null || options.AdditionalApiKeyEnvironmentVariables.Length == 0)
+        if (
+            options.AdditionalApiKeyEnvironmentVariables == null
+            || options.AdditionalApiKeyEnvironmentVariables.Length == 0
+        )
         {
             options.AdditionalApiKeyEnvironmentVariables = new[] { "DASHSCOPE_API_KEY" };
         }
@@ -125,22 +136,40 @@ public sealed class AlibabaProvider : OpenAICompatibleProvider
         public string ModelId { get; }
 
         /// <inheritdoc />
-        public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null, IReadOnlyDictionary<string, string?>? headers = null)
+        public async Task<EmbeddingResult> DoEmbedAsync(
+            IReadOnlyList<string> values,
+            IReadOnlyDictionary<string, JsonElement>? providerOptions,
+            CancellationToken cancellationToken,
+            int? dimensions = null,
+            IReadOnlyDictionary<string, string?>? headers = null
+        )
         {
-            var dimension = providerOptions != null
+            var dimension =
+                providerOptions != null
                 && providerOptions.TryGetValue("alibaba", out var options)
                 && options.ValueKind == JsonValueKind.Object
                 && options.TryGetProperty("dimension", out var width)
                 && width.ValueKind == JsonValueKind.Number
                 && width.TryGetInt32(out var parsed)
-                ? parsed
-                : dimensions;
-            var result = await EmbedAsync(new AlibabaEmbeddingRequest(values) { Dimension = dimension, Headers = ProviderExchange.ToRequestHeaders(headers) }, cancellationToken).ConfigureAwait(false);
+                    ? parsed
+                    : dimensions;
+            var result = await EmbedAsync(
+                    new AlibabaEmbeddingRequest(values)
+                    {
+                        Dimension = dimension,
+                        Headers = ProviderExchange.ToRequestHeaders(headers),
+                    },
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             return new EmbeddingResult(result.Embeddings, result.Tokens);
         }
 
         /// <summary>Embeds texts with the native DashScope embedding route.</summary>
-        public async Task<AlibabaEmbeddingResult> EmbedAsync(AlibabaEmbeddingRequest request, CancellationToken cancellationToken)
+        public async Task<AlibabaEmbeddingResult> EmbedAsync(
+            AlibabaEmbeddingRequest request,
+            CancellationToken cancellationToken
+        )
         {
             if (request == null)
             {
@@ -149,12 +178,16 @@ public sealed class AlibabaProvider : OpenAICompatibleProvider
 
             if (request.Values.Count > MaxEmbeddingsPerCall)
             {
-                throw new AiSdkException("Too many embedding values for one Alibaba call. The maximum is 10.");
+                throw new AiSdkException(
+                    "Too many embedding values for one Alibaba call. The maximum is 10."
+                );
             }
 
             if (string.Equals(request.OutputType, "sparse", StringComparison.Ordinal))
             {
-                throw new AiSdkException("Alibaba embedding outputType 'sparse' is not supported because embeddings require dense number arrays. Use 'dense' or 'dense&sparse' instead.");
+                throw new AiSdkException(
+                    "Alibaba embedding outputType 'sparse' is not supported because embeddings require dense number arrays. Use 'dense' or 'dense&sparse' instead."
+                );
             }
 
             var texts = new JsonArray();
@@ -186,32 +219,55 @@ public sealed class AlibabaProvider : OpenAICompatibleProvider
                 ["parameters"] = parameters,
             };
             var headers = ProviderExchange.Merge(_provider.CreateHeaders(), request.Headers);
-            var response = await ProviderExchange.SendAsync(
-                _provider._httpClient,
-                HttpMethod.Post,
-                ApiKeys.Combine(EmbeddingBaseUrl, "/services/embeddings/text-embedding/text-embedding"),
-                ProviderExchange.Json(body.ToJsonString()),
-                headers,
-                cancellationToken).ConfigureAwait(false);
-            using (var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body))
+            var response = await ProviderExchange
+                .SendAsync(
+                    _provider._httpClient,
+                    HttpMethod.Post,
+                    ApiKeys.Combine(
+                        EmbeddingBaseUrl,
+                        "/services/embeddings/text-embedding/text-embedding"
+                    ),
+                    ProviderExchange.Json(body.ToJsonString()),
+                    headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+            using (
+                var document = JsonDocument.Parse(
+                    string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+                )
+            )
             {
                 var indexed = new List<KeyValuePair<int, float[]>>();
-                if (document.RootElement.TryGetProperty("output", out var output)
+                if (
+                    document.RootElement.TryGetProperty("output", out var output)
                     && output.TryGetProperty("embeddings", out var embeddings)
-                    && embeddings.ValueKind == JsonValueKind.Array)
+                    && embeddings.ValueKind == JsonValueKind.Array
+                )
                 {
                     var position = 0;
                     foreach (var item in embeddings.EnumerateArray())
                     {
-                        var index = item.TryGetProperty("text_index", out var indexValue) && indexValue.TryGetInt32(out var parsed) ? parsed : position;
-                        indexed.Add(new KeyValuePair<int, float[]>(index, ReadVector(item.GetProperty("embedding"))));
+                        var index =
+                            item.TryGetProperty("text_index", out var indexValue)
+                            && indexValue.TryGetInt32(out var parsed)
+                                ? parsed
+                                : position;
+                        indexed.Add(
+                            new KeyValuePair<int, float[]>(
+                                index,
+                                ReadVector(item.GetProperty("embedding"))
+                            )
+                        );
                         position++;
                     }
 
-                    indexed.Sort(delegate (KeyValuePair<int, float[]> left, KeyValuePair<int, float[]> right)
-                    {
-                        return left.Key.CompareTo(right.Key);
-                    });
+                    indexed.Sort(
+                        delegate(KeyValuePair<int, float[]> left, KeyValuePair<int, float[]> right)
+                        {
+                            return left.Key.CompareTo(right.Key);
+                        }
+                    );
                 }
 
                 var vectors = new List<float[]>();
@@ -221,9 +277,11 @@ public sealed class AlibabaProvider : OpenAICompatibleProvider
                 }
 
                 var tokens = 0;
-                if (document.RootElement.TryGetProperty("usage", out var usage)
+                if (
+                    document.RootElement.TryGetProperty("usage", out var usage)
                     && usage.TryGetProperty("total_tokens", out var total)
-                    && total.TryGetInt32(out var count))
+                    && total.TryGetInt32(out var count)
+                )
                 {
                     tokens = count;
                 }
@@ -275,7 +333,11 @@ public sealed class AlibabaEmbeddingRequest
 public sealed class AlibabaEmbeddingResult
 {
     /// <summary>Creates an embedding result.</summary>
-    public AlibabaEmbeddingResult(IReadOnlyList<float[]> embeddings, int tokens, IReadOnlyDictionary<string, string> headers)
+    public AlibabaEmbeddingResult(
+        IReadOnlyList<float[]> embeddings,
+        int tokens,
+        IReadOnlyDictionary<string, string> headers
+    )
     {
         Embeddings = embeddings ?? Array.Empty<float[]>();
         Tokens = tokens;
@@ -296,14 +358,21 @@ public sealed class AlibabaEmbeddingResult
 public static class AlibabaServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddAlibaba(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddAlibaba(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(AlibabaProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new AlibabaProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(AlibabaProvider.ProviderId), options);
+            return new AlibabaProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(AlibabaProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

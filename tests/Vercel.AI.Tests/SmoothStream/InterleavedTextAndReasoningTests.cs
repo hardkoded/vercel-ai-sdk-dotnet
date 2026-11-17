@@ -27,10 +27,17 @@ public sealed class InterleavedTextAndReasoningTests : SmoothStreamTestBase
         Expect(
             new TextStartPart("1"),
             new ReasoningStartPart("2"),
-            D("Hello ", "1"), Delay, D("world", "1"),
-            R("Let ", "2"), Delay, R("me ", "2"), Delay, R("think", "2"),
+            D("Hello ", "1"),
+            Delay,
+            D("world", "1"),
+            R("Let ", "2"),
+            Delay,
+            R("me ", "2"),
+            Delay,
+            R("think", "2"),
             new TextEndPart("1"),
-            new ReasoningEndPart("2"));
+            new ReasoningEndPart("2")
+        );
     }
 
     [Fact]
@@ -49,10 +56,19 @@ public sealed class InterleavedTextAndReasoningTests : SmoothStreamTestBase
         Expect(
             new ReasoningStartPart("1"),
             new TextStartPart("2"),
-            R("Thinking ", "1"), Delay, R("hard", "1"),
-            D("The ", "2"), Delay, D("answer ", "2"), Delay, D("is ", "2"), Delay, D("42", "2"),
+            R("Thinking ", "1"),
+            Delay,
+            R("hard", "1"),
+            D("The ", "2"),
+            Delay,
+            D("answer ", "2"),
+            Delay,
+            D("is ", "2"),
+            Delay,
+            D("42", "2"),
             new ReasoningEndPart("1"),
-            new TextEndPart("2"));
+            new TextEndPart("2")
+        );
     }
 
     [Fact]
@@ -71,8 +87,16 @@ public sealed class InterleavedTextAndReasoningTests : SmoothStreamTestBase
         Expect(
             new ReasoningStartPart("r1"),
             new TextStartPart("t1"),
-            R("Think ", "r1"), Delay, D("Hello ", "t1"), Delay, R("more ", "r1"), Delay, D("world ", "t1"), Delay,
+            R("Think ", "r1"),
+            Delay,
+            D("Hello ", "t1"),
+            Delay,
+            R("more ", "r1"),
+            Delay,
+            D("world ", "t1"),
+            Delay,
             new ReasoningEndPart("r1"),
-            new TextEndPart("t1"));
+            new TextEndPart("t1")
+        );
     }
 }

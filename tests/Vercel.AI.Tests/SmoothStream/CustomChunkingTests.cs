@@ -20,7 +20,8 @@ public sealed class CustomChunkingTests : SmoothStreamTestBase
     {
         await Run(
             [Start, D("Hello_, world!"), End],
-            new SmoothStreamOptions { ChunkingRegex = new Regex("_"), DelayInMs = 10 });
+            new SmoothStreamOptions { ChunkingRegex = new Regex("_"), DelayInMs = 10 }
+        );
         Expect(Start, D("Hello_"), Delay, D(", world!"), End);
     }
 
@@ -29,20 +30,49 @@ public sealed class CustomChunkingTests : SmoothStreamTestBase
     {
         await Run(
             [Start, D("Hello, world!"), End],
-            new SmoothStreamOptions { ChunkingRegex = new Regex("."), DelayInMs = 10 });
+            new SmoothStreamOptions { ChunkingRegex = new Regex("."), DelayInMs = 10 }
+        );
         Expect(
             Start,
-            D("H"), Delay, D("e"), Delay, D("l"), Delay, D("l"), Delay, D("o"), Delay, D(","), Delay, D(" "), Delay,
-            D("w"), Delay, D("o"), Delay, D("r"), Delay, D("l"), Delay, D("d"), Delay, D("!"), Delay,
-            End);
+            D("H"),
+            Delay,
+            D("e"),
+            Delay,
+            D("l"),
+            Delay,
+            D("l"),
+            Delay,
+            D("o"),
+            Delay,
+            D(","),
+            Delay,
+            D(" "),
+            Delay,
+            D("w"),
+            Delay,
+            D("o"),
+            Delay,
+            D("r"),
+            Delay,
+            D("l"),
+            Delay,
+            D("d"),
+            Delay,
+            D("!"),
+            Delay,
+            End
+        );
     }
 
     [Fact]
     public async Task ThrowsWhenARegexpProducesAnEmptyMatch()
     {
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => Run(
-            [Start, D("hello"), End],
-            new SmoothStreamOptions { ChunkingRegex = new Regex(@"\S*") }));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Run(
+                [Start, D("hello"), End],
+                new SmoothStreamOptions { ChunkingRegex = new Regex(@"\S*") }
+            )
+        );
         Assert.Equal("Chunking RegExp must not match an empty string.", error.Message);
     }
 }

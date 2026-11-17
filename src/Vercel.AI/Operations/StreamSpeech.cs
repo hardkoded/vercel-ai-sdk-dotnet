@@ -76,7 +76,9 @@ public sealed class SpeechTextStream : IAsyncEnumerable<SpeechTextPart>
     public bool Locked { get; private set; }
 
     /// <summary>Takes the single enumerator.</summary>
-    public IAsyncEnumerator<SpeechTextPart> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+    public IAsyncEnumerator<SpeechTextPart> GetAsyncEnumerator(
+        CancellationToken cancellationToken = default
+    )
     {
         if (Locked)
         {
@@ -99,7 +101,10 @@ public sealed class SpeechTextStream : IAsyncEnumerable<SpeechTextPart>
         await _source.GetAsyncEnumerator().DisposeAsync().ConfigureAwait(false);
     }
 
-    internal static async IAsyncEnumerable<SpeechTextPart> FromSync(IEnumerable<SpeechTextPart> parts, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    internal static async IAsyncEnumerable<SpeechTextPart> FromSync(
+        IEnumerable<SpeechTextPart> parts,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
     {
         foreach (var part in parts)
         {
@@ -205,7 +210,18 @@ public sealed class SpeechStreamPart
 public sealed class SpeechModelStreamCall
 {
     /// <summary>Creates a speech stream call.</summary>
-    public SpeechModelStreamCall(SpeechTextStream text, string? voice, SpeechAudioFormat? outputFormat, string? instructions, double? speed, string? language, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken)
+    public SpeechModelStreamCall(
+        SpeechTextStream text,
+        string? voice,
+        SpeechAudioFormat? outputFormat,
+        string? instructions,
+        double? speed,
+        string? language,
+        JsonElement providerOptions,
+        IReadOnlyDictionary<string, string> headers,
+        bool? includeRawChunks,
+        CancellationToken cancellationToken
+    )
     {
         Text = text;
         Voice = voice;
@@ -273,7 +289,11 @@ public sealed class SpeechModelStreamResponse
 public sealed class SpeechModelStreamResult
 {
     /// <summary>Creates a stream result.</summary>
-    public SpeechModelStreamResult(IAsyncEnumerable<SpeechModelStreamPart> stream, SpeechModelStreamResponse? response = null, JsonElement? requestBody = null)
+    public SpeechModelStreamResult(
+        IAsyncEnumerable<SpeechModelStreamPart> stream,
+        SpeechModelStreamResponse? response = null,
+        JsonElement? requestBody = null
+    )
     {
         Stream = stream ?? throw new ArgumentNullException(nameof(stream));
         Response = response;
@@ -297,7 +317,10 @@ public sealed class SpeechModelStreamResult
 public interface IStreamingSpeechCaller : ISpeechCaller
 {
     /// <summary>Streams speech audio for streamed text input.</summary>
-    Task<SpeechModelStreamResult> DoStreamAsync(SpeechModelStreamCall call, CancellationToken cancellationToken);
+    Task<SpeechModelStreamResult> DoStreamAsync(
+        SpeechModelStreamCall call,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>Resolves string speech model ids.</summary>
@@ -357,10 +380,14 @@ public sealed class StreamSpeechRequest : OperationRequest
 /// <summary>Result of <see cref="StreamSpeech.Start"/>. Maps to <c>StreamSpeechResult</c>.</summary>
 public sealed class StreamSpeechResult
 {
-    private readonly PendingPromise<SpeechStreamUsage> _usage = new PendingPromise<SpeechStreamUsage>();
-    private readonly PendingPromise<IReadOnlyList<OperationWarning>> _warnings = new PendingPromise<IReadOnlyList<OperationWarning>>();
-    private readonly PendingPromise<IReadOnlyList<ProviderResponse>> _responses = new PendingPromise<IReadOnlyList<ProviderResponse>>();
-    private readonly PendingPromise<JsonElement> _providerMetadata = new PendingPromise<JsonElement>();
+    private readonly PendingPromise<SpeechStreamUsage> _usage =
+        new PendingPromise<SpeechStreamUsage>();
+    private readonly PendingPromise<IReadOnlyList<OperationWarning>> _warnings =
+        new PendingPromise<IReadOnlyList<OperationWarning>>();
+    private readonly PendingPromise<IReadOnlyList<ProviderResponse>> _responses =
+        new PendingPromise<IReadOnlyList<ProviderResponse>>();
+    private readonly PendingPromise<JsonElement> _providerMetadata =
+        new PendingPromise<JsonElement>();
     private readonly PartQueue<SpeechStreamPart> _queue = new PartQueue<SpeechStreamPart>();
     private readonly CancellationTokenSource _pipe = new CancellationTokenSource();
     private readonly object _gate = new object();
@@ -373,13 +400,24 @@ public sealed class StreamSpeechResult
     private bool _finished;
     private Exception? _lastError;
 
-    internal StreamSpeechResult(IStreamingSpeechCaller model, StreamSpeechRequest request, SpeechTextStream text, CancellationToken cancellationToken)
+    internal StreamSpeechResult(
+        IStreamingSpeechCaller model,
+        StreamSpeechRequest request,
+        SpeechTextStream text,
+        CancellationToken cancellationToken
+    )
     {
         _model = model;
         _startedAt = request.Now?.Invoke() ?? DateTime.UtcNow;
         _onError = request.OnError;
-        FullStreamCore = new OperationFullStream<SpeechStreamPart>(token => new QueueEnumerator<SpeechStreamPart>(this, token, part => part), CancelFromConsumer);
-        AudioStreamCore = new OperationFullStream<byte[]>(token => new AudioEnumerator(this, token), CancelFromConsumer);
+        FullStreamCore = new OperationFullStream<SpeechStreamPart>(
+            token => new QueueEnumerator<SpeechStreamPart>(this, token, part => part),
+            CancelFromConsumer
+        );
+        AudioStreamCore = new OperationFullStream<byte[]>(
+            token => new AudioEnumerator(this, token),
+            CancelFromConsumer
+        );
         // A rejection nobody awaits (for example a result promise the caller never reads) must not surface as an unobserved task exception.
         Observe(_usage.Task);
         Observe(_warnings.Task);
@@ -390,31 +428,52 @@ public sealed class StreamSpeechResult
 
     private static void Observe(Task task)
     {
-        _ = task.ContinueWith(completed => _ = completed.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+        _ = task.ContinueWith(
+            completed => _ = completed.Exception,
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted,
+            TaskScheduler.Default
+        );
     }
 
     /// <summary>Usage reported for the call, if available. Accessing it claims the stream.</summary>
     public Task<SpeechStreamUsage> Usage
     {
-        get { Claim(); return _usage.Task; }
+        get
+        {
+            Claim();
+            return _usage.Task;
+        }
     }
 
     /// <summary>Warnings for the call, such as unsupported settings. Accessing it claims the stream.</summary>
     public Task<IReadOnlyList<OperationWarning>> Warnings
     {
-        get { Claim(); return _warnings.Task; }
+        get
+        {
+            Claim();
+            return _warnings.Task;
+        }
     }
 
     /// <summary>Response metadata. Accessing it claims the stream.</summary>
     public Task<IReadOnlyList<ProviderResponse>> Responses
     {
-        get { Claim(); return _responses.Task; }
+        get
+        {
+            Claim();
+            return _responses.Task;
+        }
     }
 
     /// <summary>Additional provider-specific metadata. Accessing it claims the stream.</summary>
     public Task<JsonElement> ProviderMetadata
     {
-        get { Claim(); return _providerMetadata.Task; }
+        get
+        {
+            Claim();
+            return _providerMetadata.Task;
+        }
     }
 
     /// <summary>
@@ -469,9 +528,12 @@ public sealed class StreamSpeechResult
         {
             if (_owner != "unclaimed")
             {
-                throw new InvalidOperationException(_owner == "result-promises"
-                    ? (owner == "full-stream" ? "fullStream" : "audioStream") + " cannot be accessed after a result promise."
-                    : "Only one of audioStream or fullStream can be accessed, and only once.");
+                throw new InvalidOperationException(
+                    _owner == "result-promises"
+                        ? (owner == "full-stream" ? "fullStream" : "audioStream")
+                            + " cannot be accessed after a result promise."
+                        : "Only one of audioStream or fullStream can be accessed, and only once."
+                );
             }
 
             _owner = owner;
@@ -493,7 +555,11 @@ public sealed class StreamSpeechResult
         }
     }
 
-    private async Task PumpAsync(StreamSpeechRequest request, SpeechTextStream text, CancellationToken userToken)
+    private async Task PumpAsync(
+        StreamSpeechRequest request,
+        SpeechTextStream text,
+        CancellationToken userToken
+    )
     {
         // Merged so cancelling the output stream also aborts a pending doStream.
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(userToken, _pipe.Token);
@@ -511,9 +577,26 @@ public sealed class StreamSpeechResult
             token.ThrowIfCancellationRequested();
             var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
             var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
-            var call = new SpeechModelStreamCall(text, request.Voice, request.OutputFormat, request.Instructions, request.Speed, request.Language, providerOptions, headers, request.IncludeRawChunks, token);
+            var call = new SpeechModelStreamCall(
+                text,
+                request.Voice,
+                request.OutputFormat,
+                request.Instructions,
+                request.Speed,
+                request.Language,
+                providerOptions,
+                headers,
+                request.IncludeRawChunks,
+                token
+            );
             var result = await _model.DoStreamAsync(call, token).ConfigureAwait(false);
-            _response = new ProviderResponse(result.Response?.Headers, result.Response?.Body, null, result.Response?.Timestamp ?? _startedAt, result.Response?.ModelId ?? _model.ModelId);
+            _response = new ProviderResponse(
+                result.Response?.Headers,
+                result.Response?.Body,
+                null,
+                result.Response?.Timestamp ?? _startedAt,
+                result.Response?.ModelId ?? _model.ModelId
+            );
             await foreach (var part in result.Stream.WithCancellation(token).ConfigureAwait(false))
             {
                 Accept(part);
@@ -528,7 +611,12 @@ public sealed class StreamSpeechResult
         }
         catch (Exception error)
         {
-            var reason = error is OperationCanceledException && request.AbortReason != null && userToken.IsCancellationRequested ? request.AbortReason : error;
+            var reason =
+                error is OperationCanceledException
+                && request.AbortReason != null
+                && userToken.IsCancellationRequested
+                    ? request.AbortReason
+                    : error;
             RejectPending(reason);
             // When doStream rejects before the model took the enumerator, nothing owns the text stream yet, so cancel it here.
             try
@@ -592,10 +680,21 @@ public sealed class StreamSpeechResult
                 break;
             case "response-metadata":
                 var current = CurrentResponse();
-                _response = new ProviderResponse(part.Headers ?? _response?.Headers, part.Body ?? _response?.Body, null, part.Timestamp ?? current.Timestamp, part.ModelId ?? current.ModelId);
+                _response = new ProviderResponse(
+                    part.Headers ?? _response?.Headers,
+                    part.Body ?? _response?.Body,
+                    null,
+                    part.Timestamp ?? current.Timestamp,
+                    part.ModelId ?? current.ModelId
+                );
                 break;
             case "audio":
-                var audio = part.Audio ?? (part.AudioBase64 != null ? Convert.FromBase64String(part.AudioBase64) : Array.Empty<byte>());
+                var audio = part.Audio
+                    ?? (
+                        part.AudioBase64 != null
+                            ? Convert.FromBase64String(part.AudioBase64)
+                            : Array.Empty<byte>()
+                    );
                 // Empty chunks are dropped unless they carry provider metadata (e.g. an end-of-turn marker); those never count as audio.
                 if (audio.Length == 0 && part.ProviderMetadata == null)
                 {
@@ -603,7 +702,16 @@ public sealed class StreamSpeechResult
                 }
 
                 _hasAudio |= audio.Length > 0;
-                _queue.Enqueue(new SpeechStreamPart { Type = "audio", Id = part.Id, Audio = audio, AudioFormat = part.AudioFormat, ProviderMetadata = part.ProviderMetadata });
+                _queue.Enqueue(
+                    new SpeechStreamPart
+                    {
+                        Type = "audio",
+                        Id = part.Id,
+                        Audio = audio,
+                        AudioFormat = part.AudioFormat,
+                        ProviderMetadata = part.ProviderMetadata,
+                    }
+                );
                 break;
             case "raw":
                 _queue.Enqueue(new SpeechStreamPart { Type = "raw", RawValue = part.RawValue });
@@ -686,7 +794,11 @@ public sealed class StreamSpeechResult
         private readonly Func<SpeechStreamPart, T> _project;
         private T _current = default!;
 
-        public QueueEnumerator(StreamSpeechResult owner, CancellationToken token, Func<SpeechStreamPart, T> project)
+        public QueueEnumerator(
+            StreamSpeechResult owner,
+            CancellationToken token,
+            Func<SpeechStreamPart, T> project
+        )
         {
             _owner = owner;
             _token = token;
@@ -734,9 +846,7 @@ public sealed class StreamSpeechResult
     private sealed class AudioEnumerator : QueueEnumerator<byte[]>
     {
         public AudioEnumerator(StreamSpeechResult owner, CancellationToken token)
-            : base(owner, token, part => part.Audio)
-        {
-        }
+            : base(owner, token, part => part.Audio) { }
 
         protected override bool Accepts(SpeechStreamPart part)
         {
@@ -750,7 +860,10 @@ public static class StreamSpeech
 {
     /// <summary>Starts a speech stream. <c>doStream</c> is invoked immediately.</summary>
     /// <exception cref="UnsupportedFunctionalityException">The model does not support streaming speech.</exception>
-    public static StreamSpeechResult Start(StreamSpeechRequest request, CancellationToken cancellationToken = default)
+    public static StreamSpeechResult Start(
+        StreamSpeechRequest request,
+        CancellationToken cancellationToken = default
+    )
     {
         if (request == null)
         {
@@ -761,11 +874,18 @@ public static class StreamSpeech
         if (request.Model is null && request.ModelId is { } id)
         {
             request.ModelWasString = true;
-            model = SpeechModels.Default?.Invoke(id) ?? throw new UnsupportedFunctionalityException("streaming speech", "No speech model resolved for \"" + id + "\". Set SpeechModels.Default to a factory that returns an ISpeechCaller, or pass a model instance through StreamSpeechRequest.Model.");
+            model = SpeechModels.Default?.Invoke(id)
+                ?? throw new UnsupportedFunctionalityException(
+                    "streaming speech",
+                    "No speech model resolved for \""
+                        + id
+                        + "\". Set SpeechModels.Default to a factory that returns an ISpeechCaller, or pass a model instance through StreamSpeechRequest.Model."
+                );
         }
         else
         {
-            model = request.Model ?? throw new InvalidArgumentException("model", null, "model is required");
+            model = request.Model
+                ?? throw new InvalidArgumentException("model", null, "model is required");
         }
 
         if (model is not IStreamingSpeechCaller streaming)
@@ -774,7 +894,9 @@ public static class StreamSpeech
         }
 
         var text = new SpeechTextStream(ToTextStream(request));
-        var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
+        var token = request.CancellationToken.CanBeCanceled
+            ? request.CancellationToken
+            : cancellationToken;
         return new StreamSpeechResult(streaming, request, text, token);
     }
 
@@ -795,15 +917,25 @@ public static class StreamSpeech
             return SpeechTextStream.FromSync(request.TextParts);
         }
 
-        throw new InvalidArgumentException("text", null, "Expected a string, an iterable or async iterable, or a stream of strings or text parts.");
+        throw new InvalidArgumentException(
+            "text",
+            null,
+            "Expected a string, an iterable or async iterable, or a stream of strings or text parts."
+        );
     }
 
     private static Exception Unsupported(ISpeechCaller model, bool modelWasString)
     {
-        var message = "The " + model.Provider + " model \"" + model.ModelId + "\" does not support streaming speech.";
+        var message =
+            "The "
+            + model.Provider
+            + " model \""
+            + model.ModelId
+            + "\" does not support streaming speech.";
         if (modelWasString)
         {
-            message += " String model IDs resolve through the global provider (AI Gateway by default). If that provider does not support streaming speech, pass a provider model instance instead (e.g. elevenLabs.speech('eleven_flash_v2_5')) or upgrade @ai-sdk/gateway to a version with streaming speech support.";
+            message +=
+                " String model IDs resolve through the global provider (AI Gateway by default). If that provider does not support streaming speech, pass a provider model instance instead (e.g. elevenLabs.speech('eleven_flash_v2_5')) or upgrade @ai-sdk/gateway to a version with streaming speech support.";
         }
 
         return new UnsupportedFunctionalityException("streaming speech", message);

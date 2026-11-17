@@ -16,7 +16,10 @@ public sealed class AnthropicCacheControlValidator
     private int _breakpoints;
 
     /// <summary>Creates a validator. <paramref name="providerOptionsName"/> is read before <c>anthropic</c>. <paramref name="initialBreakpointCount"/> counts breakpoints already used, such as a top-level cache control.</summary>
-    public AnthropicCacheControlValidator(string providerOptionsName = "anthropic", int initialBreakpointCount = 0)
+    public AnthropicCacheControlValidator(
+        string providerOptionsName = "anthropic",
+        int initialBreakpointCount = 0
+    )
     {
         _providerOptionsName = providerOptionsName;
         _breakpoints = initialBreakpointCount;
@@ -39,20 +42,30 @@ public sealed class AnthropicCacheControlValidator
 
         if (!canCache)
         {
-            _warnings.Add(new AnthropicWarning(
-                "unsupported",
-                "cache_control on non-cacheable context",
-                "cache_control cannot be set on " + contextType + ". It will be ignored."));
+            _warnings.Add(
+                new AnthropicWarning(
+                    "unsupported",
+                    "cache_control on non-cacheable context",
+                    "cache_control cannot be set on " + contextType + ". It will be ignored."
+                )
+            );
             return null;
         }
 
         _breakpoints++;
         if (_breakpoints > MaxBreakpoints)
         {
-            _warnings.Add(new AnthropicWarning(
-                "unsupported",
-                "cacheControl breakpoint limit",
-                "Maximum " + MaxBreakpoints + " cache breakpoints exceeded (found " + _breakpoints + "). This breakpoint will be ignored."));
+            _warnings.Add(
+                new AnthropicWarning(
+                    "unsupported",
+                    "cacheControl breakpoint limit",
+                    "Maximum "
+                        + MaxBreakpoints
+                        + " cache breakpoints exceeded (found "
+                        + _breakpoints
+                        + "). This breakpoint will be ignored."
+                )
+            );
             return null;
         }
 
@@ -69,19 +82,29 @@ public sealed class AnthropicCacheControlValidator
     public static JsonObject? Read(JsonElement? providerMetadata, string providerOptionsName)
     {
         JsonElement? custom = null;
-        if (providerOptionsName != "anthropic" && providerMetadata != null && providerMetadata.Value.ValueKind == JsonValueKind.Object)
+        if (
+            providerOptionsName != "anthropic"
+            && providerMetadata != null
+            && providerMetadata.Value.ValueKind == JsonValueKind.Object
+        )
         {
             custom = AnthropicJson.Property(providerMetadata.Value, providerOptionsName);
         }
 
-        foreach (var namespaceOptions in new[] { custom, AnthropicJson.Anthropic(providerMetadata) })
+        foreach (
+            var namespaceOptions in new[] { custom, AnthropicJson.Anthropic(providerMetadata) }
+        )
         {
             if (namespaceOptions == null)
             {
                 continue;
             }
 
-            var value = AnthropicJson.Property(namespaceOptions.Value, "cacheControl", "cache_control");
+            var value = AnthropicJson.Property(
+                namespaceOptions.Value,
+                "cacheControl",
+                "cache_control"
+            );
             if (value != null && value.Value.ValueKind == JsonValueKind.Object)
             {
                 return JsonNode.Parse(value.Value.GetRawText()) as JsonObject;

@@ -14,15 +14,19 @@ if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("XAI_API_KEY")))
 var xai = XaiProvider.Create();
 
 #region generate-video-xai-cost
-var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
-{
-    Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
-    Prompt = new VideoPrompt("A cat sitting on a windowsill watching rain."),
-    Duration = 5,
-    ProviderOptions = OperationJson.Parse("""
-        { "xai": { "pollTimeoutMs": 600000 } }
-        """),
-});
+var result = await GenerateVideo.GenerateVideoAsync(
+    new GenerateVideoRequest
+    {
+        Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
+        Prompt = new VideoPrompt("A cat sitting on a windowsill watching rain."),
+        Duration = 5,
+        ProviderOptions = OperationJson.Parse(
+            """
+            { "xai": { "pollTimeoutMs": 600000 } }
+            """
+        ),
+    }
+);
 #endregion
 
 await File.WriteAllBytesAsync("video.mp4", result.Video.Data);

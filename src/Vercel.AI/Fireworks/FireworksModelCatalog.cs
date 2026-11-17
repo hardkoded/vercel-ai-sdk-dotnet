@@ -10,16 +10,26 @@ namespace Vercel.AI.Fireworks;
 internal static class FireworksModelCatalog
 {
     // Model families that always reason and reject reasoning effort 'none'.
-    private static readonly Regex ModelsWithoutNoneReasoningEffort = new Regex("^(?:gpt-oss|glm-5p3|muse-spark)", RegexOptions.None, TimeSpan.FromSeconds(1));
+    private static readonly Regex ModelsWithoutNoneReasoningEffort = new Regex(
+        "^(?:gpt-oss|glm-5p3|muse-spark)",
+        RegexOptions.None,
+        TimeSpan.FromSeconds(1)
+    );
 
     // Model families that reject reasoning effort 'minimal'.
-    private static readonly Regex ModelsWithoutMinimalReasoningEffort = new Regex("^(?:nemotron|inkling)", RegexOptions.None, TimeSpan.FromSeconds(1));
+    private static readonly Regex ModelsWithoutMinimalReasoningEffort = new Regex(
+        "^(?:nemotron|inkling)",
+        RegexOptions.None,
+        TimeSpan.FromSeconds(1)
+    );
 
     /// <summary>
     /// Fireworks accepts every reasoning effort for most models, so reasoning values are sent directly,
     /// except to model families known to reject them. Maps to <c>getFireworksReasoningEffortMap</c>.
     /// </summary>
-    internal static IReadOnlyDictionary<string, string> GetFireworksReasoningEffortMap(string modelId)
+    internal static IReadOnlyDictionary<string, string> GetFireworksReasoningEffortMap(
+        string modelId
+    )
     {
         var modelName = modelId.Substring(modelId.LastIndexOf('/') + 1);
         var map = new Dictionary<string, string>();

@@ -26,10 +26,20 @@ public sealed class CapabilitiesTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    [UpstreamTest("packages/google/src/google-image-model.test.ts::GoogleImageModel > capabilities::advertises file=$supportsFileInputs and mask=$supportsMaskInputs for $modelId", Coverage = UpstreamCoverage.Covered)]
-    public void Advertises_file_and_mask_support(string modelId, bool? supportsFileInputs, bool? supportsMaskInputs)
+    [UpstreamTest(
+        "packages/google/src/google-image-model.test.ts::GoogleImageModel > capabilities::advertises file=$supportsFileInputs and mask=$supportsMaskInputs for $modelId",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Advertises_file_and_mask_support(
+        string modelId,
+        bool? supportsFileInputs,
+        bool? supportsMaskInputs
+    )
     {
-        var capabilityModel = new Vercel.AI.Google.GoogleImageModel(GoogleImageModelTestSupport.CreateProvider(new RecordingHandler()), modelId);
+        var capabilityModel = new Vercel.AI.Google.GoogleImageModel(
+            GoogleImageModelTestSupport.CreateProvider(new RecordingHandler()),
+            modelId
+        );
 
         Assert.Equal(supportsFileInputs, capabilityModel.SupportsFileInputs);
         Assert.Equal(supportsMaskInputs, capabilityModel.SupportsMaskInputs);

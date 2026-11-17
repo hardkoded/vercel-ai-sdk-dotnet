@@ -59,7 +59,8 @@ public static class ExponentialBackoff
         Func<Task<T>> action,
         Func<Exception, Task<bool>> shouldRetry,
         RetryOptions? options = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         if (action is null)
         {
@@ -72,7 +73,14 @@ public static class ExponentialBackoff
         }
 
         options = options ?? new RetryOptions();
-        return RetryCoreAsync(action, shouldRetry, options, options.InitialDelayInMs, new List<Exception>(), cancellationToken);
+        return RetryCoreAsync(
+            action,
+            shouldRetry,
+            options,
+            options.InitialDelayInMs,
+            new List<Exception>(),
+            cancellationToken
+        );
     }
 
     private static async Task<T> RetryCoreAsync<T>(
@@ -81,7 +89,8 @@ public static class ExponentialBackoff
         RetryOptions options,
         int delayInMs,
         List<Exception> errors,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         try
         {
@@ -105,17 +114,33 @@ public static class ExponentialBackoff
             if (tryNumber > options.MaxRetries)
             {
                 throw new RetryException(
-                    "Failed after " + tryNumber.ToString(System.Globalization.CultureInfo.InvariantCulture) + " attempts. Last error: " + message,
+                    "Failed after "
+                        + tryNumber.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                        + " attempts. Last error: "
+                        + message,
                     RetryErrorReason.MaxRetriesExceeded,
-                    errors);
+                    errors
+                );
             }
 
             if (await shouldRetry(error).ConfigureAwait(false))
             {
-                var delay = options.GetDelayInMs != null ? options.GetDelayInMs(error, delayInMs) : delayInMs;
+                var delay =
+                    options.GetDelayInMs != null
+                        ? options.GetDelayInMs(error, delayInMs)
+                        : delayInMs;
                 await Delay.WaitAsync(delay, cancellationToken).ConfigureAwait(false);
-                var nextDelay = (int)Math.Round(options.BackoffFactor * delayInMs, MidpointRounding.AwayFromZero);
-                return await RetryCoreAsync(action, shouldRetry, options, nextDelay, errors, cancellationToken).ConfigureAwait(false);
+                var nextDelay = (int)
+                    Math.Round(options.BackoffFactor * delayInMs, MidpointRounding.AwayFromZero);
+                return await RetryCoreAsync(
+                        action,
+                        shouldRetry,
+                        options,
+                        nextDelay,
+                        errors,
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
             }
 
             if (tryNumber == 1)
@@ -124,9 +149,14 @@ public static class ExponentialBackoff
             }
 
             throw new RetryException(
-                "Failed after " + tryNumber.ToString(System.Globalization.CultureInfo.InvariantCulture) + " attempts with non-retryable error: '" + message + "'",
+                "Failed after "
+                    + tryNumber.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    + " attempts with non-retryable error: '"
+                    + message
+                    + "'",
                 RetryErrorReason.ErrorNotRetryable,
-                errors);
+                errors
+            );
         }
     }
 }

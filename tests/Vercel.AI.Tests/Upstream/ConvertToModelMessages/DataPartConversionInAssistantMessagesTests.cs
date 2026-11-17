@@ -12,9 +12,14 @@ namespace Vercel.AI.Tests.ConvertToModelMessages;
 [Collection("LogWarnings")]
 public sealed class DataPartConversionInAssistantMessagesTests : WarningsOff
 {
-    private const string Suite = Prefix + "convertToModelMessages > data part conversion > in assistant messages::";
+    private const string Suite =
+        Prefix + "convertToModelMessages > data part conversion > in assistant messages::";
 
-    [UpstreamTest(Suite + "should not emit empty assistant message for persistent data written before model stream starts", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Suite
+            + "should not emit empty assistant message for persistent data written before model stream starts",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public async Task Should_not_emit_empty_assistant_message_for_persistent_data_written_before_model_stream_starts()
     {
@@ -30,7 +35,8 @@ public sealed class DataPartConversionInAssistantMessagesTests : WarningsOff
               { "type": "finish-step" },
               { "type": "finish" }
             ]
-            """);
+            """
+        );
 
         // "metadata" and "providerMetadata" are undefined upstream, so they are absent from the JSON form.
         Assert.True(
@@ -46,9 +52,12 @@ public sealed class DataPartConversionInAssistantMessagesTests : WarningsOff
                       ],
                       "role": "assistant"
                     }
-                    """),
-                recordedMessage),
-            recordedMessage.ToJsonString());
+                    """
+                ),
+                recordedMessage
+            ),
+            recordedMessage.ToJsonString()
+        );
 
         var result = Convert(new[] { UIMessageJson.FromJson(recordedMessage) });
 
@@ -58,6 +67,7 @@ public sealed class DataPartConversionInAssistantMessagesTests : WarningsOff
               { "content": [ { "text": "It is sunny.", "type": "text" } ], "role": "assistant" }
             ]
             """,
-            result);
+            result
+        );
     }
 }

@@ -8,7 +8,14 @@ namespace Vercel.AI.Prompt;
 public sealed class ProviderStreamError
 {
     /// <summary>Creates a provider stream error.</summary>
-    public ProviderStreamError(string message, object? data, string? type = null, object? code = null, int? statusCode = null, bool? isRetryable = null)
+    public ProviderStreamError(
+        string message,
+        object? data,
+        string? type = null,
+        object? code = null,
+        int? statusCode = null,
+        bool? isRetryable = null
+    )
     {
         Message = message ?? string.Empty;
         Data = data;
@@ -41,7 +48,14 @@ public sealed class ProviderStreamError
 public sealed class StreamProviderError : Exception
 {
     /// <summary>Creates the error.</summary>
-    public StreamProviderError(string message, string? type, object? code, int? statusCode, bool isRetryable, object? data)
+    public StreamProviderError(
+        string message,
+        string? type,
+        object? code,
+        int? statusCode,
+        bool isRetryable,
+        object? data
+    )
         : base(message)
     {
         Type = type;
@@ -100,7 +114,15 @@ public static class StreamErrors
 
         if (error is ProviderStreamError provider)
         {
-            return Build(provider.Message, provider.Type, provider.Code, provider.StatusCode, provider.IsRetryable, provider.Data, provider);
+            return Build(
+                provider.Message,
+                provider.Type,
+                provider.Code,
+                provider.StatusCode,
+                provider.IsRetryable,
+                provider.Data,
+                provider
+            );
         }
 
         if (error is not IReadOnlyDictionary<string, object?> outer)
@@ -114,14 +136,28 @@ public static class StreamErrors
             return error;
         }
 
-        var type = TryString(details, "type", out var detailType) ? detailType : TryString(outer, "type", out var outerType) ? outerType : null;
+        var type =
+            TryString(details, "type", out var detailType) ? detailType
+            : TryString(outer, "type", out var outerType) ? outerType
+            : null;
         var code = FirstCode(details, outer);
         var status = FirstStatus(details, outer);
-        var retry = FirstBool(details, "isRetryable") ?? FirstBool(outer, "isRetryable") ?? FirstBool(details, "is_retryable") ?? FirstBool(outer, "is_retryable");
+        var retry = FirstBool(details, "isRetryable")
+            ?? FirstBool(outer, "isRetryable")
+            ?? FirstBool(details, "is_retryable")
+            ?? FirstBool(outer, "is_retryable");
         return Build(message, type, code, status, retry, error, outer);
     }
 
-    private static StreamProviderError Build(string message, string? type, object? code, int? explicitStatus, bool? explicitRetry, object? data, object source)
+    private static StreamProviderError Build(
+        string message,
+        string? type,
+        object? code,
+        int? explicitStatus,
+        bool? explicitRetry,
+        object? data,
+        object source
+    )
     {
         var status = explicitStatus ?? StatusFromCode(code) ?? MessageStatus(message);
         var retry = explicitRetry ?? MessageRetry(message) ?? IsRetryableStatus(status);
@@ -132,7 +168,8 @@ public static class StreamErrors
     {
         return message.Trim().ToLowerInvariant() switch
         {
-            "overloaded" or "overloaded error" or "model overloaded" or "service unavailable" => 503,
+            "overloaded" or "overloaded error" or "model overloaded" or "service unavailable" =>
+                503,
             "internal server error" => 500,
             _ => null,
         };
@@ -153,7 +190,10 @@ public static class StreamErrors
         return HttpStatus(code);
     }
 
-    private static int? FirstStatus(IReadOnlyDictionary<string, object?> details, IReadOnlyDictionary<string, object?> outer)
+    private static int? FirstStatus(
+        IReadOnlyDictionary<string, object?> details,
+        IReadOnlyDictionary<string, object?> outer
+    )
     {
         return HttpStatus(Get(details, "statusCode"))
             ?? HttpStatus(Get(outer, "statusCode"))
@@ -165,7 +205,10 @@ public static class StreamErrors
             ?? HttpStatus(Get(outer, "code"));
     }
 
-    private static object? FirstCode(IReadOnlyDictionary<string, object?> details, IReadOnlyDictionary<string, object?> outer)
+    private static object? FirstCode(
+        IReadOnlyDictionary<string, object?> details,
+        IReadOnlyDictionary<string, object?> outer
+    )
     {
         var code = Get(details, "code") ?? Get(outer, "code");
         return code is string or int or long ? code : null;
@@ -179,7 +222,12 @@ public static class StreamErrors
 
     private static int? HttpStatus(object? value)
     {
-        if (value is string text && text.Length == 3 && int.TryParse(text, out var parsed) && parsed is >= 400 and <= 599)
+        if (
+            value is string text
+            && text.Length == 3
+            && int.TryParse(text, out var parsed)
+            && parsed is >= 400 and <= 599
+        )
         {
             return parsed;
         }
@@ -197,7 +245,11 @@ public static class StreamErrors
         return null;
     }
 
-    private static bool TryString(IReadOnlyDictionary<string, object?> source, string name, out string value)
+    private static bool TryString(
+        IReadOnlyDictionary<string, object?> source,
+        string name,
+        out string value
+    )
     {
         if (Get(source, name) is string text)
         {
@@ -209,12 +261,18 @@ public static class StreamErrors
         return false;
     }
 
-    private static IReadOnlyDictionary<string, object?>? Nested(IReadOnlyDictionary<string, object?> source, params string[] path)
+    private static IReadOnlyDictionary<string, object?>? Nested(
+        IReadOnlyDictionary<string, object?> source,
+        params string[] path
+    )
     {
         object? current = source;
         foreach (var name in path)
         {
-            if (current is not IReadOnlyDictionary<string, object?> map || !map.TryGetValue(name, out current))
+            if (
+                current is not IReadOnlyDictionary<string, object?> map
+                || !map.TryGetValue(name, out current)
+            )
             {
                 return null;
             }

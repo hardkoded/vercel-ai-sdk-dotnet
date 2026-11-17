@@ -8,7 +8,10 @@ namespace Vercel.AI.Tests;
 
 public sealed class HeaderTests
 {
-    [UpstreamTest("packages/ai/src/util/prepare-headers.test.ts::prepareHeaders::should set Content-Type header if not present", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/prepare-headers.test.ts::prepareHeaders::should set Content-Type header if not present",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Sets_content_type_when_missing()
     {
@@ -16,7 +19,10 @@ public sealed class HeaderTests
         Assert.Equal("application/json", headers.Get("Content-Type")!);
     }
 
-    [UpstreamTest("packages/ai/src/util/prepare-headers.test.ts::prepareHeaders::should not overwrite existing Content-Type header", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/prepare-headers.test.ts::prepareHeaders::should not overwrite existing Content-Type header",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Keeps_an_existing_content_type()
     {
@@ -26,7 +32,10 @@ public sealed class HeaderTests
         Assert.Equal("text/html", headers.Get("Content-Type")!);
     }
 
-    [UpstreamTest("packages/ai/src/util/prepare-headers.test.ts::prepareHeaders::should handle undefined init", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/prepare-headers.test.ts::prepareHeaders::should handle undefined init",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Accepts_null_init()
     {
@@ -34,7 +43,10 @@ public sealed class HeaderTests
         Assert.Equal("application/json", headers.Get("Content-Type")!);
     }
 
-    [UpstreamTest("packages/ai/src/util/prepare-headers.test.ts::prepareHeaders::should handle init headers as Headers object", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/prepare-headers.test.ts::prepareHeaders::should handle init headers as Headers object",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Copies_a_header_collection()
     {
@@ -45,7 +57,10 @@ public sealed class HeaderTests
         Assert.Equal("application/json", headers.Get("Content-Type")!);
     }
 
-    [UpstreamTest("packages/ai/src/util/prepare-headers.test.ts::prepareHeaders::should handle Response object headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/util/prepare-headers.test.ts::prepareHeaders::should handle Response object headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Copies_response_headers()
     {

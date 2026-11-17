@@ -48,26 +48,56 @@ public sealed class PerplexityEmbeddingModel : IEmbeddingModel, IEmbeddingCaller
     public bool SupportsParallelCalls => true;
 
     /// <inheritdoc />
-    public Task<JsonElement?> TransformProviderOptionsAsync(JsonElement? providerOptions, IReadOnlyList<string> values, int startIndex, int endIndex, CancellationToken cancellationToken)
+    public Task<JsonElement?> TransformProviderOptionsAsync(
+        JsonElement? providerOptions,
+        IReadOnlyList<string> values,
+        int startIndex,
+        int endIndex,
+        CancellationToken cancellationToken
+    )
     {
         return Task.FromResult<JsonElement?>(null);
     }
 
     /// <inheritdoc />
-    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null, IReadOnlyDictionary<string, string?>? headers = null)
+    public async Task<EmbeddingResult> DoEmbedAsync(
+        IReadOnlyList<string> values,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        CancellationToken cancellationToken,
+        int? dimensions = null,
+        IReadOnlyDictionary<string, string?>? headers = null
+    )
     {
-        var response = await DoEmbedAsync(new EmbeddingModelCall(values, ProviderExchange.ToRequestHeaders(headers) ?? new Dictionary<string, string>(), providerOptions == null ? null : JsonSerializer.SerializeToElement(providerOptions), cancellationToken, dimensions), cancellationToken).ConfigureAwait(false);
+        var response = await DoEmbedAsync(
+                new EmbeddingModelCall(
+                    values,
+                    ProviderExchange.ToRequestHeaders(headers) ?? new Dictionary<string, string>(),
+                    providerOptions == null
+                        ? null
+                        : JsonSerializer.SerializeToElement(providerOptions),
+                    cancellationToken,
+                    dimensions
+                ),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var vectors = new List<float[]>();
         foreach (var embedding in response.Embeddings)
         {
             vectors.Add(Array.ConvertAll(embedding, value => (float)value));
         }
 
-        return new EmbeddingResult(vectors, double.IsNaN(response.Tokens) ? null : (int)response.Tokens);
+        return new EmbeddingResult(
+            vectors,
+            double.IsNaN(response.Tokens) ? null : (int)response.Tokens
+        );
     }
 
     /// <inheritdoc />
-    public async Task<EmbeddingModelResponse> DoEmbedAsync(EmbeddingModelCall call, CancellationToken cancellationToken)
+    public async Task<EmbeddingModelResponse> DoEmbedAsync(
+        EmbeddingModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (call is null)
         {
@@ -77,15 +107,24 @@ public sealed class PerplexityEmbeddingModel : IEmbeddingModel, IEmbeddingCaller
         if (call.Values.Count > MaxValuesPerCall)
         {
             throw new AiSdkException(
-                "Too many values for a single embedding call. The " + Provider + " model \"" + ModelId + "\" can only embed up to "
-                + MaxValuesPerCall.ToString(CultureInfo.InvariantCulture) + " values per call, but "
-                + call.Values.Count.ToString(CultureInfo.InvariantCulture) + " values were provided.");
+                "Too many values for a single embedding call. The "
+                    + Provider
+                    + " model \""
+                    + ModelId
+                    + "\" can only embed up to "
+                    + MaxValuesPerCall.ToString(CultureInfo.InvariantCulture)
+                    + " values per call, but "
+                    + call.Values.Count.ToString(CultureInfo.InvariantCulture)
+                    + " values were provided."
+            );
         }
 
         JsonElement? perplexity = null;
-        if (call.ProviderOptions is { ValueKind: JsonValueKind.Object } options
+        if (
+            call.ProviderOptions is { ValueKind: JsonValueKind.Object } options
             && options.TryGetProperty(PerplexityProvider.ProviderId, out var entry)
-            && entry.ValueKind == JsonValueKind.Object)
+            && entry.ValueKind == JsonValueKind.Object
+        )
         {
             perplexity = entry;
         }
@@ -114,17 +153,22 @@ public sealed class PerplexityEmbeddingModel : IEmbeddingModel, IEmbeddingCaller
             headers[pair.Key] = pair.Value;
         }
 
-        var response = await _provider.PostJsonAsync(
-            ApiKeys.Combine(_provider.Options.BaseUrl, "v1/embeddings"),
-            body.ToJsonString(),
-            _provider.CreateHeaders(headers),
-            cancellationToken).ConfigureAwait(false);
+        var response = await _provider
+            .PostJsonAsync(
+                ApiKeys.Combine(_provider.Options.BaseUrl, "v1/embeddings"),
+                body.ToJsonString(),
+                _provider.CreateHeaders(headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         using var document = JsonDocument.Parse(response.Body);
         var root = document.RootElement;
         var embeddings = new List<double[]>();
         foreach (var item in root.GetProperty("data").EnumerateArray())
         {
-            embeddings.Add(Decode(item.GetProperty("embedding").GetString() ?? string.Empty, encodingFormat));
+            embeddings.Add(
+                Decode(item.GetProperty("embedding").GetString() ?? string.Empty, encodingFormat)
+            );
         }
 
         double? tokens = null;
@@ -134,22 +178,29 @@ public sealed class PerplexityEmbeddingModel : IEmbeddingModel, IEmbeddingCaller
             tokens = usage.GetProperty("prompt_tokens").GetDouble();
             if (Option(usage, "cost") is { } cost)
             {
-                metadata = JsonValues.ParseOrEmpty(new JsonObject
-                {
-                    [PerplexityProvider.ProviderId] = new JsonObject
+                metadata = JsonValues.ParseOrEmpty(
+                    new JsonObject
                     {
-                        ["cost"] = new JsonObject
+                        [PerplexityProvider.ProviderId] = new JsonObject
                         {
-                            ["inputCost"] = Copy(cost, "input_cost"),
-                            ["totalCost"] = Copy(cost, "total_cost"),
-                            ["currency"] = Copy(cost, "currency"),
+                            ["cost"] = new JsonObject
+                            {
+                                ["inputCost"] = Copy(cost, "input_cost"),
+                                ["totalCost"] = Copy(cost, "total_cost"),
+                                ["currency"] = Copy(cost, "currency"),
+                            },
                         },
-                    },
-                }.ToJsonString());
+                    }.ToJsonString()
+                );
             }
         }
 
-        return new EmbeddingModelResponse(embeddings, tokens, providerMetadata: metadata, response: new ProviderResponse(response.Headers, root.Clone()));
+        return new EmbeddingModelResponse(
+            embeddings,
+            tokens,
+            providerMetadata: metadata,
+            response: new ProviderResponse(response.Headers, root.Clone())
+        );
     }
 
     private static double[] Decode(string base64, string encodingFormat)
@@ -166,7 +217,10 @@ public sealed class PerplexityEmbeddingModel : IEmbeddingModel, IEmbeddingCaller
 
     private static JsonElement? Option(JsonElement? element, string name)
     {
-        return element is { } value && value.TryGetProperty(name, out var property) && property.ValueKind != JsonValueKind.Null
+        return
+            element is { } value
+            && value.TryGetProperty(name, out var property)
+            && property.ValueKind != JsonValueKind.Null
             ? property
             : null;
     }

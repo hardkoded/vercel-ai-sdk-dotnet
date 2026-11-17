@@ -14,9 +14,14 @@ namespace Vercel.AI.Tests.Upstream.Anthropic.AnthropicBatch;
 internal static class AnthropicBatchTestSupport
 {
     internal const string BatchesUrl = "https://api.anthropic.com/v1/messages/batches";
-    internal const string ResultsUrl = "https://api.anthropic.com/v1/messages/batches/msgbatch_123/results";
+    internal const string ResultsUrl =
+        "https://api.anthropic.com/v1/messages/batches/msgbatch_123/results";
 
-    internal static IBatchApi CreateBatch(HttpMessageHandler handler, IReadOnlyDictionary<string, string>? headers = null, Func<string>? generateId = null)
+    internal static IBatchApi CreateBatch(
+        HttpMessageHandler handler,
+        IReadOnlyDictionary<string, string>? headers = null,
+        Func<string>? generateId = null
+    )
     {
         var options = new AnthropicOptions { ApiKey = "test-api-key", GenerateId = generateId };
         foreach (var header in headers ?? new Dictionary<string, string>())
@@ -33,11 +38,36 @@ internal static class AnthropicBatchTestSupport
         return document.RootElement.Clone();
     }
 
-    internal static JsonArray Messages(string prompt) => new(new JsonObject { ["role"] = "user", ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = prompt }) });
+    internal static JsonArray Messages(string prompt) =>
+        new(
+            new JsonObject
+            {
+                ["role"] = "user",
+                ["content"] = new JsonArray(
+                    new JsonObject { ["type"] = "text", ["text"] = prompt }
+                ),
+            }
+        );
 
-    internal static NormalizedBatchRequest TextRequest(string id, string prompt, JsonObject? extra = null, string modelId = "claude-3-haiku-20240307")
+    internal static NormalizedBatchRequest TextRequest(
+        string id,
+        string prompt,
+        JsonObject? extra = null,
+        string modelId = "claude-3-haiku-20240307"
+    )
     {
-        var options = new JsonObject { ["prompt"] = new JsonArray(new JsonObject { ["role"] = "user", ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = prompt }) }) };
+        var options = new JsonObject
+        {
+            ["prompt"] = new JsonArray(
+                new JsonObject
+                {
+                    ["role"] = "user",
+                    ["content"] = new JsonArray(
+                        new JsonObject { ["type"] = "text", ["text"] = prompt }
+                    ),
+                }
+            ),
+        };
         foreach (var pair in extra ?? new JsonObject())
         {
             options[pair.Key] = pair.Value?.DeepClone();
@@ -46,16 +76,44 @@ internal static class AnthropicBatchTestSupport
         return new NormalizedBatchRequest(id, "text", modelId, Json(options.ToJsonString()));
     }
 
-    internal static BatchOperationCall StartCall(NormalizedBatchRequest request) => StartCall([request]);
+    internal static BatchOperationCall StartCall(NormalizedBatchRequest request) =>
+        StartCall([request]);
 
-    internal static BatchOperationCall StartCall(IReadOnlyList<NormalizedBatchRequest> requests, JsonObject? providerOptions = null, IReadOnlyDictionary<string, string>? headers = null, string? webhookUrl = null) =>
-        new(null, providerOptions == null ? null : Json(providerOptions.ToJsonString()), headers ?? new Dictionary<string, string>(), CancellationToken.None, webhookUrl: webhookUrl, requests: requests);
+    internal static BatchOperationCall StartCall(
+        IReadOnlyList<NormalizedBatchRequest> requests,
+        JsonObject? providerOptions = null,
+        IReadOnlyDictionary<string, string>? headers = null,
+        string? webhookUrl = null
+    ) =>
+        new(
+            null,
+            providerOptions == null ? null : Json(providerOptions.ToJsonString()),
+            headers ?? new Dictionary<string, string>(),
+            CancellationToken.None,
+            webhookUrl: webhookUrl,
+            requests: requests
+        );
 
-    internal static BatchOperationCall OperationCall(IReadOnlyDictionary<string, string>? headers = null, CancellationToken cancellationToken = default) =>
-        new("msgbatch_123", null, headers ?? new Dictionary<string, string>(), cancellationToken);
+    internal static BatchOperationCall OperationCall(
+        IReadOnlyDictionary<string, string>? headers = null,
+        CancellationToken cancellationToken = default
+    ) => new("msgbatch_123", null, headers ?? new Dictionary<string, string>(), cancellationToken);
 
-    internal static JsonObject Counts(int processing, int succeeded, int errored, int canceled, int expired) =>
-        new() { ["processing"] = processing, ["succeeded"] = succeeded, ["errored"] = errored, ["canceled"] = canceled, ["expired"] = expired };
+    internal static JsonObject Counts(
+        int processing,
+        int succeeded,
+        int errored,
+        int canceled,
+        int expired
+    ) =>
+        new()
+        {
+            ["processing"] = processing,
+            ["succeeded"] = succeeded,
+            ["errored"] = errored,
+            ["canceled"] = canceled,
+            ["expired"] = expired,
+        };
 
     internal static JsonObject BatchResponse(params (string Key, object? Value)[] overrides)
     {
@@ -80,20 +138,31 @@ internal static class AnthropicBatchTestSupport
         return batch;
     }
 
-    internal static JsonObject MessageResultBody(string text) => new()
-    {
-        ["id"] = "msg_123",
-        ["type"] = "message",
-        ["role"] = "assistant",
-        ["model"] = "claude-3-haiku-20240307",
-        ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = text }),
-        ["stop_reason"] = "end_turn",
-        ["stop_sequence"] = null,
-        ["usage"] = new JsonObject { ["input_tokens"] = 10, ["output_tokens"] = 3, ["cache_creation_input_tokens"] = 1, ["cache_read_input_tokens"] = 2 },
-    };
+    internal static JsonObject MessageResultBody(string text) =>
+        new()
+        {
+            ["id"] = "msg_123",
+            ["type"] = "message",
+            ["role"] = "assistant",
+            ["model"] = "claude-3-haiku-20240307",
+            ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = text }),
+            ["stop_reason"] = "end_turn",
+            ["stop_sequence"] = null,
+            ["usage"] = new JsonObject
+            {
+                ["input_tokens"] = 10,
+                ["output_tokens"] = 3,
+                ["cache_creation_input_tokens"] = 1,
+                ["cache_read_input_tokens"] = 2,
+            },
+        };
 
     /// <summary>The message body with <paramref name="content"/> and any other fields replaced.</summary>
-    internal static JsonObject MessageWith(string text, JsonArray content, params (string Key, JsonNode? Value)[] overrides)
+    internal static JsonObject MessageWith(
+        string text,
+        JsonArray content,
+        params (string Key, JsonNode? Value)[] overrides
+    )
     {
         var message = MessageResultBody(text);
         message["content"] = content;
@@ -106,12 +175,20 @@ internal static class AnthropicBatchTestSupport
     }
 
     internal static string SucceededLine(string customId, JsonObject message) =>
-        new JsonObject { ["custom_id"] = customId, ["result"] = new JsonObject { ["type"] = "succeeded", ["message"] = message } }.ToJsonString();
+        new JsonObject
+        {
+            ["custom_id"] = customId,
+            ["result"] = new JsonObject { ["type"] = "succeeded", ["message"] = message },
+        }.ToJsonString();
 
-    internal static async Task<List<BatchItem>> GetResultsAsync(RecordingHandler handler, params string[] lines)
+    internal static async Task<List<BatchItem>> GetResultsAsync(
+        RecordingHandler handler,
+        params string[] lines
+    )
     {
         handler.Respond(BatchResponse()).RespondChunks(ResultsUrl, lines);
-        var stream = await CreateBatch(handler).DoGetResultsAsync(OperationCall(), CancellationToken.None);
+        var stream = await CreateBatch(handler)
+            .DoGetResultsAsync(OperationCall(), CancellationToken.None);
         return await stream.ToListAsync().AsTask();
     }
 
@@ -124,7 +201,13 @@ internal static class AnthropicBatchTestSupport
     internal static void AssertJson(string expected, JsonElement? actual)
     {
         Assert.True(actual.HasValue, "Expected JSON, got none.");
-        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expected), JsonNode.Parse(actual!.Value.GetRawText())), "Expected " + expected + " but was " + actual!.Value.GetRawText());
+        Assert.True(
+            JsonNode.DeepEquals(
+                JsonNode.Parse(expected),
+                JsonNode.Parse(actual!.Value.GetRawText())
+            ),
+            "Expected " + expected + " but was " + actual!.Value.GetRawText()
+        );
     }
 
     /// <summary>The item is invalid, as <c>invalidAnthropicBatchResult</c> reports it.</summary>
@@ -137,7 +220,14 @@ internal static class AnthropicBatchTestSupport
     }
 }
 
-internal sealed record RecordedRequest(string Method, string Url, string Body, Dictionary<string, string> Headers, bool TokenCancelledByCaller, bool TokenCanBeCanceled);
+internal sealed record RecordedRequest(
+    string Method,
+    string Url,
+    string Body,
+    Dictionary<string, string> Headers,
+    bool TokenCancelledByCaller,
+    bool TokenCanBeCanceled
+);
 
 internal sealed class RecordingHandler : HttpMessageHandler
 {
@@ -168,29 +258,64 @@ internal sealed class RecordingHandler : HttpMessageHandler
         return this;
     }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
-        var body = request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
-        var headers = request.Headers.ToDictionary(header => header.Key, header => string.Join(",", header.Value), StringComparer.OrdinalIgnoreCase);
+        var body =
+            request.Content == null
+                ? string.Empty
+                : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+        var headers = request.Headers.ToDictionary(
+            header => header.Key,
+            header => string.Join(",", header.Value),
+            StringComparer.OrdinalIgnoreCase
+        );
         OnSend?.Invoke();
-        Requests.Add(new RecordedRequest(request.Method.Method, request.RequestUri!.AbsoluteUri, body, headers, cancellationToken.IsCancellationRequested, cancellationToken.CanBeCanceled));
+        Requests.Add(
+            new RecordedRequest(
+                request.Method.Method,
+                request.RequestUri!.AbsoluteUri,
+                body,
+                headers,
+                cancellationToken.IsCancellationRequested,
+                cancellationToken.CanBeCanceled
+            )
+        );
         if (_chunks.TryGetValue(request.RequestUri.AbsoluteUri, out var chunks))
         {
             var content = new StreamContent(new ChunkedStream(chunks));
-            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/jsonl");
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+                "application/jsonl"
+            );
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = content };
         }
 
-        return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(_routes.TryGetValue(request.RequestUri.AbsoluteUri, out var routed) ? routed : _response, Encoding.UTF8, "application/json") };
+        return new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                _routes.TryGetValue(request.RequestUri.AbsoluteUri, out var routed)
+                    ? routed
+                    : _response,
+                Encoding.UTF8,
+                "application/json"
+            ),
+        };
     }
 }
 
 internal sealed class CountingHandler(Action onCall) : HttpMessageHandler
 {
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         onCall();
-        return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError));
+        return Task.FromResult(
+            new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError)
+        );
     }
 }
 
@@ -207,7 +332,11 @@ internal sealed class ChunkedStream(string[] chunks) : Stream
 
     public override long Length => throw new NotSupportedException();
 
-    public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+    public override long Position
+    {
+        get => throw new NotSupportedException();
+        set => throw new NotSupportedException();
+    }
 
     public override int Read(byte[] buffer, int offset, int count)
     {
@@ -221,13 +350,12 @@ internal sealed class ChunkedStream(string[] chunks) : Stream
         return bytes.Length;
     }
 
-    public override void Flush()
-    {
-    }
+    public override void Flush() { }
 
     public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 
     public override void SetLength(long value) => throw new NotSupportedException();
 
-    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    public override void Write(byte[] buffer, int offset, int count) =>
+        throw new NotSupportedException();
 }

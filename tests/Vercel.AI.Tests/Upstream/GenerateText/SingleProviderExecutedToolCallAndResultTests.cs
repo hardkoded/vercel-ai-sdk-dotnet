@@ -15,7 +15,10 @@ namespace Vercel.AI.Tests.Upstream.GenerateText;
 public sealed class SingleProviderExecutedToolCallAndResultTests
 {
     [Fact]
-    [UpstreamTest("packages/ai/src/generate-text/stream-text.test.ts::streamText > provider-executed tools > single provider-executed tool call and result::should only execute a single step", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/stream-text.test.ts::streamText > provider-executed tools > single provider-executed tool call and result::should only execute a single step",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_only_execute_a_single_step()
     {
         var result = Run();
@@ -25,26 +28,43 @@ public sealed class SingleProviderExecutedToolCallAndResultTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/generate-text/stream-text.test.ts::streamText > provider-executed tools > single provider-executed tool call and result::should include provider-executed tool call and result content",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_include_provider_executed_tool_call_and_result_content()
     {
         var result = Run();
         var step = Assert.Single(await result.Steps);
-        Assert.Equal(new[] { "tool-call", "tool-result", "tool-call", "tool-result" }, step.Content.Select(part => part.Type).ToArray());
+        Assert.Equal(
+            new[] { "tool-call", "tool-result", "tool-call", "tool-result" },
+            step.Content.Select(part => part.Type).ToArray()
+        );
         Assert.True(Assert.IsType<GeneratedToolCall>(step.Content[0]).ProviderExecuted);
         var result1 = Assert.IsType<GeneratedToolResult>(step.Content[1]);
         Assert.False(result1.IsError);
-        Assert.Equal("result-1", result1.ProviderMetadata!.Value.GetProperty("provider").GetProperty("itemId").GetString());
+        Assert.Equal(
+            "result-1",
+            result1
+                .ProviderMetadata!.Value.GetProperty("provider")
+                .GetProperty("itemId")
+                .GetString()
+        );
         Assert.True(Assert.IsType<GeneratedToolCall>(step.Content[2]).ProviderExecuted);
         var result2 = Assert.IsType<GeneratedToolResult>(step.Content[3]);
         Assert.True(result2.IsError);
-        Assert.Equal("error-1", result2.ProviderMetadata!.Value.GetProperty("provider").GetProperty("itemId").GetString());
+        Assert.Equal(
+            "error-1",
+            result2
+                .ProviderMetadata!.Value.GetProperty("provider")
+                .GetProperty("itemId")
+                .GetString()
+        );
     }
 
     [Fact]
     [UpstreamTest(
         "packages/ai/src/generate-text/stream-text.test.ts::streamText > provider-executed tools > single provider-executed tool call and result::should include provider-executed tool call and result in the full stream",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_include_provider_executed_tool_call_and_result_in_the_full_stream()
     {
         var result = Run();
@@ -55,8 +75,22 @@ public sealed class SingleProviderExecutedToolCallAndResultTests
         }
 
         Assert.Equal(
-            new[] { "start", "start-step", "tool-input-start", "tool-input-delta", "tool-input-end", "tool-call", "tool-result", "tool-call", "tool-error", "finish-step", "finish" },
-            parts.Select(part => part.Type).ToArray());
+            new[]
+            {
+                "start",
+                "start-step",
+                "tool-input-start",
+                "tool-input-delta",
+                "tool-input-end",
+                "tool-call",
+                "tool-result",
+                "tool-call",
+                "tool-error",
+                "finish-step",
+                "finish",
+            },
+            parts.Select(part => part.Type).ToArray()
+        );
         var startStep = Assert.IsType<StartStepPart>(parts[1]);
         Assert.Null(startStep.Request.Body);
         Assert.Null(startStep.Request.Messages);
@@ -75,15 +109,30 @@ public sealed class SingleProviderExecutedToolCallAndResultTests
         Assert.Equal("call-1", toolResult.ToolCallId);
         Assert.True(toolResult.ProviderExecuted);
         Assert.Equal("{ \"value\": \"value\" }", toolResult.InputJson);
-        Assert.Equal("{ \"value\": \"result1\" }", JsonDocument.Parse(toolResult.OutputJson).RootElement.GetString());
-        Assert.Equal("result-1", toolResult.ProviderMetadata!.Value.GetProperty("provider").GetProperty("itemId").GetString());
+        Assert.Equal(
+            "{ \"value\": \"result1\" }",
+            JsonDocument.Parse(toolResult.OutputJson).RootElement.GetString()
+        );
+        Assert.Equal(
+            "result-1",
+            toolResult
+                .ProviderMetadata!.Value.GetProperty("provider")
+                .GetProperty("itemId")
+                .GetString()
+        );
         Assert.Equal("call-2", Assert.IsType<ToolCallPart>(parts[7]).ToolCall.ToolCallId);
         var toolError = Assert.IsType<ToolErrorPart>(parts[8]).Result;
         Assert.Equal("call-2", toolError.ToolCallId);
         Assert.True(toolError.ProviderExecuted);
         Assert.Equal("{ \"value\": \"value\" }", toolError.InputJson);
         Assert.Equal("ERROR", JsonDocument.Parse(toolError.OutputJson).RootElement.GetString());
-        Assert.Equal("error-1", toolError.ProviderMetadata!.Value.GetProperty("provider").GetProperty("itemId").GetString());
+        Assert.Equal(
+            "error-1",
+            toolError
+                .ProviderMetadata!.Value.GetProperty("provider")
+                .GetProperty("itemId")
+                .GetString()
+        );
         var finishStep = Assert.IsType<StepFinishPart>(parts[9]);
         Assert.Equal(FinishReason.Stop, finishStep.Step.FinishReason);
         Assert.Equal(13, finishStep.Step.Usage.TotalTokens);
@@ -111,7 +160,10 @@ public sealed class SingleProviderExecutedToolCallAndResultTests
         Assert.Equal(0, performance.ResponseTimeMs);
         Assert.Equal(0, performance.StepTimeMs);
         var gaps = performance.TimeBetweenOutputChunksMs!;
-        Assert.Equal(new double[] { 0, 0, 0, 0, 0, 0 }, new[] { gaps.Avg, gaps.Max, gaps.Median, gaps.Min, gaps.P10, gaps.P90 });
+        Assert.Equal(
+            new double[] { 0, 0, 0, 0, 0, 0 },
+            new[] { gaps.Avg, gaps.Max, gaps.Median, gaps.Min, gaps.P10, gaps.P90 }
+        );
         Assert.Equal(0, performance.TimeToFirstOutputMs);
         Assert.Empty(performance.ToolExecutionMs);
         var finish = Assert.IsType<FinishPart>(parts[10]);
@@ -122,7 +174,8 @@ public sealed class SingleProviderExecutedToolCallAndResultTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/generate-text/stream-text.test.ts::streamText > provider-executed tools > single provider-executed tool call and result::should include provider-executed tool call and result in the ui message stream",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_include_provider_executed_tool_call_and_result_in_the_ui_message_stream()
     {
         var chunks = await ReadUiChunks(Run());
@@ -130,7 +183,8 @@ public sealed class SingleProviderExecutedToolCallAndResultTests
         // The .NET stream always sends a generated messageId on start.
         Assert.NotNull(chunks[0]!["messageId"]);
         chunks[0]!.AsObject().Remove("messageId");
-        var expected = JsonNode.Parse("""
+        var expected = JsonNode.Parse(
+            """
             [
               { "type": "start" },
               { "type": "start-step" },
@@ -155,16 +209,30 @@ public sealed class SingleProviderExecutedToolCallAndResultTests
               { "type": "finish-step" },
               { "finishReason": "stop", "type": "finish" }
             ]
-            """);
+            """
+        );
         Assert.True(JsonNode.DeepEquals(expected, chunks), chunks.ToJsonString());
     }
 
-    internal static async Task<JsonArray> ReadUiChunks(StreamTextResult result, Func<Exception, string>? onError = null, bool? redactToolErrors = null)
+    internal static async Task<JsonArray> ReadUiChunks(
+        StreamTextResult result,
+        Func<Exception, string>? onError = null,
+        bool? redactToolErrors = null
+    )
     {
         using var body = new MemoryStream();
-        await UIMessageStreamResult.WriteAsync(result, body, onError: onError, redactToolErrors: redactToolErrors);
+        await UIMessageStreamResult.WriteAsync(
+            result,
+            body,
+            onError: onError,
+            redactToolErrors: redactToolErrors
+        );
         var chunks = new JsonArray();
-        foreach (var frame in Encoding.UTF8.GetString(body.ToArray()).Split(new[] { "\n\n" }, StringSplitOptions.RemoveEmptyEntries))
+        foreach (
+            var frame in Encoding
+                .UTF8.GetString(body.ToArray())
+                .Split(new[] { "\n\n" }, StringSplitOptions.RemoveEmptyEntries)
+        )
         {
             var data = frame.Substring("data: ".Length);
             if (data != "[DONE]")
@@ -183,24 +251,61 @@ public sealed class SingleProviderExecutedToolCallAndResultTests
         {
             StreamParts = new LanguageModelStreamPart[]
             {
-                new ResponseMetadataStreamPart("id-0", "mock-model-id", DateTimeOffset.FromUnixTimeMilliseconds(0)),
+                new ResponseMetadataStreamPart(
+                    "id-0",
+                    "mock-model-id",
+                    DateTimeOffset.FromUnixTimeMilliseconds(0)
+                ),
                 new ToolInputStartStreamPart("call-1", "web_search", providerExecuted: true),
                 new ToolInputDeltaStreamPart("call-1", "{ \"value\": \"value\" }"),
                 new ToolInputEndStreamPart("call-1"),
-                new ToolCallStreamPart("call-1", "web_search", "{ \"value\": \"value\" }") { ProviderExecuted = true },
-                new ToolResultStreamPart("call-1", "web_search", JsonSerializer.SerializeToElement("{ \"value\": \"result1\" }")) { ProviderMetadata = JsonDocument.Parse("{\"provider\":{\"itemId\":\"result-1\"}}").RootElement.Clone() },
-                new ToolCallStreamPart("call-2", "web_search", "{ \"value\": \"value\" }") { ProviderExecuted = true },
-                new ToolResultStreamPart("call-2", "web_search", JsonDocument.Parse("\"ERROR\"").RootElement.Clone()) { IsError = true, ProviderMetadata = JsonDocument.Parse("{\"provider\":{\"itemId\":\"error-1\"}}").RootElement.Clone() },
-                new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(3, 10, 13, noCacheInputTokens: 3, textTokens: 10), "stop"),
+                new ToolCallStreamPart("call-1", "web_search", "{ \"value\": \"value\" }")
+                {
+                    ProviderExecuted = true,
+                },
+                new ToolResultStreamPart(
+                    "call-1",
+                    "web_search",
+                    JsonSerializer.SerializeToElement("{ \"value\": \"result1\" }")
+                )
+                {
+                    ProviderMetadata = JsonDocument
+                        .Parse("{\"provider\":{\"itemId\":\"result-1\"}}")
+                        .RootElement.Clone(),
+                },
+                new ToolCallStreamPart("call-2", "web_search", "{ \"value\": \"value\" }")
+                {
+                    ProviderExecuted = true,
+                },
+                new ToolResultStreamPart(
+                    "call-2",
+                    "web_search",
+                    JsonDocument.Parse("\"ERROR\"").RootElement.Clone()
+                )
+                {
+                    IsError = true,
+                    ProviderMetadata = JsonDocument
+                        .Parse("{\"provider\":{\"itemId\":\"error-1\"}}")
+                        .RootElement.Clone(),
+                },
+                new FinishStreamPart(
+                    FinishReason.Stop,
+                    new LanguageModelUsage(3, 10, 13, noCacheInputTokens: 3, textTokens: 10),
+                    "stop"
+                ),
             },
         };
-        return new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })).StreamTextAsync(new StreamTextOptions
-        {
-            Model = model,
-            Prompt = "test-input",
-            Tools = new[] { Tool.ProviderDefined("test.web_search", "web_search", args) },
-            StopWhen = StopWhen.IsStepCount(4),
-            NowMs = () => 0,
-        });
+        return new AiClient(
+            GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })
+        ).StreamTextAsync(
+            new StreamTextOptions
+            {
+                Model = model,
+                Prompt = "test-input",
+                Tools = new[] { Tool.ProviderDefined("test.web_search", "web_search", args) },
+                StopWhen = StopWhen.IsStepCount(4),
+                NowMs = () => 0,
+            }
+        );
     }
 }

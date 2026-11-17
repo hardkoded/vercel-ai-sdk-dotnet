@@ -12,21 +12,32 @@ namespace Vercel.AI.Tests.Upstream.ProcessUiMessageStream;
 /// <summary>Port of <c>process-ui-message-stream.test.ts</c> &gt; <c>processUIMessageStream</c> &gt; <c>initial tool execution with preliminary results after approval (static tool)</c>.</summary>
 public sealed class InitialToolExecutionWithPreliminaryResultsAfterApprovalStaticToolTests
 {
-    private const string Prefix = "packages/ai/src/ui/process-ui-message-stream.test.ts::processUIMessageStream > ";
+    private const string Prefix =
+        "packages/ai/src/ui/process-ui-message-stream.test.ts::processUIMessageStream > ";
 
     [Fact]
-    [UpstreamTest(Prefix + "initial tool execution with preliminary results after approval (static tool)::should call the update function with the correct arguments", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "initial tool execution with preliminary results after approval (static tool)::should call the update function with the correct arguments",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_call_the_update_function_with_the_correct_arguments()
     {
         var harness = new ProcessUIMessageStreamHarness();
-        harness.CreateState("msg-123", """
+        harness.CreateState(
+            "msg-123",
+            """
             {"role":"assistant","id":"original-id","parts":[{"type":"step-start"},{"approval":{"id":"id-1","approved":true},"input":{"value":"value"},"state":"approval-responded","toolCallId":"call-1","type":"tool-tool1"}]}
-            """);
-        await harness.ProcessAsync("""
+            """
+        );
+        await harness.ProcessAsync(
+            """
             [{"type":"start"},{"output":"preliminary-result","preliminary":true,"toolCallId":"call-1","type":"tool-output-available"},{"output":"final-result","preliminary":true,"toolCallId":"call-1","type":"tool-output-available"},{"output":"final-result","toolCallId":"call-1","type":"tool-output-available"},{"type":"start-step"},{"id":"1","type":"text-start"},{"delta":"Hello, world!","id":"1","type":"text-delta"},{"id":"1","type":"text-end"},{"type":"finish-step"},{"type":"finish"}]
-            """);
+            """
+        );
 
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             [
               {
                 "message": {
@@ -199,22 +210,34 @@ public sealed class InitialToolExecutionWithPreliminaryResultsAfterApprovalStati
                 }
               }
             ]
-            """, harness.WriteCalls);
+            """,
+            harness.WriteCalls
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "initial tool execution with preliminary results after approval (static tool)::should have the correct final message state", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "initial tool execution with preliminary results after approval (static tool)::should have the correct final message state",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_have_the_correct_final_message_state()
     {
         var harness = new ProcessUIMessageStreamHarness();
-        harness.CreateState("msg-123", """
+        harness.CreateState(
+            "msg-123",
+            """
             {"role":"assistant","id":"original-id","parts":[{"type":"step-start"},{"approval":{"id":"id-1","approved":true},"input":{"value":"value"},"state":"approval-responded","toolCallId":"call-1","type":"tool-tool1"}]}
-            """);
-        await harness.ProcessAsync("""
+            """
+        );
+        await harness.ProcessAsync(
+            """
             [{"type":"start"},{"output":"preliminary-result","preliminary":true,"toolCallId":"call-1","type":"tool-output-available"},{"output":"final-result","preliminary":true,"toolCallId":"call-1","type":"tool-output-available"},{"output":"final-result","toolCallId":"call-1","type":"tool-output-available"},{"type":"start-step"},{"id":"1","type":"text-start"},{"delta":"Hello, world!","id":"1","type":"text-delta"},{"id":"1","type":"text-end"},{"type":"finish-step"},{"type":"finish"}]
-            """);
+            """
+        );
 
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             [
               {
                 "type": "step-start"
@@ -241,6 +264,8 @@ public sealed class InitialToolExecutionWithPreliminaryResultsAfterApprovalStati
                 "type": "text"
               }
             ]
-            """, harness.Parts);
+            """,
+            harness.Parts
+        );
     }
 }

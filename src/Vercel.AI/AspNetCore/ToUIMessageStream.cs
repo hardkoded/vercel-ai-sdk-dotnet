@@ -26,7 +26,8 @@ public static partial class UIMessageStreamConverter
     public static async IAsyncEnumerable<JsonObject> ToUIMessageStream(
         IAsyncEnumerable<TextStreamPart> stream,
         ToUIMessageChunkOptions? options = null,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
     {
         if (stream is null)
         {
@@ -40,11 +41,16 @@ public static partial class UIMessageStreamConverter
 
         void SetSourceOutcome(UIMessageStreamOutcome newOutcome)
         {
-            if (!hasFatalFailure
+            if (
+                !hasFatalFailure
                 && outcome.Status != UIMessageStreamOutcomeStatus.Completed
                 && outcome.Status != UIMessageStreamOutcomeStatus.Aborted
                 && newOutcome.Status != UIMessageStreamOutcomeStatus.Unknown
-                && (outcome.Status == UIMessageStreamOutcomeStatus.Unknown || newOutcome.Status != UIMessageStreamOutcomeStatus.Failed))
+                && (
+                    outcome.Status == UIMessageStreamOutcomeStatus.Unknown
+                    || newOutcome.Status != UIMessageStreamOutcomeStatus.Failed
+                )
+            )
             {
                 outcome = newOutcome;
             }
@@ -58,7 +64,9 @@ public static partial class UIMessageStreamConverter
 
         // upstream getResponseUIMessageId: a continued assistant message keeps its id
         var responseMessageId = options.ResponseMessageId;
-        var lastOriginal = options.OriginalMessages is { Count: > 0 } originals ? originals[originals.Count - 1] : null;
+        var lastOriginal = options.OriginalMessages is { Count: > 0 } originals
+            ? originals[originals.Count - 1]
+            : null;
         if (options.GenerateMessageId != null)
         {
             // when there are no original messages (no persistence), the client generates the message id
@@ -68,7 +76,10 @@ public static partial class UIMessageStreamConverter
             }
             else
             {
-                responseMessageId = lastOriginal?.Role == UIMessageRole.Assistant ? lastOriginal.Id : options.GenerateMessageId();
+                responseMessageId =
+                    lastOriginal?.Role == UIMessageRole.Assistant
+                        ? lastOriginal.Id
+                        : options.GenerateMessageId();
             }
         }
         else if (lastOriginal?.Role == UIMessageRole.Assistant)
@@ -76,7 +87,9 @@ public static partial class UIMessageStreamConverter
             responseMessageId = lastOriginal.Id;
         }
 
-        var finalMessageId = responseMessageId ?? options.GenerateMessageId?.Invoke() ?? JsonValues.GenerateId("msg_");
+        var finalMessageId = responseMessageId
+            ?? options.GenerateMessageId?.Invoke()
+            ?? JsonValues.GenerateId("msg_");
 
         var chunkOptions = new ToUIMessageChunkOptions
         {
@@ -92,28 +105,38 @@ public static partial class UIMessageStreamConverter
             ResponseMessageId = finalMessageId,
         };
 
-        var chunks = TrackOutcome(ConvertToUIMessageChunks(stream, chunkOptions, SetSourceOutcome, cancellationToken), FailOutcome);
+        var chunks = TrackOutcome(
+            ConvertToUIMessageChunks(stream, chunkOptions, SetSourceOutcome, cancellationToken),
+            FailOutcome
+        );
 
-        await foreach (var chunk in HandleUIMessageStreamFinish(
-            chunks,
-            finalMessageId,
-            options.OriginalMessages,
-            options.OnStepEnd,
-            options.OnEnd,
-            error => (options.OnError ?? (_ => "An error occurred."))(error),
-            () => outcome,
+        await foreach (
+            var chunk in HandleUIMessageStreamFinish(
+                    chunks,
+                    finalMessageId,
+                    options.OriginalMessages,
+                    options.OnStepEnd,
+                    options.OnEnd,
+                    error => (options.OnError ?? (_ => "An error occurred."))(error),
+                    () => outcome,
 #pragma warning disable CS0618 // the deprecated aliases are resolved by HandleUIMessageStreamFinish
-            options.OnStepFinish,
-            options.OnFinish,
+                    options.OnStepFinish,
+                    options.OnFinish,
 #pragma warning restore CS0618
-            cancellationToken).ConfigureAwait(false))
+                    cancellationToken
+                )
+                .ConfigureAwait(false)
+        )
         {
             yield return chunk;
         }
     }
 
     // A failure of the source stream or of the conversion is fatal: it overrides every outcome that the stream declared.
-    private static async IAsyncEnumerable<JsonObject> TrackOutcome(IAsyncEnumerable<JsonObject> chunks, Action<Exception> failOutcome)
+    private static async IAsyncEnumerable<JsonObject> TrackOutcome(
+        IAsyncEnumerable<JsonObject> chunks,
+        Action<Exception> failOutcome
+    )
     {
         await using var enumerator = chunks.GetAsyncEnumerator();
         while (true)
@@ -139,7 +162,8 @@ public static partial class UIMessageStreamConverter
         IAsyncEnumerable<TextStreamPart> stream,
         ToUIMessageChunkOptions chunkOptions,
         Action<UIMessageStreamOutcome> setSourceOutcome,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         var knownToolInvalidIds = new HashSet<string>(StringComparer.Ordinal);
 
@@ -161,13 +185,22 @@ public static partial class UIMessageStreamConverter
             switch (part)
             {
                 case FinishPart:
-                    setSourceOutcome(new UIMessageStreamOutcome(UIMessageStreamOutcomeStatus.Completed));
+                    setSourceOutcome(
+                        new UIMessageStreamOutcome(UIMessageStreamOutcomeStatus.Completed)
+                    );
                     break;
                 case AbortPart:
-                    setSourceOutcome(new UIMessageStreamOutcome(UIMessageStreamOutcomeStatus.Aborted));
+                    setSourceOutcome(
+                        new UIMessageStreamOutcome(UIMessageStreamOutcomeStatus.Aborted)
+                    );
                     break;
                 case ErrorPart errorPart:
-                    setSourceOutcome(new UIMessageStreamOutcome(UIMessageStreamOutcomeStatus.Failed, errorPart.Error ?? new Exception(errorPart.Message)));
+                    setSourceOutcome(
+                        new UIMessageStreamOutcome(
+                            UIMessageStreamOutcomeStatus.Failed,
+                            errorPart.Error ?? new Exception(errorPart.Message)
+                        )
+                    );
                     break;
             }
 
@@ -176,12 +209,20 @@ public static partial class UIMessageStreamConverter
                 invalidToolCallIds.Add(invalidCall.ToolCall.ToolCallId);
             }
 
-            if (part is ToolErrorPart { Result.ProviderExecuted: false } invalidToolError && invalidToolCallIds.Remove(invalidToolError.Result.ToolCallId))
+            if (
+                part is ToolErrorPart { Result.ProviderExecuted: false } invalidToolError
+                && invalidToolCallIds.Remove(invalidToolError.Result.ToolCallId)
+            )
             {
                 continue;
             }
 
-            if (part is ToolCallPart { ToolCall: { Invalid: true, Error: not NoSuchToolError } } knownToolInvalid)
+            if (
+                part is ToolCallPart
+                {
+                    ToolCall: { Invalid: true, Error: not NoSuchToolError }
+                } knownToolInvalid
+            )
             {
                 knownToolInvalidIds.Add(knownToolInvalid.ToolCall.ToolCallId);
             }
@@ -193,32 +234,54 @@ public static partial class UIMessageStreamConverter
                 mismatchedToolCallIdInCurrentStep = null;
             }
 
-            var messageMetadata = chunkOptions.MessageMetadataSelector is { } selector ? selector(part) : chunkOptions.MessageMetadata;
-            var hasMessageMetadata = chunkOptions.MessageMetadataSelector != null && messageMetadata is { ValueKind: not (JsonValueKind.Null or JsonValueKind.Undefined) };
+            var messageMetadata = chunkOptions.MessageMetadataSelector is { } selector
+                ? selector(part)
+                : chunkOptions.MessageMetadata;
+            var hasMessageMetadata =
+                chunkOptions.MessageMetadataSelector != null
+                && messageMetadata
+                    is { ValueKind: not (JsonValueKind.Null or JsonValueKind.Undefined) };
             var chunk = ToUIMessageChunkWithMetadata(part, chunkOptions, messageMetadata);
 
-            if (part is ReasoningStartPart && chunk != null && mismatchedToolCallIdInEarlierStep != null && !hasWarnedAboutToolErrorMismatch)
+            if (
+                part is ReasoningStartPart
+                && chunk != null
+                && mismatchedToolCallIdInEarlierStep != null
+                && !hasWarnedAboutToolErrorMismatch
+            )
             {
                 hasWarnedAboutToolErrorMismatch = true;
                 LogToolErrorMismatchWarning(mismatchedToolCallIdInEarlierStep);
             }
 
-            if (part is ToolCallPart { ToolCall: { Invalid: true, ProviderExecuted: false } } mismatchedCall
+            if (
+                part
+                    is ToolCallPart
+                    {
+                        ToolCall: { Invalid: true, ProviderExecuted: false }
+                    } mismatchedCall
                 && chunk != null
                 && ModelToolErrorText(mismatchedCall.ToolCall.Error!) is { } invalidModelText
-                && (string?)chunk["errorText"] != invalidModelText)
+                && (string?)chunk["errorText"] != invalidModelText
+            )
             {
                 mismatchedToolCallIdInCurrentStep ??= mismatchedCall.ToolCall.ToolCallId;
             }
-            else if (part is ToolErrorPart { Result.ProviderExecuted: false } mismatchedError
+            else if (
+                part is ToolErrorPart { Result.ProviderExecuted: false } mismatchedError
                 && chunk != null
                 && ModelToolErrorText(mismatchedError.Result) is { } modelErrorText
-                && (string?)chunk["errorText"] != modelErrorText)
+                && (string?)chunk["errorText"] != modelErrorText
+            )
             {
                 mismatchedToolCallIdInCurrentStep ??= mismatchedError.Result.ToolCallId;
             }
 
-            if (chunk != null && part is ToolErrorPart knownError && knownToolInvalidIds.Contains(knownError.Result.ToolCallId))
+            if (
+                chunk != null
+                && part is ToolErrorPart knownError
+                && knownToolInvalidIds.Contains(knownError.Result.ToolCallId)
+            )
             {
                 chunk.Remove("dynamic");
             }
@@ -246,14 +309,19 @@ public static partial class UIMessageStreamConverter
         }
     }
 
-    private static void LogToolErrorMismatchWarning(string toolCallId)
-        => LogWarnings.Log(new LogWarningsOptions(new ModelWarning[]
-        {
-            new OtherWarning(
-                $"The error text sent to the UI for tool call \"{toolCallId}\" differs from the error text the model received, " +
-                "and reasoning from a later step was sent to the UI. " +
-                "Converting these UI messages back to model messages changes the tool result. " +
-                "Models that bind reasoning to the preceding messages (for example Anthropic models with preserved thinking) reject that history. " +
-                "See https://ai-sdk.dev/docs/ai-sdk-ui/chatbot-tool-usage#tool-error-text-and-message-history"),
-        }));
+    private static void LogToolErrorMismatchWarning(string toolCallId) =>
+        LogWarnings.Log(
+            new LogWarningsOptions(
+                new ModelWarning[]
+                {
+                    new OtherWarning(
+                        $"The error text sent to the UI for tool call \"{toolCallId}\" differs from the error text the model received, "
+                            + "and reasoning from a later step was sent to the UI. "
+                            + "Converting these UI messages back to model messages changes the tool result. "
+                            + "Models that bind reasoning to the preceding messages (for example Anthropic models with preserved thinking) reject that history. "
+                            + "See https://ai-sdk.dev/docs/ai-sdk-ui/chatbot-tool-usage#tool-error-text-and-message-history"
+                    ),
+                }
+            )
+        );
 }

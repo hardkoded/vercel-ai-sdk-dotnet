@@ -93,13 +93,17 @@ public static class V4Json
             var tools = new JsonArray();
             foreach (var tool in options.Tools)
             {
-                tools.Add(new JsonObject
-                {
-                    ["type"] = "function",
-                    ["name"] = tool.Name,
-                    ["description"] = tool.Description,
-                    ["inputSchema"] = PrepareSchema(JsonNode.Parse(tool.InputSchema.GetRawText())),
-                });
+                tools.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "function",
+                        ["name"] = tool.Name,
+                        ["description"] = tool.Description,
+                        ["inputSchema"] = PrepareSchema(
+                            JsonNode.Parse(tool.InputSchema.GetRawText())
+                        ),
+                    }
+                );
             }
 
             body["tools"] = tools;
@@ -146,12 +150,22 @@ public static class V4Json
             }
         }
 
-        var raw = root.TryGetProperty("finishReason", out var finish) ? ReadFinishReason(finish) : null;
-        var usage = ReadUsage(root);
-        var id = root.TryGetProperty("response", out var response) && response.TryGetProperty("id", out var responseId)
-            ? responseId.GetString()
+        var raw = root.TryGetProperty("finishReason", out var finish)
+            ? ReadFinishReason(finish)
             : null;
-        return new LanguageModelGenerateResult(content, FinishReasons.Parse(raw), usage, raw, responseId: id);
+        var usage = ReadUsage(root);
+        var id =
+            root.TryGetProperty("response", out var response)
+            && response.TryGetProperty("id", out var responseId)
+                ? responseId.GetString()
+                : null;
+        return new LanguageModelGenerateResult(
+            content,
+            FinishReasons.Parse(raw),
+            usage,
+            raw,
+            responseId: id
+        );
     }
 
     /// <summary>Parses one SSE JSON object into a stream part.</summary>
@@ -171,47 +185,71 @@ public static class V4Json
 
     private static LanguageModelStreamPart? ParseStreamPart(JsonElement root)
     {
-        var type = root.TryGetProperty("type", out var typeElement) ? typeElement.GetString() : null;
+        var type = root.TryGetProperty("type", out var typeElement)
+            ? typeElement.GetString()
+            : null;
         switch (type)
         {
             case "text-delta":
                 return new TextDeltaStreamPart(
                     root.TryGetProperty("id", out var id) ? id.GetString() ?? "text" : "text",
-                    ReadDelta(root));
+                    ReadDelta(root)
+                );
             case "reasoning-delta":
                 return new ReasoningDeltaStreamPart(
-                    root.TryGetProperty("id", out var reasoningId) ? reasoningId.GetString() ?? "reasoning" : "reasoning",
-                    ReadDelta(root));
+                    root.TryGetProperty("id", out var reasoningId)
+                        ? reasoningId.GetString() ?? "reasoning"
+                        : "reasoning",
+                    ReadDelta(root)
+                );
             case "tool-call":
                 return new ToolCallStreamPart(
                     root.GetProperty("toolCallId").GetString() ?? "call",
                     root.GetProperty("toolName").GetString() ?? string.Empty,
-                    ReadToolInput(root));
+                    ReadToolInput(root)
+                );
             case "source":
             case "source-url":
                 return new SourceStreamPart(
-                    root.TryGetProperty("id", out var sourceId) ? sourceId.GetString() ?? string.Empty : string.Empty,
-                    root.TryGetProperty("url", out var url) ? url.GetString() ?? string.Empty : string.Empty,
-                    root.TryGetProperty("title", out var title) ? title.GetString() : null);
+                    root.TryGetProperty("id", out var sourceId)
+                        ? sourceId.GetString() ?? string.Empty
+                        : string.Empty,
+                    root.TryGetProperty("url", out var url)
+                        ? url.GetString() ?? string.Empty
+                        : string.Empty,
+                    root.TryGetProperty("title", out var title) ? title.GetString() : null
+                );
             case "finish":
             case "finish-step":
-                var raw = root.TryGetProperty("finishReason", out var finish) ? ReadFinishReason(finish) ?? "stop" : "stop";
+                var raw = root.TryGetProperty("finishReason", out var finish)
+                    ? ReadFinishReason(finish) ?? "stop"
+                    : "stop";
                 return new FinishStreamPart(FinishReasons.Parse(raw), ReadUsage(root), raw);
             case "error":
                 return ParseError(root);
             case "stream-start":
                 return new StreamStartStreamPart(ReadWarnings(root));
             case "raw":
-                return new RawStreamPart(root.TryGetProperty("rawValue", out var rawValue) ? rawValue.GetRawText() : "null");
+                return new RawStreamPart(
+                    root.TryGetProperty("rawValue", out var rawValue)
+                        ? rawValue.GetRawText()
+                        : "null"
+                );
             case "response-metadata":
                 return new ResponseMetadataStreamPart(
                     ReadString(root, "id"),
                     ReadString(root, "modelId"),
                     root.TryGetProperty("timestamp", out var timestamp)
-                        && timestamp.ValueKind == JsonValueKind.String
-                        && DateTimeOffset.TryParse(timestamp.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed)
+                    && timestamp.ValueKind == JsonValueKind.String
+                    && DateTimeOffset.TryParse(
+                        timestamp.GetString(),
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.AssumeUniversal,
+                        out var parsed
+                    )
                         ? parsed
-                        : null);
+                        : null
+                );
             default:
                 return null;
         }
@@ -219,21 +257,31 @@ public static class V4Json
 
     private static string? ReadString(JsonElement root, string name)
     {
-        return root.ValueKind == JsonValueKind.Object && root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        return
+            root.ValueKind == JsonValueKind.Object
+            && root.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
     }
 
     private static IReadOnlyList<CallWarning> ReadWarnings(JsonElement root)
     {
         var warnings = new List<CallWarning>();
-        if (root.TryGetProperty("warnings", out var items) && items.ValueKind == JsonValueKind.Array)
+        if (
+            root.TryGetProperty("warnings", out var items)
+            && items.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var item in items.EnumerateArray())
             {
                 var type = ReadString(item, "type") ?? "other";
                 var feature = ReadString(item, "feature");
-                warnings.Add(feature is null
-                    ? new CallWarning(type, ReadString(item, "message") ?? string.Empty)
-                    : new CallWarning(type, feature, ReadString(item, "details")));
+                warnings.Add(
+                    feature is null
+                        ? new CallWarning(type, ReadString(item, "message") ?? string.Empty)
+                        : new CallWarning(type, feature, ReadString(item, "details"))
+                );
             }
         }
 
@@ -252,20 +300,34 @@ public static class V4Json
             return new ErrorStreamPart(error.ToString() ?? "Provider stream error.");
         }
 
-        return new ErrorStreamPart(new ProviderStreamError(
-            ReadString(error, "message") ?? error.GetRawText(),
-            error.Clone(),
-            ReadString(error, "type"),
-            null,
-            error.TryGetProperty("statusCode", out var status) && status.ValueKind == JsonValueKind.Number && status.TryGetInt32(out var code) ? code : null,
-            error.TryGetProperty("isRetryable", out var retryable) && retryable.ValueKind is JsonValueKind.True or JsonValueKind.False ? retryable.GetBoolean() : null));
+        return new ErrorStreamPart(
+            new ProviderStreamError(
+                ReadString(error, "message") ?? error.GetRawText(),
+                error.Clone(),
+                ReadString(error, "type"),
+                null,
+                error.TryGetProperty("statusCode", out var status)
+                && status.ValueKind == JsonValueKind.Number
+                && status.TryGetInt32(out var code)
+                    ? code
+                    : null,
+                error.TryGetProperty("isRetryable", out var retryable)
+                && retryable.ValueKind is JsonValueKind.True or JsonValueKind.False
+                    ? retryable.GetBoolean()
+                    : null
+            )
+        );
     }
 
     private static JsonObject FileData(FileContentPart file)
     {
         return file.Url is { } url
             ? new JsonObject { ["type"] = "url", ["url"] = url }
-            : new JsonObject { ["type"] = "data", ["data"] = file.Data is null ? null : Convert.ToBase64String(file.Data) };
+            : new JsonObject
+            {
+                ["type"] = "data",
+                ["data"] = file.Data is null ? null : Convert.ToBase64String(file.Data),
+            };
     }
 
     private static JsonObject Message(ModelMessage message)
@@ -284,12 +346,14 @@ public static class V4Json
                     }
                     else if (part is FileContentPart file)
                     {
-                        userParts.Add(new JsonObject
-                        {
-                            ["type"] = "file",
-                            ["mediaType"] = file.MediaType,
-                            ["data"] = FileData(file),
-                        });
+                        userParts.Add(
+                            new JsonObject
+                            {
+                                ["type"] = "file",
+                                ["mediaType"] = file.MediaType,
+                                ["data"] = FileData(file),
+                            }
+                        );
                     }
                 }
 
@@ -298,24 +362,30 @@ public static class V4Json
                 var assistantParts = new JsonArray();
                 if (!string.IsNullOrEmpty(assistant.Reasoning))
                 {
-                    assistantParts.Add(new JsonObject { ["type"] = "reasoning", ["text"] = assistant.Reasoning });
+                    assistantParts.Add(
+                        new JsonObject { ["type"] = "reasoning", ["text"] = assistant.Reasoning }
+                    );
                 }
 
                 if (!string.IsNullOrEmpty(assistant.Text))
                 {
-                    assistantParts.Add(new JsonObject { ["type"] = "text", ["text"] = assistant.Text });
+                    assistantParts.Add(
+                        new JsonObject { ["type"] = "text", ["text"] = assistant.Text }
+                    );
                 }
 
                 foreach (var call in assistant.ToolCalls)
                 {
-                    assistantParts.Add(new JsonObject
-                    {
-                        ["type"] = "tool-call",
-                        ["toolCallType"] = "function",
-                        ["toolCallId"] = call.ToolCallId,
-                        ["toolName"] = call.ToolName,
-                        ["input"] = JsonValue(call.ArgumentsJson),
-                    });
+                    assistantParts.Add(
+                        new JsonObject
+                        {
+                            ["type"] = "tool-call",
+                            ["toolCallType"] = "function",
+                            ["toolCallId"] = call.ToolCallId,
+                            ["toolName"] = call.ToolName,
+                            ["input"] = JsonValue(call.ArgumentsJson),
+                        }
+                    );
                 }
 
                 return new JsonObject { ["role"] = "assistant", ["content"] = assistantParts };
@@ -341,7 +411,9 @@ public static class V4Json
 
     private static GeneratedContent? Content(JsonElement part)
     {
-        var type = part.TryGetProperty("type", out var typeElement) ? typeElement.GetString() : null;
+        var type = part.TryGetProperty("type", out var typeElement)
+            ? typeElement.GetString()
+            : null;
         switch (type)
         {
             case "text":
@@ -353,16 +425,46 @@ public static class V4Json
                 return new GeneratedToolCall(
                     part.GetProperty("toolCallId").GetString() ?? "call",
                     part.GetProperty("toolName").GetString() ?? string.Empty,
-                    args);
+                    args
+                );
             case "source":
                 return new GeneratedSource(
-                    part.TryGetProperty("id", out var id) ? id.GetString() ?? string.Empty : string.Empty,
-                    part.TryGetProperty("url", out var url) ? url.GetString() ?? string.Empty : string.Empty,
-                    part.TryGetProperty("title", out var title) ? title.GetString() : null);
+                    part.TryGetProperty("id", out var id)
+                        ? id.GetString() ?? string.Empty
+                        : string.Empty,
+                    part.TryGetProperty("url", out var url)
+                        ? url.GetString() ?? string.Empty
+                        : string.Empty,
+                    part.TryGetProperty("title", out var title) ? title.GetString() : null
+                );
             case "file":
-                var mediaType = part.TryGetProperty("mediaType", out var media) ? media.GetString() ?? "application/octet-stream" : "application/octet-stream";
-                var data = part.TryGetProperty("data", out var dataElement) ? dataElement.GetString() : null;
-                return new GeneratedFile(data is null ? Array.Empty<byte>() : Convert.FromBase64String(data), mediaType);
+                var mediaType = part.TryGetProperty("mediaType", out var media)
+                    ? media.GetString() ?? "application/octet-stream"
+                    : "application/octet-stream";
+                var data = part.TryGetProperty("data", out var dataElement)
+                    ? dataElement.GetString()
+                    : null;
+                return new GeneratedFile(
+                    data is null ? Array.Empty<byte>() : Convert.FromBase64String(data),
+                    mediaType
+                );
+            case "reasoning-file":
+                var reasoningMediaType = part.TryGetProperty("mediaType", out var reasoningMedia)
+                    ? reasoningMedia.GetString() ?? "application/octet-stream"
+                    : "application/octet-stream";
+                var reasoningData = part.TryGetProperty("data", out var reasoningDataElement)
+                    ? reasoningDataElement.GetString()
+                    : null;
+                return new GeneratedReasoningFile(
+                    reasoningData is null
+                        ? Array.Empty<byte>()
+                        : Convert.FromBase64String(reasoningData),
+                    reasoningMediaType,
+                    part.TryGetProperty("providerMetadata", out var reasoningMetadata)
+                    && reasoningMetadata.ValueKind == JsonValueKind.Object
+                        ? reasoningMetadata.Clone()
+                        : null
+                );
             default:
                 return null;
         }
@@ -409,7 +511,10 @@ public static class V4Json
             return null;
         }
 
-        if (finish.TryGetProperty("unified", out var unified) && unified.ValueKind == JsonValueKind.String)
+        if (
+            finish.TryGetProperty("unified", out var unified)
+            && unified.ValueKind == JsonValueKind.String
+        )
         {
             return unified.GetString();
         }
@@ -435,10 +540,12 @@ public static class V4Json
             return number;
         }
 
-        if (value.ValueKind == JsonValueKind.Object
+        if (
+            value.ValueKind == JsonValueKind.Object
             && value.TryGetProperty("total", out var total)
             && total.ValueKind == JsonValueKind.Number
-            && total.TryGetInt32(out var nested))
+            && total.TryGetInt32(out var nested)
+        )
         {
             return nested;
         }
@@ -454,7 +561,10 @@ public static class V4Json
             return node;
         }
 
-        var typeName = schema["type"] is JsonValue typeValue && typeValue.TryGetValue<string>(out var type) ? type : null;
+        var typeName =
+            schema["type"] is JsonValue typeValue && typeValue.TryGetValue<string>(out var type)
+                ? type
+                : null;
         if (typeName == "object" || schema["properties"] is JsonObject)
         {
             if (schema["additionalProperties"] == null)
@@ -523,11 +633,7 @@ public static class V4Json
         }
 
         var type = isError ? (json ? "error-json" : "error-text") : (json ? "json" : "text");
-        return new JsonObject
-        {
-            ["type"] = type,
-            ["value"] = value,
-        };
+        return new JsonObject { ["type"] = type, ["value"] = value };
     }
 
     private static string ReadToolInput(JsonElement part)
@@ -537,6 +643,8 @@ public static class V4Json
             return "{}";
         }
 
-        return input.ValueKind == JsonValueKind.String ? input.GetString() ?? "{}" : input.GetRawText();
+        return input.ValueKind == JsonValueKind.String
+            ? input.GetString() ?? "{}"
+            : input.GetRawText();
     }
 }

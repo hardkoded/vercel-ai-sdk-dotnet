@@ -23,7 +23,12 @@ public static class ToolInputSchemaValidator
         return errors;
     }
 
-    private static void Check(JsonElement schema, JsonElement value, string path, List<string> errors)
+    private static void Check(
+        JsonElement schema,
+        JsonElement value,
+        string path,
+        List<string> errors
+    )
     {
         if (schema.ValueKind != JsonValueKind.Object)
         {
@@ -43,7 +48,10 @@ public static class ToolInputSchemaValidator
             errors.Add(at + ": expected the constant " + constant.GetRawText());
         }
 
-        if (schema.TryGetProperty("enum", out var allowed) && allowed.ValueKind == JsonValueKind.Array)
+        if (
+            schema.TryGetProperty("enum", out var allowed)
+            && allowed.ValueKind == JsonValueKind.Array
+        )
         {
             var found = false;
             foreach (var option in allowed.EnumerateArray())
@@ -75,12 +83,22 @@ public static class ToolInputSchemaValidator
                 var text = value.GetString()!;
                 if (TryGetNumber(schema, "minLength", out var minLength) && text.Length < minLength)
                 {
-                    errors.Add(at + ": expected at least " + minLength.ToString(CultureInfo.InvariantCulture) + " characters");
+                    errors.Add(
+                        at
+                            + ": expected at least "
+                            + minLength.ToString(CultureInfo.InvariantCulture)
+                            + " characters"
+                    );
                 }
 
                 if (TryGetNumber(schema, "maxLength", out var maxLength) && text.Length > maxLength)
                 {
-                    errors.Add(at + ": expected at most " + maxLength.ToString(CultureInfo.InvariantCulture) + " characters");
+                    errors.Add(
+                        at
+                            + ": expected at most "
+                            + maxLength.ToString(CultureInfo.InvariantCulture)
+                            + " characters"
+                    );
                 }
 
                 break;
@@ -88,19 +106,33 @@ public static class ToolInputSchemaValidator
                 var number = value.GetDouble();
                 if (TryGetNumber(schema, "minimum", out var minimum) && number < minimum)
                 {
-                    errors.Add(at + ": expected a number >= " + minimum.ToString(CultureInfo.InvariantCulture));
+                    errors.Add(
+                        at
+                            + ": expected a number >= "
+                            + minimum.ToString(CultureInfo.InvariantCulture)
+                    );
                 }
 
                 if (TryGetNumber(schema, "maximum", out var maximum) && number > maximum)
                 {
-                    errors.Add(at + ": expected a number <= " + maximum.ToString(CultureInfo.InvariantCulture));
+                    errors.Add(
+                        at
+                            + ": expected a number <= "
+                            + maximum.ToString(CultureInfo.InvariantCulture)
+                    );
                 }
 
                 break;
         }
     }
 
-    private static void CheckCombinators(JsonElement schema, JsonElement value, string path, string at, List<string> errors)
+    private static void CheckCombinators(
+        JsonElement schema,
+        JsonElement value,
+        string path,
+        string at,
+        List<string> errors
+    )
     {
         if (schema.TryGetProperty("allOf", out var allOf) && allOf.ValueKind == JsonValueKind.Array)
         {
@@ -112,7 +144,10 @@ public static class ToolInputSchemaValidator
 
         foreach (var keyword in new[] { "anyOf", "oneOf" })
         {
-            if (!schema.TryGetProperty(keyword, out var branches) || branches.ValueKind != JsonValueKind.Array)
+            if (
+                !schema.TryGetProperty(keyword, out var branches)
+                || branches.ValueKind != JsonValueKind.Array
+            )
             {
                 continue;
             }
@@ -130,20 +165,40 @@ public static class ToolInputSchemaValidator
 
             if (matches == 0 || (keyword == "oneOf" && matches > 1))
             {
-                errors.Add(at + ": expected " + (keyword == "oneOf" ? "exactly one" : "at least one") + " of the " + keyword + " schemas to match");
+                errors.Add(
+                    at
+                        + ": expected "
+                        + (keyword == "oneOf" ? "exactly one" : "at least one")
+                        + " of the "
+                        + keyword
+                        + " schemas to match"
+                );
             }
         }
     }
 
-    private static void CheckObject(JsonElement schema, JsonElement value, string path, List<string> errors)
+    private static void CheckObject(
+        JsonElement schema,
+        JsonElement value,
+        string path,
+        List<string> errors
+    )
     {
-        var hasProperties = schema.TryGetProperty("properties", out var properties) && properties.ValueKind == JsonValueKind.Object;
+        var hasProperties =
+            schema.TryGetProperty("properties", out var properties)
+            && properties.ValueKind == JsonValueKind.Object;
 
-        if (schema.TryGetProperty("required", out var required) && required.ValueKind == JsonValueKind.Array)
+        if (
+            schema.TryGetProperty("required", out var required)
+            && required.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var name in required.EnumerateArray())
             {
-                if (name.ValueKind == JsonValueKind.String && !value.TryGetProperty(name.GetString()!, out _))
+                if (
+                    name.ValueKind == JsonValueKind.String
+                    && !value.TryGetProperty(name.GetString()!, out _)
+                )
                 {
                     errors.Add(Child(path, name.GetString()!) + ": required property is missing");
                 }
@@ -170,36 +225,63 @@ public static class ToolInputSchemaValidator
         }
     }
 
-    private static void CheckArray(JsonElement schema, JsonElement value, string path, string at, List<string> errors)
+    private static void CheckArray(
+        JsonElement schema,
+        JsonElement value,
+        string path,
+        string at,
+        List<string> errors
+    )
     {
         var length = value.GetArrayLength();
         if (TryGetNumber(schema, "minItems", out var minItems) && length < minItems)
         {
-            errors.Add(at + ": expected at least " + minItems.ToString(CultureInfo.InvariantCulture) + " items");
+            errors.Add(
+                at
+                    + ": expected at least "
+                    + minItems.ToString(CultureInfo.InvariantCulture)
+                    + " items"
+            );
         }
 
         if (TryGetNumber(schema, "maxItems", out var maxItems) && length > maxItems)
         {
-            errors.Add(at + ": expected at most " + maxItems.ToString(CultureInfo.InvariantCulture) + " items");
+            errors.Add(
+                at
+                    + ": expected at most "
+                    + maxItems.ToString(CultureInfo.InvariantCulture)
+                    + " items"
+            );
         }
 
-        if (schema.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Object)
+        if (
+            schema.TryGetProperty("items", out var items)
+            && items.ValueKind == JsonValueKind.Object
+        )
         {
             var index = 0;
             foreach (var item in value.EnumerateArray())
             {
-                Check(items, item, path + "[" + index.ToString(CultureInfo.InvariantCulture) + "]", errors);
+                Check(
+                    items,
+                    item,
+                    path + "[" + index.ToString(CultureInfo.InvariantCulture) + "]",
+                    errors
+                );
                 index++;
             }
         }
     }
 
-    private static string Child(string path, string name) => path.Length == 0 ? name : path + "." + name;
+    private static string Child(string path, string name) =>
+        path.Length == 0 ? name : path + "." + name;
 
     private static bool TryGetNumber(JsonElement schema, string keyword, out double number)
     {
         number = 0;
-        return schema.TryGetProperty(keyword, out var element) && element.ValueKind == JsonValueKind.Number && element.TryGetDouble(out number);
+        return schema.TryGetProperty(keyword, out var element)
+            && element.ValueKind == JsonValueKind.Number
+            && element.TryGetDouble(out number);
     }
 
     private static bool MatchesType(JsonElement type, JsonElement value)
@@ -224,16 +306,31 @@ public static class ToolInputSchemaValidator
 
         switch (type.GetString())
         {
-            case "object": return value.ValueKind == JsonValueKind.Object;
-            case "array": return value.ValueKind == JsonValueKind.Array;
-            case "string": return value.ValueKind == JsonValueKind.String;
-            case "boolean": return value.ValueKind == JsonValueKind.True || value.ValueKind == JsonValueKind.False;
-            case "null": return value.ValueKind == JsonValueKind.Null;
-            case "number": return value.ValueKind == JsonValueKind.Number;
+            case "object":
+                return value.ValueKind == JsonValueKind.Object;
+            case "array":
+                return value.ValueKind == JsonValueKind.Array;
+            case "string":
+                return value.ValueKind == JsonValueKind.String;
+            case "boolean":
+                return value.ValueKind == JsonValueKind.True
+                    || value.ValueKind == JsonValueKind.False;
+            case "null":
+                return value.ValueKind == JsonValueKind.Null;
+            case "number":
+                return value.ValueKind == JsonValueKind.Number;
             case "integer":
                 return value.ValueKind == JsonValueKind.Number
-                    && (value.TryGetInt64(out _) || (value.TryGetDouble(out var d) && Math.Floor(d) == d && !double.IsInfinity(d)));
-            default: return true;
+                    && (
+                        value.TryGetInt64(out _)
+                        || (
+                            value.TryGetDouble(out var d)
+                            && Math.Floor(d) == d
+                            && !double.IsInfinity(d)
+                        )
+                    );
+            default:
+                return true;
         }
     }
 
@@ -245,9 +342,12 @@ public static class ToolInputSchemaValidator
         switch (value.ValueKind)
         {
             case JsonValueKind.True:
-            case JsonValueKind.False: return "boolean";
-            case JsonValueKind.Undefined: return "undefined";
-            default: return value.ValueKind.ToString().ToLowerInvariant();
+            case JsonValueKind.False:
+                return "boolean";
+            case JsonValueKind.Undefined:
+                return "undefined";
+            default:
+                return value.ValueKind.ToString().ToLowerInvariant();
         }
     }
 
@@ -260,11 +360,15 @@ public static class ToolInputSchemaValidator
 
         switch (left.ValueKind)
         {
-            case JsonValueKind.String: return left.GetString() == right.GetString();
-            case JsonValueKind.Number: return left.GetDouble() == right.GetDouble();
+            case JsonValueKind.String:
+                return left.GetString() == right.GetString();
+            case JsonValueKind.Number:
+                return left.GetDouble() == right.GetDouble();
             case JsonValueKind.Array:
-            case JsonValueKind.Object: return left.GetRawText() == right.GetRawText();
-            default: return true;
+            case JsonValueKind.Object:
+                return left.GetRawText() == right.GetRawText();
+            default:
+                return true;
         }
     }
 }

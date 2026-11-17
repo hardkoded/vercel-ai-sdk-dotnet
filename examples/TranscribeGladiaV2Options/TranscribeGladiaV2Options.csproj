@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <Description>Transcribes audio with Gladia solaria-3, a language config and PII redaction.</Description>
-  </PropertyGroup>
+    <PropertyGroup>
+        <Description>Transcribes audio with Gladia solaria-3, a language config and PII redaction.</Description>
+    </PropertyGroup>
 </Project>

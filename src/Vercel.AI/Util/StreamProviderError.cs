@@ -18,7 +18,8 @@ public sealed class StreamProviderError : AiSdkError
         int? statusCode = null,
         bool? isRetryable = null,
         object? data = null,
-        Exception? cause = null)
+        Exception? cause = null
+    )
         : base("AI_StreamProviderError", message, cause)
     {
         Type = type;
@@ -53,6 +54,7 @@ public sealed class StreamProviderError : AiSdkError
     /// <summary>Retryable statuses are 408, 409, 429, and 500 and above.</summary>
     public static bool IsRetryableStatusCode(int? statusCode)
     {
-        return statusCode != null && (statusCode == 408 || statusCode == 409 || statusCode == 429 || statusCode >= 500);
+        return statusCode != null
+            && (statusCode == 408 || statusCode == 409 || statusCode == 429 || statusCode >= 500);
     }
 }

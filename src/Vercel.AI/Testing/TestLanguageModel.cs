@@ -26,7 +26,8 @@ public sealed class TestLanguageModel : ILanguageModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<string, string> SupportedUrls { get; set; } = Vercel.AI.ProviderUtils.UrlSupport.None;
+    public IReadOnlyDictionary<string, string> SupportedUrls { get; set; } =
+        Vercel.AI.ProviderUtils.UrlSupport.None;
 
     /// <summary>Calls observed by generate and stream.</summary>
     public List<LanguageModelCallOptions> Calls { get; } = new();
@@ -50,11 +51,15 @@ public sealed class TestLanguageModel : ILanguageModel
             new GeneratedContent[] { new GeneratedText(text) },
             FinishReason.Stop,
             new LanguageModelUsage(1, 1, 2),
-            "stop");
+            "stop"
+        );
     }
 
     /// <inheritdoc />
-    public Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         Calls.Add(options);
         cancellationToken.ThrowIfCancellationRequested();
@@ -65,19 +70,25 @@ public sealed class TestLanguageModel : ILanguageModel
     /// <inheritdoc />
     public Task<LanguageModelStreamResult> DoStreamAsync(
         LanguageModelCallOptions options,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         Calls.Add(options);
-        return Task.FromResult(new LanguageModelStreamResult(Stream(cancellationToken), StreamRequest, StreamResponse));
+        return Task.FromResult(
+            new LanguageModelStreamResult(Stream(cancellationToken), StreamRequest, StreamResponse)
+        );
     }
 
-    private async IAsyncEnumerable<LanguageModelStreamPart> Stream([EnumeratorCancellation] CancellationToken cancellationToken)
+    private async IAsyncEnumerable<LanguageModelStreamPart> Stream(
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
-        var parts = StreamParts ?? new LanguageModelStreamPart[]
-        {
-            new TextDeltaStreamPart("text", "ok"),
-            new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2), "stop"),
-        };
+        var parts = StreamParts
+            ?? new LanguageModelStreamPart[]
+            {
+                new TextDeltaStreamPart("text", "ok"),
+                new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2), "stop"),
+            };
         foreach (var part in parts)
         {
             cancellationToken.ThrowIfCancellationRequested();

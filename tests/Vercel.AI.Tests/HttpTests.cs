@@ -19,15 +19,24 @@ public sealed class HttpTests
         var handler = new ScriptedHandler();
         handler.Statuses.Add(HttpStatusCode.InternalServerError);
         handler.Statuses.Add(HttpStatusCode.OK);
-        var http = new ProviderHttp(new HttpClient(handler), new RetryPolicy
-        {
-            MaxRetries = 2,
-            InitialDelay = TimeSpan.FromMilliseconds(1),
-            MaxDelay = TimeSpan.FromMilliseconds(5),
-            Jitter = 0,
-        });
+        var http = new ProviderHttp(
+            new HttpClient(handler),
+            new RetryPolicy
+            {
+                MaxRetries = 2,
+                InitialDelay = TimeSpan.FromMilliseconds(1),
+                MaxDelay = TimeSpan.FromMilliseconds(5),
+                Jitter = 0,
+            }
+        );
 
-        using var document = await http.SendJsonAsync(HttpMethod.Post, new Uri("https://example.test/v1"), "{}", null, CancellationToken.None);
+        using var document = await http.SendJsonAsync(
+            HttpMethod.Post,
+            new Uri("https://example.test/v1"),
+            "{}",
+            null,
+            CancellationToken.None
+        );
         Assert.Equal(2, handler.Calls);
         Assert.Equal(JsonValueKind.Object, document.RootElement.ValueKind);
     }
@@ -39,7 +48,14 @@ public sealed class HttpTests
         handler.Statuses.Add(HttpStatusCode.Unauthorized);
         var http = new ProviderHttp(new HttpClient(handler), new RetryPolicy { MaxRetries = 0 });
         var error = await Assert.ThrowsAsync<AuthenticationException>(() =>
-            http.SendJsonAsync(HttpMethod.Post, new Uri("https://example.test/v1"), "{}", null, CancellationToken.None));
+            http.SendJsonAsync(
+                HttpMethod.Post,
+                new Uri("https://example.test/v1"),
+                "{}",
+                null,
+                CancellationToken.None
+            )
+        );
         Assert.Equal(401, error.StatusCode);
         Assert.Contains("nope", error.Message);
     }
@@ -62,18 +78,25 @@ public sealed class HttpTests
     [UpstreamTest(
         "packages/openai-compatible/src/chat/openai-compatible-chat-language-model.test.ts::doStream > text (fixture)::should stream text content",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Reads one content delta and the chat completions path.")]
+        Note = "Reads one content delta and the chat completions path."
+    )]
     public async Task Chat_completions_stream_reads_sse_deltas()
     {
         var handler = new SseHandler(
-            "data: {\"choices\":[{\"delta\":{\"content\":\"Hi\"}}]}\n\n" +
-            "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}\n\n" +
-            "data: [DONE]\n\n");
+            "data: {\"choices\":[{\"delta\":{\"content\":\"Hi\"}}]}\n\n"
+                + "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}\n\n"
+                + "data: [DONE]\n\n"
+        );
         var provider = OpenAICompatibleProvider.Create(
             new OpenAICompatibleOptions { ApiKey = "secret", ProviderName = "openai-compatible" },
-            handler);
+            handler
+        );
         var parts = new List<LanguageModelStreamPart>();
-        await foreach (var part in (await provider.LanguageModel("m").DoStreamAsync(Prompt(), CancellationToken.None)))
+        await foreach (
+            var part in (
+                await provider.LanguageModel("m").DoStreamAsync(Prompt(), CancellationToken.None)
+            )
+        )
         {
             parts.Add(part);
         }
@@ -84,7 +107,10 @@ public sealed class HttpTests
 
     private static LanguageModelCallOptions Prompt()
     {
-        return new LanguageModelCallOptions { Prompt = new ModelMessage[] { new UserModelMessage("hi") } };
+        return new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[] { new UserModelMessage("hi") },
+        };
     }
 
     private sealed class SseHandler : HttpMessageHandler
@@ -98,13 +124,18 @@ public sealed class HttpTests
 
         public string Uri { get; private set; } = string.Empty;
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
         {
             Uri = request.RequestUri?.AbsoluteUri ?? string.Empty;
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(_body, Encoding.UTF8, "text/event-stream"),
-            });
+            return Task.FromResult(
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(_body, Encoding.UTF8, "text/event-stream"),
+                }
+            );
         }
     }
 }

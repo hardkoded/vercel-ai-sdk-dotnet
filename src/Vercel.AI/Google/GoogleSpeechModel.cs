@@ -53,13 +53,22 @@ public static class GoogleSpeechInput
     public static GoogleSpeechInspection Inspect(string text, string? voice, JsonElement? google)
     {
         var transcript = text ?? string.Empty;
-        if (google is { ValueKind: JsonValueKind.Object } options && options.TryGetProperty("turns", out var turns) && turns.ValueKind == JsonValueKind.Array && turns.GetArrayLength() > 0)
+        if (
+            google is { ValueKind: JsonValueKind.Object } options
+            && options.TryGetProperty("turns", out var turns)
+            && turns.ValueKind == JsonValueKind.Array
+            && turns.GetArrayLength() > 0
+        )
         {
             var parts = new List<string>();
             var complete = true;
             foreach (var turn in turns.EnumerateArray())
             {
-                if (turn.ValueKind != JsonValueKind.Object || !turn.TryGetProperty("text", out var value) || value.ValueKind != JsonValueKind.String)
+                if (
+                    turn.ValueKind != JsonValueKind.Object
+                    || !turn.TryGetProperty("text", out var value)
+                    || value.ValueKind != JsonValueKind.String
+                )
                 {
                     complete = false;
                     break;
@@ -74,19 +83,29 @@ public static class GoogleSpeechInput
             }
         }
 
-        var custom = voice != null && (voice.StartsWith("voice_", StringComparison.Ordinal) || voice.StartsWith("voicekey_", StringComparison.Ordinal));
-        if (!custom && google is { ValueKind: JsonValueKind.Object } element
+        var custom =
+            voice != null
+            && (
+                voice.StartsWith("voice_", StringComparison.Ordinal)
+                || voice.StartsWith("voicekey_", StringComparison.Ordinal)
+            );
+        if (
+            !custom
+            && google is { ValueKind: JsonValueKind.Object } element
             && element.TryGetProperty("multiSpeakerVoiceConfig", out var config)
             && config.ValueKind == JsonValueKind.Object
             && config.TryGetProperty("speakerVoiceConfigs", out var speakers)
-            && speakers.ValueKind == JsonValueKind.Array)
+            && speakers.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var speaker in speakers.EnumerateArray())
             {
-                if (speaker.ValueKind == JsonValueKind.Object
+                if (
+                    speaker.ValueKind == JsonValueKind.Object
                     && speaker.TryGetProperty("voiceConfig", out var voiceConfig)
                     && voiceConfig.ValueKind == JsonValueKind.Object
-                    && voiceConfig.TryGetProperty("voice", out _))
+                    && voiceConfig.TryGetProperty("voice", out _)
+                )
                 {
                     custom = true;
                 }
@@ -119,8 +138,16 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
 {
     private const int DefaultSampleRate = 24000;
 
-    private static readonly Regex SampleRatePattern = new("rate=(\\d+)", RegexOptions.None, TimeSpan.FromSeconds(1));
-    private static readonly Regex PcmMimeType = new("^audio/(?:l16|pcm)(?:;|\\z)", RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
+    private static readonly Regex SampleRatePattern = new(
+        "rate=(\\d+)",
+        RegexOptions.None,
+        TimeSpan.FromSeconds(1)
+    );
+    private static readonly Regex PcmMimeType = new(
+        "^audio/(?:l16|pcm)(?:;|\\z)",
+        RegexOptions.IgnoreCase,
+        TimeSpan.FromSeconds(1)
+    );
 
     private readonly GoogleProvider _provider;
 
@@ -136,7 +163,8 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
     {
         get
         {
-            return _provider.ModelProvider.IndexOf("vertex", StringComparison.OrdinalIgnoreCase) >= 0
+            return
+                _provider.ModelProvider.IndexOf("vertex", StringComparison.OrdinalIgnoreCase) >= 0
                 ? "google.vertex.speech"
                 : _provider.ModelProvider;
         }
@@ -146,24 +174,37 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
     public string ModelId { get; }
 
     /// <summary>Warnings from the last call.</summary>
-    public IReadOnlyList<GoogleWarning> Warnings { get; private set; } = Array.Empty<GoogleWarning>();
+    public IReadOnlyList<GoogleWarning> Warnings { get; private set; } =
+        Array.Empty<GoogleWarning>();
 
     /// <inheritdoc />
-    public async Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
+    public async Task<SpeechResult> DoGenerateAsync(
+        SpeechCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
-        var result = await GenerateAsync(new GoogleSpeechCall(options.Text)
-        {
-            Voice = options.Voice,
-            Instructions = options.Instructions,
-            Speed = options.Speed,
-            Language = options.Language,
-            OutputFormat = options.OutputFormat,
-        }, cancellationToken).ConfigureAwait(false);
+        var result = await GenerateAsync(
+                new GoogleSpeechCall(options.Text)
+                {
+                    Voice = options.Voice,
+                    Instructions = options.Instructions,
+                    Speed = options.Speed,
+                    Language = options.Language,
+                    OutputFormat = options.OutputFormat,
+                    ProviderOptions = options.ProviderOptions,
+                    Headers = options.Headers,
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return new SpeechResult(result.Audio, result.MediaType, null);
     }
 
     /// <inheritdoc />
-    public async Task<SpeechModelResult> DoGenerateAsync(SpeechModelCall call, CancellationToken cancellationToken)
+    public async Task<SpeechModelResult> DoGenerateAsync(
+        SpeechModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (call == null)
         {
@@ -181,26 +222,46 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
         };
         if (call.ProviderOptions.ValueKind == JsonValueKind.Object)
         {
-            speech.ProviderOptions = call.ProviderOptions.EnumerateObject().ToDictionary(property => property.Name, property => property.Value.Clone());
+            speech.ProviderOptions = call
+                .ProviderOptions.EnumerateObject()
+                .ToDictionary(property => property.Name, property => property.Value.Clone());
         }
 
         var result = await GenerateAsync(speech, cancellationToken).ConfigureAwait(false);
-        var warnings = result.Warnings
-            .Select(warning => new OperationWarning(warning.Type, warning.Message, warning.Feature, warning.Details))
+        var warnings = result
+            .Warnings.Select(warning => new OperationWarning(
+                warning.Type,
+                warning.Message,
+                warning.Feature,
+                warning.Details
+            ))
             .ToList();
         var metadata = new JsonObject
         {
-            ["google"] = new JsonObject { ["sampleRate"] = result.SampleRate, ["mimeType"] = result.MimeType },
+            ["google"] = new JsonObject
+            {
+                ["sampleRate"] = result.SampleRate,
+                ["mimeType"] = result.MimeType,
+            },
         };
         return new SpeechModelResult(
             result.Audio,
             warnings,
             JsonSerializer.SerializeToElement(metadata),
-            new ProviderResponse(result.Headers, result.ResponseBody, timestamp: result.Timestamp.UtcDateTime, modelId: ModelId));
+            new ProviderResponse(
+                result.Headers,
+                result.ResponseBody,
+                timestamp: result.Timestamp.UtcDateTime,
+                modelId: ModelId
+            )
+        );
     }
 
     /// <summary>Synthesizes speech with Gemini-specific options.</summary>
-    public async Task<GoogleSpeechResult> GenerateAsync(GoogleSpeechCall call, CancellationToken cancellationToken)
+    public async Task<GoogleSpeechResult> GenerateAsync(
+        GoogleSpeechCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (call == null)
         {
@@ -220,12 +281,18 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
         }
 
         var requestBody = GoogleJson.Write(prepared.Body);
-        var response = await _provider.Http.SendJsonStringAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, GoogleModelPath.Get(ModelId) + ":generateContent"),
-            requestBody,
-            headers,
-            cancellationToken).ConfigureAwait(false);
+        var response = await _provider
+            .Http.SendJsonStringAsync(
+                HttpMethod.Post,
+                ApiKeys.Combine(
+                    _provider.Options.BaseUrl,
+                    GoogleModelPath.Get(ModelId) + ":generateContent"
+                ),
+                requestBody,
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         using var document = JsonDocument.Parse(response.Body);
         var root = document.RootElement;
 
@@ -233,29 +300,38 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
         // so take the first inline-data part.
         string? base64Audio = null;
         string? mimeType = null;
-        if (root.TryGetProperty("candidates", out var candidates) && candidates.ValueKind == JsonValueKind.Array)
+        if (
+            root.TryGetProperty("candidates", out var candidates)
+            && candidates.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var candidate in candidates.EnumerateArray())
             {
-                if (candidate.ValueKind == JsonValueKind.Object
+                if (
+                    candidate.ValueKind == JsonValueKind.Object
                     && candidate.TryGetProperty("content", out var content)
                     && content.ValueKind == JsonValueKind.Object
                     && content.TryGetProperty("parts", out var parts)
-                    && parts.ValueKind == JsonValueKind.Array)
+                    && parts.ValueKind == JsonValueKind.Array
+                )
                 {
                     foreach (var part in parts.EnumerateArray())
                     {
-                        if (part.ValueKind == JsonValueKind.Object
+                        if (
+                            part.ValueKind == JsonValueKind.Object
                             && part.TryGetProperty("inlineData", out var inline)
                             && inline.ValueKind == JsonValueKind.Object
                             && inline.TryGetProperty("data", out var audioData)
                             && audioData.ValueKind == JsonValueKind.String
-                            && !string.IsNullOrEmpty(audioData.GetString()))
+                            && !string.IsNullOrEmpty(audioData.GetString())
+                        )
                         {
                             base64Audio = audioData.GetString();
-                            mimeType = inline.TryGetProperty("mimeType", out var mimeTypeValue) && mimeTypeValue.ValueKind == JsonValueKind.String
-                                ? mimeTypeValue.GetString()
-                                : null;
+                            mimeType =
+                                inline.TryGetProperty("mimeType", out var mimeTypeValue)
+                                && mimeTypeValue.ValueKind == JsonValueKind.String
+                                    ? mimeTypeValue.GetString()
+                                    : null;
                             break;
                         }
                     }
@@ -269,26 +345,41 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
         }
 
         var sampleRate = ParseSampleRate(mimeType) ?? DefaultSampleRate;
-        var bytes = base64Audio != null ? Convert.FromBase64String(base64Audio) : Array.Empty<byte>();
+        var bytes =
+            base64Audio != null ? Convert.FromBase64String(base64Audio) : Array.Empty<byte>();
 
         // Older models return PCM, which needs a container for default WAV output.
         // Gemini 3.8 returns WAV itself, and adding another header corrupts that audio.
-        var isPcm = PcmMimeType.IsMatch(mimeType ?? string.Empty) || (mimeType == null && !prepared.UsesStructuredSpeech);
+        var isPcm =
+            PcmMimeType.IsMatch(mimeType ?? string.Empty)
+            || (mimeType == null && !prepared.UsesStructuredSpeech);
         var isWrapped = prepared.OutputFormat == "AUDIO_WAV" && isPcm && bytes.Length > 0;
         var audio = isWrapped ? AddWavHeader(bytes, sampleRate) : bytes;
 
         var warnings = new List<GoogleWarning>(prepared.Warnings);
-        if (prepared.OutputFormat == "AUDIO_L16" && bytes.Length > 0 && !prepared.UsesStructuredSpeech)
+        if (
+            prepared.OutputFormat == "AUDIO_L16"
+            && bytes.Length > 0
+            && !prepared.UsesStructuredSpeech
+        )
         {
-            warnings.Add(GoogleWarning.Unsupported(
-                "outputFormat",
-                "Returning raw PCM audio (signed 16-bit little-endian, mono, " + sampleRate.ToString(CultureInfo.InvariantCulture) + " Hz). "
-                + "These bytes have no container header and are not directly playable; "
-                + "see providerMetadata.google for the sample rate and mime type."));
+            warnings.Add(
+                GoogleWarning.Unsupported(
+                    "outputFormat",
+                    "Returning raw PCM audio (signed 16-bit little-endian, mono, "
+                        + sampleRate.ToString(CultureInfo.InvariantCulture)
+                        + " Hz). "
+                        + "These bytes have no container header and are not directly playable; "
+                        + "see providerMetadata.google for the sample rate and mime type."
+                )
+            );
         }
 
         JsonObject? usage = null;
-        if (root.TryGetProperty("usageMetadata", out var usageMetadata) && usageMetadata.ValueKind == JsonValueKind.Object)
+        if (
+            root.TryGetProperty("usageMetadata", out var usageMetadata)
+            && usageMetadata.ValueKind == JsonValueKind.Object
+        )
         {
             usage = JsonNode.Parse(usageMetadata.GetRawText()) as JsonObject;
         }
@@ -304,11 +395,16 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
             timestamp,
             ModelId,
             sampleRate,
-            mimeType);
+            mimeType
+        );
     }
 
     /// <summary>Builds the speech request body and warnings.</summary>
-    public static GoogleSpeechPreparation Prepare(string modelId, string provider, GoogleSpeechCall call)
+    public static GoogleSpeechPreparation Prepare(
+        string modelId,
+        string provider,
+        GoogleSpeechCall call
+    )
     {
         var warnings = new List<GoogleWarning>();
         var vertex = provider.IndexOf("vertex", StringComparison.OrdinalIgnoreCase) >= 0;
@@ -326,28 +422,52 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
             }
         }
 
-        var inspection = GoogleSpeechInput.Inspect(call.Text, call.Voice, google.ValueKind == JsonValueKind.Object ? google : null);
+        var inspection = GoogleSpeechInput.Inspect(
+            call.Text,
+            call.Voice,
+            google.ValueKind == JsonValueKind.Object ? google : null
+        );
         if (inspection.UsesCustomVoice)
         {
-            throw new ArgumentException("Custom voices are not supported. Use a prebuilt voice instead.", "voice");
+            throw new ArgumentException(
+                "Custom voices are not supported. Use a prebuilt voice instead.",
+                "voice"
+            );
         }
 
         if (inspection.Text.Length == 0)
         {
-            throw new ArgumentException("Speech input must contain a non-empty transcript.", "text");
+            throw new ArgumentException(
+                "Speech input must contain a non-empty transcript.",
+                "text"
+            );
         }
 
-        var structured = !modelId.StartsWith("gemini-2.5-", StringComparison.Ordinal) && !modelId.StartsWith("gemini-3.1-", StringComparison.Ordinal);
+        var structured =
+            !modelId.StartsWith("gemini-2.5-", StringComparison.Ordinal)
+            && !modelId.StartsWith("gemini-3.1-", StringComparison.Ordinal);
         var voice = string.IsNullOrEmpty(call.Voice) ? "Kore" : call.Voice!;
         var languageCode = call.Language == "auto" ? null : call.Language;
         JsonObject speechConfig;
-        if (google.ValueKind == JsonValueKind.Object && google.TryGetProperty("multiSpeakerVoiceConfig", out var multi))
+        if (
+            google.ValueKind == JsonValueKind.Object
+            && google.TryGetProperty("multiSpeakerVoiceConfig", out var multi)
+        )
         {
-            speechConfig = new JsonObject { ["multiSpeakerVoiceConfig"] = JsonNode.Parse(multi.GetRawText()) };
+            speechConfig = new JsonObject
+            {
+                ["multiSpeakerVoiceConfig"] = JsonNode.Parse(multi.GetRawText()),
+            };
         }
         else
         {
-            speechConfig = new JsonObject { ["voiceConfig"] = new JsonObject { ["prebuiltVoiceConfig"] = new JsonObject { ["voiceName"] = voice } } };
+            speechConfig = new JsonObject
+            {
+                ["voiceConfig"] = new JsonObject
+                {
+                    ["prebuiltVoiceConfig"] = new JsonObject { ["voiceName"] = voice },
+                },
+            };
         }
 
         if (languageCode != null)
@@ -360,7 +480,12 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
         {
             if (speechConfig.ContainsKey("multiSpeakerVoiceConfig"))
             {
-                warnings.Add(GoogleWarning.Unsupported("instructions", "Google Gemini TTS ignores instructions when multiSpeakerVoiceConfig is set."));
+                warnings.Add(
+                    GoogleWarning.Unsupported(
+                        "instructions",
+                        "Google Gemini TTS ignores instructions when multiSpeakerVoiceConfig is set."
+                    )
+                );
             }
             else
             {
@@ -370,7 +495,12 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
 
         if (call.Speed != null)
         {
-            warnings.Add(GoogleWarning.Unsupported("speed", "Google Gemini TTS models do not support the speed option. It was ignored."));
+            warnings.Add(
+                GoogleWarning.Unsupported(
+                    "speed",
+                    "Google Gemini TTS models do not support the speed option. It was ignored."
+                )
+            );
         }
 
         var part = new JsonObject { ["text"] = prompt };
@@ -391,7 +521,11 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
                 ["alaw"] = "AUDIO_ALAW",
                 ["audio/alaw"] = "AUDIO_ALAW",
             }
-            : new Dictionary<string, string>(StringComparer.Ordinal) { ["wav"] = "AUDIO_WAV", ["pcm"] = "AUDIO_L16" };
+            : new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["wav"] = "AUDIO_WAV",
+                ["pcm"] = "AUDIO_L16",
+            };
         var resolvedOutputFormat = "wav";
         if (call.OutputFormat != null && formats.ContainsKey(call.OutputFormat))
         {
@@ -399,20 +533,36 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
         }
         else if (call.OutputFormat != null)
         {
-            warnings.Add(GoogleWarning.Unsupported("outputFormat", "Unsupported output format: " + call.OutputFormat + ". Using wav instead."));
+            warnings.Add(
+                GoogleWarning.Unsupported(
+                    "outputFormat",
+                    "Unsupported output format: " + call.OutputFormat + ". Using wav instead."
+                )
+            );
         }
 
         if (structured && call.OutputFormat != null)
         {
-            generation["responseFormat"] = new JsonObject { ["audio"] = new JsonObject { ["mimeType"] = formats[resolvedOutputFormat] } };
+            generation["responseFormat"] = new JsonObject
+            {
+                ["audio"] = new JsonObject { ["mimeType"] = formats[resolvedOutputFormat] },
+            };
         }
 
         var body = new JsonObject
         {
-            ["contents"] = new JsonArray { new JsonObject { ["role"] = "user", ["parts"] = new JsonArray(part) } },
+            ["contents"] = new JsonArray
+            {
+                new JsonObject { ["role"] = "user", ["parts"] = new JsonArray(part) },
+            },
             ["generationConfig"] = generation,
         };
-        return new GoogleSpeechPreparation(body, warnings, formats[resolvedOutputFormat], structured);
+        return new GoogleSpeechPreparation(
+            body,
+            warnings,
+            formats[resolvedOutputFormat],
+            structured
+        );
     }
 
     /// <summary>Parses the sample rate from a PCM mime type such as <c>audio/L16;rate=24000</c>.</summary>
@@ -424,7 +574,16 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
         }
 
         var match = SampleRatePattern.Match(mimeType);
-        return match.Success && int.TryParse(match.Groups[1].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var rate) ? rate : null;
+        return
+            match.Success
+            && int.TryParse(
+                match.Groups[1].Value,
+                NumberStyles.None,
+                CultureInfo.InvariantCulture,
+                out var rate
+            )
+            ? rate
+            : null;
     }
 
     /// <summary>Wraps raw signed 16-bit little-endian mono PCM in a minimal 44-byte WAV (RIFF/WAVE) container.</summary>
@@ -480,7 +639,12 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
 public sealed class GoogleSpeechPreparation
 {
     /// <summary>Creates a preparation.</summary>
-    public GoogleSpeechPreparation(JsonObject body, IReadOnlyList<GoogleWarning> warnings, string outputFormat = "AUDIO_WAV", bool usesStructuredSpeech = false)
+    public GoogleSpeechPreparation(
+        JsonObject body,
+        IReadOnlyList<GoogleWarning> warnings,
+        string outputFormat = "AUDIO_WAV",
+        bool usesStructuredSpeech = false
+    )
     {
         Body = body;
         Warnings = warnings;
@@ -516,7 +680,8 @@ public sealed class GoogleSpeechResult
         DateTimeOffset timestamp,
         string modelId,
         int sampleRate,
-        string? mimeType)
+        string? mimeType
+    )
     {
         Audio = audio;
         MediaType = mediaType;

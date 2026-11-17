@@ -11,7 +11,11 @@ namespace Vercel.AI.Tests.PruneMessages;
 /// <summary>Port of <c>prune-messages.test.ts</c> &gt; <c>pruneMessages &gt; toolCalls &gt; two tool settings</c>.</summary>
 public sealed class ToolCallsTwoToolSettingsTests
 {
-    [UpstreamTest(Prefix + "pruneMessages > toolCalls > two tool settings::should prune all tool calls, results, errors, and approvals", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "pruneMessages > toolCalls > two tool settings::should prune all tool calls, results, errors, and approvals",
+        Coverage = UpstreamCoverage.Covered
+    )]
     [Fact]
     public void Should_prune_all_tool_calls_results_errors_and_approvals()
     {
@@ -19,7 +23,8 @@ public sealed class ToolCallsTwoToolSettingsTests
             MessagesFixture1,
             PruneReasoning.None,
             PruneToolCallsRule.All(new[] { "get-weather-tool-1" }),
-            PruneToolCallsRule.BeforeLastMessages(2, new[] { "get-weather-tool-2" }));
+            PruneToolCallsRule.BeforeLastMessages(2, new[] { "get-weather-tool-2" })
+        );
 
         AssertSnapshot(
             """
@@ -89,6 +94,7 @@ public sealed class ToolCallsTwoToolSettingsTests
               }
             ]
             """,
-            result);
+            result
+        );
     }
 }

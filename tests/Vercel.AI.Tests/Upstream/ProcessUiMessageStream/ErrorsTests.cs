@@ -12,59 +12,87 @@ namespace Vercel.AI.Tests.Upstream.ProcessUiMessageStream;
 /// <summary>Port of <c>process-ui-message-stream.test.ts</c> &gt; <c>processUIMessageStream</c> &gt; <c>errors</c>.</summary>
 public sealed class ErrorsTests
 {
-    private const string Prefix = "packages/ai/src/ui/process-ui-message-stream.test.ts::processUIMessageStream > ";
+    private const string Prefix =
+        "packages/ai/src/ui/process-ui-message-stream.test.ts::processUIMessageStream > ";
 
     [Fact]
-    [UpstreamTest(Prefix + "errors::should call the update function with the correct arguments", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "errors::should call the update function with the correct arguments",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_call_the_update_function_with_the_correct_arguments()
     {
         var harness = new ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
         var errors = new JsonArray();
-        await harness.ProcessAsync("""
+        await harness.ProcessAsync(
+            """
             [{"type":"error","errorText":"test error"}]
-            """, harness.Options(error => errors.Add(error.Message)));
+            """,
+            harness.Options(error => errors.Add(error.Message))
+        );
 
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             []
-            """, harness.WriteCalls);
+            """,
+            harness.WriteCalls
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "errors::should have the correct final message state", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "errors::should have the correct final message state",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_have_the_correct_final_message_state()
     {
         var harness = new ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
         var errors = new JsonArray();
-        await harness.ProcessAsync("""
+        await harness.ProcessAsync(
+            """
             [{"type":"error","errorText":"test error"}]
-            """, harness.Options(error => errors.Add(error.Message)));
+            """,
+            harness.Options(error => errors.Add(error.Message))
+        );
 
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             {
               "id": "msg-123",
               "parts": [],
               "role": "assistant"
             }
-            """, harness.Message);
+            """,
+            harness.Message
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "errors::should call the onError function with the correct arguments", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "errors::should call the onError function with the correct arguments",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_call_the_onError_function_with_the_correct_arguments()
     {
         var harness = new ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
         var errors = new JsonArray();
-        await harness.ProcessAsync("""
+        await harness.ProcessAsync(
+            """
             [{"type":"error","errorText":"test error"}]
-            """, harness.Options(error => errors.Add(error.Message)));
+            """,
+            harness.Options(error => errors.Add(error.Message))
+        );
 
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             [
               "test error"
             ]
-            """, errors);
+            """,
+            errors
+        );
     }
 }

@@ -65,12 +65,20 @@ internal static class ScaleDownExtractionApi
 
         foreach (var choice in choices.EnumerateArray())
         {
-            if (choice.ValueKind != JsonValueKind.Object || Property(choice, "message", JsonValueKind.Object).ValueKind != JsonValueKind.Object)
+            if (
+                choice.ValueKind != JsonValueKind.Object
+                || Property(choice, "message", JsonValueKind.Object).ValueKind
+                    != JsonValueKind.Object
+            )
             {
                 throw new FormatException("Invalid choice.");
             }
 
-            Property(Property(choice, "message", JsonValueKind.Object), "content", JsonValueKind.String);
+            Property(
+                Property(choice, "message", JsonValueKind.Object),
+                "content",
+                JsonValueKind.String
+            );
         }
 
         int? promptTokens = null;
@@ -117,14 +125,17 @@ internal static class ScaleDownExtractionApi
                     return null;
                 }
 
-                entities.Add(new ScaleDownEntity
-                {
-                    Text = Property(entity, "text", JsonValueKind.String).GetString()!,
-                    Type = Property(entity, "type", JsonValueKind.String).GetString()!,
-                    Confidence = Property(entity, "confidence", JsonValueKind.Number).GetDouble(),
-                    Start = OptionalOffset(entity, "start"),
-                    End = OptionalOffset(entity, "end"),
-                });
+                entities.Add(
+                    new ScaleDownEntity
+                    {
+                        Text = Property(entity, "text", JsonValueKind.String).GetString()!,
+                        Type = Property(entity, "type", JsonValueKind.String).GetString()!,
+                        Confidence = Property(entity, "confidence", JsonValueKind.Number)
+                            .GetDouble(),
+                        Start = OptionalOffset(entity, "start"),
+                        End = OptionalOffset(entity, "end"),
+                    }
+                );
             }
 
             return new ScaleDownExtractionContent
@@ -134,7 +145,11 @@ internal static class ScaleDownExtractionApi
                 OcrText = OptionalString(root, "ocr_text"),
             };
         }
-        catch (Exception exception) when (exception is JsonException || exception is FormatException || exception is InvalidOperationException)
+        catch (Exception exception)
+            when (exception is JsonException
+                || exception is FormatException
+                || exception is InvalidOperationException
+            )
         {
             return null;
         }
@@ -157,7 +172,9 @@ internal static class ScaleDownExtractionApi
             return null;
         }
 
-        return value.ValueKind == JsonValueKind.String ? value.GetString() : throw new FormatException("Invalid " + name + ".");
+        return value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : throw new FormatException("Invalid " + name + ".");
     }
 
     private static double? OptionalNumber(JsonElement element, string name)
@@ -167,7 +184,9 @@ internal static class ScaleDownExtractionApi
             return null;
         }
 
-        return value.ValueKind == JsonValueKind.Number ? value.GetDouble() : throw new FormatException("Invalid " + name + ".");
+        return value.ValueKind == JsonValueKind.Number
+            ? value.GetDouble()
+            : throw new FormatException("Invalid " + name + ".");
     }
 
     private static int? OptionalInt(JsonElement element, string name)

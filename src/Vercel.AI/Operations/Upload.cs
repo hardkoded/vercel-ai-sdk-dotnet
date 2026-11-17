@@ -61,7 +61,14 @@ public sealed class ProviderFileReference
 public sealed class UploadFileCall
 {
     /// <summary>Creates an upload call.</summary>
-    public UploadFileCall(UploadData data, string mediaType, string? filename, CancellationToken cancellationToken, IReadOnlyDictionary<string, string>? headers, JsonElement? providerOptions)
+    public UploadFileCall(
+        UploadData data,
+        string mediaType,
+        string? filename,
+        CancellationToken cancellationToken,
+        IReadOnlyDictionary<string, string>? headers,
+        JsonElement? providerOptions
+    )
     {
         Data = data;
         MediaType = mediaType;
@@ -94,7 +101,16 @@ public sealed class UploadFileCall
 public sealed class UploadFileModelResult
 {
     /// <summary>Creates a provider result.</summary>
-    public UploadFileModelResult(ProviderFileReference providerReference, string? mediaType = null, string? filename = null, long? byteSize = null, DateTime? createdAt = null, DateTime? expiresAt = null, JsonElement? providerMetadata = null, IReadOnlyList<OperationWarning>? warnings = null)
+    public UploadFileModelResult(
+        ProviderFileReference providerReference,
+        string? mediaType = null,
+        string? filename = null,
+        long? byteSize = null,
+        DateTime? createdAt = null,
+        DateTime? expiresAt = null,
+        JsonElement? providerMetadata = null,
+        IReadOnlyList<OperationWarning>? warnings = null
+    )
     {
         ProviderReference = providerReference;
         MediaType = mediaType;
@@ -135,7 +151,10 @@ public sealed class UploadFileModelResult
 public interface IFileStore
 {
     /// <summary>Uploads a file.</summary>
-    Task<UploadFileModelResult> UploadFileAsync(UploadFileCall call, CancellationToken cancellationToken);
+    Task<UploadFileModelResult> UploadFileAsync(
+        UploadFileCall call,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>Provider that can expose a files API.</summary>
@@ -149,7 +168,16 @@ public interface IFileStoreProvider
 public sealed class UploadFileResult
 {
     /// <summary>Creates an upload result.</summary>
-    public UploadFileResult(ProviderFileReference providerReference, string? mediaType, string? filename, long? byteSize, DateTime? createdAt, DateTime? expiresAt, JsonElement? providerMetadata, IReadOnlyList<OperationWarning> warnings)
+    public UploadFileResult(
+        ProviderFileReference providerReference,
+        string? mediaType,
+        string? filename,
+        long? byteSize,
+        DateTime? createdAt,
+        DateTime? expiresAt,
+        JsonElement? providerMetadata,
+        IReadOnlyList<OperationWarning> warnings
+    )
     {
         ProviderReference = providerReference;
         MediaType = mediaType;
@@ -218,7 +246,10 @@ public sealed class UploadFileRequest
 public static class UploadFile
 {
     /// <summary>Uploads <see cref="UploadFileRequest.Data"/>.</summary>
-    public static async Task<UploadFileResult> UploadFileAsync(UploadFileRequest request, CancellationToken cancellationToken = default)
+    public static async Task<UploadFileResult> UploadFileAsync(
+        UploadFileRequest request,
+        CancellationToken cancellationToken = default
+    )
     {
         if (request == null)
         {
@@ -227,12 +258,35 @@ public static class UploadFile
 
         var data = Normalize(request.Data);
         var mediaType = request.MediaType ?? DefaultMediaType(data);
-        var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
+        var token = request.CancellationToken.CanBeCanceled
+            ? request.CancellationToken
+            : cancellationToken;
         try
         {
             var store = Resolve(request.Api);
-            var result = await store.UploadFileAsync(new UploadFileCall(data, mediaType, request.Filename, token, request.Headers, request.ProviderOptionsSpecified ? request.ProviderOptions : null), token).ConfigureAwait(false);
-            return new UploadFileResult(result.ProviderReference, result.MediaType, result.Filename, result.ByteSize, result.CreatedAt, result.ExpiresAt, result.ProviderMetadata, result.Warnings);
+            var result = await store
+                .UploadFileAsync(
+                    new UploadFileCall(
+                        data,
+                        mediaType,
+                        request.Filename,
+                        token,
+                        request.Headers,
+                        request.ProviderOptionsSpecified ? request.ProviderOptions : null
+                    ),
+                    token
+                )
+                .ConfigureAwait(false);
+            return new UploadFileResult(
+                result.ProviderReference,
+                result.MediaType,
+                result.Filename,
+                result.ByteSize,
+                result.CreatedAt,
+                result.ExpiresAt,
+                result.ProviderMetadata,
+                result.Warnings
+            );
         }
         catch (Exception error)
         {
@@ -264,7 +318,11 @@ public static class UploadFile
             return new UploadData("data", data);
         }
 
-        throw new InvalidArgumentException("data", data, "data must be bytes, a string, or tagged data");
+        throw new InvalidArgumentException(
+            "data",
+            data,
+            "data must be bytes, a string, or tagged data"
+        );
     }
 
     private static string DefaultMediaType(UploadData data)
@@ -279,8 +337,12 @@ public static class UploadFile
             return "application/octet-stream";
         }
 
-        var bytes = data.Data is byte[] raw ? raw : data.Data is string text ? DecodeSample(text) : Array.Empty<byte>();
-        return MediaTypeDetector.Detect(bytes, null) ?? (LikelyText(bytes) ? "text/plain" : "application/octet-stream");
+        var bytes =
+            data.Data is byte[] raw ? raw
+            : data.Data is string text ? DecodeSample(text)
+            : Array.Empty<byte>();
+        return MediaTypeDetector.Detect(bytes, null)
+            ?? (LikelyText(bytes) ? "text/plain" : "application/octet-stream");
     }
 
     private static byte[] DecodeSample(string data)
@@ -332,7 +394,9 @@ public static class UploadFile
             }
         }
 
-        throw new InvalidOperationException("The provider does not support file uploads. Make sure it exposes a files() method.");
+        throw new InvalidOperationException(
+            "The provider does not support file uploads. Make sure it exposes a files() method."
+        );
     }
 }
 
@@ -382,7 +446,11 @@ public sealed class SkillFilePayload
 public sealed class UploadSkillCall
 {
     /// <summary>Creates a skill call.</summary>
-    public UploadSkillCall(IReadOnlyList<SkillFilePayload> files, string? displayTitle, JsonElement? providerOptions)
+    public UploadSkillCall(
+        IReadOnlyList<SkillFilePayload> files,
+        string? displayTitle,
+        JsonElement? providerOptions
+    )
     {
         Files = files ?? Array.Empty<SkillFilePayload>();
         DisplayTitle = displayTitle;
@@ -403,7 +471,10 @@ public sealed class UploadSkillCall
 public sealed class UploadSkillResult
 {
     /// <summary>Creates a skill result.</summary>
-    public UploadSkillResult(ProviderFileReference providerReference, IReadOnlyList<OperationWarning>? warnings = null)
+    public UploadSkillResult(
+        ProviderFileReference providerReference,
+        IReadOnlyList<OperationWarning>? warnings = null
+    )
     {
         ProviderReference = providerReference;
         Warnings = warnings ?? Array.Empty<OperationWarning>();
@@ -420,7 +491,10 @@ public sealed class UploadSkillResult
 public interface ISkillStore
 {
     /// <summary>Uploads a skill.</summary>
-    Task<UploadSkillResult> UploadSkillAsync(UploadSkillCall call, CancellationToken cancellationToken);
+    Task<UploadSkillResult> UploadSkillAsync(
+        UploadSkillCall call,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>Provider that can expose a skills API.</summary>
@@ -450,7 +524,10 @@ public sealed class UploadSkillRequest
 public static class UploadSkill
 {
     /// <summary>Uploads the skill files.</summary>
-    public static async Task<UploadSkillResult> UploadSkillAsync(UploadSkillRequest request, CancellationToken cancellationToken = default)
+    public static async Task<UploadSkillResult> UploadSkillAsync(
+        UploadSkillRequest request,
+        CancellationToken cancellationToken = default
+    )
     {
         if (request == null)
         {
@@ -465,7 +542,12 @@ public static class UploadSkill
             files.Add(new SkillFilePayload(file.Path, data, file.MediaType));
         }
 
-        return await store.UploadSkillAsync(new UploadSkillCall(files, request.DisplayTitle, request.ProviderOptions), cancellationToken).ConfigureAwait(false);
+        return await store
+            .UploadSkillAsync(
+                new UploadSkillCall(files, request.DisplayTitle, request.ProviderOptions),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
     }
 
     private static ISkillStore Resolve(ApiOrProvider<ISkillStore, ISkillStoreProvider>? api)
@@ -484,6 +566,8 @@ public static class UploadSkill
             }
         }
 
-        throw new InvalidOperationException("The provider does not support skills. Make sure it exposes a skills() method.");
+        throw new InvalidOperationException(
+            "The provider does not support skills. Make sure it exposes a skills() method."
+        );
     }
 }

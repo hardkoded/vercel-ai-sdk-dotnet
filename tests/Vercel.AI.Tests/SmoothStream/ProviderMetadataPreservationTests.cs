@@ -15,7 +15,8 @@ public sealed class ProviderMetadataPreservationTests : SmoothStreamTestBase
 
     private static readonly System.Text.Json.JsonElement s_metadataB = Meta("sig-b");
 
-    private Task SmoothParts(params TextStreamPart[] parts) => Run(parts, new SmoothStreamOptions { DelayInMs = null });
+    private Task SmoothParts(params TextStreamPart[] parts) =>
+        Run(parts, new SmoothStreamOptions { DelayInMs = null });
 
     [Fact]
     public async Task ShouldPreserveMetadataFromAnEmptyDeltaWhenTheBufferIsEmpty()
@@ -31,7 +32,8 @@ public sealed class ProviderMetadataPreservationTests : SmoothStreamTestBase
                 D("Hello world", "t1"),
                 new TextEndPart("t1"),
             ],
-            new SmoothStreamOptions { DelayInMs = null });
+            new SmoothStreamOptions { DelayInMs = null }
+        );
         ExpectOutput(
             new ReasoningStartPart("r1"),
             R("Let ", "r1"),
@@ -42,7 +44,8 @@ public sealed class ProviderMetadataPreservationTests : SmoothStreamTestBase
             new TextStartPart("t1"),
             D("Hello ", "t1"),
             D("world", "t1"),
-            new TextEndPart("t1"));
+            new TextEndPart("t1")
+        );
     }
 
     [Fact]
@@ -62,7 +65,10 @@ public sealed class ProviderMetadataPreservationTests : SmoothStreamTestBase
 
         var lastReasoningDelta = Parts.OfType<ReasoningDeltaPart>().Last();
         Assert.NotNull(lastReasoningDelta.ProviderMetadata);
-        Assert.Equal(metadata.GetRawText(), lastReasoningDelta.ProviderMetadata!.Value.GetRawText());
+        Assert.Equal(
+            metadata.GetRawText(),
+            lastReasoningDelta.ProviderMetadata!.Value.GetRawText()
+        );
     }
 
     [Fact]
@@ -100,7 +106,8 @@ public sealed class ProviderMetadataPreservationTests : SmoothStreamTestBase
         var metadata = Meta("sig_abc123");
         await Run(
             [D("Signed line\n", "text-1", metadata), D("Plain line\n", "text-2")],
-            new SmoothStreamOptions { Chunking = SmoothStreamChunking.Line, DelayInMs = null });
+            new SmoothStreamOptions { Chunking = SmoothStreamChunking.Line, DelayInMs = null }
+        );
         ExpectOutput(D("Signed line\n", "text-1", metadata), D("Plain line\n", "text-2"));
     }
 
@@ -108,7 +115,14 @@ public sealed class ProviderMetadataPreservationTests : SmoothStreamTestBase
     public async Task ShouldPreserveProviderMetadataOnReasoningStartForRedactedThinking()
     {
         var metadata = System.Text.Json.JsonSerializer.SerializeToElement(
-            new Dictionary<string, object> { ["anthropic"] = new Dictionary<string, string> { ["redactedData"] = "redacted-thinking-data" } });
+            new Dictionary<string, object>
+            {
+                ["anthropic"] = new Dictionary<string, string>
+                {
+                    ["redactedData"] = "redacted-thinking-data",
+                },
+            }
+        );
         await Run([new ReasoningStartPart("1", metadata), new ReasoningEndPart("1")]);
 
         // reasoning-start should pass through unchanged with providerMetadata
@@ -118,12 +132,28 @@ public sealed class ProviderMetadataPreservationTests : SmoothStreamTestBase
     }
 
     [Theory]
-    [InlineData(SmoothStreamChunking.Word, true, "First second final", new[] { "First ", "second ", "final" })]
-    [InlineData(SmoothStreamChunking.Line, false, "First line\nSecond line\nfinal line", new[] { "First line\n", "Second line\n", "final line" })]
-    public async Task ShouldPreserveProviderMetadataOnEveryChunkedPart(SmoothStreamChunking chunking, bool reasoning, string inputText, string[] expectedText)
+    [InlineData(
+        SmoothStreamChunking.Word,
+        true,
+        "First second final",
+        new[] { "First ", "second ", "final" }
+    )]
+    [InlineData(
+        SmoothStreamChunking.Line,
+        false,
+        "First line\nSecond line\nfinal line",
+        new[] { "First line\n", "Second line\n", "final line" }
+    )]
+    public async Task ShouldPreserveProviderMetadataOnEveryChunkedPart(
+        SmoothStreamChunking chunking,
+        bool reasoning,
+        string inputText,
+        string[] expectedText
+    )
     {
         var metadata = Meta("sig_abc123");
-        TextStreamPart Delta(string text) => reasoning ? R(text, "1", metadata) : D(text, "1", metadata);
+        TextStreamPart Delta(string text) =>
+            reasoning ? R(text, "1", metadata) : D(text, "1", metadata);
         TextStreamPart[] input = reasoning
             ? [new ReasoningStartPart("1"), Delta(inputText), new ReasoningEndPart("1")]
             : [new TextStartPart("1"), Delta(inputText), new TextEndPart("1")];
@@ -132,6 +162,7 @@ public sealed class ProviderMetadataPreservationTests : SmoothStreamTestBase
 
         Assert.Equal(
             expectedText.Select(Delta).Select(Describe).ToArray(),
-            Parts.Where(p => p is TextDeltaPart or ReasoningDeltaPart).Select(Describe).ToArray());
+            Parts.Where(p => p is TextDeltaPart or ReasoningDeltaPart).Select(Describe).ToArray()
+        );
     }
 }

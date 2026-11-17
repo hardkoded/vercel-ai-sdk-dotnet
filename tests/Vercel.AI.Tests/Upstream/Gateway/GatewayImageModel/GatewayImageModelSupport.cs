@@ -14,17 +14,35 @@ internal static class GatewayImageModelSupport
 {
     public const string ModelId = "openai/gpt-image-1";
 
-    public static Vercel.AI.Gateway.GatewayImageModel CreateTestModel(HttpMessageHandler handler, string modelId = ModelId, IReadOnlyDictionary<string, string>? o11yHeaders = null)
+    public static Vercel.AI.Gateway.GatewayImageModel CreateTestModel(
+        HttpMessageHandler handler,
+        string modelId = ModelId,
+        IReadOnlyDictionary<string, string>? o11yHeaders = null
+    )
     {
         var provider = GatewayProvider.Create(
-            new GatewayOptions { ApiKey = "test-token", BaseUrl = "https://api.test.com", O11yHeaders = o11yHeaders ?? new Dictionary<string, string>() },
-            handler);
+            new GatewayOptions
+            {
+                ApiKey = "test-token",
+                BaseUrl = "https://api.test.com",
+                O11yHeaders = o11yHeaders ?? new Dictionary<string, string>(),
+            },
+            handler
+        );
         return (Vercel.AI.Gateway.GatewayImageModel)provider.ImageModel(modelId);
     }
 
-    public static UpstreamRecordingHandler PrepareJsonResponse(string? images = null, string? extra = null)
+    public static UpstreamRecordingHandler PrepareJsonResponse(
+        string? images = null,
+        string? extra = null
+    )
     {
-        return new UpstreamRecordingHandler("{\"images\":" + (images ?? "[\"base64-image-1\"]") + (extra == null ? string.Empty : "," + extra) + "}");
+        return new UpstreamRecordingHandler(
+            "{\"images\":"
+                + (images ?? "[\"base64-image-1\"]")
+                + (extra == null ? string.Empty : "," + extra)
+                + "}"
+        );
     }
 
     public static Task<ImageModelResult> DoGenerate(
@@ -38,15 +56,29 @@ internal static class GatewayImageModelSupport
         int? seed = null,
         string providerOptions = "{}",
         IReadOnlyDictionary<string, string>? headers = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         using var options = JsonDocument.Parse(providerOptions);
         return model.DoGenerateAsync(
-            new ImageModelCall(prompt, files, mask, n, size, aspectRatio, seed, options.RootElement.Clone(), headers ?? new Dictionary<string, string>(), cancellationToken),
-            cancellationToken);
+            new ImageModelCall(
+                prompt,
+                files,
+                mask,
+                n,
+                size,
+                aspectRatio,
+                seed,
+                options.RootElement.Clone(),
+                headers ?? new Dictionary<string, string>(),
+                cancellationToken
+            ),
+            cancellationToken
+        );
     }
 
     public static JsonNode? Body(UpstreamRecordingHandler handler) => JsonNode.Parse(handler.Body);
 
-    public static bool Equal(string expected, JsonNode? actual) => JsonNode.DeepEquals(JsonNode.Parse(expected), actual);
+    public static bool Equal(string expected, JsonNode? actual) =>
+        JsonNode.DeepEquals(JsonNode.Parse(expected), actual);
 }

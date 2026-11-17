@@ -18,7 +18,10 @@ internal sealed class SseStreamHandler : HttpMessageHandler
     private readonly byte[] _body;
     private readonly IReadOnlyDictionary<string, string>? _headers;
 
-    public SseStreamHandler(IEnumerable<string> chunks, IReadOnlyDictionary<string, string>? headers = null)
+    public SseStreamHandler(
+        IEnumerable<string> chunks,
+        IReadOnlyDictionary<string, string>? headers = null
+    )
     {
         _body = Encoding.UTF8.GetBytes(string.Concat(chunks));
         _headers = headers;
@@ -31,7 +34,9 @@ internal sealed class SseStreamHandler : HttpMessageHandler
     /// <summary>Builds the chunks of an upstream <c>*.chunks.txt</c> fixture: one <c>data:</c> event per line, and a final <c>[DONE]</c> when asked.</summary>
     public static IEnumerable<string> FixtureChunks(string name, bool done)
     {
-        var lines = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", name + ".chunks.txt"))
+        var lines = File.ReadAllLines(
+                Path.Combine(AppContext.BaseDirectory, "Fixtures", name + ".chunks.txt")
+            )
             .Where(line => line.Trim().Length > 0)
             .Select(line => "data: " + line + "\n\n")
             .ToList();
@@ -56,11 +61,19 @@ internal sealed class SseStreamHandler : HttpMessageHandler
         Assert.Equal("test-value", headers["test-header"]);
     }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         Uri = request.RequestUri?.AbsoluteUri ?? string.Empty;
-        Body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
-        var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new UnknownLengthContent(new MemoryStream(_body)) };
+        Body = request.Content is null
+            ? string.Empty
+            : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new UnknownLengthContent(new MemoryStream(_body)),
+        };
         response.Content.Headers.ContentType = new MediaTypeHeaderValue("text/event-stream");
         response.Headers.TryAddWithoutValidation("cache-control", "no-cache");
         response.Headers.TryAddWithoutValidation("connection", "keep-alive");

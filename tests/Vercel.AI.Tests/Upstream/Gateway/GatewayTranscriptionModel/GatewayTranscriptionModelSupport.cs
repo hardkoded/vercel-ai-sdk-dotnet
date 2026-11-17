@@ -18,11 +18,21 @@ internal static class GatewayTranscriptionModelSupport
     /// <summary>Stands for upstream's <c>'base64-audio'</c> input. The port takes audio as bytes.</summary>
     public static readonly byte[] Audio = { 1, 2, 3 };
 
-    public static Vercel.AI.Gateway.GatewayTranscriptionModel CreateTestModel(HttpMessageHandler handler, string modelId = ModelId, IReadOnlyDictionary<string, string>? o11yHeaders = null)
+    public static Vercel.AI.Gateway.GatewayTranscriptionModel CreateTestModel(
+        HttpMessageHandler handler,
+        string modelId = ModelId,
+        IReadOnlyDictionary<string, string>? o11yHeaders = null
+    )
     {
         var provider = GatewayProvider.Create(
-            new GatewayOptions { ApiKey = "test-token", BaseUrl = "https://api.test.com", O11yHeaders = o11yHeaders ?? new Dictionary<string, string>() },
-            handler);
+            new GatewayOptions
+            {
+                ApiKey = "test-token",
+                BaseUrl = "https://api.test.com",
+                O11yHeaders = o11yHeaders ?? new Dictionary<string, string>(),
+            },
+            handler
+        );
         return (Vercel.AI.Gateway.GatewayTranscriptionModel)provider.TranscriptionModel(modelId);
     }
 
@@ -39,41 +49,68 @@ internal static class GatewayTranscriptionModelSupport
         string mediaType = "audio/wav",
         string? providerOptions = null,
         IReadOnlyList<string>? timestampGranularities = null,
-        IReadOnlyDictionary<string, string>? headers = null)
+        IReadOnlyDictionary<string, string>? headers = null
+    )
     {
-        var options = providerOptions is null ? default : JsonDocument.Parse(providerOptions).RootElement.Clone();
+        var options = providerOptions is null
+            ? default
+            : JsonDocument.Parse(providerOptions).RootElement.Clone();
         var callHeaders = headers ?? new Dictionary<string, string>();
         var call = audioBase64 is null
-            ? new TranscriptionModelCall(audio ?? Audio, mediaType, options, callHeaders, CancellationToken.None) { TimestampGranularities = timestampGranularities }
-            : new TranscriptionModelCall(audioBase64, mediaType, options, callHeaders, CancellationToken.None) { TimestampGranularities = timestampGranularities };
+            ? new TranscriptionModelCall(
+                audio ?? Audio,
+                mediaType,
+                options,
+                callHeaders,
+                CancellationToken.None
+            )
+            {
+                TimestampGranularities = timestampGranularities,
+            }
+            : new TranscriptionModelCall(
+                audioBase64,
+                mediaType,
+                options,
+                callHeaders,
+                CancellationToken.None
+            )
+            {
+                TimestampGranularities = timestampGranularities,
+            };
         return model.DoGenerateAsync(call, CancellationToken.None);
     }
 
     public static JsonNode? Body(UpstreamRecordingHandler handler) => JsonNode.Parse(handler.Body);
 
-    public static bool Equal(string expected, JsonNode? actual) => JsonNode.DeepEquals(JsonNode.Parse(expected), actual);
+    public static bool Equal(string expected, JsonNode? actual) =>
+        JsonNode.DeepEquals(JsonNode.Parse(expected), actual);
 
     public const string StreamingModelId = "openai/gpt-realtime-whisper";
 
     /// <summary>Maps to <c>createStreamingTestModel</c>. <paramref name="headers"/> stands for the <c>headers</c> config.</summary>
     public static Vercel.AI.Gateway.GatewayTranscriptionModel CreateStreamingTestModel(
         IReadOnlyDictionary<string, string?>? headers = null,
-        Func<DateTimeOffset>? currentDate = null)
+        Func<DateTimeOffset>? currentDate = null
+    )
     {
-        var provider = GatewayProvider.Create(new GatewayOptions
-        {
-            ApiKey = "test-token",
-            BaseUrl = "https://api.test.com",
-            O11yHeaders = new Dictionary<string, string>(),
-            WebSocket = MockWebSocket.Factory,
-            CurrentDate = currentDate,
-        });
-        var model = (Vercel.AI.Gateway.GatewayTranscriptionModel)provider.TranscriptionModel(StreamingModelId);
-        var configHeaders = headers ?? new Dictionary<string, string?>
-        {
-            ["Authorization"] = "Bearer test-token",
-            ["ai-gateway-auth-method"] = "api-key",
-        };
+        var provider = GatewayProvider.Create(
+            new GatewayOptions
+            {
+                ApiKey = "test-token",
+                BaseUrl = "https://api.test.com",
+                O11yHeaders = new Dictionary<string, string>(),
+                WebSocket = MockWebSocket.Factory,
+                CurrentDate = currentDate,
+            }
+        );
+        var model = (Vercel.AI.Gateway.GatewayTranscriptionModel)
+            provider.TranscriptionModel(StreamingModelId);
+        var configHeaders = headers
+            ?? new Dictionary<string, string?>
+            {
+                ["Authorization"] = "Bearer test-token",
+                ["ai-gateway-auth-method"] = "api-key",
+            };
         model.HeadersResolver = _ => Task.FromResult(configHeaders);
         return model;
     }
@@ -98,9 +135,12 @@ internal static class GatewayTranscriptionModelSupport
         bool? includeRawChunks = null,
         IReadOnlyDictionary<string, string?>? headers = null,
         CancellationToken abortSignal = default,
-        Exception? abortReason = null)
+        Exception? abortReason = null
+    )
     {
-        var options = providerOptions is null ? default : JsonDocument.Parse(providerOptions).RootElement.Clone();
+        var options = providerOptions is null
+            ? default
+            : JsonDocument.Parse(providerOptions).RootElement.Clone();
         return model.DoStreamAsync(
             new TranscriptionStreamCall(
                 audio ?? AudioOf(new byte[] { 1, 2, 3 }),
@@ -109,8 +149,10 @@ internal static class GatewayTranscriptionModelSupport
                 headers ?? new Dictionary<string, string?>(),
                 includeRawChunks,
                 abortSignal,
-                abortReason),
-            CancellationToken.None);
+                abortReason
+            ),
+            CancellationToken.None
+        );
     }
 
     /// <summary>Maps to <c>convertReadableStreamToArray</c>.</summary>

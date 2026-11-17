@@ -16,8 +16,9 @@ namespace Vercel.AI.Operations;
 public static class AiSdkVersion
 {
     /// <summary>Package version from the assembly informational version, without the <c>+commit</c> suffix.</summary>
-    public static readonly string Version = typeof(AiSdkVersion).Assembly
-        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion.Split('+')[0];
+    public static readonly string Version = typeof(AiSdkVersion)
+        .Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!
+        .InformationalVersion.Split('+')[0];
 
     /// <summary>User-agent token appended to provider requests.</summary>
     public static readonly string UserAgent = "ai/" + Version;
@@ -27,7 +28,13 @@ public static class AiSdkVersion
 public sealed class OperationWarning
 {
     /// <summary>Creates a warning.</summary>
-    public OperationWarning(string type, string? message = null, string? feature = null, string? details = null, string? setting = null)
+    public OperationWarning(
+        string type,
+        string? message = null,
+        string? feature = null,
+        string? details = null,
+        string? setting = null
+    )
     {
         Type = type ?? throw new ArgumentNullException(nameof(type));
         Message = message;
@@ -38,7 +45,9 @@ public sealed class OperationWarning
 
     internal CallWarning ToCallWarning()
     {
-        return Feature != null ? new CallWarning(Type, Feature, Details ?? Message) : new CallWarning(Type, Message ?? Details ?? Type);
+        return Feature != null
+            ? new CallWarning(Type, Feature, Details ?? Message)
+            : new CallWarning(Type, Message ?? Details ?? Type);
     }
 
     /// <summary>Warning type: <c>unsupported</c>, <c>compatibility</c>, <c>deprecated</c>, or <c>other</c>.</summary>
@@ -73,7 +82,11 @@ public sealed class OperationWarning
 public sealed class WarningLogContext
 {
     /// <summary>Creates a log context.</summary>
-    public WarningLogContext(IReadOnlyList<OperationWarning> warnings, string? provider, string? model)
+    public WarningLogContext(
+        IReadOnlyList<OperationWarning> warnings,
+        string? provider,
+        string? model
+    )
     {
         Warnings = warnings ?? Array.Empty<OperationWarning>();
         Provider = provider;
@@ -105,9 +118,17 @@ public static class WarningLog
     public static object? Logger { get; set; }
 
     /// <summary>Records warnings for one model call.</summary>
-    public static void Write(IReadOnlyList<OperationWarning>? warnings, string? provider, string? model)
+    public static void Write(
+        IReadOnlyList<OperationWarning>? warnings,
+        string? provider,
+        string? model
+    )
     {
-        var context = new WarningLogContext(warnings ?? Array.Empty<OperationWarning>(), provider, model);
+        var context = new WarningLogContext(
+            warnings ?? Array.Empty<OperationWarning>(),
+            provider,
+            model
+        );
         var observer = Observer;
         if (observer != null)
         {
@@ -182,7 +203,15 @@ public sealed class UnsupportedModelVersionException : AiSdkException
 {
     /// <summary>Creates the exception.</summary>
     public UnsupportedModelVersionException(string version, string provider, string modelId)
-        : base("Unsupported model version " + version + " for provider \"" + provider + "\" and model \"" + modelId + "\". AI SDK 5 only supports models that implement specification version \"v2\".")
+        : base(
+            "Unsupported model version "
+                + version
+                + " for provider \""
+                + provider
+                + "\" and model \""
+                + modelId
+                + "\". AI SDK 5 only supports models that implement specification version \"v2\"."
+        )
     {
         Version = version;
         Provider = provider;
@@ -203,12 +232,23 @@ public sealed class UnsupportedModelVersionException : AiSdkException
 public class RetryableCallException : AiSdkException
 {
     /// <summary>Creates a retryable provider error.</summary>
-    public RetryableCallException(string message, int? statusCode, IReadOnlyDictionary<string, string>? responseHeaders, bool? isRetryable = null)
+    public RetryableCallException(
+        string message,
+        int? statusCode,
+        IReadOnlyDictionary<string, string>? responseHeaders,
+        bool? isRetryable = null
+    )
         : base(message)
     {
         StatusCode = statusCode;
         ResponseHeaders = responseHeaders;
-        IsRetryable = isRetryable ?? (statusCode == 408 || statusCode == 409 || statusCode == 429 || (statusCode != null && statusCode >= 500));
+        IsRetryable = isRetryable
+            ?? (
+                statusCode == 408
+                || statusCode == 409
+                || statusCode == 429
+                || (statusCode != null && statusCode >= 500)
+            );
     }
 
     /// <summary>HTTP status, when the failure came from HTTP.</summary>
@@ -248,9 +288,7 @@ public sealed class NoSpeechGeneratedException : AiSdkException
 {
     /// <summary>Creates the exception.</summary>
     public NoSpeechGeneratedException(IReadOnlyList<ProviderResponse> responses)
-        : this(responses, null)
-    {
-    }
+        : this(responses, null) { }
 
     /// <summary>Creates the exception with the provider error that caused it.</summary>
     public NoSpeechGeneratedException(IReadOnlyList<ProviderResponse> responses, Exception? cause)
@@ -296,9 +334,7 @@ public sealed class NoVideoGeneratedException : AiSdkException
 {
     /// <summary>Creates the exception.</summary>
     public NoVideoGeneratedException(IReadOnlyList<ProviderResponse> responses)
-        : this(responses, null)
-    {
-    }
+        : this(responses, null) { }
 
     /// <summary>Creates the exception with a custom message.</summary>
     public NoVideoGeneratedException(IReadOnlyList<ProviderResponse> responses, string? message)
@@ -316,7 +352,14 @@ public sealed class DownloadException : AiSdkException
 {
     /// <summary>Creates the exception.</summary>
     public DownloadException(string url, int statusCode, string? statusText)
-        : base("Failed to download " + url + ": " + statusCode.ToString(CultureInfo.InvariantCulture) + " " + (statusText ?? string.Empty).Trim())
+        : base(
+            "Failed to download "
+                + url
+                + ": "
+                + statusCode.ToString(CultureInfo.InvariantCulture)
+                + " "
+                + (statusText ?? string.Empty).Trim()
+        )
     {
         Url = url;
         StatusCode = statusCode;
@@ -337,7 +380,12 @@ public sealed class DownloadException : AiSdkException
 public class DecisionUnsupportedQuestionTypeException : AiSdkException, IErrorMarkers
 {
     /// <summary>Creates the exception.</summary>
-    public DecisionUnsupportedQuestionTypeException(string questionId, string questionType, string provider, string modelId)
+    public DecisionUnsupportedQuestionTypeException(
+        string questionId,
+        string questionType,
+        string provider,
+        string modelId
+    )
         : base("Question \"" + questionId + "\" has unsupported type \"" + questionType + "\".")
     {
         QuestionId = questionId;
@@ -364,7 +412,8 @@ public class DecisionUnsupportedQuestionTypeException : AiSdkException, IErrorMa
     /// <inheritdoc />
     public bool HasMarker(string marker)
     {
-        return marker == AiSdkError.Marker || marker == DecisionUnsupportedQuestionTypeError.ErrorMarker;
+        return marker == AiSdkError.Marker
+            || marker == DecisionUnsupportedQuestionTypeError.ErrorMarker;
     }
 }
 
@@ -385,7 +434,14 @@ public sealed class ProviderRequest
 public sealed class ProviderResponse
 {
     /// <summary>Creates response metadata.</summary>
-    public ProviderResponse(IReadOnlyDictionary<string, string>? headers = null, JsonElement? body = null, string? id = null, DateTime? timestamp = null, string? modelId = null, JsonElement? providerMetadata = null)
+    public ProviderResponse(
+        IReadOnlyDictionary<string, string>? headers = null,
+        JsonElement? body = null,
+        string? id = null,
+        DateTime? timestamp = null,
+        string? modelId = null,
+        JsonElement? providerMetadata = null
+    )
     {
         Headers = headers;
         Body = body;
@@ -418,7 +474,13 @@ public sealed class ProviderResponse
 public sealed class OperationUsage
 {
     /// <summary>Creates usage. Unset counts stay null.</summary>
-    public OperationUsage(int? inputTokens = null, int? outputTokens = null, int? totalTokens = null, double? tokens = null, double? seconds = null)
+    public OperationUsage(
+        int? inputTokens = null,
+        int? outputTokens = null,
+        int? totalTokens = null,
+        double? tokens = null,
+        double? seconds = null
+    )
     {
         InputTokens = inputTokens;
         OutputTokens = outputTokens;
@@ -448,7 +510,8 @@ public sealed class OperationUsage
         return new OperationUsage(
             Add(left.InputTokens, right.InputTokens),
             Add(left.OutputTokens, right.OutputTokens),
-            Add(left.TotalTokens, right.TotalTokens));
+            Add(left.TotalTokens, right.TotalTokens)
+        );
     }
 
     private static int? Add(int? left, int? right)
@@ -494,7 +557,10 @@ public class OperationRequest
 public static class OperationHeaders
 {
     /// <summary>Lowercases header names and appends the AI SDK user-agent.</summary>
-    public static Dictionary<string, string> WithUserAgent(IReadOnlyDictionary<string, string>? headers, string suffix)
+    public static Dictionary<string, string> WithUserAgent(
+        IReadOnlyDictionary<string, string>? headers,
+        string suffix
+    )
     {
         var result = new Dictionary<string, string>(StringComparer.Ordinal);
         if (headers != null)
@@ -521,7 +587,10 @@ public static class OperationHeaders
     }
 
     /// <summary>Reads a header, ignoring case and parameters after <c>;</c>.</summary>
-    public static string? MediaTypeFromContentType(IReadOnlyDictionary<string, string>? headers, string requiredPrefix)
+    public static string? MediaTypeFromContentType(
+        IReadOnlyDictionary<string, string>? headers,
+        string requiredPrefix
+    )
     {
         if (headers == null)
         {
@@ -543,8 +612,13 @@ public static class OperationHeaders
         }
 
         var separator = mediaType!.IndexOf(';');
-        var normalized = (separator < 0 ? mediaType : mediaType.Substring(0, separator)).Trim().ToLowerInvariant();
-        if (normalized.Length == 0 || !normalized.StartsWith(requiredPrefix, StringComparison.Ordinal))
+        var normalized = (separator < 0 ? mediaType : mediaType.Substring(0, separator))
+            .Trim()
+            .ToLowerInvariant();
+        if (
+            normalized.Length == 0
+            || !normalized.StartsWith(requiredPrefix, StringComparison.Ordinal)
+        )
         {
             return null;
         }
@@ -562,7 +636,8 @@ public static class OperationRetry
         CancellationToken cancellationToken,
         Exception? abortReason,
         Func<CancellationToken, Task<T>> action,
-        Func<Exception, bool>? additionalRetryable)
+        Func<Exception, bool>? additionalRetryable
+    )
     {
         if (action == null)
         {
@@ -570,7 +645,13 @@ public static class OperationRetry
         }
 
         var resolved = ResolveMaxRetries(maxRetries);
-        return ExecuteResolvedAsync(resolved, cancellationToken, abortReason, action, additionalRetryable);
+        return ExecuteResolvedAsync(
+            resolved,
+            cancellationToken,
+            abortReason,
+            action,
+            additionalRetryable
+        );
     }
 
     /// <summary>Returns the retry count after validation. Null becomes 2.</summary>
@@ -592,25 +673,38 @@ public static class OperationRetry
         CancellationToken cancellationToken,
         Exception? abortReason,
         Func<CancellationToken, Task<T>> action,
-        Func<Exception, bool>? additionalRetryable)
+        Func<Exception, bool>? additionalRetryable
+    )
     {
-        var retry = new RetryWithExponentialBackoffRespectingRetryHeaders(new Vercel.AI.Util.RetryOptions
-        {
-            MaxRetries = maxRetries,
-            AbortSignal = cancellationToken,
-            AdditionalRetryableError = additionalRetryable == null
-                ? null
-                : error => Task.FromResult(error is Exception exception && additionalRetryable(exception)),
-        });
+        var retry = new RetryWithExponentialBackoffRespectingRetryHeaders(
+            new Vercel.AI.Util.RetryOptions
+            {
+                MaxRetries = maxRetries,
+                AbortSignal = cancellationToken,
+                AdditionalRetryableError =
+                    additionalRetryable == null
+                        ? null
+                        : error =>
+                            Task.FromResult(
+                                error is Exception exception && additionalRetryable(exception)
+                            ),
+            }
+        );
         try
         {
-            return await retry.ExecuteAsync(() =>
-            {
-                ThrowIfAborted(cancellationToken, abortReason);
-                return action(cancellationToken);
-            }).ConfigureAwait(false);
+            return await retry
+                .ExecuteAsync(() =>
+                {
+                    ThrowIfAborted(cancellationToken, abortReason);
+                    return action(cancellationToken);
+                })
+                .ConfigureAwait(false);
         }
-        catch (OperationCanceledException canceled) when (abortReason != null && cancellationToken.IsCancellationRequested && canceled.CancellationToken == cancellationToken)
+        catch (OperationCanceledException canceled)
+            when (abortReason != null
+                && cancellationToken.IsCancellationRequested
+                && canceled.CancellationToken == cancellationToken
+            )
         {
             throw abortReason;
         }
@@ -626,7 +720,10 @@ public static class OperationRetry
                 errors.Add(item as Exception ?? new InvalidOperationException(item?.ToString()));
             }
 
-            var reason = error.Reason == Vercel.AI.Util.RetryErrorReason.MaxRetriesExceeded ? "maxRetriesExceeded" : "errorNotRetryable";
+            var reason =
+                error.Reason == Vercel.AI.Util.RetryErrorReason.MaxRetriesExceeded
+                    ? "maxRetriesExceeded"
+                    : "errorNotRetryable";
             throw new OperationRetryException(error.Message, reason, errors);
         }
     }
@@ -695,7 +792,9 @@ public static class MediaTypeDetector
     /// <summary>Returns a media type for <paramref name="data"/>, or null when no signature matches.</summary>
     public static string? Detect(byte[]? data, string? topLevelType)
     {
-        return data == null || data.Length == 0 ? null : MediaTypes.DetectMediaType(data, topLevelType);
+        return data == null || data.Length == 0
+            ? null
+            : MediaTypes.DetectMediaType(data, topLevelType);
     }
 
     /// <summary>Decodes a base64 payload or returns the bytes unchanged.</summary>
@@ -742,7 +841,11 @@ public static class OperationJson
     /// <summary>Reads a property or returns null.</summary>
     public static JsonElement? Get(JsonElement? element, string name)
     {
-        if (element is JsonElement value && value.ValueKind == JsonValueKind.Object && value.TryGetProperty(name, out var property))
+        if (
+            element is JsonElement value
+            && value.ValueKind == JsonValueKind.Object
+            && value.TryGetProperty(name, out var property)
+        )
         {
             return property;
         }

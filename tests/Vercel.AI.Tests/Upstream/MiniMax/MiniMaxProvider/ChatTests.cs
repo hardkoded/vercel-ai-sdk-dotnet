@@ -10,7 +10,10 @@ namespace Vercel.AI.Tests.MiniMaxProvider;
 public sealed class ChatTests
 {
     [Fact]
-    [UpstreamTest("packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > chat::should construct a chat model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > chat::should construct a chat model",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_construct_a_chat_model()
     {
         var provider = Vercel.AI.MiniMax.MiniMaxProvider.Create();

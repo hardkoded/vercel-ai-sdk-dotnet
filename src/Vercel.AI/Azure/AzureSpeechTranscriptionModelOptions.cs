@@ -22,13 +22,21 @@ internal static class AzureSpeechTranscriptionModelOptions
             ["transcribeStyle"] = ProviderOptionShape.Enum("verbatim", "clean"),
             ["locales"] = ProviderOptionShape.ArrayOf(ProviderOptionShape.String(), length: 1),
             ["diarization"] = ProviderOptionShape.ObjectOf(
-                new Dictionary<string, OptionValidator>(StringComparer.Ordinal) { ["enabled"] = ProviderOptionShape.Boolean() },
+                new Dictionary<string, OptionValidator>(StringComparer.Ordinal)
+                {
+                    ["enabled"] = ProviderOptionShape.Boolean(),
+                },
                 true,
-                "enabled"),
+                "enabled"
+            ),
             ["phraseList"] = ProviderOptionShape.ObjectOf(
-                new Dictionary<string, OptionValidator>(StringComparer.Ordinal) { ["phrases"] = ProviderOptionShape.ArrayOf(ProviderOptionShape.String()) },
+                new Dictionary<string, OptionValidator>(StringComparer.Ordinal)
+                {
+                    ["phrases"] = ProviderOptionShape.ArrayOf(ProviderOptionShape.String()),
+                },
                 true,
-                "phrases"),
+                "phrases"
+            ),
         };
     }
 }

@@ -10,7 +10,8 @@ namespace Vercel.AI.Tests.Upstream.Gateway.GatewayDecisionModel;
 /// <summary>Port of <c>gateway-decision-model.test.ts</c> &gt; <c>GatewayDecisionModel &gt; doDecide</c>.</summary>
 public sealed class GatewayDecisionModelDoDecideTests
 {
-    private const string Prefix = "packages/gateway/src/gateway-decision-model.test.ts::GatewayDecisionModel > doDecide::";
+    private const string Prefix =
+        "packages/gateway/src/gateway-decision-model.test.ts::GatewayDecisionModel > doDecide::";
 
     private static void AssertDummyAnswers(IReadOnlyDictionary<string, DecisionAnswer> answers)
     {
@@ -19,10 +20,21 @@ public sealed class GatewayDecisionModelDoDecideTests
         Assert.Equal(0.97, answers["correct"].Probability);
         Assert.Equal("choice", answers["tone"].Type);
         Assert.Equal("neutral", answers["tone"].Choice);
-        Assert.Equal(new Dictionary<string, double> { ["neutral"] = 0.9, ["playful"] = 0.1 }, answers["tone"].Probabilities);
+        Assert.Equal(
+            new Dictionary<string, double> { ["neutral"] = 0.9, ["playful"] = 0.1 },
+            answers["tone"].Probabilities
+        );
         Assert.Equal("score", answers["quality"].Type);
         Assert.Equal(1.8, answers["quality"].Score);
-        Assert.Equal(new Dictionary<string, double> { ["0"] = 0.05, ["1"] = 0.1, ["2"] = 0.85 }, answers["quality"].Probabilities);
+        Assert.Equal(
+            new Dictionary<string, double>
+            {
+                ["0"] = 0.05,
+                ["1"] = 0.1,
+                ["2"] = 0.85,
+            },
+            answers["quality"].Probabilities
+        );
     }
 
     [Theory]
@@ -35,7 +47,10 @@ public sealed class GatewayDecisionModelDoDecideTests
     [InlineData("high")]
     [InlineData("xhigh")]
     [InlineData("max")]
-    [UpstreamTest(Prefix + "forwards reasoning when supplied: %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "forwards reasoning when supplied: %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Forwards_reasoning_when_supplied(string? reasoning)
     {
         var (model, capture) = Setup();
@@ -54,7 +69,10 @@ public sealed class GatewayDecisionModelDoDecideTests
     [Theory]
     [InlineData(null)]
     [InlineData(512.0)]
-    [UpstreamTest(Prefix + "forwards maxOutputTokens when supplied: %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "forwards maxOutputTokens when supplied: %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Forwards_maxOutputTokens_when_supplied(double? maxOutputTokens)
     {
         var (model, capture) = Setup();
@@ -75,7 +93,9 @@ public sealed class GatewayDecisionModelDoDecideTests
     public async Task Should_pass_headers_correctly()
     {
         var (model, capture) = Setup();
-        await model.DoDecideAsync(Call(headers: new Dictionary<string, string> { ["Custom-Header"] = "test-value" }));
+        await model.DoDecideAsync(
+            Call(headers: new Dictionary<string, string> { ["Custom-Header"] = "test-value" })
+        );
         Assert.Equal("Bearer test-token", capture.Headers["Authorization"]);
         Assert.Equal("test-value", capture.Headers["Custom-Header"]);
         Assert.Equal("4", capture.Headers["ai-decision-model-specification-version"]);
@@ -101,25 +121,44 @@ public sealed class GatewayDecisionModelDoDecideTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should send state and questions in request body", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should send state and questions in request body",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_send_state_and_questions_in_request_body()
     {
         var (model, capture) = Setup();
         await model.DoDecideAsync(Call(null));
-        JsonAssert.Equal(RequestBody(capture), "{\"stateParts\":[{\"type\":\"text\",\"text\":\"" + TestState + "\"}],\"questions\":" + QuestionsJson + "}");
+        JsonAssert.Equal(
+            RequestBody(capture),
+            "{\"stateParts\":[{\"type\":\"text\",\"text\":\""
+                + TestState
+                + "\"}],\"questions\":"
+                + QuestionsJson
+                + "}"
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should pass providerOptions into request body", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should pass providerOptions into request body",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_pass_providerOptions_into_request_body()
     {
         var (model, capture) = Setup();
         await model.DoDecideAsync(Call("{\"typesafe\":{\"effort\":\"high\"}}"));
-        JsonAssert.Equal(RequestBody(capture)!["providerOptions"], "{\"typesafe\":{\"effort\":\"high\"}}");
+        JsonAssert.Equal(
+            RequestBody(capture)!["providerOptions"],
+            "{\"typesafe\":{\"effort\":\"high\"}}"
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should pass conditional model fallbacks into request body", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should pass conditional model fallbacks into request body",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_pass_conditional_model_fallbacks_into_request_body()
     {
         var (model, capture) = Setup();
@@ -146,7 +185,10 @@ public sealed class GatewayDecisionModelDoDecideTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should pass service-owned gateway options through with conditional fallbacks", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should pass service-owned gateway options through with conditional fallbacks",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_pass_service_owned_gateway_options_through_with_conditional_fallbacks()
     {
         var (model, capture) = Setup();
@@ -163,29 +205,50 @@ public sealed class GatewayDecisionModelDoDecideTests
             }
             """;
         await model.DoDecideAsync(Call(providerOptions));
-        JsonAssert.Equal(RequestBody(capture), "{\"stateParts\":[{\"type\":\"text\",\"text\":\"" + TestState + "\"}],\"questions\":" + QuestionsJson + ",\"providerOptions\":" + providerOptions + "}");
+        JsonAssert.Equal(
+            RequestBody(capture),
+            "{\"stateParts\":[{\"type\":\"text\",\"text\":\""
+                + TestState
+                + "\"}],\"questions\":"
+                + QuestionsJson
+                + ",\"providerOptions\":"
+                + providerOptions
+                + "}"
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should reject invalid conditional model fallbacks", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should reject invalid conditional model fallbacks",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_reject_invalid_conditional_model_fallbacks()
     {
         var (model, capture) = Setup();
-        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => model.DoDecideAsync(Call("""
-            {
-              "gateway": {
-                "models": [
-                  { "model": "openai/gpt-5.6-sol", "when": { "question": "correct", "probabilityBetween": [0.7, 0.3] } }
-                ]
-              }
-            }
-            """)));
+        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() =>
+            model.DoDecideAsync(
+                Call(
+                    """
+                    {
+                      "gateway": {
+                        "models": [
+                          { "model": "openai/gpt-5.6-sol", "when": { "question": "correct", "probabilityBetween": [0.7, 0.3] } }
+                        ]
+                      }
+                    }
+                    """
+                )
+            )
+        );
         Assert.Contains("invalid gateway provider options", error.Message);
         Assert.Equal(0, capture.Calls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should extract choice, score, and boolean answers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should extract choice, score, and boolean answers",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_extract_choice_score_and_boolean_answers()
     {
         var result = await Setup(Response()).Model.DoDecideAsync(Call());
@@ -196,7 +259,8 @@ public sealed class GatewayDecisionModelDoDecideTests
     [UpstreamTest(Prefix + "should extract refusal answers", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_extract_refusal_answers()
     {
-        var answers = "{\"correct\":{\"type\":\"boolean\",\"probability\":0.97},\"tone\":{\"type\":\"refusal\"},\"quality\":{\"type\":\"score\",\"score\":1.8,\"probabilities\":{\"0\":0.05,\"1\":0.1,\"2\":0.85}}}";
+        var answers =
+            "{\"correct\":{\"type\":\"boolean\",\"probability\":0.97},\"tone\":{\"type\":\"refusal\"},\"quality\":{\"type\":\"score\",\"score\":1.8,\"probabilities\":{\"0\":0.05,\"1\":0.1,\"2\":0.85}}}";
         var result = await Setup(Response(answers)).Model.DoDecideAsync(Call());
         Assert.Equal(3, result.Answers.Count);
         Assert.Equal("refusal", result.Answers["tone"].Type);
@@ -210,7 +274,10 @@ public sealed class GatewayDecisionModelDoDecideTests
     [UpstreamTest(Prefix + "should extract rounding", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_extract_rounding()
     {
-        var result = await Setup(Response(null, ("rounding", "{\"probabilityDecimals\":2,\"scoreDecimals\":2}"))).Model.DoDecideAsync(Call());
+        var result = await Setup(
+            Response(null, ("rounding", "{\"probabilityDecimals\":2,\"scoreDecimals\":2}"))
+        )
+            .Model.DoDecideAsync(Call());
         Assert.Equal(2, result.Rounding!.ProbabilityDecimals);
         Assert.Equal(2, result.Rounding.ScoreDecimals);
     }
@@ -219,13 +286,19 @@ public sealed class GatewayDecisionModelDoDecideTests
     [UpstreamTest(Prefix + "should extract usage", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_extract_usage()
     {
-        var result = await Setup(Response(null, ("usage", "{\"inputTokens\":42,\"outputTokens\":7}"))).Model.DoDecideAsync(Call());
+        var result = await Setup(
+            Response(null, ("usage", "{\"inputTokens\":42,\"outputTokens\":7}"))
+        )
+            .Model.DoDecideAsync(Call());
         Assert.Equal(42, result.Usage!.InputTokens);
         Assert.Equal(7, result.Usage.OutputTokens);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should omit rounding and usage when absent", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should omit rounding and usage when absent",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_omit_rounding_and_usage_when_absent()
     {
         var result = await Setup().Model.DoDecideAsync(Call());
@@ -237,7 +310,13 @@ public sealed class GatewayDecisionModelDoDecideTests
     [UpstreamTest(Prefix + "should extract warnings", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_extract_warnings()
     {
-        var body = Response(null, ("warnings", "[{\"type\":\"unsupported\",\"feature\":\"providerOptions.typesafe.effort\",\"details\":\"This model ignores effort.\"}]"));
+        var body = Response(
+            null,
+            (
+                "warnings",
+                "[{\"type\":\"unsupported\",\"feature\":\"providerOptions.typesafe.effort\",\"details\":\"This model ignores effort.\"}]"
+            )
+        );
         var result = await Setup(body).Model.DoDecideAsync(Call());
         var warning = Assert.Single(result.Warnings);
         Assert.Equal("unsupported", warning.Type);
@@ -246,7 +325,10 @@ public sealed class GatewayDecisionModelDoDecideTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should default warnings to an empty array when absent", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should default warnings to an empty array when absent",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_default_warnings_to_an_empty_array_when_absent()
     {
         var result = await Setup().Model.DoDecideAsync(Call());
@@ -265,15 +347,22 @@ public sealed class GatewayDecisionModelDoDecideTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should attribute the response to the returned model after a fallback", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should attribute the response to the returned model after a fallback",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_attribute_the_response_to_the_returned_model_after_a_fallback()
     {
-        var result = await Setup(Response(null, ("model", "\"anthropic/claude-sonnet-5\""))).Model.DoDecideAsync(Call());
+        var result = await Setup(Response(null, ("model", "\"anthropic/claude-sonnet-5\"")))
+            .Model.DoDecideAsync(Call());
         Assert.Equal("anthropic/claude-sonnet-5", result.Response!.ModelId);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should attribute the response to the requested model when none is returned", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should attribute the response to the requested model when none is returned",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_attribute_the_response_to_the_requested_model_when_none_is_returned()
     {
         var result = await Setup().Model.DoDecideAsync(Call());
@@ -284,7 +373,10 @@ public sealed class GatewayDecisionModelDoDecideTests
     [UpstreamTest(Prefix + "should return provider metadata", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_return_provider_metadata()
     {
-        var result = await Setup(Response(null, ("providerMetadata", "{\"gateway\":{\"cost\":\"0.002\"}}"))).Model.DoDecideAsync(Call());
+        var result = await Setup(
+            Response(null, ("providerMetadata", "{\"gateway\":{\"cost\":\"0.002\"}}"))
+        )
+            .Model.DoDecideAsync(Call());
         JsonAssert.Equal(result.ProviderMetadata!.Value, "{\"gateway\":{\"cost\":\"0.002\"}}");
     }
 }

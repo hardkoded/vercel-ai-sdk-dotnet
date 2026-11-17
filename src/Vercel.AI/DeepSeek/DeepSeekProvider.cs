@@ -22,9 +22,7 @@ public sealed class DeepSeekProvider : OpenAICompatibleProvider
 
     /// <summary>Creates a provider.</summary>
     public DeepSeekProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
-        : base(Prepare(options), httpClient)
-    {
-    }
+        : base(Prepare(options), httpClient) { }
 
     /// <summary>
     /// Creates a model that uses the Responses API. It supports server-side tools such as <see cref="DeepSeekTools.WebSearch"/>.
@@ -42,9 +40,14 @@ public sealed class DeepSeekProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static new DeepSeekProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new DeepSeekProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new DeepSeekProvider(client, options);
     }
 
@@ -56,7 +59,10 @@ public sealed class DeepSeekProvider : OpenAICompatibleProvider
             ["image/*"] = "^https?://.*\\z",
         };
 
-        if (string.IsNullOrEmpty(options.ProviderName) || options.ProviderName == "openai-compatible")
+        if (
+            string.IsNullOrEmpty(options.ProviderName)
+            || options.ProviderName == "openai-compatible"
+        )
         {
             options.ProviderName = ProviderId;
         }
@@ -87,14 +93,21 @@ public sealed class DeepSeekProvider : OpenAICompatibleProvider
 public static class DeepSeekServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddDeepSeek(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddDeepSeek(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(DeepSeekProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new DeepSeekProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(DeepSeekProvider.ProviderId), options);
+            return new DeepSeekProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(DeepSeekProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

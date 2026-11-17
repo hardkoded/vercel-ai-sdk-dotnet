@@ -13,14 +13,21 @@ public sealed class OptionsTests
     private const string Prefix = WebFetchToolFixture.FilePath + "::createWebFetchTool > options::";
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects combining allowed and blocked domains", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "rejects combining allowed and blocked domains",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void RejectsCombiningAllowedAndBlockedDomains()
     {
-        Assert.Throws<InvalidArgumentError>(() => WebFetchTools.Create(new WebFetchToolOptions
-        {
-            AllowedDomains = new[] { "example.com" },
-            BlockedDomains = new[] { "example.org" },
-        }));
+        Assert.Throws<InvalidArgumentError>(() =>
+            WebFetchTools.Create(
+                new WebFetchToolOptions
+                {
+                    AllowedDomains = new[] { "example.com" },
+                    BlockedDomains = new[] { "example.org" },
+                }
+            )
+        );
     }
 
     [Theory]
@@ -32,31 +39,58 @@ public sealed class OptionsTests
     [UpstreamTest(Prefix + "rejects invalid domain %j", Coverage = UpstreamCoverage.Covered)]
     public void RejectsInvalidDomain(string domain)
     {
-        Assert.Throws<InvalidArgumentError>(() => WebFetchTools.Create(new WebFetchToolOptions { AllowedDomains = new[] { domain } }));
+        Assert.Throws<InvalidArgumentError>(() =>
+            WebFetchTools.Create(new WebFetchToolOptions { AllowedDomains = new[] { domain } })
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects invalid option %j", Coverage = UpstreamCoverage.Partial, Note = "MaxLength is an int, so the fractional case { maxLength: 1.5 } cannot be written.")]
+    [UpstreamTest(
+        Prefix + "rejects invalid option %j",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "MaxLength is an int, so the fractional case { maxLength: 1.5 } cannot be written."
+    )]
     public void RejectsInvalidOption()
     {
-        Assert.Throws<InvalidArgumentError>(() => WebFetchTools.Create(new WebFetchToolOptions { MaxLength = 0 }));
-        Assert.Throws<InvalidArgumentError>(() => WebFetchTools.Create(new WebFetchToolOptions { MaxBytes = -1 }));
-        Assert.Throws<InvalidArgumentError>(() => WebFetchTools.Create(new WebFetchToolOptions { Timeout = TimeSpan.Zero }));
-        Assert.Throws<InvalidArgumentError>(() => WebFetchTools.Create(new WebFetchToolOptions { Timeout = TimeSpan.FromMilliseconds(2_147_483_648) }));
+        Assert.Throws<InvalidArgumentError>(() =>
+            WebFetchTools.Create(new WebFetchToolOptions { MaxLength = 0 })
+        );
+        Assert.Throws<InvalidArgumentError>(() =>
+            WebFetchTools.Create(new WebFetchToolOptions { MaxBytes = -1 })
+        );
+        Assert.Throws<InvalidArgumentError>(() =>
+            WebFetchTools.Create(new WebFetchToolOptions { Timeout = TimeSpan.Zero })
+        );
+        Assert.Throws<InvalidArgumentError>(() =>
+            WebFetchTools.Create(
+                new WebFetchToolOptions { Timeout = TimeSpan.FromMilliseconds(2_147_483_648) }
+            )
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "describes the configured behavior", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "describes the configured behavior",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void DescribesTheConfiguredBehavior()
     {
-        var webFetch = WebFetchTools.Create(new WebFetchToolOptions
-        {
-            AllowedDomains = new[] { "Example.COM" },
-            MaxLength = 1000,
-            RequireUrlInUserMessage = true,
-        });
+        var webFetch = WebFetchTools.Create(
+            new WebFetchToolOptions
+            {
+                AllowedDomains = new[] { "Example.COM" },
+                MaxLength = 1000,
+                RequireUrlInUserMessage = true,
+            }
+        );
 
-        Assert.Contains("Only these domains and their subdomains can be fetched: example.com.", webFetch.Description);
-        Assert.Contains("Only URLs that appear in user messages can be fetched.", webFetch.Description);
+        Assert.Contains(
+            "Only these domains and their subdomains can be fetched: example.com.",
+            webFetch.Description
+        );
+        Assert.Contains(
+            "Only URLs that appear in user messages can be fetched.",
+            webFetch.Description
+        );
     }
 }

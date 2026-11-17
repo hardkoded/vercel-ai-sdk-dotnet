@@ -11,7 +11,8 @@ namespace Vercel.AI.Tests.OpenResponsesLanguageModelTests;
 /// <summary>Port of <c>open-responses-language-model.test.ts</c> &gt; <c>OpenResponsesLanguageModel &gt; doGenerate &gt; request parameters</c>.</summary>
 public sealed class DoGenerateRequestParametersTests
 {
-    private const string Prefix = "packages/open-responses/src/responses/open-responses-language-model.test.ts::OpenResponsesLanguageModel > doGenerate > request parameters::";
+    private const string Prefix =
+        "packages/open-responses/src/responses/open-responses-language-model.test.ts::OpenResponsesLanguageModel > doGenerate > request parameters::";
 
     [Fact]
     [UpstreamTest(Prefix + "should send correct request body", Coverage = UpstreamCoverage.Covered)]
@@ -24,13 +25,17 @@ public sealed class DoGenerateRequestParametersTests
         options.TopP = 0.9;
         options.PresencePenalty = 0.1;
         options.FrequencyPenalty = 0.2;
-        options.JsonSchema = UpstreamChat.Json("""{"type":"object","properties":{"status":{"type":"string"}},"required":["status"]}""");
+        options.JsonSchema = UpstreamChat.Json(
+            """{"type":"object","properties":{"status":{"type":"string"}},"required":["status"]}"""
+        );
         options.JsonSchemaName = "response";
         options.JsonSchemaDescription = "Example response schema";
 
         await Model(capture).DoGenerateAsync(options, CancellationToken.None);
 
-        JsonAssert.Equal(UpstreamChat.Body(capture), """
+        JsonAssert.Equal(
+            UpstreamChat.Body(capture),
+            """
             {
               "frequency_penalty":0.2,
               "input":[{"content":[{"text":"Hello","type":"input_text"}],"role":"user","type":"message"}],
@@ -41,6 +46,7 @@ public sealed class DoGenerateRequestParametersTests
               "text":{"format":{"description":"Example response schema","name":"response","schema":{"properties":{"status":{"type":"string"}},"required":["status"],"type":"object"},"strict":true,"type":"json_schema"}},
               "top_p":0.9
             }
-            """);
+            """
+        );
     }
 }

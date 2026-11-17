@@ -14,13 +14,19 @@ namespace Vercel.AI.Tests.Upstream.Google.DownloadToolResultFiles;
 [Collection("DownloadFetch")]
 public sealed class DownloadToolResultFilesTests
 {
-    private const string Id = "packages/google/src/download-tool-result-files.test.ts::downloadToolResultFiles::";
+    private const string Id =
+        "packages/google/src/download-tool-result-files.test.ts::downloadToolResultFiles::";
 
     private static IReadOnlyList<ModelMessage> CreateToolResultPrompt(params string[] urls)
     {
         return new ModelMessage[]
         {
-            new ToolModelMessage("tool-call-id", "get-image", urls.Select(url => (UserContentPart)new FileContentPart("image", url, null, null)).ToList()),
+            new ToolModelMessage(
+                "tool-call-id",
+                "get-image",
+                urls.Select(url => (UserContentPart)new FileContentPart("image", url, null, null))
+                    .ToList()
+            ),
         };
     }
 
@@ -44,35 +50,58 @@ public sealed class DownloadToolResultFilesTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "downloads remote files in tool results without changing user files", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "downloads remote files in tool results without changing user files",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task DownloadsRemoteFilesInToolResultsWithoutChangingUserFiles()
     {
         var calls = new List<(string Url, string Redirect)>();
-        var user = new UserModelMessage(new UserContentPart[] { new FileContentPart("image/png", "https://example.com/user-image.png", null, null) });
+        var user = new UserModelMessage(
+            new UserContentPart[]
+            {
+                new FileContentPart("image/png", "https://example.com/user-image.png", null, null),
+            }
+        );
         var prompt = new ModelMessage[]
         {
             user,
-            new ToolModelMessage("tool-call-id", "get-image", new UserContentPart[] { new FileContentPart("image", "https://example.com/tool-image.jpg", null, null) }),
+            new ToolModelMessage(
+                "tool-call-id",
+                "get-image",
+                new UserContentPart[]
+                {
+                    new FileContentPart("image", "https://example.com/tool-image.jpg", null, null),
+                }
+            ),
         };
 
         var result = await WithGlobalFetch(
             (url, request) =>
             {
                 calls.Add((url, request.Redirect));
-                return Task.FromResult(DownloadResponse.Bytes(new byte[] { 0xff, 0xd8, 0xff }, "image/jpeg"));
+                return Task.FromResult(
+                    DownloadResponse.Bytes(new byte[] { 0xff, 0xd8, 0xff }, "image/jpeg")
+                );
             },
-            () => DownloadToolResultFiles_(prompt, 7 * 1024 * 1024));
+            () => DownloadToolResultFiles_(prompt, 7 * 1024 * 1024)
+        );
 
         Assert.Equal(("https://example.com/tool-image.jpg", "manual"), Assert.Single(calls));
         Assert.Same(user, result[0]);
-        var file = Assert.IsType<FileContentPart>(Assert.Single(((ToolModelMessage)result[1]).OutputContent!));
+        var file = Assert.IsType<FileContentPart>(
+            Assert.Single(((ToolModelMessage)result[1]).OutputContent!)
+        );
         Assert.Equal("image/jpeg", file.MediaType);
         Assert.Equal(new byte[] { 0xff, 0xd8, 0xff }, file.Data);
         Assert.Null(file.Url);
     }
 
     [Fact]
-    [UpstreamTest(Id + "preserves tool result URLs supported in function responses", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "preserves tool result URLs supported in function responses",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task PreservesToolResultUrlsSupportedInFunctionResponses()
     {
         var fetches = 0;
@@ -84,10 +113,16 @@ public sealed class DownloadToolResultFilesTests
                 fetches++;
                 return Task.FromResult(DownloadResponse.Bytes(Array.Empty<byte>(), null));
             },
-            () => DownloadToolResultFiles_(
-                prompt,
-                7 * 1024 * 1024,
-                new Dictionary<string, IReadOnlyList<Regex>> { ["*"] = new[] { new Regex(@"^gs://.*\z") } }));
+            () =>
+                DownloadToolResultFiles_(
+                    prompt,
+                    7 * 1024 * 1024,
+                    new Dictionary<string, IReadOnlyList<Regex>>
+                    {
+                        ["*"] = new[] { new Regex(@"^gs://.*\z") },
+                    }
+                )
+        );
 
         Assert.Equal(0, fetches);
         Assert.Same(prompt[0], result[0]);
@@ -97,9 +132,17 @@ public sealed class DownloadToolResultFilesTests
     [UpstreamTest(Id + "limits the size of each download", Coverage = UpstreamCoverage.Covered)]
     public async Task LimitsTheSizeOfEachDownload()
     {
-        var error = await Assert.ThrowsAsync<DownloadError>(() => WithGlobalFetch(
-            (url, request) => Task.FromResult(DownloadResponse.Bytes(new byte[] { 0xff, 0xd8, 0xff }, null)),
-            () => DownloadToolResultFiles_(CreateToolResultPrompt("https://example.com/tool-image.jpg"), 2)));
+        var error = await Assert.ThrowsAsync<DownloadError>(() =>
+            WithGlobalFetch(
+                (url, request) =>
+                    Task.FromResult(DownloadResponse.Bytes(new byte[] { 0xff, 0xd8, 0xff }, null)),
+                () =>
+                    DownloadToolResultFiles_(
+                        CreateToolResultPrompt("https://example.com/tool-image.jpg"),
+                        2
+                    )
+            )
+        );
 
         Assert.Contains("exceeded maximum size of 2 bytes", error.Message);
     }
@@ -120,7 +163,15 @@ public sealed class DownloadToolResultFilesTests
                 Interlocked.Decrement(ref active);
                 return DownloadResponse.Bytes(new byte[] { 0xff, 0xd8, 0xff }, null);
             },
-            () => DownloadToolResultFiles_(CreateToolResultPrompt("https://example.com/tool-image-1.jpg", "https://example.com/tool-image-2.jpg"), 7 * 1024 * 1024));
+            () =>
+                DownloadToolResultFiles_(
+                    CreateToolResultPrompt(
+                        "https://example.com/tool-image-1.jpg",
+                        "https://example.com/tool-image-2.jpg"
+                    ),
+                    7 * 1024 * 1024
+                )
+        );
 
         Assert.Equal(1, maxActive);
     }
@@ -128,8 +179,15 @@ public sealed class DownloadToolResultFilesTests
     private static async Task<IReadOnlyList<ModelMessage>> DownloadToolResultFiles_(
         IReadOnlyList<ModelMessage> prompt,
         long maxBytes,
-        IReadOnlyDictionary<string, IReadOnlyList<Regex>>? supportedUrls = null)
+        IReadOnlyDictionary<string, IReadOnlyList<Regex>>? supportedUrls = null
+    )
     {
-        return await Download_.DownloadToolResultFilesAsync(prompt, CancellationToken.None, maxBytes, null, supportedUrls);
+        return await Download_.DownloadToolResultFilesAsync(
+            prompt,
+            CancellationToken.None,
+            maxBytes,
+            null,
+            supportedUrls
+        );
     }
 }

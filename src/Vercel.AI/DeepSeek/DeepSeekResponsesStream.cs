@@ -17,7 +17,10 @@ internal sealed class DeepSeekResponsesStream
     private readonly string _webSearchToolName;
     private readonly List<string> _openText = new();
     private readonly List<string> _openReasoning = new();
-    private readonly Dictionary<string, (string CallId, string ToolName, string Arguments)> _functionCalls = new(StringComparer.Ordinal);
+    private readonly Dictionary<
+        string,
+        (string CallId, string ToolName, string Arguments)
+    > _functionCalls = new(StringComparer.Ordinal);
     private readonly List<JsonElement> _logprobs = new();
     private FinishReason _finish = FinishReason.Interrupted;
     private string? _rawFinish;
@@ -54,10 +57,20 @@ internal sealed class DeepSeekResponsesStream
         using (document)
         {
             var root = document.RootElement;
-            if (!DeepSeekResponsesApi.IsValidChunk(root) || OpenAIJson.String(root, "type") is not { } type)
+            if (
+                !DeepSeekResponsesApi.IsValidChunk(root)
+                || OpenAIJson.String(root, "type") is not { } type
+            )
             {
                 _finish = FinishReason.Error;
-                parts.Add(new ErrorStreamPart(new ProviderUtils.TypeValidationException("Type validation failed: Value: " + data + ".", root.Clone())));
+                parts.Add(
+                    new ErrorStreamPart(
+                        new ProviderUtils.TypeValidationException(
+                            "Type validation failed: Value: " + data + ".",
+                            root.Clone()
+                        )
+                    )
+                );
                 return parts;
             }
 
@@ -68,7 +81,11 @@ internal sealed class DeepSeekResponsesStream
             catch (InvalidOperationException exception)
             {
                 _finish = FinishReason.Error;
-                parts.Add(new ErrorStreamPart("Invalid DeepSeek Responses stream chunk: " + exception.Message));
+                parts.Add(
+                    new ErrorStreamPart(
+                        "Invalid DeepSeek Responses stream chunk: " + exception.Message
+                    )
+                );
             }
         }
 
@@ -88,11 +105,19 @@ internal sealed class DeepSeekResponsesStream
             parts.Add(new TextEndStreamPart(id));
         }
 
-        parts.Add(new FinishStreamPart(
-            _finish,
-            DeepSeekResponsesResults.ConvertUsage(_usage),
-            _rawFinish,
-            DeepSeekResponsesResults.ProviderMetadata(_providerOptionsName, _responseId, _usage, _logprobs)));
+        parts.Add(
+            new FinishStreamPart(
+                _finish,
+                DeepSeekResponsesResults.ConvertUsage(_usage),
+                _rawFinish,
+                DeepSeekResponsesResults.ProviderMetadata(
+                    _providerOptionsName,
+                    _responseId,
+                    _usage,
+                    _logprobs
+                )
+            )
+        );
         return parts;
     }
 
@@ -103,14 +128,23 @@ internal sealed class DeepSeekResponsesStream
             case "response.created":
                 var created = Response(root);
                 _responseId = OpenAIJson.String(created, "id");
-                parts.Add(new ResponseMetadataStreamPart(_responseId, OpenAIJson.String(created, "model"), CreatedAt(created)));
+                parts.Add(
+                    new ResponseMetadataStreamPart(
+                        _responseId,
+                        OpenAIJson.String(created, "model"),
+                        CreatedAt(created)
+                    )
+                );
                 break;
             case "response.output_item.added":
                 ItemAdded(Item(root), parts);
                 break;
             case "response.output_text.delta":
                 var textId = Required(root, "item_id");
-                if (OpenAIJson.Child(root, "logprobs") is { ValueKind: JsonValueKind.Array } logprobs)
+                if (
+                    OpenAIJson.Child(root, "logprobs") is
+                    { ValueKind: JsonValueKind.Array } logprobs
+                )
                 {
                     _logprobs.AddRange(logprobs.EnumerateArray().Select(entry => entry.Clone()));
                 }
@@ -128,7 +162,12 @@ internal sealed class DeepSeekResponsesStream
                 if (!_openReasoning.Contains(reasoningId))
                 {
                     _openReasoning.Add(reasoningId);
-                    parts.Add(new ReasoningStartStreamPart(reasoningId, ItemIdMetadata(_providerOptionsName, reasoningId)));
+                    parts.Add(
+                        new ReasoningStartStreamPart(
+                            reasoningId,
+                            ItemIdMetadata(_providerOptionsName, reasoningId)
+                        )
+                    );
                 }
 
                 parts.Add(new ReasoningDeltaStreamPart(reasoningId, Required(root, "delta")));
@@ -137,7 +176,11 @@ internal sealed class DeepSeekResponsesStream
                 var delta = Required(root, "delta");
                 if (_functionCalls.TryGetValue(Required(root, "item_id"), out var call))
                 {
-                    _functionCalls[Required(root, "item_id")] = (call.CallId, call.ToolName, call.Arguments + delta);
+                    _functionCalls[Required(root, "item_id")] = (
+                        call.CallId,
+                        call.ToolName,
+                        call.Arguments + delta
+                    );
                     parts.Add(new ToolInputDeltaStreamPart(call.CallId, delta));
                 }
 
@@ -153,7 +196,16 @@ internal sealed class DeepSeekResponsesStream
             case "error":
                 _finish = FinishReason.Error;
                 var message = OpenAIJson.String(root, "message") ?? "DeepSeek stream error";
-                parts.Add(new ErrorStreamPart(new ProviderStreamError(message, root.Clone(), "error", OpenAIJson.String(root, "code"))));
+                parts.Add(
+                    new ErrorStreamPart(
+                        new ProviderStreamError(
+                            message,
+                            root.Clone(),
+                            "error",
+                            OpenAIJson.String(root, "code")
+                        )
+                    )
+                );
                 break;
         }
     }
@@ -177,12 +229,21 @@ internal sealed class DeepSeekResponsesStream
                     _openReasoning.Add(itemId);
                 }
 
-                parts.Add(new ReasoningStartStreamPart(itemId, ItemIdMetadata(_providerOptionsName, itemId)));
+                parts.Add(
+                    new ReasoningStartStreamPart(
+                        itemId,
+                        ItemIdMetadata(_providerOptionsName, itemId)
+                    )
+                );
                 break;
             case "function_call":
                 var callId = Required(item, "call_id");
                 var name = Required(item, "name");
-                _functionCalls[itemId ?? callId] = (callId, name, OpenAIJson.String(item, "arguments") ?? string.Empty);
+                _functionCalls[itemId ?? callId] = (
+                    callId,
+                    name,
+                    OpenAIJson.String(item, "arguments") ?? string.Empty
+                );
                 parts.Add(new ToolInputStartStreamPart(callId, name));
                 break;
         }
@@ -203,7 +264,12 @@ internal sealed class DeepSeekResponsesStream
             case "reasoning" when itemId != null:
                 if (_openReasoning.Remove(itemId))
                 {
-                    parts.Add(new ReasoningEndStreamPart(itemId, ItemIdMetadata(_providerOptionsName, itemId)));
+                    parts.Add(
+                        new ReasoningEndStreamPart(
+                            itemId,
+                            ItemIdMetadata(_providerOptionsName, itemId)
+                        )
+                    );
                 }
 
                 break;
@@ -220,12 +286,35 @@ internal sealed class DeepSeekResponsesStream
                 }
 
                 parts.Add(new ToolInputEndStreamPart(callId));
-                parts.Add(new ToolCallStreamPart(callId, name, OpenAIJson.String(item, "arguments") ?? (tracked ? existing.Arguments : string.Empty)));
+                parts.Add(
+                    new ToolCallStreamPart(
+                        callId,
+                        name,
+                        OpenAIJson.String(item, "arguments")
+                            ?? (tracked ? existing.Arguments : string.Empty)
+                    )
+                );
                 break;
             case "web_search_call":
                 var id = Required(item, "id");
-                parts.Add(new ToolCallStreamPart(id, _webSearchToolName, "{}", WebSearchCallMetadata(_providerOptionsName, item)) { ProviderExecuted = true });
-                parts.Add(new ToolResultStreamPart(id, _webSearchToolName, OpenAIJson.Element(WebSearchResult(item))));
+                parts.Add(
+                    new ToolCallStreamPart(
+                        id,
+                        _webSearchToolName,
+                        "{}",
+                        WebSearchCallMetadata(_providerOptionsName, item)
+                    )
+                    {
+                        ProviderExecuted = true,
+                    }
+                );
+                parts.Add(
+                    new ToolResultStreamPart(
+                        id,
+                        _webSearchToolName,
+                        OpenAIJson.Element(WebSearchResult(item))
+                    )
+                );
                 break;
         }
     }
@@ -233,11 +322,20 @@ internal sealed class DeepSeekResponsesStream
     private void Finish(string type, JsonElement root, List<LanguageModelStreamPart> parts)
     {
         var response = Response(root);
-        _usage = OpenAIJson.Child(response, "usage") is { ValueKind: JsonValueKind.Object } usage ? usage.Clone() : null;
+        _usage = OpenAIJson.Child(response, "usage") is { ValueKind: JsonValueKind.Object } usage
+            ? usage.Clone()
+            : null;
         _responseId = OpenAIJson.String(response, "id") ?? _responseId;
         var status = OpenAIJson.String(response, "status");
-        var incompleteReason = OpenAIJson.String(OpenAIJson.Child(response, "incomplete_details"), "reason");
-        _finish = DeepSeekResponsesResults.MapFinishReason(status, incompleteReason, _hasFunctionCall);
+        var incompleteReason = OpenAIJson.String(
+            OpenAIJson.Child(response, "incomplete_details"),
+            "reason"
+        );
+        _finish = DeepSeekResponsesResults.MapFinishReason(
+            status,
+            incompleteReason,
+            _hasFunctionCall
+        );
         _rawFinish = incompleteReason ?? status;
         if (type != "response.failed")
         {
@@ -247,22 +345,29 @@ internal sealed class DeepSeekResponsesStream
         var error = OpenAIJson.Child(response, "error");
         var code = OpenAIJson.String(error, "code");
         var (statusCode, isRetryable) = FailedResponseStatus(code);
-        parts.Add(new ErrorStreamPart(new ProviderStreamError(
-            OpenAIJson.String(error, "message") ?? "DeepSeek response failed",
-            root.Clone(),
-            "response.failed",
-            code,
-            statusCode,
-            isRetryable)));
+        parts.Add(
+            new ErrorStreamPart(
+                new ProviderStreamError(
+                    OpenAIJson.String(error, "message") ?? "DeepSeek response failed",
+                    root.Clone(),
+                    "response.failed",
+                    code,
+                    statusCode,
+                    isRetryable
+                )
+            )
+        );
     }
 
     private static JsonElement Response(JsonElement root)
     {
-        return OpenAIJson.Child(root, "response") ?? throw new InvalidOperationException("missing response");
+        return OpenAIJson.Child(root, "response")
+            ?? throw new InvalidOperationException("missing response");
     }
 
     private static JsonElement Item(JsonElement root)
     {
-        return OpenAIJson.Child(root, "item") ?? throw new InvalidOperationException("missing item");
+        return OpenAIJson.Child(root, "item")
+            ?? throw new InvalidOperationException("missing item");
     }
 }

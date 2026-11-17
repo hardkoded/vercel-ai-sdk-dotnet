@@ -20,9 +20,7 @@ public sealed class QuiverAIProvider : OpenAICompatibleProvider
 
     /// <summary>Creates a provider.</summary>
     public QuiverAIProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
-        : base(Prepare(options), httpClient)
-    {
-    }
+        : base(Prepare(options), httpClient) { }
 
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
@@ -31,9 +29,14 @@ public sealed class QuiverAIProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider.</summary>
-    public static new QuiverAIProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new QuiverAIProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new QuiverAIProvider(client, options);
     }
 
@@ -44,16 +47,20 @@ public sealed class QuiverAIProvider : OpenAICompatibleProvider
     protected override string? ResolveApiKey()
     {
         return base.ResolveApiKey()
-            ?? throw new AiSdkException("QuiverAI API key is missing. Pass it using the 'apiKey' parameter or the QUIVERAI_API_KEY environment variable.");
+            ?? throw new AiSdkException(
+                "QuiverAI API key is missing. Pass it using the 'apiKey' parameter or the QUIVERAI_API_KEY environment variable."
+            );
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
-            ? Environment.GetEnvironmentVariable("QUIVERAI_BASE_URL")?.TrimEnd('/') ?? DefaultBaseUrl
-            : options.BaseUrl.TrimEnd('/');
+        options.BaseUrl =
+            string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
+                ? Environment.GetEnvironmentVariable("QUIVERAI_BASE_URL")?.TrimEnd('/')
+                    ?? DefaultBaseUrl
+                : options.BaseUrl.TrimEnd('/');
         options.ApiKeyEnvironmentVariable = "QUIVERAI_API_KEY";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
@@ -67,14 +74,21 @@ public sealed class QuiverAIProvider : OpenAICompatibleProvider
 public static class QuiverAIServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddQuiverAI(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddQuiverAI(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(QuiverAIProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new QuiverAIProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(QuiverAIProvider.ProviderId), options);
+            return new QuiverAIProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(QuiverAIProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

@@ -13,13 +13,21 @@ public sealed class DoGenerateCodeInterpreterToolTests
     private const string Prefix = TestFile + " > doGenerate > code_interpreter tool::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should include code_interpreter tool call with real response", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should include code_interpreter tool call with real response",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_include_code_interpreter_tool_call_with_real_response()
     {
-        var result = await Model(JsonFixture("xai-code-execution-tool.1")).DoGenerateAsync(
-            WithTools(ProviderTool("xai.code_execution", "code_execution")),
-            CancellationToken.None);
+        var result = await Model(JsonFixture("xai-code-execution-tool.1"))
+            .DoGenerateAsync(
+                WithTools(ProviderTool("xai.code_execution", "code_execution")),
+                CancellationToken.None
+            );
 
-        JsonAssert.Equal(ToJson(result.Content), Expected("xai-code-execution-tool.1.content.json").ToJsonString());
+        JsonAssert.Equal(
+            ToJson(result.Content),
+            Expected("xai-code-execution-tool.1.content.json").ToJsonString()
+        );
     }
 }

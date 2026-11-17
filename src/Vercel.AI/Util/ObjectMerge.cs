@@ -15,7 +15,10 @@ public static class ObjectMerge
     /// Undefined override values are skipped. <c>__proto__</c>, <c>constructor</c>, and <c>prototype</c> are ignored.
     /// Returns <c>null</c> when both inputs are null.
     /// </summary>
-    public static IDictionary<string, object>? MergeObjects(IDictionary<string, object>? baseObject, IDictionary<string, object>? overrides)
+    public static IDictionary<string, object>? MergeObjects(
+        IDictionary<string, object>? baseObject,
+        IDictionary<string, object>? overrides
+    )
     {
         if (baseObject == null && overrides == null)
         {
@@ -73,7 +76,15 @@ public static class ObjectMerge
 
     private static IDictionary<string, object>? AsMergeableMap(object? value)
     {
-        if (value == null || value is JsUndefined || value is string || value is IList || value is DateTime || value is Delegate || value is Regex)
+        if (
+            value == null
+            || value is JsUndefined
+            || value is string
+            || value is IList
+            || value is DateTime
+            || value is Delegate
+            || value is Regex
+        )
         {
             return null;
         }

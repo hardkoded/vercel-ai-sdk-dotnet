@@ -14,11 +14,9 @@ if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AI_GATEWAY_API_KEY"
 #region streaming
 var client = new AiClient(GatewayProvider.Create());
 
-var stream = client.StreamTextAsync(new StreamTextOptions
-{
-    ModelId = "openai/gpt-6-astra",
-    Prompt = "Draft a changelog entry.",
-});
+var stream = client.StreamTextAsync(
+    new StreamTextOptions { ModelId = "openai/gpt-6-astra", Prompt = "Draft a changelog entry." }
+);
 
 await foreach (var delta in stream.TextStream())
 {

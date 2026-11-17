@@ -57,7 +57,9 @@ public sealed class XaiProvider : OpenAICompatibleProvider
 
 #pragma warning disable CS0809 // The base member stays current for the other OpenAI-compatible providers.
     /// <summary>Creates a Chat Completions model. Upstream xAI has no chat model; use <see cref="LanguageModel(string)"/> or <see cref="ResponsesModel(string)"/>.</summary>
-    [Obsolete("xAI language models use the Responses API, as upstream does. Use LanguageModel or ResponsesModel. The Chat Completions model will be removed.")]
+    [Obsolete(
+        "xAI language models use the Responses API, as upstream does. Use LanguageModel or ResponsesModel. The Chat Completions model will be removed."
+    )]
     public override OpenAICompatibleLanguageModel CreateChatModel(string modelId)
     {
         return base.CreateChatModel(modelId);
@@ -93,13 +95,13 @@ public sealed class XaiProvider : OpenAICompatibleProvider
     {
         return new XaiRealtimeModel(
             modelId,
-            new XaiRealtimeModelConfig(
-                "xai.realtime",
-                Options.BaseUrl,
-                _ => Task.FromResult<IReadOnlyDictionary<string, string?>>(CreateHeaders()))
+            new XaiRealtimeModelConfig("xai.realtime", Options.BaseUrl, _ =>
+                Task.FromResult<IReadOnlyDictionary<string, string?>>(CreateHeaders())
+            )
             {
                 HttpClient = _httpClient,
-            });
+            }
+        );
     }
 
     /// <summary>Creates a video model. The provider id is <c>xai.video</c>.</summary>
@@ -115,16 +117,24 @@ public sealed class XaiProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static new XaiProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new XaiProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new XaiProvider(client, options);
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
-        if (string.IsNullOrEmpty(options.ProviderName) || options.ProviderName == "openai-compatible")
+        if (
+            string.IsNullOrEmpty(options.ProviderName)
+            || options.ProviderName == "openai-compatible"
+        )
         {
             options.ProviderName = ProviderId;
         }
@@ -154,14 +164,20 @@ public sealed class XaiProvider : OpenAICompatibleProvider
 public static class XaiServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddXai(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddXai(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(XaiProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new XaiProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(XaiProvider.ProviderId), options);
+            return new XaiProvider(
+                sp.GetRequiredService<IHttpClientFactory>().CreateClient(XaiProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

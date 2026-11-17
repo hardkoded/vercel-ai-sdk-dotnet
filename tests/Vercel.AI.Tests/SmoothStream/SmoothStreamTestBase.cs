@@ -28,14 +28,25 @@ public abstract class SmoothStreamTestBase
         }
     }
 
-    protected static TextDeltaPart D(string text, string id = "1", JsonElement? metadata = null) => new(id, text, metadata);
+    protected static TextDeltaPart D(string text, string id = "1", JsonElement? metadata = null) =>
+        new(id, text, metadata);
 
-    protected static ReasoningDeltaPart R(string text, string id = "1", JsonElement? metadata = null) => new(id, text, metadata);
+    protected static ReasoningDeltaPart R(
+        string text,
+        string id = "1",
+        JsonElement? metadata = null
+    ) => new(id, text, metadata);
 
-    protected static string DelayOf(int? ms) => $"delay {(ms is int m ? m.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null")}";
+    protected static string DelayOf(int? ms) =>
+        $"delay {(ms is int m ? m.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null")}";
 
     protected static JsonElement Meta(string signature) =>
-        JsonSerializer.SerializeToElement(new Dictionary<string, object> { ["anthropic"] = new Dictionary<string, string> { ["signature"] = signature } });
+        JsonSerializer.SerializeToElement(
+            new Dictionary<string, object>
+            {
+                ["anthropic"] = new Dictionary<string, string> { ["signature"] = signature },
+            }
+        );
 
     /// <summary>Runs the transform over <paramref name="input"/> and records every delay and output part, like <c>consumeStream</c>.</summary>
     protected async Task Run(TextStreamPart[] input, SmoothStreamOptions? options = null)
@@ -56,30 +67,37 @@ public abstract class SmoothStreamTestBase
     }
 
     /// <summary>The recorded events without the delays.</summary>
-    protected string[] Output() => _events.Where(e => !e.StartsWith("delay ", StringComparison.Ordinal)).ToArray();
+    protected string[] Output() =>
+        _events.Where(e => !e.StartsWith("delay ", StringComparison.Ordinal)).ToArray();
 
-    protected string[] Delays() => _events.Where(e => e.StartsWith("delay ", StringComparison.Ordinal)).ToArray();
+    protected string[] Delays() =>
+        _events.Where(e => e.StartsWith("delay ", StringComparison.Ordinal)).ToArray();
 
     protected void Expect(params object[] expected) =>
-        Assert.Equal(expected.Select(e => e as string ?? Describe((TextStreamPart)e)).ToArray(), _events.ToArray());
+        Assert.Equal(
+            expected.Select(e => e as string ?? Describe((TextStreamPart)e)).ToArray(),
+            _events.ToArray()
+        );
 
     protected void ExpectOutput(params TextStreamPart[] expected) =>
         Assert.Equal(expected.Select(Describe).ToArray(), Output());
 
-    protected static string Describe(TextStreamPart part) => part switch
-    {
-        TextDeltaPart p => $"{p.Type} {p.Id} {Quote(p.Text)} {Raw(p.ProviderMetadata)}",
-        ReasoningDeltaPart p => $"{p.Type} {p.Id} {Quote(p.Text)} {Raw(p.ProviderMetadata)}",
-        TextStartPart p => $"{p.Type} {p.Id} {Raw(p.ProviderMetadata)}",
-        TextEndPart p => $"{p.Type} {p.Id}",
-        ReasoningStartPart p => $"{p.Type} {p.Id} {Raw(p.ProviderMetadata)}",
-        ReasoningEndPart p => $"{p.Type} {p.Id} {Raw(p.ProviderMetadata)}",
-        ToolCallPart p => $"{p.Type} {p.ToolCall.ToolCallId} {p.ToolCall.ToolName} {p.ToolCall.ArgumentsJson}",
-        ToolInputStartPart p => $"{p.Type} {p.Id} {p.ToolName}",
-        ToolInputDeltaPart p => $"{p.Type} {p.Id} {p.Delta}",
-        ToolInputEndPart p => $"{p.Type} {p.Id}",
-        _ => part.Type,
-    };
+    protected static string Describe(TextStreamPart part) =>
+        part switch
+        {
+            TextDeltaPart p => $"{p.Type} {p.Id} {Quote(p.Text)} {Raw(p.ProviderMetadata)}",
+            ReasoningDeltaPart p => $"{p.Type} {p.Id} {Quote(p.Text)} {Raw(p.ProviderMetadata)}",
+            TextStartPart p => $"{p.Type} {p.Id} {Raw(p.ProviderMetadata)}",
+            TextEndPart p => $"{p.Type} {p.Id}",
+            ReasoningStartPart p => $"{p.Type} {p.Id} {Raw(p.ProviderMetadata)}",
+            ReasoningEndPart p => $"{p.Type} {p.Id} {Raw(p.ProviderMetadata)}",
+            ToolCallPart p =>
+                $"{p.Type} {p.ToolCall.ToolCallId} {p.ToolCall.ToolName} {p.ToolCall.ArgumentsJson}",
+            ToolInputStartPart p => $"{p.Type} {p.Id} {p.ToolName}",
+            ToolInputDeltaPart p => $"{p.Type} {p.Id} {p.Delta}",
+            ToolInputEndPart p => $"{p.Type} {p.Id}",
+            _ => part.Type,
+        };
 
     private static string Quote(string text) => JsonSerializer.Serialize(text);
 

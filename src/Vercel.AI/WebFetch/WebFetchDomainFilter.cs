@@ -10,7 +10,11 @@ namespace Vercel.AI.WebFetch;
 /// <summary>Matches hostnames against the allowed and blocked domains. Maps to <c>domain-filter.ts</c>.</summary>
 internal static class WebFetchDomainFilter
 {
-    private static readonly Regex InvalidDomainCharacters = new(@"[\s/\\:*@?#\[\]]", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+    private static readonly Regex InvalidDomainCharacters = new(
+        @"[\s/\\:*@?#\[\]]",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(1)
+    );
 
     /// <summary>
     /// Normalizes a hostname for domain matching: lowercase, punycode, and without a trailing dot so <c>example.com.</c>
@@ -21,7 +25,10 @@ internal static class WebFetchDomainFilter
         return hostname.ToLowerInvariant().TrimEnd('.');
     }
 
-    public static IReadOnlyList<string> NormalizeDomains(string parameter, IReadOnlyList<string> domains)
+    public static IReadOnlyList<string> NormalizeDomains(
+        string parameter,
+        IReadOnlyList<string> domains
+    )
     {
         var normalized = new List<string>();
         foreach (var domain in domains)
@@ -31,13 +38,23 @@ internal static class WebFetchDomainFilter
             // Entries are bare domains: no scheme, port, path, credentials, or wildcards.
             if (trimmed.Length == 0 || InvalidDomainCharacters.IsMatch(trimmed))
             {
-                throw new InvalidArgumentError(parameter, domains, "Invalid domain \"" + domain + "\". Use bare domains such as \"example.com\"; subdomains are included automatically.");
+                throw new InvalidArgumentError(
+                    parameter,
+                    domains,
+                    "Invalid domain \""
+                        + domain
+                        + "\". Use bare domains such as \"example.com\"; subdomains are included automatically."
+                );
             }
 
             Uri parsed;
             if (!Uri.TryCreate("https://" + trimmed, UriKind.Absolute, out parsed!))
             {
-                throw new InvalidArgumentError(parameter, domains, "Invalid domain \"" + domain + "\".");
+                throw new InvalidArgumentError(
+                    parameter,
+                    domains,
+                    "Invalid domain \"" + domain + "\"."
+                );
             }
 
             normalized.Add(NormalizeHostname(parsed.IdnHost));
@@ -46,7 +63,10 @@ internal static class WebFetchDomainFilter
         return normalized;
     }
 
-    public static Func<Uri, bool> Create(IReadOnlyList<string>? allowedDomains, IReadOnlyList<string>? blockedDomains)
+    public static Func<Uri, bool> Create(
+        IReadOnlyList<string>? allowedDomains,
+        IReadOnlyList<string>? blockedDomains
+    )
     {
         static bool Matches(string hostname, IReadOnlyList<string> domains)
         {

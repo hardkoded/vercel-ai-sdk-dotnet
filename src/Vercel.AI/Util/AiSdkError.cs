@@ -34,9 +34,7 @@ public sealed class ErrorMarkerBag : IErrorMarkers
 
     /// <summary>Creates a bag with one marker.</summary>
     public ErrorMarkerBag(string marker, bool value)
-        : this(new KeyValuePair<string, bool>(marker, value))
-    {
-    }
+        : this(new KeyValuePair<string, bool>(marker, value)) { }
 
     /// <inheritdoc />
     public bool HasMarker(string marker)
@@ -54,7 +52,9 @@ public class AiSdkError : Exception, IErrorMarkers
     /// <summary>Marker present on every AI SDK error.</summary>
     public const string Marker = "vercel.ai.error";
 
-    private readonly Dictionary<string, bool> _markers = new Dictionary<string, bool>(StringComparer.Ordinal);
+    private readonly Dictionary<string, bool> _markers = new Dictionary<string, bool>(
+        StringComparer.Ordinal
+    );
 
     /// <summary>Creates an error with the upstream <paramref name="name"/> and <paramref name="message"/>.</summary>
     public AiSdkError(string? name, string message, Exception? cause = null)
@@ -109,7 +109,10 @@ public sealed class InvalidArgumentError : AiSdkError
 
     /// <summary>Creates the error for <paramref name="parameter"/>.</summary>
     public InvalidArgumentError(string parameter, object? value, string message)
-        : base("AI_InvalidArgumentError", "Invalid argument for parameter " + parameter + ": " + message)
+        : base(
+            "AI_InvalidArgumentError",
+            "Invalid argument for parameter " + parameter + ": " + message
+        )
     {
         Parameter = parameter;
         Value = value;

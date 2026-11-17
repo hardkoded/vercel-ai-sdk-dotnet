@@ -35,7 +35,8 @@ public static class ResponseBodies
         HttpResponseMessage response,
         string url,
         long? maxBytes = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         if (response is null)
         {
@@ -52,7 +53,16 @@ public static class ResponseBodies
         if (contentLength > limit)
         {
             CancelResponseBody(response);
-            throw new DownloadError(url, "Download of " + url + " exceeded maximum size of " + limit + " bytes (Content-Length: " + contentLength + ").");
+            throw new DownloadError(
+                url,
+                "Download of "
+                    + url
+                    + " exceeded maximum size of "
+                    + limit
+                    + " bytes (Content-Length: "
+                    + contentLength
+                    + ")."
+            );
         }
 
         using (var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
@@ -60,12 +70,21 @@ public static class ResponseBodies
         {
             var chunk = new byte[81920];
             int read;
-            while ((read = await stream.ReadAsync(chunk, 0, chunk.Length, cancellationToken).ConfigureAwait(false)) > 0)
+            while (
+                (
+                    read = await stream
+                        .ReadAsync(chunk, 0, chunk.Length, cancellationToken)
+                        .ConfigureAwait(false)
+                ) > 0
+            )
             {
                 if (body.Length + read > limit)
                 {
                     CancelResponseBody(response);
-                    throw new DownloadError(url, "Download of " + url + " exceeded maximum size of " + limit + " bytes.");
+                    throw new DownloadError(
+                        url,
+                        "Download of " + url + " exceeded maximum size of " + limit + " bytes."
+                    );
                 }
 
                 body.Write(chunk, 0, read);

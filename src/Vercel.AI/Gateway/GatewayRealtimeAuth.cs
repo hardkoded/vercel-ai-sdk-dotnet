@@ -29,19 +29,28 @@ public static class GatewayRealtimeAuth
     public const string GatewayTeamSubprotocolPrefix = "ai-gateway-team.";
 
     /// <summary>Builds the WebSocket subprotocols that carry <paramref name="token"/> to the Gateway.</summary>
-    public static IReadOnlyList<string> GetGatewayRealtimeProtocols(string token, string? teamIdOrSlug = null)
+    public static IReadOnlyList<string> GetGatewayRealtimeProtocols(
+        string token,
+        string? teamIdOrSlug = null
+    )
     {
         return BuildGatewayProtocols(GatewayRealtimeSubprotocol, token, teamIdOrSlug);
     }
 
     /// <summary>Like <see cref="GetGatewayRealtimeProtocols"/>, with the streaming transcription marker subprotocol.</summary>
-    public static IReadOnlyList<string> GetGatewayTranscriptionProtocols(string token, string? teamIdOrSlug = null)
+    public static IReadOnlyList<string> GetGatewayTranscriptionProtocols(
+        string token,
+        string? teamIdOrSlug = null
+    )
     {
         return BuildGatewayProtocols(GatewayTranscriptionSubprotocol, token, teamIdOrSlug);
     }
 
     /// <summary>Like <see cref="GetGatewayRealtimeProtocols"/>, with the streaming speech marker subprotocol.</summary>
-    public static IReadOnlyList<string> GetGatewaySpeechProtocols(string token, string? teamIdOrSlug = null)
+    public static IReadOnlyList<string> GetGatewaySpeechProtocols(
+        string token,
+        string? teamIdOrSlug = null
+    )
     {
         return BuildGatewayProtocols(GatewaySpeechSubprotocol, token, teamIdOrSlug);
     }
@@ -52,7 +61,8 @@ public static class GatewayRealtimeAuth
     /// </summary>
     public static string? GetGatewayRealtimeAuthToken(string? secWebSocketProtocol)
     {
-        var token = FindProtocol(secWebSocketProtocol, GatewayAuthSubprotocolPrefix)?.Substring(GatewayAuthSubprotocolPrefix.Length);
+        var token = FindProtocol(secWebSocketProtocol, GatewayAuthSubprotocolPrefix)
+            ?.Substring(GatewayAuthSubprotocolPrefix.Length);
         return string.IsNullOrEmpty(token) ? null : token;
     }
 
@@ -62,7 +72,8 @@ public static class GatewayRealtimeAuth
     /// </summary>
     public static string? GetGatewayRealtimeTeamIdOrSlug(string? secWebSocketProtocol)
     {
-        var encoded = FindProtocol(secWebSocketProtocol, GatewayTeamSubprotocolPrefix)?.Substring(GatewayTeamSubprotocolPrefix.Length);
+        var encoded = FindProtocol(secWebSocketProtocol, GatewayTeamSubprotocolPrefix)
+            ?.Substring(GatewayTeamSubprotocolPrefix.Length);
         if (string.IsNullOrEmpty(encoded))
         {
             return null;
@@ -83,7 +94,11 @@ public static class GatewayRealtimeAuth
         }
     }
 
-    private static IReadOnlyList<string> BuildGatewayProtocols(string marker, string token, string? teamIdOrSlug)
+    private static IReadOnlyList<string> BuildGatewayProtocols(
+        string marker,
+        string token,
+        string? teamIdOrSlug
+    )
     {
         var protocols = new List<string> { marker, GatewayAuthSubprotocolPrefix + token };
         if (!string.IsNullOrEmpty(teamIdOrSlug))
@@ -115,7 +130,8 @@ public static class GatewayRealtimeAuth
 
     private static string EncodeSubprotocolValue(string value)
     {
-        return Convert.ToBase64String(Encoding.UTF8.GetBytes(value))
+        return Convert
+            .ToBase64String(Encoding.UTF8.GetBytes(value))
             .Replace('+', '-')
             .Replace('/', '_')
             .TrimEnd('=');

@@ -17,7 +17,10 @@ namespace Vercel.AI.OpenAI;
 /// <summary>Responses API request body and the warnings produced while building it.</summary>
 public sealed class OpenAIResponsesPreparedRequest
 {
-    internal OpenAIResponsesPreparedRequest(JsonObject body, IReadOnlyList<OpenAICallWarning> warnings)
+    internal OpenAIResponsesPreparedRequest(
+        JsonObject body,
+        IReadOnlyList<OpenAICallWarning> warnings
+    )
     {
         Body = body;
         Warnings = warnings;
@@ -33,7 +36,10 @@ public sealed class OpenAIResponsesPreparedRequest
 /// <summary>OpenAI Responses API language model.</summary>
 public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 {
-    private static readonly JsonSerializerOptions CustomToolInputOptions = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    private static readonly JsonSerializerOptions CustomToolInputOptions = new()
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     private readonly ProviderHttp _http;
     private readonly string _providerName;
@@ -41,7 +47,10 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     private readonly string? _requestModelId;
     private readonly Func<Uri> _url;
     private readonly bool _explicitMessageItemType;
-    private readonly Func<IReadOnlyDictionary<string, string?>?, Dictionary<string, string?>> _headers;
+    private readonly Func<
+        IReadOnlyDictionary<string, string?>?,
+        Dictionary<string, string?>
+    > _headers;
 
     /// <summary>
     /// Whether a request with a <c>web_search</c> or <c>web_search_preview</c> tool adds
@@ -71,16 +80,18 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     /// <c>azure</c> provider options first and fall back to <c>openai</c> when <c>azure</c> is absent.
     /// </summary>
     public OpenAIResponsesLanguageModel(Azure.AzureOpenAIProvider provider, string modelId)
-        : this(provider, modelId, null)
-    {
-    }
+        : this(provider, modelId, null) { }
 
     /// <summary>
     /// Creates an Azure OpenAI Responses model for a deployment. <see cref="ModelId"/> reports
     /// <paramref name="settings"/>.<see cref="Azure.AzureOpenAILanguageModelSettings.ModelId"/> when set and
     /// drives capability detection. Requests always use <paramref name="deploymentId"/>.
     /// </summary>
-    public OpenAIResponsesLanguageModel(Azure.AzureOpenAIProvider provider, string deploymentId, Azure.AzureOpenAILanguageModelSettings? settings)
+    public OpenAIResponsesLanguageModel(
+        Azure.AzureOpenAIProvider provider,
+        string deploymentId,
+        Azure.AzureOpenAILanguageModelSettings? settings
+    )
     {
         if (provider == null)
         {
@@ -93,7 +104,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         _providerName = provider.Name;
         _providerOptionsName = "azure";
         _url = () => provider.AzureUri("responses", deploymentId);
-        _explicitMessageItemType = Azure.AzureOpenAIProvider.GetAzureOpenAIBaseURLInfo(provider.Options.BaseUrl).IsFoundryProject;
+        _explicitMessageItemType = Azure
+            .AzureOpenAIProvider.GetAzureOpenAIBaseURLInfo(provider.Options.BaseUrl)
+            .IsFoundryProject;
         _headers = provider.CreateHeaders;
     }
 
@@ -101,11 +114,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<string, string> SupportedUrls { get; } = new Dictionary<string, string>
-    {
-        ["image/*"] = "^https?://.*\\z",
-        ["application/pdf"] = "^https?://.*\\z",
-    };
+    public IReadOnlyDictionary<string, string> SupportedUrls { get; } =
+        new Dictionary<string, string>
+        {
+            ["image/*"] = "^https?://.*\\z",
+            ["application/pdf"] = "^https?://.*\\z",
+        };
 
     /// <inheritdoc />
     public string Provider => _providerName + ".responses";
@@ -122,12 +136,16 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     public static PreparedResponsesTools PrepareResponsesTools(
         IReadOnlyList<LanguageModelTool>? tools,
         ToolChoice? toolChoice,
-        PrepareResponsesToolsOptions? options = null)
+        PrepareResponsesToolsOptions? options = null
+    )
     {
         return OpenAIResponsesPrepareTools.Prepare(tools, toolChoice, options);
     }
 
-    private static readonly IReadOnlyDictionary<string, string> ProviderToolNames = new Dictionary<string, string>
+    private static readonly IReadOnlyDictionary<string, string> ProviderToolNames = new Dictionary<
+        string,
+        string
+    >
     {
         ["openai.code_interpreter"] = "code_interpreter",
         ["openai.computer"] = "computer",
@@ -143,15 +161,22 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         ["openai.programmatic_tool_calling"] = "programmatic_tool_calling",
     };
 
-    internal static ToolNameMapping CreateToolNameMapping(IReadOnlyList<LanguageModelTool>? tools) =>
-        ToolNames.CreateToolNameMapping(MappedTools(tools), ProviderToolNames);
+    internal static ToolNameMapping CreateToolNameMapping(
+        IReadOnlyList<LanguageModelTool>? tools
+    ) => ToolNames.CreateToolNameMapping(MappedTools(tools), ProviderToolNames);
 
     /// <summary>Whether the shell tool of the request runs in a hosted container, so its calls are provider-executed.</summary>
     internal static bool IsShellProviderExecuted(IReadOnlyList<LanguageModelTool>? tools)
     {
-        var shell = tools?.FirstOrDefault(tool => tool.IsProviderDefined && tool.ProviderToolId == "openai.shell");
-        if (shell is null || shell.Args.ValueKind != JsonValueKind.Object
-            || !shell.Args.TryGetProperty("environment", out var environment) || environment.ValueKind != JsonValueKind.Object)
+        var shell = tools?.FirstOrDefault(tool =>
+            tool.IsProviderDefined && tool.ProviderToolId == "openai.shell"
+        );
+        if (
+            shell is null
+            || shell.Args.ValueKind != JsonValueKind.Object
+            || !shell.Args.TryGetProperty("environment", out var environment)
+            || environment.ValueKind != JsonValueKind.Object
+        )
         {
             return false;
         }
@@ -161,13 +186,22 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
     /// <summary>The client name of the web search tool, if the request defines one.</summary>
     internal static string? WebSearchToolName(IReadOnlyList<LanguageModelTool>? tools) =>
-        tools?.FirstOrDefault(tool => tool.ProviderToolId == "openai.web_search" || tool.ProviderToolId == "openai.web_search_preview")?.Name;
+        tools
+            ?.FirstOrDefault(tool =>
+                tool.ProviderToolId == "openai.web_search"
+                || tool.ProviderToolId == "openai.web_search_preview"
+            )
+            ?.Name;
 
     private static IReadOnlyList<MappedTool>? MappedTools(IReadOnlyList<LanguageModelTool>? tools)
     {
-        return tools?.Select(tool => tool.IsProviderDefined
-            ? new MappedTool("provider", tool.Name, tool.ProviderToolId)
-            : new MappedTool("function", tool.Name)).ToArray();
+        return tools
+            ?.Select(tool =>
+                tool.IsProviderDefined
+                    ? new MappedTool("provider", tool.Name, tool.ProviderToolId)
+                    : new MappedTool("function", tool.Name)
+            )
+            .ToArray();
     }
 
     private static OpenAIResponsesAllowedTools? ParseAllowedTools(JsonElement? openai)
@@ -179,16 +213,25 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
         var mode = OpenAIJson.String(allowed, "mode");
         var names = OpenAIJson.Child(allowed, "toolNames");
-        if (allowed.ValueKind != JsonValueKind.Object
+        if (
+            allowed.ValueKind != JsonValueKind.Object
             || names is not { ValueKind: JsonValueKind.Array } nameArray
             || nameArray.GetArrayLength() == 0
             || nameArray.EnumerateArray().Any(name => name.ValueKind != JsonValueKind.String)
-            || OpenAIJson.Child(allowed, "mode") != null && mode != "auto" && mode != "required")
+            || OpenAIJson.Child(allowed, "mode") != null && mode != "auto" && mode != "required"
+        )
         {
-            throw new InvalidArgumentException("providerOptions", allowed.GetRawText(), "invalid openai provider options");
+            throw new InvalidArgumentException(
+                "providerOptions",
+                allowed.GetRawText(),
+                "invalid openai provider options"
+            );
         }
 
-        return new OpenAIResponsesAllowedTools(nameArray.EnumerateArray().Select(name => name.GetString()!).ToArray(), mode);
+        return new OpenAIResponsesAllowedTools(
+            nameArray.EnumerateArray().Select(name => name.GetString()!).ToArray(),
+            mode
+        );
     }
 
     private static JsonNode? ParsePromptCacheOptions(JsonElement? options)
@@ -202,13 +245,22 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         var ttl = OpenAIJson.String(value, "ttl");
         var prewarm = OpenAIJson.Child(value, "prewarm");
         var comparisonResponseId = OpenAIJson.Child(value, "comparisonResponseId");
-        if (value.ValueKind != JsonValueKind.Object
+        if (
+            value.ValueKind != JsonValueKind.Object
             || OpenAIJson.Child(value, "mode") != null && mode != "implicit" && mode != "explicit"
             || OpenAIJson.Child(value, "ttl") != null && ttl != "30m" && ttl != "12h"
-            || prewarm is { } rawPrewarm && rawPrewarm.ValueKind != JsonValueKind.True && rawPrewarm.ValueKind != JsonValueKind.False
-            || comparisonResponseId is { } rawComparison && rawComparison.ValueKind != JsonValueKind.String)
+            || prewarm is { } rawPrewarm
+                && rawPrewarm.ValueKind != JsonValueKind.True
+                && rawPrewarm.ValueKind != JsonValueKind.False
+            || comparisonResponseId is { } rawComparison
+                && rawComparison.ValueKind != JsonValueKind.String
+        )
         {
-            throw new InvalidArgumentException("providerOptions", value.GetRawText(), "invalid openai provider options");
+            throw new InvalidArgumentException(
+                "providerOptions",
+                value.GetRawText(),
+                "invalid openai provider options"
+            );
         }
 
         var parsed = new JsonObject();
@@ -236,7 +288,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     }
 
     /// <summary>Builds the Responses body for <paramref name="modelId"/>. Generate calls omit <c>stream</c>.</summary>
-    public static OpenAIResponsesPreparedRequest Prepare(string modelId, LanguageModelCallOptions options, bool stream)
+    public static OpenAIResponsesPreparedRequest Prepare(
+        string modelId,
+        LanguageModelCallOptions options,
+        bool stream
+    )
     {
         return Prepare(modelId, options, stream, "openai");
     }
@@ -245,9 +301,22 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     /// Builds the Responses body. Options come from <paramref name="providerOptionsName"/> and fall back to
     /// <c>openai</c> when that key is absent.
     /// </summary>
-    public static OpenAIResponsesPreparedRequest Prepare(string modelId, LanguageModelCallOptions options, bool stream, string providerOptionsName, bool supportsWebSearchSourcesInclude = true)
+    public static OpenAIResponsesPreparedRequest Prepare(
+        string modelId,
+        LanguageModelCallOptions options,
+        bool stream,
+        string providerOptionsName,
+        bool supportsWebSearchSourcesInclude = true
+    )
     {
-        return Prepare(modelId, options, stream, providerOptionsName, supportsWebSearchSourcesInclude, null);
+        return Prepare(
+            modelId,
+            options,
+            stream,
+            providerOptionsName,
+            supportsWebSearchSourcesInclude,
+            null
+        );
     }
 
     /// <summary>
@@ -255,40 +324,69 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     /// <paramref name="requestModelId"/>, when set, is sent as the request <c>model</c>.
     /// <paramref name="explicitMessageItemType"/> adds <c>type: "message"</c> to message items (Foundry projects).
     /// </summary>
-    public static OpenAIResponsesPreparedRequest Prepare(string modelId, LanguageModelCallOptions options, bool stream, string providerOptionsName, bool supportsWebSearchSourcesInclude, string? requestModelId, bool explicitMessageItemType = false)
+    public static OpenAIResponsesPreparedRequest Prepare(
+        string modelId,
+        LanguageModelCallOptions options,
+        bool stream,
+        string providerOptionsName,
+        bool supportsWebSearchSourcesInclude,
+        string? requestModelId,
+        bool explicitMessageItemType = false
+    )
     {
         options ??= new LanguageModelCallOptions();
         var warnings = new List<OpenAICallWarning>();
         var openai = ProviderOptionsFor(options.ProviderOptions, providerOptionsName);
         var capabilities = OpenAILanguageModelCapabilities.ForModel(modelId);
         var effort = OpenAIJson.String(openai, "reasoningEffort");
-        if (effort == null && !string.IsNullOrEmpty(options.Reasoning) && options.Reasoning != "provider-default")
+        if (
+            effort == null
+            && !string.IsNullOrEmpty(options.Reasoning)
+            && options.Reasoning != "provider-default"
+        )
         {
             effort = options.Reasoning;
         }
 
-        if (effort != null && capabilities.SupportedReasoningEfforts != null && !Contains(capabilities.SupportedReasoningEfforts, effort))
+        if (
+            effort != null
+            && capabilities.SupportedReasoningEfforts != null
+            && !Contains(capabilities.SupportedReasoningEfforts, effort)
+        )
         {
-            warnings.Add(new OpenAICallWarning(
-                "unsupported",
-                "reasoningEffort",
-                modelId + " only supports the following reasoning efforts: " + string.Join(", ", capabilities.SupportedReasoningEfforts)));
+            warnings.Add(
+                new OpenAICallWarning(
+                    "unsupported",
+                    "reasoningEffort",
+                    modelId
+                        + " only supports the following reasoning efforts: "
+                        + string.Join(", ", capabilities.SupportedReasoningEfforts)
+                )
+            );
             effort = null;
         }
 
         // An explicit null reasoningSummary turns the default off.
-        var summaryExplicit = openai is { ValueKind: JsonValueKind.Object } summaryHolder
+        var summaryExplicit =
+            openai is { ValueKind: JsonValueKind.Object } summaryHolder
             && summaryHolder.TryGetProperty("reasoningSummary", out _);
-        var reasoningSummary = summaryExplicit
-            ? OpenAIJson.String(openai, "reasoningSummary")
-            : effort != null && effort != "none" ? "detailed" : null;
+        var reasoningSummary =
+            summaryExplicit ? OpenAIJson.String(openai, "reasoningSummary")
+            : effort != null && effort != "none" ? "detailed"
+            : null;
         var reasoning = OpenAIJson.Bool(openai, "forceReasoning") ?? capabilities.IsReasoningModel;
-        if (OpenAIJson.String(openai, "conversation") != null && OpenAIJson.String(openai, "previousResponseId") != null)
+        if (
+            OpenAIJson.String(openai, "conversation") != null
+            && OpenAIJson.String(openai, "previousResponseId") != null
+        )
         {
-            warnings.Add(new OpenAICallWarning(
-                "unsupported",
-                "conversation",
-                "conversation and previousResponseId cannot be used together"));
+            warnings.Add(
+                new OpenAICallWarning(
+                    "unsupported",
+                    "conversation",
+                    "conversation and previousResponseId cannot be used together"
+                )
+            );
         }
 
         if (options.TopK != null)
@@ -296,10 +394,17 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             warnings.Add(new OpenAICallWarning("unsupported", "topK", null));
         }
 
-        var systemMode = OpenAIJson.String(openai, "systemMessageMode") ?? (reasoning ? "developer" : capabilities.SystemMessageMode);
-        var explicitItem = explicitMessageItemType || OpenAIJson.Bool(openai, "explicitMessageItemType") == true;
-        var configurationUpdateUnsupportedReason = GetConfigurationUpdateUnsupportedReason(capabilities, openai);
-        var hasContinuation = OpenAIJson.String(openai, "conversation") != null || OpenAIJson.String(openai, "previousResponseId") != null;
+        var systemMode = OpenAIJson.String(openai, "systemMessageMode")
+            ?? (reasoning ? "developer" : capabilities.SystemMessageMode);
+        var explicitItem =
+            explicitMessageItemType || OpenAIJson.Bool(openai, "explicitMessageItemType") == true;
+        var configurationUpdateUnsupportedReason = GetConfigurationUpdateUnsupportedReason(
+            capabilities,
+            openai
+        );
+        var hasContinuation =
+            OpenAIJson.String(openai, "conversation") != null
+            || OpenAIJson.String(openai, "previousResponseId") != null;
         var outputSchemaToolNames = new HashSet<string>();
         var customProviderToolNames = new HashSet<string>();
         var toolNameMapping = CreateToolNameMapping(options.Tools);
@@ -313,7 +418,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 CustomProviderToolNames = customProviderToolNames,
                 OutputSchemaToolNames = outputSchemaToolNames,
                 SupportsAsyncToolCalling = capabilities.SupportsAsyncToolCalling,
-            });
+            }
+        );
         var converted = ConvertInput(
             options.Prompt,
             systemMode,
@@ -327,9 +433,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             isReasoningModel: reasoning,
             hasConversation: OpenAIJson.String(openai, "conversation") != null,
             toolNameMapping: toolNameMapping,
-            hasApplyPatchTool: options.Tools?.Any(tool => tool.IsProviderDefined && tool.ProviderToolId == "openai.apply_patch") == true,
-            hasLocalShellTool: options.Tools?.Any(tool => tool.IsProviderDefined && tool.ProviderToolId == "openai.local_shell") == true,
-            hasPreviousResponseId: OpenAIJson.String(openai, "previousResponseId") != null);
+            hasApplyPatchTool: options.Tools?.Any(tool =>
+                tool.IsProviderDefined && tool.ProviderToolId == "openai.apply_patch"
+            ) == true,
+            hasLocalShellTool: options.Tools?.Any(tool =>
+                tool.IsProviderDefined && tool.ProviderToolId == "openai.local_shell"
+            ) == true,
+            hasPreviousResponseId: OpenAIJson.String(openai, "previousResponseId") != null
+        );
         warnings.AddRange(converted.Warnings);
 
         // The schema accepts update efforts supported by any model. Check this model's list.
@@ -337,17 +448,27 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             updateEffort != null
             && capabilities.SupportedReasoningEfforts != null
             && !Contains(capabilities.SupportedReasoningEfforts, updateEffort)
-                ? modelId + " only supports the following reasoning efforts: " + string.Join(", ", capabilities.SupportedReasoningEfforts)
+                ? modelId
+                    + " only supports the following reasoning efforts: "
+                    + string.Join(", ", capabilities.SupportedReasoningEfforts)
                 : null;
 
         foreach (var item in converted.Input)
         {
-            if (item is JsonObject { } update && update["type"]?.GetValue<string>() == "configuration_update")
+            if (
+                item is JsonObject { } update
+                && update["type"]?.GetValue<string>() == "configuration_update"
+            )
             {
-                var reason = UpdateEffortUnsupportedReason(update["reasoning"]?["effort"]?.GetValue<string>());
+                var reason = UpdateEffortUnsupportedReason(
+                    update["reasoning"]?["effort"]?.GetValue<string>()
+                );
                 if (reason != null)
                 {
-                    throw new UnsupportedFunctionalityException("Message-level reasoningEffortUpdate", reason);
+                    throw new UnsupportedFunctionalityException(
+                        "Message-level reasoningEffortUpdate",
+                        reason
+                    );
                 }
             }
         }
@@ -356,15 +477,22 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         if (effortUpdate != null)
         {
             ValidateUpdateEffort(effortUpdate);
-            var requestReason = configurationUpdateUnsupportedReason ?? UpdateEffortUnsupportedReason(effortUpdate);
+            var requestReason = configurationUpdateUnsupportedReason
+                ?? UpdateEffortUnsupportedReason(effortUpdate);
             if (requestReason != null)
             {
-                warnings.Add(new OpenAICallWarning("unsupported", "reasoningEffortUpdate", requestReason));
+                warnings.Add(
+                    new OpenAICallWarning("unsupported", "reasoningEffortUpdate", requestReason)
+                );
             }
-            else if (!(converted.Input.Count > 0
-                && converted.Input[0] is JsonObject { } first
-                && first["type"]?.GetValue<string>() == "configuration_update"
-                && first["reasoning"]?["effort"]?.GetValue<string>() == effortUpdate))
+            else if (
+                !(
+                    converted.Input.Count > 0
+                    && converted.Input[0] is JsonObject { } first
+                    && first["type"]?.GetValue<string>() == "configuration_update"
+                    && first["reasoning"]?["effort"]?.GetValue<string>() == effortUpdate
+                )
+            )
             {
                 // An identical first item would otherwise leave two adjacent updates, which OpenAI rejects.
                 converted.Input.Insert(0, ConfigurationUpdate(effortUpdate));
@@ -373,11 +501,15 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
         for (var i = 1; i < converted.Input.Count; i++)
         {
-            if (IsConfigurationUpdate(converted.Input[i - 1]) && IsConfigurationUpdate(converted.Input[i]))
+            if (
+                IsConfigurationUpdate(converted.Input[i - 1])
+                && IsConfigurationUpdate(converted.Input[i])
+            )
             {
                 throw new UnsupportedFunctionalityException(
                     "Adjacent configuration updates",
-                    "Configuration updates cannot be consecutive. Set reasoningEffortUpdate and textFormatUpdate in the same empty system message, and omit request-level reasoningEffortUpdate when using message-level updates.");
+                    "Configuration updates cannot be consecutive. Set reasoningEffortUpdate and textFormatUpdate in the same empty system message, and omit request-level reasoningEffortUpdate when using message-level updates."
+                );
             }
         }
         // A compaction trigger is a request control and must be the final input item.
@@ -419,7 +551,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             {
                 ["type"] = "json_schema",
                 ["strict"] = OpenAIJson.Bool(openai, "strictJsonSchema") ?? true,
-                ["name"] = string.IsNullOrEmpty(options.JsonSchemaName) ? "response" : options.JsonSchemaName,
+                ["name"] = string.IsNullOrEmpty(options.JsonSchemaName)
+                    ? "response"
+                    : options.JsonSchemaName,
             };
             if (options.JsonSchemaDescription != null)
             {
@@ -466,11 +600,18 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         Copy(body, "instructions", OpenAIJson.String(openai, "instructions"));
         Copy(body, "service_tier", OpenAIJson.String(openai, "serviceTier"));
         Copy(body, "prompt_cache_key", OpenAIJson.String(openai, "promptCacheKey"));
-        Copy(body, "prompt_cache_options", ParsePromptCacheOptions(OpenAIJson.Child(openai, "promptCacheOptions")));
+        Copy(
+            body,
+            "prompt_cache_options",
+            ParsePromptCacheOptions(OpenAIJson.Child(openai, "promptCacheOptions"))
+        );
         Copy(body, "prompt_cache_retention", OpenAIJson.String(openai, "promptCacheRetention"));
         Copy(body, "safety_identifier", OpenAIJson.String(openai, "safetyIdentifier"));
         Copy(body, "truncation", OpenAIJson.String(openai, "truncation"));
-        if (OpenAIJson.Child(openai, "contextManagement") is { ValueKind: JsonValueKind.Array } contextManagement)
+        if (
+            OpenAIJson.Child(openai, "contextManagement") is
+            { ValueKind: JsonValueKind.Array } contextManagement
+        )
         {
             var managed = new JsonArray();
             foreach (var entry in contextManagement.EnumerateArray())
@@ -489,7 +630,15 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
         var reasoningMode = OpenAIJson.String(openai, "reasoningMode");
         var reasoningContext = OpenAIJson.String(openai, "reasoningContext");
-        if (reasoning && (effort != null || reasoningSummary != null || reasoningMode != null || reasoningContext != null))
+        if (
+            reasoning
+            && (
+                effort != null
+                || reasoningSummary != null
+                || reasoningMode != null
+                || reasoningContext != null
+            )
+        )
         {
             var reasoningBody = new JsonObject();
             if (effort != null)
@@ -516,55 +665,74 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
         else if (!reasoning && OpenAIJson.String(openai, "reasoningEffort") != null)
         {
-            warnings.Add(new OpenAICallWarning(
-                "unsupported",
-                "reasoningEffort",
-                "reasoningEffort is not supported for non-reasoning models"));
+            warnings.Add(
+                new OpenAICallWarning(
+                    "unsupported",
+                    "reasoningEffort",
+                    "reasoningEffort is not supported for non-reasoning models"
+                )
+            );
         }
 
         if (!reasoning)
         {
             if (summaryExplicit && reasoningSummary != null)
             {
-                warnings.Add(new OpenAICallWarning(
-                    "unsupported",
-                    "reasoningSummary",
-                    "reasoningSummary is not supported for non-reasoning models"));
+                warnings.Add(
+                    new OpenAICallWarning(
+                        "unsupported",
+                        "reasoningSummary",
+                        "reasoningSummary is not supported for non-reasoning models"
+                    )
+                );
             }
 
             if (reasoningMode != null)
             {
-                warnings.Add(new OpenAICallWarning(
-                    "unsupported",
-                    "reasoningMode",
-                    "reasoningMode is not supported for non-reasoning models"));
+                warnings.Add(
+                    new OpenAICallWarning(
+                        "unsupported",
+                        "reasoningMode",
+                        "reasoningMode is not supported for non-reasoning models"
+                    )
+                );
             }
 
             if (reasoningContext != null)
             {
-                warnings.Add(new OpenAICallWarning(
-                    "unsupported",
-                    "reasoningContext",
-                    "reasoningContext is not supported for non-reasoning models"));
+                warnings.Add(
+                    new OpenAICallWarning(
+                        "unsupported",
+                        "reasoningContext",
+                        "reasoningContext is not supported for non-reasoning models"
+                    )
+                );
             }
         }
 
         if (capabilities.SupportsConfigurationUpdate && body["prompt_cache_retention"] != null)
         {
             body.Remove("prompt_cache_retention");
-            warnings.Add(new OpenAICallWarning(
-                "unsupported",
-                "promptCacheRetention",
-                "promptCacheRetention is not supported by GPT-6 and later models; use promptCacheOptions instead"));
+            warnings.Add(
+                new OpenAICallWarning(
+                    "unsupported",
+                    "promptCacheRetention",
+                    "promptCacheRetention is not supported by GPT-6 and later models; use promptCacheOptions instead"
+                )
+            );
         }
 
-        var topLogprobs = OpenAIJson.Int(openai, "logprobs") ?? (OpenAIJson.Bool(openai, "logprobs") == true ? 20 : null);
+        var topLogprobs = OpenAIJson.Int(openai, "logprobs")
+            ?? (OpenAIJson.Bool(openai, "logprobs") == true ? 20 : null);
         var include = new List<string>();
         if (OpenAIJson.Child(openai, "include") is { ValueKind: JsonValueKind.Array } includeValues)
         {
             foreach (var value in includeValues.EnumerateArray())
             {
-                if (value.ValueKind == JsonValueKind.String && !include.Contains(value.GetString()!))
+                if (
+                    value.ValueKind == JsonValueKind.String
+                    && !include.Contains(value.GetString()!)
+                )
                 {
                     include.Add(value.GetString()!);
                 }
@@ -580,10 +748,15 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             }
         }
 
-        if (supportsWebSearchSourcesInclude
+        if (
+            supportsWebSearchSourcesInclude
             && OpenAIJson.Bool(openai, "includeWebSearchSources") != false
-            && options.Tools?.Any(tool => tool.ProviderToolId == "openai.web_search" || tool.ProviderToolId == "openai.web_search_preview") == true
-            && !include.Contains("web_search_call.action.sources"))
+            && options.Tools?.Any(tool =>
+                tool.ProviderToolId == "openai.web_search"
+                || tool.ProviderToolId == "openai.web_search_preview"
+            ) == true
+            && !include.Contains("web_search_call.action.sources")
+        )
         {
             include.Add("web_search_call.action.sources");
         }
@@ -607,16 +780,34 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             {
                 if (IsConfigurationUpdate(item))
                 {
-                    effectiveEffort = item!["reasoning"]?["effort"]?.GetValue<string>() ?? effectiveEffort;
+                    effectiveEffort = item!["reasoning"]?["effort"]?.GetValue<string>()
+                        ?? effectiveEffort;
                 }
             }
 
             if (!(effectiveEffort == "none" && capabilities.SupportsNonReasoningParameters))
             {
-                Remove(body, warnings, "temperature", "temperature", "temperature is not supported for reasoning models");
-                Remove(body, warnings, "top_p", "topP", "topP is not supported for reasoning models");
-                if (capabilities.SupportedReasoningEfforts != null
-                    && (body["top_logprobs"] != null || include.Contains("message.output_text.logprobs")))
+                Remove(
+                    body,
+                    warnings,
+                    "temperature",
+                    "temperature",
+                    "temperature is not supported for reasoning models"
+                );
+                Remove(
+                    body,
+                    warnings,
+                    "top_p",
+                    "topP",
+                    "topP is not supported for reasoning models"
+                );
+                if (
+                    capabilities.SupportedReasoningEfforts != null
+                    && (
+                        body["top_logprobs"] != null
+                        || include.Contains("message.output_text.logprobs")
+                    )
+                )
                 {
                     body.Remove("top_logprobs");
                     include.Remove("message.output_text.logprobs");
@@ -635,7 +826,13 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                         body["include"] = kept;
                     }
 
-                    warnings.Add(new OpenAICallWarning("unsupported", "logprobs", "logprobs is not supported for reasoning models"));
+                    warnings.Add(
+                        new OpenAICallWarning(
+                            "unsupported",
+                            "logprobs",
+                            "logprobs is not supported for reasoning models"
+                        )
+                    );
                 }
             }
         }
@@ -644,10 +841,13 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         if (serviceTier == "flex" && !capabilities.SupportsFlexProcessing)
         {
             body.Remove("service_tier");
-            warnings.Add(new OpenAICallWarning(
-                "unsupported",
-                "serviceTier",
-                "flex processing is only available for o3, o4-mini, and gpt-5 models"));
+            warnings.Add(
+                new OpenAICallWarning(
+                    "unsupported",
+                    "serviceTier",
+                    "flex processing is only available for o3, o4-mini, and gpt-5 models"
+                )
+            );
         }
 
         foreach (var warning in prepared.ToolWarnings)
@@ -678,20 +878,39 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     internal Func<string>? GenerateId { get; set; }
 
     /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
-        var prepared = Prepare(ModelId, options, false, _providerOptionsName, SupportsWebSearchSourcesInclude, _requestModelId, _explicitMessageItemType);
-        var response = await _http.SendJsonStringAsync(
-            HttpMethod.Post,
-            _url(),
-            prepared.Body.ToJsonString(),
-            _headers(options.Headers),
-            cancellationToken).ConfigureAwait(false);
-        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
-        var namedOptions = options.ProviderOptions != null && options.ProviderOptions.TryGetValue(_providerOptionsName, out var providerOptions)
-            ? providerOptions
-            : (JsonElement?)null;
-        var collectLogprobs = OpenAIJson.Bool(namedOptions, "logprobs") == true
+        var prepared = Prepare(
+            ModelId,
+            options,
+            false,
+            _providerOptionsName,
+            SupportsWebSearchSourcesInclude,
+            _requestModelId,
+            _explicitMessageItemType
+        );
+        var response = await _http
+            .SendJsonStringAsync(
+                HttpMethod.Post,
+                _url(),
+                prepared.Body.ToJsonString(),
+                _headers(options.Headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        using var document = JsonDocument.Parse(
+            string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+        );
+        var namedOptions =
+            options.ProviderOptions != null
+            && options.ProviderOptions.TryGetValue(_providerOptionsName, out var providerOptions)
+                ? providerOptions
+                : (JsonElement?)null;
+        var collectLogprobs =
+            OpenAIJson.Bool(namedOptions, "logprobs") == true
             || OpenAIJson.Int(namedOptions, "logprobs") is not null and not 0;
         return Parse(
             document.RootElement,
@@ -706,16 +925,41 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             collectLogprobs,
             WebSearchToolName(options.Tools),
             IsShellProviderExecuted(options.Tools),
-            ExtractApprovalRequestIdToToolCallIdMapping(options.Prompt));
+            ExtractApprovalRequestIdToToolCallIdMapping(options.Prompt)
+        );
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
-        var prepared = Prepare(ModelId, options, true, _providerOptionsName, SupportsWebSearchSourcesInclude, _requestModelId, _explicitMessageItemType);
+        var prepared = Prepare(
+            ModelId,
+            options,
+            true,
+            _providerOptionsName,
+            SupportsWebSearchSourcesInclude,
+            _requestModelId,
+            _explicitMessageItemType
+        );
         var json = prepared.Body.ToJsonString();
-        var sse = await _http.OpenSseResponseAsync(_url(), json, _headers(options.Headers), cancellationToken).ConfigureAwait(false);
-        return sse.ToStreamResult(StreamAsync(options, prepared, sse.Events, _url().ToString(), json, sse.Headers, cancellationToken), json);
+        var sse = await _http
+            .OpenSseResponseAsync(_url(), json, _headers(options.Headers), cancellationToken)
+            .ConfigureAwait(false);
+        return sse.ToStreamResult(
+            StreamAsync(
+                options,
+                prepared,
+                sse.Events,
+                _url().ToString(),
+                json,
+                sse.Headers,
+                cancellationToken
+            ),
+            json
+        );
     }
 
     private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
@@ -725,7 +969,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         string url,
         string requestBodyJson,
         IReadOnlyDictionary<string, string> responseHeaders,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         yield return new StreamStartStreamPart(ToCallWarnings(prepared.Warnings));
         var state = new OpenAIResponsesStream(
@@ -736,7 +981,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             _providerOptionsName,
             WebSearchToolName(options.Tools),
             IsShellProviderExecuted(options.Tools),
-            ExtractApprovalRequestIdToToolCallIdMapping(options.Prompt));
+            ExtractApprovalRequestIdToToolCallIdMapping(options.Prompt)
+        );
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             JsonDocument? chunkDocument = null;
@@ -760,16 +1006,29 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 // Mirrors openaiResponsesChunkSchema: an invalid chunk (including a non-object value) fails the stream,
                 // an unknown chunk (unknown_chunk) is ignored.
                 var node = JsonNode.Parse(data) as JsonObject;
-                if (node == null || !OpenAIResponsesSchema.IsValidChunk(chunkDocument.RootElement))
+                var typedChunk = OpenAIResponsesSchema.ParseChunk(chunkDocument.RootElement);
+                if (node == null || typedChunk == null)
                 {
                     state.MarkParseError();
                     yield return node != null && IsOpenAIChatCompletionChunk(node)
-                        ? new ErrorStreamPart(CreateChatCompletionsMismatchError(node, url, requestBodyJson, responseHeaders))
-                        : new ErrorStreamPart(new ProviderUtils.TypeValidationException("Type validation failed: Value: " + data + ".", chunkDocument.RootElement.Clone()));
+                        ? new ErrorStreamPart(
+                            CreateChatCompletionsMismatchError(
+                                node,
+                                url,
+                                requestBodyJson,
+                                responseHeaders
+                            )
+                        )
+                        : new ErrorStreamPart(
+                            new ProviderUtils.TypeValidationException(
+                                "Type validation failed: Value: " + data + ".",
+                                chunkDocument.RootElement.Clone()
+                            )
+                        );
                     continue;
                 }
 
-                if (OpenAIResponsesSchema.IsUnknownChunk(chunkDocument.RootElement))
+                if (typedChunk is OpenAIResponsesApi.UnknownChunk)
                 {
                     continue;
                 }
@@ -798,25 +1057,32 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         JsonObject value,
         string url,
         string requestBodyJson,
-        IReadOnlyDictionary<string, string> responseHeaders) =>
+        IReadOnlyDictionary<string, string> responseHeaders
+    ) =>
         new(
             "Received a Chat Completions stream while using the OpenAI Responses API. "
-            + "The default OpenAI provider model uses the Responses API. If your custom baseURL targets a Chat Completions-compatible endpoint, use openai.chat('model-id') or createOpenAI(...).chat('model-id') instead. "
-            + "You can also use @ai-sdk/openai-compatible for OpenAI-compatible providers.",
+                + "The default OpenAI provider model uses the Responses API. If your custom baseURL targets a Chat Completions-compatible endpoint, use openai.chat('model-id') or createOpenAI(...).chat('model-id') instead. "
+                + "You can also use @ai-sdk/openai-compatible for OpenAI-compatible providers.",
             url,
             JsonNode.Parse(requestBodyJson)!,
             responseHeaders: responseHeaders,
             responseBody: value.ToJsonString(),
-            cause: new ProviderUtils.TypeValidationException("Type validation failed: Value: " + value.ToJsonString() + ".", JsonDocument.Parse(value.ToJsonString()).RootElement.Clone()),
+            cause: new ProviderUtils.TypeValidationException(
+                "Type validation failed: Value: " + value.ToJsonString() + ".",
+                JsonDocument.Parse(value.ToJsonString()).RootElement.Clone()
+            ),
             isRetryable: false,
-            data: value.DeepClone());
+            data: value.DeepClone()
+        );
 
     /// <summary>
     /// Maps MCP approval request ids to the tool call ids of the prompt. When an MCP tool needs approval, the model
     /// tracks the pending approval with a generated tool call id. When the conversation continues after the approval
     /// response, the approval request id maps back to that id so tool results reference the right call.
     /// </summary>
-    internal static Dictionary<string, string> ExtractApprovalRequestIdToToolCallIdMapping(IReadOnlyList<ModelMessage> prompt)
+    internal static Dictionary<string, string> ExtractApprovalRequestIdToToolCallIdMapping(
+        IReadOnlyList<ModelMessage> prompt
+    )
     {
         var mapping = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var message in prompt)
@@ -828,9 +1094,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
             foreach (var part in assistant.Parts.OfType<AssistantToolCallPart>())
             {
-                if (part.ProviderOptions != null
+                if (
+                    part.ProviderOptions != null
                     && part.ProviderOptions.TryGetValue("openai", out var openai)
-                    && OpenAIJson.String(openai, "approvalRequestId") is { } approvalRequestId)
+                    && OpenAIJson.String(openai, "approvalRequestId") is { } approvalRequestId
+                )
                 {
                     mapping[approvalRequestId] = part.ToolCall.ToolCallId;
                 }
@@ -853,26 +1121,34 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         bool collectLogprobs = false,
         string? webSearchToolName = null,
         bool isShellProviderExecuted = false,
-        IReadOnlyDictionary<string, string>? approvalRequestIdToDummyToolCallIdFromPrompt = null)
+        IReadOnlyDictionary<string, string>? approvalRequestIdToDummyToolCallIdFromPrompt = null
+    )
     {
         functionToolNames ??= Array.Empty<string>();
         approvalRequestIdToDummyToolCallIdFromPrompt ??= new Dictionary<string, string>();
         generateId ??= () => JsonValues.GenerateId("source_");
         if (root.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
         {
-            var message = error.TryGetProperty("message", out var messageElement) && messageElement.ValueKind == JsonValueKind.String
-                ? messageElement.GetString() ?? "Responses API error"
-                : "Responses API error";
+            var message =
+                error.TryGetProperty("message", out var messageElement)
+                && messageElement.ValueKind == JsonValueKind.String
+                    ? messageElement.GetString() ?? "Responses API error"
+                    : "Responses API error";
             throw new BadRequestException(message, raw);
         }
 
-        if (!root.TryGetProperty("output", out var output) || output.ValueKind != JsonValueKind.Array)
+        if (
+            !root.TryGetProperty("output", out var output)
+            || output.ValueKind != JsonValueKind.Array
+        )
         {
             string? detail = null;
-            if (root.TryGetProperty("incomplete_details", out var incomplete)
+            if (
+                root.TryGetProperty("incomplete_details", out var incomplete)
                 && incomplete.ValueKind == JsonValueKind.Object
                 && incomplete.TryGetProperty("reason", out var reason)
-                && reason.ValueKind == JsonValueKind.String)
+                && reason.ValueKind == JsonValueKind.String
+            )
             {
                 detail = reason.GetString();
             }
@@ -890,9 +1166,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         var hasFileSearchResults = false;
         foreach (var item in output.EnumerateArray())
         {
-            var itemType = item.TryGetProperty("type", out var itemTypeElement) ? itemTypeElement.GetString() : null;
-            hasWebSearchActionSources |= itemType == "web_search_call" && OpenAIResponsesOutput.WebSearchUrls(item).Count > 0;
-            hasFileSearchResults |= itemType == "file_search_call" && OpenAIResponsesOutput.HasResults(item);
+            var itemType = item.TryGetProperty("type", out var itemTypeElement)
+                ? itemTypeElement.GetString()
+                : null;
+            hasWebSearchActionSources |=
+                itemType == "web_search_call"
+                && OpenAIResponsesOutput.WebSearchUrls(item).Count > 0;
+            hasFileSearchResults |=
+                itemType == "file_search_call" && OpenAIResponsesOutput.HasResults(item);
         }
 
         string? structuredOutputText = null;
@@ -900,8 +1181,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         var retrievedFileIds = new HashSet<string>(StringComparer.Ordinal);
         foreach (var item in output.EnumerateArray())
         {
-            var type = item.TryGetProperty("type", out var typeElement) ? typeElement.GetString() : null;
-            if (type == "message" && item.TryGetProperty("content", out var parts) && parts.ValueKind == JsonValueKind.Array)
+            var type = item.TryGetProperty("type", out var typeElement)
+                ? typeElement.GetString()
+                : null;
+            if (
+                type == "message"
+                && item.TryGetProperty("content", out var parts)
+                && parts.ValueKind == JsonValueKind.Array
+            )
             {
                 var itemId = OpenAIJson.String(item, "id");
                 var phase = OpenAIJson.String(item, "phase");
@@ -909,8 +1196,18 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 // Parse only the last final answer for JSON output, while every message stays in the content.
                 if (jsonResponse && phase == "final_answer")
                 {
-                    structuredOutputText = string.Concat(parts.EnumerateArray()
-                        .Select(contentPart => OpenAIJson.String(contentPart, OpenAIJson.String(contentPart, "type") == "refusal" ? "refusal" : "text")));
+                    structuredOutputText = string.Concat(
+                        parts
+                            .EnumerateArray()
+                            .Select(contentPart =>
+                                OpenAIJson.String(
+                                    contentPart,
+                                    OpenAIJson.String(contentPart, "type") == "refusal"
+                                        ? "refusal"
+                                        : "text"
+                                )
+                            )
+                    );
                 }
 
                 foreach (var part in parts.EnumerateArray())
@@ -918,31 +1215,55 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     if (OpenAIJson.String(part, "type") == "refusal")
                     {
                         hasRefusal = true;
-                        content.Add(new OpenAIText(
-                            OpenAIJson.String(part, "refusal") ?? string.Empty,
-                            null,
-                            OpenAIResponsesOutput.TextMetadata(itemId, Array.Empty<JsonElement>(), phase, providerOptionsName)));
+                        content.Add(
+                            new OpenAIText(
+                                OpenAIJson.String(part, "refusal") ?? string.Empty,
+                                null,
+                                OpenAIResponsesOutput.TextMetadata(
+                                    itemId,
+                                    Array.Empty<JsonElement>(),
+                                    phase,
+                                    providerOptionsName
+                                )
+                            )
+                        );
                         continue;
                     }
 
-                    if (part.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String)
+                    if (
+                        part.TryGetProperty("text", out var text)
+                        && text.ValueKind == JsonValueKind.String
+                    )
                     {
                         var value = text.GetString();
                         if (value != null)
                         {
                             var annotations = new List<JsonElement>();
-                            if (part.TryGetProperty("annotations", out var annotationArray) && annotationArray.ValueKind == JsonValueKind.Array)
+                            if (
+                                part.TryGetProperty("annotations", out var annotationArray)
+                                && annotationArray.ValueKind == JsonValueKind.Array
+                            )
                             {
                                 annotations.AddRange(annotationArray.EnumerateArray());
                             }
 
-                            content.Add(new OpenAIText(
-                                value!,
-                                OpenAIResponsesOutput.Citations(annotations),
-                                OpenAIResponsesOutput.TextMetadata(itemId, annotations, phase, providerOptionsName)));
-                            if (collectLogprobs
+                            content.Add(
+                                new OpenAIText(
+                                    value!,
+                                    OpenAIResponsesOutput.Citations(annotations),
+                                    OpenAIResponsesOutput.TextMetadata(
+                                        itemId,
+                                        annotations,
+                                        phase,
+                                        providerOptionsName
+                                    )
+                                )
+                            );
+                            if (
+                                collectLogprobs
                                 && part.TryGetProperty("logprobs", out var partLogprobs)
-                                && partLogprobs.ValueKind != JsonValueKind.Null)
+                                && partLogprobs.ValueKind != JsonValueKind.Null
+                            )
                             {
                                 logprobs.Add(JsonNode.Parse(partLogprobs.GetRawText()));
                             }
@@ -951,13 +1272,21 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                             foreach (var annotation in annotations)
                             {
                                 var annotationType = OpenAIJson.String(annotation, "type");
-                                if ((annotationType == "url_citation" && hasWebSearchActionSources)
-                                    || (annotationType == "file_citation" && hasFileSearchResults))
+                                if (
+                                    (annotationType == "url_citation" && hasWebSearchActionSources)
+                                    || (annotationType == "file_citation" && hasFileSearchResults)
+                                )
                                 {
                                     continue;
                                 }
 
-                                content.Add(OpenAIResponsesOutput.AnnotationSource(annotation, generateId(), providerOptionsName));
+                                content.Add(
+                                    OpenAIResponsesOutput.AnnotationSource(
+                                        annotation,
+                                        generateId(),
+                                        providerOptionsName
+                                    )
+                                );
                             }
                         }
                     }
@@ -968,18 +1297,39 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 var mcpToolName = OpenAIResponsesOutput.McpToolName(item);
                 var mcpItemId = OpenAIJson.String(item, "id") ?? string.Empty;
                 var mcpApprovalRequestId = OpenAIJson.String(item, "approval_request_id");
-                var mcpToolCallId = mcpApprovalRequestId != null
-                    ? approvalRequestIdToDummyToolCallIdFromPrompt.TryGetValue(mcpApprovalRequestId, out var mappedToolCallId) ? mappedToolCallId : mcpItemId
-                    : mcpItemId;
-                content.Add(new GeneratedToolCall(mcpToolCallId, mcpToolName, OpenAIJson.String(item, "arguments") ?? "{}")
-                {
-                    ProviderExecuted = true,
-                    Dynamic = true,
-                });
-                content.Add(new GeneratedToolResult(mcpToolCallId, mcpToolName, OpenAIResponsesOutput.McpCallResult(item))
-                {
-                    ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName),
-                });
+                var mcpToolCallId =
+                    mcpApprovalRequestId != null
+                        ? approvalRequestIdToDummyToolCallIdFromPrompt.TryGetValue(
+                            mcpApprovalRequestId,
+                            out var mappedToolCallId
+                        )
+                            ? mappedToolCallId
+                            : mcpItemId
+                        : mcpItemId;
+                content.Add(
+                    new GeneratedToolCall(
+                        mcpToolCallId,
+                        mcpToolName,
+                        OpenAIJson.String(item, "arguments") ?? "{}"
+                    )
+                    {
+                        ProviderExecuted = true,
+                        Dynamic = true,
+                    }
+                );
+                content.Add(
+                    new GeneratedToolResult(
+                        mcpToolCallId,
+                        mcpToolName,
+                        OpenAIResponsesOutput.McpCallResult(item)
+                    )
+                    {
+                        ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(
+                            item,
+                            providerOptionsName
+                        ),
+                    }
+                );
             }
             else if (type == "mcp_list_tools")
             {
@@ -987,21 +1337,41 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             }
             else if (type == "mcp_approval_request")
             {
-                var approvalRequestId = OpenAIJson.String(item, "approval_request_id") ?? OpenAIJson.String(item, "id") ?? string.Empty;
+                var approvalRequestId = OpenAIJson.String(item, "approval_request_id")
+                    ?? OpenAIJson.String(item, "id")
+                    ?? string.Empty;
                 var dummyToolCallId = generateId();
-                content.Add(new GeneratedToolCall(dummyToolCallId, OpenAIResponsesOutput.McpToolName(item), OpenAIJson.String(item, "arguments") ?? "{}")
-                {
-                    ProviderExecuted = true,
-                    Dynamic = true,
-                });
+                content.Add(
+                    new GeneratedToolCall(
+                        dummyToolCallId,
+                        OpenAIResponsesOutput.McpToolName(item),
+                        OpenAIJson.String(item, "arguments") ?? "{}"
+                    )
+                    {
+                        ProviderExecuted = true,
+                        Dynamic = true,
+                    }
+                );
                 content.Add(new GeneratedToolApprovalRequest(approvalRequestId, dummyToolCallId));
             }
             else if (type == "web_search_call")
             {
                 var id = OpenAIJson.String(item, "id") ?? string.Empty;
-                var webSearchName = toolNameMapping?.ToCustomToolName(webSearchToolName ?? "web_search") ?? webSearchToolName ?? "web_search";
-                content.Add(new GeneratedToolCall(id, webSearchName, "{}") { ProviderExecuted = true });
-                content.Add(new GeneratedToolResult(id, webSearchName, OpenAIResponsesOutput.WebSearchResult(item)));
+                var webSearchName = toolNameMapping?.ToCustomToolName(
+                    webSearchToolName ?? "web_search"
+                )
+                    ?? webSearchToolName
+                    ?? "web_search";
+                content.Add(
+                    new GeneratedToolCall(id, webSearchName, "{}") { ProviderExecuted = true }
+                );
+                content.Add(
+                    new GeneratedToolResult(
+                        id,
+                        webSearchName,
+                        OpenAIResponsesOutput.WebSearchResult(item)
+                    )
+                );
                 foreach (var url in OpenAIResponsesOutput.WebSearchUrls(item))
                 {
                     content.Add(new GeneratedSource(generateId(), url, null));
@@ -1010,55 +1380,104 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             else if (type == "file_search_call")
             {
                 var id = OpenAIJson.String(item, "id") ?? string.Empty;
-                content.Add(new GeneratedToolResult(id, "file_search", OpenAIResponsesOutput.FileSearchResult(item)));
+                content.Add(
+                    new GeneratedToolResult(
+                        id,
+                        "file_search",
+                        OpenAIResponsesOutput.FileSearchResult(item)
+                    )
+                );
                 foreach (var (fileId, filename) in OpenAIResponsesOutput.RetrievedFiles(item))
                 {
                     if (retrievedFileIds.Add(fileId))
                     {
-                        content.Add(new GeneratedDocumentSource(generateId(), "text/plain", filename, filename, OpenAIResponsesOutput.FileSearchMetadata(fileId, providerOptionsName)));
+                        content.Add(
+                            new GeneratedDocumentSource(
+                                generateId(),
+                                "text/plain",
+                                filename,
+                                filename,
+                                OpenAIResponsesOutput.FileSearchMetadata(
+                                    fileId,
+                                    providerOptionsName
+                                )
+                            )
+                        );
                     }
                 }
             }
             else if (type == "function_call")
             {
                 hasFunctionCall = true;
-                var id = item.TryGetProperty("call_id", out var idElement) && idElement.ValueKind == JsonValueKind.String
-                    ? idElement.GetString() ?? "call"
-                    : "call";
-                var name = item.TryGetProperty("name", out var nameElement) ? nameElement.GetString() ?? string.Empty : string.Empty;
-                var arguments = item.TryGetProperty("arguments", out var args) && args.ValueKind == JsonValueKind.String
-                    ? args.GetString() ?? "{}"
-                    : "{}";
-                var expanded = OpenAIParallelToolCall.Expand(id, name, arguments, functionToolNames, OpenAIJson.String(item, "id") ?? string.Empty, providerOptionsName);
+                var id =
+                    item.TryGetProperty("call_id", out var idElement)
+                    && idElement.ValueKind == JsonValueKind.String
+                        ? idElement.GetString() ?? "call"
+                        : "call";
+                var name = item.TryGetProperty("name", out var nameElement)
+                    ? nameElement.GetString() ?? string.Empty
+                    : string.Empty;
+                var arguments =
+                    item.TryGetProperty("arguments", out var args)
+                    && args.ValueKind == JsonValueKind.String
+                        ? args.GetString() ?? "{}"
+                        : "{}";
+                var expanded = OpenAIParallelToolCall.Expand(
+                    id,
+                    name,
+                    arguments,
+                    functionToolNames,
+                    OpenAIJson.String(item, "id") ?? string.Empty,
+                    providerOptionsName
+                );
                 if (expanded != null)
                 {
-                    content.AddRange(expanded.Select(call => new GeneratedToolCall(call.ToolCallId, call.ToolName, call.Input, call.ProviderMetadata)));
+                    content.AddRange(
+                        expanded.Select(call => new GeneratedToolCall(
+                            call.ToolCallId,
+                            call.ToolName,
+                            call.Input,
+                            call.ProviderMetadata
+                        ))
+                    );
                     continue;
                 }
 
-                var metadata = OpenAIParallelToolCall.CallMetadata(item, providerName: providerOptionsName);
+                var metadata = OpenAIParallelToolCall.CallMetadata(
+                    item,
+                    providerName: providerOptionsName
+                );
                 content.Add(new GeneratedToolCall(id, name, arguments, metadata));
             }
             else if (type == "program")
             {
-                content.Add(new GeneratedToolCall(
-                    OpenAIJson.String(item, "call_id") ?? "call",
-                    ProgrammaticToolName(toolNameMapping),
-                    OpenAIResponsesOutput.ProgramInput(item),
-                    OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName))
-                {
-                    ProviderExecuted = true,
-                });
+                content.Add(
+                    new GeneratedToolCall(
+                        OpenAIJson.String(item, "call_id") ?? "call",
+                        ProgrammaticToolName(toolNameMapping),
+                        OpenAIResponsesOutput.ProgramInput(item),
+                        OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName)
+                    )
+                    {
+                        ProviderExecuted = true,
+                    }
+                );
             }
             else if (type == "program_output")
             {
-                content.Add(new GeneratedToolResult(
-                    OpenAIJson.String(item, "call_id") ?? "call",
-                    ProgrammaticToolName(toolNameMapping),
-                    OpenAIResponsesOutput.ProgramOutputResult(item))
-                {
-                    ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName),
-                });
+                content.Add(
+                    new GeneratedToolResult(
+                        OpenAIJson.String(item, "call_id") ?? "call",
+                        ProgrammaticToolName(toolNameMapping),
+                        OpenAIResponsesOutput.ProgramOutputResult(item)
+                    )
+                    {
+                        ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(
+                            item,
+                            providerOptionsName
+                        ),
+                    }
+                );
             }
             else if (type == "custom_tool_call")
             {
@@ -1066,59 +1485,89 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 var id = OpenAIJson.String(item, "call_id") ?? "call";
                 var name = OpenAIJson.String(item, "name") ?? string.Empty;
                 var input = OpenAIJson.String(item, "input") ?? string.Empty;
-                content.Add(new GeneratedToolCall(id, name, JsonSerializer.Serialize(input, CustomToolInputOptions), OpenAIParallelToolCall.CallMetadata(item, providerName: providerOptionsName)));
+                content.Add(
+                    new GeneratedToolCall(
+                        id,
+                        name,
+                        JsonSerializer.Serialize(input, CustomToolInputOptions),
+                        OpenAIParallelToolCall.CallMetadata(item, providerName: providerOptionsName)
+                    )
+                );
             }
             else if (type == "local_shell_call")
             {
-                content.Add(new GeneratedToolCall(
-                    OpenAIJson.String(item, "call_id") ?? "call",
-                    toolNameMapping?.ToCustomToolName("local_shell") ?? "local_shell",
-                    OpenAIResponsesOutput.LocalShellCallInput(item),
-                    OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName)));
+                content.Add(
+                    new GeneratedToolCall(
+                        OpenAIJson.String(item, "call_id") ?? "call",
+                        toolNameMapping?.ToCustomToolName("local_shell") ?? "local_shell",
+                        OpenAIResponsesOutput.LocalShellCallInput(item),
+                        OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName)
+                    )
+                );
             }
             else if (type == "shell_call")
             {
-                content.Add(new GeneratedToolCall(
-                    OpenAIJson.String(item, "call_id") ?? "call",
-                    toolNameMapping?.ToCustomToolName("shell") ?? "shell",
-                    OpenAIResponsesOutput.ShellCallInput(item),
-                    OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName))
-                {
-                    ProviderExecuted = isShellProviderExecuted,
-                });
+                content.Add(
+                    new GeneratedToolCall(
+                        OpenAIJson.String(item, "call_id") ?? "call",
+                        toolNameMapping?.ToCustomToolName("shell") ?? "shell",
+                        OpenAIResponsesOutput.ShellCallInput(item),
+                        OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName)
+                    )
+                    {
+                        ProviderExecuted = isShellProviderExecuted,
+                    }
+                );
             }
             else if (type == "shell_call_output")
             {
-                content.Add(new GeneratedToolResult(
-                    OpenAIJson.String(item, "call_id") ?? "call",
-                    toolNameMapping?.ToCustomToolName("shell") ?? "shell",
-                    OpenAIResponsesOutput.ShellCallOutputResult(item)));
+                content.Add(
+                    new GeneratedToolResult(
+                        OpenAIJson.String(item, "call_id") ?? "call",
+                        toolNameMapping?.ToCustomToolName("shell") ?? "shell",
+                        OpenAIResponsesOutput.ShellCallOutputResult(item)
+                    )
+                );
             }
             else if (type == "apply_patch_call")
             {
                 hasFunctionCall = true;
-                content.Add(new GeneratedToolCall(
-                    OpenAIJson.String(item, "call_id") ?? "call",
-                    toolNameMapping?.ToCustomToolName("apply_patch") ?? "apply_patch",
-                    OpenAIResponsesOutput.ApplyPatchInput(item),
-                    OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName)));
+                content.Add(
+                    new GeneratedToolCall(
+                        OpenAIJson.String(item, "call_id") ?? "call",
+                        toolNameMapping?.ToCustomToolName("apply_patch") ?? "apply_patch",
+                        OpenAIResponsesOutput.ApplyPatchInput(item),
+                        OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName)
+                    )
+                );
             }
-            else if (type == "reasoning" && item.TryGetProperty("summary", out var summary) && summary.ValueKind == JsonValueKind.Array)
+            else if (
+                type == "reasoning"
+                && item.TryGetProperty("summary", out var summary)
+                && summary.ValueKind == JsonValueKind.Array
+            )
             {
-                var reasoningItemId = item.TryGetProperty("id", out var reasoningIdElement) && reasoningIdElement.ValueKind == JsonValueKind.String
-                    ? reasoningIdElement.GetString()
-                    : null;
+                var reasoningItemId =
+                    item.TryGetProperty("id", out var reasoningIdElement)
+                    && reasoningIdElement.ValueKind == JsonValueKind.String
+                        ? reasoningIdElement.GetString()
+                        : null;
                 var reasoningValues = new JsonObject();
                 if (!string.IsNullOrEmpty(reasoningItemId))
                 {
                     reasoningValues["itemId"] = reasoningItemId;
                 }
 
-                reasoningValues["reasoningEncryptedContent"] = item.TryGetProperty("encrypted_content", out var encryptedElement) && encryptedElement.ValueKind == JsonValueKind.String
-                    ? encryptedElement.GetString()
-                    : null;
+                reasoningValues["reasoningEncryptedContent"] =
+                    item.TryGetProperty("encrypted_content", out var encryptedElement)
+                    && encryptedElement.ValueKind == JsonValueKind.String
+                        ? encryptedElement.GetString()
+                        : null;
 
-                JsonElement? reasoningMetadata = reasoningValues.Count > 0 ? OpenAIJson.ProviderMetadata(reasoningValues, providerOptionsName) : null;
+                JsonElement? reasoningMetadata =
+                    reasoningValues.Count > 0
+                        ? OpenAIJson.ProviderMetadata(reasoningValues, providerOptionsName)
+                        : null;
                 if (summary.GetArrayLength() == 0)
                 {
                     content.Add(new GeneratedReasoning(string.Empty, reasoningMetadata));
@@ -1126,44 +1575,62 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
                 foreach (var part in summary.EnumerateArray())
                 {
-                    var text = part.TryGetProperty("text", out var textElement) && textElement.ValueKind == JsonValueKind.String
-                        ? textElement.GetString() ?? string.Empty
-                        : string.Empty;
+                    var text =
+                        part.TryGetProperty("text", out var textElement)
+                        && textElement.ValueKind == JsonValueKind.String
+                            ? textElement.GetString() ?? string.Empty
+                            : string.Empty;
                     content.Add(new GeneratedReasoning(text, reasoningMetadata));
                 }
             }
         }
 
         string? incompleteReason = null;
-        if (root.TryGetProperty("incomplete_details", out var incompleteDetails)
+        if (
+            root.TryGetProperty("incomplete_details", out var incompleteDetails)
             && incompleteDetails.ValueKind == JsonValueKind.Object
             && incompleteDetails.TryGetProperty("reason", out var reasonElement)
-            && reasonElement.ValueKind == JsonValueKind.String)
+            && reasonElement.ValueKind == JsonValueKind.String
+        )
         {
             incompleteReason = reasonElement.GetString();
         }
 
         var finish = MapFinishReason(incompleteReason, hasFunctionCall, hasRefusal);
 
-        var responseId = root.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.String ? idValue.GetString() : null;
-        var responseModel = root.TryGetProperty("model", out var modelValue) && modelValue.ValueKind == JsonValueKind.String ? modelValue.GetString() : null;
+        var responseId =
+            root.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.String
+                ? idValue.GetString()
+                : null;
+        var responseModel =
+            root.TryGetProperty("model", out var modelValue)
+            && modelValue.ValueKind == JsonValueKind.String
+                ? modelValue.GetString()
+                : null;
         var providerMetadata = new JsonObject { ["responseId"] = responseId };
         if (logprobs.Count > 0)
         {
             providerMetadata["logprobs"] = logprobs;
         }
 
-        if (root.TryGetProperty("service_tier", out var serviceTierValue) && serviceTierValue.ValueKind == JsonValueKind.String)
+        if (
+            root.TryGetProperty("service_tier", out var serviceTierValue)
+            && serviceTierValue.ValueKind == JsonValueKind.String
+        )
         {
             providerMetadata["serviceTier"] = serviceTierValue.GetString();
         }
 
-        if (root.TryGetProperty("reasoning", out var reasoningValue)
+        if (
+            root.TryGetProperty("reasoning", out var reasoningValue)
             && reasoningValue.ValueKind == JsonValueKind.Object
             && reasoningValue.TryGetProperty("context", out var reasoningContextValue)
-            && reasoningContextValue.ValueKind != JsonValueKind.Null)
+            && reasoningContextValue.ValueKind != JsonValueKind.Null
+        )
         {
-            providerMetadata["reasoningContext"] = JsonNode.Parse(reasoningContextValue.GetRawText());
+            providerMetadata["reasoningContext"] = JsonNode.Parse(
+                reasoningContextValue.GetRawText()
+            );
         }
 
         if (PromptCacheDiagnostics(root) is { } promptCacheDiagnostics)
@@ -1174,7 +1641,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         return new LanguageModelGenerateResult(
             content,
             finish,
-            OpenAIJson.ResponsesUsage(root.TryGetProperty("usage", out var usage) ? usage : (JsonElement?)null),
+            OpenAIJson.ResponsesUsage(
+                root.TryGetProperty("usage", out var usage) ? usage : (JsonElement?)null
+            ),
             incompleteReason,
             ToCallWarnings(warnings),
             string.IsNullOrEmpty(responseId) ? null : responseId,
@@ -1183,13 +1652,19 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             string.IsNullOrEmpty(responseModel) ? null : responseModel,
             OpenAIJson.UnixSeconds(OpenAIJson.Unix(root, "created_at")),
             headers,
-            structuredOutputText);
+            structuredOutputText
+        );
     }
 
     internal static string ProgrammaticToolName(ToolNameMapping? toolNameMapping) =>
-        toolNameMapping?.ToCustomToolName("programmatic_tool_calling") ?? "programmatic_tool_calling";
+        toolNameMapping?.ToCustomToolName("programmatic_tool_calling")
+        ?? "programmatic_tool_calling";
 
-    internal static FinishReason MapFinishReason(string? incompleteReason, bool hasFunctionCall, bool hasRefusal = false)
+    internal static FinishReason MapFinishReason(
+        string? incompleteReason,
+        bool hasFunctionCall,
+        bool hasRefusal = false
+    )
     {
         switch (incompleteReason)
         {
@@ -1211,18 +1686,31 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
     }
 
-    private static readonly string[] UpdateEfforts = { "none", "low", "medium", "high", "xhigh", "max" };
+    private static readonly string[] UpdateEfforts =
+    {
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+    };
 
-    private static string? GetConfigurationUpdateUnsupportedReason(OpenAILanguageModelCapabilities capabilities, JsonElement? openai)
+    private static string? GetConfigurationUpdateUnsupportedReason(
+        OpenAILanguageModelCapabilities capabilities,
+        JsonElement? openai
+    )
     {
         if (!capabilities.SupportsConfigurationUpdate)
         {
             return "Configuration updates are only supported by GPT-6 and later models";
         }
 
-        if (OpenAIJson.String(openai, "reasoningMode") == "pro"
+        if (
+            OpenAIJson.String(openai, "reasoningMode") == "pro"
             || OpenAIJson.Child(openai, "contextManagement") != null
-            || OpenAIJson.String(openai, "truncation") == "auto")
+            || OpenAIJson.String(openai, "truncation") == "auto"
+        )
         {
             return "Configuration updates require standard reasoning mode without automatic compaction or automatic truncation";
         }
@@ -1234,7 +1722,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     {
         if (Array.IndexOf(UpdateEfforts, effort) < 0)
         {
-            throw new InvalidArgumentException("providerOptions", effort, "invalid openai provider options");
+            throw new InvalidArgumentException(
+                "providerOptions",
+                effort,
+                "invalid openai provider options"
+            );
         }
     }
 
@@ -1263,13 +1755,25 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     /// <summary>Returns the known <c>prompt_cache_diagnostics</c> fields, or <c>null</c> when absent or without a string <c>type</c>.</summary>
     internal static JsonObject? PromptCacheDiagnostics(JsonNode? diagnostics)
     {
-        if (diagnostics is not JsonObject { } source || source["type"] is not JsonValue type || !type.TryGetValue<string>(out _))
+        if (
+            diagnostics is not JsonObject { } source
+            || source["type"] is not JsonValue type
+            || !type.TryGetValue<string>(out _)
+        )
         {
             return null;
         }
 
         var result = new JsonObject();
-        foreach (var key in new[] { "type", "reason", "cache_missed_tokens", "comparison_reusable_tokens" })
+        foreach (
+            var key in new[]
+            {
+                "type",
+                "reason",
+                "cache_missed_tokens",
+                "comparison_reusable_tokens",
+            }
+        )
         {
             if (source.ContainsKey(key))
             {
@@ -1283,7 +1787,10 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     private static bool IsConfigurationUpdate(JsonNode? item) =>
         item is JsonObject obj && obj["type"]?.GetValue<string>() == "configuration_update";
 
-    private static JsonElement? ProviderOptionsFor(IReadOnlyDictionary<string, JsonElement>? providerOptions, string name)
+    private static JsonElement? ProviderOptionsFor(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        string name
+    )
     {
         if (providerOptions != null)
         {
@@ -1316,13 +1823,15 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         ToolNameMapping? toolNameMapping = null,
         bool hasApplyPatchTool = false,
         bool hasLocalShellTool = false,
-        bool hasPreviousResponseId = false)
+        bool hasPreviousResponseId = false
+    )
     {
         var input = new JsonArray();
         var programmaticToolCallIds = new HashSet<string>();
-        var parallelToolResultGroups = hasConversation || hasPreviousResponseId
-            ? CollectCompleteParallelToolResultGroups(prompt, providerOptionsName)
-            : new Dictionary<string, ParallelToolResultGroup>();
+        var parallelToolResultGroups =
+            hasConversation || hasPreviousResponseId
+                ? CollectCompleteParallelToolResultGroups(prompt, providerOptionsName)
+                : new Dictionary<string, ParallelToolResultGroup>();
         var emittedParallelToolCalls = new HashSet<string>();
         var emittedParallelToolResults = new HashSet<string>();
         var processedApprovalIds = new HashSet<string>();
@@ -1332,33 +1841,51 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             switch (message)
             {
                 case SystemModelMessage system:
-                    var systemOptions = ProviderOptionsFor(system.ProviderOptions, providerOptionsName);
+                    var systemOptions = ProviderOptionsFor(
+                        system.ProviderOptions,
+                        providerOptionsName
+                    );
                     var messageEffort = OpenAIJson.String(systemOptions, "reasoningEffortUpdate");
                     var messageTextFormat = OpenAIJson.Child(systemOptions, "textFormatUpdate");
                     var messageAdditionalTools = AdditionalToolsList(systemOptions);
-                    if (messageEffort != null || messageTextFormat != null || messageAdditionalTools != null)
+                    if (
+                        messageEffort != null
+                        || messageTextFormat != null
+                        || messageAdditionalTools != null
+                    )
                     {
-                        var hasConfigurationUpdate = messageEffort != null || messageTextFormat != null;
+                        var hasConfigurationUpdate =
+                            messageEffort != null || messageTextFormat != null;
                         if (messageEffort != null)
                         {
                             ValidateUpdateEffort(messageEffort);
                         }
 
-                        var feature = messageEffort != null
-                            ? "reasoningEffortUpdate"
-                            : messageTextFormat != null ? "textFormatUpdate" : "additionalTools";
-                        var reason = system.Content != string.Empty
-                            ? "Message-level " + feature + " requires empty system message content."
-                            : hasConfigurationUpdate ? configurationUpdateUnsupportedReason : null;
+                        var feature =
+                            messageEffort != null ? "reasoningEffortUpdate"
+                            : messageTextFormat != null ? "textFormatUpdate"
+                            : "additionalTools";
+                        var reason =
+                            system.Content != string.Empty
+                                ? "Message-level "
+                                    + feature
+                                    + " requires empty system message content."
+                            : hasConfigurationUpdate ? configurationUpdateUnsupportedReason
+                            : null;
                         if (reason != null)
                         {
-                            throw new UnsupportedFunctionalityException("Message-level " + feature, reason);
+                            throw new UnsupportedFunctionalityException(
+                                "Message-level " + feature,
+                                reason
+                            );
                         }
 
                         // The controls are independent of systemMessageMode's text handling.
                         if (hasConfigurationUpdate)
                         {
-                            var normalizedFormat = messageTextFormat is { } rawFormat ? OpenAIResponsesTextFormat.Normalize(rawFormat, warnings) : null;
+                            var normalizedFormat = messageTextFormat is { } rawFormat
+                                ? OpenAIResponsesTextFormat.Normalize(rawFormat, warnings)
+                                : null;
                             input.Add(ConfigurationUpdate(messageEffort, normalizedFormat));
                         }
 
@@ -1372,24 +1899,38 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
                     if (systemMessageMode == "remove")
                     {
-                        warnings.Add(new OpenAICallWarning("other", null, null, "system messages are removed for this model"));
+                        warnings.Add(
+                            new OpenAICallWarning(
+                                "other",
+                                null,
+                                null,
+                                "system messages are removed for this model"
+                            )
+                        );
                         break;
                     }
 
                     if (systemMessageMode != "system" && systemMessageMode != "developer")
                     {
-                        throw new AiSdkException("Unsupported system message mode: " + systemMessageMode);
+                        throw new AiSdkException(
+                            "Unsupported system message mode: " + systemMessageMode
+                        );
                     }
 
-                    var systemBreakpoint = OpenAIJson.PromptCacheBreakpoint(ProviderOptionsFor(system.ProviderOptions, providerOptionsName));
-                    JsonNode systemContent = systemBreakpoint == null
-                        ? JsonValue.Create(system.Content)!
-                        : new JsonArray(new JsonObject
-                        {
-                            ["type"] = "input_text",
-                            ["text"] = system.Content,
-                            ["prompt_cache_breakpoint"] = systemBreakpoint,
-                        });
+                    var systemBreakpoint = OpenAIJson.PromptCacheBreakpoint(
+                        ProviderOptionsFor(system.ProviderOptions, providerOptionsName)
+                    );
+                    JsonNode systemContent =
+                        systemBreakpoint == null
+                            ? JsonValue.Create(system.Content)!
+                            : new JsonArray(
+                                new JsonObject
+                                {
+                                    ["type"] = "input_text",
+                                    ["text"] = system.Content,
+                                    ["prompt_cache_breakpoint"] = systemBreakpoint,
+                                }
+                            );
                     input.Add(MessageItem(systemMessageMode, systemContent, explicitItem));
                     break;
                 case UserModelMessage user:
@@ -1398,8 +1939,17 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     {
                         if (part is TextContentPart text)
                         {
-                            var item = new JsonObject { ["type"] = "input_text", ["text"] = text.Text };
-                            if (OpenAIJson.PromptCacheBreakpoint(ProviderOptionsFor(text.ProviderOptions, providerOptionsName)) is { } textBreakpoint)
+                            var item = new JsonObject
+                            {
+                                ["type"] = "input_text",
+                                ["text"] = text.Text,
+                            };
+                            if (
+                                OpenAIJson.PromptCacheBreakpoint(
+                                    ProviderOptionsFor(text.ProviderOptions, providerOptionsName)
+                                ) is
+                                { } textBreakpoint
+                            )
                             {
                                 item["prompt_cache_breakpoint"] = textBreakpoint;
                             }
@@ -1409,7 +1959,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                         else if (part is FileContentPart file)
                         {
                             var item = ConvertFile(file);
-                            if (OpenAIJson.PromptCacheBreakpoint(ProviderOptionsFor(file.ProviderOptions, providerOptionsName)) is { } fileBreakpoint)
+                            if (
+                                OpenAIJson.PromptCacheBreakpoint(
+                                    ProviderOptionsFor(file.ProviderOptions, providerOptionsName)
+                                ) is
+                                { } fileBreakpoint
+                            )
                             {
                                 item["prompt_cache_breakpoint"] = fileBreakpoint;
                             }
@@ -1421,82 +1976,199 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     input.Add(MessageItem("user", parts, explicitItem));
                     break;
                 case AssistantModelMessage assistant:
-                    AddStoredReasoning(input, assistant, providerOptionsName, hasContinuation, store);
-                    var hasTextItemIds = assistant.Parts.Any(part => part is AssistantTextPart && TextItemId(part, providerOptionsName) != null);
+                    AddStoredReasoning(
+                        input,
+                        assistant,
+                        providerOptionsName,
+                        hasContinuation,
+                        store
+                    );
+                    var hasTextItemIds = assistant.Parts.Any(part =>
+                        part is AssistantTextPart && TextItemId(part, providerOptionsName) != null
+                    );
                     if (hasTextItemIds)
                     {
-                        AddStoredText(input, assistant, providerOptionsName, explicitItem, store, isReasoningModel, hasConversation);
+                        AddStoredText(
+                            input,
+                            assistant,
+                            providerOptionsName,
+                            explicitItem,
+                            store,
+                            isReasoningModel,
+                            hasConversation
+                        );
                     }
                     else if (!string.IsNullOrEmpty(assistant.Text))
                     {
-                        input.Add(MessageItem("assistant", JsonValue.Create(assistant.Text)!, explicitItem));
+                        input.Add(
+                            MessageItem(
+                                "assistant",
+                                JsonValue.Create(assistant.Text)!,
+                                explicitItem
+                            )
+                        );
                     }
 
                     foreach (var call in assistant.ToolCalls)
                     {
-                        var parallelCallMetadata = OpenAIParallelToolCall.GetParallelToolCallMetadata(AssistantCallOptions(assistant, call), providerOptionsName);
-                        if (parallelCallMetadata != null
-                            && parallelToolResultGroups.TryGetValue(parallelCallMetadata.ToolCallId, out var parallelCallGroup)
-                            && OpenAIParallelToolCall.HasSameParallelToolCall(parallelCallGroup.Metadata, parallelCallMetadata))
+                        var parallelCallMetadata =
+                            OpenAIParallelToolCall.GetParallelToolCallMetadata(
+                                AssistantCallOptions(assistant, call),
+                                providerOptionsName
+                            );
+                        if (
+                            parallelCallMetadata != null
+                            && parallelToolResultGroups.TryGetValue(
+                                parallelCallMetadata.ToolCallId,
+                                out var parallelCallGroup
+                            )
+                            && OpenAIParallelToolCall.HasSameParallelToolCall(
+                                parallelCallGroup.Metadata,
+                                parallelCallMetadata
+                            )
+                        )
                         {
-                            if (emittedParallelToolCalls.Add(parallelCallGroup.Metadata.ToolCallId) && !hasConversation)
+                            if (
+                                emittedParallelToolCalls.Add(parallelCallGroup.Metadata.ToolCallId)
+                                && !hasConversation
+                            )
                             {
                                 // Conversations already contain the original wrapper item.
                                 // previousResponseId chains require plain client function calls to be reconstructed in full.
-                                input.Add(new JsonObject
-                                {
-                                    ["type"] = "function_call",
-                                    ["call_id"] = parallelCallGroup.Metadata.ToolCallId,
-                                    ["name"] = parallelCallGroup.Metadata.ToolName,
-                                    ["arguments"] = parallelCallGroup.Metadata.Input,
-                                });
+                                input.Add(
+                                    new JsonObject
+                                    {
+                                        ["type"] = "function_call",
+                                        ["call_id"] = parallelCallGroup.Metadata.ToolCallId,
+                                        ["name"] = parallelCallGroup.Metadata.ToolName,
+                                        ["arguments"] = parallelCallGroup.Metadata.Input,
+                                    }
+                                );
                             }
 
                             continue;
                         }
 
-                        if (ToolCaller(ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName)) is JsonObject { } callCaller
-                            && callCaller["type"]?.GetValue<string>() == "program")
+                        if (
+                            ToolCaller(
+                                ProviderOptionsFor(
+                                    AssistantCallOptions(assistant, call),
+                                    providerOptionsName
+                                )
+                            )
+                                is JsonObject { } callCaller
+                            && callCaller["type"]?.GetValue<string>() == "program"
+                        )
                         {
                             programmaticToolCallIds.Add(call.ToolCallId);
                         }
 
                         // When using a conversation, skip items that already exist in the conversation context to avoid "Duplicate item found" errors.
-                        if (hasConversation && OpenAIJson.String(ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), "itemId") != null)
+                        if (
+                            hasConversation
+                            && OpenAIJson.String(
+                                ProviderOptionsFor(
+                                    AssistantCallOptions(assistant, call),
+                                    providerOptionsName
+                                ),
+                                "itemId"
+                            ) != null
+                        )
                         {
                             continue;
                         }
 
                         if (IsProgrammaticToolName(call.ToolName, toolNameMapping))
                         {
-                            AddProgramCall(input, call, ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), store, hasConversation);
+                            AddProgramCall(
+                                input,
+                                call,
+                                ProviderOptionsFor(
+                                    AssistantCallOptions(assistant, call),
+                                    providerOptionsName
+                                ),
+                                store,
+                                hasConversation
+                            );
                             continue;
                         }
 
                         if (IsShellToolName(call.ToolName, toolNameMapping))
                         {
-                            AddShellCall(input, call, ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), store, hasContinuation, hasConversation);
+                            AddShellCall(
+                                input,
+                                call,
+                                ProviderOptionsFor(
+                                    AssistantCallOptions(assistant, call),
+                                    providerOptionsName
+                                ),
+                                store,
+                                hasContinuation,
+                                hasConversation
+                            );
                             continue;
                         }
 
-                        if (hasLocalShellTool && toolNameMapping?.ToProviderToolName(call.ToolName) == "local_shell")
+                        if (
+                            hasLocalShellTool
+                            && toolNameMapping?.ToProviderToolName(call.ToolName) == "local_shell"
+                        )
                         {
-                            AddLocalShellCall(input, call, ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), store, hasContinuation, hasConversation);
+                            AddLocalShellCall(
+                                input,
+                                call,
+                                ProviderOptionsFor(
+                                    AssistantCallOptions(assistant, call),
+                                    providerOptionsName
+                                ),
+                                store,
+                                hasContinuation,
+                                hasConversation
+                            );
                             continue;
                         }
 
-                        if (hasApplyPatchTool && toolNameMapping?.ToProviderToolName(call.ToolName) == "apply_patch")
+                        if (
+                            hasApplyPatchTool
+                            && toolNameMapping?.ToProviderToolName(call.ToolName) == "apply_patch"
+                        )
                         {
-                            AddApplyPatchCall(input, call, ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), store, hasContinuation, hasConversation);
+                            AddApplyPatchCall(
+                                input,
+                                call,
+                                ProviderOptionsFor(
+                                    AssistantCallOptions(assistant, call),
+                                    providerOptionsName
+                                ),
+                                store,
+                                hasContinuation,
+                                hasConversation
+                            );
                             continue;
                         }
 
                         // A provider-executed call has no client function to replay. Upstream references the stored item, or drops the call.
                         if (call.ProviderExecuted)
                         {
-                            if (store && OpenAIJson.String(ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), "itemId") is { } providerItemId)
+                            if (
+                                store
+                                && OpenAIJson.String(
+                                    ProviderOptionsFor(
+                                        AssistantCallOptions(assistant, call),
+                                        providerOptionsName
+                                    ),
+                                    "itemId"
+                                )
+                                    is { } providerItemId
+                            )
                             {
-                                input.Add(new JsonObject { ["type"] = "item_reference", ["id"] = providerItemId });
+                                input.Add(
+                                    new JsonObject
+                                    {
+                                        ["type"] = "item_reference",
+                                        ["id"] = providerItemId,
+                                    }
+                                );
                             }
 
                             continue;
@@ -1505,8 +2177,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                         if (customToolNames?.Contains(call.ToolName) == true)
                         {
                             var callOptions = ProviderOptionsFor(
-                                assistant.Parts.OfType<AssistantToolCallPart>().FirstOrDefault(part => part.ToolCall == call)?.ProviderOptions,
-                                providerOptionsName);
+                                assistant
+                                    .Parts.OfType<AssistantToolCallPart>()
+                                    .FirstOrDefault(part => part.ToolCall == call)
+                                    ?.ProviderOptions,
+                                providerOptionsName
+                            );
                             var itemId = OpenAIJson.String(callOptions, "itemId");
                             if (hasConversation && itemId != null)
                             {
@@ -1518,7 +2194,13 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                             {
                                 if (!hasContinuation)
                                 {
-                                    input.Add(new JsonObject { ["type"] = "item_reference", ["id"] = itemId });
+                                    input.Add(
+                                        new JsonObject
+                                        {
+                                            ["type"] = "item_reference",
+                                            ["id"] = itemId,
+                                        }
+                                    );
                                 }
 
                                 continue;
@@ -1550,9 +2232,19 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                             ["type"] = "function_call",
                             ["call_id"] = call.ToolCallId,
                             ["name"] = call.ToolName,
-                            ["arguments"] = string.IsNullOrEmpty(call.ArgumentsJson) ? "{}" : call.ArgumentsJson,
+                            ["arguments"] = string.IsNullOrEmpty(call.ArgumentsJson)
+                                ? "{}"
+                                : call.ArgumentsJson,
                         };
-                        if (ToolCaller(ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName)) is { } functionCaller)
+                        if (
+                            ToolCaller(
+                                ProviderOptionsFor(
+                                    AssistantCallOptions(assistant, call),
+                                    providerOptionsName
+                                )
+                            ) is
+                            { } functionCaller
+                        )
                         {
                             functionCall["caller"] = functionCaller;
                         }
@@ -1564,18 +2256,39 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     {
                         if (IsProgrammaticToolName(resultPart.ToolName, toolNameMapping))
                         {
-                            AddProgramOutput(input, resultPart, providerOptionsName, store, hasConversation);
+                            AddProgramOutput(
+                                input,
+                                resultPart,
+                                providerOptionsName,
+                                store,
+                                hasConversation
+                            );
                         }
-                        else if (IsShellToolName(resultPart.ToolName, toolNameMapping) && !hasConversation && resultPart.Output.OutputType == "json")
+                        else if (
+                            IsShellToolName(resultPart.ToolName, toolNameMapping)
+                            && !hasConversation
+                            && resultPart.Output.OutputType == "json"
+                        )
                         {
                             // The shell_call_output has its own item id, which the call's metadata does not hold, so it is rebuilt.
-                            input.Add(ShellCallOutput(resultPart.ToolCallId, resultPart.Output.OutputJson));
+                            input.Add(
+                                ShellCallOutput(resultPart.ToolCallId, resultPart.Output.OutputJson)
+                            );
                         }
                     }
 
                     if (hasTextItemIds)
                     {
-                        AddStoredText(input, assistant, providerOptionsName, explicitItem, store, isReasoningModel, hasConversation, afterToolParts: true);
+                        AddStoredText(
+                            input,
+                            assistant,
+                            providerOptionsName,
+                            explicitItem,
+                            store,
+                            isReasoningModel,
+                            hasConversation,
+                            afterToolParts: true
+                        );
                     }
 
                     break;
@@ -1589,84 +2302,147 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
                     if (store && !hasConversation && !hasPreviousResponseId)
                     {
-                        input.Add(new JsonObject { ["type"] = "item_reference", ["id"] = approvalResponse.ApprovalId });
+                        input.Add(
+                            new JsonObject
+                            {
+                                ["type"] = "item_reference",
+                                ["id"] = approvalResponse.ApprovalId,
+                            }
+                        );
                     }
 
-                    input.Add(new JsonObject
-                    {
-                        ["type"] = "mcp_approval_response",
-                        ["approval_request_id"] = approvalResponse.ApprovalId,
-                        ["approve"] = approvalResponse.Approved,
-                    });
+                    input.Add(
+                        new JsonObject
+                        {
+                            ["type"] = "mcp_approval_response",
+                            ["approval_request_id"] = approvalResponse.ApprovalId,
+                            ["approve"] = approvalResponse.Approved,
+                        }
+                    );
                     break;
                 case ToolModelMessage tool:
                     // Skip execution-denied with approvalId: already handled via the tool approval response.
-                    if (tool.OutputType == "execution-denied" && OpenAIJson.String(OpenAIJson.Child(tool.OutputProviderOptions, "openai"), "approvalId") != null)
+                    if (
+                        tool.OutputType == "execution-denied"
+                        && OpenAIJson.String(
+                            OpenAIJson.Child(tool.OutputProviderOptions, "openai"),
+                            "approvalId"
+                        ) != null
+                    )
                     {
                         break;
                     }
 
-                    var parallelResultMetadata = OpenAIParallelToolCall.GetParallelToolCallMetadata(ToOptions(tool.ProviderMetadata), providerOptionsName);
-                    if (parallelResultMetadata != null
-                        && parallelToolResultGroups.TryGetValue(parallelResultMetadata.ToolCallId, out var parallelResultGroup)
-                        && OpenAIParallelToolCall.HasSameParallelToolCall(parallelResultGroup.Metadata, parallelResultMetadata))
+                    var parallelResultMetadata = OpenAIParallelToolCall.GetParallelToolCallMetadata(
+                        ToOptions(tool.ProviderMetadata),
+                        providerOptionsName
+                    );
+                    if (
+                        parallelResultMetadata != null
+                        && parallelToolResultGroups.TryGetValue(
+                            parallelResultMetadata.ToolCallId,
+                            out var parallelResultGroup
+                        )
+                        && OpenAIParallelToolCall.HasSameParallelToolCall(
+                            parallelResultGroup.Metadata,
+                            parallelResultMetadata
+                        )
+                    )
                     {
                         if (emittedParallelToolResults.Add(parallelResultGroup.Metadata.ToolCallId))
                         {
-                            AddParallelToolResults(input, parallelResultGroup, outputSchemaToolNames, providerOptionsName);
+                            AddParallelToolResults(
+                                input,
+                                parallelResultGroup,
+                                outputSchemaToolNames,
+                                providerOptionsName
+                            );
                         }
 
                         break;
                     }
 
                     // The output's own breakpoint wins over the tool result's.
-                    var toolBreakpoint = OpenAIJson.PromptCacheBreakpoint(tool.OutputProviderOptions)
-                        ?? OpenAIJson.PromptCacheBreakpoint(tool.ProviderMetadata);
+                    var toolBreakpoint = OpenAIJson.PromptCacheBreakpoint(
+                        tool.OutputProviderOptions
+                    ) ?? OpenAIJson.PromptCacheBreakpoint(tool.ProviderMetadata);
                     var toolIsCustom = customToolNames?.Contains(tool.ToolName) == true;
-                    var toolHasSchema = !toolIsCustom && outputSchemaToolNames?.Contains(tool.ToolName) == true;
-                    var toolText = OpenAIJson.ToolOutputText(tool.OutputType, tool.OutputType == "execution-denied" ? tool.ExecutionDeniedReason : tool.OutputJson, toolHasSchema);
+                    var toolHasSchema =
+                        !toolIsCustom && outputSchemaToolNames?.Contains(tool.ToolName) == true;
+                    var toolText = OpenAIJson.ToolOutputText(
+                        tool.OutputType,
+                        tool.OutputType == "execution-denied"
+                            ? tool.ExecutionDeniedReason
+                            : tool.OutputJson,
+                        toolHasSchema
+                    );
                     JsonNode toolOutput = toolText;
                     if (toolBreakpoint != null)
                     {
-                        toolOutput = new JsonArray(new JsonObject
-                        {
-                            ["type"] = "input_text",
-                            ["text"] = toolText,
-                            ["prompt_cache_breakpoint"] = toolBreakpoint,
-                        });
+                        toolOutput = new JsonArray(
+                            new JsonObject
+                            {
+                                ["type"] = "input_text",
+                                ["text"] = toolText,
+                                ["prompt_cache_breakpoint"] = toolBreakpoint,
+                            }
+                        );
                     }
 
-                    if (IsShellToolName(tool.ToolName, toolNameMapping) && tool.OutputType == "json")
+                    if (
+                        IsShellToolName(tool.ToolName, toolNameMapping)
+                        && tool.OutputType == "json"
+                    )
                     {
                         input.Add(ShellCallOutput(tool.ToolCallId, tool.OutputJson));
                         break;
                     }
 
-                    if (hasLocalShellTool && toolNameMapping?.ToProviderToolName(tool.ToolName) == "local_shell" && tool.OutputType == "json")
+                    if (
+                        hasLocalShellTool
+                        && toolNameMapping?.ToProviderToolName(tool.ToolName) == "local_shell"
+                        && tool.OutputType == "json"
+                    )
                     {
                         input.Add(LocalShellCallOutput(tool.ToolCallId, tool.OutputJson));
                         break;
                     }
 
-                    if (hasApplyPatchTool && tool.ToolName == "apply_patch" && tool.OutputType == "json")
+                    if (
+                        hasApplyPatchTool
+                        && tool.ToolName == "apply_patch"
+                        && tool.OutputType == "json"
+                    )
                     {
                         input.Add(ApplyPatchCallOutput(tool.ToolCallId, tool.OutputJson));
                         break;
                     }
 
-                    var resultCaller = ToolCaller(ProviderOptionsFor(ToOptions(tool.ProviderMetadata), providerOptionsName));
-                    if (tool.OutputType == "execution-denied"
-                        && (programmaticToolCallIds.Contains(tool.ToolCallId)
-                            || (resultCaller is JsonObject { } denied && denied["type"]?.GetValue<string>() == "program")))
+                    var resultCaller = ToolCaller(
+                        ProviderOptionsFor(ToOptions(tool.ProviderMetadata), providerOptionsName)
+                    );
+                    if (
+                        tool.OutputType == "execution-denied"
+                        && (
+                            programmaticToolCallIds.Contains(tool.ToolCallId)
+                            || (
+                                resultCaller is JsonObject { } denied
+                                && denied["type"]?.GetValue<string>() == "program"
+                            )
+                        )
+                    )
                     {
                         throw new UnsupportedFunctionalityException(
                             "execution-denied results for programmatic tool calls",
-                            "functionality not supported: execution-denied results for programmatic tool calls");
+                            "functionality not supported: execution-denied results for programmatic tool calls"
+                        );
                     }
 
                     var toolResultItem = new JsonObject
                     {
-                        ["type"] = toolIsCustom ? "custom_tool_call_output" : "function_call_output",
+                        ["type"] = toolIsCustom
+                            ? "custom_tool_call_output"
+                            : "function_call_output",
                         ["call_id"] = tool.ToolCallId,
                         ["output"] = toolOutput,
                     };
@@ -1677,7 +2453,10 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
                     input.Add(toolResultItem);
 
-                    var additionalTools = ToolResultAdditionalTools(tool.ProviderMetadata, providerOptionsName);
+                    var additionalTools = ToolResultAdditionalTools(
+                        tool.ProviderMetadata,
+                        providerOptionsName
+                    );
                     if (additionalTools is { Count: > 0 })
                     {
                         input.Add(AdditionalToolsItem(additionalTools));
@@ -1692,35 +2471,60 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         return new ResponsesInput(input, warnings);
     }
 
-    private sealed record ParallelToolResultGroup(OpenAIParallelToolCallMetadata Metadata, IReadOnlyList<ToolModelMessage> Results);
+    private sealed record ParallelToolResultGroup(
+        OpenAIParallelToolCallMetadata Metadata,
+        IReadOnlyList<ToolModelMessage> Results
+    );
 
-    private sealed class PendingParallelToolResultGroup(OpenAIParallelToolCallMetadata metadata, ToolModelMessage first)
+    private sealed class PendingParallelToolResultGroup(
+        OpenAIParallelToolCallMetadata metadata,
+        ToolModelMessage first
+    )
     {
         public OpenAIParallelToolCallMetadata Metadata { get; set; } = metadata;
 
-        public Dictionary<int, ToolModelMessage> Results { get; } = new() { [metadata.Index] = first };
+        public Dictionary<int, ToolModelMessage> Results { get; } =
+            new() { [metadata.Index] = first };
 
         public bool Invalid { get; set; }
     }
 
-    private static Dictionary<string, ParallelToolResultGroup> CollectCompleteParallelToolResultGroups(IReadOnlyList<ModelMessage> prompt, string providerOptionsName)
+    private static Dictionary<
+        string,
+        ParallelToolResultGroup
+    > CollectCompleteParallelToolResultGroups(
+        IReadOnlyList<ModelMessage> prompt,
+        string providerOptionsName
+    )
     {
         var pendingGroups = new Dictionary<string, PendingParallelToolResultGroup>();
         foreach (var message in ToolModelMessage.Flatten(prompt))
         {
-            if (message is not ToolModelMessage part
-                || OpenAIParallelToolCall.GetParallelToolCallMetadata(ToOptions(part.ProviderMetadata), providerOptionsName) is not { } metadata)
+            if (
+                message is not ToolModelMessage part
+                || OpenAIParallelToolCall.GetParallelToolCallMetadata(
+                    ToOptions(part.ProviderMetadata),
+                    providerOptionsName
+                )
+                    is not { } metadata
+            )
             {
                 continue;
             }
 
             if (!pendingGroups.TryGetValue(metadata.ToolCallId, out var existing))
             {
-                pendingGroups[metadata.ToolCallId] = new PendingParallelToolResultGroup(metadata, part);
+                pendingGroups[metadata.ToolCallId] = new PendingParallelToolResultGroup(
+                    metadata,
+                    part
+                );
                 continue;
             }
 
-            if (!OpenAIParallelToolCall.HasSameParallelToolCall(existing.Metadata, metadata) || existing.Results.ContainsKey(metadata.Index))
+            if (
+                !OpenAIParallelToolCall.HasSameParallelToolCall(existing.Metadata, metadata)
+                || existing.Results.ContainsKey(metadata.Index)
+            )
             {
                 existing.Invalid = true;
                 continue;
@@ -1739,7 +2543,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         {
             var toolCallId = pair.Key;
             var group = pair.Value;
-            if (group.Invalid || group.Results.Count != group.Metadata.Count || group.Metadata.Input is null)
+            if (
+                group.Invalid
+                || group.Results.Count != group.Metadata.Count
+                || group.Metadata.Input is null
+            )
             {
                 continue;
             }
@@ -1765,15 +2573,31 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     }
 
     // The internal wrapper returns one output containing the child results in the order of the original tool_uses array.
-    private static void AddParallelToolResults(JsonArray input, ParallelToolResultGroup group, ISet<string>? outputSchemaToolNames, string providerOptionsName)
+    private static void AddParallelToolResults(
+        JsonArray input,
+        ParallelToolResultGroup group,
+        ISet<string>? outputSchemaToolNames,
+        string providerOptionsName
+    )
     {
         var texts = new List<string>();
         var breakpoints = new List<JsonNode?>();
         foreach (var result in group.Results)
         {
             var hasSchema = outputSchemaToolNames?.Contains(result.ToolName) == true;
-            texts.Add(OpenAIJson.ToolOutputText(result.OutputType, result.OutputType == "execution-denied" ? result.ExecutionDeniedReason : result.OutputJson, hasSchema));
-            breakpoints.Add(OpenAIJson.PromptCacheBreakpoint(result.OutputProviderOptions) ?? OpenAIJson.PromptCacheBreakpoint(result.ProviderMetadata));
+            texts.Add(
+                OpenAIJson.ToolOutputText(
+                    result.OutputType,
+                    result.OutputType == "execution-denied"
+                        ? result.ExecutionDeniedReason
+                        : result.OutputJson,
+                    hasSchema
+                )
+            );
+            breakpoints.Add(
+                OpenAIJson.PromptCacheBreakpoint(result.OutputProviderOptions)
+                    ?? OpenAIJson.PromptCacheBreakpoint(result.ProviderMetadata)
+            );
         }
 
         JsonNode output;
@@ -1802,16 +2626,21 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             output = JsonValue.Create(string.Join("\n", texts))!;
         }
 
-        input.Add(new JsonObject
-        {
-            ["type"] = "function_call_output",
-            ["call_id"] = group.Metadata.ToolCallId,
-            ["output"] = output,
-        });
+        input.Add(
+            new JsonObject
+            {
+                ["type"] = "function_call_output",
+                ["call_id"] = group.Metadata.ToolCallId,
+                ["output"] = output,
+            }
+        );
 
         foreach (var result in group.Results)
         {
-            if (ToolResultAdditionalTools(result.ProviderMetadata, providerOptionsName) is { Count: > 0 } additionalTools)
+            if (
+                ToolResultAdditionalTools(result.ProviderMetadata, providerOptionsName) is
+                { Count: > 0 } additionalTools
+            )
             {
                 input.Add(AdditionalToolsItem(additionalTools));
             }
@@ -1825,7 +2654,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         toolNameMapping?.ToProviderToolName(toolName) == "shell";
 
     // A stored shell call replays as an item reference. Without storage, a call is rebuilt as a shell_call.
-    private static void AddShellCall(JsonArray input, GeneratedToolCall call, JsonElement? options, bool store, bool hasContinuation, bool hasConversation)
+    private static void AddShellCall(
+        JsonArray input,
+        GeneratedToolCall call,
+        JsonElement? options,
+        bool store,
+        bool hasContinuation,
+        bool hasConversation
+    )
     {
         var itemId = OpenAIJson.String(options, "itemId");
         if (hasConversation && itemId != null)
@@ -1886,19 +2722,25 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             throw new AiSdkException("The shell tool call input is not valid JSON.", exception);
         }
 
-        if ((parsed as JsonObject)?["action"] is not JsonObject action
+        if (
+            (parsed as JsonObject)?["action"] is not JsonObject action
             || action["commands"] is not JsonArray commands
             || commands.Any(command => !IsKind(command, JsonValueKind.String))
             || action["timeoutMs"] is { } timeout && !IsKind(timeout, JsonValueKind.Number)
-            || action["maxOutputLength"] is { } maxOutput && !IsKind(maxOutput, JsonValueKind.Number))
+            || action["maxOutputLength"] is { } maxOutput
+                && !IsKind(maxOutput, JsonValueKind.Number)
+        )
         {
-            throw new AiSdkException("The shell tool call input needs an action with a commands array of strings.");
+            throw new AiSdkException(
+                "The shell tool call input needs an action with a commands array of strings."
+            );
         }
 
         return action;
     }
 
-    private static bool IsKind(JsonNode? node, JsonValueKind kind) => node is JsonValue value && value.GetValueKind() == kind;
+    private static bool IsKind(JsonNode? node, JsonValueKind kind) =>
+        node is JsonValue value && value.GetValueKind() == kind;
 
     // The shell output schema: { maxOutputLength?: number, output: { stdout, stderr, outcome: { type: "timeout" } | { type: "exit", exitCode } }[] }.
     private static JsonObject ShellCallOutput(string callId, string outputJson)
@@ -1921,32 +2763,49 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         var output = new JsonArray();
         foreach (var item in items)
         {
-            if (item is not JsonObject entry
+            if (
+                item is not JsonObject entry
                 || !IsKind(entry["stdout"], JsonValueKind.String)
                 || !IsKind(entry["stderr"], JsonValueKind.String)
-                || entry["outcome"] is not JsonObject outcome)
+                || entry["outcome"] is not JsonObject outcome
+            )
             {
-                throw new AiSdkException("Each shell tool result output needs stdout, stderr, and an outcome.");
+                throw new AiSdkException(
+                    "Each shell tool result output needs stdout, stderr, and an outcome."
+                );
             }
 
-            var outcomeType = IsKind(outcome["type"], JsonValueKind.String) ? outcome["type"]!.GetValue<string>() : null;
+            var outcomeType = IsKind(outcome["type"], JsonValueKind.String)
+                ? outcome["type"]!.GetValue<string>()
+                : null;
             JsonObject converted = outcomeType switch
             {
                 "timeout" => new JsonObject { ["type"] = "timeout" },
-                "exit" when IsKind(outcome["exitCode"], JsonValueKind.Number) =>
-                    new JsonObject { ["type"] = "exit", ["exit_code"] = outcome["exitCode"]!.DeepClone() },
-                _ => throw new AiSdkException("The shell tool result outcome must be a timeout or an exit with an exitCode."),
+                "exit" when IsKind(outcome["exitCode"], JsonValueKind.Number) => new JsonObject
+                {
+                    ["type"] = "exit",
+                    ["exit_code"] = outcome["exitCode"]!.DeepClone(),
+                },
+                _ => throw new AiSdkException(
+                    "The shell tool result outcome must be a timeout or an exit with an exitCode."
+                ),
             };
 
-            output.Add(new JsonObject
-            {
-                ["stdout"] = entry["stdout"]!.DeepClone(),
-                ["stderr"] = entry["stderr"]!.DeepClone(),
-                ["outcome"] = converted,
-            });
+            output.Add(
+                new JsonObject
+                {
+                    ["stdout"] = entry["stdout"]!.DeepClone(),
+                    ["stderr"] = entry["stderr"]!.DeepClone(),
+                    ["outcome"] = converted,
+                }
+            );
         }
 
-        var shellCallOutput = new JsonObject { ["type"] = "shell_call_output", ["call_id"] = callId };
+        var shellCallOutput = new JsonObject
+        {
+            ["type"] = "shell_call_output",
+            ["call_id"] = callId,
+        };
         if (parsedObject["maxOutputLength"] is { } maxOutputLength)
         {
             if (!IsKind(maxOutputLength, JsonValueKind.Number))
@@ -1962,7 +2821,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     }
 
     // A stored apply_patch call replays as an item reference. Without storage, it is rebuilt as an apply_patch_call that the apply_patch_call_output matches.
-    private static void AddApplyPatchCall(JsonArray input, GeneratedToolCall call, JsonElement? options, bool store, bool hasContinuation, bool hasConversation)
+    private static void AddApplyPatchCall(
+        JsonArray input,
+        GeneratedToolCall call,
+        JsonElement? options,
+        bool store,
+        bool hasContinuation,
+        bool hasConversation
+    )
     {
         var itemId = OpenAIJson.String(options, "itemId");
         if (hasConversation && itemId != null)
@@ -1982,7 +2848,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
 
         var applyPatchInput = ApplyPatchInput(call.ArgumentsJson);
-        var applyPatchCall = new JsonObject { ["type"] = "apply_patch_call", ["call_id"] = applyPatchInput["callId"]!.DeepClone() };
+        var applyPatchCall = new JsonObject
+        {
+            ["type"] = "apply_patch_call",
+            ["call_id"] = applyPatchInput["callId"]!.DeepClone(),
+        };
         if (itemId != null)
         {
             applyPatchCall["id"] = itemId;
@@ -1994,7 +2864,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     }
 
     // A stored local_shell call replays as an item reference. Without storage, it is rebuilt as a local_shell_call that the local_shell_call_output matches.
-    private static void AddLocalShellCall(JsonArray input, GeneratedToolCall call, JsonElement? options, bool store, bool hasContinuation, bool hasConversation)
+    private static void AddLocalShellCall(
+        JsonArray input,
+        GeneratedToolCall call,
+        JsonElement? options,
+        bool store,
+        bool hasContinuation,
+        bool hasConversation
+    )
     {
         var itemId = OpenAIJson.String(options, "itemId");
         if (hasConversation && itemId != null)
@@ -2014,8 +2891,20 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
 
         var action = LocalShellAction(call.ArgumentsJson);
-        var wireAction = new JsonObject { ["type"] = "exec", ["command"] = action["command"]!.DeepClone() };
-        foreach (var (key, wireKey) in new[] { ("timeoutMs", "timeout_ms"), ("user", "user"), ("workingDirectory", "working_directory"), ("env", "env") })
+        var wireAction = new JsonObject
+        {
+            ["type"] = "exec",
+            ["command"] = action["command"]!.DeepClone(),
+        };
+        foreach (
+            var (key, wireKey) in new[]
+            {
+                ("timeoutMs", "timeout_ms"),
+                ("user", "user"),
+                ("workingDirectory", "working_directory"),
+                ("env", "env"),
+            }
+        )
         {
             if (action[key] is { } value)
             {
@@ -2023,7 +2912,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             }
         }
 
-        var localShellCall = new JsonObject { ["type"] = "local_shell_call", ["call_id"] = call.ToolCallId };
+        var localShellCall = new JsonObject
+        {
+            ["type"] = "local_shell_call",
+            ["call_id"] = call.ToolCallId,
+        };
         if (itemId != null)
         {
             localShellCall["id"] = itemId;
@@ -2043,19 +2936,33 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
         catch (JsonException exception)
         {
-            throw new AiSdkException("The local_shell tool call input is not valid JSON.", exception);
+            throw new AiSdkException(
+                "The local_shell tool call input is not valid JSON.",
+                exception
+            );
         }
 
-        if ((parsed as JsonObject)?["action"] is not JsonObject action
-            || action["type"] is not JsonValue { } type || type.GetValueKind() != JsonValueKind.String || type.GetValue<string>() != "exec"
+        if (
+            (parsed as JsonObject)?["action"] is not JsonObject action
+            || action["type"] is not JsonValue { } type
+            || type.GetValueKind() != JsonValueKind.String
+            || type.GetValue<string>() != "exec"
             || action["command"] is not JsonArray command
             || command.Any(part => !IsKind(part, JsonValueKind.String))
             || action["timeoutMs"] is { } timeout && !IsKind(timeout, JsonValueKind.Number)
             || action["user"] is { } user && !IsKind(user, JsonValueKind.String)
-            || action["workingDirectory"] is { } workingDirectory && !IsKind(workingDirectory, JsonValueKind.String)
-            || action["env"] is { } env && (env is not JsonObject envObject || envObject.Any(entry => !IsKind(entry.Value, JsonValueKind.String))))
+            || action["workingDirectory"] is { } workingDirectory
+                && !IsKind(workingDirectory, JsonValueKind.String)
+            || action["env"] is { } env
+                && (
+                    env is not JsonObject envObject
+                    || envObject.Any(entry => !IsKind(entry.Value, JsonValueKind.String))
+                )
+        )
         {
-            throw new AiSdkException("The local_shell tool call input needs an exec action with a command array of strings.");
+            throw new AiSdkException(
+                "The local_shell tool call input needs an exec action with a command array of strings."
+            );
         }
 
         return action;
@@ -2074,12 +2981,20 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             throw new AiSdkException("The local_shell tool result is not valid JSON.", exception);
         }
 
-        if ((parsed as JsonObject)?["output"] is not { } output || !IsKind(output, JsonValueKind.String))
+        if (
+            (parsed as JsonObject)?["output"] is not { } output
+            || !IsKind(output, JsonValueKind.String)
+        )
         {
             throw new AiSdkException("The local_shell tool result needs an output string.");
         }
 
-        return new JsonObject { ["type"] = "local_shell_call_output", ["call_id"] = callId, ["output"] = output.DeepClone() };
+        return new JsonObject
+        {
+            ["type"] = "local_shell_call_output",
+            ["call_id"] = callId,
+            ["output"] = output.DeepClone(),
+        };
     }
 
     // The apply_patch input schema: { callId: string, operation: create_file | update_file { path, diff } | delete_file { path } }.
@@ -2092,17 +3007,24 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
         catch (JsonException exception)
         {
-            throw new AiSdkException("The apply_patch tool call input is not valid JSON.", exception);
+            throw new AiSdkException(
+                "The apply_patch tool call input is not valid JSON.",
+                exception
+            );
         }
 
-        if (parsed is not JsonObject root
+        if (
+            parsed is not JsonObject root
             || !IsKind(root["callId"], JsonValueKind.String)
             || root["operation"] is not JsonObject operation
             || !IsKind(operation["path"], JsonValueKind.String)
             || operation["type"] is not JsonValue typeValue
-            || typeValue.GetValueKind() != JsonValueKind.String)
+            || typeValue.GetValueKind() != JsonValueKind.String
+        )
         {
-            throw new AiSdkException("The apply_patch tool call input needs a callId and an operation with a type and a path.");
+            throw new AiSdkException(
+                "The apply_patch tool call input needs a callId and an operation with a type and a path."
+            );
         }
 
         var type = typeValue.GetValue<string>();
@@ -2113,7 +3035,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             case "update_file":
                 if (!IsKind(operation["diff"], JsonValueKind.String))
                 {
-                    throw new AiSdkException("The apply_patch " + type + " operation needs a diff string.");
+                    throw new AiSdkException(
+                        "The apply_patch " + type + " operation needs a diff string."
+                    );
                 }
 
                 rebuilt["diff"] = operation["diff"]!.DeepClone();
@@ -2121,7 +3045,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             case "delete_file":
                 break;
             default:
-                throw new AiSdkException("The apply_patch operation type must be create_file, update_file, or delete_file.");
+                throw new AiSdkException(
+                    "The apply_patch operation type must be create_file, update_file, or delete_file."
+                );
         }
 
         return new JsonObject { ["callId"] = root["callId"]!.DeepClone(), ["operation"] = rebuilt };
@@ -2140,11 +3066,15 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             throw new AiSdkException("The apply_patch tool result is not valid JSON.", exception);
         }
 
-        if (parsed is not JsonObject parsedObject
+        if (
+            parsed is not JsonObject parsedObject
             || !IsKind(parsedObject["status"], JsonValueKind.String)
-            || parsedObject["status"]!.GetValue<string>() is not ("completed" or "failed"))
+            || parsedObject["status"]!.GetValue<string>() is not ("completed" or "failed")
+        )
         {
-            throw new AiSdkException("The apply_patch tool result needs a status of completed or failed.");
+            throw new AiSdkException(
+                "The apply_patch tool result needs a status of completed or failed."
+            );
         }
 
         var item = new JsonObject
@@ -2166,24 +3096,44 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         return item;
     }
 
-    private static IReadOnlyDictionary<string, JsonElement>? AssistantCallOptions(AssistantModelMessage assistant, GeneratedToolCall call) =>
-        assistant.Parts.OfType<AssistantToolCallPart>().FirstOrDefault(part => part.ToolCall == call)?.ProviderOptions;
+    private static IReadOnlyDictionary<string, JsonElement>? AssistantCallOptions(
+        AssistantModelMessage assistant,
+        GeneratedToolCall call
+    ) =>
+        assistant
+            .Parts.OfType<AssistantToolCallPart>()
+            .FirstOrDefault(part => part.ToolCall == call)
+            ?.ProviderOptions;
 
-    private static IReadOnlyDictionary<string, JsonElement>? ToOptions(JsonElement? providerMetadata) =>
+    private static IReadOnlyDictionary<string, JsonElement>? ToOptions(
+        JsonElement? providerMetadata
+    ) =>
         providerMetadata is { ValueKind: JsonValueKind.Object } metadata
-            ? metadata.EnumerateObject().ToDictionary(property => property.Name, property => property.Value.Clone())
+            ? metadata
+                .EnumerateObject()
+                .ToDictionary(property => property.Name, property => property.Value.Clone())
             : null;
 
     // The Responses caller of a tool call: a program caller uses caller_id, others pass through.
     private static JsonNode? ToolCaller(JsonElement? options) =>
         OpenAIJson.Child(options, "caller") is { ValueKind: JsonValueKind.Object } caller
             ? OpenAIJson.String(caller, "type") == "program"
-                ? new JsonObject { ["type"] = "program", ["caller_id"] = OpenAIJson.String(caller, "callerId") }
+                ? new JsonObject
+                {
+                    ["type"] = "program",
+                    ["caller_id"] = OpenAIJson.String(caller, "callerId"),
+                }
                 : JsonNode.Parse(caller.GetRawText())
             : null;
 
     // A provider-executed program call replays as an item reference when stored, else as a program item.
-    private static void AddProgramCall(JsonArray input, GeneratedToolCall call, JsonElement? options, bool store, bool hasConversation)
+    private static void AddProgramCall(
+        JsonArray input,
+        GeneratedToolCall call,
+        JsonElement? options,
+        bool store,
+        bool hasConversation
+    )
     {
         var itemId = OpenAIJson.String(options, "itemId");
         if (hasConversation && itemId != null)
@@ -2204,27 +3154,44 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
         catch (JsonException exception)
         {
-            throw new AiSdkException("The programmatic tool call input is not valid JSON.", exception);
+            throw new AiSdkException(
+                "The programmatic tool call input is not valid JSON.",
+                exception
+            );
         }
 
-        if (programInput?["code"] is not JsonValue code || code.GetValueKind() != JsonValueKind.String
-            || programInput["fingerprint"] is not JsonValue fingerprint || fingerprint.GetValueKind() != JsonValueKind.String)
+        if (
+            programInput?["code"] is not JsonValue code
+            || code.GetValueKind() != JsonValueKind.String
+            || programInput["fingerprint"] is not JsonValue fingerprint
+            || fingerprint.GetValueKind() != JsonValueKind.String
+        )
         {
-            throw new AiSdkException("The programmatic tool call input needs a string code and fingerprint.");
+            throw new AiSdkException(
+                "The programmatic tool call input needs a string code and fingerprint."
+            );
         }
 
-        input.Add(new JsonObject
-        {
-            ["type"] = "program",
-            ["id"] = itemId ?? call.ToolCallId,
-            ["call_id"] = call.ToolCallId,
-            ["code"] = code.GetValue<string>(),
-            ["fingerprint"] = fingerprint.GetValue<string>(),
-        });
+        input.Add(
+            new JsonObject
+            {
+                ["type"] = "program",
+                ["id"] = itemId ?? call.ToolCallId,
+                ["call_id"] = call.ToolCallId,
+                ["code"] = code.GetValue<string>(),
+                ["fingerprint"] = fingerprint.GetValue<string>(),
+            }
+        );
     }
 
     // A program result replays as an item reference when stored, else as a program_output item.
-    private static void AddProgramOutput(JsonArray input, AssistantToolResultPart part, string providerOptionsName, bool store, bool hasConversation)
+    private static void AddProgramOutput(
+        JsonArray input,
+        AssistantToolResultPart part,
+        string providerOptionsName,
+        bool store,
+        bool hasConversation
+    )
     {
         // The conversation already holds provider-executed results.
         if (hasConversation)
@@ -2232,8 +3199,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             return;
         }
 
-        var itemId = OpenAIJson.String(ProviderOptionsFor(part.ProviderOptions, providerOptionsName), "itemId")
-            ?? OpenAIJson.String(ProviderOptionsFor(ToOptions(part.Output.ProviderMetadata), providerOptionsName), "itemId")
+        var itemId = OpenAIJson.String(
+            ProviderOptionsFor(part.ProviderOptions, providerOptionsName),
+            "itemId"
+        )
+            ?? OpenAIJson.String(
+                ProviderOptionsFor(ToOptions(part.Output.ProviderMetadata), providerOptionsName),
+                "itemId"
+            )
             ?? part.ToolCallId;
         if (store)
         {
@@ -2256,40 +3229,58 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             throw new AiSdkException("The programmatic tool result is not valid JSON.", exception);
         }
 
-        if (output?["result"] is not JsonValue result || result.GetValueKind() != JsonValueKind.String
-            || output["status"] is not JsonValue status || status.GetValueKind() != JsonValueKind.String
-            || (status.GetValue<string>() != "completed" && status.GetValue<string>() != "incomplete"))
+        if (
+            output?["result"] is not JsonValue result
+            || result.GetValueKind() != JsonValueKind.String
+            || output["status"] is not JsonValue status
+            || status.GetValueKind() != JsonValueKind.String
+            || (
+                status.GetValue<string>() != "completed"
+                && status.GetValue<string>() != "incomplete"
+            )
+        )
         {
-            throw new AiSdkException("The programmatic tool result needs a string result and a completed or incomplete status.");
+            throw new AiSdkException(
+                "The programmatic tool result needs a string result and a completed or incomplete status."
+            );
         }
 
-        input.Add(new JsonObject
-        {
-            ["type"] = "program_output",
-            ["id"] = itemId,
-            ["call_id"] = part.ToolCallId,
-            ["result"] = result.GetValue<string>(),
-            ["status"] = status.GetValue<string>(),
-        });
+        input.Add(
+            new JsonObject
+            {
+                ["type"] = "program_output",
+                ["id"] = itemId,
+                ["call_id"] = part.ToolCallId,
+                ["result"] = result.GetValue<string>(),
+                ["status"] = status.GetValue<string>(),
+            }
+        );
     }
 
-    private static JsonObject AdditionalToolsItem(JsonArray tools) => new()
-    {
-        ["type"] = "additional_tools",
-        ["role"] = "developer",
-        ["tools"] = tools,
-    };
+    private static JsonObject AdditionalToolsItem(JsonArray tools) =>
+        new()
+        {
+            ["type"] = "additional_tools",
+            ["role"] = "developer",
+            ["tools"] = tools,
+        };
 
     // Tool definitions loaded immediately after an ordinary tool result. Options under the provider name win,
     // then the "openai" ones. A malformed list is an error.
-    private static JsonArray? ToolResultAdditionalTools(JsonElement? toolResultOptions, string providerOptionsName)
+    private static JsonArray? ToolResultAdditionalTools(
+        JsonElement? toolResultOptions,
+        string providerOptionsName
+    )
     {
         if (toolResultOptions is not { ValueKind: JsonValueKind.Object } root)
         {
             return null;
         }
 
-        if (root.TryGetProperty(providerOptionsName, out var named) && AdditionalToolsList(named) is { } list)
+        if (
+            root.TryGetProperty(providerOptionsName, out var named)
+            && AdditionalToolsList(named) is { } list
+        )
         {
             return list;
         }
@@ -2302,14 +3293,19 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     // The validated additionalTools of a provider options object, or null when it has none.
     private static JsonArray? AdditionalToolsList(JsonElement? options)
     {
-        if (options is not { ValueKind: JsonValueKind.Object } root || !root.TryGetProperty("additionalTools", out var list))
+        if (
+            options is not { ValueKind: JsonValueKind.Object } root
+            || !root.TryGetProperty("additionalTools", out var list)
+        )
         {
             return null;
         }
 
         if (list.ValueKind != JsonValueKind.Array)
         {
-            throw new AiSdkException("Invalid additionalTools: expected an array of tool definitions.");
+            throw new AiSdkException(
+                "Invalid additionalTools: expected an array of tool definitions."
+            );
         }
 
         var tools = new JsonArray();
@@ -2323,11 +3319,15 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
     private static JsonNode ValidateAdditionalTool(JsonElement definition)
     {
-        if (definition.ValueKind != JsonValueKind.Object
+        if (
+            definition.ValueKind != JsonValueKind.Object
             || !definition.TryGetProperty("type", out var type)
-            || type.ValueKind != JsonValueKind.String)
+            || type.ValueKind != JsonValueKind.String
+        )
         {
-            throw new AiSdkException("Invalid additionalTools: each definition must be an object with a type.");
+            throw new AiSdkException(
+                "Invalid additionalTools: each definition must be an object with a type."
+            );
         }
 
         switch (type.GetString())
@@ -2342,7 +3342,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 ValidateNamespaceDefinition(definition);
                 break;
             default:
-                throw new AiSdkException("Invalid additionalTools: unsupported type '" + type.GetString() + "'.");
+                throw new AiSdkException(
+                    "Invalid additionalTools: unsupported type '" + type.GetString() + "'."
+                );
         }
 
         return JsonNode.Parse(definition.GetRawText())!;
@@ -2366,16 +3368,22 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 case "parameters" when property.Value.ValueKind == JsonValueKind.Object:
                     hasParameters = true;
                     break;
-                case "strict" or "defer_loading" when property.Value.ValueKind is JsonValueKind.True or JsonValueKind.False:
+                case "strict"
+                or "defer_loading"
+                    when property.Value.ValueKind is JsonValueKind.True or JsonValueKind.False:
                     break;
                 default:
-                    throw new AiSdkException("Invalid additionalTools: unexpected or malformed '" + property.Name + "'.");
+                    throw new AiSdkException(
+                        "Invalid additionalTools: unexpected or malformed '" + property.Name + "'."
+                    );
             }
         }
 
         if (!hasName || !hasParameters)
         {
-            throw new AiSdkException("Invalid additionalTools: a function definition needs type, name and parameters.");
+            throw new AiSdkException(
+                "Invalid additionalTools: a function definition needs type, name and parameters."
+            );
         }
     }
 
@@ -2397,13 +3405,17 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     ValidateCustomFormat(property.Value);
                     break;
                 default:
-                    throw new AiSdkException("Invalid additionalTools: unexpected or malformed '" + property.Name + "'.");
+                    throw new AiSdkException(
+                        "Invalid additionalTools: unexpected or malformed '" + property.Name + "'."
+                    );
             }
         }
 
         if (!hasName)
         {
-            throw new AiSdkException("Invalid additionalTools: a custom definition needs type and name.");
+            throw new AiSdkException(
+                "Invalid additionalTools: a custom definition needs type and name."
+            );
         }
     }
 
@@ -2417,7 +3429,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         var isGrammar = type.GetString() == "grammar";
         if (!isGrammar && type.GetString() != "text")
         {
-            throw new AiSdkException("Invalid additionalTools: unsupported custom format type '" + type.GetString() + "'.");
+            throw new AiSdkException(
+                "Invalid additionalTools: unsupported custom format type '"
+                    + type.GetString()
+                    + "'."
+            );
         }
 
         var hasSyntax = false;
@@ -2428,20 +3444,28 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             {
                 case "type":
                     break;
-                case "syntax" when isGrammar && property.Value.ValueKind == JsonValueKind.String && property.Value.GetString() is "regex" or "lark":
+                case "syntax"
+                    when isGrammar
+                        && property.Value.ValueKind == JsonValueKind.String
+                        && property.Value.GetString() is "regex" or "lark":
                     hasSyntax = true;
                     break;
-                case "definition" when isGrammar && property.Value.ValueKind == JsonValueKind.String:
+                case "definition"
+                    when isGrammar && property.Value.ValueKind == JsonValueKind.String:
                     hasDefinition = true;
                     break;
                 default:
-                    throw new AiSdkException("Invalid additionalTools: unexpected or malformed '" + property.Name + "'.");
+                    throw new AiSdkException(
+                        "Invalid additionalTools: unexpected or malformed '" + property.Name + "'."
+                    );
             }
         }
 
         if (isGrammar && (!hasSyntax || !hasDefinition))
         {
-            throw new AiSdkException("Invalid additionalTools: a grammar format needs syntax and definition.");
+            throw new AiSdkException(
+                "Invalid additionalTools: a grammar format needs syntax and definition."
+            );
         }
     }
 
@@ -2462,15 +3486,21 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 case "description" when property.Value.ValueKind == JsonValueKind.String:
                     hasDescription = true;
                     break;
-                case "tools" when property.Value.ValueKind == JsonValueKind.Array && property.Value.GetArrayLength() > 0:
+                case "tools"
+                    when property.Value.ValueKind == JsonValueKind.Array
+                        && property.Value.GetArrayLength() > 0:
                     foreach (var nested in property.Value.EnumerateArray())
                     {
-                        if (nested.ValueKind != JsonValueKind.Object
+                        if (
+                            nested.ValueKind != JsonValueKind.Object
                             || !nested.TryGetProperty("type", out var nestedType)
                             || nestedType.ValueKind != JsonValueKind.String
-                            || nestedType.GetString() != "function")
+                            || nestedType.GetString() != "function"
+                        )
                         {
-                            throw new AiSdkException("Invalid additionalTools: a namespace holds function definitions.");
+                            throw new AiSdkException(
+                                "Invalid additionalTools: a namespace holds function definitions."
+                            );
                         }
 
                         ValidateFunctionDefinition(nested);
@@ -2479,13 +3509,17 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     hasTools = true;
                     break;
                 default:
-                    throw new AiSdkException("Invalid additionalTools: unexpected or malformed '" + property.Name + "'.");
+                    throw new AiSdkException(
+                        "Invalid additionalTools: unexpected or malformed '" + property.Name + "'."
+                    );
             }
         }
 
         if (!hasName || !hasDescription || !hasTools)
         {
-            throw new AiSdkException("Invalid additionalTools: a namespace definition needs type, name, description and a non-empty tools list.");
+            throw new AiSdkException(
+                "Invalid additionalTools: a namespace definition needs type, name, description and a non-empty tools list."
+            );
         }
     }
 
@@ -2514,7 +3548,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         bool store,
         bool isReasoningModel,
         bool hasConversation,
-        bool afterToolParts = false)
+        bool afterToolParts = false
+    )
     {
         var emittedTextItemIds = new HashSet<string>();
         var hasPrecedingReasoning = false;
@@ -2562,7 +3597,13 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     }
 
     // Reasoning already held by a conversation or previous response is filtered out.
-    private static void AddStoredReasoning(JsonArray input, AssistantModelMessage assistant, string providerOptionsName, bool hasContinuation, bool store)
+    private static void AddStoredReasoning(
+        JsonArray input,
+        AssistantModelMessage assistant,
+        string providerOptionsName,
+        bool hasContinuation,
+        bool store
+    )
     {
         var options = ProviderOptionsFor(assistant.ReasoningProviderOptions, providerOptionsName);
         var itemId = OpenAIJson.String(options, "itemId");
@@ -2580,7 +3621,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         var summary = new JsonArray();
         if (!string.IsNullOrEmpty(assistant.Reasoning))
         {
-            summary.Add(new JsonObject { ["type"] = "summary_text", ["text"] = assistant.Reasoning });
+            summary.Add(
+                new JsonObject { ["type"] = "summary_text", ["text"] = assistant.Reasoning }
+            );
         }
 
         var item = new JsonObject { ["type"] = "reasoning", ["id"] = itemId };
@@ -2597,7 +3640,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     {
         var mediaType = file.MediaType ?? "application/octet-stream";
         var inline = file.Data != null;
-        var full = OpenAIJson.ResolveFullMediaType(mediaType, file.Data, inline && string.IsNullOrEmpty(file.Url));
+        var full = OpenAIJson.ResolveFullMediaType(
+            mediaType,
+            file.Data,
+            inline && string.IsNullOrEmpty(file.Url)
+        );
         if (OpenAIJson.TopLevel(full) == "image")
         {
             var image = new JsonObject { ["type"] = "input_image" };
@@ -2607,7 +3654,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             }
             else
             {
-                image["image_url"] = "data:" + full + ";base64," + Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
+                image["image_url"] =
+                    "data:"
+                    + full
+                    + ";base64,"
+                    + Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
             }
 
             return image;
@@ -2627,7 +3678,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         {
             ["type"] = "input_file",
             ["filename"] = string.IsNullOrEmpty(file.FileName) ? "data" : file.FileName,
-            ["file_data"] = "data:" + full + ";base64," + Convert.ToBase64String(file.Data ?? Array.Empty<byte>()),
+            ["file_data"] =
+                "data:"
+                + full
+                + ";base64,"
+                + Convert.ToBase64String(file.Data ?? Array.Empty<byte>()),
         };
     }
 
@@ -2658,7 +3713,13 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
     }
 
-    private static void Remove(JsonObject body, List<OpenAICallWarning> warnings, string field, string feature, string details)
+    private static void Remove(
+        JsonObject body,
+        List<OpenAICallWarning> warnings,
+        string field,
+        string feature,
+        string details
+    )
     {
         if (body[field] == null)
         {
