@@ -24,6 +24,35 @@ public sealed class DeepSeekProvider : OpenAICompatibleProvider
     public DeepSeekProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient) { }
 
+    /// <inheritdoc />
+    public override ILanguageModel LanguageModel(string modelId)
+    {
+        return ChatModel(modelId);
+    }
+
+    /// <summary>
+    /// Creates a model that uses the Chat Completions API. The provider id is <c>deepseek.chat</c>.
+    /// Assistant prefix completion and strict tool calls need a base URL that ends with <c>/beta</c>.
+    /// Maps to <c>chat</c> (<c>createLanguageModel</c>).
+    /// </summary>
+    public DeepSeekChatLanguageModel ChatModel(string modelId)
+    {
+        var baseUrl = Options.BaseUrl.TrimEnd('/');
+        return new DeepSeekChatLanguageModel(
+            modelId,
+            new DeepSeekChatConfig(Options.ProviderName + ".chat", this, (_, path) =>
+                new Uri(baseUrl + path)
+            )
+            {
+                SupportsAssistantPrefixCompletion = baseUrl.EndsWith(
+                    "/beta",
+                    StringComparison.Ordinal
+                ),
+                SupportsStrictToolCalls = baseUrl.EndsWith("/beta", StringComparison.Ordinal),
+            }
+        );
+    }
+
     /// <summary>
     /// Creates a model that uses the Responses API. It supports server-side tools such as <see cref="DeepSeekTools.WebSearch"/>.
     /// The provider id is <c>deepseek.responses</c>.

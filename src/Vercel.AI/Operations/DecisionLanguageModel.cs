@@ -474,9 +474,10 @@ public sealed class DecisionLanguageModel : IEvaluationDecisionCaller
                     ? new OperationWarning(
                         warning.Type,
                         feature: warning.Feature,
-                        details: warning.Message
+                        details: warning.Message,
+                        setting: warning.Setting
                     )
-                    : new OperationWarning(warning.Type, warning.Message)
+                    : new OperationWarning(warning.Type, warning.Message, setting: warning.Setting)
             )
             .ToList();
         return new DecisionModelResult(

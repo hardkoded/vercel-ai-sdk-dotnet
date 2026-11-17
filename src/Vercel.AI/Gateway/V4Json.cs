@@ -277,10 +277,17 @@ public static class V4Json
             {
                 var type = ReadString(item, "type") ?? "other";
                 var feature = ReadString(item, "feature");
+                var setting = ReadString(item, "setting");
                 warnings.Add(
                     feature is null
                         ? new CallWarning(type, ReadString(item, "message") ?? string.Empty)
+                        {
+                            Setting = setting,
+                        }
                         : new CallWarning(type, feature, ReadString(item, "details"))
+                        {
+                            Setting = setting,
+                        }
                 );
             }
         }

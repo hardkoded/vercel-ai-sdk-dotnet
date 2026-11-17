@@ -626,9 +626,10 @@ public sealed class ExtractionLanguageModel : IExtractionCaller
                     ? new OperationWarning(
                         warning.Type,
                         feature: warning.Feature,
-                        details: warning.Message
+                        details: warning.Message,
+                        setting: warning.Setting
                     )
-                    : new OperationWarning(warning.Type, warning.Message)
+                    : new OperationWarning(warning.Type, warning.Message, setting: warning.Setting)
             )
             .ToList();
         var usage = new OperationUsage(result.Usage.InputTokens, result.Usage.OutputTokens);

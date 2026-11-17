@@ -359,19 +359,19 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     /// Azure-hosted DeepSeek chat model for a deployment. Images are sent as URLs when they are <c>http</c> or
     /// <c>https</c>. The provider id is <c>azure.deepseek</c>. Maps to <c>deepseek</c> (<c>createDeepSeekModel</c>).
     /// </summary>
-    public OpenAICompatibleLanguageModel DeepSeek(string deploymentName)
+    public DeepSeek.DeepSeekChatLanguageModel DeepSeek(string deploymentName)
     {
-        var options = Options.Copy();
-        options.SupportedUrls = new Dictionary<string, string> { ["image/*"] = "^https?://.*\\z" };
-        options.SupportsStructuredOutputs = true;
-        options.InterruptedWithoutFinish = true;
-        options.IncludeUsage = true;
-        options.MetadataExtractor = new DeepSeek.DeepSeekChatMetadataExtractor(ProviderId);
-        var deepSeek = new OpenAICompatibleProvider(options, SharedHttpClient);
-        return new OpenAICompatibleLanguageModel(
-            deepSeek,
+        return new DeepSeek.DeepSeekChatLanguageModel(
             deploymentName,
-            ProviderId + ".deepseek"
+            new DeepSeek.DeepSeekChatConfig(ProviderId + ".deepseek", this, (_, _) =>
+                ChatUri(deploymentName)
+            )
+            {
+                SupportsPenaltySampling = true,
+                SupportsThinking = false,
+                // json_object with thinking enabled makes Azure return the JSON in reasoning_content with empty content
+                SupportsStructuredOutputs = true,
+            }
         );
     }
 

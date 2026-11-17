@@ -30,17 +30,17 @@ An argument failed validation. Message format matches the TypeScript SDK.
 ## Constructors
 
 <a id="Vercel_AI_Util_InvalidArgumentError__ctor_"></a>
-<a id="Vercel_AI_Util_InvalidArgumentError__ctor_System_String_System_Object_System_String_"></a>
+<a id="Vercel_AI_Util_InvalidArgumentError__ctor_System_String_System_Object_System_String_System_Exception_"></a>
 
-### InvalidArgumentError(string, object?, string)
+### InvalidArgumentError(string, object?, string, Exception?)
 
 
 ```csharp
-public InvalidArgumentError(string parameter, object? value, string message)
+public InvalidArgumentError(string parameter, object? value, string message, Exception? cause = null)
 ```
 
 
-Creates the error for &lt;code class="paramref"&gt;parameter&lt;/code&gt;.
+Creates the error for &lt;code class="paramref"&gt;parameter&lt;/code&gt;. Maps to `InvalidArgumentError`, whose `cause` is &lt;code class="paramref"&gt;cause&lt;/code&gt;.
 
 **Parameters**
 
@@ -49,6 +49,7 @@ Creates the error for &lt;code class="paramref"&gt;parameter&lt;/code&gt;.
 | `parameter` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `value` | [object](https://learn.microsoft.com/dotnet/api/system.object) |  |
 | `message` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `cause` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AiSdkError.cs#L111)
 
@@ -87,7 +88,7 @@ Parameter that failed validation.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AiSdkError.cs#L120)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AiSdkError.cs#L129)
 
 <a id="Vercel_AI_Util_InvalidArgumentError_Value_"></a>
 <a id="Vercel_AI_Util_InvalidArgumentError_Value"></a>
@@ -104,7 +105,7 @@ Rejected value.
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AiSdkError.cs#L123)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AiSdkError.cs#L132)
 
 ## Methods
 
@@ -129,4 +130,4 @@ Returns whether &lt;code class="paramref"&gt;error&lt;/code&gt; carries this err
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AiSdkError.cs#L126)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/AiSdkError.cs#L135)
