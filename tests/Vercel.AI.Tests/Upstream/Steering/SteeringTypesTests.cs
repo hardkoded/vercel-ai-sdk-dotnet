@@ -14,13 +14,15 @@ namespace Vercel.AI.Tests.Upstream.Steering;
 /// </summary>
 public sealed class SteeringTypesTests
 {
+    private const string Commit = "b8c01eb49d82fd32efe8a2a1e4cd02fbb2b7ae97";
     private const string Prefix =
         "packages/ai/src/generate-text/steering.test-d.ts::steering types::";
 
     [Fact]
     [UpstreamTest(
         Prefix + "should accept text and user messages",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
     )]
     public void Should_accept_text_and_user_messages()
     {
@@ -44,7 +46,8 @@ public sealed class SteeringTypesTests
     [Fact]
     [UpstreamTest(
         Prefix + "should accept text and user messages in the queue",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
     )]
     public void Should_accept_text_and_user_messages_in_the_queue()
     {
@@ -68,7 +71,8 @@ public sealed class SteeringTypesTests
     [Fact]
     [UpstreamTest(
         Prefix + "should narrow the outcome by type",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
     )]
     public void Should_narrow_the_outcome_by_type()
     {
@@ -101,7 +105,8 @@ public sealed class SteeringTypesTests
     [Fact]
     [UpstreamTest(
         Prefix + "should expose steering messages on step results",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
     )]
     public void Should_expose_steering_messages_on_step_results()
     {
@@ -116,7 +121,8 @@ public sealed class SteeringTypesTests
     [Fact]
     [UpstreamTest(
         Prefix + "should pass steering messages to prepareStep",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
     )]
     public void Should_pass_steering_messages_to_prepareStep()
     {
@@ -131,7 +137,8 @@ public sealed class SteeringTypesTests
     [Fact]
     [UpstreamTest(
         Prefix + "should accept a steering object in generateText, streamText and agents",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
     )]
     public void Should_accept_a_steering_object_in_generateText_streamText_and_agents()
     {
