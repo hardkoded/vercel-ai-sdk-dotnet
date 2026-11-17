@@ -29,7 +29,7 @@ public sealed class ToUIMessageStreamTests
     {
         var chunks = await Convert(
             [new ErrorPart("boom") { Error = new JsError("boom") }],
-            new ToUIMessageChunkOptions { OnError = error => $"handled: {error.Message}" }
+            new UIMessageStreamOptions { OnError = error => $"handled: {error.Message}" }
         );
 
         Assert.True(
@@ -68,7 +68,7 @@ public sealed class ToUIMessageStreamTests
                     }
                 ),
             ],
-            new ToUIMessageChunkOptions
+            new UIMessageStreamOptions
             {
                 OnError = error =>
                 {
@@ -116,7 +116,7 @@ public sealed class ToUIMessageStreamTests
                     }
                 ),
             ],
-            new ToUIMessageChunkOptions
+            new UIMessageStreamOptions
             {
                 OnError = error =>
                 {
@@ -255,7 +255,7 @@ public sealed class ToUIMessageStreamTests
             ToAsync([
                 new ErrorPart("generation failed") { Error = new JsError("generation failed") },
             ]),
-            new ToUIMessageChunkOptions
+            new UIMessageStreamOptions
             {
                 OnError = _ => throw conversionError,
                 OnEnd = onEndEvent =>
@@ -294,10 +294,10 @@ public sealed class ToUIMessageStreamTests
                 TestStep,
                 new FinishPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2)),
             ],
-            new ToUIMessageChunkOptions
+            new UIMessageStreamOptions
             {
                 GenerateMessageId = () => "assistant-1",
-                MessageMetadataSelector = part =>
+                MessageMetadata = part =>
                     part is StepFinishPart finishStep
                         ? JsonSerializer.SerializeToElement(
                             new { totalTokens = finishStep.Step.Usage.TotalTokens }
@@ -359,11 +359,9 @@ public sealed class ToUIMessageStreamTests
                 new TextDeltaPart("t1", "Hello"),
                 new FinishPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2)),
             ],
-            new ToUIMessageChunkOptions
+            new UIMessageStreamOptions
             {
-                // the port always sends a message id with the start chunk (upstream omits it without generateMessageId)
-                GenerateMessageId = () => "assistant-1",
-                MessageMetadataSelector = part =>
+                MessageMetadata = part =>
                     JsonSerializer.SerializeToElement(new { partType = part.Type }),
             }
         );
@@ -373,7 +371,7 @@ public sealed class ToUIMessageStreamTests
                 JsonNode.Parse(
                     """
                     [
-                      {"type":"start","messageMetadata":{"partType":"start"},"messageId":"assistant-1"},
+                      {"type":"start","messageMetadata":{"partType":"start"}},
                       {"type":"text-delta","id":"t1","delta":"Hello"},
                       {"type":"message-metadata","messageMetadata":{"partType":"text-delta"}},
                       {"type":"finish","finishReason":"stop","messageMetadata":{"partType":"finish"}}
@@ -398,9 +396,9 @@ public sealed class ToUIMessageStreamTests
 
         var stream = UIMessageStreamConverter.ToUIMessageStream(
             ToAsync([new FinishPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2))]),
-            new ToUIMessageChunkOptions
+            new UIMessageStreamOptions
             {
-                MessageMetadataSelector = _ => throw metadataError,
+                MessageMetadata = _ => throw metadataError,
                 OnEnd = onEndEvent =>
                 {
                     onEndEvents.Add(onEndEvent);
@@ -444,7 +442,7 @@ public sealed class ToUIMessageStreamTests
 #pragma warning disable CS0618 // the test calls the deprecated alias
         await Convert(
             [new StartPart(), TestStep],
-            new ToUIMessageChunkOptions
+            new UIMessageStreamOptions
             {
                 OnStepEnd = onStepEnd,
                 OnStepFinish = _ =>
@@ -472,7 +470,7 @@ public sealed class ToUIMessageStreamTests
 
         var chunks = await Convert(
             [new StartPart()],
-            new ToUIMessageChunkOptions
+            new UIMessageStreamOptions
             {
                 GenerateMessageId = () =>
                 {
@@ -516,7 +514,7 @@ public sealed class ToUIMessageStreamTests
                 new TextEndPart("t1"),
                 new FinishPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2)),
             ],
-            new ToUIMessageChunkOptions
+            new UIMessageStreamOptions
             {
                 OriginalMessages = originalMessages,
                 GenerateMessageId = () =>
@@ -584,7 +582,7 @@ public sealed class ToUIMessageStreamTests
                 TestStep,
                 new FinishPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2)),
             ],
-            new ToUIMessageChunkOptions
+            new UIMessageStreamOptions
             {
                 OriginalMessages = originalMessages,
                 GenerateMessageId = () => "assistant-msg-1",
@@ -638,7 +636,7 @@ public sealed class ToUIMessageStreamTests
                 new TextEndPart("t1"),
                 new FinishPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2)),
             ],
-            new ToUIMessageChunkOptions
+            new UIMessageStreamOptions
             {
                 GenerateMessageId = () => "msg-123",
                 OnEnd = onEndEvent =>
@@ -679,7 +677,7 @@ public sealed class ToUIMessageStreamTests
 
     internal static async Task<JsonArray> Convert(
         IReadOnlyList<TextStreamPart> parts,
-        ToUIMessageChunkOptions? options = null
+        UIMessageStreamOptions? options = null
     )
     {
         var chunks = new JsonArray();

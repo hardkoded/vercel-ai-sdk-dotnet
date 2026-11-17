@@ -88,6 +88,10 @@
     "slug": "api/Vercel.AI.Gateway"
   },
   {
+    "label": "Vercel.AI.GenerateObject",
+    "slug": "api/Vercel.AI.GenerateObject"
+  },
+  {
     "label": "Vercel.AI.GenerateText",
     "slug": "api/Vercel.AI.GenerateText"
   },

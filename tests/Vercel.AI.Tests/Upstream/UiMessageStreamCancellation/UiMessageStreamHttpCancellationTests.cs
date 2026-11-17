@@ -227,7 +227,7 @@ public sealed class UiMessageStreamHttpCancellationTests
 
         context.Stream = UIMessageStreamConverter.ToUIMessageStream(
             result.Stream(),
-            new ToUIMessageChunkOptions
+            new UIMessageStreamOptions
             {
                 OnEnd = e =>
                 {

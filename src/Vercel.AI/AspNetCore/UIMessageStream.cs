@@ -400,7 +400,7 @@ public sealed class UIMessageStreamResult : IResult
         bool sendSources = false
     )
     {
-        var options = new ToUIMessageChunkOptions
+        var options = new UIMessageStreamOptions
         {
             OnError = onError,
             RedactToolErrors = redactToolErrors,

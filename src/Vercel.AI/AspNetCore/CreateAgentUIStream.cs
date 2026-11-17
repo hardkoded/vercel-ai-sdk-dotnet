@@ -44,10 +44,10 @@ public sealed class CreateAgentUIStreamOptions
 
     /// <summary>
     /// The UI message stream options. The tools of the agent and <see cref="OnUIMessageStepEnd"/> replace its
-    /// <see cref="ToUIMessageChunkOptions.Tools"/> and <see cref="ToUIMessageChunkOptions.OnStepEnd"/>.
-    /// Its <see cref="ToUIMessageChunkOptions.OriginalMessages"/> default to the validated <see cref="UIMessages"/>.
+    /// <see cref="UIMessageStreamOptions.Tools"/> and <see cref="UIMessageStreamOptions.OnStepEnd"/>.
+    /// Its <see cref="UIMessageStreamOptions.OriginalMessages"/> default to the validated <see cref="UIMessages"/>.
     /// </summary>
-    public ToUIMessageChunkOptions? UIMessageStreamOptions { get; set; }
+    public UIMessageStreamOptions? UIMessageStreamOptions { get; set; }
 }
 
 public static partial class UIMessageStreamConverter
@@ -106,7 +106,7 @@ public static partial class UIMessageStreamConverter
 
         var streamOptions = options.UIMessageStreamOptions;
 #pragma warning disable CS0618
-        var chunkOptions = new ToUIMessageChunkOptions
+        var chunkOptions = new UIMessageStreamOptions
         {
             Tools = agent.Tools,
             SendReasoning = streamOptions?.SendReasoning ?? true,
@@ -116,8 +116,6 @@ public static partial class UIMessageStreamConverter
             OnError = streamOptions?.OnError,
             RedactToolErrors = streamOptions?.RedactToolErrors,
             MessageMetadata = streamOptions?.MessageMetadata,
-            MessageMetadataSelector = streamOptions?.MessageMetadataSelector,
-            ResponseMessageId = streamOptions?.ResponseMessageId,
             GenerateMessageId = streamOptions?.GenerateMessageId,
             OriginalMessages = streamOptions?.OriginalMessages ?? validatedMessages,
             OnStepEnd = options.OnUIMessageStepEnd,

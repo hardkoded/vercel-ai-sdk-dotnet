@@ -19,7 +19,7 @@ public sealed class UIMessageStreamOnEndEvent
 ```
 
 
-The event that [OnEnd](/api/Vercel.AI.AspNetCore/ToUIMessageChunkOptions/#Vercel_AI_AspNetCore_ToUIMessageChunkOptions_OnEnd) receives. Maps to `UIMessageStreamOnEndCallback`'s event.
+The event that [OnEnd](/api/Vercel.AI.AspNetCore/UIMessageStreamOptions/#Vercel_AI_AspNetCore_UIMessageStreamOptions_OnEnd) receives. Maps to `UIMessageStreamOnEndCallback`'s event.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
@@ -69,7 +69,7 @@ The reason why the generation finished, as the `finish` chunk wrote it.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStreamOutcome.cs#L87)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStreamOutcome.cs#L88)
 
 <a id="Vercel_AI_AspNetCore_UIMessageStreamOnEndEvent_IsAborted_"></a>
 <a id="Vercel_AI_AspNetCore_UIMessageStreamOnEndEvent_IsAborted"></a>
@@ -86,7 +86,7 @@ Whether the stream was aborted.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStreamOutcome.cs#L72)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStreamOutcome.cs#L73)
 
 <a id="Vercel_AI_AspNetCore_UIMessageStreamOnEndEvent_IsCancelled_"></a>
 <a id="Vercel_AI_AspNetCore_UIMessageStreamOnEndEvent_IsCancelled"></a>
@@ -104,7 +104,7 @@ Maps to `isCancelled`, which is only present when it is `true`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStreamOutcome.cs#L78)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStreamOutcome.cs#L79)
 
 <a id="Vercel_AI_AspNetCore_UIMessageStreamOnEndEvent_IsContinuation_"></a>
 <a id="Vercel_AI_AspNetCore_UIMessageStreamOnEndEvent_IsContinuation"></a>
@@ -121,7 +121,7 @@ Whether the response message continues the last original message, or a new messa
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStreamOutcome.cs#L69)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStreamOutcome.cs#L70)
 
 <a id="Vercel_AI_AspNetCore_UIMessageStreamOnEndEvent_Messages_"></a>
 <a id="Vercel_AI_AspNetCore_UIMessageStreamOnEndEvent_Messages"></a>
@@ -138,7 +138,7 @@ The updated list of UI messages.
 
 **Value:** [IReadOnlyList&lt;UIMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStreamOutcome.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStreamOutcome.cs#L67)
 
 <a id="Vercel_AI_AspNetCore_UIMessageStreamOnEndEvent_Outcome_"></a>
 <a id="Vercel_AI_AspNetCore_UIMessageStreamOnEndEvent_Outcome"></a>
@@ -155,7 +155,7 @@ The operation-level outcome of the stream.
 
 **Value:** [UIMessageStreamOutcome](/api/Vercel.AI.AspNetCore/UIMessageStreamOutcome/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStreamOutcome.cs#L81)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStreamOutcome.cs#L82)
 
 <a id="Vercel_AI_AspNetCore_UIMessageStreamOnEndEvent_ResponseMessage_"></a>
 <a id="Vercel_AI_AspNetCore_UIMessageStreamOnEndEvent_ResponseMessage"></a>
@@ -172,4 +172,4 @@ The message that was sent to the client as a response, including the original me
 
 **Value:** [UIMessage](/api/Vercel.AI.Ui/UIMessage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStreamOutcome.cs#L84)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStreamOutcome.cs#L85)

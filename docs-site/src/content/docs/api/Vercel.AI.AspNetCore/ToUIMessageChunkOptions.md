@@ -1,6 +1,6 @@
 ---
 title: "ToUIMessageChunkOptions"
-description: "Options of ToUIMessageChunkOptions) and CancellationToken). Maps to ToUIMessageChunkOptions."
+description: "Options of ToUIMessageChunkOptions). Maps to ToUIMessageChunkOptions."
 editUrl: false
 prev: false
 next: false
@@ -19,30 +19,30 @@ public sealed class ToUIMessageChunkOptions
 ```
 
 
-Options of `ToUIMessageChunkOptions)` and `CancellationToken)`. Maps to `ToUIMessageChunkOptions`.
+Options of `ToUIMessageChunkOptions)`. Maps to `ToUIMessageChunkOptions`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L15)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L16)
 
 ## Properties
 
-<a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_OnEnd_"></a>
-<a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_OnEnd"></a>
+<a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_MessageMetadata_"></a>
+<a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_MessageMetadata"></a>
 
-### OnEnd
+### MessageMetadata
 
 
 ```csharp
-public Func<UIMessageStreamOnEndEvent, Task>? OnEnd { get; init; }
+public JsonElement? MessageMetadata { get; init; }
 ```
 
 
-Called when the stream ends, whether it completed, failed, was aborted, or the consumer cancelled it. Maps to `onEnd`.
+Metadata of the response message, sent with the `start` and `finish` chunks. A value, as upstream's `toUIMessageChunk` takes it. Maps to `messageMetadata`.
 
-**Value:** [Func&lt;UIMessageStreamOnEndEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
+**Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L47)
 
 <a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_OnError_"></a>
 <a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_OnError"></a>
@@ -61,42 +61,7 @@ Null writes `An error occurred.`. The argument is the error. Maps to `onError`.
 
 **Value:** [Func&lt;Exception, string&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L31)
-
-<a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_OnStepEnd_"></a>
-<a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_OnStepEnd"></a>
-
-### OnStepEnd
-
-
-```csharp
-public Func<UIMessageStreamOnStepEndEvent, Task>? OnStepEnd { get; init; }
-```
-
-
-Called when each step ends during multi-step agent runs. Maps to `onStepEnd`.
-
-**Value:** [Func&lt;UIMessageStreamOnStepEndEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
-
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L49)
-
-<a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_OriginalMessages_"></a>
-<a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_OriginalMessages"></a>
-
-### OriginalMessages
-
-
-```csharp
-public IReadOnlyList<UIMessage>? OriginalMessages { get; init; }
-```
-
-
-The messages of the conversation. When the last one is an assistant message, the response continues it and reuses its id.
-Maps to `originalMessages`.
-
-**Value:** [IReadOnlyList&lt;UIMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
-
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L38)
 
 <a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_RedactToolErrors_"></a>
 <a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_RedactToolErrors"></a>
@@ -114,7 +79,7 @@ Defaults to `true` when [OnError](#Vercel_AI_AspNetCore_ToUIMessageChunkOptions_
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L44)
 
 <a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_ResponseMessageId_"></a>
 <a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_ResponseMessageId"></a>
@@ -131,7 +96,7 @@ Id of the response message sent with the `start` chunk. Maps to `responseMessage
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L50)
 
 <a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_SendFinish_"></a>
 <a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_SendFinish"></a>
@@ -148,7 +113,7 @@ Whether the `finish` chunk is sent. Defaults to `true`. Maps to `sendFinish`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L24)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L31)
 
 <a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_SendReasoning_"></a>
 <a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_SendReasoning"></a>
@@ -165,7 +130,24 @@ Whether reasoning parts are sent. Defaults to `true`. Maps to `sendReasoning`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L18)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L22)
+
+<a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_SendSources_"></a>
+<a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_SendSources"></a>
+
+### SendSources
+
+
+```csharp
+public bool SendSources { get; init; }
+```
+
+
+Whether source parts are sent. Defaults to `false`. Maps to `sendSources`.
+
+**Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L25)
 
 <a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_SendStart_"></a>
 <a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_SendStart"></a>
@@ -182,4 +164,21 @@ Whether the `start` chunk is sent. Defaults to `true`. Maps to `sendStart`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L21)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L28)
+
+<a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_Tools_"></a>
+<a id="Vercel_AI_AspNetCore_ToUIMessageChunkOptions_Tools"></a>
+
+### Tools
+
+
+```csharp
+public IReadOnlyList<Tool>? Tools { get; init; }
+```
+
+
+The tools of the call. A call, input, result or error of a dynamic tool is marked as dynamic. Maps to `tools`.
+
+**Value:** [IReadOnlyList&lt;Tool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/ToUIMessageChunk.cs#L19)

@@ -13,19 +13,85 @@ using Vercel.AI.Util;
 
 namespace Vercel.AI.AspNetCore;
 
+/// <summary>Options of <see cref="UIMessageStreamConverter.ToUIMessageStream"/>. Maps to <c>UIMessageStreamOptions</c>.</summary>
+public sealed class UIMessageStreamOptions
+{
+    /// <summary>The tools of the call. A call, input, result or error of a dynamic tool is marked as dynamic. Maps to the <c>tools</c> argument of <c>toUIMessageStream</c>.</summary>
+    public IReadOnlyList<Tool>? Tools { get; init; }
+
+    /// <summary>Whether reasoning parts are sent. Defaults to <c>true</c>. Maps to <c>sendReasoning</c>.</summary>
+    public bool SendReasoning { get; init; } = true;
+
+    /// <summary>Whether source parts are sent. Defaults to <c>false</c>. Maps to <c>sendSources</c>.</summary>
+    public bool SendSources { get; init; }
+
+    /// <summary>Whether the <c>start</c> chunk is sent. Defaults to <c>true</c>. Maps to <c>sendStart</c>.</summary>
+    public bool SendStart { get; init; } = true;
+
+    /// <summary>Whether the <c>finish</c> chunk is sent. Defaults to <c>true</c>. Maps to <c>sendFinish</c>.</summary>
+    public bool SendFinish { get; init; } = true;
+
+    /// <summary>
+    /// Formats stream errors. Also formats invalid tool calls and application-executed tool errors when <see cref="RedactToolErrors"/> is enabled.
+    /// Provider-executed tool execution errors bypass this callback so their original error data survives model-message round trips.
+    /// Null writes <c>An error occurred.</c>. Maps to <c>onError</c>.
+    /// </summary>
+    public Func<Exception, string>? OnError { get; init; }
+
+    /// <summary>
+    /// Replaces the error text of failed tool calls with the result of <see cref="OnError"/>.
+    /// Defaults to <c>true</c> when <see cref="OnError"/> is provided and to <c>false</c> otherwise. Maps to <c>redactToolErrors</c>.
+    /// </summary>
+    public bool? RedactToolErrors { get; init; }
+
+    /// <summary>
+    /// Called for each stream part. Its value is sent with the <c>start</c> and <c>finish</c> chunks, and with a separate <c>message-metadata</c> chunk for any other part.
+    /// Maps to the function form of <c>messageMetadata</c>.
+    /// </summary>
+    public Func<TextStreamPart, JsonElement?>? MessageMetadata { get; init; }
+
+    /// <summary>
+    /// The messages of the conversation. When the last one is an assistant message, the response continues it and reuses its id.
+    /// Maps to <c>originalMessages</c>.
+    /// </summary>
+    public IReadOnlyList<UIMessage>? OriginalMessages { get; init; }
+
+    /// <summary>
+    /// Generates the id of the response message, unless the last original message is an assistant message, whose id is reused.
+    /// Without it, the <c>start</c> chunk has no <c>messageId</c>. Maps to <c>generateMessageId</c>.
+    /// </summary>
+    public Func<string>? GenerateMessageId { get; init; }
+
+    /// <summary>Called when each step ends during multi-step agent runs. Maps to <c>onStepEnd</c>.</summary>
+    public Func<UIMessageStreamOnStepEndEvent, Task>? OnStepEnd { get; init; }
+
+    /// <summary>Called when each step ends during multi-step agent runs. Maps to the deprecated <c>onStepFinish</c>. Use <see cref="OnStepEnd"/> instead.</summary>
+    [Obsolete("Use OnStepEnd instead.")]
+    public Func<UIMessageStreamOnStepEndEvent, Task>? OnStepFinish { get; init; }
+
+    /// <summary>
+    /// Called when the stream ends, whether it completed, failed, was aborted, or the consumer cancelled it. Maps to <c>onEnd</c>.
+    /// </summary>
+    public Func<UIMessageStreamOnEndEvent, Task>? OnEnd { get; init; }
+
+    /// <summary>Called when the stream ends. Maps to the deprecated <c>onFinish</c>. Use <see cref="OnEnd"/> instead.</summary>
+    [Obsolete("Use OnEnd instead.")]
+    public Func<UIMessageStreamOnEndEvent, Task>? OnFinish { get; init; }
+}
+
 public static partial class UIMessageStreamConverter
 {
     /// <summary>
     /// Converts a stream of <see cref="TextStreamPart"/> parts (as emitted by <c>streamText</c>) into a stream of UI message chunks.
-    /// It adds the response message id.
-    /// It also calls <see cref="ToUIMessageChunkOptions.OnStepEnd"/> and <see cref="ToUIMessageChunkOptions.OnEnd"/>.
+    /// It adds the response message id when <see cref="UIMessageStreamOptions.GenerateMessageId"/> is set.
+    /// It also calls <see cref="UIMessageStreamOptions.OnStepEnd"/> and <see cref="UIMessageStreamOptions.OnEnd"/>.
     /// </summary>
     /// <param name="stream">The parts to convert.</param>
     /// <param name="options">Conversion options.</param>
     /// <param name="cancellationToken">Cancels the read of <paramref name="stream"/>.</param>
     public static async IAsyncEnumerable<JsonObject> ToUIMessageStream(
         IAsyncEnumerable<TextStreamPart> stream,
-        ToUIMessageChunkOptions? options = null,
+        UIMessageStreamOptions? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default
     )
     {
@@ -34,7 +100,7 @@ public static partial class UIMessageStreamConverter
             throw new ArgumentNullException(nameof(stream));
         }
 
-        options ??= new ToUIMessageChunkOptions();
+        options ??= new UIMessageStreamOptions();
 
         var outcome = new UIMessageStreamOutcome(UIMessageStreamOutcomeStatus.Unknown);
         var hasFatalFailure = false;
@@ -63,57 +129,44 @@ public static partial class UIMessageStreamConverter
         }
 
         // upstream getResponseUIMessageId: a continued assistant message keeps its id
-        var responseMessageId = options.ResponseMessageId;
-        var lastOriginal = options.OriginalMessages is { Count: > 0 } originals
-            ? originals[originals.Count - 1]
-            : null;
-        if (options.GenerateMessageId != null)
+        string? responseMessageId = null;
+        if (options.GenerateMessageId != null && options.OriginalMessages is { } originals)
         {
             // when there are no original messages (no persistence), the client generates the message id
-            if (options.OriginalMessages is null)
-            {
-                responseMessageId = options.ResponseMessageId;
-            }
-            else
-            {
-                responseMessageId =
-                    lastOriginal?.Role == UIMessageRole.Assistant
-                        ? lastOriginal.Id
-                        : options.GenerateMessageId();
-            }
+            var lastOriginal = originals.Count > 0 ? originals[originals.Count - 1] : null;
+            responseMessageId =
+                lastOriginal?.Role == UIMessageRole.Assistant
+                    ? lastOriginal.Id
+                    : options.GenerateMessageId();
         }
-        else if (lastOriginal?.Role == UIMessageRole.Assistant)
-        {
-            responseMessageId = lastOriginal.Id;
-        }
-
-        var finalMessageId = responseMessageId
-            ?? options.GenerateMessageId?.Invoke()
-            ?? JsonValues.GenerateId("msg_");
 
         var chunkOptions = new ToUIMessageChunkOptions
         {
             Tools = options.Tools,
             SendReasoning = options.SendReasoning,
             SendSources = options.SendSources,
-            MessageMetadata = options.MessageMetadata,
-            MessageMetadataSelector = options.MessageMetadataSelector,
             SendStart = options.SendStart,
             SendFinish = options.SendFinish,
             OnError = options.OnError,
             RedactToolErrors = options.RedactToolErrors,
-            ResponseMessageId = finalMessageId,
+            ResponseMessageId = responseMessageId,
         };
 
         var chunks = TrackOutcome(
-            ConvertToUIMessageChunks(stream, chunkOptions, SetSourceOutcome, cancellationToken),
+            ConvertToUIMessageChunks(
+                stream,
+                chunkOptions,
+                options.MessageMetadata,
+                SetSourceOutcome,
+                cancellationToken
+            ),
             FailOutcome
         );
 
         await foreach (
             var chunk in HandleUIMessageStreamFinish(
                     chunks,
-                    finalMessageId,
+                    responseMessageId ?? options.GenerateMessageId?.Invoke(),
                     options.OriginalMessages,
                     options.OnStepEnd,
                     options.OnEnd,
@@ -161,6 +214,7 @@ public static partial class UIMessageStreamConverter
     private static async IAsyncEnumerable<JsonObject> ConvertToUIMessageChunks(
         IAsyncEnumerable<TextStreamPart> stream,
         ToUIMessageChunkOptions chunkOptions,
+        Func<TextStreamPart, JsonElement?>? messageMetadataSelector,
         Action<UIMessageStreamOutcome> setSourceOutcome,
         [EnumeratorCancellation] CancellationToken cancellationToken
     )
@@ -234,13 +288,10 @@ public static partial class UIMessageStreamConverter
                 mismatchedToolCallIdInCurrentStep = null;
             }
 
-            var messageMetadata = chunkOptions.MessageMetadataSelector is { } selector
-                ? selector(part)
-                : chunkOptions.MessageMetadata;
+            var messageMetadata = messageMetadataSelector?.Invoke(part);
             var hasMessageMetadata =
-                chunkOptions.MessageMetadataSelector != null
-                && messageMetadata
-                    is { ValueKind: not (JsonValueKind.Null or JsonValueKind.Undefined) };
+                messageMetadata is
+                { ValueKind: not (JsonValueKind.Null or JsonValueKind.Undefined) };
             var chunk = ToUIMessageChunkWithMetadata(part, chunkOptions, messageMetadata);
 
             if (
