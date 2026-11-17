@@ -377,12 +377,18 @@ public sealed class DeprecatedContentTypeWarningsTests
         Assert.Equal("image/png", data.MediaType);
         Assert.Equal(new byte[] { 116, 101, 115, 116 }, data.Data);
         Assert.Equal("image.png", data.FileName);
+        Assert.Null(data.ProviderOptions);
         var url = Assert.IsType<FileContentPart>(parts[1]);
         Assert.Equal("image/png", url.MediaType);
         Assert.Equal("https://example.com/image.png", url.Url);
-        AssertReference(parts[2], "application/pdf");
+        Assert.Null(url.FileName);
+        Assert.Null(url.ProviderOptions);
+        var reference = AssertReference(parts[2], "application/pdf");
+        Assert.Null(reference.FileName);
         var text = Assert.IsType<FileContentPart>(parts[3]);
         Assert.Equal("text/plain", text.MediaType);
         Assert.Equal("inline text", text.Text);
+        Assert.Null(text.FileName);
+        Assert.Null(text.ProviderOptions);
     }
 }

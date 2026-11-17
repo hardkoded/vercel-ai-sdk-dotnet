@@ -1899,6 +1899,24 @@ public sealed class ToolModelMessage : ModelMessage
         return reference.ToDictionary(pair => pair.Key, pair => pair.Value);
     }
 
+    private static IReadOnlyDictionary<string, JsonElement>? GetDeprecatedProviderOptions(
+        UserContentPart part
+    )
+    {
+        return part switch
+        {
+            FileUrlContentPart p => p.ProviderOptions,
+            ImageUrlContentPart p => p.ProviderOptions,
+            FileDataContentPart p => p.ProviderOptions,
+            FileIdContentPart p => p.ProviderOptions,
+            FileReferenceContentPart p => p.ProviderOptions,
+            ImageDataContentPart p => p.ProviderOptions,
+            ImageFileIdContentPart p => p.ProviderOptions,
+            ImageFileReferenceContentPart p => p.ProviderOptions,
+            _ => null,
+        };
+    }
+
     private static JsonNode FileIdToJson(
         string? fileId,
         IReadOnlyDictionary<string, string>? fileIds
@@ -2247,6 +2265,17 @@ public sealed class ToolModelMessage : ModelMessage
                     "Tool content parts must be text, file, or custom parts.",
                     nameof(content)
                 );
+            }
+
+            if (GetDeprecatedProviderOptions(part) is { } deprecatedOptions)
+            {
+                var options = new JsonObject();
+                foreach (var pair in deprecatedOptions)
+                {
+                    options[pair.Key] = JsonNode.Parse(pair.Value.GetRawText());
+                }
+
+                array[array.Count - 1]!["providerOptions"] = options;
             }
         }
 

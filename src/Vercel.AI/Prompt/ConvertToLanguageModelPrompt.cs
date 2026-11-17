@@ -310,7 +310,7 @@ public static class LanguageModelPrompts
                 return new FileContentPart(
                     fileData.MediaType,
                     null,
-                    Convert.FromBase64String(fileData.Data),
+                    DecodeBase64(fileData.Data),
                     fileData.FileName
                 )
                 {
@@ -337,7 +337,7 @@ public static class LanguageModelPrompts
                 return new FileContentPart(
                     imageData.MediaType,
                     null,
-                    Convert.FromBase64String(imageData.Data),
+                    DecodeBase64(imageData.Data),
                     null
                 )
                 {
@@ -366,6 +366,19 @@ public static class LanguageModelPrompts
             default:
                 return part;
         }
+    }
+
+    // Accepts standard and URL-safe base64, with or without padding.
+    private static byte[] DecodeBase64(string data)
+    {
+        var normalized = data.Replace('-', '+').Replace('_', '/');
+        var remainder = normalized.Length % 4;
+        if (remainder > 0)
+        {
+            normalized += new string('=', 4 - remainder);
+        }
+
+        return Convert.FromBase64String(normalized);
     }
 
     private static DeprecatedWarning DeprecatedData(string type)
