@@ -84,7 +84,8 @@ public sealed class PrepareResponsesToolsTests
     [InlineData("mcp")]
     [UpstreamTest(
         Suite + "::%s supplies telemetry redaction for configuration and raw bodies",
-        Coverage = UpstreamCoverage.Partial
+        Coverage = UpstreamCoverage.Partial,
+        Commit = "9f37b45262a853f44b9ca84c8592169b38369826"
     )]
     public void Supplies_telemetry_redaction_for_configuration(string name)
     {
