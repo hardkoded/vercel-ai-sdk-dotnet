@@ -112,6 +112,9 @@ public sealed class OpenAIRealtimeModel : IServerWebSocketRealtimeModel
         _http = config.Http ?? new ProviderHttp(config.HttpClient ?? DefaultHttpClient.Value);
     }
 
+    /// <summary>The model configuration (base URL, headers, transport). Maps to <c>config</c>.</summary>
+    internal OpenAIRealtimeModelConfig Config => _config;
+
     /// <summary>The realtime model specification version. Maps to <c>specificationVersion</c>.</summary>
     public string SpecificationVersion => "v4";
 

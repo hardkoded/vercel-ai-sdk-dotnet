@@ -83,7 +83,7 @@ public sealed class OpenAIRealtimeFactoryTests
     [UpstreamTest(
         Prefix + "rejects an invalid selector %j in construction and token minting",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Only the string selectors can be expressed: OpenAIRealtimeOptions.Api is a string?, so null (undefined), false, 1 and {} cannot be passed."
+        Note = "Only the string selectors can be expressed: upstream types api as 'live' | 'realtime' and passes false, 1 and {} through a type cast; OpenAIRealtimeOptions.Api is a string?, which has no equivalent for non-string values, and null means unset."
     )]
     public async Task Partial_Rejects_an_invalid_selector_in_construction_and_token_minting(
         string api
@@ -154,10 +154,9 @@ public sealed class OpenAIRealtimeFactoryTests
     [UpstreamTest(
         Prefix
             + "forwards the shared constructor configuration to %s without serializing the selector",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Upstream inspects the model's private config.baseURL and config.fetch fields; the port checks the same configuration through the server WebSocket URL and headers, and the provider name."
+        Coverage = UpstreamCoverage.Covered
     )]
-    public async Task Partial_Forwards_the_shared_constructor_configuration_without_serializing_the_selector(
+    public async Task Forwards_the_shared_constructor_configuration_without_serializing_the_selector(
         string api
     )
     {
@@ -177,6 +176,8 @@ public sealed class OpenAIRealtimeFactoryTests
         Assert.Equal("custom." + api, model.Provider);
         if (model is Live live)
         {
+            Assert.Equal("https://example.com/proxy/v1", live.Config.Options.BaseUrl);
+            Assert.Same(provider.Http, live.Config.Http);
             var connection = await live.GetServerWebSocketConfigAsync(null, CancellationToken.None);
             Assert.Equal("wss://example.com/proxy/v1/live/sessions", connection.Url);
             Assert.Equal("Bearer test-key", connection.Headers["authorization"]);
@@ -194,6 +195,8 @@ public sealed class OpenAIRealtimeFactoryTests
         else
         {
             var realtime = (Realtime)model;
+            Assert.Equal("https://example.com/proxy/v1", realtime.Config.BaseUrl);
+            Assert.Same(provider.Http, realtime.Config.Http);
             var connection = await realtime.GetServerWebSocketConfigAsync(
                 null,
                 CancellationToken.None

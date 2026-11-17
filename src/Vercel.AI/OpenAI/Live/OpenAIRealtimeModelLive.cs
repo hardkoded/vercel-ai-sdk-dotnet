@@ -53,6 +53,9 @@ public sealed class OpenAIRealtimeModelLive : IServerWebSocketRealtimeModel
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
     }
 
+    /// <summary>The shared provider configuration (base URL, headers, transport). Maps to <c>config</c>.</summary>
+    internal OpenAIProvider Config => _provider;
+
     /// <summary>The realtime model specification version. Maps to <c>specificationVersion</c>.</summary>
     public string SpecificationVersion => "v4";
 
