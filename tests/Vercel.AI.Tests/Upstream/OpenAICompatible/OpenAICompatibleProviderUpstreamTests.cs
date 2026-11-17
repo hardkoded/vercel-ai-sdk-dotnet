@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
@@ -267,6 +268,50 @@ public sealed class OpenAICompatibleProviderUpstreamTests
         );
         Assert.Null(JsonNode.Parse(capture.Requests[0].Body)!["response_format"]);
         Assert.IsType<OpenAICompatibleEmbeddingModel>(provider.EmbeddingModel("embed"));
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/openai-compatible/src/openai-compatible-provider.test.ts::OpenAICompatibleProvider > metadataExtractor setting::should pass metadataExtractor to chat model",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Metadata_extractor_is_passed_to_the_chat_model()
+    {
+        var mockExtractor = new MockMetadataExtractor();
+        var provider = Provider(
+            new UpstreamCapture(),
+            "test-provider",
+            null,
+            "https://api.example.com"
+        );
+        provider.Options.MetadataExtractor = mockExtractor;
+
+        var model = provider.CreateChatModel("chat-model");
+        Assert.Same(mockExtractor, provider.Options.MetadataExtractor);
+        await model.DoGenerateAsync(UpstreamChat.Prompt(), CancellationToken.None);
+
+        Assert.Equal(1, mockExtractor.ExtractCalls);
+    }
+
+    private sealed class MockMetadataExtractor : OpenAICompatibleMetadataExtractor
+    {
+        public int ExtractCalls { get; private set; }
+
+        public override JsonObject? ExtractMetadata(JsonElement parsedBody)
+        {
+            ExtractCalls++;
+            return null;
+        }
+
+        public override OpenAICompatibleStreamMetadataExtractor CreateStreamExtractor() =>
+            new MockStreamExtractor();
+    }
+
+    private sealed class MockStreamExtractor : OpenAICompatibleStreamMetadataExtractor
+    {
+        public override void ProcessChunk(JsonElement parsedChunk) { }
+
+        public override JsonObject? BuildMetadata() => null;
     }
 
     private static OpenAICompatibleProvider Configured(string name)
