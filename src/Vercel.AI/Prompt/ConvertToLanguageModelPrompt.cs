@@ -371,7 +371,20 @@ public static class LanguageModelPrompts
     // Accepts standard and URL-safe base64, with or without padding.
     private static byte[] DecodeBase64(string data)
     {
-        var normalized = data.Replace('-', '+').Replace('_', '/');
+        var builder = new System.Text.StringBuilder(data.Length + 3);
+        foreach (var c in data)
+        {
+            if (!char.IsWhiteSpace(c))
+            {
+                builder.Append(
+                    c == '-' ? '+'
+                    : c == '_' ? '/'
+                    : c
+                );
+            }
+        }
+
+        var normalized = builder.ToString().TrimEnd('=');
         var remainder = normalized.Length % 4;
         if (remainder > 0)
         {
