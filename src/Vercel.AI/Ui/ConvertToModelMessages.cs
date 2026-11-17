@@ -319,9 +319,29 @@ public static class UIMessageConversion
                     AddToolContent(tool, options, content);
                     break;
                 case DataUIPart data:
-                    if (options?.ConvertDataPart?.Invoke(data) is TextContentPart dataText)
+                    var dataPart = options?.ConvertDataPart?.Invoke(data);
+                    if (dataPart is TextContentPart dataText)
                     {
                         content.Add(new AssistantTextPart(dataText.Text, dataText.ProviderOptions));
+                    }
+                    else if (dataPart is FileContentPart dataFile)
+                    {
+                        content.Add(
+                            dataFile.ProviderReference != null
+                                ? AssistantFilePart.FromProviderReference(
+                                    dataFile.MediaType,
+                                    dataFile.ProviderReference,
+                                    dataFile.FileName,
+                                    dataFile.ProviderOptions
+                                )
+                                : new AssistantFilePart(
+                                    dataFile.MediaType,
+                                    dataFile.Url,
+                                    dataFile.Data,
+                                    dataFile.FileName,
+                                    dataFile.ProviderOptions
+                                )
+                        );
                     }
 
                     break;

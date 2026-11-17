@@ -16,6 +16,12 @@ internal static class ConvertToModelMessagesSupport
 
     internal static JsonElement Json(string json) => JsonDocument.Parse(json).RootElement.Clone();
 
+    /// <summary>Builds UI messages from the JSON array that upstream passes to <c>convertToModelMessages</c>.</summary>
+    internal static IReadOnlyList<UIMessage> UiMessages(string messagesJson) =>
+        ((JsonArray)JsonNode.Parse(messagesJson)!)
+            .Select(node => UIMessageJson.FromJson((JsonObject)node!))
+            .ToList();
+
     internal static UIMessage Assistant(params UIMessagePart[] parts) =>
         new(UIMessageRole.Assistant, parts);
 
@@ -217,15 +223,37 @@ internal static class ConvertToModelMessagesSupport
                     file.ProviderOptions
                 );
             case AssistantToolCallPart call:
+            {
+                var callNode = new JsonObject
+                {
+                    ["input"] = ToolInput(call.ToolCall.ArgumentsJson),
+                    ["toolCallId"] = call.ToolCall.ToolCallId,
+                    ["toolName"] = call.ToolCall.ToolName,
+                    ["type"] = "tool-call",
+                };
+                if (call.ToolCall.ProviderExecuted)
+                {
+                    callNode["providerExecuted"] = true;
+                }
+
+                return WithProviderOptions(callNode, call.ProviderOptions);
+            }
+
+            case AssistantToolResultPart toolResult:
                 return WithProviderOptions(
                     new JsonObject
                     {
-                        ["input"] = ToolInput(call.ToolCall.ArgumentsJson),
-                        ["toolCallId"] = call.ToolCall.ToolCallId,
-                        ["toolName"] = call.ToolCall.ToolName,
-                        ["type"] = "tool-call",
+                        ["output"] = RenderOutput(toolResult.Output),
+                        ["toolCallId"] = toolResult.ToolCallId,
+                        ["toolName"] = toolResult.ToolName,
+                        ["type"] = "tool-result",
                     },
-                    call.ProviderOptions
+                    toolResult.ProviderOptions
+                );
+            case AssistantCustomPart custom:
+                return WithProviderOptions(
+                    new JsonObject { ["kind"] = custom.Kind, ["type"] = "custom" },
+                    custom.ProviderOptions
                 );
             case AssistantToolApprovalRequestPart request:
             {
@@ -305,12 +333,28 @@ internal static class ConvertToModelMessagesSupport
         return WithProviderOptions(node, providerOptions);
     }
 
-    private static JsonObject RenderToolResult(ToolModelMessage result)
+    private static JsonObject RenderOutput(ToolModelMessage result)
     {
         var output = new JsonObject { ["type"] = result.OutputType };
+        if (result.OutputType == "execution-denied")
+        {
+            if (result.ExecutionDeniedReason != null)
+            {
+                output["reason"] = result.ExecutionDeniedReason;
+            }
+
+            return output;
+        }
+
         output["value"] = result.OutputType is "json" or "error-json"
             ? JsonNode.Parse(result.OutputJson)
             : result.OutputJson;
+        return output;
+    }
+
+    private static JsonObject RenderToolResult(ToolModelMessage result)
+    {
+        var output = RenderOutput(result);
         return WithProviderOptions(
             new JsonObject
             {

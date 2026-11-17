@@ -16,6 +16,949 @@ public sealed class WhenConvertingToolApprovalRequestResponsesTests : WarningsOf
         Prefix + "convertToModelMessages > when converting tool approval request responses::";
 
     [UpstreamTest(
+        Suite + "should convert an approved tool approval request (static tool)",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    [Fact]
+    public void Should_convert_an_approved_tool_approval_request_static_tool()
+    {
+        var result = Convert(
+            UiMessages(
+                """
+                [
+                  {
+                    "role": "user",
+                    "parts": [
+                      {
+                        "type": "text",
+                        "text": "What is the weather in Tokyo?"
+                      }
+                    ]
+                  },
+                  {
+                    "role": "assistant",
+                    "parts": [
+                      {
+                        "type": "step-start"
+                      },
+                      {
+                        "type": "tool-weather",
+                        "toolCallId": "call-1",
+                        "state": "approval-responded",
+                        "input": {
+                          "city": "Tokyo"
+                        },
+                        "approval": {
+                          "approved": true,
+                          "id": "approval-1"
+                        }
+                      }
+                    ]
+                  }
+                ]
+                """
+            )
+        );
+
+        AssertEqual(
+            """
+            [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "What is the weather in Tokyo?"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "toolCallId": "call-1",
+                    "toolName": "weather",
+                    "input": {
+                      "city": "Tokyo"
+                    }
+                  },
+                  {
+                    "type": "tool-approval-request",
+                    "approvalId": "approval-1",
+                    "toolCallId": "call-1"
+                  }
+                ]
+              },
+              {
+                "role": "tool",
+                "content": [
+                  {
+                    "type": "tool-approval-response",
+                    "approvalId": "approval-1",
+                    "approved": true
+                  }
+                ]
+              }
+            ]
+            """,
+            result
+        );
+    }
+
+    [UpstreamTest(
+        Suite + "should convert an approved tool approval request (dynamic tool)",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    [Fact]
+    public void Should_convert_an_approved_tool_approval_request_dynamic_tool()
+    {
+        var result = Convert(
+            UiMessages(
+                """
+                [
+                  {
+                    "role": "user",
+                    "parts": [
+                      {
+                        "type": "text",
+                        "text": "What is the weather in Tokyo?"
+                      }
+                    ]
+                  },
+                  {
+                    "role": "assistant",
+                    "parts": [
+                      {
+                        "type": "step-start"
+                      },
+                      {
+                        "type": "dynamic-tool",
+                        "toolCallId": "call-1",
+                        "state": "approval-responded",
+                        "input": {
+                          "city": "Tokyo"
+                        },
+                        "toolName": "weather",
+                        "approval": {
+                          "approved": true,
+                          "id": "approval-1"
+                        }
+                      }
+                    ]
+                  }
+                ]
+                """
+            )
+        );
+
+        AssertEqual(
+            """
+            [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "What is the weather in Tokyo?"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "toolCallId": "call-1",
+                    "toolName": "weather",
+                    "input": {
+                      "city": "Tokyo"
+                    }
+                  },
+                  {
+                    "type": "tool-approval-request",
+                    "approvalId": "approval-1",
+                    "toolCallId": "call-1"
+                  }
+                ]
+              },
+              {
+                "role": "tool",
+                "content": [
+                  {
+                    "type": "tool-approval-response",
+                    "approvalId": "approval-1",
+                    "approved": true
+                  }
+                ]
+              }
+            ]
+            """,
+            result
+        );
+    }
+
+    [UpstreamTest(
+        Suite + "should preserve automatic approval metadata for approved tool results",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    [Fact]
+    public void Should_preserve_automatic_approval_metadata_for_approved_tool_results()
+    {
+        var result = Convert(
+            UiMessages(
+                """
+                [
+                  {
+                    "role": "user",
+                    "parts": [
+                      {
+                        "type": "text",
+                        "text": "What is the weather in Tokyo?"
+                      }
+                    ]
+                  },
+                  {
+                    "role": "assistant",
+                    "parts": [
+                      {
+                        "type": "step-start"
+                      },
+                      {
+                        "type": "tool-weather",
+                        "toolCallId": "call-1",
+                        "state": "output-available",
+                        "input": {
+                          "city": "Tokyo"
+                        },
+                        "approval": {
+                          "approved": true,
+                          "id": "approval-1",
+                          "isAutomatic": true,
+                          "reason": "trusted internal tool"
+                        },
+                        "output": {
+                          "weather": "Sunny"
+                        }
+                      }
+                    ]
+                  }
+                ]
+                """
+            )
+        );
+
+        AssertEqual(
+            """
+            [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "What is the weather in Tokyo?"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "toolCallId": "call-1",
+                    "toolName": "weather",
+                    "input": {
+                      "city": "Tokyo"
+                    }
+                  },
+                  {
+                    "type": "tool-approval-request",
+                    "approvalId": "approval-1",
+                    "toolCallId": "call-1",
+                    "isAutomatic": true
+                  }
+                ]
+              },
+              {
+                "role": "tool",
+                "content": [
+                  {
+                    "type": "tool-approval-response",
+                    "approvalId": "approval-1",
+                    "approved": true,
+                    "reason": "trusted internal tool"
+                  },
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "toolName": "weather",
+                    "output": {
+                      "type": "json",
+                      "value": {
+                        "weather": "Sunny"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+            """,
+            result
+        );
+    }
+
+    [UpstreamTest(
+        Suite + "should convert a denied tool approval request and follow up text (static tool)",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    [Fact]
+    public void Should_convert_a_denied_tool_approval_request_and_follow_up_text_static_tool()
+    {
+        var result = Convert(
+            UiMessages(
+                """
+                [
+                  {
+                    "role": "user",
+                    "parts": [
+                      {
+                        "type": "text",
+                        "text": "What is the weather in Tokyo?"
+                      }
+                    ]
+                  },
+                  {
+                    "role": "assistant",
+                    "parts": [
+                      {
+                        "type": "step-start"
+                      },
+                      {
+                        "type": "tool-weather",
+                        "toolCallId": "call-1",
+                        "state": "approval-responded",
+                        "input": {
+                          "city": "Tokyo"
+                        },
+                        "approval": {
+                          "approved": false,
+                          "id": "approval-1",
+                          "reason": "I don't want to approve this"
+                        }
+                      },
+                      {
+                        "type": "step-start"
+                      },
+                      {
+                        "type": "text",
+                        "text": "I was not able to retrieve the weather.",
+                        "state": "done"
+                      }
+                    ]
+                  }
+                ]
+                """
+            )
+        );
+
+        AssertEqual(
+            """
+            [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "What is the weather in Tokyo?"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "toolCallId": "call-1",
+                    "toolName": "weather",
+                    "input": {
+                      "city": "Tokyo"
+                    }
+                  },
+                  {
+                    "type": "tool-approval-request",
+                    "approvalId": "approval-1",
+                    "toolCallId": "call-1"
+                  }
+                ]
+              },
+              {
+                "role": "tool",
+                "content": [
+                  {
+                    "type": "tool-approval-response",
+                    "approvalId": "approval-1",
+                    "approved": false,
+                    "reason": "I don't want to approve this"
+                  },
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "toolName": "weather",
+                    "output": {
+                      "type": "execution-denied",
+                      "reason": "I don't want to approve this"
+                    }
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "I was not able to retrieve the weather."
+                  }
+                ]
+              }
+            ]
+            """,
+            result
+        );
+    }
+
+    [UpstreamTest(
+        Suite + "should convert a denied tool approval request and follow up text (dynamic tool)",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    [Fact]
+    public void Should_convert_a_denied_tool_approval_request_and_follow_up_text_dynamic_tool()
+    {
+        var result = Convert(
+            UiMessages(
+                """
+                [
+                  {
+                    "role": "user",
+                    "parts": [
+                      {
+                        "type": "text",
+                        "text": "What is the weather in Tokyo?"
+                      }
+                    ]
+                  },
+                  {
+                    "role": "assistant",
+                    "parts": [
+                      {
+                        "type": "step-start"
+                      },
+                      {
+                        "type": "dynamic-tool",
+                        "toolCallId": "call-1",
+                        "state": "approval-responded",
+                        "input": {
+                          "city": "Tokyo"
+                        },
+                        "toolName": "weather",
+                        "approval": {
+                          "approved": false,
+                          "id": "approval-1",
+                          "reason": "I don't want to approve this"
+                        }
+                      },
+                      {
+                        "type": "step-start"
+                      },
+                      {
+                        "type": "text",
+                        "text": "I was not able to retrieve the weather.",
+                        "state": "done"
+                      }
+                    ]
+                  }
+                ]
+                """
+            )
+        );
+
+        AssertEqual(
+            """
+            [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "What is the weather in Tokyo?"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "toolCallId": "call-1",
+                    "toolName": "weather",
+                    "input": {
+                      "city": "Tokyo"
+                    }
+                  },
+                  {
+                    "type": "tool-approval-request",
+                    "approvalId": "approval-1",
+                    "toolCallId": "call-1"
+                  }
+                ]
+              },
+              {
+                "role": "tool",
+                "content": [
+                  {
+                    "type": "tool-approval-response",
+                    "approvalId": "approval-1",
+                    "approved": false,
+                    "reason": "I don't want to approve this"
+                  },
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "toolName": "weather",
+                    "output": {
+                      "type": "execution-denied",
+                      "reason": "I don't want to approve this"
+                    }
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "I was not able to retrieve the weather."
+                  }
+                ]
+              }
+            ]
+            """,
+            result
+        );
+    }
+
+    [UpstreamTest(
+        Suite + "should convert tool output denied (static tool)",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    [Fact]
+    public void Should_convert_tool_output_denied_static_tool()
+    {
+        var result = Convert(
+            UiMessages(
+                """
+                [
+                  {
+                    "role": "user",
+                    "parts": [
+                      {
+                        "type": "text",
+                        "text": "What is the weather in Tokyo?"
+                      }
+                    ]
+                  },
+                  {
+                    "role": "assistant",
+                    "parts": [
+                      {
+                        "type": "step-start"
+                      },
+                      {
+                        "type": "tool-weather",
+                        "toolCallId": "call-1",
+                        "state": "output-denied",
+                        "input": {
+                          "city": "Tokyo"
+                        },
+                        "approval": {
+                          "approved": false,
+                          "id": "approval-1",
+                          "reason": "I don't want to approve this"
+                        }
+                      }
+                    ]
+                  }
+                ]
+                """
+            )
+        );
+
+        AssertEqual(
+            """
+            [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "What is the weather in Tokyo?"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "toolCallId": "call-1",
+                    "toolName": "weather",
+                    "input": {
+                      "city": "Tokyo"
+                    }
+                  },
+                  {
+                    "type": "tool-approval-request",
+                    "approvalId": "approval-1",
+                    "toolCallId": "call-1"
+                  }
+                ]
+              },
+              {
+                "role": "tool",
+                "content": [
+                  {
+                    "type": "tool-approval-response",
+                    "approvalId": "approval-1",
+                    "approved": false,
+                    "reason": "I don't want to approve this"
+                  },
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "toolName": "weather",
+                    "output": {
+                      "type": "error-text",
+                      "value": "I don't want to approve this"
+                    }
+                  }
+                ]
+              }
+            ]
+            """,
+            result
+        );
+    }
+
+    [UpstreamTest(
+        Suite + "should convert tool output denied without approval (static tool)",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    [Fact]
+    public void Should_convert_tool_output_denied_without_approval_static_tool()
+    {
+        var result = Convert(
+            UiMessages(
+                """
+                [
+                  {
+                    "role": "user",
+                    "parts": [
+                      {
+                        "type": "text",
+                        "text": "What is the weather in Tokyo?"
+                      }
+                    ]
+                  },
+                  {
+                    "role": "assistant",
+                    "parts": [
+                      {
+                        "type": "tool-weather",
+                        "toolCallId": "call-1",
+                        "state": "output-denied",
+                        "input": {
+                          "city": "Tokyo"
+                        }
+                      }
+                    ]
+                  }
+                ]
+                """
+            )
+        );
+
+        AssertEqual(
+            """
+            [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "What is the weather in Tokyo?"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "toolCallId": "call-1",
+                    "toolName": "weather",
+                    "input": {
+                      "city": "Tokyo"
+                    }
+                  }
+                ]
+              },
+              {
+                "role": "tool",
+                "content": [
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "toolName": "weather",
+                    "output": {
+                      "type": "error-text",
+                      "value": "Tool call execution denied."
+                    }
+                  }
+                ]
+              }
+            ]
+            """,
+            result
+        );
+    }
+
+    [UpstreamTest(
+        Suite + "should convert tool output denied (dynamic tool)",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    [Fact]
+    public void Should_convert_tool_output_denied_dynamic_tool()
+    {
+        var result = Convert(
+            UiMessages(
+                """
+                [
+                  {
+                    "role": "user",
+                    "parts": [
+                      {
+                        "type": "text",
+                        "text": "What is the weather in Tokyo?"
+                      }
+                    ]
+                  },
+                  {
+                    "role": "assistant",
+                    "parts": [
+                      {
+                        "type": "step-start"
+                      },
+                      {
+                        "type": "dynamic-tool",
+                        "toolCallId": "call-1",
+                        "state": "output-denied",
+                        "input": {
+                          "city": "Tokyo"
+                        },
+                        "toolName": "weather",
+                        "approval": {
+                          "approved": false,
+                          "id": "approval-1",
+                          "reason": "I don't want to approve this"
+                        }
+                      }
+                    ]
+                  }
+                ]
+                """
+            )
+        );
+
+        AssertEqual(
+            """
+            [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "What is the weather in Tokyo?"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "toolCallId": "call-1",
+                    "toolName": "weather",
+                    "input": {
+                      "city": "Tokyo"
+                    }
+                  },
+                  {
+                    "type": "tool-approval-request",
+                    "approvalId": "approval-1",
+                    "toolCallId": "call-1"
+                  }
+                ]
+              },
+              {
+                "role": "tool",
+                "content": [
+                  {
+                    "type": "tool-approval-response",
+                    "approvalId": "approval-1",
+                    "approved": false,
+                    "reason": "I don't want to approve this"
+                  },
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "toolName": "weather",
+                    "output": {
+                      "type": "error-text",
+                      "value": "I don't want to approve this"
+                    }
+                  }
+                ]
+              }
+            ]
+            """,
+            result
+        );
+    }
+
+    [UpstreamTest(
+        Suite + "should convert tool output result with approval and follow up text (static tool)",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    [Fact]
+    public void Should_convert_tool_output_result_with_approval_and_follow_up_text_static_tool()
+    {
+        var result = Convert(
+            UiMessages(
+                """
+                [
+                  {
+                    "role": "user",
+                    "parts": [
+                      {
+                        "type": "text",
+                        "text": "What is the weather in Tokyo?"
+                      }
+                    ]
+                  },
+                  {
+                    "role": "assistant",
+                    "parts": [
+                      {
+                        "type": "step-start"
+                      },
+                      {
+                        "type": "tool-weather",
+                        "toolCallId": "call-1",
+                        "state": "output-available",
+                        "input": {
+                          "city": "Tokyo"
+                        },
+                        "approval": {
+                          "approved": true,
+                          "id": "approval-1"
+                        },
+                        "output": {
+                          "weather": "Sunny",
+                          "temperature": "20°C"
+                        }
+                      },
+                      {
+                        "type": "step-start"
+                      },
+                      {
+                        "type": "text",
+                        "text": "The weather in Tokyo is sunny.",
+                        "state": "done"
+                      }
+                    ]
+                  }
+                ]
+                """
+            )
+        );
+
+        AssertEqual(
+            """
+            [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "What is the weather in Tokyo?"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "toolCallId": "call-1",
+                    "toolName": "weather",
+                    "input": {
+                      "city": "Tokyo"
+                    }
+                  },
+                  {
+                    "type": "tool-approval-request",
+                    "approvalId": "approval-1",
+                    "toolCallId": "call-1"
+                  }
+                ]
+              },
+              {
+                "role": "tool",
+                "content": [
+                  {
+                    "type": "tool-approval-response",
+                    "approvalId": "approval-1",
+                    "approved": true
+                  },
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "toolName": "weather",
+                    "output": {
+                      "type": "json",
+                      "value": {
+                        "weather": "Sunny",
+                        "temperature": "20°C"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "The weather in Tokyo is sunny."
+                  }
+                ]
+              }
+            ]
+            """,
+            result
+        );
+    }
+
+    [UpstreamTest(
         Suite + "should propagate reason from a pending approval request",
         Coverage = UpstreamCoverage.Covered
     )]
@@ -213,6 +1156,124 @@ public sealed class WhenConvertingToolApprovalRequestResponsesTests : WarningsOf
         Assert.DoesNotContain(
             "signature",
             Render(result)[1]!["content"]![1]!.AsObject().Select(property => property.Key)
+        );
+    }
+
+    [UpstreamTest(
+        Suite + "should convert tool error result with approval and follow up text (static tool)",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    [Fact]
+    public void Should_convert_tool_error_result_with_approval_and_follow_up_text_static_tool()
+    {
+        var result = Convert(
+            UiMessages(
+                """
+                [
+                  {
+                    "role": "user",
+                    "parts": [
+                      {
+                        "type": "text",
+                        "text": "What is the weather in Tokyo?"
+                      }
+                    ]
+                  },
+                  {
+                    "role": "assistant",
+                    "parts": [
+                      {
+                        "type": "step-start"
+                      },
+                      {
+                        "type": "tool-weather",
+                        "toolCallId": "call-1",
+                        "state": "output-error",
+                        "input": {
+                          "city": "Tokyo"
+                        },
+                        "approval": {
+                          "approved": true,
+                          "id": "approval-1"
+                        },
+                        "errorText": "Error: Fetching weather data failed"
+                      },
+                      {
+                        "type": "step-start"
+                      },
+                      {
+                        "type": "text",
+                        "text": "The weather in Tokyo is sunny.",
+                        "state": "done"
+                      }
+                    ]
+                  }
+                ]
+                """
+            )
+        );
+
+        AssertEqual(
+            """
+            [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "What is the weather in Tokyo?"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "tool-call",
+                    "toolCallId": "call-1",
+                    "toolName": "weather",
+                    "input": {
+                      "city": "Tokyo"
+                    }
+                  },
+                  {
+                    "type": "tool-approval-request",
+                    "approvalId": "approval-1",
+                    "toolCallId": "call-1"
+                  }
+                ]
+              },
+              {
+                "role": "tool",
+                "content": [
+                  {
+                    "type": "tool-approval-response",
+                    "approvalId": "approval-1",
+                    "approved": true
+                  },
+                  {
+                    "type": "tool-result",
+                    "toolCallId": "call-1",
+                    "toolName": "weather",
+                    "output": {
+                      "type": "error-text",
+                      "value": "Error: Fetching weather data failed"
+                    }
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "The weather in Tokyo is sunny."
+                  }
+                ]
+              }
+            ]
+            """,
+            result
         );
     }
 }

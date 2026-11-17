@@ -151,4 +151,130 @@ public sealed class WhenIgnoringIncompleteToolCallsTests : WarningsOff
             result
         );
     }
+
+    [UpstreamTest(
+        Suite + "should ignore tool calls that are awaiting approval or have no state",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    [Fact]
+    public void Should_ignore_tool_calls_that_are_awaiting_approval_or_have_no_state()
+    {
+        var result = Convert(
+            UiMessages(
+                """
+                [
+                  {
+                    "role": "assistant",
+                    "parts": [
+                      { "type": "text", "text": "Waiting for completed tool calls.", "state": "done" },
+                      { "type": "tool-weather", "state": "approval-requested", "toolCallId": "call-awaiting-approval", "input": { "city": "Tokyo" }, "approval": { "id": "approval-1" } },
+                      { "type": "tool-weather", "toolCallId": "call-without-state", "input": { "city": "Berlin" } }
+                    ]
+                  },
+                  { "role": "user", "parts": [{ "type": "text", "text": "Continue." }] }
+                ]
+                """
+            ),
+            new ConvertToModelMessagesOptions { IgnoreIncompleteToolCalls = true }
+        );
+
+        AssertEqual(
+            """
+            [
+              { "role": "assistant", "content": [{ "type": "text", "text": "Waiting for completed tool calls." }] },
+              { "role": "user", "content": [{ "type": "text", "text": "Continue." }] }
+            ]
+            """,
+            result
+        );
+    }
+
+    [UpstreamTest(
+        Suite + "should preserve tool calls with approval responses",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    [Fact]
+    public void Should_preserve_tool_calls_with_approval_responses()
+    {
+        var result = Convert(
+            UiMessages(
+                """
+                [
+                  {
+                    "role": "assistant",
+                    "parts": [
+                      { "type": "tool-weather", "state": "approval-responded", "toolCallId": "call-approved", "input": { "city": "Tokyo" }, "approval": { "id": "approval-1", "approved": true } }
+                    ]
+                  }
+                ]
+                """
+            ),
+            new ConvertToModelMessagesOptions { IgnoreIncompleteToolCalls = true }
+        );
+
+        AssertEqual(
+            """
+            [
+              {
+                "role": "assistant",
+                "content": [
+                  { "type": "tool-call", "toolCallId": "call-approved", "toolName": "weather", "input": { "city": "Tokyo" } },
+                  { "type": "tool-approval-request", "approvalId": "approval-1", "toolCallId": "call-approved" }
+                ]
+              },
+              {
+                "role": "tool",
+                "content": [
+                  { "type": "tool-approval-response", "approvalId": "approval-1", "approved": true }
+                ]
+              }
+            ]
+            """,
+            result
+        );
+    }
+
+    [UpstreamTest(
+        Suite
+            + "should handle conversation with multiple tool invocations and user message at the end",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    [Fact]
+    public void Should_handle_conversation_with_multiple_tool_invocations_and_user_message_at_the_end()
+    {
+        var result = Convert(
+            UiMessages(
+                """
+                [
+                  {
+                    "role": "assistant",
+                    "parts": [
+                      { "type": "step-start" },
+                      { "type": "tool-screenshot", "state": "output-available", "toolCallId": "call-1", "input": { "value": "value-1" }, "output": "result-1" },
+                      { "type": "step-start" },
+                      { "type": "tool-screenshot", "state": "input-streaming", "toolCallId": "call-2", "input": { "value": "value-2" } },
+                      { "type": "tool-screenshot", "state": "input-available", "toolCallId": "call-3", "input": { "value": "value-3" } },
+                      { "type": "dynamic-tool", "toolName": "tool-screenshot2", "state": "input-available", "toolCallId": "call-3", "input": { "value": "value-3" } },
+                      { "type": "text", "text": "response", "state": "done" }
+                    ]
+                  },
+                  { "role": "user", "parts": [{ "type": "text", "text": "Thanks!" }] }
+                ]
+                """
+            ),
+            new ConvertToModelMessagesOptions { IgnoreIncompleteToolCalls = true }
+        );
+
+        AssertEqual(
+            """
+            [
+              { "content": [{ "input": { "value": "value-1" }, "toolCallId": "call-1", "toolName": "screenshot", "type": "tool-call" }], "role": "assistant" },
+              { "content": [{ "output": { "type": "text", "value": "result-1" }, "toolCallId": "call-1", "toolName": "screenshot", "type": "tool-result" }], "role": "tool" },
+              { "content": [{ "text": "response", "type": "text" }], "role": "assistant" },
+              { "content": [{ "text": "Thanks!", "type": "text" }], "role": "user" }
+            ]
+            """,
+            result
+        );
+    }
 }
