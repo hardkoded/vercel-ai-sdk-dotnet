@@ -22,6 +22,17 @@ Console.WriteLine(await stream.FinishReason);
 <sup><a href='/examples/StreamText/Program.cs#L14-L28' title='Snippet source file'>snippet source</a> | <a href='#snippet-streaming' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
+## Partial output stream
+
+Set `Output` and enumerate `PartialOutputStream` for the structured output as it grows. Each value is a `JsonElement`. With `OutputSpec.Object`, it is the partial object, repaired from the JSON text so far. With text output (no `Output`, or `OutputSpec.Text()`), it is the text so far as a JSON string. A value is published only when it differs from the last one, each step starts over, and text that the model streams in a later text block of a step is ignored. The partial object is not validated against the schema. Maps to `partialOutputStream`.
+
+```csharp
+await foreach (var partialObject in result.PartialOutputStream())
+{
+    Console.WriteLine(partialObject);
+}
+```
+
 ## UI message stream
 
 `Vercel.AI.AspNetCore` writes the same Server-Sent Events a JavaScript `useChat` client reads:

@@ -52,12 +52,10 @@ var result = Ai.StreamTextAsync(
     }
 );
 
-// Upstream logs result.partialOutputStream here. The port has no partial output stream yet, so this prints the JSON text deltas.
-await foreach (var delta in result.TextStream())
+await foreach (var partialObject in result.PartialOutputStream())
 {
-    Console.Write(delta);
+    Console.WriteLine(partialObject);
 }
 
-Console.WriteLine();
 Console.WriteLine("Recipe: " + await result.Output);
 #endregion

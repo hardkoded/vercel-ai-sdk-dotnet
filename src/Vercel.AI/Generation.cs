@@ -554,6 +554,7 @@ internal static class Generation
         )
         {
             Tools = options.Tools,
+            OutputSpecification = options.Output,
         };
     }
 
@@ -3910,6 +3911,9 @@ public sealed class StreamTextResult
     // The tools of the call. The UI message stream marks the parts of dynamic tools with them.
     internal IReadOnlyList<Tool>? Tools { get; init; }
 
+    // The output specification of the call. Null means text output.
+    internal OutputSpec? OutputSpecification { get; init; }
+
     internal StreamTextResult(
         PartBuffer buffer,
         Task<string> text,
@@ -3993,6 +3997,74 @@ public sealed class StreamTextResult
             {
                 yield return delta.Text;
             }
+        }
+    }
+
+    /// <summary>
+    /// The partial structured output after each text delta that changes it: the text so far for text output, the repaired partial
+    /// object for object output. Each step starts over. Maps to <c>partialOutputStream</c>.
+    /// </summary>
+    public async IAsyncEnumerable<JsonElement> PartialOutputStream(
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
+    {
+        var isObject = OutputSpecification?.Schema != null;
+        string? firstTextChunkId = null;
+        var text = new StringBuilder();
+        string? lastPublishedValue = null;
+        await foreach (var part in _buffer.Read(cancellationToken).ConfigureAwait(false))
+        {
+            if (part is StartStepPart)
+            {
+                firstTextChunkId = null;
+                text.Clear();
+                lastPublishedValue = null;
+                continue;
+            }
+
+            // The partial output follows the first text block of the step.
+            if (part is not TextDeltaPart delta)
+            {
+                continue;
+            }
+
+            firstTextChunkId ??= delta.Id;
+            if (delta.Id != firstTextChunkId)
+            {
+                continue;
+            }
+
+            text.Append(delta.Text);
+            if (delta.Text.Length == 0 && delta.ProviderMetadata != null)
+            {
+                continue;
+            }
+
+            JsonElement partial;
+            if (isObject)
+            {
+                var result = PartialJson.Parse(text.ToString());
+                if (result.State is PartialJson.FailedParse or PartialJson.UndefinedInput)
+                {
+                    continue;
+                }
+
+                partial = JsonSerializer.SerializeToElement(result.Value);
+            }
+            else
+            {
+                partial = JsonSerializer.SerializeToElement(text.ToString());
+            }
+
+            // Only publish a value that changed.
+            var currentValue = isObject ? partial.GetRawText() : text.ToString();
+            if (currentValue == lastPublishedValue)
+            {
+                continue;
+            }
+
+            lastPublishedValue = currentValue;
+            yield return partial;
         }
     }
 
