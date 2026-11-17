@@ -24,6 +24,7 @@ internal static class FileModes
     public static void WriteRestricted(string path, string content, bool groupAccess = false)
     {
         var temp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        string? stagingDir = null;
         try
         {
             var mode = UserRead | UserWrite | (groupAccess ? GroupRead | GroupWrite : 0);
@@ -45,7 +46,12 @@ internal static class FileModes
                 writer.Write(content);
             }
 #else
-            // netstandard2.0 has no create-with-mode API: the file is empty until its mode is set, and it is never written without one.
+            // netstandard2.0 has no create-with-mode API. The file is staged in a new directory that is restricted to its owner
+            // (mode 0700) before the file exists, so no other user can reach it while its own mode is still the default.
+            stagingDir = temp + ".d";
+            Directory.CreateDirectory(stagingDir);
+            SetMode(stagingDir, UserRead | UserWrite | UserExecute);
+            temp = Path.Combine(stagingDir, "secret");
             File.WriteAllText(temp, "");
             SetMode(temp, mode);
             File.WriteAllText(temp, content);
@@ -76,6 +82,21 @@ internal static class FileModes
             }
 
             throw;
+        }
+        finally
+        {
+            if (stagingDir is not null)
+            {
+                try
+                {
+                    Directory.Delete(stagingDir, recursive: true);
+                }
+                catch (Exception exception)
+                    when (exception is IOException or UnauthorizedAccessException)
+                {
+                    // Best effort: the staging directory is empty and private.
+                }
+            }
         }
     }
 

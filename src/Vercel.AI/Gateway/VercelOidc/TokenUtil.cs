@@ -135,11 +135,11 @@ internal static class TokenUtil
 #else
         var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 #endif
-        return AssertVercelTokenResponse(JsonNode.Parse(text));
+        return AssertVercelOidcTokenResponse(JsonNode.Parse(text));
     }
 
     /// <summary>Checks the shape of an OIDC token response.</summary>
-    public static VercelTokenResponse AssertVercelTokenResponse(JsonNode? response)
+    public static VercelTokenResponse AssertVercelOidcTokenResponse(JsonNode? response)
     {
         if (response is not JsonObject obj)
         {
@@ -217,7 +217,7 @@ internal static class TokenUtil
             return null;
         }
 
-        return AssertVercelTokenResponse(JsonNode.Parse(File.ReadAllText(tokenPath)));
+        return AssertVercelOidcTokenResponse(JsonNode.Parse(File.ReadAllText(tokenPath)));
     }
 
     /// <summary>Decodes the payload segment of a JWT.</summary>
