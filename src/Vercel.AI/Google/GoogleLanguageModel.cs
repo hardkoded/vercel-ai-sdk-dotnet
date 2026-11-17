@@ -614,7 +614,19 @@ public sealed class GoogleLanguageModel : ILanguageModel
                             }
                             else if (generated is GoogleGeneratedFile file)
                             {
-                                yield return new FileStreamPart(file.Data, file.MediaType);
+                                yield return new FileStreamPart(
+                                    file.Data,
+                                    file.MediaType,
+                                    file.ProviderMetadata
+                                );
+                            }
+                            else if (generated is GeneratedReasoningFile reasoningFile)
+                            {
+                                yield return new ReasoningFileStreamPart(
+                                    reasoningFile.Data,
+                                    reasoningFile.MediaType,
+                                    reasoningFile.ProviderMetadata
+                                );
                             }
                         }
 
@@ -977,22 +989,4 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
         public GoogleJsonAccumulator Accumulator { get; } = new();
     }
-}
-
-/// <summary>A streamed file part. The shared stream model has no file delta, so this carries the bytes.</summary>
-public sealed class FileStreamPart : LanguageModelStreamPart
-{
-    /// <summary>Creates a file part.</summary>
-    public FileStreamPart(byte[] data, string mediaType)
-        : base("file")
-    {
-        Data = data ?? Array.Empty<byte>();
-        MediaType = mediaType ?? "application/octet-stream";
-    }
-
-    /// <summary>File bytes.</summary>
-    public byte[] Data { get; }
-
-    /// <summary>IANA media type.</summary>
-    public string MediaType { get; }
 }

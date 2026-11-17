@@ -437,4 +437,39 @@ public sealed class DoStreamTests
             );
         }
     }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/google/src/google-language-model.test.ts::doStream::should stream file parts with thought flag in providerMetadata",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    // Upstream passes "thoughtimg" and "regularimg" through as opaque strings. The port decodes base64, so the data is valid base64 here.
+    public async Task Should_stream_file_parts_with_thought_flag_in_providerMetadata()
+    {
+        var handler = new RecordingHandler
+        {
+            MediaType = "text/event-stream",
+            ResponseText =
+                "data: {\"candidates\":[{\"content\":{\"parts\":[{\"inlineData\":{\"data\":\"thoughtimage\",\"mimeType\":\"image/png\"},\"thought\":true,\"thoughtSignature\":\"stream_sig\"},{\"inlineData\":{\"data\":\"regularimage\",\"mimeType\":\"image/jpeg\"}}],\"role\":\"model\"},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":10,\"candidatesTokenCount\":20,\"totalTokenCount\":30}}\n\n",
+        };
+        var model = GoogleUpstream.Client(handler).LanguageModel("gemini-pro");
+
+        var parts = await GoogleUpstream.Collect(
+            await model.DoStreamAsync(GoogleUpstream.Hello(), CancellationToken.None)
+        );
+
+        var fileParts = parts.Where(part => part.Type is "file" or "reasoning-file").ToArray();
+        Assert.Equal(new[] { "reasoning-file", "file" }, fileParts.Select(p => p.Type).ToArray());
+        var reasoningFile = Assert.IsType<ReasoningFileStreamPart>(fileParts[0]);
+        Assert.Equal("image/png", reasoningFile.MediaType);
+        Assert.Equal(Convert.FromBase64String("thoughtimage"), reasoningFile.Data);
+        GoogleUpstream.JsonEqual(
+            reasoningFile.ProviderMetadata!.Value,
+            "{\"google\":{\"thoughtSignature\":\"stream_sig\"}}"
+        );
+        var file = Assert.IsType<FileStreamPart>(fileParts[1]);
+        Assert.Equal("image/jpeg", file.MediaType);
+        Assert.Equal(Convert.FromBase64String("regularimage"), file.Data);
+        Assert.Null(file.ProviderMetadata);
+    }
 }

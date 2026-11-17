@@ -448,6 +448,23 @@ public static class V4Json
                     data is null ? Array.Empty<byte>() : Convert.FromBase64String(data),
                     mediaType
                 );
+            case "reasoning-file":
+                var reasoningMediaType = part.TryGetProperty("mediaType", out var reasoningMedia)
+                    ? reasoningMedia.GetString() ?? "application/octet-stream"
+                    : "application/octet-stream";
+                var reasoningData = part.TryGetProperty("data", out var reasoningDataElement)
+                    ? reasoningDataElement.GetString()
+                    : null;
+                return new GeneratedReasoningFile(
+                    reasoningData is null
+                        ? Array.Empty<byte>()
+                        : Convert.FromBase64String(reasoningData),
+                    reasoningMediaType,
+                    part.TryGetProperty("providerMetadata", out var reasoningMetadata)
+                    && reasoningMetadata.ValueKind == JsonValueKind.Object
+                        ? reasoningMetadata.Clone()
+                        : null
+                );
             default:
                 return null;
         }

@@ -259,4 +259,32 @@ public sealed class DoGenerateTests
             "{\"thinkingLevel\":\"" + level + "\"}"
         );
     }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/google/src/google-language-model.test.ts::doGenerate::should preserve thought flag on file parts in providerMetadata",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Should_preserve_thought_flag_on_file_parts_in_providerMetadata()
+    {
+        var result = GoogleUpstream.Parse(
+            "{\"candidates\":[{\"content\":{\"parts\":[{\"inlineData\":{\"mimeType\":\"image/png\",\"data\":\"thoughtimagedata\"},\"thought\":true,\"thoughtSignature\":\"img_sig1\"},{\"inlineData\":{\"mimeType\":\"image/jpeg\",\"data\":\"regularimagedata\"}}],\"role\":\"model\"},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":10,\"candidatesTokenCount\":20,\"totalTokenCount\":30}}"
+        );
+
+        Assert.Equal(
+            new[] { "reasoning-file", "file" },
+            result.Content.Select(part => part.Type).ToArray()
+        );
+        var reasoningFile = Assert.IsType<GeneratedReasoningFile>(result.Content[0]);
+        Assert.Equal("image/png", reasoningFile.MediaType);
+        Assert.Equal(Convert.FromBase64String("thoughtimagedata"), reasoningFile.Data);
+        GoogleUpstream.JsonEqual(
+            reasoningFile.ProviderMetadata!.Value,
+            "{\"google\":{\"thoughtSignature\":\"img_sig1\"}}"
+        );
+        var file = Assert.IsAssignableFrom<GeneratedFile>(result.Content[1]);
+        Assert.Equal("image/jpeg", file.MediaType);
+        Assert.Equal(Convert.FromBase64String("regularimagedata"), file.Data);
+        Assert.Null(Assert.IsType<GoogleGeneratedFile>(file).ProviderMetadata);
+    }
 }
