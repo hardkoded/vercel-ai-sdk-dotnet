@@ -718,11 +718,7 @@ public abstract class OutputSpec
             _elementSchemaNode = JsonNode.Parse(elementSchema.GetRawText())!;
             _minItems = minItems;
             _maxItems = maxItems;
-            SchemaValue = OutputStrategies.WrapArrayOutputSchema(
-                elementSchema,
-                minItems,
-                maxItems
-            );
+            SchemaValue = OutputStrategies.WrapArrayOutputSchema(elementSchema, minItems, maxItems);
             Name = name;
             Description = description;
         }
@@ -814,7 +810,10 @@ public abstract class OutputSpec
             return JsonSerializer.SerializeToElement(parsed);
         }
 
-        internal override Func<JsonElement, IEnumerable<JsonElement>>? CreateElementStreamTransform()
+        internal override Func<
+            JsonElement,
+            IEnumerable<JsonElement>
+        >? CreateElementStreamTransform()
         {
             var publishedElements = 0;
             return partial =>
@@ -905,7 +904,9 @@ public abstract class OutputSpec
                         {
                             ["type"] = "string",
                             ["enum"] = new JsonArray(
-                                _options.Select(option => (JsonNode?)JsonValue.Create(option)).ToArray()
+                                _options
+                                    .Select(option => (JsonNode?)JsonValue.Create(option))
+                                    .ToArray()
                             ),
                         },
                     },

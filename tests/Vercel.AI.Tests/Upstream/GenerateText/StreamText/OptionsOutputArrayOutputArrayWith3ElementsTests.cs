@@ -39,7 +39,13 @@ public sealed class OptionsOutputArrayOutputArrayWith3ElementsTests
     public async Task Should_stream_only_complete_objects_in_partialObjectStream()
     {
         Assert.Equal(
-            new[] { "[]", "[{\"content\":\"element 1\"}]", "[{\"content\":\"element 1\"},{\"content\":\"element 2\"}]", "[{\"content\":\"element 1\"},{\"content\":\"element 2\"},{\"content\":\"element 3\"}]" },
+            new[]
+            {
+                "[]",
+                "[{\"content\":\"element 1\"}]",
+                "[{\"content\":\"element 1\"},{\"content\":\"element 2\"}]",
+                "[{\"content\":\"element 1\"},{\"content\":\"element 2\"},{\"content\":\"element 3\"}]",
+            },
             await OptionsOutputSupport.Collect(Create())
         );
     }
@@ -49,7 +55,12 @@ public sealed class OptionsOutputArrayOutputArrayWith3ElementsTests
     public async Task Should_stream_individual_elements_in_elementStream()
     {
         Assert.Equal(
-            new[] { "{\"content\":\"element 1\"}", "{\"content\":\"element 2\"}", "{\"content\":\"element 3\"}" },
+            new[]
+            {
+                "{\"content\":\"element 1\"}",
+                "{\"content\":\"element 2\"}",
+                "{\"content\":\"element 3\"}",
+            },
             await OptionsOutputSupport.CollectElements(Create())
         );
     }
@@ -62,7 +73,8 @@ public sealed class OptionsOutputArrayOutputArrayWith3ElementsTests
 
         Assert.Equal(
             """[{"content":"element 1"},{"content":"element 2"},{"content":"element 3"}]""",
-            output!.Value.GetRawText());
+            output!.Value.GetRawText()
+        );
     }
 
     [Fact]
@@ -71,6 +83,7 @@ public sealed class OptionsOutputArrayOutputArrayWith3ElementsTests
     {
         Assert.Equal(
             """{"elements":[{"content":"element 1"},{ "content": "element 2"},{"content":"element 3"}]}""",
-            await Create().Text);
+            await Create().Text
+        );
     }
 }

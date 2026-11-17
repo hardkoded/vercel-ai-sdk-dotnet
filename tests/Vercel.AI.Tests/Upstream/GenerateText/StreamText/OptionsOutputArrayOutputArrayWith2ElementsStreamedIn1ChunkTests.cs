@@ -48,7 +48,8 @@ public sealed class OptionsOutputArrayOutputArrayWith2ElementsStreamedIn1ChunkTe
 
         Assert.Equal(
             """[{"content":"element 1"},{"content":"element 2"}]""",
-            output!.Value.GetRawText());
+            output!.Value.GetRawText()
+        );
     }
 
     [Fact]
@@ -57,6 +58,7 @@ public sealed class OptionsOutputArrayOutputArrayWith2ElementsStreamedIn1ChunkTe
     {
         Assert.Equal(
             """{"elements":[{"content":"element 1"},{"content":"element 2"}]}""",
-            await Create().Text);
+            await Create().Text
+        );
     }
 }

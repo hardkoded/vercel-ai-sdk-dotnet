@@ -113,7 +113,8 @@ public sealed class OptionsOutputArrayOutputTests
         );
         Assert.Contains("elements array must contain at most 2 items", validation.Message);
         var failure = await Assert.ThrowsAsync<Vercel.AI.GenerateObject.NoObjectGeneratedException>(
-            async () => await result.Output
+            async () =>
+                await result.Output
         );
         Assert.IsType<Vercel.AI.ProviderUtils.TypeValidationException>(failure.InnerException);
     }
