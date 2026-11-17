@@ -363,7 +363,9 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     {
         return new DeepSeek.DeepSeekChatLanguageModel(
             deploymentName,
-            new DeepSeek.DeepSeekChatConfig(ProviderId + ".deepseek", this, (_, _) => ChatUri(deploymentName))
+            new DeepSeek.DeepSeekChatConfig(ProviderId + ".deepseek", this, (_, _) =>
+                ChatUri(deploymentName)
+            )
             {
                 SupportsPenaltySampling = true,
                 SupportsThinking = false,

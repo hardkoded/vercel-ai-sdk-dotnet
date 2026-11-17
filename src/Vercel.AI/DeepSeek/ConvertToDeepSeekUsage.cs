@@ -20,8 +20,7 @@ internal static class ConvertToDeepSeekUsage
 
         var promptTokens = Int(element, "prompt_tokens") ?? 0;
         var completionTokens = Int(element, "completion_tokens") ?? 0;
-        var cacheReadTokens =
-            Int(element, "prompt_cache_hit_tokens")
+        var cacheReadTokens = Int(element, "prompt_cache_hit_tokens")
             ?? Nested(element, "prompt_tokens_details", "cached_tokens")
             ?? 0;
         var reasoningTokens = Nested(element, "completion_tokens_details", "reasoning_tokens") ?? 0;

@@ -40,10 +40,8 @@ public sealed class DeepSeekProvider : OpenAICompatibleProvider
         var baseUrl = Options.BaseUrl.TrimEnd('/');
         return new DeepSeekChatLanguageModel(
             modelId,
-            new DeepSeekChatConfig(
-                Options.ProviderName + ".chat",
-                this,
-                (_, path) => new Uri(baseUrl + path)
+            new DeepSeekChatConfig(Options.ProviderName + ".chat", this, (_, path) =>
+                new Uri(baseUrl + path)
             )
             {
                 SupportsAssistantPrefixCompletion = baseUrl.EndsWith(
