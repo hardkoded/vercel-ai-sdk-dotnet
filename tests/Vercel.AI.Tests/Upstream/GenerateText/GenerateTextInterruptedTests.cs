@@ -9,8 +9,7 @@ using Vercel.AI.Testing;
 namespace Vercel.AI.Tests.Upstream.GenerateText;
 
 /// <summary>
-/// Port of <c>generate-text.test.ts</c> &gt; <c>generateText</c>, the interrupted finish reason. Not ported: <c>should stop an interrupted response with a deferred provider tool result</c>,
-/// because the port has no provider tool that defers its result.
+/// Port of <c>generate-text.test.ts</c> &gt; <c>generateText</c>, the interrupted finish reason.
 /// </summary>
 public sealed class GenerateTextInterruptedTests
 {

@@ -267,18 +267,16 @@ internal static class DiceGameFixture
         rollDie.ProviderOptions = Json(
             "{\"anthropic\":{\"allowedCallers\":[\"code_execution_20250825\"]}}"
         );
-        return new[]
-        {
-            Tool.ProviderDefined(
-                "anthropic.code_execution_20250825",
-                "code_execution",
-                Json("{}"),
-                Json(
-                    "{\"type\":\"object\",\"properties\":{\"code\":{\"type\":\"string\"}},\"required\":[\"code\"],\"additionalProperties\":false}"
-                )
-            ),
-            rollDie,
-        };
+        var codeExecution = Tool.ProviderDefined(
+            "anthropic.code_execution_20250825",
+            "code_execution",
+            Json("{}"),
+            Json(
+                "{\"type\":\"object\",\"properties\":{\"code\":{\"type\":\"string\"}},\"required\":[\"code\"],\"additionalProperties\":false}"
+            )
+        );
+        codeExecution.SupportsDeferredResults = true;
+        return new[] { codeExecution, rollDie };
     }
 
     // Forwards the container id of the last step, as forwardAnthropicContainerIdFromLastStep does.

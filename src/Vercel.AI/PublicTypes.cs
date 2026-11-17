@@ -102,6 +102,12 @@ public sealed class Tool
     /// </summary>
     public JsonElement? ProviderOptions { get; set; }
 
+    /// <summary>
+    /// For a provider-defined tool: whether the provider may return the result of a call in a later step, such as code execution in programmatic tool calling.
+    /// The loop then continues until the result arrives. Maps to <c>supportsDeferredResults</c>.
+    /// </summary>
+    public bool SupportsDeferredResults { get; set; }
+
     private Tool(string providerToolId, string name, JsonElement args, JsonElement? inputSchema)
     {
         Name = name ?? throw new ArgumentNullException(nameof(name));
