@@ -207,4 +207,44 @@ public sealed class ConvertToMistralConversationInputsTests
             )
         );
     }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/mistral/src/convert-to-mistral-conversation-inputs.test.ts::preserves argument replay and serializes result graphs in conversation inputs",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Preserves_argument_replay_and_serializes_result_graphs_in_conversation_inputs()
+    {
+        var value = new Dictionary<string, object?>
+        {
+            ["count"] = System.Numerics.BigInteger.Parse("42"),
+        };
+        value["self"] = value;
+        var inputs = Convert(
+            new AssistantModelMessage(
+                new AssistantContentPart[]
+                {
+                    new AssistantToolCallPart(
+                        new GeneratedToolCall("call1", "inspect", "{\"count\":42}")
+                    ),
+                }
+            ),
+            new ToolModelMessage(
+                "call1",
+                "inspect",
+                Vercel.AI.ProviderUtils.StringifyWithBigIntAndCyclesUtil.StringifyWithBigIntAndCycles(
+                    value
+                ),
+                false
+            )
+        );
+        Assert.Equal(2, inputs.Count);
+        Assert.Equal("function.call", (string)inputs[0]!["type"]!);
+        Assert.Equal("call1", (string)inputs[0]!["tool_call_id"]!);
+        Assert.Equal("inspect", (string)inputs[0]!["name"]!);
+        Assert.Equal("{\"count\":42}", (string)inputs[0]!["arguments"]!);
+        Assert.Equal("function.result", (string)inputs[1]!["type"]!);
+        Assert.Equal("call1", (string)inputs[1]!["tool_call_id"]!);
+        Assert.Equal("{\"count\":\"42\",\"self\":\"[Circular]\"}", (string)inputs[1]!["result"]!);
+    }
 }
