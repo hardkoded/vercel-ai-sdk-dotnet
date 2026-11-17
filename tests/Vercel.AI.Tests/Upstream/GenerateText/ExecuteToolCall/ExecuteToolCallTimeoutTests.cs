@@ -11,7 +11,7 @@ namespace Vercel.AI.Tests.Upstream.GenerateText.ExecuteToolCall;
 
 /// <summary>
 /// Port of <c>execute-tool-call.test.ts</c> &gt; <c>executeToolCall</c> &gt; <c>timeout</c>.
-/// The port has no <c>executeToolCall</c> function, so each test runs one tool call through <c>GenerateTextAsync</c>.
+/// Each test runs one tool call through <c>GenerateTextAsync</c>, which calls <c>ToolCallExecution.ExecuteToolCall</c>. The signature is not upstream's yet (#1317).
 /// A tool receives a <see cref="CancellationToken"/>, so "an abort signal" is a token that can be cancelled, and "no abort signal" is the token the caller passed.
 /// </summary>
 public sealed class ExecuteToolCallTimeoutTests

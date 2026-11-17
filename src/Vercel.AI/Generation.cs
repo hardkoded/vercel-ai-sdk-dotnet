@@ -1966,7 +1966,8 @@ internal static class Generation
                     ),
                     async (call, _) =>
                     {
-                        var (executed, executionMs) = await ExecuteToolAsync(
+                        var (executed, executionMs) = await ToolCallExecution
+                            .ExecuteToolCall(
                                 call,
                                 options,
                                 stepInputMessages,
@@ -2608,7 +2609,7 @@ internal static class Generation
         };
     }
 
-    private static Tool? FindTool(GenerateTextOptions options, string name)
+    internal static Tool? FindTool(GenerateTextOptions options, string name)
     {
         if (options.Tools != null)
         {
@@ -2701,13 +2702,8 @@ internal static class Generation
                         approval.ToolCall.ToolName,
                         approval.ToolCall.Input.GetRawText()
                     );
-                    var (executed, _) = await ExecuteToolAsync(
-                            call,
-                            options,
-                            stepMessages,
-                            now,
-                            cancellationToken
-                        )
+                    var (executed, _) = await ToolCallExecution
+                        .ExecuteToolCall(call, options, stepMessages, now, cancellationToken)
                         .ConfigureAwait(false);
                     return executed;
                 },
@@ -2995,7 +2991,7 @@ internal static class Generation
     }
 
     // A tool without an execute function, or one awaiting approval, leaves its call for the caller, so the loop ends without asking the stop condition.
-    private static bool HasExecutor(Tool? tool) =>
+    internal static bool HasExecutor(Tool? tool) =>
         tool != null
         && (tool.Execute != null || tool.ExecuteWithOptions != null || tool.ExecuteStream != null);
 
@@ -3045,184 +3041,8 @@ internal static class Generation
         return false;
     }
 
-    private static async Task<(ExecutedTool Executed, double ElapsedMs)> ExecuteToolAsync(
-        GeneratedToolCall call,
-        GenerateTextOptions options,
-        IReadOnlyList<ModelMessage> stepMessages,
-        Func<double> now,
-        CancellationToken cancellationToken,
-        Action<ExecutedTool>? onPreliminaryToolResult = null
-    )
-    {
-        var tool = FindTool(options, call.ToolName);
-
-        if (tool == null || !HasExecutor(tool))
-        {
-            return (
-                new ExecutedTool(
-                    call.ToolCallId,
-                    call.ToolName,
-                    "{\"error\":\"Tool has no execute function.\"}",
-                    true
-                )
-                {
-                    InputJson = call.ArgumentsJson,
-                    Dynamic = call.Dynamic,
-                    Title = call.Title,
-                    ToolMetadata = call.ToolMetadata,
-                    ModelOutputType = "error-text",
-                    ModelOutput = "Tool has no execute function.",
-                },
-                0
-            );
-        }
-
-        if (options.OnToolExecutionStart != null)
-        {
-            await NotifyAsync(
-                    () =>
-                        options.OnToolExecutionStart(
-                            new ToolExecutionStartEvent(call, stepMessages),
-                            cancellationToken
-                        ),
-                    cancellationToken
-                )
-                .ConfigureAwait(false);
-        }
-
-        // Like upstream, the tool timeout starts after onToolExecutionStart and cancels only this tool, not the call.
-        var toolTimeoutMs = TimeoutConfiguration.GetToolTimeoutMs(options.Timeout, call.ToolName);
-        using var toolTimeout =
-            toolTimeoutMs != null
-                ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
-                : null;
-        toolTimeout?.CancelAfter(toolTimeoutMs!.Value);
-        var toolToken = toolTimeout?.Token ?? cancellationToken;
-
-        var startMs = now();
-        ExecutedTool executed;
-        try
-        {
-            using var arguments = JsonDocument.Parse(
-                string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson
-            );
-            var input = arguments.RootElement.Clone();
-            string output;
-            if (tool.ExecuteStream != null)
-            {
-                // Like upstream's executeTool, each streamed value is a preliminary result and the last one is the final result.
-                var last = default(string);
-                await foreach (
-                    var part in Vercel
-                        .AI.ProviderUtils.ToolExecution.ExecuteStreamAsync(
-                            tool.ExecuteStream(
-                                input,
-                                new ToolExecutionOptions(call.ToolCallId, stepMessages, toolToken)
-                            ),
-                            toolToken
-                        )
-                        .ConfigureAwait(false)
-                )
-                {
-                    if (part.Type == "preliminary")
-                    {
-                        onPreliminaryToolResult?.Invoke(
-                            new ExecutedTool(
-                                call.ToolCallId,
-                                call.ToolName,
-                                string.IsNullOrEmpty(part.Output) ? "null" : part.Output,
-                                false
-                            )
-                            {
-                                InputJson = call.ArgumentsJson,
-                                Dynamic = call.Dynamic,
-                                Title = call.Title,
-                                ToolMetadata = call.ToolMetadata,
-                                Preliminary = true,
-                            }
-                        );
-                    }
-                    else
-                    {
-                        last = part.Output;
-                    }
-                }
-
-                output = last!;
-            }
-            else
-            {
-                output =
-                    tool.ExecuteWithOptions != null
-                        ? await tool.ExecuteWithOptions(
-                                input,
-                                new ToolExecutionOptions(call.ToolCallId, stepMessages, toolToken)
-                            )
-                            .ConfigureAwait(false)
-                        : await tool.Execute!(input, toolToken).ConfigureAwait(false);
-            }
-
-            output = string.IsNullOrEmpty(output) ? "null" : output;
-            var modelOutput = tool.ToModelOutput?.Invoke(
-                new ToolModelOutputCall(call.ToolCallId, input, output)
-            );
-            executed = new ExecutedTool(call.ToolCallId, call.ToolName, output, false)
-            {
-                InputJson = call.ArgumentsJson,
-                Dynamic = call.Dynamic,
-                Title = call.Title,
-                ToolMetadata = call.ToolMetadata,
-                ModelOutputType = modelOutput is ContentToolModelOutput ? null : modelOutput?.Type,
-                ModelOutput =
-                    modelOutput is ContentToolModelOutput ? null : ModelOutputText(modelOutput),
-                ModelOutputContent = modelOutput is ContentToolModelOutput content
-                    ? ToUserContent(content.Value)
-                    : null,
-            };
-        }
-        catch (Exception thrown) when (!cancellationToken.IsCancellationRequested)
-        {
-            // A tool that stops on its token reports the timeout, as upstream reports the abort reason of the tool signal.
-            var exception =
-                thrown is OperationCanceledException cancelled
-                && toolTimeout != null
-                && cancelled.CancellationToken == toolToken
-                && toolToken.IsCancellationRequested
-                    ? new TimeoutError("The operation was aborted due to timeout")
-                    : thrown;
-            var error = JsonSerializer.Serialize(new { error = exception.Message });
-            executed = new ExecutedTool(call.ToolCallId, call.ToolName, error, true)
-            {
-                InputJson = call.ArgumentsJson,
-                Dynamic = call.Dynamic,
-                Title = call.Title,
-                ToolMetadata = call.ToolMetadata,
-                ModelOutputType = "error-text",
-                ModelOutput = ErrorMessage.ToErrorString(exception),
-                Error = exception,
-            };
-        }
-
-        var elapsedMs = now() - startMs;
-        if (options.OnToolExecutionEnd != null)
-        {
-            var elapsed = TimeSpan.FromMilliseconds(elapsedMs);
-            await NotifyAsync(
-                    () =>
-                        options.OnToolExecutionEnd(
-                            new ToolExecutionEndEvent(call, stepMessages, executed, elapsed),
-                            cancellationToken
-                        ),
-                    cancellationToken
-                )
-                .ConfigureAwait(false);
-        }
-
-        return (executed, elapsedMs);
-    }
-
     // The model-facing result of a tool's toModelOutput. Only text and error-text results travel as plain text.
-    private static string? ModelOutputText(ToolModelOutput? output)
+    internal static string? ModelOutputText(ToolModelOutput? output)
     {
         return output switch
         {
@@ -3261,7 +3081,7 @@ internal static class Generation
     }
 
     // Upstream's `notify` ignores an error a callback throws, so a faulty listener cannot break generation.
-    private static async Task NotifyAsync(Func<Task> callback, CancellationToken cancellationToken)
+    internal static async Task NotifyAsync(Func<Task> callback, CancellationToken cancellationToken)
     {
         try
         {

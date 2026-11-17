@@ -4,7 +4,8 @@
 
 using System.Runtime.CompilerServices;
 using System.Text.Json;
-using Vercel.AI.Gateway;
+using Vercel.AI.GenerateText;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.Testing;
 
@@ -12,22 +13,16 @@ namespace Vercel.AI.Tests.Upstream.GenerateText.ExecuteToolCall;
 
 /// <summary>
 /// Port of <c>execute-tool-call.test.ts</c> &gt; <c>executeToolCall</c> &gt; <c>onPreliminaryToolResult callback</c>.
-/// The port has no <c>executeToolCall</c> function, so each test runs one tool call through <c>StreamTextAsync</c>
-/// and reads the preliminary <c>tool-result</c> parts that the callback feeds.
 /// </summary>
 public sealed class OnPreliminaryToolResultCallbackTests
 {
     private const string Prefix =
         "packages/ai/src/generate-text/execute-tool-call.test.ts::executeToolCall > onPreliminaryToolResult callback::";
 
-    private const string Note =
-        "The port has no executeToolCall function. The test observes the preliminary tool-result parts of streamText, which come from the same callback.";
-
     [Fact]
     [UpstreamTest(
         Prefix + "should be called for preliminary results",
-        Coverage = UpstreamCoverage.Partial,
-        Note = Note
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_be_called_for_preliminary_results()
     {
@@ -43,8 +38,7 @@ public sealed class OnPreliminaryToolResultCallbackTests
     [Fact]
     [UpstreamTest(
         Prefix + "should return final result even with preliminary results",
-        Coverage = UpstreamCoverage.Partial,
-        Note = Note
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_return_final_result_even_with_preliminary_results()
     {
@@ -87,38 +81,17 @@ public sealed class OnPreliminaryToolResultCallbackTests
             null
         );
         tool.ExecuteStream = execute;
-        var result = new AiClient(
-            GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })
-        ).StreamTextAsync(
-            new StreamTextOptions
-            {
-                Model = new TestLanguageModel
-                {
-                    StreamParts = new LanguageModelStreamPart[]
-                    {
-                        new ToolCallStreamPart("call-1", "testTool", "{ \"value\": \"test\" }"),
-                        new FinishStreamPart(
-                            FinishReason.ToolCalls,
-                            new LanguageModelUsage(3, 10, 13),
-                            "tool-calls"
-                        ),
-                    },
-                },
-                Prompt = "test-input",
-                Tools = new[] { tool },
-            }
+        var preliminary = new List<ExecutedTool>();
+
+        var (executed, _) = await ToolCallExecution.ExecuteToolCall(
+            new GeneratedToolCall("call-1", "testTool", "{ \"value\": \"test\" }"),
+            new GenerateTextOptions { Model = new TestLanguageModel(), Tools = new[] { tool } },
+            Array.Empty<ModelMessage>(),
+            () => 0,
+            CancellationToken.None,
+            preliminary.Add
         );
 
-        var preliminary = new List<ExecutedTool>();
-        await foreach (var part in result.Stream())
-        {
-            if (part is ToolResultPart { Result.Preliminary: true } toolResult)
-            {
-                preliminary.Add(toolResult.Result);
-            }
-        }
-
-        var step = Assert.Single(await result.Steps);
-        return (preliminary, Assert.Single(step.ToolResults));
+        return (preliminary, executed);
     }
 }
