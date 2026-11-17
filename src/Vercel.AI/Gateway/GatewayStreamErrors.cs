@@ -38,9 +38,7 @@ internal static class GatewayStreamErrors
         string? authMethod
     )
     {
-        controller.Complete(
-            IsCancellation(error) ? error : GatewayErrors.AsGatewayError(error, authMethod)
-        );
+        controller.Complete(MapOrPassThrough(error, authMethod));
     }
 
     /// <summary>
@@ -82,9 +80,17 @@ internal static class GatewayStreamErrors
         );
     }
 
-    private static bool IsCancellation(Exception error)
+    // AsGatewayError rethrows cancellation; the stream hands that same error to the controller unchanged.
+    private static Exception MapOrPassThrough(Exception error, string? authMethod)
     {
-        return error is OperationCanceledException || error is TimeoutError;
+        try
+        {
+            return GatewayErrors.AsGatewayError(error, authMethod);
+        }
+        catch (Exception passedThrough) when (ReferenceEquals(passedThrough, error))
+        {
+            return error;
+        }
     }
 
     // Extracts a human-readable message from an `error` stream part's payload for the terminal close error.

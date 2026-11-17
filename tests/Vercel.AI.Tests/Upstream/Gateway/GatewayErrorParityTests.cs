@@ -1175,6 +1175,42 @@ public sealed class GatewayAsErrorTests
     private const string AsErrorPrefix =
         "packages/gateway/src/errors/as-gateway-error.test.ts::asGatewayError > ";
 
+    [Theory]
+    [InlineData("AbortError")]
+    [InlineData("TimeoutError")]
+    [UpstreamTest(
+        AsErrorPrefix + "caller cancellation::should rethrow a %s DOMException unchanged",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
+    )]
+    public void Rethrows_a_cancellation_exception_unchanged(string name)
+    {
+        Exception error =
+            name == "AbortError"
+                ? new OperationCanceledException("Request cancelled")
+                : new Vercel.AI.Util.TimeoutError("Request cancelled");
+
+        Assert.Same(error, Assert.ThrowsAny<Exception>(() => GatewayErrors.AsGatewayError(error)));
+    }
+
+    [Theory]
+    [InlineData("AbortError")]
+    [InlineData("TimeoutError")]
+    [UpstreamTest(
+        AsErrorPrefix + "caller cancellation::should rethrow an Error named %s unchanged",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f"
+    )]
+    public void Rethrows_a_cancellation_exception_subclass_unchanged(string name)
+    {
+        Exception error =
+            name == "AbortError"
+                ? new TaskCanceledException("Request cancelled")
+                : new Vercel.AI.Util.TimeoutError("Request cancelled");
+
+        Assert.Same(error, Assert.ThrowsAny<Exception>(() => GatewayErrors.AsGatewayError(error)));
+    }
+
     [Fact]
     [UpstreamTest(
         AsErrorPrefix
