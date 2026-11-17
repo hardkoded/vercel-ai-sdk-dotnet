@@ -44,34 +44,6 @@ public sealed class MistralProvider : OpenAICompatibleProvider
         return new MistralConversationLanguageModel(this, modelId);
     }
 
-    private static readonly HashSet<string> ModelsWithoutReasoningEffort = new HashSet<string>
-    {
-        "codestral-2508",
-        "codestral-latest",
-        "ministral-14b-2512",
-        "ministral-14b-latest",
-        "ministral-3b-2512",
-        "ministral-3b-latest",
-        "ministral-8b-2512",
-        "ministral-8b-latest",
-        "mistral-code-fim-latest",
-        "mistral-code-latest",
-        "mistral-large-latest",
-        "mistral-large-2512",
-        "voxtral-small-2507",
-        "voxtral-small-latest",
-    };
-
-    private static readonly Dictionary<string, string> EffortMap = new Dictionary<string, string>
-    {
-        { "minimal", "high" },
-        { "low", "high" },
-        { "medium", "high" },
-        { "high", "high" },
-        { "xhigh", "high" },
-        { "max", "high" },
-    };
-
     private static string? ResolveReasoningEffort(
         string modelId,
         string? reasoning,
@@ -79,7 +51,10 @@ public sealed class MistralProvider : OpenAICompatibleProvider
         IList<CallWarning> warnings
     )
     {
-        if (ModelsWithoutReasoningEffort.Contains(modelId))
+        var reasoningCapabilities = MistralModelCatalog
+            .GetMistralLanguageModelEntry(modelId)
+            .Language.Reasoning;
+        if (!reasoningCapabilities.Support)
         {
             if (ReasoningMap.IsCustomReasoning(reasoning))
             {
@@ -105,15 +80,10 @@ public sealed class MistralProvider : OpenAICompatibleProvider
             return null;
         }
 
-        if (reasoning == "none")
-        {
-            return "none";
-        }
-
         var mappingWarnings = new List<ModelWarning>();
         var effort = ReasoningMap.MapReasoningToProviderEffort(
             reasoning!,
-            EffortMap,
+            reasoningCapabilities.Efforts.ToDictionary(e => e, e => e),
             mappingWarnings
         );
         foreach (var warning in mappingWarnings)

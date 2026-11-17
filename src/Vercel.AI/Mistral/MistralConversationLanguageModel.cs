@@ -396,7 +396,7 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
 
         var reasoningCapabilities = MistralModelCatalog
             .GetMistralLanguageModelEntry(ModelId)
-            .ConversationReasoning;
+            .Language.Endpoints.Conversation.Reasoning;
         string? resolvedReasoningEffort = null;
         if (reasoningCapabilities.Support)
         {
