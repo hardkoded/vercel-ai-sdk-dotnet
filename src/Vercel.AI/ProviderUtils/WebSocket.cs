@@ -164,7 +164,9 @@ internal sealed class ClientWebSocketAdapter : IWebSocketLike
 {
     private readonly ClientWebSocket _socket = new ClientWebSocket();
     private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
-    private readonly SemaphoreSlim _sendLock = new SemaphoreSlim(1, 1);
+    private readonly object _sendGate = new object();
+    private Task _sendTail = Task.CompletedTask;
+    private int _closing;
     private long _buffered;
     private int _readyState;
 
@@ -233,11 +235,14 @@ internal sealed class ClientWebSocketAdapter : IWebSocketLike
 
     public void Close(int? code = null, string? reason = null)
     {
-        if (Interlocked.Exchange(ref _readyState, 2) >= 2)
+        // Cleanup ownership is separate from the ready state: a peer close sets the state to 3, and the socket
+        // must still be disposed.
+        if (Interlocked.Exchange(ref _closing, 1) != 0)
         {
             return;
         }
 
+        Interlocked.CompareExchange(ref _readyState, 2, 1);
         _ = CloseAsync(code, reason);
     }
 
@@ -315,34 +320,41 @@ internal sealed class ClientWebSocketAdapter : IWebSocketLike
         }
 
         Interlocked.Add(ref _buffered, data.Length);
-        _ = Task.Run(async () =>
+        // Sends are chained so frames reach the socket in call order.
+        lock (_sendGate)
+        {
+            _sendTail = SendAfterAsync(_sendTail, data, type);
+        }
+    }
+
+    private async Task SendAfterAsync(Task previous, byte[] data, WebSocketMessageType type)
+    {
+        try
         {
             try
             {
-                await _sendLock.WaitAsync(_cancellation.Token).ConfigureAwait(false);
-                try
-                {
-                    await _socket
-                        .SendAsync(new ArraySegment<byte>(data), type, true, _cancellation.Token)
-                        .ConfigureAwait(false);
-                }
-                finally
-                {
-                    _sendLock.Release();
-                }
+                await previous.ConfigureAwait(false);
             }
             catch (Exception)
             {
-                if (!_cancellation.IsCancellationRequested)
-                {
-                    OnError?.Invoke(null);
-                }
+                // The failure of an earlier frame was already reported.
             }
-            finally
+
+            await _socket
+                .SendAsync(new ArraySegment<byte>(data), type, true, _cancellation.Token)
+                .ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            if (!_cancellation.IsCancellationRequested)
             {
-                Interlocked.Add(ref _buffered, -data.Length);
+                OnError?.Invoke(null);
             }
-        });
+        }
+        finally
+        {
+            Interlocked.Add(ref _buffered, -data.Length);
+        }
     }
 
     private async Task CloseAsync(int? code, string? reason)
