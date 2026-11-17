@@ -277,6 +277,12 @@ public sealed class GoogleVertexSpeechTranscriptionModel : ITranscriptionModel
 /// <summary>Vertex Gemini transcription through generateContent.</summary>
 public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, ITranscriptionCaller
 {
+    private const string LiveWebSocketPath =
+        "google.cloud.aiplatform.v1.LlmBidiService/BidiGenerateContent";
+
+    // After the input audio has ended, finish when no terminal signal arrives within this window.
+    private const int DefaultFinishGraceMs = 3000;
+
     private static readonly string[] OptionNamespaces = { "googleVertex", "vertex", "google" };
     private static readonly string[] ConfigFields =
     {
@@ -311,10 +317,10 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
         get { return "v4"; }
     }
 
-    /// <summary>False. The Vertex Live WebSocket is not opened by this port.</summary>
+    /// <summary>True. Live model ids stream over the Vertex Live API WebSocket.</summary>
     public bool CanStream
     {
-        get { return false; }
+        get { return true; }
     }
 
     /// <inheritdoc />
@@ -515,13 +521,109 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
         );
     }
 
-    /// <summary>Returns null. The Vertex Live WebSocket is not opened by this port.</summary>
-    public Task<TranscriptionStreamStart?> DoStreamAsync(
+    /// <summary>Streams transcription over the Vertex Live API WebSocket (<c>LlmBidiService/BidiGenerateContent</c>).</summary>
+    public async Task<TranscriptionStreamStart?> DoStreamAsync(
         TranscriptionStreamCall call,
         CancellationToken cancellationToken
     )
     {
-        return Task.FromResult<TranscriptionStreamStart?>(null);
+        if (call is null)
+        {
+            throw new ArgumentNullException(nameof(call));
+        }
+
+        if (!GoogleTranscriptionModel.IsLive(ModelId))
+        {
+            throw new InvalidArgumentException(
+                "modelId",
+                ModelId,
+                "Model '"
+                    + ModelId
+                    + "' does not support streaming transcription. Use a live model such as 'gemini-3.5-transcribe-live'."
+            );
+        }
+
+        var timestamp = _provider.Clock().UtcDateTime;
+        var warnings = new List<OperationWarning>();
+        ValidateLiveInputAudioFormat(call.InputAudioFormat);
+
+        // Vertex Live authenticates with the same OAuth Bearer header the HTTP surface uses.
+        var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var pair in await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false))
+        {
+            headers[pair.Key] = pair.Value;
+        }
+
+        foreach (var pair in call.Headers)
+        {
+            headers[pair.Key] = pair.Value;
+        }
+
+        var vertex = _provider.Vertex;
+        var modelResource =
+            "projects/"
+            + vertex.Project
+            + "/locations/"
+            + vertex.Region
+            + "/publishers/google/models/"
+            + ModelId;
+        var url = new Uri(
+            "wss://" + VertexHost(vertex.Region) + "/ws/" + LiveWebSocketPath,
+            UriKind.Absolute
+        );
+
+        // Mirrors the Developer API model: sending generationConfig.responseModalities suppresses the final
+        // inputTranscription segments, so the setup omits generationConfig.
+        var setup = new JsonObject
+        {
+            ["model"] = modelResource,
+            ["inputAudioTranscription"] = TranscriptionConfig(call.ProviderOptions, false)
+                ?? new JsonObject(),
+        };
+        var session = new LiveSession(
+            call,
+            setup,
+            (int)(call.InputAudioFormat.Rate ?? 16000),
+            vertex.FinishGraceMs ?? DefaultFinishGraceMs,
+            warnings
+        );
+        session.Start(url, headers, vertex.WebSocket);
+        return new TranscriptionStreamStart(
+            new ModelPartStream(session.Queue, session.Cancel),
+            new ProviderResponse(timestamp: timestamp, modelId: ModelId),
+            new ProviderRequest(setup.ToJsonString())
+        );
+    }
+
+    /// <summary>Regional Vertex hostname (mirrors the provider's base-URL host rules). Maps to <c>vertexHost</c>.</summary>
+    private static string VertexHost(string location)
+    {
+        if (location == "global")
+        {
+            return "aiplatform.googleapis.com";
+        }
+
+        if (location == "eu" || location == "us")
+        {
+            return "aiplatform." + location + ".rep.googleapis.com";
+        }
+
+        return location + "-aiplatform.googleapis.com";
+    }
+
+    private static void ValidateLiveInputAudioFormat(AudioFormat inputAudioFormat)
+    {
+        if (
+            inputAudioFormat.Type != "audio/pcm"
+            || (inputAudioFormat.Rate != null && inputAudioFormat.Rate != 16000)
+        )
+        {
+            throw new InvalidArgumentException(
+                "inputAudioFormat",
+                inputAudioFormat,
+                "The Gemini Live transcription API only supports 16kHz 16-bit PCM input audio."
+            );
+        }
     }
 
     private static bool? WordTimestampOption(JsonElement providerOptions)
@@ -571,5 +673,553 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
         }
 
         return config.Count > 0 ? config : null;
+    }
+
+    /// <summary>Maps to <c>createVertexLiveTranscriptionStream</c>.</summary>
+    private sealed class LiveSession
+    {
+        private readonly TranscriptionStreamCall _call;
+        private readonly JsonObject _setup;
+        private readonly int _inputAudioRate;
+        private readonly int _finishGraceMs;
+        private readonly IReadOnlyList<OperationWarning> _warnings;
+        private readonly object _gate = new object();
+        private readonly TaskCompletionSource<bool> _setupComplete = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        private WebSocketConnection? _connection;
+        private AudioChunkReader? _reader;
+        private Timer? _finishTimer;
+        private bool _finished;
+        private bool _audioEnded;
+        private int _segmentCounter;
+        private string _segmentBuffer = string.Empty;
+        private string _fullText = string.Empty;
+        private string _latestInterim = string.Empty;
+        private string? _language;
+        private JsonElement? _usageMetadata;
+
+        public LiveSession(
+            TranscriptionStreamCall call,
+            JsonObject setup,
+            int inputAudioRate,
+            int finishGraceMs,
+            IReadOnlyList<OperationWarning> warnings
+        )
+        {
+            _call = call;
+            _setup = setup;
+            _inputAudioRate = inputAudioRate;
+            _finishGraceMs = finishGraceMs;
+            _warnings = warnings;
+        }
+
+        public PartQueue<ModelStreamPart> Queue { get; } = new PartQueue<ModelStreamPart>();
+
+        public void Start(
+            Uri url,
+            IReadOnlyDictionary<string, string?> headers,
+            WebSocketFactory? webSocket
+        )
+        {
+            _connection = ConnectToWebSocket.Connect(
+                new ConnectToWebSocketOptions
+                {
+                    Url = url,
+                    Headers = headers,
+                    WebSocket = webSocket,
+                    AbortSignal = _call.CancellationToken,
+                    AbortReason = _call.AbortReason,
+                    OnAbort = FinishWithError,
+                    OnProcessingError = FinishWithError,
+                    OnOpen = OnOpen,
+                    OnMessageText = OnMessageTextAsync,
+                    OnSocketError = () =>
+                        FinishWithError(
+                            new AiSdkException(
+                                "Vertex Live transcription error."
+                                    + (
+                                        webSocket is null
+                                            ? " Note: the default WebSocket implementation may not send the Authorization header required by Vertex."
+                                            : string.Empty
+                                    )
+                            )
+                        ),
+                    OnClose = OnClose,
+                }
+            );
+        }
+
+        public void Cancel()
+        {
+            if (!TryFinish())
+            {
+                return;
+            }
+
+            Queue.Complete(null);
+            Cleanup();
+        }
+
+        private bool IsFinished
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return _finished;
+                }
+            }
+        }
+
+        private bool TryFinish()
+        {
+            lock (_gate)
+            {
+                if (_finished)
+                {
+                    return false;
+                }
+
+                _finished = true;
+                return true;
+            }
+        }
+
+        private void Cleanup(int? closeCode = null)
+        {
+            AudioChunkReader? reader;
+            lock (_gate)
+            {
+                _finishTimer?.Dispose();
+                _finishTimer = null;
+                reader = _reader;
+            }
+
+            try
+            {
+                if (reader is not null)
+                {
+                    reader.Cancel();
+                }
+                else
+                {
+                    // Pre-open failure or abort: cancel the caller's audio stream so an upstream producer
+                    // piping into it does not hang.
+                    _call.Audio.Cancel();
+                }
+            }
+            catch (Exception)
+            {
+                // A stream that is locked by its owner stays with its owner.
+            }
+
+            _connection?.Close(closeCode);
+        }
+
+        private void FinishWithError(Exception error)
+        {
+            if (!TryFinish())
+            {
+                return;
+            }
+
+            Queue.Complete(error);
+            Cleanup();
+        }
+
+        // Trailing transcripts can arrive after audioStreamEnd. Without a terminal signal, finish after a quiet
+        // grace window. Transcript activity reschedules the timer.
+        private void SchedulePendingFinish()
+        {
+            lock (_gate)
+            {
+                if (_finished || !_audioEnded)
+                {
+                    return;
+                }
+
+                _finishTimer?.Dispose();
+                _finishTimer = new Timer(_ => Finish(), null, _finishGraceMs, Timeout.Infinite);
+            }
+        }
+
+        private void CompleteSegment()
+        {
+            // A finished segment supersedes any interim text it revises.
+            if (_segmentBuffer.Length == 0)
+            {
+                if (_latestInterim.Length == 0)
+                {
+                    return;
+                }
+
+                _segmentBuffer = _latestInterim;
+            }
+
+            _latestInterim = string.Empty;
+            Queue.Enqueue(
+                new ModelStreamPart
+                {
+                    Type = "transcript-final",
+                    Id = SegmentId(),
+                    Text = _segmentBuffer,
+                }
+            );
+            _fullText += _fullText.Length == 0 ? _segmentBuffer : " " + _segmentBuffer;
+            _segmentBuffer = string.Empty;
+            _segmentCounter++;
+        }
+
+        private string SegmentId()
+        {
+            return "google-segment-" + _segmentCounter.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private void Finish()
+        {
+            lock (_gate)
+            {
+                if (_finished)
+                {
+                    return;
+                }
+
+                CompleteSegment();
+                _finished = true;
+            }
+
+            OperationUsage? usage = null;
+            JsonElement? metadata = null;
+            if (_usageMetadata is { } raw)
+            {
+                usage = new OperationUsage(
+                    inputTokens: ReadInt(raw, "promptTokenCount"),
+                    outputTokens: ReadInt(raw, "candidatesTokenCount"),
+                    totalTokens: ReadInt(raw, "totalTokenCount")
+                );
+                metadata = JsonSerializer.SerializeToElement(
+                    new JsonObject
+                    {
+                        ["google"] = new JsonObject
+                        {
+                            ["usageMetadata"] = JsonNode.Parse(raw.GetRawText()),
+                        },
+                    }
+                );
+            }
+
+            Queue.Enqueue(
+                new ModelStreamPart
+                {
+                    Type = "finish",
+                    Text = _fullText,
+                    Segments = new List<TranscriptSegment>(),
+                    Language = _language,
+                    Usage = usage,
+                    ProviderMetadata = metadata,
+                }
+            );
+            Queue.Complete(null);
+            Cleanup(1000);
+        }
+
+        private void OnOpen(IWebSocketLike socket)
+        {
+            Queue.Enqueue(new ModelStreamPart { Type = "stream-start", Warnings = _warnings });
+            socket.Send(new JsonObject { ["setup"] = _setup.DeepClone() }.ToJsonString());
+            // Audio may only be sent after the server acknowledged the setup.
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _setupComplete.Task.ConfigureAwait(false);
+                    if (!IsFinished)
+                    {
+                        await SendAudioAsync(socket).ConfigureAwait(false);
+                    }
+                }
+                catch (Exception error)
+                {
+                    FinishWithError(error);
+                }
+            });
+        }
+
+        private async Task SendAudioAsync(IWebSocketLike socket)
+        {
+            var reader = _call.Audio.GetReader();
+            lock (_gate)
+            {
+                _reader = reader;
+            }
+
+            try
+            {
+                while (true)
+                {
+                    var bytes = await reader
+                        .ReadAsync(_call.CancellationToken)
+                        .ConfigureAwait(false);
+                    if (bytes is null || IsFinished)
+                    {
+                        break;
+                    }
+
+                    socket.Send(
+                        new JsonObject
+                        {
+                            ["realtimeInput"] = new JsonObject
+                            {
+                                ["audio"] = new JsonObject
+                                {
+                                    ["data"] = Convert.ToBase64String(bytes),
+                                    ["mimeType"] =
+                                        "audio/pcm;rate="
+                                        + _inputAudioRate.ToString(CultureInfo.InvariantCulture),
+                                },
+                            },
+                        }.ToJsonString()
+                    );
+                    // Backpressure: pause reads while the socket buffer is full.
+                    await WebSocketUtils
+                        .WaitForWebSocketBufferDrainAsync(
+                            socket,
+                            cancellationToken: _call.CancellationToken
+                        )
+                        .ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                reader.ReleaseLock();
+                lock (_gate)
+                {
+                    _reader = null;
+                }
+            }
+
+            if (!IsFinished)
+            {
+                socket.Send("{\"realtimeInput\":{\"audioStreamEnd\":true}}");
+                lock (_gate)
+                {
+                    _audioEnded = true;
+                }
+
+                SchedulePendingFinish();
+            }
+        }
+
+        private Task OnMessageTextAsync(string text)
+        {
+            if (IsFinished)
+            {
+                return Task.CompletedTask;
+            }
+
+            JsonElement message;
+            try
+            {
+                using var document = JsonDocument.Parse(text);
+                message = document.RootElement.Clone();
+            }
+            catch (JsonException)
+            {
+                return Task.CompletedTask;
+            }
+
+            if (message.ValueKind != JsonValueKind.Object)
+            {
+                return Task.CompletedTask;
+            }
+
+            if (_call.IncludeRawChunks == true)
+            {
+                Queue.Enqueue(new ModelStreamPart { Type = "raw", Raw = message });
+            }
+
+            if (message.TryGetProperty("setupComplete", out var setup) && IsPresent(setup))
+            {
+                _setupComplete.TrySetResult(true);
+            }
+
+            if (
+                message.TryGetProperty("usageMetadata", out var usage)
+                && usage.ValueKind == JsonValueKind.Object
+            )
+            {
+                _usageMetadata = usage.Clone();
+            }
+
+            if (
+                message.TryGetProperty("error", out var error)
+                && error.ValueKind == JsonValueKind.Object
+            )
+            {
+                FinishWithError(
+                    new AiSdkException(
+                        GoogleJson.String(error, "message") ?? "Vertex Live API error"
+                    )
+                );
+                return Task.CompletedTask;
+            }
+
+            JsonElement? serverContent = GoogleJson.TryObject(
+                message,
+                "serverContent",
+                out var content
+            )
+                ? content
+                : null;
+
+            // Low-latency revisable transcription while the user is speaking.
+            if (
+                serverContent is { } sc
+                && GoogleJson.TryObject(sc, "interimInputTranscription", out var interim)
+                && GoogleJson.String(interim, "text") is { Length: > 0 } interimText
+            )
+            {
+                SchedulePendingFinish();
+                _latestInterim = interimText;
+                Queue.Enqueue(
+                    new ModelStreamPart
+                    {
+                        Type = "transcript-partial",
+                        Id = SegmentId(),
+                        Text = interimText,
+                    }
+                );
+            }
+
+            JsonElement? transcription = null;
+            if (
+                serverContent is { } sc2
+                && GoogleJson.TryObject(sc2, "inputTranscription", out var inner)
+            )
+            {
+                transcription = inner;
+            }
+            else if (GoogleJson.TryObject(message, "inputTranscription", out var outer))
+            {
+                transcription = outer;
+            }
+
+            if (transcription is { } t)
+            {
+                if (GoogleJson.String(t, "languageCode") is { } languageCode)
+                {
+                    _language = languageCode;
+                }
+
+                if (GoogleJson.String(t, "text") is { Length: > 0 } delta)
+                {
+                    SchedulePendingFinish();
+                    // A real transcription delta supersedes interim fallback text.
+                    _latestInterim = string.Empty;
+                    _segmentBuffer += delta;
+                    Queue.Enqueue(
+                        new ModelStreamPart
+                        {
+                            Type = "transcript-delta",
+                            Id = SegmentId(),
+                            Delta = delta,
+                        }
+                    );
+                }
+
+                if (
+                    t.TryGetProperty("finished", out var finished)
+                    && finished.ValueKind == JsonValueKind.True
+                )
+                {
+                    CompleteSegment();
+                }
+            }
+
+            var turnComplete =
+                serverContent is { } sc3
+                && sc3.TryGetProperty("turnComplete", out var tc)
+                && tc.ValueKind == JsonValueKind.True;
+            if (turnComplete)
+            {
+                CompleteSegment();
+            }
+
+            // interactionStatus idle (REQUIRES_ACTION in the EAP builds) is the definitive
+            // all-processing-complete signal: finish as soon as the input audio has ended.
+            var interactionStatus = serverContent is { } sc4
+                ? GoogleJson.String(sc4, "interactionStatus")
+                : null;
+            bool ended;
+            lock (_gate)
+            {
+                ended = _audioEnded;
+            }
+
+            if (
+                ended
+                && (
+                    interactionStatus == "IDLE"
+                    || interactionStatus == "REQUIRES_ACTION"
+                    || (turnComplete && interactionStatus is null)
+                )
+            )
+            {
+                Finish();
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private void OnClose(int? code, string? reason)
+        {
+            bool ended;
+            lock (_gate)
+            {
+                if (_finished)
+                {
+                    return;
+                }
+
+                ended = _audioEnded;
+            }
+
+            // A close after the input audio ended means the server delivered everything it will deliver.
+            if (ended)
+            {
+                Finish();
+                return;
+            }
+
+            FinishWithError(
+                new AiSdkException(
+                    "Vertex Live transcription WebSocket closed unexpectedly before finishing (code "
+                        + (
+                            code is { } value
+                                ? value.ToString(CultureInfo.InvariantCulture)
+                                : "unknown"
+                        )
+                        + (string.IsNullOrEmpty(reason) ? string.Empty : ", reason: " + reason)
+                        + ")."
+                )
+            );
+        }
+
+        private static bool IsPresent(JsonElement value)
+        {
+            return value.ValueKind != JsonValueKind.Null
+                && value.ValueKind != JsonValueKind.Undefined;
+        }
+
+        private static int? ReadInt(JsonElement element, string name)
+        {
+            return
+                element.TryGetProperty(name, out var value)
+                && value.ValueKind == JsonValueKind.Number
+                && value.TryGetInt32(out var number)
+                ? number
+                : (int?)null;
+        }
     }
 }

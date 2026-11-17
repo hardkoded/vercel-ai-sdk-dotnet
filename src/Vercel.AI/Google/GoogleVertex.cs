@@ -262,6 +262,12 @@ public sealed class VertexOptions : GoogleOptions
     /// </summary>
     public Vercel.AI.Util.DownloadFetch? DownloadFetch { get; set; }
 
+    /// <summary>Custom WebSocket implementation for Gemini Live transcription streaming. Defaults to <c>ClientWebSocket</c>. Maps to <c>webSocket</c>.</summary>
+    public Vercel.AI.ProviderUtils.WebSocketFactory? WebSocket { get; set; }
+
+    /// <summary>Quiet window after the input audio ends before a live transcription finishes. Maps to <c>_internal.finishGraceMs</c>.</summary>
+    internal int? FinishGraceMs { get; set; }
+
     /// <summary>Returns a copy. The provider changes the copy, so the options the caller passed in are left as they were.</summary>
     public VertexOptions Copy()
     {
@@ -281,6 +287,8 @@ public sealed class VertexOptions : GoogleOptions
             GenerateAuthToken = GenerateAuthToken,
             ToolResultDownloads = ToolResultDownloads,
             DownloadFetch = DownloadFetch,
+            WebSocket = WebSocket,
+            FinishGraceMs = FinishGraceMs,
         };
         foreach (var pair in Headers)
         {
