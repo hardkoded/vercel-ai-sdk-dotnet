@@ -126,11 +126,48 @@ internal static class Generation
 
     // Maps to the shouldStartNextStep of generateText and streamText. A step with no client tool calls continues
     // only for a waiting steering message, and `endReason` says why the waiting messages are not delivered when the loop ends.
+    // Tracks provider-executed tool calls that support deferred results (e.g. code_execution in programmatic tool calling).
+    // Such a call may get its result in a later step, and the loop continues until it does.
+    private static void TrackPendingDeferredToolCalls(
+        StepResult step,
+        IReadOnlyList<Tool>? tools,
+        Dictionary<string, string> pendingDeferredToolCalls
+    )
+    {
+        foreach (var call in step.ToolCalls)
+        {
+            if (!call.ProviderExecuted)
+            {
+                continue;
+            }
+
+            var tool = tools?.FirstOrDefault(t =>
+                t.IsProviderDefined
+                && string.Equals(t.Name, call.ToolName, StringComparison.Ordinal)
+            );
+            if (tool is not { SupportsDeferredResults: true })
+            {
+                continue;
+            }
+
+            if (!step.ToolResults.Any(r => r.ToolCallId == call.ToolCallId))
+            {
+                pendingDeferredToolCalls[call.ToolCallId] = call.ToolName;
+            }
+        }
+
+        foreach (var result in step.ToolResults)
+        {
+            pendingDeferredToolCalls.Remove(result.ToolCallId);
+        }
+    }
+
     private static bool ShouldStartNextStep(
         StepResult step,
         List<StepResult> steps,
         StopCondition stop,
         SteeringRun? steeringRun,
+        Dictionary<string, string> pendingDeferredToolCalls,
         ref SteeringNotDeliveredReason endReason
     )
     {
@@ -151,7 +188,7 @@ internal static class Generation
                 return false;
             }
         }
-        else
+        else if (pendingDeferredToolCalls.Count == 0)
         {
             // queued messages wait for a task that was not cut off:
             var isTruncated =
@@ -245,6 +282,7 @@ internal static class Generation
             var stop = options.StopWhen ?? StopWhen.IsStepCount(1);
             var current = model;
             // why waiting steering messages are not delivered when the loop ends:
+            var pendingDeferredToolCalls = new Dictionary<string, string>();
             var steeringEndReason = SteeringNotDeliveredReason.Finished;
             while (steps.Count < HardStepCap)
             {
@@ -357,7 +395,17 @@ internal static class Generation
                     await options.OnStepEnd(step, cancellationToken).ConfigureAwait(false);
                 }
 
-                if (!ShouldStartNextStep(step, steps, stop, steeringRun, ref steeringEndReason))
+                TrackPendingDeferredToolCalls(step, options.Tools, pendingDeferredToolCalls);
+                if (
+                    !ShouldStartNextStep(
+                        step,
+                        steps,
+                        stop,
+                        steeringRun,
+                        pendingDeferredToolCalls,
+                        ref steeringEndReason
+                    )
+                )
                 {
                     break;
                 }
@@ -598,6 +646,7 @@ internal static class Generation
             var textPartIds = new PartIdReserver();
             var reasoningPartIds = new PartIdReserver();
             // why waiting steering messages are not delivered when the stream ends:
+            var pendingDeferredToolCalls = new Dictionary<string, string>();
             var steeringEndReason = SteeringNotDeliveredReason.Finished;
             while (steps.Count < HardStepCap)
             {
@@ -1266,7 +1315,17 @@ internal static class Generation
                     await options.OnStepEnd(step, cancellationToken).ConfigureAwait(false);
                 }
 
-                if (!ShouldStartNextStep(step, steps, stop, steeringRun, ref steeringEndReason))
+                TrackPendingDeferredToolCalls(step, options.Tools, pendingDeferredToolCalls);
+                if (
+                    !ShouldStartNextStep(
+                        step,
+                        steps,
+                        stop,
+                        steeringRun,
+                        pendingDeferredToolCalls,
+                        ref steeringEndReason
+                    )
+                )
                 {
                     break;
                 }

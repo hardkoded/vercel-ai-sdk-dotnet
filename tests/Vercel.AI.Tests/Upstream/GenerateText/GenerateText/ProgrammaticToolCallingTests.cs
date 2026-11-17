@@ -16,11 +16,64 @@ public sealed class ProgrammaticToolCallingTests
     private const string Id =
         "packages/ai/src/generate-text/generate-text.test.ts::generateText > programmatic tool calling::";
 
+    private static Tool DeferredProgramTool(JsonElement args, JsonElement schema)
+    {
+        var tool = Tool.ProviderDefined("test.program", "program", args, schema);
+        tool.SupportsDeferredResults = true;
+        return tool;
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Id + "should stop an interrupted response with a deferred provider tool result",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_stop_an_interrupted_response_with_a_deferred_provider_tool_result()
+    {
+        var modelCallCount = 0;
+        using var args = JsonDocument.Parse("{}");
+        using var schema = JsonDocument.Parse("{\"type\":\"object\",\"properties\":{}}");
+
+        var result = await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = new TestLanguageModel
+                    {
+                        OnGenerate = _ =>
+                        {
+                            modelCallCount++;
+                            return new LanguageModelGenerateResult(
+                                new GeneratedContent[]
+                                {
+                                    new GeneratedToolCall("call-1", "program", "{}")
+                                    {
+                                        ProviderExecuted = true,
+                                    },
+                                },
+                                FinishReason.Interrupted,
+                                new LanguageModelUsage(3, 10, 13)
+                            );
+                        },
+                    },
+                    Tools = new[]
+                    {
+                        DeferredProgramTool(args.RootElement.Clone(), schema.RootElement.Clone()),
+                    },
+                    Prompt = "Run a program",
+                    StopWhen = StopWhen.IsStepCount(3),
+                }
+            );
+
+        Assert.Equal(1, modelCallCount);
+        Assert.Single(result.Steps);
+        Assert.Equal(FinishReason.Interrupted, result.FinishReason);
+    }
+
     [Fact]
     [UpstreamTest(
         Id + "should stop for client tool approval while a provider tool result is deferred",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The provider tool is declared without supportsDeferredResults, which the port does not have."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_stop_for_client_tool_approval_while_a_provider_tool_result_is_deferred()
     {
@@ -74,9 +127,7 @@ public sealed class ProgrammaticToolCallingTests
                     },
                     Tools = new[]
                     {
-                        Tool.ProviderDefined(
-                            "test.program",
-                            "program",
+                        DeferredProgramTool(
                             args.RootElement.Clone(),
                             programSchema.RootElement.Clone()
                         ),

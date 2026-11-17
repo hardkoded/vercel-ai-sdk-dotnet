@@ -13,8 +13,7 @@ using Vercel.AI.Testing;
 namespace Vercel.AI.Tests.Upstream.GenerateText.StreamText;
 
 /// <summary>
-/// Port of <c>stream-text.test.ts</c> &gt; <c>streamText &gt; result.stream &gt; tool choice enforcement</c>, the interrupted finish reason. Not ported:
-/// <c>should stop an interrupted stream with a deferred provider tool result</c>, because the port has no provider tool that defers its result.
+/// Port of <c>stream-text.test.ts</c> &gt; <c>streamText &gt; result.stream &gt; tool choice enforcement</c>, the interrupted finish reason.
 /// </summary>
 public sealed class ToolChoiceEnforcementTests
 {
