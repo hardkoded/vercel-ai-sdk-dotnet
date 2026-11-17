@@ -44,7 +44,7 @@ public sealed class UIMessageStreamOutcome
     public Exception? Error { get; }
 }
 
-/// <summary>The event that <see cref="ToUIMessageChunkOptions.OnEnd"/> receives. Maps to <c>UIMessageStreamOnEndCallback</c>'s event.</summary>
+/// <summary>The event that <see cref="UIMessageStreamOptions.OnEnd"/> receives. Maps to <c>UIMessageStreamOnEndCallback</c>'s event.</summary>
 public sealed class UIMessageStreamOnEndEvent
 {
     /// <summary>Creates the event.</summary>
@@ -88,7 +88,7 @@ public sealed class UIMessageStreamOnEndEvent
     public string? FinishReason { get; init; }
 }
 
-/// <summary>The event that <see cref="ToUIMessageChunkOptions.OnStepEnd"/> receives. Maps to <c>UIMessageStreamOnStepEndCallback</c>'s event.</summary>
+/// <summary>The event that <see cref="UIMessageStreamOptions.OnStepEnd"/> receives. Maps to <c>UIMessageStreamOnStepEndCallback</c>'s event.</summary>
 public sealed class UIMessageStreamOnStepEndEvent
 {
     /// <summary>Creates the event.</summary>

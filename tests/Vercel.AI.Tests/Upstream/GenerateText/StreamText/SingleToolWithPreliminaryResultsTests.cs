@@ -76,9 +76,6 @@ public sealed class SingleToolWithPreliminaryResultsTests
     {
         var chunks = await SingleProviderExecutedToolCallAndResultTests.ReadUiChunks(Run());
 
-        // The .NET stream always sends a generated messageId on start.
-        Assert.NotNull(chunks[0]!["messageId"]);
-        chunks[0]!.AsObject().Remove("messageId");
         var expected = JsonNode.Parse(
             """
             [

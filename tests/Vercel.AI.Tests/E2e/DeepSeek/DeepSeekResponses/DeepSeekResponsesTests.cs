@@ -53,7 +53,7 @@ public sealed class DeepSeekResponsesTests
                 new ReadUIMessageStreamOptions(
                     UIMessageStreamConverter.ToUIMessageStream(
                         result.Stream(),
-                        new ToUIMessageChunkOptions { SendReasoning = true }
+                        new UIMessageStreamOptions { SendReasoning = true }
                     )
                 )
             )

@@ -70,7 +70,7 @@ public sealed class ToolErrorTextMismatchWarningTests
     {
         var logged = await Consume(
             ToolErrorThenReasoning,
-            new ToUIMessageChunkOptions { RedactToolErrors = true }
+            new UIMessageStreamOptions { RedactToolErrors = true }
         );
 
         var options = Assert.Single(logged);
@@ -112,7 +112,7 @@ public sealed class ToolErrorTextMismatchWarningTests
                 .. Reasoning,
                 TestStep,
             ],
-            new ToUIMessageChunkOptions { RedactToolErrors = true }
+            new UIMessageStreamOptions { RedactToolErrors = true }
         );
 
         Assert.Single(logged);
@@ -139,7 +139,7 @@ public sealed class ToolErrorTextMismatchWarningTests
     {
         var logged = await Consume(
             ToolErrorThenReasoning,
-            new ToUIMessageChunkOptions
+            new UIMessageStreamOptions
             {
                 OnError = error => error.Message,
                 RedactToolErrors = false,
@@ -159,7 +159,7 @@ public sealed class ToolErrorTextMismatchWarningTests
     {
         var logged = await Consume(
             ToolErrorThenReasoning,
-            new ToUIMessageChunkOptions { OnError = error => error.Message }
+            new UIMessageStreamOptions { OnError = error => error.Message }
         );
 
         Assert.Single(logged);
@@ -175,7 +175,7 @@ public sealed class ToolErrorTextMismatchWarningTests
     {
         var logged = await Consume(
             ToolErrorThenReasoning,
-            new ToUIMessageChunkOptions { OnError = error => "Error: " + error.Message }
+            new UIMessageStreamOptions { OnError = error => "Error: " + error.Message }
         );
 
         Assert.Empty(logged);
@@ -191,7 +191,7 @@ public sealed class ToolErrorTextMismatchWarningTests
     {
         var logged = await Consume(
             ToolErrorThenReasoning,
-            new ToUIMessageChunkOptions { SendReasoning = false }
+            new UIMessageStreamOptions { SendReasoning = false }
         );
 
         Assert.Empty(logged);
@@ -245,7 +245,7 @@ public sealed class ToolErrorTextMismatchWarningTests
         // approved tool calls run before the first step of the next call
         var logged = await Consume(
             [ToolError, StartStep, .. Reasoning, TestStep],
-            new ToUIMessageChunkOptions { RedactToolErrors = true }
+            new UIMessageStreamOptions { RedactToolErrors = true }
         );
 
         Assert.Single(logged);
@@ -276,7 +276,7 @@ public sealed class ToolErrorTextMismatchWarningTests
         );
         var logged = await Consume(
             [StartStep, invalidCall, invalidError, TestStep, StartStep, .. Reasoning, TestStep],
-            new ToUIMessageChunkOptions { RedactToolErrors = true }
+            new UIMessageStreamOptions { RedactToolErrors = true }
         );
 
         Assert.Single(logged);
@@ -354,7 +354,7 @@ public sealed class ToolErrorTextMismatchWarningTests
 
     private static async Task<List<LogWarningsOptions>> Consume(
         TextStreamPart[] parts,
-        ToUIMessageChunkOptions? options = null
+        UIMessageStreamOptions? options = null
     )
     {
         var logged = new List<LogWarningsOptions>();

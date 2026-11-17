@@ -12,7 +12,7 @@ using Vercel.AI.Util;
 
 namespace Vercel.AI.AspNetCore;
 
-/// <summary>Options of <see cref="UIMessageStreamConverter.ToUIMessageChunk"/> and <see cref="UIMessageStreamConverter.ToUIMessageStream"/>. Maps to <c>ToUIMessageChunkOptions</c>.</summary>
+/// <summary>Options of <see cref="UIMessageStreamConverter.ToUIMessageChunk"/>. Maps to <c>ToUIMessageChunkOptions</c>.</summary>
 public sealed class ToUIMessageChunkOptions
 {
     /// <summary>The tools of the call. A call, input, result or error of a dynamic tool is marked as dynamic. Maps to <c>tools</c>.</summary>
@@ -43,46 +43,11 @@ public sealed class ToUIMessageChunkOptions
     /// </summary>
     public bool? RedactToolErrors { get; init; }
 
-    /// <summary>Metadata of the response message, sent with the <c>start</c> and <c>finish</c> chunks. Maps to <c>messageMetadata</c>.</summary>
+    /// <summary>Metadata of the response message, sent with the <c>start</c> and <c>finish</c> chunks. A value, as upstream's <c>toUIMessageChunk</c> takes it. Maps to <c>messageMetadata</c>.</summary>
     public JsonElement? MessageMetadata { get; init; }
-
-    /// <summary>
-    /// Called for each stream part. Its value is sent with the <c>start</c> and <c>finish</c> chunks, and with a separate <c>message-metadata</c> chunk for any other part.
-    /// It takes precedence over <see cref="MessageMetadata"/>. Only <see cref="UIMessageStreamConverter.ToUIMessageStream"/> calls it.
-    /// Maps to the function form of <c>messageMetadata</c> (C# cannot overload a property by type).
-    /// </summary>
-    public Func<TextStreamPart, JsonElement?>? MessageMetadataSelector { get; init; }
 
     /// <summary>Id of the response message sent with the <c>start</c> chunk. Maps to <c>responseMessageId</c>.</summary>
     public string? ResponseMessageId { get; init; }
-
-    /// <summary>
-    /// The messages of the conversation. When the last one is an assistant message, the response continues it and reuses its id.
-    /// Maps to <c>originalMessages</c>.
-    /// </summary>
-    public IReadOnlyList<UIMessage>? OriginalMessages { get; init; }
-
-    /// <summary>
-    /// Generates the id of the response message, unless the last original message is an assistant message, whose id is reused.
-    /// Maps to <c>generateMessageId</c>.
-    /// </summary>
-    public Func<string>? GenerateMessageId { get; init; }
-
-    /// <summary>Called when each step ends during multi-step agent runs. Maps to <c>onStepEnd</c>.</summary>
-    public Func<UIMessageStreamOnStepEndEvent, Task>? OnStepEnd { get; init; }
-
-    /// <summary>Called when each step ends during multi-step agent runs. Maps to the deprecated <c>onStepFinish</c>. Use <see cref="OnStepEnd"/> instead.</summary>
-    [Obsolete("Use OnStepEnd instead.")]
-    public Func<UIMessageStreamOnStepEndEvent, Task>? OnStepFinish { get; init; }
-
-    /// <summary>
-    /// Called when the stream ends, whether it completed, failed, was aborted, or the consumer cancelled it. Maps to <c>onEnd</c>.
-    /// </summary>
-    public Func<UIMessageStreamOnEndEvent, Task>? OnEnd { get; init; }
-
-    /// <summary>Called when the stream ends. Maps to the deprecated <c>onFinish</c>. Use <see cref="OnEnd"/> instead.</summary>
-    [Obsolete("Use OnEnd instead.")]
-    public Func<UIMessageStreamOnEndEvent, Task>? OnFinish { get; init; }
 }
 
 /// <summary>Converts <c>streamText</c> parts into AI SDK UI message chunks.</summary>
