@@ -230,47 +230,46 @@ internal static class OpenAIParallelToolCall
 
     /// <summary>Provider metadata of a plain function call: item id, plus async mode, namespace and caller when present. The async mode falls back to the one seen when the item was added.</summary>
     public static JsonElement? CallMetadata(
-        JsonElement item,
+        string? id,
+        bool? async,
+        string? ns = null,
+        OpenAIResponsesApi.ToolCaller? caller = null,
         bool? ongoingAsync = null,
         string providerName = "openai"
     )
     {
         var values = new JsonObject();
-        if (OpenAIJson.String(item, "id") is { Length: > 0 } itemId)
+        if (id is { Length: > 0 } itemId)
         {
             values["itemId"] = itemId;
         }
 
-        if (
-            item.TryGetProperty("async", out var asyncMode)
-            && asyncMode.ValueKind is JsonValueKind.True or JsonValueKind.False
-        )
+        if (async is { } asyncMode)
         {
-            values["async"] = asyncMode.GetBoolean();
+            values["async"] = asyncMode;
         }
         else if (ongoingAsync is { } fallbackAsync)
         {
             values["async"] = fallbackAsync;
         }
 
-        if (OpenAIJson.String(item, "namespace") is { } ns)
+        if (ns is not null)
         {
             values["namespace"] = ns;
         }
 
-        if (
-            item.TryGetProperty("caller", out var caller)
-            && caller.ValueKind == JsonValueKind.Object
-        )
+        switch (caller)
         {
-            values["caller"] =
-                OpenAIJson.String(caller, "type") == "program"
-                    ? new JsonObject
-                    {
-                        ["type"] = "program",
-                        ["callerId"] = OpenAIJson.String(caller, "caller_id"),
-                    }
-                    : JsonNode.Parse(caller.GetRawText());
+            case OpenAIResponsesApi.ProgramToolCaller program:
+                values["caller"] = new JsonObject
+                {
+                    ["type"] = "program",
+                    ["callerId"] = program.CallerId,
+                };
+                break;
+            case OpenAIResponsesApi.DirectToolCaller:
+                values["caller"] = new JsonObject { ["type"] = "direct" };
+                break;
         }
 
         return values.Count > 0 ? OpenAIJson.ProviderMetadata(values, providerName) : null;

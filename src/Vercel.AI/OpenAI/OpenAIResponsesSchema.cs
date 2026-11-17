@@ -437,6 +437,13 @@ internal static class OpenAIResponsesSchema
         ("total_tokens", Optional(Number))
     );
 
+    private static readonly Rule PromptCacheDiagnostics = Object(
+        ("type", String),
+        ("reason", Nullish(String)),
+        ("cache_missed_tokens", Nullish(Number)),
+        ("comparison_reusable_tokens", Nullish(Number))
+    );
+
     private static readonly Rule Response = Object(
         ("id", Optional(String)),
         ("created_at", Optional(Number)),
@@ -454,16 +461,10 @@ internal static class OpenAIResponsesSchema
         ("model", Optional(String)),
         ("output", Optional(Array(OutputItem))),
         ("service_tier", Nullish(String)),
+        ("prompt_cache_diagnostics", Nullish(PromptCacheDiagnostics)),
         ("reasoning", Nullish(Object(("context", Nullish(String))))),
         ("incomplete_details", Nullish(Object(("reason", String)))),
         ("usage", Nullish(Usage))
-    );
-
-    private static readonly Rule PromptCacheDiagnostics = Object(
-        ("type", String),
-        ("reason", Nullish(String)),
-        ("cache_missed_tokens", Nullish(Number)),
-        ("comparison_reusable_tokens", Nullish(Number))
     );
 
     private static readonly Rule CodeInterpreterOutputs = Nullable(

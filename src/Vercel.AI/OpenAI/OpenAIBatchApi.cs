@@ -1024,9 +1024,10 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
         }
 
         if (
-            body.TryGetProperty("prompt_cache_diagnostics", out var cacheDiagnostics)
-            && OpenAIResponsesLanguageModel.PromptCacheDiagnostics(Node(cacheDiagnostics))
-                is { } promptCacheDiagnostics
+            OpenAIResponsesLanguageModel.PromptCacheDiagnostics(
+                OpenAIResponsesSchema.ParseResponse(body)?.PromptCacheDiagnostics
+            ) is
+            { } promptCacheDiagnostics
         )
         {
             openai["promptCacheDiagnostics"] = promptCacheDiagnostics;
