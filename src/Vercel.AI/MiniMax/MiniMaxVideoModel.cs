@@ -189,9 +189,9 @@ public sealed class MiniMaxVideoModel : IVideoModel, IVideoCaller
                 continue;
             }
 
-            if (statusError != null)
+            if (result.Status == "error")
             {
-                throw statusError;
+                throw statusError!;
             }
 
             var references = new JsonArray();
