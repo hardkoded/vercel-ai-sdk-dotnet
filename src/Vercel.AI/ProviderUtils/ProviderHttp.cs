@@ -482,28 +482,61 @@ public sealed class ProviderHttp
         int statusCode,
         string message,
         string? body,
-        IReadOnlyDictionary<string, string>? responseHeaders
+        IReadOnlyDictionary<string, string>? responseHeaders,
+        string? url = null,
+        object? requestBodyValues = null
     )
     {
         return statusCode switch
         {
-            400 => new BadRequestException(message, body) { ResponseHeaders = responseHeaders },
-            401 => new AuthenticationException(message, body) { ResponseHeaders = responseHeaders },
+            400 => new BadRequestException(message, body)
+            {
+                ResponseHeaders = responseHeaders,
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+            },
+            401 => new AuthenticationException(message, body)
+            {
+                ResponseHeaders = responseHeaders,
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+            },
             403 => new PermissionDeniedException(message, body)
             {
                 ResponseHeaders = responseHeaders,
+                Url = url,
+                RequestBodyValues = requestBodyValues,
             },
-            404 => new NotFoundException(message, body) { ResponseHeaders = responseHeaders },
+            404 => new NotFoundException(message, body)
+            {
+                ResponseHeaders = responseHeaders,
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+            },
             422 => new UnprocessableEntityException(message, body)
             {
                 ResponseHeaders = responseHeaders,
+                Url = url,
+                RequestBodyValues = requestBodyValues,
             },
-            429 => new RateLimitException(message, body) { ResponseHeaders = responseHeaders },
+            429 => new RateLimitException(message, body)
+            {
+                ResponseHeaders = responseHeaders,
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+            },
             >= 500 and <= 599 => new InternalServerException(message, statusCode, body)
             {
                 ResponseHeaders = responseHeaders,
+                Url = url,
+                RequestBodyValues = requestBodyValues,
             },
-            _ => new ApiException(message, statusCode, body) { ResponseHeaders = responseHeaders },
+            _ => new ApiException(message, statusCode, body)
+            {
+                ResponseHeaders = responseHeaders,
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+            },
         };
     }
 
