@@ -289,10 +289,9 @@ public class DeepSeekMessageProviderOptions
             return null;
         }
 
-        var scope = "providerOptions." + providerOptionsName;
         if (source.ValueKind != JsonValueKind.Object)
         {
-            throw new InvalidArgumentError(scope, null, "expected an object.");
+            throw DeepSeekFilePartProviderOptions.InvalidOptions(providerOptionsName);
         }
 
         var options = new DeepSeekAssistantMessageProviderOptions();
@@ -309,16 +308,14 @@ public class DeepSeekMessageProviderOptions
                     options.Name =
                         property.Value.ValueKind == JsonValueKind.String
                             ? property.Value.GetString()
-                            : throw new InvalidArgumentError(
-                                scope + ".name",
-                                null,
-                                "expected a string."
+                            : throw DeepSeekFilePartProviderOptions.InvalidOptions(
+                                providerOptionsName
                             );
                     break;
                 case "prefix":
                     if (property.Value.ValueKind != JsonValueKind.True)
                     {
-                        throw new InvalidArgumentError(scope + ".prefix", null, "expected true.");
+                        throw DeepSeekFilePartProviderOptions.InvalidOptions(providerOptionsName);
                     }
 
                     options.Prefix = true;
@@ -401,10 +398,9 @@ public sealed class DeepSeekFilePartProviderOptions
             return null;
         }
 
-        var scope = "providerOptions." + providerOptionsName;
         if (options.ValueKind != JsonValueKind.Object)
         {
-            throw new InvalidArgumentError(scope, null, "expected an object.");
+            throw InvalidOptions(providerOptionsName);
         }
 
         var result = new DeepSeekFilePartProviderOptions();
@@ -417,11 +413,7 @@ public sealed class DeepSeekFilePartProviderOptions
                 detailValue.ValueKind == JsonValueKind.String ? detailValue.GetString() : null;
             if (detail == null || Array.IndexOf(ImageDetails, detail) < 0)
             {
-                throw new InvalidArgumentError(
-                    scope + ".imageDetail",
-                    null,
-                    "expected one of low, high, original, auto."
-                );
+                throw InvalidOptions(providerOptionsName);
             }
 
             result.ImageDetail = detail;
@@ -434,12 +426,21 @@ public sealed class DeepSeekFilePartProviderOptions
         {
             if (fileDataValue.ValueKind != JsonValueKind.True)
             {
-                throw new InvalidArgumentError(scope + ".fileData", null, "expected true.");
+                throw InvalidOptions(providerOptionsName);
             }
 
             result.FileData = true;
         }
 
         return result;
+    }
+
+    internal static InvalidArgumentError InvalidOptions(string providerOptionsName)
+    {
+        return new InvalidArgumentError(
+            "providerOptions",
+            null,
+            "invalid " + providerOptionsName + " provider options"
+        );
     }
 }
