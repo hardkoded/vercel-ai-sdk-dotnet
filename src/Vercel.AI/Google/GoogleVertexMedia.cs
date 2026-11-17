@@ -960,13 +960,18 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
 
         private void OnOpen(IWebSocketLike socket)
         {
-            if (IsFinished)
+            // The finished check and the setup send share the lifecycle lock, so completion cannot land between them.
+            lock (_gate)
             {
-                return;
+                if (_finished)
+                {
+                    return;
+                }
+
+                Queue.Enqueue(new ModelStreamPart { Type = "stream-start", Warnings = _warnings });
+                socket.Send(new JsonObject { ["setup"] = _setup.DeepClone() }.ToJsonString());
             }
 
-            Queue.Enqueue(new ModelStreamPart { Type = "stream-start", Warnings = _warnings });
-            socket.Send(new JsonObject { ["setup"] = _setup.DeepClone() }.ToJsonString());
             // Audio may only be sent after the server acknowledged the setup.
             _ = Task.Run(async () =>
             {
