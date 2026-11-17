@@ -1342,7 +1342,9 @@ The model follows the transcription-stream envelope (`TranscriptionStreamEnvelop
 
 `GatewayProvider.ExperimentalTranscriptionGetTokenAsync(model, expiresAfterSeconds)` mints a transcription-bound short-lived client secret (`vcst_`) through `/v1/realtime/client-secrets` with `routeKind: "transcription"`, and returns `GatewayTranscriptionFactoryGetTokenResult` (`Token`, `Url`, `ExpiresAt`). Call it on the server. A browser then connects with `GatewayProvider.Create(new GatewayOptions { ApiKey = token }).ExperimentalTranscription(model)`, without holding the Gateway credential. `ExpiresAt` stays `null` when the endpoint sends none.
 
-Minting needs the Gateway credential, so it must run on a server. In a browser runtime (Blazor WebAssembly, where `OperatingSystem.IsBrowser()` is true) `ExperimentalRealtimeGetTokenAsync` and `ExperimentalTranscriptionGetTokenAsync` throw an `AiSdkException` ("must be minted server-side"). Building the realtime model with `RealtimeModel(id)` touches no credential and works in a browser, so a client can drive the transport with a token minted on the server.
+`GatewayProvider.ExperimentalSpeechGetTokenAsync(model, expiresAfterSeconds)` does the same for streaming speech (`routeKind: "speech"`) and returns `GatewaySpeechFactoryGetTokenResult` (`Token`, `Url` such as `wss://ai-gateway.vercel.sh/v4/ai/speech-model?ai-model-id=elevenlabs%2Feleven-flash-v2.5`, `ExpiresAt`). The Gateway streaming speech model itself is not ported yet (#752).
+
+Minting needs the Gateway credential, so it must run on a server. In a browser runtime (Blazor WebAssembly, where `OperatingSystem.IsBrowser()` is true) `ExperimentalRealtimeGetTokenAsync`, `ExperimentalTranscriptionGetTokenAsync` and `ExperimentalSpeechGetTokenAsync` throw an `AiSdkException` ("must be minted server-side"). Building the realtime model with `RealtimeModel(id)` touches no credential and works in a browser, so a client can drive the transport with a token minted on the server.
 
 ## Gladia transcription options
 

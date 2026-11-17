@@ -190,6 +190,30 @@ public sealed class GatewayProvider
         );
     }
 
+    /// <summary>
+    /// Mints a speech-bound short-lived client secret (<c>vcst_</c>) a browser can use to open the streaming speech
+    /// WebSocket without holding the Gateway credential. Server-side only. Maps to <c>experimental_speech.getToken</c>.
+    /// </summary>
+    public async Task<GatewaySpeechFactoryGetTokenResult> ExperimentalSpeechGetTokenAsync(
+        string model,
+        int? expiresAfterSeconds = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var secret = await MintClientSecretAsync(
+                model,
+                expiresAfterSeconds,
+                "speech",
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        return new GatewaySpeechFactoryGetTokenResult(
+            secret.Token,
+            GatewaySpeechModel.ToGatewaySpeechUrl(Options.BaseUrl, model),
+            secret.ExpiresAt
+        );
+    }
+
     /// <summary>Decision model routed through <c>/decision-model</c>.</summary>
     public GatewayDecisionModel DecisionModel(string modelId)
     {
@@ -579,7 +603,7 @@ public sealed class GatewayProvider
         if (IsBrowserEnvironment())
         {
             throw new AiSdkException(
-                "AI Gateway client secrets must be minted server-side: minting needs your Gateway credential, which must never reach the browser. Call gateway.ExperimentalRealtimeGetTokenAsync() or gateway.ExperimentalTranscriptionGetTokenAsync() from your server and pass the returned token to the client."
+                "AI Gateway client secrets must be minted server-side: minting needs your Gateway credential, which must never reach the browser. Call gateway.ExperimentalRealtimeGetTokenAsync(), gateway.ExperimentalTranscriptionGetTokenAsync() or gateway.ExperimentalSpeechGetTokenAsync() from your server and pass the returned token to the client."
             );
         }
     }
@@ -702,6 +726,27 @@ public sealed class GatewayTranscriptionFactoryGetTokenResult
     public string Token { get; }
 
     /// <summary>WebSocket URL of the streaming transcription surface for this model.</summary>
+    public string Url { get; }
+
+    /// <summary>Token expiry, epoch seconds.</summary>
+    public long? ExpiresAt { get; }
+}
+
+/// <summary>The result of minting a streaming speech client secret. Maps to <c>GatewaySpeechFactoryGetTokenResult</c>.</summary>
+public sealed class GatewaySpeechFactoryGetTokenResult
+{
+    /// <summary>Creates a result.</summary>
+    public GatewaySpeechFactoryGetTokenResult(string token, string url, long? expiresAt = null)
+    {
+        Token = token ?? throw new ArgumentNullException(nameof(token));
+        Url = url ?? throw new ArgumentNullException(nameof(url));
+        ExpiresAt = expiresAt;
+    }
+
+    /// <summary>The minted <c>vcst_</c> client secret.</summary>
+    public string Token { get; }
+
+    /// <summary>WebSocket URL of the streaming speech surface for this model.</summary>
     public string Url { get; }
 
     /// <summary>Token expiry, epoch seconds.</summary>
