@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 using Vercel.AI.Zai;
 
 namespace Vercel.AI.Tests;
@@ -352,6 +353,52 @@ public sealed class ZaiUpstreamTests
         var image = Assert.Throws<AiSdkException>(() => provider.ImageModel("model"));
         Assert.Equal("Provider 'zai' does not support embedding model 'model'.", embedding.Message);
         Assert.Equal("Provider 'zai' does not support image model 'model'.", image.Message);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/zai/src/zai-chat-language-model.test.ts::ZaiChatLanguageModel::serializes and restores provider-specific model behavior",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Serializes_and_restores_provider_specific_model_behavior()
+    {
+        var model = (ZaiChatLanguageModel)
+            ZaiProvider
+                .Create(
+                    new OpenAICompatibleOptions
+                    {
+                        ApiKey = "test-key",
+                        BaseUrl = "https://example.com/zai",
+                    },
+                    new UpstreamCapture()
+                )
+                .LanguageModel("glm-5.3");
+
+        var serialized = System.Text.Json.JsonSerializer.Deserialize<SerializedModelOptions>(
+            System.Text.Json.JsonSerializer.Serialize(model.Serialize())
+        )!;
+
+        Assert.Equal("glm-5.3", serialized.ModelId);
+        Assert.Equal("zai.chat", serialized.Config["provider"]?.ToString());
+        Assert.Equal("https://example.com/zai", serialized.Config["baseURL"]?.ToString());
+        Assert.DoesNotContain("fetch", serialized.Config.Keys);
+
+        var capture = new UpstreamCapture();
+        var restored = ZaiChatLanguageModel.Deserialize(serialized, "test-key", capture);
+        var options = UpstreamChat.Prompt();
+        options.ProviderOptions = UpstreamChat.Bag(
+            "zai",
+            "{\"thinking\":{\"type\":\"enabled\",\"clearThinking\":false}}"
+        );
+        await restored.DoGenerateAsync(options, CancellationToken.None);
+
+        Assert.Equal(
+            "https://example.com/zai/chat/completions",
+            capture.Requests[0].Uri?.AbsoluteUri
+        );
+        var body = UpstreamChat.Body(capture);
+        Assert.Equal("enabled", body["thinking"]!["type"]!.GetValue<string>());
+        Assert.False(body["thinking"]!["clear_thinking"]!.GetValue<bool>());
     }
 
     [Fact]
