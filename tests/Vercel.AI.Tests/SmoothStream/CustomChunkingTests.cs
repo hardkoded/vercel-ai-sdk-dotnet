@@ -64,6 +64,28 @@ public sealed class CustomChunkingTests : SmoothStreamTestBase
         );
     }
 
+    [Theory]
+    [InlineData("global", @"\S+\s+")]
+    [InlineData("sticky", @"\G\S+\s+")]
+    public async Task ShouldPreserveChunkBoundariesForRegexps(string kind, string pattern)
+    {
+        // .NET Regex has no lastIndex, so the upstream lastIndex assertions have no counterpart.
+        // \G is the .NET equivalent of the sticky flag.
+        Assert.NotNull(kind);
+        await Run(
+            [Start, D("alpha beta gamma delta "), End],
+            new SmoothStreamOptions
+            {
+                ChunkingRegex = new Regex(pattern, RegexOptions.Multiline),
+                DelayInMs = null,
+            }
+        );
+        Assert.Equal(
+            ["alpha ", "beta ", "gamma ", "delta "],
+            Parts.OfType<TextDeltaPart>().Select(p => p.Text)
+        );
+    }
+
     [Fact]
     public async Task ThrowsWhenARegexpProducesAnEmptyMatch()
     {
