@@ -62,6 +62,31 @@ public sealed class DoGenerateSettingsAndOptionsTopLevelReasoningTests
 
     [Fact]
     [UpstreamTest(
+        Prefix + "should map top-level reasoning none to the lowest effort for grok-4.7",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "b05c249ca42b0653542f0f055af7a0df5e4e46e2"
+    )]
+    public async Task Should_map_top_level_reasoning_none_to_the_lowest_effort_for_grok_4_7()
+    {
+        var capture = EmptyResponse("grok-4.7");
+        var options = HelloPrompt();
+        options.Reasoning = "none";
+
+        var result = await Model(capture, "grok-4.7")
+            .DoGenerateAsync(options, CancellationToken.None);
+
+        Assert.Equal("low", (string?)Body(capture)["reasoning"]!["effort"]);
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("compatibility", warning.Type);
+        Assert.Equal("reasoning", warning.Feature);
+        Assert.Equal(
+            "reasoning \"none\" is not directly supported by this model. mapped to effort \"low\".",
+            warning.Message
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
         Prefix + "should map top-level reasoning xhigh to reasoning effort \"xhigh\" for grok-4.6",
         Coverage = UpstreamCoverage.Covered
     )]

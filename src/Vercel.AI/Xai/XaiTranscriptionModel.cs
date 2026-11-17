@@ -339,7 +339,8 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
         {
             (
                 "model",
-                XaiModelCatalog.GetXaiTranscriptionModelEntry(modelId).Model is { } model
+                XaiModelCatalog.GetXaiTranscriptionModelEntry(modelId).RequestConfig.Model
+                    is { } model
                     ? new[] { model }
                     : null
             ),

@@ -3,27 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Xai;
-
-/// <summary>Model capability checks for xAI models.</summary>
-internal static class XaiReasoningEffort
-{
-    // grok-4.20 reasoning and non-reasoning models, including dated variants, reject the effort parameter for every value.
-    private static readonly Regex ModelsWithoutReasoningEffort = new Regex(
-        @"^grok-4\.20(-[0-9]{4})?-(non-)?reasoning\z",
-        RegexOptions.CultureInvariant,
-        TimeSpan.FromMilliseconds(100)
-    );
-
-    /// <summary>False for models that reject the reasoning effort parameter. Maps to <c>supportsReasoningEffort</c>.</summary>
-    public static bool Supports(string modelId)
-    {
-        return !ModelsWithoutReasoningEffort.IsMatch(modelId);
-    }
-}
 
 /// <summary>Converts xAI Responses usage and finish reasons.</summary>
 internal static class XaiResponsesResults

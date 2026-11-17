@@ -28,17 +28,6 @@ public sealed class XaiReasoning : GeneratedReasoning
 /// </summary>
 public sealed class XaiResponsesLanguageModel : ILanguageModel
 {
-    private static readonly Dictionary<string, string> BaseEffortMap = new Dictionary<
-        string,
-        string
-    >
-    {
-        { "minimal", "low" },
-        { "low", "low" },
-        { "medium", "medium" },
-        { "high", "high" },
-    };
-
     private readonly XaiProvider _provider;
     private readonly Func<string> _generateId;
 
@@ -362,7 +351,10 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
             return providerEffort;
         }
 
-        if (!XaiReasoningEffort.Supports(ModelId))
+        var portable = XaiModelCatalog
+            .GetXaiLanguageModelEntry(ModelId)
+            .Capabilities.Reasoning.Portable;
+        if (!portable.Configurable)
         {
             warnings.Add(
                 new CallWarning(
@@ -374,18 +366,22 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
             return null;
         }
 
-        if (reasoning == "none")
+        var effortMap = new Dictionary<string, string>
         {
-            return "none";
+            { "low", "low" },
+            { "medium", "medium" },
+            { "high", "high" },
+        };
+        if (portable.None)
+        {
+            effortMap["none"] = "none";
         }
 
-        // Only grok-4.6 accepts xhigh. Other models take high for both xhigh and max.
-        var top = ModelId == "grok-4.6" ? "xhigh" : "high";
-        var effortMap = new Dictionary<string, string>(BaseEffortMap)
+        if (portable.Xhigh)
         {
-            { "xhigh", top },
-            { "max", top },
-        };
+            effortMap["xhigh"] = "xhigh";
+        }
+
         var mappingWarnings = new List<ModelWarning>();
         var effort = ReasoningMap.MapReasoningToProviderEffort(
             reasoning!,

@@ -79,7 +79,7 @@ public sealed class RegexAndCultureRegressionTests
     [InlineData("grok-4.20-0309-reasoning", false)]
     public void Xai_reasoning_effort_matches_only_exact_ascii_ids(string modelId, bool supported)
     {
-        Assert.Equal(supported, XaiReasoningEffort.Supports(modelId));
+        Assert.Equal(supported, XaiReasoningEffort.SupportsReasoningEffort(modelId));
     }
 
     [Theory]
