@@ -19,7 +19,8 @@ public sealed class TranslationStreamCall
         JsonElement providerOptions,
         IReadOnlyDictionary<string, string> headers,
         bool? includeRawChunks,
-        CancellationToken cancellationToken
+        CancellationToken cancellationToken,
+        Exception? abortReason = null
     )
     {
         Audio = audio;
@@ -31,6 +32,7 @@ public sealed class TranslationStreamCall
         Headers = headers;
         IncludeRawChunks = includeRawChunks;
         CancellationToken = cancellationToken;
+        AbortReason = abortReason;
     }
 
     /// <summary>Audio stream.</summary>
@@ -59,17 +61,28 @@ public sealed class TranslationStreamCall
 
     /// <summary>Cancellation token shared with <c>fullStream</c> cancellation.</summary>
     public CancellationToken CancellationToken { get; }
+
+    /// <summary>Error the stream fails with when <see cref="CancellationToken"/> is cancelled. Maps to <c>abortSignal.reason</c>.</summary>
+    public Exception? AbortReason { get; }
 }
 
 /// <summary>A started translation stream.</summary>
 public sealed class TranslationStreamStart
 {
     /// <summary>Creates a start payload.</summary>
-    public TranslationStreamStart(ModelPartStream stream, ProviderResponse? response = null)
+    public TranslationStreamStart(
+        ModelPartStream stream,
+        ProviderResponse? response = null,
+        ProviderRequest? request = null
+    )
     {
         Stream = stream;
         Response = response;
+        Request = request;
     }
+
+    /// <summary>Request information: the setup payload sent to the provider.</summary>
+    public ProviderRequest? Request { get; }
 
     /// <summary>Model parts.</summary>
     public ModelPartStream Stream { get; }
@@ -320,7 +333,8 @@ public sealed class StreamTranslateResult
                         providerOptions,
                         headers,
                         request.IncludeRawChunks,
-                        cancellationToken
+                        cancellationToken,
+                        request.AbortReason
                     ),
                     cancellationToken
                 )
