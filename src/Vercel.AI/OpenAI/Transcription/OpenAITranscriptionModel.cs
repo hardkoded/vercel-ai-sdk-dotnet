@@ -690,7 +690,7 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
 
     // The bearer token rides the `openai-insecure-api-key` subprotocol (a native WebSocket cannot send headers) and the
     // Authorization header is stripped: OpenAI rejects handshakes that send both auth channels.
-    private static (
+    internal static (
         string[] Protocols,
         Dictionary<string, string?> Headers
     ) GetOpenAIRealtimeConnection(IReadOnlyDictionary<string, string?> headers)

@@ -1895,6 +1895,26 @@ var result = StreamTranscribe.Start(new StreamTranscribeRequest
 - **Authentication.** A native WebSocket cannot send headers, so the bearer token goes in the `openai-insecure-api-key.{token}` subprotocol next to `realtime`, and the `Authorization` header is removed because OpenAI rejects handshakes that send both. Other headers are passed on. The scheme is case-insensitive, and a per-call header overrides the provider header whatever its casing. Without an `Authorization` header only `realtime` is requested.
 - **Custom socket.** `OpenAIOptions.WebSocket` sets the `WebSocketFactory`. It defaults to `ClientWebSocket`. Backpressure pauses audio reads while the socket buffer is full, and cancelling the stream closes the socket and cancels the audio (`AudioChunkStream(onCancel)`).
 
+## OpenAI speech translation
+
+Speech translation is experimental. `OpenAIProvider.SpeechTranslationModel(id)` returns an `OpenAISpeechTranslationModel`. It implements `ISpeechTranslationCaller`, so it works with `StreamTranslate`. It translates live speech over the OpenAI Realtime translations WebSocket (`wss://.../realtime/translations?model={id}`) and is streaming-only. The one model is `gpt-realtime-translate`, which produces translated audio, translated text, and a source transcript.
+
+```csharp
+var audio = new AudioChunkStream();
+var result = StreamTranslate.Start(new StreamTranslateRequest
+{
+    Model = (ISpeechTranslationCaller)provider.SpeechTranslationModel("gpt-realtime-translate"),
+    Audio = audio,
+    InputAudioFormat = new AudioFormat("audio/pcm", 24000),
+    TargetLanguage = "es",
+});
+```
+
+- **Session.** The stream sends `session.update` with the `TargetLanguage` as the output language when the socket opens, then `session.input_audio_buffer.append` for each audio chunk, and `session.close` when the audio ends. `TranslationStreamStart.Request.Body` holds the `session.update` message. `TargetLanguage` is required.
+- **Parts.** `session.input_transcript.delta` becomes a `source-transcript-delta` part and `session.output_transcript.delta` an `output-text-delta` part. `session.output_audio.delta` becomes an `audio` part with the decoded bytes. An empty audio delta is skipped. `session.closed` emits `source-transcript-final` and `output-text-final` for the accumulated text (each only when not empty), then `finish` with `SourceText` and `OutputText`. A server `error` event is emitted as an `error` part and the stream goes on. A close or a socket error before `session.closed` ends the stream with an `AiSdkException` that carries the close code and reason. With `IncludeRawChunks`, every event is also emitted as a `raw` part.
+- **Input audio.** Only 24kHz 16-bit PCM input is accepted (`audio/pcm`, rate 24000 or none). Another format throws an `InvalidArgumentException` for `inputAudioFormat`. The source language is auto-detected and the output is always 24kHz 16-bit PCM, so `SourceLanguage` and `OutputAudioFormat` produce `unsupported` warnings.
+- **Authentication and socket.** The same as [OpenAI transcription](#openai-transcription): the bearer token goes in the `openai-insecure-api-key.{token}` subprotocol, the `Authorization` header is removed, and `OpenAIOptions.WebSocket` sets the `WebSocketFactory`. Cancelling the stream closes the socket and cancels the audio. When `StreamTranslateRequest`'s cancellation token fires, the stream fails with the request's abort reason.
+
 ## OpenAI realtime
 
 `OpenAIProvider.RealtimeModel(id)` returns an `OpenAIRealtimeModel` (OpenAI Realtime, provider id `openai.realtime`) or an `OpenAIRealtimeModelLive` (OpenAI Live, provider id `openai.live`). Both implement `IServerWebSocketRealtimeModel`. The known `gpt-live-1` id uses Live and every other id uses Realtime. `RealtimeModel(id, new OpenAIRealtimeOptions { Api = "live" })` selects the API explicitly, for an early-access model id. Realtime is experimental.
