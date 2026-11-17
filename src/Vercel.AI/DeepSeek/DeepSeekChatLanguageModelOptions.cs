@@ -109,6 +109,7 @@ public sealed class DeepSeekLanguageModelChatOptions
             "providerOptions",
             providerOptions != null
             && providerOptions.TryGetValue(providerOptionsName, out var value)
+            && value.ValueKind != JsonValueKind.Undefined
                 ? value.GetRawText()
                 : null,
             "invalid " + providerOptionsName + " provider options",
@@ -346,7 +347,10 @@ public class DeepSeekMessageProviderOptions
 
         if (source.ValueKind != JsonValueKind.Object)
         {
-            throw DeepSeekFilePartProviderOptions.InvalidOptions(providerOptionsName);
+            throw DeepSeekFilePartProviderOptions.InvalidOptions(
+                providerOptionsName,
+                "expected an object."
+            );
         }
 
         var options = new DeepSeekAssistantMessageProviderOptions();
@@ -364,13 +368,17 @@ public class DeepSeekMessageProviderOptions
                         property.Value.ValueKind == JsonValueKind.String
                             ? property.Value.GetString()
                             : throw DeepSeekFilePartProviderOptions.InvalidOptions(
-                                providerOptionsName
+                                providerOptionsName,
+                                "name: expected a string."
                             );
                     break;
                 case "prefix":
                     if (property.Value.ValueKind != JsonValueKind.True)
                     {
-                        throw DeepSeekFilePartProviderOptions.InvalidOptions(providerOptionsName);
+                        throw DeepSeekFilePartProviderOptions.InvalidOptions(
+                            providerOptionsName,
+                            "prefix: expected true."
+                        );
                     }
 
                     options.Prefix = true;
@@ -474,7 +482,7 @@ public sealed class DeepSeekFilePartProviderOptions
 
         if (options.ValueKind != JsonValueKind.Object)
         {
-            throw InvalidOptions(providerOptionsName);
+            throw InvalidOptions(providerOptionsName, "expected an object.");
         }
 
         var result = new DeepSeekFilePartProviderOptions();
@@ -487,7 +495,10 @@ public sealed class DeepSeekFilePartProviderOptions
                 detailValue.ValueKind == JsonValueKind.String ? detailValue.GetString() : null;
             if (detail == null || Array.IndexOf(ImageDetails, detail) < 0)
             {
-                throw InvalidOptions(providerOptionsName);
+                throw InvalidOptions(
+                    providerOptionsName,
+                    "imageDetail: expected one of low, high, original, auto."
+                );
             }
 
             result.ImageDetail = detail;
@@ -500,7 +511,7 @@ public sealed class DeepSeekFilePartProviderOptions
         {
             if (fileDataValue.ValueKind != JsonValueKind.True)
             {
-                throw InvalidOptions(providerOptionsName);
+                throw InvalidOptions(providerOptionsName, "fileData: expected true.");
             }
 
             result.FileData = true;
@@ -509,12 +520,9 @@ public sealed class DeepSeekFilePartProviderOptions
         return result;
     }
 
-    internal static InvalidArgumentError InvalidOptions(string providerOptionsName)
+    /// <summary>The validation failure <see cref="DeepSeekLanguageModelChatOptions.InvalidProviderOptions"/> wraps as its cause.</summary>
+    internal static InvalidArgumentError InvalidOptions(string providerOptionsName, string detail)
     {
-        return new InvalidArgumentError(
-            "providerOptions",
-            null,
-            "invalid " + providerOptionsName + " provider options"
-        );
+        return new InvalidArgumentError("providerOptions." + providerOptionsName, null, detail);
     }
 }

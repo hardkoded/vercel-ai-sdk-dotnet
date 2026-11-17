@@ -174,12 +174,13 @@ public sealed class AzureImageModel : IImageModel, IImageCaller
         var warnings = result
             .CallWarnings.Select(warning =>
                 warning.Feature == null
-                    ? new OperationWarning(warning.Type, warning.Message)
+                    ? new OperationWarning(warning.Type, warning.Message, setting: warning.Setting)
                     : new OperationWarning(
                         warning.Type,
                         null,
                         warning.Feature,
-                        warning.Message == warning.Feature ? null : warning.Message
+                        warning.Message == warning.Feature ? null : warning.Message,
+                        warning.Setting
                     )
             )
             .ToList();
