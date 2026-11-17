@@ -22,8 +22,10 @@ public sealed class DoStreamTests
     [Fact]
     [UpstreamTest(
         Prefix + "streams transcription over the Vertex Live API WebSocket",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Partial
     )]
+    // Partial: upstream asserts finish.usage equals the raw usageMetadata object. Here Usage is an OperationUsage, so
+    // the test asserts InputTokens and the raw object through ProviderMetadata (see #1327).
     public async Task Streams_transcription_over_the_Vertex_Live_API_WebSocket()
     {
         var audio = new AudioChunkStream();

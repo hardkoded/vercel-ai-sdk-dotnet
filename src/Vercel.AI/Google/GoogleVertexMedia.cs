@@ -690,6 +690,7 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
         private WebSocketConnection? _connection;
         private AudioChunkReader? _reader;
         private Timer? _finishTimer;
+        private int _finishTimerGeneration;
         private bool _finished;
         private bool _audioEnded;
         private int _segmentCounter;
@@ -722,7 +723,7 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
             WebSocketFactory? webSocket
         )
         {
-            _connection = ConnectToWebSocket.Connect(
+            var connection = ConnectToWebSocket.Connect(
                 new ConnectToWebSocketOptions
                 {
                     Url = url,
@@ -748,6 +749,19 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
                     OnClose = OnClose,
                 }
             );
+
+            // An abort during Connect finishes the session before the connection is published. Close it then.
+            bool alreadyFinished;
+            lock (_gate)
+            {
+                alreadyFinished = _finished;
+                _connection = connection;
+            }
+
+            if (alreadyFinished)
+            {
+                connection.Close(1000);
+            }
         }
 
         public void Cancel()
@@ -840,7 +854,13 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
                 }
 
                 _finishTimer?.Dispose();
-                _finishTimer = new Timer(_ => Finish(), null, _finishGraceMs, Timeout.Infinite);
+                var generation = ++_finishTimerGeneration;
+                _finishTimer = new Timer(
+                    _ => FinishFromTimer(generation),
+                    null,
+                    _finishGraceMs,
+                    Timeout.Infinite
+                );
             }
         }
 
@@ -874,6 +894,20 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
         private string SegmentId()
         {
             return "google-segment-" + _segmentCounter.ToString(CultureInfo.InvariantCulture);
+        }
+
+        // Timer.Dispose does not stop a callback that is already queued: ignore callbacks of replaced timers.
+        private void FinishFromTimer(int generation)
+        {
+            lock (_gate)
+            {
+                if (generation != _finishTimerGeneration)
+                {
+                    return;
+                }
+
+                Finish();
+            }
         }
 
         private void Finish()
@@ -926,6 +960,11 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
 
         private void OnOpen(IWebSocketLike socket)
         {
+            if (IsFinished)
+            {
+                return;
+            }
+
             Queue.Enqueue(new ModelStreamPart { Type = "stream-start", Warnings = _warnings });
             socket.Send(new JsonObject { ["setup"] = _setup.DeepClone() }.ToJsonString());
             // Audio may only be sent after the server acknowledged the setup.
@@ -1011,7 +1050,17 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
             }
         }
 
+        // Message handling, segment emission, and timer completion share one lock, so a finished segment is
+        // never emitted twice.
         private Task OnMessageTextAsync(string text)
+        {
+            lock (_gate)
+            {
+                return ProcessMessage(text);
+            }
+        }
+
+        private Task ProcessMessage(string text)
         {
             if (IsFinished)
             {
