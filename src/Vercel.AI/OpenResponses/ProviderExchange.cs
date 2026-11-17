@@ -117,7 +117,9 @@ internal static class ProviderExchange
         CancellationToken cancellationToken,
         HttpClient? downloadClient = null,
         IReadOnlyDictionary<string, string?>? untrustedHeaders = null,
-        Vercel.AI.Util.DownloadFetch? downloadFetch = null
+        Vercel.AI.Util.DownloadFetch? downloadFetch = null,
+        Func<int, string, ApiException>? failedResponseHandler = null,
+        long? maxPendingBodyBytes = null
     )
     {
         if (downloadFetch != null)
@@ -199,12 +201,45 @@ internal static class ProviderExchange
                             // An oversized error body is dropped. The status is the error.
                         }
 
-                        throw ProviderHttp.MapStatus((int)response.StatusCode, errorBody);
+                        throw failedResponseHandler != null
+                            ? failedResponseHandler((int)response.StatusCode, errorBody)
+                            : ProviderHttp.MapStatus((int)response.StatusCode, errorBody);
                     }
 
-                    var bytes = await ResponseBodies
-                        .ReadResponseWithSizeLimitAsync(response, url, null, cancellationToken)
-                        .ConfigureAwait(false);
+                    // A 202 body is bounded like upstream's readPendingBody.
+                    byte[] bytes;
+                    if (maxPendingBodyBytes is { } pendingLimit && (int)response.StatusCode == 202)
+                    {
+                        try
+                        {
+                            bytes = await ResponseBodies
+                                .ReadResponseWithSizeLimitAsync(
+                                    response,
+                                    url,
+                                    pendingLimit,
+                                    cancellationToken
+                                )
+                                .ConfigureAwait(false);
+                        }
+                        catch (DownloadError)
+                        {
+                            throw new ApiException(
+                                "xAI video status response exceeded " + pendingLimit + " bytes",
+                                202,
+                                null
+                            )
+                            {
+                                Url = url,
+                            };
+                        }
+                    }
+                    else
+                    {
+                        bytes = await ResponseBodies
+                            .ReadResponseWithSizeLimitAsync(response, url, null, cancellationToken)
+                            .ConfigureAwait(false);
+                    }
+
                     return new ProviderExchangeResult(
                         Encoding.UTF8.GetString(bytes),
                         bytes,
