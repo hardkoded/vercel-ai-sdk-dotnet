@@ -522,6 +522,15 @@ public sealed class GeneratedToolResult : GeneratedContent
 
     /// <summary>Metadata of the tool, apart from provider metadata. Maps to the result's <c>toolMetadata</c>.</summary>
     public IReadOnlyDictionary<string, JsonElement>? ToolMetadata { get; init; }
+
+    /// <summary>False when the generation loop ran a client tool. A provider's own result is provider-executed. Maps to the result's <c>providerExecuted</c>.</summary>
+    public bool ProviderExecuted { get; init; } = true;
+
+    /// <summary>The JSON input of the tool call this result answers. Maps to the result's <c>input</c>.</summary>
+    public string? InputJson { get; init; }
+
+    // The tool message the loop already built when it ran the tool, so ToResponseMessages does not run toModelOutput twice.
+    internal ToolModelMessage? ModelMessage { get; init; }
 }
 
 /// <summary>
