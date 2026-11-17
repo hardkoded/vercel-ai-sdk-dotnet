@@ -292,7 +292,8 @@ public sealed class XaiFiles : IFileStore
                 ApiKeys.Combine(_baseUrl, "/files"),
                 body,
                 headers,
-                cancellationToken
+                cancellationToken,
+                XaiError.FailedResponseHandler
             )
             .ConfigureAwait(false);
         return ReadFile(response.Body, fileName, upload.MediaType);
@@ -312,7 +313,8 @@ public sealed class XaiFiles : IFileStore
                 ApiKeys.Combine(_baseUrl, "/files/" + PathSegments.Encode(id)),
                 null,
                 _headers(),
-                cancellationToken
+                cancellationToken,
+                XaiError.FailedResponseHandler
             )
             .ConfigureAwait(false);
         return ReadFile(response.Body, null, null);
@@ -332,7 +334,8 @@ public sealed class XaiFiles : IFileStore
                 ApiKeys.Combine(_baseUrl, "/files/" + PathSegments.Encode(id) + "/content"),
                 null,
                 _headers(),
-                cancellationToken
+                cancellationToken,
+                XaiError.FailedResponseHandler
             )
             .ConfigureAwait(false);
         string? contentType = null;
@@ -367,7 +370,8 @@ public sealed class XaiFiles : IFileStore
                 ApiKeys.Combine(_baseUrl, "/files/" + PathSegments.Encode(id)),
                 null,
                 _headers(),
-                cancellationToken
+                cancellationToken,
+                XaiError.FailedResponseHandler
             )
             .ConfigureAwait(false);
         using (

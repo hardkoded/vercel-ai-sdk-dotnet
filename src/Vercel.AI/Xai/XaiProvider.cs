@@ -41,6 +41,7 @@ public sealed class XaiProvider : OpenAICompatibleProvider
         : base(Prepare(options), httpClient)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        Http.ErrorToMessage = XaiError.ErrorToMessage;
     }
 
     /// <summary>Creates a Responses API model, like <see cref="ResponsesModel(string)"/>. The provider id is <c>xai.responses</c>.</summary>
@@ -149,6 +150,7 @@ public sealed class XaiProvider : OpenAICompatibleProvider
             options.ApiKeyEnvironmentVariable = ApiKeyVariable;
         }
 
+        options.SelectErrorMessage ??= XaiError.SelectErrorMessage;
         options.SupportsEmbeddings = false;
         options.SupportsImages = true;
         if (string.IsNullOrEmpty(options.UserAgent))

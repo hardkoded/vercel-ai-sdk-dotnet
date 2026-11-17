@@ -17,6 +17,9 @@ public sealed class ProviderHttp
     private readonly RetryPolicy _retry;
     private readonly TimeSpan? _timeout;
 
+    /// <summary>Provider hook that turns a failed response into the exception message. Maps to a provider's <c>failedResponseHandler</c>. Null uses the shared extraction.</summary>
+    internal Func<int, string, string>? ErrorToMessage { get; set; }
+
     /// <summary>Creates a provider HTTP client.</summary>
     public ProviderHttp(HttpClient httpClient, RetryPolicy? retry = null, TimeSpan? timeout = null)
     {
@@ -50,7 +53,7 @@ public sealed class ProviderHttp
         {
             throw MapStatusWithHeaders(
                 (int)response.StatusCode,
-                JsonValues.ExtractErrorMessage(body, (int)response.StatusCode),
+                ErrorMessage((int)response.StatusCode, body),
                 body,
                 CopyHeaders(response)
             );
@@ -91,7 +94,7 @@ public sealed class ProviderHttp
             {
                 throw MapStatusWithHeaders(
                     (int)response.StatusCode,
-                    JsonValues.ExtractErrorMessage(body, (int)response.StatusCode),
+                    ErrorMessage((int)response.StatusCode, body),
                     body,
                     CopyHeaders(response)
                 );
@@ -166,7 +169,7 @@ public sealed class ProviderHttp
             var text = Encoding.UTF8.GetString(bytes);
             throw MapStatusWithHeaders(
                 (int)response.StatusCode,
-                JsonValues.ExtractErrorMessage(text, (int)response.StatusCode),
+                ErrorMessage((int)response.StatusCode, text),
                 text,
                 CopyHeaders(response)
             );
@@ -201,7 +204,7 @@ public sealed class ProviderHttp
                     .ConfigureAwait(false);
                 throw MapStatusWithHeaders(
                     (int)response.StatusCode,
-                    JsonValues.ExtractErrorMessage(text, (int)response.StatusCode),
+                    ErrorMessage((int)response.StatusCode, text),
                     text,
                     CopyHeaders(response)
                 );
@@ -312,7 +315,7 @@ public sealed class ProviderHttp
                     .ConfigureAwait(false);
                 throw MapStatusWithHeaders(
                     (int)response.StatusCode,
-                    JsonValues.ExtractErrorMessage(body, (int)response.StatusCode),
+                    ErrorMessage((int)response.StatusCode, body),
                     body,
                     CopyHeaders(response)
                 );
@@ -420,7 +423,7 @@ public sealed class ProviderHttp
                     .ConfigureAwait(false);
                 throw MapStatusWithHeaders(
                     (int)response.StatusCode,
-                    JsonValues.ExtractErrorMessage(body, (int)response.StatusCode),
+                    ErrorMessage((int)response.StatusCode, body),
                     body,
                     CopyHeaders(response)
                 );
@@ -475,6 +478,12 @@ public sealed class ProviderHttp
     public static ApiException MapStatus(int statusCode, string message, string? body)
     {
         return MapStatusWithHeaders(statusCode, message, body, null);
+    }
+
+    private string ErrorMessage(int statusCode, string body)
+    {
+        return ErrorToMessage?.Invoke(statusCode, body)
+            ?? JsonValues.ExtractErrorMessage(body, statusCode);
     }
 
     /// <summary>Like the public overloads, and keeps <paramref name="responseHeaders"/> on the exception.</summary>

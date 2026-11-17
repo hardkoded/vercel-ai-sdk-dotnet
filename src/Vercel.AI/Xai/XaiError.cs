@@ -14,10 +14,22 @@ internal static class XaiError
     /// <summary>Port of <c>xaiFailedResponseHandler</c>.</summary>
     public static ApiException FailedResponseHandler(int statusCode, string body)
     {
-        return ProviderHttp.MapStatus(statusCode, ErrorToMessage(body, statusCode), body);
+        return ProviderHttp.MapStatus(statusCode, ErrorToMessage(statusCode, body), body);
     }
 
-    private static string ErrorToMessage(string body, int statusCode)
+    /// <summary>Error message for the OpenAI-compatible models: the xAI string shapes, then the shared OpenAI shape.</summary>
+    internal static string? SelectErrorMessage(string? body)
+    {
+        return (string.IsNullOrWhiteSpace(body) ? null : TryReadStringShape(body!))
+            ?? OpenAICompatible.OpenAICompatibleChat.ReadErrorMessage(body);
+    }
+
+    internal static string ErrorToMessage(int statusCode, string body)
+    {
+        return TryReadStringShape(body) ?? JsonValues.ExtractErrorMessage(body, statusCode);
+    }
+
+    private static string? TryReadStringShape(string body)
     {
         try
         {
@@ -42,6 +54,6 @@ internal static class XaiError
             // Falls through to the shared extraction.
         }
 
-        return JsonValues.ExtractErrorMessage(body, statusCode);
+        return null;
     }
 }
