@@ -354,6 +354,40 @@ public sealed class ZaiUpstreamTests
         Assert.Equal("Provider 'zai' does not support image model 'model'.", image.Message);
     }
 
+    [Fact]
+    [UpstreamTest(
+        "packages/zai/src/zai-chat-language-model.test.ts::ZaiChatLanguageModel::exports constrained provider option types",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Exports_constrained_provider_option_types()
+    {
+        static string[] Wire<T>(Func<T, ZaiLanguageModelChatOptions> make)
+            where T : struct, Enum =>
+            [
+                .. Enum.GetValues<T>()
+                    .Select(value =>
+                    {
+                        var options = make(value).ToProviderOptions()["zai"];
+                        var property = options.EnumerateObject().Single();
+                        return property.Value.ValueKind == System.Text.Json.JsonValueKind.Object
+                            ? property.Value.EnumerateObject().Single().Value.GetString()!
+                            : property.Value.GetString()!;
+                    }),
+            ];
+
+        Assert.Equal(
+            ["none", "minimal", "low", "medium", "high", "xhigh", "max"],
+            Wire<ZaiReasoningEffort>(v => new ZaiLanguageModelChatOptions { ReasoningEffort = v })
+        );
+        Assert.Equal(
+            ["enabled", "disabled"],
+            Wire<ZaiThinkingType>(v => new ZaiLanguageModelChatOptions
+            {
+                Thinking = new ZaiThinking { Type = v },
+            })
+        );
+    }
+
     private static async Task AssertFinish(string raw, FinishReason unified)
     {
         var capture = new UpstreamCapture
