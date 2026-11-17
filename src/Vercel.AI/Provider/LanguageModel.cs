@@ -963,6 +963,160 @@ public sealed class ImageUrlContentPart : UserContentPart
 }
 
 /// <summary>
+/// A deprecated <c>file-data</c> part inside a tool result. Use <see cref="FileContentPart"/> with inline data instead.
+/// Maps to <c>{ type: 'file-data', data, mediaType, filename?, providerOptions }</c> in the tool result content.
+/// </summary>
+public sealed class FileDataContentPart : UserContentPart
+{
+    /// <summary>Creates a file-data part.</summary>
+    public FileDataContentPart(string data, string mediaType, string? fileName = null)
+        : base("file-data")
+    {
+        Data = data ?? throw new ArgumentNullException(nameof(data));
+        MediaType = mediaType ?? throw new ArgumentNullException(nameof(mediaType));
+        FileName = fileName;
+    }
+
+    /// <summary>Base64-encoded file data.</summary>
+    public string Data { get; }
+
+    /// <summary>IANA media type.</summary>
+    public string MediaType { get; }
+
+    /// <summary>Optional file name.</summary>
+    public string? FileName { get; }
+
+    /// <summary>Provider-specific options for this part.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
+}
+
+/// <summary>
+/// A deprecated <c>file-id</c> part inside a tool result. Use <see cref="FileContentPart.FromProviderReference"/> instead.
+/// Maps to <c>{ type: 'file-id', fileId, providerOptions }</c> in the tool result content, where <c>fileId</c> is a string or a map from provider name to file id.
+/// </summary>
+public sealed class FileIdContentPart : UserContentPart
+{
+    /// <summary>Creates a file-id part from a single file id. The provider of the model is used as the reference key.</summary>
+    public FileIdContentPart(string fileId)
+        : base("file-id")
+    {
+        FileId = fileId ?? throw new ArgumentNullException(nameof(fileId));
+    }
+
+    /// <summary>Creates a file-id part from a map from provider name to file id.</summary>
+    public FileIdContentPart(IReadOnlyDictionary<string, string> fileIds)
+        : base("file-id")
+    {
+        FileIds = fileIds ?? throw new ArgumentNullException(nameof(fileIds));
+    }
+
+    /// <summary>The file id, when it is a string. Exactly one of <see cref="FileId"/> and <see cref="FileIds"/> is set.</summary>
+    public string? FileId { get; }
+
+    /// <summary>The map from provider name to file id, when the file id is a record.</summary>
+    public IReadOnlyDictionary<string, string>? FileIds { get; }
+
+    /// <summary>Provider-specific options for this part.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
+}
+
+/// <summary>
+/// A deprecated <c>file-reference</c> part inside a tool result. Use <see cref="FileContentPart.FromProviderReference"/> instead.
+/// Maps to <c>{ type: 'file-reference', providerReference, providerOptions }</c> in the tool result content.
+/// </summary>
+public sealed class FileReferenceContentPart : UserContentPart
+{
+    /// <summary>Creates a file-reference part.</summary>
+    public FileReferenceContentPart(IReadOnlyDictionary<string, string> providerReference)
+        : base("file-reference")
+    {
+        ProviderReference = providerReference
+            ?? throw new ArgumentNullException(nameof(providerReference));
+    }
+
+    /// <summary>Map from provider name to the provider's file id.</summary>
+    public IReadOnlyDictionary<string, string> ProviderReference { get; }
+
+    /// <summary>Provider-specific options for this part.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
+}
+
+/// <summary>
+/// A deprecated <c>image-data</c> part inside a tool result. Use <see cref="FileContentPart"/> with inline data instead.
+/// Maps to <c>{ type: 'image-data', data, mediaType, providerOptions }</c> in the tool result content.
+/// </summary>
+public sealed class ImageDataContentPart : UserContentPart
+{
+    /// <summary>Creates an image-data part.</summary>
+    public ImageDataContentPart(string data, string mediaType)
+        : base("image-data")
+    {
+        Data = data ?? throw new ArgumentNullException(nameof(data));
+        MediaType = mediaType ?? throw new ArgumentNullException(nameof(mediaType));
+    }
+
+    /// <summary>Base64-encoded image data.</summary>
+    public string Data { get; }
+
+    /// <summary>IANA media type.</summary>
+    public string MediaType { get; }
+
+    /// <summary>Provider-specific options for this part.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
+}
+
+/// <summary>
+/// A deprecated <c>image-file-id</c> part inside a tool result. Use <see cref="FileContentPart.FromProviderReference"/> with the <c>image</c> media type instead.
+/// Maps to <c>{ type: 'image-file-id', fileId, providerOptions }</c> in the tool result content, where <c>fileId</c> is a string or a map from provider name to file id.
+/// </summary>
+public sealed class ImageFileIdContentPart : UserContentPart
+{
+    /// <summary>Creates an image-file-id part from a single file id. The provider of the model is used as the reference key.</summary>
+    public ImageFileIdContentPart(string fileId)
+        : base("image-file-id")
+    {
+        FileId = fileId ?? throw new ArgumentNullException(nameof(fileId));
+    }
+
+    /// <summary>Creates an image-file-id part from a map from provider name to file id.</summary>
+    public ImageFileIdContentPart(IReadOnlyDictionary<string, string> fileIds)
+        : base("image-file-id")
+    {
+        FileIds = fileIds ?? throw new ArgumentNullException(nameof(fileIds));
+    }
+
+    /// <summary>The file id, when it is a string. Exactly one of <see cref="FileId"/> and <see cref="FileIds"/> is set.</summary>
+    public string? FileId { get; }
+
+    /// <summary>The map from provider name to file id, when the file id is a record.</summary>
+    public IReadOnlyDictionary<string, string>? FileIds { get; }
+
+    /// <summary>Provider-specific options for this part.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
+}
+
+/// <summary>
+/// A deprecated <c>image-file-reference</c> part inside a tool result. Use <see cref="FileContentPart.FromProviderReference"/> with the <c>image</c> media type instead.
+/// Maps to <c>{ type: 'image-file-reference', providerReference, providerOptions }</c> in the tool result content.
+/// </summary>
+public sealed class ImageFileReferenceContentPart : UserContentPart
+{
+    /// <summary>Creates an image-file-reference part.</summary>
+    public ImageFileReferenceContentPart(IReadOnlyDictionary<string, string> providerReference)
+        : base("image-file-reference")
+    {
+        ProviderReference = providerReference
+            ?? throw new ArgumentNullException(nameof(providerReference));
+    }
+
+    /// <summary>Map from provider name to the provider's file id.</summary>
+    public IReadOnlyDictionary<string, string> ProviderReference { get; }
+
+    /// <summary>Provider-specific options for this part.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
+}
+
+/// <summary>
 /// A custom content part inside a tool result, used to carry provider-specific content.
 /// Maps to <c>{ type: 'custom', providerOptions }</c> in the tool result content of <c>LanguageModelV4Prompt</c>.
 /// </summary>
@@ -1747,6 +1901,50 @@ public sealed class ToolModelMessage : ModelMessage
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
+    private static Dictionary<string, string> CloneReference(
+        IReadOnlyDictionary<string, string> reference
+    )
+    {
+        return reference.ToDictionary(pair => pair.Key, pair => pair.Value);
+    }
+
+    private static IReadOnlyDictionary<string, JsonElement>? GetDeprecatedProviderOptions(
+        UserContentPart part
+    )
+    {
+        return part switch
+        {
+            FileUrlContentPart p => p.ProviderOptions,
+            ImageUrlContentPart p => p.ProviderOptions,
+            FileDataContentPart p => p.ProviderOptions,
+            FileIdContentPart p => p.ProviderOptions,
+            FileReferenceContentPart p => p.ProviderOptions,
+            ImageDataContentPart p => p.ProviderOptions,
+            ImageFileIdContentPart p => p.ProviderOptions,
+            ImageFileReferenceContentPart p => p.ProviderOptions,
+            _ => null,
+        };
+    }
+
+    private static JsonNode FileIdToJson(
+        string? fileId,
+        IReadOnlyDictionary<string, string>? fileIds
+    )
+    {
+        return fileIds is null ? JsonValue.Create(fileId)! : ReferenceToJson(fileIds);
+    }
+
+    private static JsonObject ReferenceToJson(IReadOnlyDictionary<string, string> reference)
+    {
+        var json = new JsonObject();
+        foreach (var pair in reference)
+        {
+            json[pair.Key] = pair.Value;
+        }
+
+        return json;
+    }
+
     private static Dictionary<string, JsonElement>? CloneProviderOptions(
         IReadOnlyDictionary<string, JsonElement>? options
     )
@@ -1822,6 +2020,68 @@ public sealed class ToolModelMessage : ModelMessage
                 copy[i] = new ImageUrlContentPart(imageUrl.Url)
                 {
                     ProviderOptions = CloneProviderOptions(imageUrl.ProviderOptions),
+                };
+            }
+            else if (part is FileDataContentPart fileData)
+            {
+                copy[i] = new FileDataContentPart(
+                    fileData.Data,
+                    fileData.MediaType,
+                    fileData.FileName
+                )
+                {
+                    ProviderOptions = CloneProviderOptions(fileData.ProviderOptions),
+                };
+            }
+            else if (part is FileIdContentPart fileId)
+            {
+                var clonedProviderOptions = CloneProviderOptions(fileId.ProviderOptions);
+                copy[i] = fileId.FileIds is { } fileIds
+                    ? new FileIdContentPart(CloneReference(fileIds))
+                    {
+                        ProviderOptions = clonedProviderOptions,
+                    }
+                    : new FileIdContentPart(fileId.FileId!)
+                    {
+                        ProviderOptions = clonedProviderOptions,
+                    };
+            }
+            else if (part is FileReferenceContentPart fileReference)
+            {
+                copy[i] = new FileReferenceContentPart(
+                    CloneReference(fileReference.ProviderReference)
+                )
+                {
+                    ProviderOptions = CloneProviderOptions(fileReference.ProviderOptions),
+                };
+            }
+            else if (part is ImageDataContentPart imageData)
+            {
+                copy[i] = new ImageDataContentPart(imageData.Data, imageData.MediaType)
+                {
+                    ProviderOptions = CloneProviderOptions(imageData.ProviderOptions),
+                };
+            }
+            else if (part is ImageFileIdContentPart imageFileId)
+            {
+                var clonedProviderOptions = CloneProviderOptions(imageFileId.ProviderOptions);
+                copy[i] = imageFileId.FileIds is { } imageFileIds
+                    ? new ImageFileIdContentPart(CloneReference(imageFileIds))
+                    {
+                        ProviderOptions = clonedProviderOptions,
+                    }
+                    : new ImageFileIdContentPart(imageFileId.FileId!)
+                    {
+                        ProviderOptions = clonedProviderOptions,
+                    };
+            }
+            else if (part is ImageFileReferenceContentPart imageFileReference)
+            {
+                copy[i] = new ImageFileReferenceContentPart(
+                    CloneReference(imageFileReference.ProviderReference)
+                )
+                {
+                    ProviderOptions = CloneProviderOptions(imageFileReference.ProviderOptions),
                 };
             }
             else if (part is CustomContentPart custom)
@@ -1924,6 +2184,74 @@ public sealed class ToolModelMessage : ModelMessage
             {
                 array.Add(new JsonObject { ["type"] = "image-url", ["url"] = imageUrl.Url });
             }
+            else if (part is FileDataContentPart fileData)
+            {
+                var json = new JsonObject
+                {
+                    ["type"] = "file-data",
+                    ["data"] = fileData.Data,
+                    ["mediaType"] = fileData.MediaType,
+                };
+                if (fileData.FileName != null)
+                {
+                    json["filename"] = fileData.FileName;
+                }
+
+                array.Add(json);
+            }
+            else if (part is FileIdContentPart fileId)
+            {
+                array.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "file-id",
+                        ["fileId"] = FileIdToJson(fileId.FileId, fileId.FileIds),
+                    }
+                );
+            }
+            else if (part is FileReferenceContentPart fileReference)
+            {
+                array.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "file-reference",
+                        ["providerReference"] = ReferenceToJson(fileReference.ProviderReference),
+                    }
+                );
+            }
+            else if (part is ImageDataContentPart imageData)
+            {
+                array.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "image-data",
+                        ["data"] = imageData.Data,
+                        ["mediaType"] = imageData.MediaType,
+                    }
+                );
+            }
+            else if (part is ImageFileIdContentPart imageFileId)
+            {
+                array.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "image-file-id",
+                        ["fileId"] = FileIdToJson(imageFileId.FileId, imageFileId.FileIds),
+                    }
+                );
+            }
+            else if (part is ImageFileReferenceContentPart imageFileReference)
+            {
+                array.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "image-file-reference",
+                        ["providerReference"] = ReferenceToJson(
+                            imageFileReference.ProviderReference
+                        ),
+                    }
+                );
+            }
             else if (part is CustomContentPart custom)
             {
                 var json = new JsonObject { ["type"] = "custom" };
@@ -1946,6 +2274,17 @@ public sealed class ToolModelMessage : ModelMessage
                     "Tool content parts must be text, file, or custom parts.",
                     nameof(content)
                 );
+            }
+
+            if (GetDeprecatedProviderOptions(part) is { } deprecatedOptions)
+            {
+                var options = new JsonObject();
+                foreach (var pair in deprecatedOptions)
+                {
+                    options[pair.Key] = JsonNode.Parse(pair.Value.GetRawText());
+                }
+
+                array[array.Count - 1]!["providerOptions"] = options;
             }
         }
 

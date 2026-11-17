@@ -332,7 +332,8 @@ internal static class Generation
                         callOptions.Prompt,
                         current.SupportedUrls,
                         options.ExperimentalDownload,
-                        cancellationToken
+                        cancellationToken,
+                        current.Provider.Split('.')[0]
                     )
                     .ConfigureAwait(false);
 
@@ -732,7 +733,8 @@ internal static class Generation
                         callOptions.Prompt,
                         current.SupportedUrls,
                         options.ExperimentalDownload,
-                        cancellationToken
+                        cancellationToken,
+                        current.Provider.Split('.')[0]
                     )
                     .ConfigureAwait(false);
                 LanguageModelStreamResult streamResult;
