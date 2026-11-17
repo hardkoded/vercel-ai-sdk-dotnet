@@ -222,6 +222,7 @@ internal static class Generation
         var steeringRun = Steering.StartSteeringRun(options.ExperimentalSteering);
         try
         {
+            Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(options.MaxRetries);
             ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency);
             WarnUnsupportedTimeouts(options, model);
             using var scope = telemetry?.Begin("generateText", model.ModelId);
@@ -474,6 +475,7 @@ internal static class Generation
         CancellationToken cancellationToken
     )
     {
+        Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(options.MaxRetries);
         ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency);
         var buffer = new PartBuffer();
         var textSource = new TaskCompletionSource<string>(
