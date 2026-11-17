@@ -22,8 +22,8 @@ public sealed class GatewayProviderGetSpendReportMethodTests
     [Fact]
     [UpstreamTest(
         Prefix + "should fetch spend report successfully",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Checks the parsed result, the default base URL and the call through the HTTP handler. The upstream test mocks the GatewaySpendReport constructor and checks fetch: undefined."
+        Coverage = UpstreamCoverage.Covered,
+        Note = "The upstream fetch: undefined is the provider's own Http, which the port always sets."
     )]
     public async Task Should_fetch_spend_report_successfully()
     {
@@ -38,6 +38,10 @@ public sealed class GatewayProviderGetSpendReportMethodTests
             "https://ai-gateway.vercel.sh/v1/report",
             server.Calls[0].RequestUri!.GetLeftPart(UriPartial.Path)
         );
+        var config = provider.CreateConfig();
+        Assert.Equal("https://ai-gateway.vercel.sh/v4/ai", config.BaseUrl);
+        Assert.NotNull(config.HeadersAsync);
+        Assert.Same(provider.Http, config.Http);
     }
 
     [Fact]
