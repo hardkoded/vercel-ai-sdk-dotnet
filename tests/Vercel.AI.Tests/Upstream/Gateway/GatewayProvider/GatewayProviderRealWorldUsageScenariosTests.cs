@@ -7,6 +7,7 @@ using Vercel.AI.Gateway;
 namespace Vercel.AI.Tests.Upstream.Gateway.GatewayProviderTests;
 
 /// <summary>Port of the <c>getAvailableModels</c> tests of <c>gateway-provider.test.ts</c> &gt; <c>Authentication Comprehensive Tests &gt; Real-world usage scenarios</c>.</summary>
+[Collection("GatewayAuthEnvironment")]
 public sealed class GatewayProviderRealWorldUsageScenariosTests
 {
     private const string Prefix =
@@ -15,11 +16,17 @@ public sealed class GatewayProviderRealWorldUsageScenariosTests
     [Fact]
     [UpstreamTest(
         Prefix + "should work in local development with API key",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Passes the key through GatewayOptions.ApiKey. The upstream test sets the AI_GATEWAY_API_KEY environment variable, which the port does not mutate because tests run in parallel."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_work_in_local_development_with_API_key()
     {
+        var previous = Environment.GetEnvironmentVariable(
+            GatewayProvider.ApiKeyEnvironmentVariable
+        );
+        Environment.SetEnvironmentVariable(
+            GatewayProvider.ApiKeyEnvironmentVariable,
+            "local-dev-api-key"
+        );
         var oidcCalls = 0;
         VercelEnvironment.OidcTokenOverride = _ =>
         {
@@ -29,7 +36,7 @@ public sealed class GatewayProviderRealWorldUsageScenariosTests
         try
         {
             var provider = GatewayProvider.Create(
-                new GatewayOptions { ApiKey = "local-dev-api-key" },
+                new GatewayOptions(),
                 new GatewayTestServer("{\"models\":[]}")
             );
 
@@ -40,6 +47,7 @@ public sealed class GatewayProviderRealWorldUsageScenariosTests
         }
         finally
         {
+            Environment.SetEnvironmentVariable(GatewayProvider.ApiKeyEnvironmentVariable, previous);
             VercelEnvironment.OidcTokenOverride = null;
         }
     }

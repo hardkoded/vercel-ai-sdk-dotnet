@@ -650,7 +650,7 @@ public sealed class GatewayProvider
         }
     }
 
-    private GatewayConfig CreateConfig(
+    internal GatewayConfig CreateConfig(
         Action<IReadOnlyDictionary<string, string?>>? onResolved = null
     )
     {
