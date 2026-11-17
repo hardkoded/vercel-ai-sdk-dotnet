@@ -73,7 +73,7 @@ internal static class AuthConfigStore
         if (!Directory.Exists(authDir))
         {
             Directory.CreateDirectory(authDir);
-            FileModes.TryRestrictDirectory(authDir);
+            FileModes.RestrictDirectory(authDir);
         }
 
         var json = new JsonObject();

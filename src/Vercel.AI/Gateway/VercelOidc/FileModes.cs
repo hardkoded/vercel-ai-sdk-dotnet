@@ -26,9 +26,30 @@ internal static class FileModes
         var temp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
+            var mode = UserRead | UserWrite | (groupAccess ? GroupRead | GroupWrite : 0);
+#if NET
+            // The file is created with its mode, so no other user can open it first.
+            var options = new FileStreamOptions
+            {
+                Mode = FileMode.CreateNew,
+                Access = FileAccess.Write,
+            };
+            if (!OperatingSystem.IsWindows())
+            {
+                options.UnixCreateMode = (UnixFileMode)mode;
+            }
+
+            using (var stream = new FileStream(temp, options))
+            using (var writer = new StreamWriter(stream))
+            {
+                writer.Write(content);
+            }
+#else
+            // netstandard2.0 has no create-with-mode API: the file is empty until its mode is set, and it is never written without one.
             File.WriteAllText(temp, "");
-            TrySetMode(temp, UserRead | UserWrite | (groupAccess ? GroupRead | GroupWrite : 0));
+            SetMode(temp, mode);
             File.WriteAllText(temp, content);
+#endif
 #if NET
             File.Move(temp, path, overwrite: true);
 #else
@@ -58,17 +79,15 @@ internal static class FileModes
         }
     }
 
-    /// <summary>Sets mode 0770 on a directory this code created, on platforms that have file modes.</summary>
-    public static void TryRestrictDirectory(string path) =>
-        TrySetMode(
-            path,
-            UserRead | UserWrite | UserExecute | GroupRead | GroupWrite | GroupExecute
-        );
+    /// <summary>Sets mode 0770 on a directory this code created.</summary>
+    public static void RestrictDirectory(string path) =>
+        SetMode(path, UserRead | UserWrite | UserExecute | GroupRead | GroupWrite | GroupExecute);
 
     /// <summary>
-    /// Sets a Unix mode. Does nothing on Windows, and on runtimes older than .NET 7 that have no <c>File.SetUnixFileMode</c>.
+    /// Sets a Unix mode. Does nothing on Windows. Throws on a Unix runtime older than .NET 7, which has no <c>File.SetUnixFileMode</c>,
+    /// so a secret is never written with the default mode.
     /// </summary>
-    private static void TrySetMode(string path, int mode)
+    private static void SetMode(string path, int mode)
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
@@ -82,7 +101,14 @@ internal static class FileModes
         var method = modeType is null
             ? null
             : typeof(File).GetMethod("SetUnixFileMode", [typeof(string), modeType]);
-        method?.Invoke(null, [path, Enum.ToObject(modeType!, mode)]);
+        if (method is null)
+        {
+            throw new PlatformNotSupportedException(
+                "Cannot restrict file permissions on this runtime. Use .NET 7 or later."
+            );
+        }
+
+        method.Invoke(null, [path, Enum.ToObject(modeType!, mode)]);
 #endif
     }
 }

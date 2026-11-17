@@ -198,7 +198,7 @@ internal static class TokenUtil
         if (!Directory.Exists(tokenDir))
         {
             Directory.CreateDirectory(tokenDir);
-            FileModes.TryRestrictDirectory(tokenDir);
+            FileModes.RestrictDirectory(tokenDir);
         }
 
         FileModes.WriteRestricted(tokenPath, token.Raw.ToJsonString(), groupAccess: true);
