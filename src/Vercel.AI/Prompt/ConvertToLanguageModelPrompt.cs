@@ -17,14 +17,14 @@ public static class LanguageModelPrompts
     /// <param name="messages">The prompt messages.</param>
     /// <param name="supportedUrls">The model's <see cref="ILanguageModel.SupportedUrls"/>.</param>
     /// <param name="download">Custom download function. When it is null, URLs are downloaded with <see cref="DefaultDownloadFunction"/>.</param>
-    /// <param name="provider">Provider of the model. It is only used to convert the deprecated <c>file-id</c> and <c>image-file-id</c> tool result parts with a string file id.</param>
     /// <param name="abortSignal">Cancellation for the downloads.</param>
+    /// <param name="provider">Provider of the model. It is only used to convert the deprecated <c>file-id</c> and <c>image-file-id</c> tool result parts with a string file id.</param>
     public static async Task<IReadOnlyList<ModelMessage>> ConvertToLanguageModelPromptAsync(
         IReadOnlyList<ModelMessage> messages,
         IReadOnlyDictionary<string, string> supportedUrls,
         Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>? download,
-        string? provider = null,
-        CancellationToken abortSignal = default
+        CancellationToken abortSignal = default,
+        string? provider = null
     )
     {
         if (messages is null)
