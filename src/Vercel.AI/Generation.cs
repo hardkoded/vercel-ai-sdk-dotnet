@@ -1041,6 +1041,7 @@ internal static class Generation
                                             cancellationToken
                                         )
                                         .ConfigureAwait(false);
+                                outputChunkTimes.Add(ElapsedMs());
                                 toolContent.Add(generatedFile);
                                 buffer.Add(new FilePart(generatedFile, filePart.ProviderMetadata));
                                 break;
@@ -1064,6 +1065,7 @@ internal static class Generation
                                     generatedReasoningFile.MediaType,
                                     reasoningFilePart.ProviderMetadata
                                 );
+                                outputChunkTimes.Add(ElapsedMs());
                                 contentOrder.Add(recordedReasoningFile);
                                 buffer.Add(
                                     new ReasoningFilePart(
@@ -1358,6 +1360,8 @@ internal static class Generation
             ReasoningDeltaStreamPart { Delta.Length: > 0 } => true,
             ToolInputDeltaStreamPart { Delta.Length: > 0 } => true,
             ToolCallStreamPart => true,
+            FileStreamPart => true,
+            ReasoningFileStreamPart => true,
             _ => false,
         };
     }
@@ -1719,7 +1723,7 @@ internal static class Generation
         };
     }
 
-    private static IReadOnlyDictionary<string, JsonElement>? ToProviderOptions(
+    internal static IReadOnlyDictionary<string, JsonElement>? ToProviderOptions(
         JsonElement? metadata
     )
     {
@@ -1799,7 +1803,6 @@ internal static class Generation
         var files = new List<GeneratedFile>();
         var reasoningParts = new List<string>();
         var reasoningMetadata = new List<JsonElement?>();
-        var assistantParts = new List<AssistantContentPart>();
         foreach (var part in generated.Content)
         {
             var resolved = part switch
@@ -1820,42 +1823,10 @@ internal static class Generation
             content.Add(resolved);
             switch (resolved)
             {
-                case GeneratedToolApprovalRequest approvalRequest:
-                    assistantParts.Add(
-                        new AssistantToolApprovalRequestPart(
-                            approvalRequest.ApprovalId,
-                            approvalRequest.ToolCallId
-                        )
-                    );
-                    break;
                 case GeneratedToolCall call:
                     toolCalls.Add(call);
-                    assistantParts.Add(new AssistantToolCallPart(call));
                     break;
-                case GeneratedText generatedText:
-                    assistantParts.Add(
-                        new AssistantTextPart(
-                            generatedText.Text,
-                            ToProviderOptions(generatedText.ProviderMetadata)
-                        )
-                    );
-                    break;
-                case GeneratedToolResult providerResult:
-                    // The provider ran the tool, so the next step replays the result in the same assistant message.
-                    var output = new ToolModelMessage(
-                        providerResult.ToolCallId,
-                        providerResult.ToolName,
-                        providerResult.ResultJson,
-                        providerResult.IsError
-                    );
-                    assistantParts.Add(
-                        new AssistantToolResultPart(
-                            providerResult.ToolCallId,
-                            providerResult.ToolName,
-                            output,
-                            ToProviderOptions(providerResult.ProviderMetadata)
-                        )
-                    );
+                case GeneratedToolResult:
                     break;
                 case GeneratedSource source:
                     sources.Add(source);
@@ -1863,25 +1834,9 @@ internal static class Generation
                 case GeneratedReasoning generatedReasoning:
                     reasoningParts.Add(generatedReasoning.Text);
                     reasoningMetadata.Add(generatedReasoning.ProviderMetadata);
-                    assistantParts.Add(
-                        new AssistantReasoningPart(
-                            generatedReasoning.Text,
-                            ToProviderOptions(generatedReasoning.ProviderMetadata)
-                        )
-                    );
                     break;
                 case GeneratedFile file:
                     files.Add(file);
-                    break;
-                case GeneratedReasoningFile reasoningFile:
-                    assistantParts.Add(
-                        new AssistantReasoningFilePart(
-                            reasoningFile.MediaType,
-                            null,
-                            reasoningFile.Data,
-                            ToProviderOptions(reasoningFile.ProviderMetadata)
-                        )
-                    );
                     break;
             }
         }
@@ -1935,18 +1890,6 @@ internal static class Generation
                     }
                 }
             }
-
-            assistantParts.Add(
-                new AssistantToolApprovalRequestPart(
-                    request.ApprovalId,
-                    request.ToolCallId,
-                    request.IsAutomatic ? true : null
-                )
-                {
-                    Reason = request.Reason,
-                    Signature = request.Signature,
-                }
-            );
         }
 
         var stepResponseStart = responseMessages.Count;
@@ -1955,7 +1898,7 @@ internal static class Generation
             toolCalls,
             reasoning,
             ToProviderOptions(MergeProviderMetadata(reasoningMetadata)),
-            assistantParts
+            ToResponseMessages.ToAssistantContent(content.Concat(approvalRequests).ToArray())
         );
         messages.Add(assistantMessage);
         responseMessages.Add(assistantMessage);
