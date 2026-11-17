@@ -351,7 +351,7 @@ The `redirect` option and OAuth (`authProvider`) are not ported ([#585](https://
 
 ## Tool result title, metadata and dynamic flag
 
-`ExecutedTool` carries `Title`, `ToolMetadata` and `Dynamic` from the tool call it answers, and `ToolInputStartPart` carries the tool's `Title`. `Dynamic` is true for a dynamic tool and for an invalid call. The `GeneratedToolResult` of a client tool in `Content` carries `Dynamic` and `ToolMetadata` too, and `ToolInputStartPart` also carries the tool's `ToolMetadata`.
+`ExecutedTool` carries `Title`, `ToolMetadata` and `Dynamic` from the tool call it answers, and `ToolInputStartPart` carries the tool's `Title`. `Dynamic` is true for a dynamic tool and for an invalid call. The `GeneratedToolResult` of a client tool in `Content` carries `Dynamic` and `ToolMetadata` too, and `ToolInputStartPart` also carries the tool's `ToolMetadata`. That result also sets `ProviderExecuted` to false (a provider's own result keeps it true) and carries the `InputJson` of the call it answers. The response messages of a step (the assistant message, the approval responses, and one tool message with the results in tool call order) are built from `Content` in one place, as upstream's `toResponseMessages` does. The assistant message now includes the step's files and skips empty text that has no provider metadata.
 
 ## MCP tool output
 

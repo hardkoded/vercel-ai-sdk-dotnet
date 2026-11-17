@@ -1988,31 +1988,8 @@ internal static class Generation
             }
         }
 
-        var stepResponseStart = responseMessages.Count;
-        var assistantMessage = new AssistantModelMessage(
-            generated.Text,
-            toolCalls,
-            reasoning,
-            ToProviderOptions(MergeProviderMetadata(reasoningMetadata)),
-            ToResponseMessages.ToAssistantContent(content.Concat(approvalRequests).ToArray())
-        );
-        messages.Add(assistantMessage);
-        responseMessages.Add(assistantMessage);
-        foreach (var approvalResponse in approvalResponses)
-        {
-            var responseMessage = new ToolApprovalResponseModelMessage(
-                approvalResponse.ApprovalId,
-                approvalResponse.Approved,
-                approvalResponse.Reason,
-                approvalResponse.ProviderExecuted
-            );
-            messages.Add(responseMessage);
-            responseMessages.Add(responseMessage);
-        }
-
         if (ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason))
         {
-            var toolMessages = new List<ToolModelMessage>();
             var callsToExecute = new List<GeneratedToolCall>();
             foreach (var call in toolCalls)
             {
@@ -2023,15 +2000,6 @@ internal static class Generation
                     {
                         var invalidResult = InvalidToolResult(call);
                         toolResults.Add(invalidResult);
-                        toolMessages.Add(
-                            new ToolModelMessage(
-                                invalidResult.ToolCallId,
-                                invalidResult.ToolName,
-                                invalidResult.ModelOutput ?? invalidResult.OutputJson,
-                                invalidResult.IsError,
-                                invalidResult.ModelOutputType
-                            )
-                        );
                     }
 
                     continue;
@@ -2080,63 +2048,6 @@ internal static class Generation
                 toolExecutionMs[executed.ToolCallId] = elapsedMs;
 
                 toolResults.Add(executed);
-                toolMessages.Add(
-                    executed.ModelOutputContent != null
-                        ? new ToolModelMessage(
-                            executed.ToolCallId,
-                            executed.ToolName,
-                            executed.ModelOutputContent
-                        )
-                        : new ToolModelMessage(
-                            executed.ToolCallId,
-                            executed.ToolName,
-                            executed.ModelOutput ?? executed.OutputJson,
-                            executed.IsError,
-                            executed.ModelOutputType
-                        )
-                );
-            }
-
-            // A denied call has no result to wait for, so it is answered with an execution-denied result. A provider-executed
-            // call gets it from the prompt preparation, which names the approval for the provider.
-            foreach (var approvalResponse in approvalResponses)
-            {
-                if (!approvalResponse.Approved && !approvalResponse.ProviderExecuted)
-                {
-                    toolMessages.Add(
-                        new ToolModelMessage(
-                            approvalResponse.ToolCall.ToolCallId,
-                            approvalResponse.ToolCall.ToolName,
-                            approvalResponse.Reason,
-                            false,
-                            "execution-denied"
-                        )
-                    );
-                }
-            }
-
-            // Upstream sends the results of one step as a single tool message, in the order of the calls.
-            if (toolMessages.Count > 0)
-            {
-                var order = new Dictionary<string, int>(StringComparer.Ordinal);
-                for (var index = 0; index < toolCalls.Count; index++)
-                {
-                    order[toolCalls[index].ToolCallId] = index;
-                }
-
-                var sorted = toolMessages
-                    .Select((message, index) => (Message: message, Index: index))
-                    .OrderBy(entry =>
-                        order.TryGetValue(entry.Message.ToolCallId, out var position)
-                            ? position
-                            : int.MaxValue
-                    )
-                    .ThenBy(entry => entry.Index)
-                    .Select(entry => entry.Message)
-                    .ToList();
-                var toolMessage = sorted.Count == 1 ? sorted[0] : new ToolModelMessage(sorted);
-                messages.Add(toolMessage);
-                responseMessages.Add(toolMessage);
             }
         }
 
@@ -2168,6 +2079,9 @@ internal static class Generation
                             Error = executed.Error,
                             Dynamic = executed.Dynamic,
                             ToolMetadata = executed.ToolMetadata,
+                            ProviderExecuted = false,
+                            InputJson = executed.InputJson,
+                            ModelMessage = ExecutedToolMessage(executed),
                         }
                     );
                 }
@@ -2178,6 +2092,25 @@ internal static class Generation
                 content.AddRange(approvalRequests);
                 content.AddRange(approvalResponses);
             }
+        }
+
+        // The assistant message and the tool message are built from the content, as upstream does.
+        var stepResponseStart = responseMessages.Count;
+        var stepMessages = ToResponseMessages.Convert(content, options.Tools);
+        if (!ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason))
+        {
+            stepMessages.RemoveAll(message => message is ToolModelMessage);
+        }
+
+        if (stepMessages.Count == 0 || stepMessages[0] is not AssistantModelMessage)
+        {
+            stepMessages.Insert(0, new AssistantModelMessage(Array.Empty<AssistantContentPart>()));
+        }
+
+        foreach (var stepMessage in stepMessages)
+        {
+            messages.Add(stepMessage);
+            responseMessages.Add(stepMessage);
         }
 
         var response = new StepResponse(
@@ -2356,6 +2289,24 @@ internal static class Generation
         }
 
         return tools;
+    }
+
+    // The tool message for a result the loop produced: its model output, built when the tool ran.
+    private static ToolModelMessage ExecutedToolMessage(ExecutedTool executed)
+    {
+        return executed.ModelOutputContent != null
+            ? new ToolModelMessage(
+                executed.ToolCallId,
+                executed.ToolName,
+                executed.ModelOutputContent
+            )
+            : new ToolModelMessage(
+                executed.ToolCallId,
+                executed.ToolName,
+                executed.ModelOutput ?? executed.OutputJson,
+                executed.IsError,
+                executed.ModelOutputType
+            );
     }
 
     // The tool result of a call that failed to parse. The model reads the error the way upstream sends it: "Name: message".
