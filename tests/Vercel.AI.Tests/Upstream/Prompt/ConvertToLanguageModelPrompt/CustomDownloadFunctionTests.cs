@@ -53,7 +53,7 @@ public sealed class CustomDownloadFunctionTests
             },
             new Dictionary<string, string>(), // No URL support, so download should be triggered
             mockDownload,
-            abort.Token
+            abortSignal: abort.Token
         );
 
         var call = Assert.Single(calls);

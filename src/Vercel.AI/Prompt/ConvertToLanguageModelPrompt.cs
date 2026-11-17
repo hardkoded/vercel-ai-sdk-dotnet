@@ -17,11 +17,13 @@ public static class LanguageModelPrompts
     /// <param name="messages">The prompt messages.</param>
     /// <param name="supportedUrls">The model's <see cref="ILanguageModel.SupportedUrls"/>.</param>
     /// <param name="download">Custom download function. When it is null, URLs are downloaded with <see cref="DefaultDownloadFunction"/>.</param>
+    /// <param name="provider">Provider of the model. It is only used to convert the deprecated <c>file-id</c> and <c>image-file-id</c> tool result parts with a string file id.</param>
     /// <param name="abortSignal">Cancellation for the downloads.</param>
     public static async Task<IReadOnlyList<ModelMessage>> ConvertToLanguageModelPromptAsync(
         IReadOnlyList<ModelMessage> messages,
         IReadOnlyDictionary<string, string> supportedUrls,
         Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>? download,
+        string? provider = null,
         CancellationToken abortSignal = default
     )
     {
@@ -40,18 +42,40 @@ public static class LanguageModelPrompts
         var converted = new List<ModelMessage>(messages.Count);
         foreach (var message in messages)
         {
-            converted.Add(
-                message switch
-                {
-                    UserModelMessage user => ConvertUserMessage(user, downloaded),
-                    ToolModelMessage tool => ConvertToolMessage(tool, downloaded),
-                    AssistantModelMessage assistant => ConvertAssistantMessage(
-                        assistant,
-                        downloaded
-                    ),
-                    _ => message,
-                }
-            );
+            converted.Add(ConvertToLanguageModelMessage(message, downloaded, provider));
+        }
+
+        return converted;
+    }
+
+    /// <summary>
+    /// Converts a message to its language model form. Maps to <c>convertToLanguageModelMessage</c>.
+    /// </summary>
+    /// <param name="message">The message to convert.</param>
+    /// <param name="downloadedAssets">Downloaded data by URL. Only available if the model does not support URLs.</param>
+    /// <param name="provider">Provider of the model. It is only used to convert the deprecated <c>file-id</c> and <c>image-file-id</c> tool result parts with a string file id.</param>
+    public static ModelMessage ConvertToLanguageModelMessage(
+        ModelMessage message,
+        IReadOnlyDictionary<string, DownloadResult> downloadedAssets,
+        string? provider = null
+    )
+    {
+        var warnings = new List<ModelWarning>();
+        var converted = message switch
+        {
+            UserModelMessage user => ConvertUserMessage(user, downloadedAssets),
+            ToolModelMessage tool => ConvertToolMessage(tool, downloadedAssets, provider, warnings),
+            AssistantModelMessage assistant => ConvertAssistantMessage(
+                assistant,
+                downloadedAssets,
+                provider,
+                warnings
+            ),
+            _ => message,
+        };
+        if (warnings.Count > 0)
+        {
+            LogWarnings.Log(new LogWarningsOptions(warnings));
         }
 
         return converted;
@@ -199,7 +223,9 @@ public static class LanguageModelPrompts
 
     private static ToolModelMessage ConvertToolResult(
         ToolModelMessage result,
-        IReadOnlyDictionary<string, DownloadResult> downloaded
+        IReadOnlyDictionary<string, DownloadResult> downloaded,
+        string? provider,
+        List<ModelWarning> warnings
     )
     {
         if (result.OutputContent is null)
@@ -211,7 +237,7 @@ public static class LanguageModelPrompts
         var content = new List<UserContentPart>(result.OutputContent.Count);
         foreach (var part in result.OutputContent)
         {
-            var converted = ConvertToolResultPart(part, downloaded);
+            var converted = ConvertToolResultPart(part, downloaded, provider, warnings);
             changed |= !ReferenceEquals(converted, part);
             content.Add(converted);
         }
@@ -234,10 +260,12 @@ public static class LanguageModelPrompts
         };
     }
 
-    // Maps to mapToolResultOutput for the deprecated "file-url" and "image-url" parts.
+    // Maps to mapToolResultOutput for the deprecated tool result content parts.
     private static UserContentPart ConvertToolResultPart(
         UserContentPart part,
-        IReadOnlyDictionary<string, DownloadResult> downloaded
+        IReadOnlyDictionary<string, DownloadResult> downloaded,
+        string? provider,
+        List<ModelWarning> warnings
     )
     {
         switch (part)
@@ -259,30 +287,124 @@ public static class LanguageModelPrompts
                         $"The \"file-url\" tool result content part with URL \"{fileUrl.Url}\" is missing a \"mediaType\". {inferenceSuffix} {message}";
                 }
 
-                LogDeprecation("\"tool-result\" content of type \"file-url\"", message);
+                warnings.Add(
+                    new DeprecatedWarning("\"tool-result\" content of type \"file-url\"", message)
+                );
                 return GetDownloadableFilePart(fileUrl) is { } converted
                     ? ConvertFilePart(converted, downloaded)
                     : part;
             }
 
             case ImageUrlContentPart imageUrl:
-                LogDeprecation(
-                    "\"tool-result\" content of type \"image-url\"",
-                    "The \"image-url\" type for tool result content is deprecated. Use the \"file\" type with mediaType 'image' (or a specific image/* subtype) and { type: 'url', url } instead."
+                warnings.Add(
+                    new DeprecatedWarning(
+                        "\"tool-result\" content of type \"image-url\"",
+                        "The \"image-url\" type for tool result content is deprecated. Use the \"file\" type with mediaType 'image' (or a specific image/* subtype) and { type: 'url', url } instead."
+                    )
                 );
                 return GetDownloadableFilePart(imageUrl) is { } image
                     ? ConvertFilePart(image, downloaded)
                     : part;
+            case FileDataContentPart fileData:
+                warnings.Add(DeprecatedData("file-data"));
+                return new FileContentPart(
+                    fileData.MediaType,
+                    null,
+                    Convert.FromBase64String(fileData.Data),
+                    fileData.FileName
+                )
+                {
+                    ProviderOptions = fileData.ProviderOptions,
+                };
+            case FileIdContentPart fileId:
+                warnings.Add(DeprecatedReference("file-id"));
+                return FileContentPart.FromProviderReference(
+                    "application",
+                    ConvertFileIdToProviderReference(fileId.FileId, fileId.FileIds, provider),
+                    null,
+                    fileId.ProviderOptions
+                );
+            case FileReferenceContentPart fileReference:
+                warnings.Add(DeprecatedReference("file-reference"));
+                return FileContentPart.FromProviderReference(
+                    "application",
+                    fileReference.ProviderReference,
+                    null,
+                    fileReference.ProviderOptions
+                );
+            case ImageDataContentPart imageData:
+                warnings.Add(DeprecatedData("image-data"));
+                return new FileContentPart(
+                    imageData.MediaType,
+                    null,
+                    Convert.FromBase64String(imageData.Data),
+                    null
+                )
+                {
+                    ProviderOptions = imageData.ProviderOptions,
+                };
+            case ImageFileIdContentPart imageFileId:
+                warnings.Add(DeprecatedReference("image-file-id"));
+                return FileContentPart.FromProviderReference(
+                    "image",
+                    ConvertFileIdToProviderReference(
+                            imageFileId.FileId,
+                            imageFileId.FileIds,
+                            provider
+                        ),
+                    null,
+                    imageFileId.ProviderOptions
+                );
+            case ImageFileReferenceContentPart imageFileReference:
+                warnings.Add(DeprecatedReference("image-file-reference"));
+                return FileContentPart.FromProviderReference(
+                    "image",
+                    imageFileReference.ProviderReference,
+                    null,
+                    imageFileReference.ProviderOptions
+                );
             default:
                 return part;
         }
     }
 
-    private static void LogDeprecation(string setting, string message)
+    private static DeprecatedWarning DeprecatedData(string type)
     {
-        LogWarnings.Log(
-            new LogWarningsOptions(new ModelWarning[] { new DeprecatedWarning(setting, message) })
+        return new DeprecatedWarning(
+            "\"tool-result\" content of type \"" + type + "\"",
+            "The \"" + type + "\" type for tool result content is deprecated. Use the \"file\" type with mediaType and { type: 'data', data } instead."
         );
+    }
+
+    private static DeprecatedWarning DeprecatedReference(string type)
+    {
+        return new DeprecatedWarning(
+            "\"tool-result\" content of type \"" + type + "\"",
+            "The \"" + type + "\" type for tool result content is deprecated. Use the \"file\" type with mediaType and { type: 'reference', reference } instead."
+        );
+    }
+
+    // Maps to convertFileIdToProviderReference.
+    private static IReadOnlyDictionary<string, string> ConvertFileIdToProviderReference(
+        string? fileId,
+        IReadOnlyDictionary<string, string>? fileIds,
+        string? provider
+    )
+    {
+        if (fileIds is not null)
+        {
+            return fileIds;
+        }
+
+        if (provider is null)
+        {
+            throw new InvalidOperationException(
+                "Cannot convert string fileId to provider reference without a provider ID. "
+                    + "Use a Record<string, string> fileId or switch to the file-reference type."
+            );
+        }
+
+        return new Dictionary<string, string> { [provider] = fileId! };
     }
 
     private static readonly Dictionary<string, string> UrlExtensionToMediaType = new(
@@ -329,19 +451,21 @@ public static class LanguageModelPrompts
 
     private static ToolModelMessage ConvertToolMessage(
         ToolModelMessage tool,
-        IReadOnlyDictionary<string, DownloadResult> downloaded
+        IReadOnlyDictionary<string, DownloadResult> downloaded,
+        string? provider,
+        List<ModelWarning> warnings
     )
     {
         if (tool.Results.Count == 1 && ReferenceEquals(tool.Results[0], tool))
         {
-            return ConvertToolResult(tool, downloaded);
+            return ConvertToolResult(tool, downloaded, provider, warnings);
         }
 
         var results = new List<ToolModelMessage>(tool.Results.Count);
         var changed = false;
         foreach (var result in tool.Results)
         {
-            var converted = ConvertToolResult(result, downloaded);
+            var converted = ConvertToolResult(result, downloaded, provider, warnings);
             changed |= !ReferenceEquals(converted, result);
             results.Add(converted);
         }
@@ -353,7 +477,9 @@ public static class LanguageModelPrompts
 
     private static AssistantModelMessage ConvertAssistantMessage(
         AssistantModelMessage assistant,
-        IReadOnlyDictionary<string, DownloadResult> downloaded
+        IReadOnlyDictionary<string, DownloadResult> downloaded,
+        string? provider,
+        List<ModelWarning> warnings
     )
     {
         var changed = false;
@@ -362,7 +488,7 @@ public static class LanguageModelPrompts
         {
             if (part is AssistantToolResultPart toolResult)
             {
-                var output = ConvertToolResult(toolResult.Output, downloaded);
+                var output = ConvertToolResult(toolResult.Output, downloaded, provider, warnings);
                 if (!ReferenceEquals(output, toolResult.Output))
                 {
                     changed = true;

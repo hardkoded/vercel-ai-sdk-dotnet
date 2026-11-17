@@ -332,6 +332,7 @@ internal static class Generation
                         callOptions.Prompt,
                         current.SupportedUrls,
                         options.ExperimentalDownload,
+                        current.Provider.Split('.')[0],
                         cancellationToken
                     )
                     .ConfigureAwait(false);
@@ -732,6 +733,7 @@ internal static class Generation
                         callOptions.Prompt,
                         current.SupportedUrls,
                         options.ExperimentalDownload,
+                        current.Provider.Split('.')[0],
                         cancellationToken
                     )
                     .ConfigureAwait(false);
