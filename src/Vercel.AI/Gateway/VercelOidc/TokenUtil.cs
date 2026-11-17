@@ -12,9 +12,9 @@ namespace Vercel.AI.Gateway.VercelOidc;
 internal sealed record TokenPayload(string? Sub, string? Name, double Exp);
 
 /// <summary>The body the Vercel API returns for an OIDC token refresh. Keeps the whole object so it is cached as received.</summary>
-internal sealed class VercelOidcTokenResponse
+internal sealed class VercelTokenResponse
 {
-    public VercelOidcTokenResponse(string token, JsonObject raw)
+    public VercelTokenResponse(string token, JsonObject raw)
     {
         Token = token;
         Raw = raw;
@@ -90,7 +90,7 @@ internal static class TokenUtil
             AuthConfigStore.WriteAuthConfig(updatedConfig);
             return updatedConfig.Token;
         }
-        catch (Exception error) when (error is not OperationCanceledException)
+        catch (Exception error) when (!cancellationToken.IsCancellationRequested)
         {
             AuthConfigStore.WriteAuthConfig(new AuthConfig());
             if (error is AccessTokenMissingError or RefreshAccessTokenFailedError)
@@ -103,7 +103,7 @@ internal static class TokenUtil
     }
 
     /// <summary>Asks the Vercel API for a fresh OIDC token for the project.</summary>
-    public static async Task<VercelOidcTokenResponse> GetVercelOidcTokenAsync(
+    public static async Task<VercelTokenResponse> GetVercelOidcTokenAsync(
         string authToken,
         string projectId,
         string? teamId,
@@ -135,11 +135,11 @@ internal static class TokenUtil
 #else
         var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 #endif
-        return AssertVercelOidcTokenResponse(JsonNode.Parse(text));
+        return AssertVercelTokenResponse(JsonNode.Parse(text));
     }
 
     /// <summary>Checks the shape of an OIDC token response.</summary>
-    public static VercelOidcTokenResponse AssertVercelOidcTokenResponse(JsonNode? response)
+    public static VercelTokenResponse AssertVercelTokenResponse(JsonNode? response)
     {
         if (response is not JsonObject obj)
         {
@@ -155,7 +155,7 @@ internal static class TokenUtil
             );
         }
 
-        return new VercelOidcTokenResponse(token, obj);
+        return new VercelTokenResponse(token, obj);
     }
 
     /// <summary>Reads <c>.vercel/project.json</c> from the project root.</summary>
@@ -187,7 +187,7 @@ internal static class TokenUtil
     }
 
     /// <summary>Caches the OIDC token response for the project.</summary>
-    public static void SaveToken(VercelOidcTokenResponse token, string projectId)
+    public static void SaveToken(VercelTokenResponse token, string projectId)
     {
         var dir = TokenIo.GetUserDataDir()
             ?? throw new VercelOidcTokenError(
@@ -205,7 +205,7 @@ internal static class TokenUtil
     }
 
     /// <summary>Loads the cached OIDC token response for the project, or null when there is none.</summary>
-    public static VercelOidcTokenResponse? LoadToken(string projectId)
+    public static VercelTokenResponse? LoadToken(string projectId)
     {
         var dir = TokenIo.GetUserDataDir()
             ?? throw new VercelOidcTokenError(
@@ -217,7 +217,7 @@ internal static class TokenUtil
             return null;
         }
 
-        return AssertVercelOidcTokenResponse(JsonNode.Parse(File.ReadAllText(tokenPath)));
+        return AssertVercelTokenResponse(JsonNode.Parse(File.ReadAllText(tokenPath)));
     }
 
     /// <summary>Decodes the payload segment of a JWT.</summary>

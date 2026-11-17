@@ -5,8 +5,10 @@
 using System.Net;
 using System.Text.Json.Nodes;
 using Vercel.AI.Gateway.VercelOidc;
+using Vercel.AI.Tests.VercelOidc;
+using GatewayTokenUtil = Vercel.AI.Gateway.VercelOidc.TokenUtil;
 
-namespace Vercel.AI.Tests.VercelOidc;
+namespace Vercel.AI.Tests.VercelOidc.TokenUtil;
 
 /// <summary>Port of <c>token-util.test.ts</c> &gt; <c>getVercelToken</c> (in <c>@vercel/oidc</c>).</summary>
 public sealed class GetVercelTokenTests : VercelOidcTestBase
@@ -16,7 +18,7 @@ public sealed class GetVercelTokenTests : VercelOidcTestBase
     private string AuthPath => Path.Combine(CliDataDir, "auth.json");
 
     private static Task<string> GetAsync() =>
-        TokenUtil.GetVercelTokenAsync(null, CancellationToken.None);
+        GatewayTokenUtil.GetVercelTokenAsync(null, CancellationToken.None);
 
     private static HttpResponseMessage TokenResponse(string refreshToken = "") =>
         ScriptedHandler.Json(

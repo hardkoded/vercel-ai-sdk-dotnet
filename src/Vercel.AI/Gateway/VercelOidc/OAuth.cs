@@ -183,6 +183,14 @@ internal static class OAuth
                 throw new InvalidOperationException("Invalid OAuth discovery response");
             }
 
+            if (
+                !Uri.TryCreate(tokenEndpoint, UriKind.Absolute, out var endpointUri)
+                || endpointUri.Scheme != Uri.UriSchemeHttps
+            )
+            {
+                throw new InvalidOperationException("Invalid OAuth discovery response");
+            }
+
             s_tokenEndpoint = tokenEndpoint;
             return tokenEndpoint;
         }

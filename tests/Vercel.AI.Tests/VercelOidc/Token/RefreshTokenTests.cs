@@ -3,8 +3,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.Gateway.VercelOidc;
+using Vercel.AI.Tests.VercelOidc;
+using RefreshToken = Vercel.AI.Gateway.VercelOidc.Token;
 
-namespace Vercel.AI.Tests.VercelOidc;
+namespace Vercel.AI.Tests.VercelOidc.Token;
 
 /// <summary>Port of <c>token.test.ts</c> &gt; <c>refreshToken</c> (in <c>@vercel/oidc</c>).</summary>
 public sealed class RefreshTokenTests : VercelOidcTestBase
@@ -28,7 +30,7 @@ public sealed class RefreshTokenTests : VercelOidcTestBase
     }
 
     private static Task RefreshAsync(VercelOidcTokenOptions? options = null) =>
-        Token.RefreshTokenAsync(options, CancellationToken.None);
+        RefreshToken.RefreshTokenAsync(options, CancellationToken.None);
 
     [Fact]
     public async Task Should_correctly_load_saved_token_from_file()

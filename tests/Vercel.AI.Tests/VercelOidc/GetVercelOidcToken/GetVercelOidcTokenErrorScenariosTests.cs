@@ -4,8 +4,9 @@
 
 using System.Net;
 using Vercel.AI.Gateway.VercelOidc;
+using Vercel.AI.Tests.VercelOidc;
 
-namespace Vercel.AI.Tests.VercelOidc;
+namespace Vercel.AI.Tests.VercelOidc.GetVercelOidcToken;
 
 /// <summary>Port of <c>get-vercel-oidc-token.test.ts</c> &gt; <c>getVercelOidcToken - Error Scenarios</c> (in <c>@vercel/oidc</c>).</summary>
 public sealed class GetVercelOidcTokenErrorScenariosTests : VercelOidcTestBase

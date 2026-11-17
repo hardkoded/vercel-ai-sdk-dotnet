@@ -7,6 +7,9 @@ namespace Vercel.AI.Gateway.VercelOidc;
 /// <summary>Maps to <c>token.ts</c> in <c>@vercel/oidc</c>.</summary>
 internal static class Token
 {
+    // .NET-only: concurrent refreshes would each spend the same refresh token, and a rejected one clears auth.json.
+    private static readonly SemaphoreSlim s_refreshLock = new(1, 1);
+
     /// <summary>Refreshes the OIDC token from the cache or the Vercel API and publishes it in <c>VERCEL_OIDC_TOKEN</c>.</summary>
     public static async Task RefreshTokenAsync(
         VercelOidcTokenOptions? options,
@@ -35,27 +38,35 @@ internal static class Token
             );
         }
 
-        var maybeToken = TokenUtil.LoadToken(projectId!);
-        if (
-            maybeToken is null
-            || TokenUtil.IsExpired(
-                TokenUtil.GetTokenPayload(maybeToken.Token),
-                options?.ExpirationBufferMs ?? 0
-            )
-        )
+        await s_refreshLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            var authToken = await TokenUtil
-                .GetVercelTokenAsync(options, cancellationToken)
-                .ConfigureAwait(false);
-            maybeToken = await TokenUtil
-                .GetVercelOidcTokenAsync(authToken, projectId!, teamId, cancellationToken)
-                .ConfigureAwait(false);
-            TokenUtil.SaveToken(maybeToken, projectId!);
-        }
+            var maybeToken = TokenUtil.LoadToken(projectId!);
+            if (
+                maybeToken is null
+                || TokenUtil.IsExpired(
+                    TokenUtil.GetTokenPayload(maybeToken.Token),
+                    options?.ExpirationBufferMs ?? 0
+                )
+            )
+            {
+                var authToken = await TokenUtil
+                    .GetVercelTokenAsync(options, cancellationToken)
+                    .ConfigureAwait(false);
+                maybeToken = await TokenUtil
+                    .GetVercelOidcTokenAsync(authToken, projectId!, teamId, cancellationToken)
+                    .ConfigureAwait(false);
+                TokenUtil.SaveToken(maybeToken, projectId!);
+            }
 
-        Environment.SetEnvironmentVariable(
-            VercelEnvironment.OidcTokenEnvironmentVariable,
-            maybeToken.Token
-        );
+            Environment.SetEnvironmentVariable(
+                VercelEnvironment.OidcTokenEnvironmentVariable,
+                maybeToken.Token
+            );
+        }
+        finally
+        {
+            s_refreshLock.Release();
+        }
     }
 }

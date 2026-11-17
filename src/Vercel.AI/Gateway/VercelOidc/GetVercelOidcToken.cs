@@ -51,9 +51,12 @@ internal static class VercelOidcToken
                 token = GetVercelOidcTokenSync();
             }
         }
-        catch (Exception error) when (error is not OperationCanceledException)
+        catch (Exception error) when (!cancellationToken.IsCancellationRequested)
         {
-            throw new VercelOidcTokenError((err?.Message ?? "") + "\n" + error.Message);
+            throw new VercelOidcTokenError(
+                (err is null ? "" : err.Message + "\n") + error.Message,
+                error
+            );
         }
 
         return token;
