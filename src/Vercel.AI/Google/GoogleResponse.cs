@@ -346,8 +346,11 @@ public static class GoogleResponse
             var thought =
                 part.TryGetProperty("thought", out var thoughtValue)
                 && thoughtValue.ValueKind == JsonValueKind.True;
+            var signature = SignatureMetadata(part, context);
             content.Add(
-                new GoogleGeneratedFile(bytes, media, thought, SignatureMetadata(part, context))
+                thought
+                    ? new GeneratedReasoningFile(bytes, media, signature)
+                    : new GoogleGeneratedFile(bytes, media, signature)
             );
             return;
         }
@@ -716,24 +719,15 @@ public sealed class GoogleToolResult : GeneratedContent
     public JsonElement? ProviderMetadata { get; }
 }
 
-/// <summary>A generated file, including thought images.</summary>
+/// <summary>A generated file. Files the model marks as thoughts are <see cref="GeneratedReasoningFile"/> instead.</summary>
 public sealed class GoogleGeneratedFile : GeneratedFile
 {
     /// <summary>Creates a file.</summary>
-    public GoogleGeneratedFile(
-        byte[] data,
-        string mediaType,
-        bool thought,
-        JsonElement? providerMetadata
-    )
+    public GoogleGeneratedFile(byte[] data, string mediaType, JsonElement? providerMetadata)
         : base(data, mediaType)
     {
-        Thought = thought;
         ProviderMetadata = providerMetadata;
     }
-
-    /// <summary>True when the file was part of the model's thoughts.</summary>
-    public bool Thought { get; }
 
     /// <summary>Provider metadata.</summary>
     public JsonElement? ProviderMetadata { get; }
