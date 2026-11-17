@@ -218,7 +218,7 @@ Uploads inline data. Streams are rejected. `deepseek.expiresAfter` overrides [Ex
 
 **Returns:** [Task&lt;UploadFileModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekFileStore.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekFileStore.cs#L71)
 
 <a id="Vercel_AI_DeepSeek_DeepSeekFileStore_Validate_"></a>
 <a id="Vercel_AI_DeepSeek_DeepSeekFileStore_Validate_System_Int64_System_String_System_String_System_Byte___"></a>
@@ -242,4 +242,4 @@ Checks size, filename, media type, and magic bytes before any request is sent.
 | `mediaType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `data` | [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekFileStore.cs#L202)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekFileStore.cs#L287)

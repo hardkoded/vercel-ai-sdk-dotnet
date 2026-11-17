@@ -101,6 +101,31 @@ Provider id.
 
 ## Methods
 
+<a id="Vercel_AI_DeepSeek_DeepSeekProvider_ChatModel_"></a>
+<a id="Vercel_AI_DeepSeek_DeepSeekProvider_ChatModel_System_String_"></a>
+
+### ChatModel(string)
+
+
+```csharp
+public DeepSeekChatLanguageModel ChatModel(string modelId)
+```
+
+
+Creates a model that uses the Chat Completions API. The provider id is `deepseek.chat`.
+Assistant prefix completion and strict tool calls need a base URL that ends with `/beta`.
+Maps to `chat` (`createLanguageModel`).
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [DeepSeekChatLanguageModel](/api/Vercel.AI.DeepSeek/DeepSeekChatLanguageModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekProvider.cs#L38)
+
 <a id="Vercel_AI_DeepSeek_DeepSeekProvider_Create_"></a>
 <a id="Vercel_AI_DeepSeek_DeepSeekProvider_Create_Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_System_Net_Http_HttpMessageHandler_"></a>
 
@@ -123,7 +148,7 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [DeepSeekProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekProvider.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekProvider.cs#L72)
 
 <a id="Vercel_AI_DeepSeek_DeepSeekProvider_FileStore_"></a>
 <a id="Vercel_AI_DeepSeek_DeepSeekProvider_FileStore"></a>
@@ -140,7 +165,30 @@ Returns a file store.
 
 **Returns:** [IFileStore](/api/Vercel.AI.Provider/IFileStore/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekProvider.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekProvider.cs#L66)
+
+<a id="Vercel_AI_DeepSeek_DeepSeekProvider_LanguageModel_"></a>
+<a id="Vercel_AI_DeepSeek_DeepSeekProvider_LanguageModel_System_String_"></a>
+
+### LanguageModel(string)
+
+
+```csharp
+public override ILanguageModel LanguageModel(string modelId)
+```
+
+
+Returns a language model.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekProvider.cs#L28)
 
 <a id="Vercel_AI_DeepSeek_DeepSeekProvider_ResponsesModel_"></a>
 <a id="Vercel_AI_DeepSeek_DeepSeekProvider_ResponsesModel_System_String_"></a>
@@ -164,4 +212,4 @@ The provider id is `deepseek.responses`.
 
 **Returns:** [DeepSeekResponsesLanguageModel](/api/Vercel.AI.DeepSeek/DeepSeekResponsesLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekProvider.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekProvider.cs#L60)
