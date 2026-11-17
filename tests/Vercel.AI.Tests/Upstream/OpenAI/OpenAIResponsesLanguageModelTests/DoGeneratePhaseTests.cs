@@ -335,7 +335,7 @@ public sealed class DoGeneratePhaseTests
         Assert.Equal(expectedProviderMetadataKey, providerMetadataKey);
 
         var result = OpenAIResponsesLanguageModel.Parse(
-            document.RootElement,
+            OpenAIResponsesSchema.ParseResponse(document.RootElement)!,
             Array.Empty<OpenAICallWarning>(),
             raw,
             new Dictionary<string, string>(),

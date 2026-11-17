@@ -274,7 +274,7 @@ public sealed class OpenAIResponsesUpstreamTests
     public async Task GeneratesText()
     {
         var result = await GenerateFromJson(
-            "{\"id\":\"resp_67c97c0203188190a025beb4a75242bc\",\"created_at\":1741257730,\"model\":\"gpt-4o\",\"output\":[{\"id\":\"msg_1\",\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer text\"}]}]}"
+            "{\"id\":\"resp_67c97c0203188190a025beb4a75242bc\",\"created_at\":1741257730,\"model\":\"gpt-4o\",\"output\":[{\"id\":\"msg_1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer text\",\"annotations\":[]}]}]}"
         );
         Assert.Equal("answer text", result.Text);
         Assert.Equal("resp_67c97c0203188190a025beb4a75242bc", result.ResponseId);

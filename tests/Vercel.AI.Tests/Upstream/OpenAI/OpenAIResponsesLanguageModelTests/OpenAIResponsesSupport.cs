@@ -26,7 +26,7 @@ internal static class OpenAIResponsesSupport
         using var document = JsonDocument.Parse(raw);
         var next = 0;
         return OpenAIResponsesLanguageModel.Parse(
-            document.RootElement,
+            OpenAIResponsesSchema.ParseResponse(document.RootElement)!,
             Array.Empty<OpenAICallWarning>(),
             raw,
             new Dictionary<string, string>(),

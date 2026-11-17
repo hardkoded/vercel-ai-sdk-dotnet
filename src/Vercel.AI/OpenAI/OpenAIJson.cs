@@ -342,6 +342,33 @@ internal static class OpenAIJson
         );
     }
 
+    public static LanguageModelUsage ResponsesUsage(OpenAIResponsesApi.Usage? usage)
+    {
+        if (usage is null)
+        {
+            return new LanguageModelUsage(null, null, null);
+        }
+
+        var input = (int)usage.InputTokens;
+        var output = (int)usage.OutputTokens;
+        var cacheRead = (int)(usage.InputTokensDetails?.CachedTokens ?? 0);
+        int? cacheWrite = usage.InputTokensDetails?.CacheWriteTokens is { } written
+            ? (int)written
+            : null;
+        var reasoning = (int)(usage.OutputTokensDetails?.ReasoningTokens ?? 0);
+        return new LanguageModelUsage(
+            input,
+            output,
+            usage.TotalTokens is { } total ? (int)total : null,
+            cacheRead,
+            cacheWrite,
+            reasoning,
+            usage.Raw,
+            input - cacheRead - (cacheWrite ?? 0),
+            output - reasoning
+        );
+    }
+
     public static LanguageModelUsage CompletionUsage(JsonElement? usage)
     {
         if (usage == null || usage.Value.ValueKind != JsonValueKind.Object)

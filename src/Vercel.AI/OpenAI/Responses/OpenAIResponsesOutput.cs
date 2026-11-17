@@ -23,7 +23,7 @@ public sealed class OpenAIText : GeneratedText
 }
 
 /// <summary>
-/// Maps Responses annotations, web-search sources, and file-search results. Retrieved references are sources.
+/// Maps typed Responses annotations, web-search sources, and file-search results. Retrieved references are sources.
 /// Annotations are the citations that hang off the text they support.
 /// </summary>
 internal static class OpenAIResponsesOutput
@@ -36,71 +36,133 @@ internal static class OpenAIResponsesOutput
 
     /// <summary>The source an annotation points at: a URL source for <c>url_citation</c>, else a document source.</summary>
     public static GeneratedContent AnnotationSource(
-        JsonElement annotation,
+        OpenAIResponsesApi.Annotation annotation,
         string id,
         string providerName = "openai"
     )
     {
-        var type = OpenAIJson.String(annotation, "type");
-        if (type == "url_citation")
+        if (annotation is OpenAIResponsesApi.UrlCitation url)
         {
-            return new GeneratedSource(
-                id,
-                OpenAIJson.String(annotation, "url") ?? string.Empty,
-                OpenAIJson.String(annotation, "title")
-            );
+            return new GeneratedSource(id, url.Url, url.Title);
         }
 
-        var fileId = OpenAIJson.String(annotation, "file_id") ?? string.Empty;
-        var filename =
-            type == "file_path"
-                ? fileId
-                : OpenAIJson.String(annotation, "filename") ?? string.Empty;
-        var metadata = new JsonObject { ["type"] = type, ["fileId"] = fileId };
-        if (type == "container_file_citation")
+        var isFilePath = annotation is OpenAIResponsesApi.FilePath;
+        var fileId = AnnotationFileId(annotation);
+        var filename = annotation switch
         {
-            metadata["containerId"] = OpenAIJson.String(annotation, "container_id");
-        }
-        else if (
-            annotation.TryGetProperty("index", out var index)
-            && index.ValueKind == JsonValueKind.Number
-        )
+            OpenAIResponsesApi.FileCitation file => file.Filename,
+            OpenAIResponsesApi.ContainerFileCitation container => container.Filename,
+            _ => fileId,
+        };
+        var metadata = new JsonObject
         {
-            metadata["index"] = JsonNode.Parse(index.GetRawText());
+            ["type"] = AnnotationType(annotation),
+            ["fileId"] = fileId,
+        };
+        switch (annotation)
+        {
+            case OpenAIResponsesApi.ContainerFileCitation container:
+                metadata["containerId"] = container.ContainerId;
+                break;
+            case OpenAIResponsesApi.FileCitation file:
+                metadata["index"] = file.Index;
+                break;
+            case OpenAIResponsesApi.FilePath path:
+                metadata["index"] = path.Index;
+                break;
         }
 
         return new GeneratedDocumentSource(
             id,
-            type == "file_path" ? "application/octet-stream" : "text/plain",
+            isFilePath ? "application/octet-stream" : "text/plain",
             filename,
             filename,
             OpenAIJson.ProviderMetadata(metadata, providerName)
         );
     }
 
+    /// <summary>The annotation as the API returned it, for provider metadata.</summary>
+    public static JsonObject AnnotationJson(OpenAIResponsesApi.Annotation annotation) =>
+        annotation switch
+        {
+            OpenAIResponsesApi.UrlCitation url => new JsonObject
+            {
+                ["type"] = "url_citation",
+                ["start_index"] = url.StartIndex,
+                ["end_index"] = url.EndIndex,
+                ["url"] = url.Url,
+                ["title"] = url.Title,
+            },
+            OpenAIResponsesApi.FileCitation file => new JsonObject
+            {
+                ["type"] = "file_citation",
+                ["file_id"] = file.FileId,
+                ["filename"] = file.Filename,
+                ["index"] = file.Index,
+            },
+            OpenAIResponsesApi.ContainerFileCitation container => new JsonObject
+            {
+                ["type"] = "container_file_citation",
+                ["container_id"] = container.ContainerId,
+                ["file_id"] = container.FileId,
+                ["filename"] = container.Filename,
+                ["start_index"] = container.StartIndex,
+                ["end_index"] = container.EndIndex,
+            },
+            OpenAIResponsesApi.FilePath path => new JsonObject
+            {
+                ["type"] = "file_path",
+                ["file_id"] = path.FileId,
+                ["index"] = path.Index,
+            },
+            _ => throw new InvalidOperationException("Unknown annotation."),
+        };
+
+    /// <summary>The annotation type.</summary>
+    public static string AnnotationType(OpenAIResponsesApi.Annotation annotation) =>
+        annotation switch
+        {
+            OpenAIResponsesApi.UrlCitation => "url_citation",
+            OpenAIResponsesApi.FileCitation => "file_citation",
+            OpenAIResponsesApi.ContainerFileCitation => "container_file_citation",
+            _ => "file_path",
+        };
+
     /// <summary>The citations for a text block. A <c>file_path</c> annotation is a generated file, not a citation.</summary>
-    public static IReadOnlyList<Citation>? Citations(IEnumerable<JsonElement> annotations)
+    public static IReadOnlyList<Citation>? Citations(
+        IEnumerable<OpenAIResponsesApi.Annotation> annotations
+    )
     {
         var citations = new List<Citation>();
         foreach (var annotation in annotations)
         {
-            var type = OpenAIJson.String(annotation, "type");
-            if (type == "file_path")
+            if (annotation is OpenAIResponsesApi.FilePath)
             {
                 continue;
             }
 
-            var id =
-                type == "url_citation"
-                    ? OpenAIJson.String(annotation, "url")
-                    : OpenAIJson.String(annotation, "file_id");
-            var source = AnnotationSource(annotation, id ?? string.Empty);
-            var start = Index(annotation, "start_index");
-            var end = start == null ? null : Index(annotation, "end_index");
+            var id = annotation is OpenAIResponsesApi.UrlCitation url
+                ? url.Url
+                : AnnotationFileId(annotation);
+            var source = AnnotationSource(annotation, id);
+            int? start = null;
+            int? end = null;
+            switch (annotation)
+            {
+                case OpenAIResponsesApi.UrlCitation urlCitation:
+                    start = urlCitation.StartIndex;
+                    end = urlCitation.EndIndex;
+                    break;
+                case OpenAIResponsesApi.ContainerFileCitation container:
+                    start = container.StartIndex;
+                    end = container.EndIndex;
+                    break;
+            }
+
             citations.Add(
                 source switch
                 {
-                    GeneratedSource url => new Citation(url, start, end),
+                    GeneratedSource sourceUrl => new Citation(sourceUrl, start, end),
                     _ => new Citation((GeneratedDocumentSource)source, start, end),
                 }
             );
@@ -110,160 +172,112 @@ internal static class OpenAIResponsesOutput
     }
 
     /// <summary>The input of a <c>program</c> item: its code and replay fingerprint.</summary>
-    public static string ProgramInput(JsonElement item) =>
-        new JsonObject
-        {
-            ["code"] = OpenAIJson.String(item, "code"),
-            ["fingerprint"] = OpenAIJson.String(item, "fingerprint"),
-        }.ToJsonString(JsonOptions);
+    public static string ProgramInput(OpenAIResponsesApi.Program item) =>
+        new JsonObject { ["code"] = item.Code, ["fingerprint"] = item.Fingerprint }.ToJsonString(
+            JsonOptions
+        );
 
     /// <summary>The result of a <c>program_output</c> item.</summary>
-    public static string ProgramOutputResult(JsonElement item) =>
-        new JsonObject
-        {
-            ["result"] = OpenAIJson.String(item, "result"),
-            ["status"] = OpenAIJson.String(item, "status"),
-        }.ToJsonString(JsonOptions);
+    public static string ProgramOutputResult(OpenAIResponsesApi.ProgramOutput item) =>
+        new JsonObject { ["result"] = item.Result, ["status"] = item.Status }.ToJsonString(
+            JsonOptions
+        );
 
     /// <summary>The input of a <c>shell_call</c> item: its commands and the optional execution controls. Null controls are omitted.</summary>
-    public static string ShellCallInput(JsonElement item)
+    public static string ShellCallInput(OpenAIResponsesApi.ShellCall item)
     {
-        var action = new JsonObject();
-        var source =
-            item.TryGetProperty("action", out var actionElement)
-            && actionElement.ValueKind == JsonValueKind.Object
-                ? actionElement
-                : default;
-        action["commands"] =
-            source.ValueKind == JsonValueKind.Object
-            && source.TryGetProperty("commands", out var commands)
-                ? JsonNode.Parse(commands.GetRawText())
-                : new JsonArray();
-        if (
-            source.ValueKind == JsonValueKind.Object
-            && OpenAIJson.Int(source, "timeout_ms") is { } timeoutMs
-        )
+        var action = new JsonObject { ["commands"] = ToArray(item.Action.Commands) };
+        if (item.Action.TimeoutMs is { } timeoutMs)
         {
-            action["timeoutMs"] = timeoutMs;
+            action["timeoutMs"] = Number(timeoutMs);
         }
 
-        if (
-            source.ValueKind == JsonValueKind.Object
-            && OpenAIJson.Int(source, "max_output_length") is { } maxOutputLength
-        )
+        if (item.Action.MaxOutputLength is { } maxOutputLength)
         {
-            action["maxOutputLength"] = maxOutputLength;
+            action["maxOutputLength"] = Number(maxOutputLength);
         }
 
         return new JsonObject { ["action"] = action }.ToJsonString(JsonOptions);
     }
 
     /// <summary>The input of a <c>local_shell_call</c> item: the action with the fields of upstream's <c>localShellInputSchema</c> parse, in snake_case as the API returned them.</summary>
-    public static string LocalShellCallInput(JsonElement item)
+    public static string LocalShellCallInput(OpenAIResponsesApi.LocalShellCall item)
     {
-        var action = new JsonObject();
-        if (
-            item.TryGetProperty("action", out var source)
-            && source.ValueKind == JsonValueKind.Object
-        )
+        var source = item.Action;
+        var action = new JsonObject { ["type"] = "exec", ["command"] = ToArray(source.Command) };
+        if (source.TimeoutMs is { } timeoutMs)
         {
-            foreach (
-                var name in new[]
-                {
-                    "type",
-                    "command",
-                    "timeout_ms",
-                    "user",
-                    "working_directory",
-                    "env",
-                }
-            )
-            {
-                if (source.TryGetProperty(name, out var value))
-                {
-                    action[name] = JsonNode.Parse(value.GetRawText());
-                }
-            }
+            action["timeout_ms"] = Number(timeoutMs);
+        }
+
+        if (source.User is { } user)
+        {
+            action["user"] = user;
+        }
+
+        if (source.WorkingDirectory is { } workingDirectory)
+        {
+            action["working_directory"] = workingDirectory;
+        }
+
+        if (source.Env is { } env)
+        {
+            action["env"] = ToObject(env);
         }
 
         return new JsonObject { ["action"] = action }.ToJsonString(JsonOptions);
     }
 
     /// <summary>The input of a streamed <c>local_shell_call</c> item: an exec action with camelCase fields, as upstream's stream builds it.</summary>
-    public static string LocalShellStreamCallInput(JsonElement item)
+    public static string LocalShellStreamCallInput(OpenAIResponsesApi.LocalShellCall item)
     {
-        var source =
-            item.TryGetProperty("action", out var actionElement)
-            && actionElement.ValueKind == JsonValueKind.Object
-                ? actionElement
-                : default;
-        var action = new JsonObject { ["type"] = "exec" };
-        if (source.ValueKind == JsonValueKind.Object)
+        var source = item.Action;
+        var action = new JsonObject { ["type"] = "exec", ["command"] = ToArray(source.Command) };
+        if (source.TimeoutMs is { } timeoutMs)
         {
-            action["command"] = source.TryGetProperty("command", out var command)
-                ? JsonNode.Parse(command.GetRawText())
-                : null;
-            if (OpenAIJson.Int(source, "timeout_ms") is { } timeoutMs)
-            {
-                action["timeoutMs"] = timeoutMs;
-            }
+            action["timeoutMs"] = Number(timeoutMs);
+        }
 
-            if (OpenAIJson.String(source, "user") is { } user)
-            {
-                action["user"] = user;
-            }
+        if (source.User is { } user)
+        {
+            action["user"] = user;
+        }
 
-            if (OpenAIJson.String(source, "working_directory") is { } workingDirectory)
-            {
-                action["workingDirectory"] = workingDirectory;
-            }
+        if (source.WorkingDirectory is { } workingDirectory)
+        {
+            action["workingDirectory"] = workingDirectory;
+        }
 
-            if (source.TryGetProperty("env", out var env) && env.ValueKind == JsonValueKind.Object)
-            {
-                action["env"] = JsonNode.Parse(env.GetRawText());
-            }
+        if (source.Env is { } env)
+        {
+            action["env"] = ToObject(env);
         }
 
         return new JsonObject { ["action"] = action }.ToJsonString(JsonOptions);
     }
 
     /// <summary>The result of a <c>shell_call_output</c> item, in the shape of upstream's <c>shellOutputSchema</c>.</summary>
-    public static string ShellCallOutputResult(JsonElement item)
+    public static string ShellCallOutputResult(OpenAIResponsesApi.ShellCallOutput item)
     {
         var result = new JsonObject();
-        if (OpenAIJson.Int(item, "max_output_length") is { } maxOutputLength)
+        if (item.MaxOutputLength is { } maxOutputLength)
         {
-            result["maxOutputLength"] = maxOutputLength;
+            result["maxOutputLength"] = Number(maxOutputLength);
         }
 
         var output = new JsonArray();
-        if (
-            item.TryGetProperty("output", out var entries)
-            && entries.ValueKind == JsonValueKind.Array
-        )
+        foreach (var entry in item.Output)
         {
-            foreach (var entry in entries.EnumerateArray())
-            {
-                var outcome = entry.TryGetProperty("outcome", out var outcomeElement)
-                    ? outcomeElement
-                    : default;
-                output.Add(
-                    new JsonObject
-                    {
-                        ["stdout"] = OpenAIJson.String(entry, "stdout"),
-                        ["stderr"] = OpenAIJson.String(entry, "stderr"),
-                        ["outcome"] =
-                            outcome.ValueKind == JsonValueKind.Object
-                            && OpenAIJson.String(outcome, "type") == "exit"
-                                ? new JsonObject
-                                {
-                                    ["type"] = "exit",
-                                    ["exitCode"] = OpenAIJson.Int(outcome, "exit_code"),
-                                }
-                                : new JsonObject { ["type"] = "timeout" },
-                    }
-                );
-            }
+            output.Add(
+                new JsonObject
+                {
+                    ["stdout"] = entry.Stdout,
+                    ["stderr"] = entry.Stderr,
+                    ["outcome"] = entry.Outcome is OpenAIResponsesApi.ExitOutcome exit
+                        ? new JsonObject { ["type"] = "exit", ["exitCode"] = Number(exit.ExitCode) }
+                        : new JsonObject { ["type"] = "timeout" },
+                }
+            );
         }
 
         result["output"] = output;
@@ -271,43 +285,97 @@ internal static class OpenAIResponsesOutput
     }
 
     /// <summary>The input of an <c>apply_patch_call</c> item: its call id and operation.</summary>
-    public static string ApplyPatchInput(JsonElement item) =>
+    public static string ApplyPatchInput(OpenAIResponsesApi.ApplyPatchCall item) =>
         new JsonObject
         {
-            ["callId"] = OpenAIJson.String(item, "call_id"),
-            ["operation"] = item.TryGetProperty("operation", out var operation)
-                ? JsonNode.Parse(operation.GetRawText())
-                : null,
+            ["callId"] = item.CallId,
+            ["operation"] = item.Operation switch
+            {
+                OpenAIResponsesApi.CreateFileOperation create => new JsonObject
+                {
+                    ["type"] = "create_file",
+                    ["path"] = create.Path,
+                    ["diff"] = create.Diff,
+                },
+                OpenAIResponsesApi.DeleteFileOperation delete => new JsonObject
+                {
+                    ["type"] = "delete_file",
+                    ["path"] = delete.Path,
+                },
+                OpenAIResponsesApi.UpdateFileOperation update => new JsonObject
+                {
+                    ["type"] = "update_file",
+                    ["path"] = update.Path,
+                    ["diff"] = update.Diff,
+                },
+                _ => throw new InvalidOperationException("Unknown apply patch operation."),
+            },
         }.ToJsonString(JsonOptions);
 
+    /// <summary>The <c>type</c> of an apply patch operation.</summary>
+    public static string ApplyPatchOperationType(
+        OpenAIResponsesApi.ApplyPatchOperation operation
+    ) =>
+        operation switch
+        {
+            OpenAIResponsesApi.CreateFileOperation => "create_file",
+            OpenAIResponsesApi.DeleteFileOperation => "delete_file",
+            _ => "update_file",
+        };
+
     /// <summary>Provider metadata that carries only the output item id.</summary>
-    public static JsonElement ItemMetadata(JsonElement item, string providerName = "openai") =>
-        OpenAIJson.ProviderMetadata(
-            new JsonObject { ["itemId"] = OpenAIJson.String(item, "id") },
-            providerName
-        );
+    public static JsonElement ItemMetadata(string? id, string providerName = "openai") =>
+        OpenAIJson.ProviderMetadata(new JsonObject { ["itemId"] = id }, providerName);
 
     /// <summary>The tool name of an <c>mcp_call</c> item: <c>mcp.</c> and the name of the MCP tool.</summary>
-    public static string McpToolName(JsonElement item) => "mcp." + OpenAIJson.String(item, "name");
+    public static string McpToolName(string name) => "mcp." + name;
 
     /// <summary>The result an <c>mcp_call</c> reports, in the shape of upstream's <c>mcpOutputSchema</c> call result.</summary>
-    public static string McpCallResult(JsonElement item)
+    public static string McpCallResult(OpenAIResponsesApi.McpCall item)
     {
         var result = new JsonObject
         {
             ["type"] = "call",
-            ["serverLabel"] = OpenAIJson.String(item, "server_label"),
-            ["name"] = OpenAIJson.String(item, "name"),
-            ["arguments"] = OpenAIJson.String(item, "arguments"),
+            ["serverLabel"] = item.ServerLabel,
+            ["name"] = item.Name,
+            ["arguments"] = item.Arguments,
         };
-        if (item.TryGetProperty("output", out var output) && output.ValueKind != JsonValueKind.Null)
+        if (item.Output is { } output)
         {
-            result["output"] = JsonNode.Parse(output.GetRawText());
+            result["output"] = output;
         }
 
-        if (item.TryGetProperty("error", out var error) && error.ValueKind != JsonValueKind.Null)
+        switch (item.Error)
         {
-            result["error"] = JsonNode.Parse(error.GetRawText());
+            case OpenAIResponsesApi.ErrorText text:
+                result["error"] = text.Value;
+                break;
+            case OpenAIResponsesApi.ErrorObject error:
+                var errorObject = new JsonObject();
+                if (error.Type is { } type)
+                {
+                    errorObject["type"] = type;
+                }
+
+                if (error.Code is { } code)
+                {
+                    errorObject["code"] = long.TryParse(
+                        code,
+                        System.Globalization.NumberStyles.Integer,
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        out var numeric
+                    )
+                        ? numeric
+                        : code;
+                }
+
+                if (error.Message is { } message)
+                {
+                    errorObject["message"] = message;
+                }
+
+                result["error"] = errorObject;
+                break;
         }
 
         return result.ToJsonString();
@@ -316,7 +384,7 @@ internal static class OpenAIResponsesOutput
     /// <summary>Provider metadata for a text block.</summary>
     public static JsonElement TextMetadata(
         string? itemId,
-        IReadOnlyList<JsonElement> annotations,
+        IReadOnlyList<OpenAIResponsesApi.Annotation> annotations,
         string? phase = null,
         string providerName = "openai"
     )
@@ -332,7 +400,7 @@ internal static class OpenAIResponsesOutput
             var array = new JsonArray();
             foreach (var annotation in annotations)
             {
-                array.Add(JsonNode.Parse(annotation.GetRawText()));
+                array.Add(AnnotationJson(annotation));
             }
 
             metadata["annotations"] = array;
@@ -341,26 +409,26 @@ internal static class OpenAIResponsesOutput
         return OpenAIJson.ProviderMetadata(metadata, providerName);
     }
 
+    /// <summary>The wire name of a message phase.</summary>
+    public static string? PhaseName(OpenAIResponsesApi.MessagePhase? phase) =>
+        phase switch
+        {
+            OpenAIResponsesApi.MessagePhase.Commentary => "commentary",
+            OpenAIResponsesApi.MessagePhase.FinalAnswer => "final_answer",
+            _ => null,
+        };
+
     /// <summary>The URL sources of a <c>web_search_call</c> search action.</summary>
-    public static List<string> WebSearchUrls(JsonElement item)
+    public static List<string> WebSearchUrls(OpenAIResponsesApi.WebSearchAction? action)
     {
         var urls = new List<string>();
-        if (
-            item.TryGetProperty("action", out var action)
-            && action.ValueKind == JsonValueKind.Object
-            && OpenAIJson.String(action, "type") == "search"
-            && action.TryGetProperty("sources", out var sources)
-            && sources.ValueKind == JsonValueKind.Array
-        )
+        if (action is OpenAIResponsesApi.WebSearchSearch { Sources: { } sources })
         {
-            foreach (var source in sources.EnumerateArray())
+            foreach (var source in sources)
             {
-                if (
-                    OpenAIJson.String(source, "type") == "url"
-                    && OpenAIJson.String(source, "url") is { } url
-                )
+                if (source is OpenAIResponsesApi.WebSearchUrlSource url)
                 {
-                    urls.Add(url);
+                    urls.Add(url.Url);
                 }
             }
         }
@@ -369,57 +437,62 @@ internal static class OpenAIResponsesOutput
     }
 
     /// <summary>The result a <c>web_search_call</c> reports.</summary>
-    public static string WebSearchResult(JsonElement item)
+    public static string WebSearchResult(OpenAIResponsesApi.WebSearchAction? action)
     {
-        if (
-            !item.TryGetProperty("action", out var action)
-            || action.ValueKind != JsonValueKind.Object
-        )
-        {
-            return "{}";
-        }
-
         var result = new JsonObject();
-        switch (OpenAIJson.String(action, "type"))
+        switch (action)
         {
-            case "search":
+            case null:
+                return "{}";
+            case OpenAIResponsesApi.WebSearchSearch searchAction:
                 var search = new JsonObject { ["type"] = "search" };
-                if (OpenAIJson.String(action, "query") is { } query)
+                if (searchAction.Query is { } query)
                 {
                     search["query"] = query;
                 }
 
-                if (
-                    action.TryGetProperty("queries", out var queries)
-                    && queries.ValueKind == JsonValueKind.Array
-                )
+                if (searchAction.Queries is { } queries)
                 {
-                    search["queries"] = JsonNode.Parse(queries.GetRawText());
+                    search["queries"] = ToArray(queries);
                 }
 
                 result["action"] = search;
-                if (
-                    action.TryGetProperty("sources", out var sources)
-                    && sources.ValueKind == JsonValueKind.Array
-                )
+                if (searchAction.Sources is { } sources)
                 {
-                    result["sources"] = JsonNode.Parse(sources.GetRawText());
+                    var array = new JsonArray();
+                    foreach (var source in sources)
+                    {
+                        array.Add(
+                            source switch
+                            {
+                                OpenAIResponsesApi.WebSearchUrlSource url => new JsonObject
+                                {
+                                    ["type"] = "url",
+                                    ["url"] = url.Url,
+                                },
+                                OpenAIResponsesApi.WebSearchApiSource api => new JsonObject
+                                {
+                                    ["type"] = "api",
+                                    ["name"] = api.Name,
+                                },
+                                _ => throw new InvalidOperationException("Unknown source."),
+                            }
+                        );
+                    }
+
+                    result["sources"] = array;
                 }
 
                 break;
-            case "open_page":
-                result["action"] = new JsonObject
-                {
-                    ["type"] = "openPage",
-                    ["url"] = OpenAIJson.String(action, "url"),
-                };
+            case OpenAIResponsesApi.WebSearchOpenPage openPage:
+                result["action"] = new JsonObject { ["type"] = "openPage", ["url"] = openPage.Url };
                 break;
-            case "find_in_page":
+            case OpenAIResponsesApi.WebSearchFindInPage findInPage:
                 result["action"] = new JsonObject
                 {
                     ["type"] = "findInPage",
-                    ["url"] = OpenAIJson.String(action, "url"),
-                    ["pattern"] = OpenAIJson.String(action, "pattern"),
+                    ["url"] = findInPage.Url,
+                    ["pattern"] = findInPage.Pattern,
                 };
                 break;
         }
@@ -428,61 +501,55 @@ internal static class OpenAIResponsesOutput
     }
 
     /// <summary>The result a <c>file_search_call</c> reports.</summary>
-    public static string FileSearchResult(JsonElement item)
+    public static string FileSearchResult(
+        IReadOnlyList<string> queries,
+        IReadOnlyList<OpenAIResponsesApi.FileSearchResult>? results
+    )
     {
-        var queries =
-            item.TryGetProperty("queries", out var queryArray)
-            && queryArray.ValueKind == JsonValueKind.Array
-                ? JsonNode.Parse(queryArray.GetRawText())
-                : new JsonArray();
-        JsonNode? results = null;
-        if (
-            item.TryGetProperty("results", out var resultArray)
-            && resultArray.ValueKind == JsonValueKind.Array
-        )
+        JsonNode? mapped = null;
+        if (results != null)
         {
-            var mapped = new JsonArray();
-            foreach (var result in resultArray.EnumerateArray())
+            var array = new JsonArray();
+            foreach (var result in results)
             {
-                mapped.Add(
+                var attributes = new JsonObject();
+                foreach (var attribute in result.Attributes)
+                {
+                    attributes[attribute.Key] = attribute.Value switch
+                    {
+                        string text => JsonValue.Create(text),
+                        bool flag => JsonValue.Create(flag),
+                        double number => Number(number),
+                        _ => null,
+                    };
+                }
+
+                array.Add(
                     new JsonObject
                     {
-                        ["attributes"] = result.TryGetProperty("attributes", out var attributes)
-                            ? JsonNode.Parse(attributes.GetRawText())
-                            : new JsonObject(),
-                        ["fileId"] = OpenAIJson.String(result, "file_id"),
-                        ["filename"] = OpenAIJson.String(result, "filename"),
-                        ["score"] = result.TryGetProperty("score", out var score)
-                            ? JsonNode.Parse(score.GetRawText())
-                            : null,
-                        ["text"] = OpenAIJson.String(result, "text"),
+                        ["attributes"] = attributes,
+                        ["fileId"] = result.FileId,
+                        ["filename"] = result.Filename,
+                        ["score"] = Number(result.Score),
+                        ["text"] = result.Text,
                     }
                 );
             }
 
-            results = mapped;
+            mapped = array;
         }
 
-        return new JsonObject { ["queries"] = queries, ["results"] = results }.ToJsonString();
+        return new JsonObject
+        {
+            ["queries"] = ToArray(queries),
+            ["results"] = mapped,
+        }.ToJsonString();
     }
 
     /// <summary>The retrieved files of a <c>file_search_call</c>, one per file id.</summary>
-    public static IEnumerable<(string FileId, string Filename)> RetrievedFiles(JsonElement item)
-    {
-        if (
-            item.TryGetProperty("results", out var results)
-            && results.ValueKind == JsonValueKind.Array
-        )
-        {
-            foreach (var result in results.EnumerateArray())
-            {
-                yield return (
-                    OpenAIJson.String(result, "file_id") ?? string.Empty,
-                    OpenAIJson.String(result, "filename") ?? string.Empty
-                );
-            }
-        }
-    }
+    public static IEnumerable<(string FileId, string Filename)> RetrievedFiles(
+        IReadOnlyList<OpenAIResponsesApi.FileSearchResult>? results
+    ) => results?.Select(result => (result.FileId, result.Filename)) ?? [];
 
     /// <summary>Provider metadata of a retrieved file source.</summary>
     public static JsonElement FileSearchMetadata(string fileId, string providerName = "openai") =>
@@ -491,15 +558,44 @@ internal static class OpenAIResponsesOutput
             providerName
         );
 
-    public static bool HasResults(JsonElement item) =>
-        item.TryGetProperty("results", out var results)
-        && results.ValueKind == JsonValueKind.Array
-        && results.GetArrayLength() > 0;
+    /// <summary>Whether a <c>file_search_call</c> has any result.</summary>
+    public static bool HasResults(IReadOnlyList<OpenAIResponsesApi.FileSearchResult>? results) =>
+        results is { Count: > 0 };
 
-    private static int? Index(JsonElement annotation, string name) =>
-        annotation.TryGetProperty(name, out var value)
-        && value.ValueKind == JsonValueKind.Number
-        && value.TryGetInt32(out var number)
-            ? number
-            : null;
+    private static string AnnotationFileId(OpenAIResponsesApi.Annotation annotation) =>
+        annotation switch
+        {
+            OpenAIResponsesApi.FileCitation file => file.FileId,
+            OpenAIResponsesApi.ContainerFileCitation container => container.FileId,
+            OpenAIResponsesApi.FilePath path => path.FileId,
+            _ => string.Empty,
+        };
+
+    private static JsonArray ToArray(IEnumerable<string> values)
+    {
+        var array = new JsonArray();
+        foreach (var value in values)
+        {
+            array.Add(value);
+        }
+
+        return array;
+    }
+
+    private static JsonObject ToObject(IReadOnlyDictionary<string, string> values)
+    {
+        var result = new JsonObject();
+        foreach (var entry in values)
+        {
+            result[entry.Key] = entry.Value;
+        }
+
+        return result;
+    }
+
+    // A whole number is written without a fraction, as JSON.stringify does.
+    private static JsonNode Number(double value) =>
+        value == Math.Floor(value) && Math.Abs(value) < 9e15
+            ? JsonValue.Create((long)value)
+            : JsonValue.Create(value);
 }

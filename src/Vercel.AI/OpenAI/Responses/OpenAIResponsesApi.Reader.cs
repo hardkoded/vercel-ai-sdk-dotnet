@@ -33,7 +33,8 @@ internal static partial class OpenAIResponsesApi
             body.Str("service_tier"),
             body.Obj("reasoning")?.Str("context"),
             body.Obj("incomplete_details")?.Req("reason"),
-            ReadUsage(body.Obj("usage"))
+            ReadUsage(body.Obj("usage")),
+            ReadPromptCacheDiagnostics(body.Obj("prompt_cache_diagnostics"))
         );
 
     /// <summary>Reads a chunk that matched a modeled variant of <c>openaiResponsesChunkSchema</c>. The caller validated it, and handles <c>unknown_chunk</c> itself.</summary>
@@ -46,6 +47,7 @@ internal static partial class OpenAIResponsesApi
             case "response.output_text.delta":
                 return new OutputTextDelta(
                     chunk.Req("item_id"),
+                    chunk.Num("output_index"),
                     chunk.Req("delta"),
                     ReadLogprobs(chunk.Opt("logprobs"))
                 );
@@ -732,9 +734,20 @@ internal static partial class OpenAIResponsesApi
                     o.Num("orchestration_output_tokens")
                 )
                 : null,
-            value.Num("total_tokens")
+            value.Num("total_tokens"),
+            value.Clone()
         );
     }
+
+    private static PromptCacheDiagnostics? ReadPromptCacheDiagnostics(JsonElement? diagnostics) =>
+        diagnostics is { } d
+            ? new PromptCacheDiagnostics(
+                d.Req("type"),
+                d.Str("reason"),
+                d.Num("cache_missed_tokens"),
+                d.Num("comparison_reusable_tokens")
+            )
+            : null;
 
     private static ResponseHeader ReadHeader(JsonElement response) =>
         new(
@@ -746,17 +759,9 @@ internal static partial class OpenAIResponsesApi
 
     private static FinishedResponse ReadFinished(JsonElement response)
     {
-        var diagnostics = response.Obj("prompt_cache_diagnostics");
         var error = response.Obj("error");
         return new FinishedResponse(
-            diagnostics is { } d
-                ? new PromptCacheDiagnostics(
-                    d.Req("type"),
-                    d.Str("reason"),
-                    d.Num("cache_missed_tokens"),
-                    d.Num("comparison_reusable_tokens")
-                )
-                : null,
+            ReadPromptCacheDiagnostics(response.Obj("prompt_cache_diagnostics")),
             response.Obj("incomplete_details")?.Req("reason"),
             ReadUsage(response.Obj("usage")),
             response.Obj("reasoning")?.Str("context"),

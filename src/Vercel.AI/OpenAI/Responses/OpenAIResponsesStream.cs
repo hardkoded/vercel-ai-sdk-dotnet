@@ -25,8 +25,8 @@ internal sealed class OpenAIResponsesStream
 
     private readonly Func<string> _generateId;
     private readonly string _providerOptionsName;
-    private readonly List<JsonElement> _annotations = new();
-    private readonly List<JsonElement> _fallbackAnnotations = new();
+    private readonly List<OpenAIResponsesApi.Annotation> _annotations = new();
+    private readonly List<OpenAIResponsesApi.Annotation> _fallbackAnnotations = new();
     private readonly HashSet<string> _retrievedFileIds = new(StringComparer.Ordinal);
     private string? _openTextId;
     private string? _openTextPhase;
@@ -90,392 +90,216 @@ internal sealed class OpenAIResponsesStream
             ?? (() => Vercel.AI.ProviderUtils.JsonValues.GenerateId("source_"));
     }
 
-    public IEnumerable<LanguageModelStreamPart> Push(JsonObject node)
+    public IEnumerable<LanguageModelStreamPart> Push(OpenAIResponsesApi.Chunk chunk)
     {
         var parts = new List<LanguageModelStreamPart>();
-        var type = node["type"]?.GetValue<string>();
-        switch (type)
+        switch (chunk)
         {
-            case "response.created":
-                if (node["response"] is JsonObject created)
-                {
-                    _responseId = created["id"]?.GetValue<string>();
-                    parts.Add(
-                        new ResponseMetadataStreamPart(
-                            _responseId,
-                            created["model"]?.GetValue<string>(),
-                            created["created_at"] is JsonValue createdAt
-                            && createdAt.TryGetValue<long>(out var seconds)
-                                ? DateTimeOffset.FromUnixTimeSeconds(seconds)
-                                : null
-                        )
-                    );
-                }
-
-                break;
-            case "response.output_item.added":
-                if (
-                    node["item"] is JsonObject webSearchAdded
-                    && webSearchAdded["type"]?.GetValue<string>() == "web_search_call"
-                )
-                {
-                    var webSearchId = webSearchAdded["id"]?.GetValue<string>() ?? string.Empty;
-                    if (OutputIndex(node) is { } webSearchIndex)
-                    {
-                        _activeOutputItemIds[webSearchIndex] = webSearchId;
-                    }
-
-                    parts.Add(
-                        new ToolInputStartStreamPart(
-                            webSearchId,
-                            WebSearchName(),
-                            providerExecuted: true
-                        )
-                    );
-                    parts.Add(new ToolInputEndStreamPart(webSearchId));
-                    parts.Add(
-                        new ToolCallStreamPart(webSearchId, WebSearchName(), "{}")
-                        {
-                            ProviderExecuted = true,
-                        }
-                    );
-                }
-                else if (
-                    node["item"] is JsonObject functionCall
-                    && functionCall["type"]?.GetValue<string>() == "function_call"
-                    && node["output_index"] is JsonValue addedIndex
-                    && addedIndex.TryGetValue<int>(out var functionCallIndex)
-                )
-                {
-                    var functionCallName = functionCall["name"]?.GetValue<string>() ?? string.Empty;
-                    var functionCallId = functionCall["call_id"]?.GetValue<string>() ?? "call";
-                    var suppress = OpenAIParallelToolCall.IsUndeclared(
-                        functionCallName,
-                        _functionToolNames
-                    );
-                    _ongoingFunctionCalls[functionCallIndex] = new OngoingFunctionCall(
-                        functionCallName,
-                        functionCallId,
-                        suppress,
-                        functionCall["async"] is JsonValue functionAsync
-                        && functionAsync.TryGetValue<bool>(out var functionAsyncMode)
-                            ? functionAsyncMode
-                            : null
-                    );
-                    if (!suppress)
-                    {
-                        parts.Add(new ToolInputStartStreamPart(functionCallId, functionCallName));
-                    }
-                }
-                else if (
-                    node["item"] is JsonObject customCall
-                    && customCall["type"]?.GetValue<string>() == "custom_tool_call"
-                    && node["output_index"] is JsonValue customIndexValue
-                    && customIndexValue.TryGetValue<int>(out var customIndex)
-                )
-                {
-                    var customCallId = customCall["call_id"]?.GetValue<string>() ?? "call";
-                    var customName = customCall["name"]?.GetValue<string>() ?? string.Empty;
-                    _ongoingCustomToolCalls[customIndex] = new OngoingCustomToolCall(
-                        customCallId,
-                        customCall["async"] is JsonValue asyncValue
-                        && asyncValue.TryGetValue<bool>(out var asyncMode)
-                            ? asyncMode
-                            : null
-                    );
-                    parts.Add(
-                        new ToolInputStartStreamPart(
-                            customCallId,
-                            customName,
-                            inputEncoding: ToolInputEncoding.Text
-                        )
-                    );
-                }
-                else if (
-                    node["item"] is JsonObject applyPatchAdded
-                    && applyPatchAdded["type"]?.GetValue<string>() == "apply_patch_call"
-                    && OutputIndex(node) is { } applyPatchIndex
-                )
-                {
-                    var applyPatchCallId = applyPatchAdded["call_id"]?.GetValue<string>() ?? "call";
-                    var operation = applyPatchAdded["operation"] as JsonObject;
-                    var operationType = operation?["type"]?.GetValue<string>() ?? string.Empty;
-                    var isDelete = operationType == "delete_file";
-                    var applyPatchName = ToCustomToolName("apply_patch");
-
-                    // delete_file has no diff
-                    _ongoingApplyPatchCalls[applyPatchIndex] = new OngoingApplyPatchCall(
-                        applyPatchCallId
+            case OpenAIResponsesApi.ResponseCreated created:
+                _responseId = created.Response.Id;
+                parts.Add(
+                    new ResponseMetadataStreamPart(
+                        _responseId,
+                        created.Response.Model,
+                        OpenAIJson.UnixSeconds((long)created.Response.CreatedAt)
                     )
-                    {
-                        HasDiff = isDelete,
-                        EndEmitted = isDelete,
-                    };
-                    parts.Add(new ToolInputStartStreamPart(applyPatchCallId, applyPatchName));
-                    if (isDelete)
-                    {
-                        parts.Add(
-                            new ToolInputDeltaStreamPart(
-                                applyPatchCallId,
-                                ApplyPatchInput(applyPatchAdded)
-                            )
-                        );
-                        parts.Add(new ToolInputEndStreamPart(applyPatchCallId));
-                    }
-                    else
-                    {
-                        parts.Add(
-                            new ToolInputDeltaStreamPart(
-                                applyPatchCallId,
-                                "{\"callId\":\""
-                                    + EscapeJsonDelta(applyPatchCallId)
-                                    + "\",\"operation\":{\"type\":\""
-                                    + EscapeJsonDelta(operationType)
-                                    + "\",\"path\":\""
-                                    + EscapeJsonDelta(
-                                        operation?["path"]?.GetValue<string>() ?? string.Empty
-                                    )
-                                    + "\",\"diff\":\""
-                            )
-                        );
-                    }
-                }
-                else if (
-                    node["item"] is JsonObject reasoningAdded
-                    && reasoningAdded["type"]?.GetValue<string>() == "reasoning"
-                    && reasoningAdded["id"]?.GetValue<string>() is { } reasoningId
-                )
-                {
-                    if (OutputIndex(node) is { } reasoningIndex)
-                    {
-                        _activeOutputItemIds[reasoningIndex] = reasoningId;
-                    }
-
-                    var encrypted = reasoningAdded["encrypted_content"]?.GetValue<string>();
-                    _activeReasoning[reasoningId] = new ActiveReasoning(encrypted);
-                    parts.Add(
-                        new ReasoningStartStreamPart(
-                            ReasoningPartId(reasoningId, 0),
-                            ReasoningMetadata(reasoningId, encrypted, includeEncrypted: true)
-                        )
-                    );
-                }
-                else if (
-                    node["item"] is JsonObject added
-                    && added["type"]?.GetValue<string>() == "message"
-                )
-                {
-                    _annotations.Clear();
-                    var messageId = added["id"]?.GetValue<string>() ?? "text";
-                    if (OutputIndex(node) is { } messageIndex)
-                    {
-                        _activeOutputItemIds[messageIndex] = messageId;
-                    }
-
-                    OpenText(parts, messageId, added["phase"]?.GetValue<string>());
-                }
-
+                );
                 break;
-            case "response.output_text.delta":
+            case OpenAIResponsesApi.OutputItemAdded added:
+                OutputItemAdded(parts, added);
+                break;
+            case OpenAIResponsesApi.OutputTextDelta textDelta:
                 var itemId = ResolveOutputItemId(
-                    node["item_id"]?.GetValue<string>() ?? _openTextId ?? "text",
-                    node
+                    textDelta.ItemId,
+                    OutputIndex(textDelta.OutputIndex)
                 );
                 OpenText(parts, itemId);
-                var delta = node["delta"]?.GetValue<string>();
-                if (!string.IsNullOrEmpty(delta))
+                if (!string.IsNullOrEmpty(textDelta.Delta))
                 {
-                    parts.Add(new TextDeltaStreamPart(itemId, delta!));
+                    parts.Add(new TextDeltaStreamPart(itemId, textDelta.Delta));
                 }
 
                 break;
-            case "response.refusal.delta":
+            case OpenAIResponsesApi.RefusalDelta refusalDelta:
                 _hasRefusal = true;
                 var refusalItemId = ResolveOutputItemId(
-                    node["item_id"]?.GetValue<string>() ?? _openTextId ?? "text",
-                    node
+                    refusalDelta.ItemId,
+                    OutputIndex(refusalDelta.OutputIndex)
                 );
                 OpenText(parts, refusalItemId);
+                parts.Add(new TextDeltaStreamPart(refusalItemId, refusalDelta.Delta));
+                break;
+            case OpenAIResponsesApi.RefusalDone:
+                _hasRefusal = true;
+                break;
+            case OpenAIResponsesApi.ReasoningSummaryPartAdded partAdded:
+                var partItemId = ResolveOutputItemId(
+                    partAdded.ItemId,
+                    OutputIndex(partAdded.OutputIndex)
+                );
+                var summaryIndex = (int)partAdded.SummaryIndex;
+                // The first reasoning start comes from output_item.added.
+                if (
+                    summaryIndex > 0
+                    && _activeReasoning.TryGetValue(partItemId, out var activeReasoning)
+                )
+                {
+                    activeReasoning.SummaryParts[summaryIndex] = ReasoningPartState.Active;
+
+                    // A new summary part lets every part that could conclude conclude.
+                    foreach (
+                        var concludable in activeReasoning
+                            .SummaryParts.Where(entry =>
+                                entry.Value == ReasoningPartState.CanConclude
+                            )
+                            .Select(entry => entry.Key)
+                            .ToList()
+                    )
+                    {
+                        parts.Add(
+                            new ReasoningEndStreamPart(
+                                ReasoningPartId(partItemId, concludable),
+                                ReasoningMetadata(partItemId, null)
+                            )
+                        );
+                        activeReasoning.SummaryParts[concludable] = ReasoningPartState.Concluded;
+                    }
+
+                    parts.Add(
+                        new ReasoningStartStreamPart(
+                            ReasoningPartId(partItemId, summaryIndex),
+                            ReasoningMetadata(
+                                partItemId,
+                                activeReasoning.EncryptedContent,
+                                includeEncrypted: true
+                            )
+                        )
+                    );
+                }
+
+                break;
+            case OpenAIResponsesApi.ReasoningSummaryTextDelta reasoningDelta:
+                var reasoningDeltaItemId = ResolveOutputItemId(
+                    reasoningDelta.ItemId,
+                    OutputIndex(reasoningDelta.OutputIndex)
+                );
                 parts.Add(
-                    new TextDeltaStreamPart(
-                        refusalItemId,
-                        node["delta"]?.GetValue<string>() ?? string.Empty
+                    new ReasoningDeltaStreamPart(
+                        ReasoningPartId(reasoningDeltaItemId, (int)reasoningDelta.SummaryIndex),
+                        reasoningDelta.Delta,
+                        ReasoningMetadata(reasoningDeltaItemId, null)
                     )
                 );
                 break;
-            case "response.refusal.done":
-                _hasRefusal = true;
-                break;
-            case "response.reasoning_summary_part.added":
-                if (node["item_id"]?.GetValue<string>() is { } partItem)
+            case OpenAIResponsesApi.ReasoningSummaryPartDone partDone:
+                var reasoningDoneItemId = ResolveOutputItemId(
+                    partDone.ItemId,
+                    OutputIndex(partDone.OutputIndex)
+                );
+                if (_activeReasoning.TryGetValue(reasoningDoneItemId, out var doneReasoning))
                 {
-                    var partItemId = ResolveOutputItemId(partItem, node);
-                    var summaryIndex = SummaryIndex(node);
-                    // The first reasoning start comes from output_item.added.
-                    if (
-                        summaryIndex > 0
-                        && _activeReasoning.TryGetValue(partItemId, out var activeReasoning)
-                    )
+                    var doneSummaryIndex = (int)partDone.SummaryIndex;
+                    if (_store)
                     {
-                        activeReasoning.SummaryParts[summaryIndex] = ReasoningPartState.Active;
-
-                        // A new summary part lets every part that could conclude conclude.
-                        foreach (
-                            var concludable in activeReasoning
-                                .SummaryParts.Where(entry =>
-                                    entry.Value == ReasoningPartState.CanConclude
-                                )
-                                .Select(entry => entry.Key)
-                                .ToList()
-                        )
-                        {
-                            parts.Add(
-                                new ReasoningEndStreamPart(
-                                    ReasoningPartId(partItemId, concludable),
-                                    ReasoningMetadata(partItemId, null)
-                                )
-                            );
-                            activeReasoning.SummaryParts[concludable] =
-                                ReasoningPartState.Concluded;
-                        }
-
+                        // Stored reasoning needs no encrypted content, so the part can end now.
                         parts.Add(
-                            new ReasoningStartStreamPart(
-                                ReasoningPartId(partItemId, summaryIndex),
-                                ReasoningMetadata(
-                                    partItemId,
-                                    activeReasoning.EncryptedContent,
-                                    includeEncrypted: true
-                                )
+                            new ReasoningEndStreamPart(
+                                ReasoningPartId(reasoningDoneItemId, doneSummaryIndex),
+                                ReasoningMetadata(reasoningDoneItemId, null)
                             )
                         );
-                    }
-                }
-
-                break;
-            case "response.reasoning_summary_text.delta":
-                if (node["item_id"]?.GetValue<string>() is { } deltaItem)
-                {
-                    var reasoningDeltaItemId = ResolveOutputItemId(deltaItem, node);
-                    parts.Add(
-                        new ReasoningDeltaStreamPart(
-                            ReasoningPartId(reasoningDeltaItemId, SummaryIndex(node)),
-                            node["delta"]?.GetValue<string>() ?? string.Empty,
-                            ReasoningMetadata(reasoningDeltaItemId, null)
-                        )
-                    );
-                }
-
-                break;
-            case "response.reasoning_summary_part.done":
-                if (node["item_id"]?.GetValue<string>() is { } doneItem)
-                {
-                    var reasoningDoneItemId = ResolveOutputItemId(doneItem, node);
-                    if (_activeReasoning.TryGetValue(reasoningDoneItemId, out var doneReasoning))
-                    {
-                        var doneSummaryIndex = SummaryIndex(node);
-                        if (_store)
-                        {
-                            // Stored reasoning needs no encrypted content, so the part can end now.
-                            parts.Add(
-                                new ReasoningEndStreamPart(
-                                    ReasoningPartId(reasoningDoneItemId, doneSummaryIndex),
-                                    ReasoningMetadata(reasoningDoneItemId, null)
-                                )
-                            );
-                            doneReasoning.SummaryParts[doneSummaryIndex] =
-                                ReasoningPartState.Concluded;
-                        }
-                        else
-                        {
-                            // Wait for the final item, which carries the encrypted content.
-                            doneReasoning.SummaryParts[doneSummaryIndex] =
-                                ReasoningPartState.CanConclude;
-                        }
-                    }
-                }
-
-                break;
-            case "response.output_text.annotation.added":
-                if (node["annotation"] is JsonObject annotation)
-                {
-                    var element = JsonSerializer.Deserialize<JsonElement>(
-                        annotation.ToJsonString()
-                    );
-                    _annotations.Add(element);
-                    var annotationType = annotation["type"]?.GetValue<string>();
-                    if (annotationType == "url_citation" || annotationType == "file_citation")
-                    {
-                        // Retrieval events may arrive after the annotation. Decide the fallback once the stream ends.
-                        _fallbackAnnotations.Add(element);
+                        doneReasoning.SummaryParts[doneSummaryIndex] = ReasoningPartState.Concluded;
                     }
                     else
                     {
-                        parts.Add(
-                            ToSourcePart(
-                                OpenAIResponsesOutput.AnnotationSource(
-                                    element,
-                                    _generateId(),
-                                    _providerOptionsName
-                                )
-                            )
-                        );
+                        // Wait for the final item, which carries the encrypted content.
+                        doneReasoning.SummaryParts[doneSummaryIndex] =
+                            ReasoningPartState.CanConclude;
                     }
                 }
 
                 break;
-            case "response.function_call_arguments.delta":
+            case OpenAIResponsesApi.OutputTextAnnotationAdded annotationAdded:
+                var annotation = annotationAdded.Annotation;
+                _annotations.Add(annotation);
+                if (annotation is OpenAIResponsesApi.UrlCitation or OpenAIResponsesApi.FileCitation)
+                {
+                    // Retrieval events may arrive after the annotation. Decide the fallback once the stream ends.
+                    _fallbackAnnotations.Add(annotation);
+                }
+                else
+                {
+                    parts.Add(
+                        ToSourcePart(
+                            OpenAIResponsesOutput.AnnotationSource(
+                                annotation,
+                                _generateId(),
+                                _providerOptionsName
+                            )
+                        )
+                    );
+                }
+
+                break;
+            case OpenAIResponsesApi.FunctionCallArgumentsDelta argumentsDelta:
                 if (
-                    node["output_index"] is JsonValue deltaIndex
-                    && deltaIndex.TryGetValue<int>(out var deltaFunctionCallIndex)
-                    && _ongoingFunctionCalls.TryGetValue(deltaFunctionCallIndex, out var ongoing)
-                    && node["delta"]?.GetValue<string>() is { } argumentsDelta
+                    _ongoingFunctionCalls.TryGetValue(
+                        (int)argumentsDelta.OutputIndex,
+                        out var ongoing
+                    )
                 )
                 {
                     if (ongoing.SuppressInputStreaming)
                     {
-                        ongoing.BufferedInputDeltas.Add(argumentsDelta);
+                        ongoing.BufferedInputDeltas.Add(argumentsDelta.Delta);
                     }
                     else
                     {
-                        parts.Add(new ToolInputDeltaStreamPart(ongoing.ToolCallId, argumentsDelta));
+                        parts.Add(
+                            new ToolInputDeltaStreamPart(ongoing.ToolCallId, argumentsDelta.Delta)
+                        );
                     }
                 }
 
                 break;
-            case "response.custom_tool_call_input.delta":
+            case OpenAIResponsesApi.CustomToolCallInputDelta customDelta:
                 if (
-                    node["output_index"] is JsonValue customDeltaIndex
-                    && customDeltaIndex.TryGetValue<int>(out var customDeltaKey)
-                    && _ongoingCustomToolCalls.TryGetValue(customDeltaKey, out var ongoingCustom)
-                    && ReadDelta(node["delta"]) is { } customDelta
+                    _ongoingCustomToolCalls.TryGetValue(
+                        (int)customDelta.OutputIndex,
+                        out var ongoingCustom
+                    )
                 )
                 {
-                    parts.Add(new ToolInputDeltaStreamPart(ongoingCustom.ToolCallId, customDelta));
+                    parts.Add(
+                        new ToolInputDeltaStreamPart(ongoingCustom.ToolCallId, customDelta.Delta)
+                    );
                 }
 
                 break;
-            case "response.apply_patch_call_operation_diff.delta":
+            case OpenAIResponsesApi.ApplyPatchCallOperationDiffDelta patchDelta:
                 if (
-                    OutputIndex(node) is { } patchDeltaIndex
-                    && _ongoingApplyPatchCalls.TryGetValue(patchDeltaIndex, out var patchDeltaCall)
+                    _ongoingApplyPatchCalls.TryGetValue(
+                        (int)patchDelta.OutputIndex,
+                        out var patchDeltaCall
+                    )
                 )
                 {
                     parts.Add(
                         new ToolInputDeltaStreamPart(
                             patchDeltaCall.ToolCallId,
-                            EscapeJsonDelta(node["delta"]?.GetValue<string>() ?? string.Empty)
+                            EscapeJsonDelta(patchDelta.Delta)
                         )
                     );
                     patchDeltaCall.HasDiff = true;
                 }
 
                 break;
-            case "response.apply_patch_call_operation_diff.done":
+            case OpenAIResponsesApi.ApplyPatchCallOperationDiffDone patchDone:
                 if (
-                    OutputIndex(node) is { } patchDoneIndex
-                    && _ongoingApplyPatchCalls.TryGetValue(patchDoneIndex, out var patchDoneCall)
-                    && !patchDoneCall.EndEmitted
+                    _ongoingApplyPatchCalls.TryGetValue(
+                        (int)patchDone.OutputIndex,
+                        out var patchDoneCall
+                    ) && !patchDoneCall.EndEmitted
                 )
                 {
                     if (!patchDoneCall.HasDiff)
@@ -483,7 +307,7 @@ internal sealed class OpenAIResponsesStream
                         parts.Add(
                             new ToolInputDeltaStreamPart(
                                 patchDoneCall.ToolCallId,
-                                EscapeJsonDelta(node["diff"]?.GetValue<string>() ?? string.Empty)
+                                EscapeJsonDelta(patchDone.Diff)
                             )
                         );
                         patchDoneCall.HasDiff = true;
@@ -495,309 +319,330 @@ internal sealed class OpenAIResponsesStream
                 }
 
                 break;
-            case "response.output_item.done":
-                if (
-                    node["item"] is JsonObject functionCallDone
-                    && functionCallDone["type"]?.GetValue<string>() == "function_call"
-                )
-                {
-                    var doneIndex =
-                        node["output_index"] is JsonValue indexValue
-                        && indexValue.TryGetValue<int>(out var parsedIndex)
-                            ? parsedIndex
-                            : -1;
-                    _ongoingFunctionCalls.TryGetValue(doneIndex, out var finished);
-                    _ongoingFunctionCalls.Remove(doneIndex);
-                    FunctionCallDone(
-                        parts,
-                        JsonSerializer.Deserialize<JsonElement>(functionCallDone.ToJsonString()),
-                        finished
-                    );
-                }
-                else if (
-                    node["item"] is JsonObject customCallDone
-                    && customCallDone["type"]?.GetValue<string>() == "custom_tool_call"
-                )
-                {
-                    var customDoneIndex =
-                        node["output_index"] is JsonValue customDoneValue
-                        && customDoneValue.TryGetValue<int>(out var parsedCustomIndex)
-                            ? parsedCustomIndex
-                            : -1;
-                    _ongoingCustomToolCalls.TryGetValue(customDoneIndex, out var finishedCustom);
-                    _ongoingCustomToolCalls.Remove(customDoneIndex);
-                    CustomToolCallDone(
-                        parts,
-                        JsonSerializer.Deserialize<JsonElement>(customCallDone.ToJsonString()),
-                        finishedCustom
-                    );
-                }
-                else if (
-                    node["item"] is JsonObject reasoningDone
-                    && reasoningDone["type"]?.GetValue<string>() == "reasoning"
-                    && reasoningDone["id"]?.GetValue<string>() is { } reasoningDoneId
-                )
-                {
-                    var itemIdForDone = ResolveOutputItemId(reasoningDoneId, node);
-                    if (_activeReasoning.TryGetValue(itemIdForDone, out var finishedReasoning))
-                    {
-                        _activeReasoning.Remove(itemIdForDone);
-                        var finalEncrypted = reasoningDone["encrypted_content"]?.GetValue<string>();
-                        foreach (
-                            var summaryIndex in finishedReasoning
-                                .SummaryParts.Where(entry =>
-                                    entry.Value
-                                        is ReasoningPartState.Active
-                                            or ReasoningPartState.CanConclude
-                                )
-                                .Select(entry => entry.Key)
+            case OpenAIResponsesApi.OutputItemDone done:
+                OutputItemDone(parts, done);
+                break;
+            case OpenAIResponsesApi.ResponseCompleted completed:
+                FinishResponse(completed.Response);
+                break;
+            case OpenAIResponsesApi.ResponseIncomplete incomplete:
+                FinishResponse(incomplete.Response);
+                break;
+            case OpenAIResponsesApi.ResponseFailed failedChunk:
+                var failed = failedChunk.Response;
+                var failedReason = failed.IncompleteReason;
+                _reasoningContext = failed.ReasoningContext ?? _reasoningContext;
+                _promptCacheDiagnostics = OpenAIResponsesLanguageModel.PromptCacheDiagnostics(
+                    failed.PromptCacheDiagnostics
+                );
+                _failedFinish =
+                    failedReason != null
+                        ? OpenAIResponsesLanguageModel.MapFinishReason(
+                            failedReason,
+                            _hasFunctionCall,
+                            _hasRefusal
                         )
-                        {
-                            parts.Add(
-                                new ReasoningEndStreamPart(
-                                    ReasoningPartId(itemIdForDone, summaryIndex),
-                                    ReasoningMetadata(
-                                        itemIdForDone,
-                                        finalEncrypted,
-                                        includeEncrypted: true
-                                    )
-                                )
-                            );
-                        }
-                    }
+                        : FinishReason.Error;
+                _failedRaw = failedReason ?? "error";
+                if (failed.Error is { } failedError && !_streamError)
+                {
+                    _streamError = true;
+                    parts.Add(new ErrorStreamPart(failedError.Message));
+                }
 
-                    if (OutputIndex(node) is { } finishedIndex)
-                    {
-                        _activeOutputItemIds.Remove(finishedIndex);
-                    }
-                }
-                else if (
-                    node["item"] is JsonObject applyPatchDone
-                    && applyPatchDone["type"]?.GetValue<string>() == "apply_patch_call"
-                )
+                if (failed.Usage != null)
                 {
-                    var applyPatchDoneIndex = OutputIndex(node) ?? -1;
-                    _ongoingApplyPatchCalls.TryGetValue(applyPatchDoneIndex, out var patchCall);
-                    _ongoingApplyPatchCalls.Remove(applyPatchDoneIndex);
-                    if (
-                        patchCall is { EndEmitted: false }
-                        && applyPatchDone["operation"]?["type"]?.GetValue<string>() != "delete_file"
-                    )
-                    {
-                        if (!patchCall.HasDiff)
-                        {
-                            parts.Add(
-                                new ToolInputDeltaStreamPart(
-                                    patchCall.ToolCallId,
-                                    EscapeJsonDelta(
-                                        applyPatchDone["operation"]?["diff"]?.GetValue<string>()
-                                            ?? string.Empty
-                                    )
-                                )
-                            );
-                        }
-
-                        parts.Add(new ToolInputDeltaStreamPart(patchCall.ToolCallId, "\"}}"));
-                        parts.Add(new ToolInputEndStreamPart(patchCall.ToolCallId));
-                        patchCall.EndEmitted = true;
-                    }
-
-                    // Emit the final tool-call with the complete diff once the item is completed.
-                    if (
-                        patchCall != null
-                        && applyPatchDone["status"]?.GetValue<string>() == "completed"
-                    )
-                    {
-                        _hasFunctionCall = true;
-                        var patchElement = JsonSerializer.Deserialize<JsonElement>(
-                            applyPatchDone.ToJsonString()
-                        );
-                        parts.Add(
-                            new ToolCallStreamPart(
-                                patchCall.ToolCallId,
-                                ToCustomToolName("apply_patch"),
-                                OpenAIResponsesOutput.ApplyPatchInput(patchElement),
-                                OpenAIResponsesOutput.ItemMetadata(
-                                    patchElement,
-                                    _providerOptionsName
-                                )
-                            )
-                        );
-                    }
-                }
-                else if (
-                    node["item"] is JsonObject localShellDone
-                    && localShellDone["type"]?.GetValue<string>() == "local_shell_call"
-                )
-                {
-                    var localShellElement = JsonSerializer.Deserialize<JsonElement>(
-                        localShellDone.ToJsonString()
-                    );
-                    parts.Add(
-                        new ToolCallStreamPart(
-                            localShellDone["call_id"]?.GetValue<string>() ?? "call",
-                            ToCustomToolName("local_shell"),
-                            OpenAIResponsesOutput.LocalShellStreamCallInput(localShellElement),
-                            OpenAIResponsesOutput.ItemMetadata(
-                                localShellElement,
-                                _providerOptionsName
-                            )
-                        )
-                    );
-                }
-                else if (
-                    node["item"] is JsonObject shellCallDone
-                    && shellCallDone["type"]?.GetValue<string>() == "shell_call"
-                )
-                {
-                    var shellElement = JsonSerializer.Deserialize<JsonElement>(
-                        shellCallDone.ToJsonString()
-                    );
-                    parts.Add(
-                        new ToolCallStreamPart(
-                            shellCallDone["call_id"]?.GetValue<string>() ?? "call",
-                            ToCustomToolName("shell"),
-                            OpenAIResponsesOutput.ShellCallInput(shellElement),
-                            OpenAIResponsesOutput.ItemMetadata(shellElement, _providerOptionsName)
-                        )
-                        {
-                            ProviderExecuted = _isShellProviderExecuted,
-                        }
-                    );
-                }
-                else if (
-                    node["item"] is JsonObject shellOutputDone
-                    && shellOutputDone["type"]?.GetValue<string>() == "shell_call_output"
-                )
-                {
-                    parts.Add(
-                        new ToolResultStreamPart(
-                            shellOutputDone["call_id"]?.GetValue<string>() ?? "call",
-                            ToCustomToolName("shell"),
-                            JsonSerializer.Deserialize<JsonElement>(
-                                OpenAIResponsesOutput.ShellCallOutputResult(
-                                    JsonSerializer.Deserialize<JsonElement>(
-                                        shellOutputDone.ToJsonString()
-                                    )
-                                )
-                            )
-                        )
-                    );
-                }
-                else if (node["item"] is JsonObject done)
-                {
-                    ItemDone(
-                        parts,
-                        JsonSerializer.Deserialize<JsonElement>(done.ToJsonString()),
-                        done["id"]?.GetValue<string>() is { } doneId
-                            ? ResolveOutputItemId(doneId, node)
-                            : null
-                    );
-                    if (
-                        done["type"]?.GetValue<string>() == "web_search_call"
-                        && OutputIndex(node) is { } webSearchDoneIndex
-                    )
-                    {
-                        _activeOutputItemIds.Remove(webSearchDoneIndex);
-                    }
-
-                    if (
-                        done["type"]?.GetValue<string>() == "message"
-                        && OutputIndex(node) is { } messageDoneIndex
-                    )
-                    {
-                        _activeOutputItemIds.Remove(messageDoneIndex);
-                    }
+                    _usage = OpenAIJson.ResponsesUsage(failed.Usage);
                 }
 
                 break;
-            case "response.completed":
-            case "response.incomplete":
-                _finished = true;
-                if (node["response"] is JsonObject response)
-                {
-                    _incompleteReason = response["incomplete_details"]
-                        ?["reason"]?.GetValue<string>();
-                    if (
-                        response["service_tier"] is JsonValue serviceTier
-                        && serviceTier.TryGetValue<string>(out var serviceTierValue)
-                    )
-                    {
-                        _serviceTier = serviceTierValue;
-                    }
-
-                    _reasoningContext = ReasoningContext(response) ?? _reasoningContext;
-                    _promptCacheDiagnostics = OpenAIResponsesLanguageModel.PromptCacheDiagnostics(
-                        response["prompt_cache_diagnostics"]
-                    );
-                    if (response["output"] is JsonArray output)
-                    {
-                        foreach (var item in output)
-                        {
-                            _hasFunctionCall |=
-                                item?["type"]?.GetValue<string>() == "function_call";
-                        }
-                    }
-
-                    if (response["usage"] != null)
-                    {
-                        _usage = OpenAIJson.ResponsesUsage(
-                            JsonSerializer.Deserialize<JsonElement>(
-                                response["usage"]!.ToJsonString()
-                            )
-                        );
-                    }
-                }
-
-                break;
-            case "response.failed":
-                if (node["response"] is JsonObject failed)
-                {
-                    var failedReason = failed["incomplete_details"]?["reason"]?.GetValue<string>();
-                    _reasoningContext = ReasoningContext(failed) ?? _reasoningContext;
-                    _promptCacheDiagnostics = OpenAIResponsesLanguageModel.PromptCacheDiagnostics(
-                        failed["prompt_cache_diagnostics"]
-                    );
-                    _failedFinish =
-                        failedReason != null
-                            ? OpenAIResponsesLanguageModel.MapFinishReason(
-                                failedReason,
-                                _hasFunctionCall,
-                                _hasRefusal
-                            )
-                            : FinishReason.Error;
-                    _failedRaw = failedReason ?? "error";
-                    if (failed["error"] is JsonNode failedError && !_streamError)
-                    {
-                        _streamError = true;
-                        parts.Add(
-                            new ErrorStreamPart(
-                                failedError["message"]?.GetValue<string>()
-                                    ?? failedError.ToJsonString()
-                            )
-                        );
-                    }
-
-                    if (failed["usage"] != null)
-                    {
-                        _usage = OpenAIJson.ResponsesUsage(
-                            JsonSerializer.Deserialize<JsonElement>(failed["usage"]!.ToJsonString())
-                        );
-                    }
-                }
-
-                break;
-            case "error":
+            case OpenAIResponsesApi.ErrorChunk error:
                 _streamError = true;
                 _failedFinish = FinishReason.Error;
                 _failedRaw = "error";
-                parts.Add(
-                    new ErrorStreamPart(node["message"]?.GetValue<string>() ?? node.ToJsonString())
-                );
+                parts.Add(new ErrorStreamPart(error.Message));
                 break;
         }
 
         return parts;
+    }
+
+    private void FinishResponse(OpenAIResponsesApi.FinishedResponse response)
+    {
+        _finished = true;
+        _incompleteReason = response.IncompleteReason;
+        if (response.ServiceTier is { } serviceTier)
+        {
+            _serviceTier = serviceTier;
+        }
+
+        _reasoningContext = response.ReasoningContext ?? _reasoningContext;
+        _promptCacheDiagnostics = OpenAIResponsesLanguageModel.PromptCacheDiagnostics(
+            response.PromptCacheDiagnostics
+        );
+        if (response.Usage != null)
+        {
+            _usage = OpenAIJson.ResponsesUsage(response.Usage);
+        }
+    }
+
+    private void OutputItemAdded(
+        List<LanguageModelStreamPart> parts,
+        OpenAIResponsesApi.OutputItemAdded added
+    )
+    {
+        var index = (int)added.OutputIndex;
+        switch (added.Item)
+        {
+            case OpenAIResponsesApi.AddedWebSearchCall webSearch:
+                _activeOutputItemIds[index] = webSearch.Id;
+                parts.Add(
+                    new ToolInputStartStreamPart(
+                        webSearch.Id,
+                        WebSearchName(),
+                        providerExecuted: true
+                    )
+                );
+                parts.Add(new ToolInputEndStreamPart(webSearch.Id));
+                parts.Add(
+                    new ToolCallStreamPart(webSearch.Id, WebSearchName(), "{}")
+                    {
+                        ProviderExecuted = true,
+                    }
+                );
+                break;
+            case OpenAIResponsesApi.AddedFunctionCall functionCall:
+                var suppress = OpenAIParallelToolCall.IsUndeclared(
+                    functionCall.Name,
+                    _functionToolNames
+                );
+                _ongoingFunctionCalls[index] = new OngoingFunctionCall(
+                    functionCall.Name,
+                    functionCall.CallId,
+                    suppress,
+                    functionCall.Async
+                );
+                if (!suppress)
+                {
+                    parts.Add(new ToolInputStartStreamPart(functionCall.CallId, functionCall.Name));
+                }
+
+                break;
+            case OpenAIResponsesApi.CustomToolCall customCall:
+                _ongoingCustomToolCalls[index] = new OngoingCustomToolCall(
+                    customCall.CallId,
+                    customCall.Async
+                );
+                parts.Add(
+                    new ToolInputStartStreamPart(
+                        customCall.CallId,
+                        customCall.Name,
+                        inputEncoding: ToolInputEncoding.Text
+                    )
+                );
+                break;
+            case OpenAIResponsesApi.ApplyPatchCall applyPatch:
+                var operationType = OpenAIResponsesOutput.ApplyPatchOperationType(
+                    applyPatch.Operation
+                );
+                var isDelete = applyPatch.Operation is OpenAIResponsesApi.DeleteFileOperation;
+                var applyPatchName = ToCustomToolName("apply_patch");
+
+                // delete_file has no diff
+                _ongoingApplyPatchCalls[index] = new OngoingApplyPatchCall(applyPatch.CallId)
+                {
+                    HasDiff = isDelete,
+                    EndEmitted = isDelete,
+                };
+                parts.Add(new ToolInputStartStreamPart(applyPatch.CallId, applyPatchName));
+                if (isDelete)
+                {
+                    parts.Add(
+                        new ToolInputDeltaStreamPart(
+                            applyPatch.CallId,
+                            OpenAIResponsesOutput.ApplyPatchInput(applyPatch)
+                        )
+                    );
+                    parts.Add(new ToolInputEndStreamPart(applyPatch.CallId));
+                }
+                else
+                {
+                    var path = applyPatch.Operation switch
+                    {
+                        OpenAIResponsesApi.CreateFileOperation create => create.Path,
+                        OpenAIResponsesApi.UpdateFileOperation update => update.Path,
+                        _ => string.Empty,
+                    };
+                    parts.Add(
+                        new ToolInputDeltaStreamPart(
+                            applyPatch.CallId,
+                            "{\"callId\":\""
+                                + EscapeJsonDelta(applyPatch.CallId)
+                                + "\",\"operation\":{\"type\":\""
+                                + EscapeJsonDelta(operationType)
+                                + "\",\"path\":\""
+                                + EscapeJsonDelta(path)
+                                + "\",\"diff\":\""
+                        )
+                    );
+                }
+
+                break;
+            case OpenAIResponsesApi.ReasoningItem reasoning:
+                _activeOutputItemIds[index] = reasoning.Id;
+                _activeReasoning[reasoning.Id] = new ActiveReasoning(reasoning.EncryptedContent);
+                parts.Add(
+                    new ReasoningStartStreamPart(
+                        ReasoningPartId(reasoning.Id, 0),
+                        ReasoningMetadata(
+                            reasoning.Id,
+                            reasoning.EncryptedContent,
+                            includeEncrypted: true
+                        )
+                    )
+                );
+                break;
+            case OpenAIResponsesApi.AddedMessage message:
+                _annotations.Clear();
+                _activeOutputItemIds[index] = message.Id;
+                OpenText(parts, message.Id, OpenAIResponsesOutput.PhaseName(message.Phase));
+                break;
+        }
+    }
+
+    private void OutputItemDone(
+        List<LanguageModelStreamPart> parts,
+        OpenAIResponsesApi.OutputItemDone chunk
+    )
+    {
+        var index = (int)chunk.OutputIndex;
+        switch (chunk.Item)
+        {
+            case OpenAIResponsesApi.DoneFunctionCall functionCall:
+                _ongoingFunctionCalls.TryGetValue(index, out var finished);
+                _ongoingFunctionCalls.Remove(index);
+                FunctionCallDone(parts, functionCall, finished);
+                break;
+            case OpenAIResponsesApi.DoneCustomToolCall customCall:
+                _ongoingCustomToolCalls.TryGetValue(index, out var finishedCustom);
+                _ongoingCustomToolCalls.Remove(index);
+                CustomToolCallDone(parts, customCall, finishedCustom);
+                break;
+            case OpenAIResponsesApi.ReasoningItem reasoning:
+                var itemIdForDone = ResolveOutputItemId(reasoning.Id, index);
+                if (_activeReasoning.TryGetValue(itemIdForDone, out var finishedReasoning))
+                {
+                    _activeReasoning.Remove(itemIdForDone);
+                    foreach (
+                        var summaryIndex in finishedReasoning
+                            .SummaryParts.Where(entry =>
+                                entry.Value
+                                    is ReasoningPartState.Active
+                                        or ReasoningPartState.CanConclude
+                            )
+                            .Select(entry => entry.Key)
+                    )
+                    {
+                        parts.Add(
+                            new ReasoningEndStreamPart(
+                                ReasoningPartId(itemIdForDone, summaryIndex),
+                                ReasoningMetadata(
+                                    itemIdForDone,
+                                    reasoning.EncryptedContent,
+                                    includeEncrypted: true
+                                )
+                            )
+                        );
+                    }
+                }
+
+                _activeOutputItemIds.Remove(index);
+                break;
+            case OpenAIResponsesApi.ApplyPatchCall applyPatch:
+                _ongoingApplyPatchCalls.TryGetValue(index, out var patchCall);
+                _ongoingApplyPatchCalls.Remove(index);
+                if (
+                    patchCall is { EndEmitted: false }
+                    && applyPatch.Operation is not OpenAIResponsesApi.DeleteFileOperation
+                )
+                {
+                    if (!patchCall.HasDiff)
+                    {
+                        parts.Add(
+                            new ToolInputDeltaStreamPart(
+                                patchCall.ToolCallId,
+                                EscapeJsonDelta(
+                                    applyPatch.Operation switch
+                                    {
+                                        OpenAIResponsesApi.CreateFileOperation create =>
+                                            create.Diff,
+                                        OpenAIResponsesApi.UpdateFileOperation update =>
+                                            update.Diff,
+                                        _ => string.Empty,
+                                    }
+                                )
+                            )
+                        );
+                    }
+
+                    parts.Add(new ToolInputDeltaStreamPart(patchCall.ToolCallId, "\"}}"));
+                    parts.Add(new ToolInputEndStreamPart(patchCall.ToolCallId));
+                    patchCall.EndEmitted = true;
+                }
+
+                // Emit the final tool-call with the complete diff once the item is completed.
+                if (patchCall != null && applyPatch.Status == "completed")
+                {
+                    _hasFunctionCall = true;
+                    parts.Add(
+                        new ToolCallStreamPart(
+                            patchCall.ToolCallId,
+                            ToCustomToolName("apply_patch"),
+                            OpenAIResponsesOutput.ApplyPatchInput(applyPatch),
+                            OpenAIResponsesOutput.ItemMetadata(applyPatch.Id, _providerOptionsName)
+                        )
+                    );
+                }
+
+                break;
+            case OpenAIResponsesApi.DoneLocalShellCall localShell:
+                parts.Add(
+                    new ToolCallStreamPart(
+                        localShell.Call.CallId,
+                        ToCustomToolName("local_shell"),
+                        OpenAIResponsesOutput.LocalShellStreamCallInput(localShell.Call),
+                        OpenAIResponsesOutput.ItemMetadata(localShell.Call.Id, _providerOptionsName)
+                    )
+                );
+                break;
+            case OpenAIResponsesApi.ShellCall shellCall:
+                parts.Add(
+                    new ToolCallStreamPart(
+                        shellCall.CallId,
+                        ToCustomToolName("shell"),
+                        OpenAIResponsesOutput.ShellCallInput(shellCall),
+                        OpenAIResponsesOutput.ItemMetadata(shellCall.Id, _providerOptionsName)
+                    )
+                    {
+                        ProviderExecuted = _isShellProviderExecuted,
+                    }
+                );
+                break;
+            case OpenAIResponsesApi.ShellCallOutput shellOutput:
+                parts.Add(
+                    new ToolResultStreamPart(
+                        shellOutput.CallId,
+                        ToCustomToolName("shell"),
+                        JsonSerializer.Deserialize<JsonElement>(
+                            OpenAIResponsesOutput.ShellCallOutputResult(shellOutput)
+                        )
+                    )
+                );
+                break;
+            case OpenAIResponsesApi.IDoneItem done:
+                ItemDone(parts, done, index);
+                break;
+        }
     }
 
     /// <summary>Records an unparsable chunk: the stream finishes with the error reason.</summary>
@@ -809,61 +654,6 @@ internal sealed class OpenAIResponsesStream
     }
 
     /// <summary>Ends the stream: sources that only citations supplied, then the finish part.</summary>
-    // A custom tool input delta can end in half of a surrogate pair. System.Text.Json refuses to decode a lone
-    // surrogate escape, so decode the raw text by hand in that case.
-    private static string? ReadDelta(JsonNode? node)
-    {
-        try
-        {
-            return node?.GetValue<string>();
-        }
-        catch (InvalidOperationException)
-            when (node is JsonValue value && value.TryGetValue<JsonElement>(out var element))
-        {
-            var raw = element.GetRawText();
-            var text = new System.Text.StringBuilder(raw.Length);
-            for (var i = 1; i < raw.Length - 1; i++)
-            {
-                var c = raw[i];
-                if (c != '\\')
-                {
-                    text.Append(c);
-                    continue;
-                }
-
-                c = raw[++i];
-                if (c == 'u')
-                {
-                    text.Append(
-                        (char)
-                            int.Parse(
-                                raw.Substring(i + 1, 4),
-                                System.Globalization.NumberStyles.HexNumber,
-                                System.Globalization.CultureInfo.InvariantCulture
-                            )
-                    );
-                    i += 4;
-                }
-                else
-                {
-                    text.Append(
-                        c switch
-                        {
-                            'b' => '\b',
-                            'f' => '\f',
-                            'n' => '\n',
-                            'r' => '\r',
-                            't' => '\t',
-                            _ => c,
-                        }
-                    );
-                }
-            }
-
-            return text.ToString();
-        }
-    }
-
     public IEnumerable<LanguageModelStreamPart> Complete()
     {
         var parts = new List<LanguageModelStreamPart>();
@@ -874,7 +664,7 @@ internal sealed class OpenAIResponsesStream
                     _openTextId,
                     providerMetadata: OpenAIResponsesOutput.TextMetadata(
                         _openTextId,
-                        Array.Empty<JsonElement>(),
+                        [],
                         _openTextPhase,
                         _providerOptionsName
                     )
@@ -886,10 +676,9 @@ internal sealed class OpenAIResponsesStream
 
         foreach (var annotation in _fallbackAnnotations)
         {
-            var annotationType = OpenAIJson.String(annotation, "type");
             if (
-                (annotationType == "url_citation" && _hasWebSearchActionSources)
-                || (annotationType == "file_citation" && _hasFileSearchResults)
+                (annotation is OpenAIResponsesApi.UrlCitation && _hasWebSearchActionSources)
+                || (annotation is OpenAIResponsesApi.FileCitation && _hasFileSearchResults)
             )
             {
                 continue;
@@ -950,12 +739,6 @@ internal sealed class OpenAIResponsesStream
         return metadata;
     }
 
-    private static string? ReasoningContext(JsonObject response) =>
-        response["reasoning"]?["context"] is JsonValue context
-        && context.TryGetValue<string>(out var value)
-            ? value
-            : null;
-
     private void OpenText(List<LanguageModelStreamPart> parts, string id, string? phase = null)
     {
         if (_openTextId == id)
@@ -971,7 +754,7 @@ internal sealed class OpenAIResponsesStream
                     _openTextId,
                     providerMetadata: OpenAIResponsesOutput.TextMetadata(
                         _openTextId,
-                        Array.Empty<JsonElement>(),
+                        [],
                         _openTextPhase,
                         _providerOptionsName
                     )
@@ -984,28 +767,15 @@ internal sealed class OpenAIResponsesStream
         parts.Add(
             new TextStartStreamPart(
                 id,
-                OpenAIResponsesOutput.TextMetadata(
-                    id,
-                    Array.Empty<JsonElement>(),
-                    phase,
-                    _providerOptionsName
-                )
+                OpenAIResponsesOutput.TextMetadata(id, [], phase, _providerOptionsName)
             )
         );
     }
 
-    private static int? OutputIndex(JsonObject node) =>
-        node["output_index"] is JsonValue value && value.TryGetValue<int>(out var index)
-            ? index
-            : null;
+    private static int? OutputIndex(double? value) => value is { } index ? (int)index : null;
 
-    private static int SummaryIndex(JsonObject node) =>
-        node["summary_index"] is JsonValue value && value.TryGetValue<int>(out var index)
-            ? index
-            : 0;
-
-    private string ResolveOutputItemId(string itemId, JsonObject node) =>
-        OutputIndex(node) is { } index && _activeOutputItemIds.TryGetValue(index, out var active)
+    private string ResolveOutputItemId(string itemId, int? outputIndex) =>
+        outputIndex is { } index && _activeOutputItemIds.TryGetValue(index, out var active)
             ? active
             : itemId;
 
@@ -1080,36 +850,32 @@ internal sealed class OpenAIResponsesStream
     // The input deltas are raw text. The final tool call input is the JSON encoding of that text.
     private void CustomToolCallDone(
         List<LanguageModelStreamPart> parts,
-        JsonElement item,
+        OpenAIResponsesApi.DoneCustomToolCall item,
         OngoingCustomToolCall? ongoing
     )
     {
         _hasFunctionCall = true;
-        var callId = OpenAIJson.String(item, "call_id") ?? ongoing?.ToolCallId ?? "call";
         var metadata = new JsonObject();
-        if (OpenAIJson.String(item, "id") is { Length: > 0 } itemId)
+        if (item.Id is { Length: > 0 } itemId)
         {
             metadata["itemId"] = itemId;
         }
 
-        if (
-            item.TryGetProperty("async", out var asyncMode)
-            && asyncMode.ValueKind is JsonValueKind.True or JsonValueKind.False
-        )
+        if (item.Async is { } asyncMode)
         {
-            metadata["async"] = asyncMode.GetBoolean();
+            metadata["async"] = asyncMode;
         }
         else if (ongoing?.Async is { } ongoingAsync)
         {
             metadata["async"] = ongoingAsync;
         }
 
-        parts.Add(new ToolInputEndStreamPart(callId));
+        parts.Add(new ToolInputEndStreamPart(item.CallId));
         parts.Add(
             new ToolCallStreamPart(
-                callId,
-                OpenAIJson.String(item, "name") ?? string.Empty,
-                JsonSerializer.Serialize(OpenAIJson.String(item, "input"), TextInputOptions),
+                item.CallId,
+                item.Name,
+                JsonSerializer.Serialize(item.Input, TextInputOptions),
                 OpenAIJson.ProviderMetadata(metadata, _providerOptionsName)
             )
         );
@@ -1117,15 +883,14 @@ internal sealed class OpenAIResponsesStream
 
     private void FunctionCallDone(
         List<LanguageModelStreamPart> parts,
-        JsonElement item,
+        OpenAIResponsesApi.DoneFunctionCall item,
         OngoingFunctionCall? ongoing
     )
     {
         _hasFunctionCall = true;
-        var callId = OpenAIJson.String(item, "call_id") ?? ongoing?.ToolCallId ?? "call";
-        var name = OpenAIJson.String(item, "name") ?? ongoing?.ToolName ?? string.Empty;
-        var input = OpenAIJson.String(item, "arguments") ?? "{}";
-        var itemId = OpenAIJson.String(item, "id") ?? string.Empty;
+        var callId = item.CallId;
+        var name = item.Name;
+        var input = item.Arguments;
         var suppress = ongoing?.SuppressInputStreaming
             ?? OpenAIParallelToolCall.IsUndeclared(name, _functionToolNames);
 
@@ -1136,7 +901,7 @@ internal sealed class OpenAIResponsesStream
                 name,
                 input,
                 _functionToolNames,
-                itemId,
+                item.Id,
                 _providerOptionsName
             )
                 is { } expanded
@@ -1176,7 +941,7 @@ internal sealed class OpenAIResponsesStream
             }
         }
 
-        JsonElement? endMetadata = OpenAIJson.String(item, "namespace") is { } ns
+        JsonElement? endMetadata = item.Namespace is { } ns
             ? OpenAIJson.ProviderMetadata(
                 new JsonObject { ["namespace"] = ns },
                 _providerOptionsName
@@ -1188,7 +953,14 @@ internal sealed class OpenAIResponsesStream
                 callId,
                 name,
                 input,
-                OpenAIParallelToolCall.CallMetadata(item, ongoing?.Async, _providerOptionsName)
+                OpenAIParallelToolCall.CallMetadata(
+                    item.Id,
+                    item.Async,
+                    item.Namespace,
+                    item.Caller,
+                    ongoing?.Async,
+                    _providerOptionsName
+                )
             )
         );
     }
@@ -1203,187 +975,182 @@ internal sealed class OpenAIResponsesStream
         return json.Substring(1, json.Length - 2);
     }
 
-    private static string ApplyPatchInput(JsonObject item) =>
-        OpenAIResponsesOutput.ApplyPatchInput(
-            JsonSerializer.Deserialize<JsonElement>(item.ToJsonString())
-        );
-
     private void ItemDone(
         List<LanguageModelStreamPart> parts,
-        JsonElement item,
-        string? resolvedId = null
+        OpenAIResponsesApi.IDoneItem item,
+        int outputIndex
     )
     {
-        var itemType = OpenAIJson.String(item, "type");
-        if (itemType == "message")
+        switch (item)
         {
-            var id = resolvedId ?? _openTextId ?? "text";
-            var phase = OpenAIJson.String(item, "phase") ?? _openTextPhase;
-            _openTextId = null;
-            _openTextPhase = null;
-            parts.Add(
-                new TextEndStreamPart(
-                    id,
-                    OpenAIResponsesOutput.Citations(_annotations),
-                    OpenAIResponsesOutput.TextMetadata(
+            case OpenAIResponsesApi.DoneMessage message:
+                var id = ResolveOutputItemId(message.Id, outputIndex);
+                var phase = OpenAIResponsesOutput.PhaseName(message.Phase) ?? _openTextPhase;
+                _openTextId = null;
+                _openTextPhase = null;
+                parts.Add(
+                    new TextEndStreamPart(
                         id,
-                        _annotations,
-                        phase,
-                        _providerOptionsName
+                        OpenAIResponsesOutput.Citations(_annotations),
+                        OpenAIResponsesOutput.TextMetadata(
+                            id,
+                            _annotations,
+                            phase,
+                            _providerOptionsName
+                        )
                     )
-                )
-            );
-            _annotations.Clear();
-        }
-        else if (itemType == "program")
-        {
-            parts.Add(
-                new ToolCallStreamPart(
-                    OpenAIJson.String(item, "call_id") ?? "call",
-                    OpenAIResponsesLanguageModel.ProgrammaticToolName(_toolNameMapping),
-                    OpenAIResponsesOutput.ProgramInput(item),
-                    OpenAIResponsesOutput.ItemMetadata(item, _providerOptionsName)
-                )
-                {
-                    ProviderExecuted = true,
-                }
-            );
-        }
-        else if (itemType == "program_output")
-        {
-            parts.Add(
-                new ToolResultStreamPart(
-                    OpenAIJson.String(item, "call_id") ?? "call",
-                    OpenAIResponsesLanguageModel.ProgrammaticToolName(_toolNameMapping),
-                    JsonSerializer.Deserialize<JsonElement>(
-                        OpenAIResponsesOutput.ProgramOutputResult(item)
+                );
+                _annotations.Clear();
+                _activeOutputItemIds.Remove(outputIndex);
+                break;
+            case OpenAIResponsesApi.Program program:
+                parts.Add(
+                    new ToolCallStreamPart(
+                        program.CallId,
+                        OpenAIResponsesLanguageModel.ProgrammaticToolName(_toolNameMapping),
+                        OpenAIResponsesOutput.ProgramInput(program),
+                        OpenAIResponsesOutput.ItemMetadata(program.Id, _providerOptionsName)
                     )
-                )
-                {
-                    ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(
-                        item,
-                        _providerOptionsName
-                    ),
-                }
-            );
-        }
-        else if (itemType == "mcp_call")
-        {
-            var mcpToolName = OpenAIResponsesOutput.McpToolName(item);
-            var mcpItemId = OpenAIJson.String(item, "id") ?? string.Empty;
-            var mcpApprovalRequestId = OpenAIJson.String(item, "approval_request_id");
+                    {
+                        ProviderExecuted = true,
+                    }
+                );
+                break;
+            case OpenAIResponsesApi.ProgramOutput programOutput:
+                parts.Add(
+                    new ToolResultStreamPart(
+                        programOutput.CallId,
+                        OpenAIResponsesLanguageModel.ProgrammaticToolName(_toolNameMapping),
+                        JsonSerializer.Deserialize<JsonElement>(
+                            OpenAIResponsesOutput.ProgramOutputResult(programOutput)
+                        )
+                    )
+                    {
+                        ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(
+                            programOutput.Id,
+                            _providerOptionsName
+                        ),
+                    }
+                );
+                break;
+            case OpenAIResponsesApi.McpCall mcpCall:
+                var mcpToolName = OpenAIResponsesOutput.McpToolName(mcpCall.Name);
 
-            // When MCP tools require approval, they are tracked with our own tool call ids. The approval_request_id
-            // maps back to that id so the results match.
-            var mcpToolCallId =
-                mcpApprovalRequestId != null
-                    ? _approvalRequestIdToDummyToolCallIdFromStream.TryGetValue(
-                        mcpApprovalRequestId,
-                        out var streamToolCallId
-                    )
-                        ? streamToolCallId
-                        : _approvalRequestIdToDummyToolCallIdFromPrompt.TryGetValue(
-                            mcpApprovalRequestId,
-                            out var promptToolCallId
+                // When MCP tools require approval, they are tracked with our own tool call ids. The approval_request_id
+                // maps back to that id so the results match.
+                var mcpToolCallId =
+                    mcpCall.ApprovalRequestId != null
+                        ? _approvalRequestIdToDummyToolCallIdFromStream.TryGetValue(
+                            mcpCall.ApprovalRequestId,
+                            out var streamToolCallId
                         )
-                            ? promptToolCallId
-                            : mcpItemId
-                    : mcpItemId;
-            parts.Add(
-                new ToolCallStreamPart(
-                    mcpToolCallId,
-                    mcpToolName,
-                    OpenAIJson.String(item, "arguments") ?? "{}"
-                )
-                {
-                    ProviderExecuted = true,
-                    Dynamic = true,
-                }
-            );
-            parts.Add(
-                new ToolResultStreamPart(
-                    mcpToolCallId,
-                    mcpToolName,
-                    JsonSerializer.Deserialize<JsonElement>(
-                        OpenAIResponsesOutput.McpCallResult(item)
-                    )
-                )
-                {
-                    ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(
-                        item,
-                        _providerOptionsName
-                    ),
-                }
-            );
-        }
-        else if (itemType == "mcp_list_tools")
-        {
-            // Skip listTools: it is not exposed and not sent back.
-        }
-        else if (itemType == "mcp_approval_request")
-        {
-            var dummyToolCallId = _generateId();
-            var approvalRequestId = OpenAIJson.String(item, "approval_request_id")
-                ?? OpenAIJson.String(item, "id")
-                ?? string.Empty;
-            _approvalRequestIdToDummyToolCallIdFromStream[approvalRequestId] = dummyToolCallId;
-            parts.Add(
-                new ToolCallStreamPart(
-                    dummyToolCallId,
-                    OpenAIResponsesOutput.McpToolName(item),
-                    OpenAIJson.String(item, "arguments") ?? "{}"
-                )
-                {
-                    ProviderExecuted = true,
-                    Dynamic = true,
-                }
-            );
-            parts.Add(new ToolApprovalRequestStreamPart(approvalRequestId, dummyToolCallId));
-        }
-        else if (itemType == "web_search_call")
-        {
-            parts.Add(
-                new ToolResultStreamPart(
-                    resolvedId ?? OpenAIJson.String(item, "id") ?? string.Empty,
-                    WebSearchName(),
-                    JsonSerializer.Deserialize<JsonElement>(
-                        OpenAIResponsesOutput.WebSearchResult(item)
-                    )
-                )
-            );
-            foreach (var url in OpenAIResponsesOutput.WebSearchUrls(item))
-            {
-                _hasWebSearchActionSources = true;
-                parts.Add(new SourceStreamPart(_generateId(), url, null));
-            }
-        }
-        else if (itemType == "file_search_call")
-        {
-            parts.Add(
-                new ToolResultStreamPart(
-                    OpenAIJson.String(item, "id") ?? string.Empty,
-                    "file_search",
-                    JsonSerializer.Deserialize<JsonElement>(
-                        OpenAIResponsesOutput.FileSearchResult(item)
-                    )
-                )
-            );
-            foreach (var (fileId, filename) in OpenAIResponsesOutput.RetrievedFiles(item))
-            {
-                _hasFileSearchResults = true;
-                if (_retrievedFileIds.Add(fileId))
-                {
-                    parts.Add(
-                        new DocumentSourceStreamPart(
-                            _generateId(),
-                            "text/plain",
-                            filename,
-                            filename,
-                            OpenAIResponsesOutput.FileSearchMetadata(fileId, _providerOptionsName)
+                            ? streamToolCallId
+                            : _approvalRequestIdToDummyToolCallIdFromPrompt.TryGetValue(
+                                mcpCall.ApprovalRequestId,
+                                out var promptToolCallId
+                            )
+                                ? promptToolCallId
+                                : mcpCall.Id
+                        : mcpCall.Id;
+                parts.Add(
+                    new ToolCallStreamPart(mcpToolCallId, mcpToolName, mcpCall.Arguments)
+                    {
+                        ProviderExecuted = true,
+                        Dynamic = true,
+                    }
+                );
+                parts.Add(
+                    new ToolResultStreamPart(
+                        mcpToolCallId,
+                        mcpToolName,
+                        JsonSerializer.Deserialize<JsonElement>(
+                            OpenAIResponsesOutput.McpCallResult(mcpCall)
                         )
-                    );
+                    )
+                    {
+                        ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(
+                            mcpCall.Id,
+                            _providerOptionsName
+                        ),
+                    }
+                );
+                break;
+            case OpenAIResponsesApi.McpListTools:
+                // Skip listTools: it is not exposed and not sent back.
+                break;
+            case OpenAIResponsesApi.McpApprovalRequest approvalRequest:
+                var dummyToolCallId = _generateId();
+                var approvalRequestId = approvalRequest.ApprovalRequestId ?? approvalRequest.Id;
+                _approvalRequestIdToDummyToolCallIdFromStream[approvalRequestId] = dummyToolCallId;
+                parts.Add(
+                    new ToolCallStreamPart(
+                        dummyToolCallId,
+                        OpenAIResponsesOutput.McpToolName(approvalRequest.Name),
+                        approvalRequest.Arguments
+                    )
+                    {
+                        ProviderExecuted = true,
+                        Dynamic = true,
+                    }
+                );
+                parts.Add(new ToolApprovalRequestStreamPart(approvalRequestId, dummyToolCallId));
+                break;
+            case OpenAIResponsesApi.DoneWebSearchCall webSearch:
+                parts.Add(
+                    new ToolResultStreamPart(
+                        ResolveOutputItemId(webSearch.Id, outputIndex),
+                        WebSearchName(),
+                        JsonSerializer.Deserialize<JsonElement>(
+                            OpenAIResponsesOutput.WebSearchResult(webSearch.Action)
+                        )
+                    )
+                );
+                foreach (var url in OpenAIResponsesOutput.WebSearchUrls(webSearch.Action))
+                {
+                    _hasWebSearchActionSources = true;
+                    parts.Add(new SourceStreamPart(_generateId(), url, null));
                 }
-            }
+
+                _activeOutputItemIds.Remove(outputIndex);
+                break;
+            case OpenAIResponsesApi.DoneFileSearchCall fileSearch:
+                parts.Add(
+                    new ToolResultStreamPart(
+                        fileSearch.Id,
+                        "file_search",
+                        JsonSerializer.Deserialize<JsonElement>(
+                            OpenAIResponsesOutput.FileSearchResult(
+                                fileSearch.Queries,
+                                fileSearch.Results
+                            )
+                        )
+                    )
+                );
+                foreach (
+                    var (fileId, filename) in OpenAIResponsesOutput.RetrievedFiles(
+                        fileSearch.Results
+                    )
+                )
+                {
+                    _hasFileSearchResults = true;
+                    if (_retrievedFileIds.Add(fileId))
+                    {
+                        parts.Add(
+                            new DocumentSourceStreamPart(
+                                _generateId(),
+                                "text/plain",
+                                filename,
+                                filename,
+                                OpenAIResponsesOutput.FileSearchMetadata(
+                                    fileId,
+                                    _providerOptionsName
+                                )
+                            )
+                        );
+                    }
+                }
+
+                break;
         }
     }
 

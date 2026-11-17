@@ -904,6 +904,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         using var document = JsonDocument.Parse(
             string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
         );
+        var parsedResponse = OpenAIResponsesSchema.ParseResponse(document.RootElement)
+            ?? throw new ProviderUtils.TypeValidationException(
+                "Type validation failed: Value: " + document.RootElement.GetRawText() + ".",
+                document.RootElement.Clone()
+            );
         var namedOptions =
             options.ProviderOptions != null
             && options.ProviderOptions.TryGetValue(_providerOptionsName, out var providerOptions)
@@ -913,7 +918,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             OpenAIJson.Bool(namedOptions, "logprobs") == true
             || OpenAIJson.Int(namedOptions, "logprobs") is not null and not 0;
         return Parse(
-            document.RootElement,
+            parsedResponse,
             prepared.Warnings,
             response.Body,
             response.Headers,
@@ -1005,11 +1010,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
                 // Mirrors openaiResponsesChunkSchema: an invalid chunk (including a non-object value) fails the stream,
                 // an unknown chunk (unknown_chunk) is ignored.
-                var node = JsonNode.Parse(data) as JsonObject;
                 var typedChunk = OpenAIResponsesSchema.ParseChunk(chunkDocument.RootElement);
-                if (node == null || typedChunk == null)
+                if (typedChunk == null)
                 {
                     state.MarkParseError();
+                    var node = JsonNode.Parse(data) as JsonObject;
                     yield return node != null && IsOpenAIChatCompletionChunk(node)
                         ? new ErrorStreamPart(
                             CreateChatCompletionsMismatchError(
@@ -1033,7 +1038,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     continue;
                 }
 
-                foreach (var part in state.Push(node))
+                foreach (var part in state.Push(typedChunk))
                 {
                     yield return part;
                 }
@@ -1109,7 +1114,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     }
 
     internal static LanguageModelGenerateResult Parse(
-        JsonElement root,
+        OpenAIResponsesApi.Response response,
         IReadOnlyList<OpenAICallWarning> warnings,
         string raw,
         IReadOnlyDictionary<string, string> headers,
@@ -1127,32 +1132,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         functionToolNames ??= Array.Empty<string>();
         approvalRequestIdToDummyToolCallIdFromPrompt ??= new Dictionary<string, string>();
         generateId ??= () => JsonValues.GenerateId("source_");
-        if (root.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
+        if (response.Error is { } error)
         {
-            var message =
-                error.TryGetProperty("message", out var messageElement)
-                && messageElement.ValueKind == JsonValueKind.String
-                    ? messageElement.GetString() ?? "Responses API error"
-                    : "Responses API error";
-            throw new BadRequestException(message, raw);
+            throw new BadRequestException(error.Message, raw);
         }
 
-        if (
-            !root.TryGetProperty("output", out var output)
-            || output.ValueKind != JsonValueKind.Array
-        )
+        if (response.Output is not { } output)
         {
-            string? detail = null;
-            if (
-                root.TryGetProperty("incomplete_details", out var incomplete)
-                && incomplete.ValueKind == JsonValueKind.Object
-                && incomplete.TryGetProperty("reason", out var reason)
-                && reason.ValueKind == JsonValueKind.String
-            )
-            {
-                detail = reason.GetString();
-            }
-
+            var detail = response.IncompleteReason;
             var message = string.IsNullOrEmpty(detail)
                 ? "Responses API returned no output"
                 : "Responses API returned no output (" + detail + ")";
@@ -1164,476 +1151,403 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         var hasRefusal = false;
         var hasWebSearchActionSources = false;
         var hasFileSearchResults = false;
-        foreach (var item in output.EnumerateArray())
+        foreach (var item in output)
         {
-            var itemType = item.TryGetProperty("type", out var itemTypeElement)
-                ? itemTypeElement.GetString()
-                : null;
             hasWebSearchActionSources |=
-                itemType == "web_search_call"
-                && OpenAIResponsesOutput.WebSearchUrls(item).Count > 0;
+                item is OpenAIResponsesApi.WebSearchCall webSearch
+                && OpenAIResponsesOutput.WebSearchUrls(webSearch.Action).Count > 0;
             hasFileSearchResults |=
-                itemType == "file_search_call" && OpenAIResponsesOutput.HasResults(item);
+                item is OpenAIResponsesApi.FileSearchCall fileSearch
+                && OpenAIResponsesOutput.HasResults(fileSearch.Results);
         }
 
         string? structuredOutputText = null;
         var logprobs = new JsonArray();
         var retrievedFileIds = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var item in output.EnumerateArray())
+        foreach (var item in output)
         {
-            var type = item.TryGetProperty("type", out var typeElement)
-                ? typeElement.GetString()
-                : null;
-            if (
-                type == "message"
-                && item.TryGetProperty("content", out var parts)
-                && parts.ValueKind == JsonValueKind.Array
-            )
+            switch (item)
             {
-                var itemId = OpenAIJson.String(item, "id");
-                var phase = OpenAIJson.String(item, "phase");
+                case OpenAIResponsesApi.Message message:
+                    var itemId = message.Id;
+                    var phase = OpenAIResponsesOutput.PhaseName(message.Phase);
 
-                // Parse only the last final answer for JSON output, while every message stays in the content.
-                if (jsonResponse && phase == "final_answer")
-                {
-                    structuredOutputText = string.Concat(
-                        parts
-                            .EnumerateArray()
-                            .Select(contentPart =>
-                                OpenAIJson.String(
-                                    contentPart,
-                                    OpenAIJson.String(contentPart, "type") == "refusal"
-                                        ? "refusal"
-                                        : "text"
-                                )
-                            )
-                    );
-                }
-
-                foreach (var part in parts.EnumerateArray())
-                {
-                    if (OpenAIJson.String(part, "type") == "refusal")
+                    // Parse only the last final answer for JSON output, while every message stays in the content.
+                    if (jsonResponse && phase == "final_answer")
                     {
-                        hasRefusal = true;
-                        content.Add(
-                            new OpenAIText(
-                                OpenAIJson.String(part, "refusal") ?? string.Empty,
-                                null,
-                                OpenAIResponsesOutput.TextMetadata(
-                                    itemId,
-                                    Array.Empty<JsonElement>(),
-                                    phase,
-                                    providerOptionsName
-                                )
+                        structuredOutputText = string.Concat(
+                            message.Content.Select(contentPart =>
+                                contentPart switch
+                                {
+                                    OpenAIResponsesApi.Refusal refusal => refusal.RefusalText,
+                                    OpenAIResponsesApi.OutputText outputText => outputText.Text,
+                                    _ => string.Empty,
+                                }
                             )
                         );
-                        continue;
                     }
 
-                    if (
-                        part.TryGetProperty("text", out var text)
-                        && text.ValueKind == JsonValueKind.String
-                    )
+                    foreach (var part in message.Content)
                     {
-                        var value = text.GetString();
-                        if (value != null)
+                        if (part is OpenAIResponsesApi.Refusal refusalPart)
                         {
-                            var annotations = new List<JsonElement>();
-                            if (
-                                part.TryGetProperty("annotations", out var annotationArray)
-                                && annotationArray.ValueKind == JsonValueKind.Array
-                            )
-                            {
-                                annotations.AddRange(annotationArray.EnumerateArray());
-                            }
-
+                            hasRefusal = true;
                             content.Add(
                                 new OpenAIText(
-                                    value!,
-                                    OpenAIResponsesOutput.Citations(annotations),
+                                    refusalPart.RefusalText,
+                                    null,
                                     OpenAIResponsesOutput.TextMetadata(
                                         itemId,
-                                        annotations,
+                                        [],
                                         phase,
                                         providerOptionsName
                                     )
                                 )
                             );
-                            if (
-                                collectLogprobs
-                                && part.TryGetProperty("logprobs", out var partLogprobs)
-                                && partLogprobs.ValueKind != JsonValueKind.Null
-                            )
-                            {
-                                logprobs.Add(JsonNode.Parse(partLogprobs.GetRawText()));
-                            }
-
-                            // Citation-derived sources are only used when retrieval data is unavailable.
-                            foreach (var annotation in annotations)
-                            {
-                                var annotationType = OpenAIJson.String(annotation, "type");
-                                if (
-                                    (annotationType == "url_citation" && hasWebSearchActionSources)
-                                    || (annotationType == "file_citation" && hasFileSearchResults)
-                                )
-                                {
-                                    continue;
-                                }
-
-                                content.Add(
-                                    OpenAIResponsesOutput.AnnotationSource(
-                                        annotation,
-                                        generateId(),
-                                        providerOptionsName
-                                    )
-                                );
-                            }
+                            continue;
                         }
-                    }
-                }
-            }
-            else if (type == "mcp_call")
-            {
-                var mcpToolName = OpenAIResponsesOutput.McpToolName(item);
-                var mcpItemId = OpenAIJson.String(item, "id") ?? string.Empty;
-                var mcpApprovalRequestId = OpenAIJson.String(item, "approval_request_id");
-                var mcpToolCallId =
-                    mcpApprovalRequestId != null
-                        ? approvalRequestIdToDummyToolCallIdFromPrompt.TryGetValue(
-                            mcpApprovalRequestId,
-                            out var mappedToolCallId
-                        )
-                            ? mappedToolCallId
-                            : mcpItemId
-                        : mcpItemId;
-                content.Add(
-                    new GeneratedToolCall(
-                        mcpToolCallId,
-                        mcpToolName,
-                        OpenAIJson.String(item, "arguments") ?? "{}"
-                    )
-                    {
-                        ProviderExecuted = true,
-                        Dynamic = true,
-                    }
-                );
-                content.Add(
-                    new GeneratedToolResult(
-                        mcpToolCallId,
-                        mcpToolName,
-                        OpenAIResponsesOutput.McpCallResult(item)
-                    )
-                    {
-                        ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(
-                            item,
-                            providerOptionsName
-                        ),
-                    }
-                );
-            }
-            else if (type == "mcp_list_tools")
-            {
-                // Skip listTools: it is not exposed and not sent back.
-            }
-            else if (type == "mcp_approval_request")
-            {
-                var approvalRequestId = OpenAIJson.String(item, "approval_request_id")
-                    ?? OpenAIJson.String(item, "id")
-                    ?? string.Empty;
-                var dummyToolCallId = generateId();
-                content.Add(
-                    new GeneratedToolCall(
-                        dummyToolCallId,
-                        OpenAIResponsesOutput.McpToolName(item),
-                        OpenAIJson.String(item, "arguments") ?? "{}"
-                    )
-                    {
-                        ProviderExecuted = true,
-                        Dynamic = true,
-                    }
-                );
-                content.Add(new GeneratedToolApprovalRequest(approvalRequestId, dummyToolCallId));
-            }
-            else if (type == "web_search_call")
-            {
-                var id = OpenAIJson.String(item, "id") ?? string.Empty;
-                var webSearchName = toolNameMapping?.ToCustomToolName(
-                    webSearchToolName ?? "web_search"
-                )
-                    ?? webSearchToolName
-                    ?? "web_search";
-                content.Add(
-                    new GeneratedToolCall(id, webSearchName, "{}") { ProviderExecuted = true }
-                );
-                content.Add(
-                    new GeneratedToolResult(
-                        id,
-                        webSearchName,
-                        OpenAIResponsesOutput.WebSearchResult(item)
-                    )
-                );
-                foreach (var url in OpenAIResponsesOutput.WebSearchUrls(item))
-                {
-                    content.Add(new GeneratedSource(generateId(), url, null));
-                }
-            }
-            else if (type == "file_search_call")
-            {
-                var id = OpenAIJson.String(item, "id") ?? string.Empty;
-                content.Add(
-                    new GeneratedToolResult(
-                        id,
-                        "file_search",
-                        OpenAIResponsesOutput.FileSearchResult(item)
-                    )
-                );
-                foreach (var (fileId, filename) in OpenAIResponsesOutput.RetrievedFiles(item))
-                {
-                    if (retrievedFileIds.Add(fileId))
-                    {
+
+                        if (part is not OpenAIResponsesApi.OutputText textPart)
+                        {
+                            continue;
+                        }
+
+                        var annotations = textPart.Annotations;
                         content.Add(
-                            new GeneratedDocumentSource(
-                                generateId(),
-                                "text/plain",
-                                filename,
-                                filename,
-                                OpenAIResponsesOutput.FileSearchMetadata(
-                                    fileId,
+                            new OpenAIText(
+                                textPart.Text,
+                                OpenAIResponsesOutput.Citations(annotations),
+                                OpenAIResponsesOutput.TextMetadata(
+                                    itemId,
+                                    annotations,
+                                    phase,
                                     providerOptionsName
                                 )
                             )
                         );
+                        if (collectLogprobs && textPart.Logprobs is { } partLogprobs)
+                        {
+                            logprobs.Add(LogprobsJson(partLogprobs));
+                        }
+
+                        // Citation-derived sources are only used when retrieval data is unavailable.
+                        foreach (var annotation in annotations)
+                        {
+                            if (
+                                (
+                                    annotation is OpenAIResponsesApi.UrlCitation
+                                    && hasWebSearchActionSources
+                                )
+                                || (
+                                    annotation is OpenAIResponsesApi.FileCitation
+                                    && hasFileSearchResults
+                                )
+                            )
+                            {
+                                continue;
+                            }
+
+                            content.Add(
+                                OpenAIResponsesOutput.AnnotationSource(
+                                    annotation,
+                                    generateId(),
+                                    providerOptionsName
+                                )
+                            );
+                        }
                     }
-                }
-            }
-            else if (type == "function_call")
-            {
-                hasFunctionCall = true;
-                var id =
-                    item.TryGetProperty("call_id", out var idElement)
-                    && idElement.ValueKind == JsonValueKind.String
-                        ? idElement.GetString() ?? "call"
-                        : "call";
-                var name = item.TryGetProperty("name", out var nameElement)
-                    ? nameElement.GetString() ?? string.Empty
-                    : string.Empty;
-                var arguments =
-                    item.TryGetProperty("arguments", out var args)
-                    && args.ValueKind == JsonValueKind.String
-                        ? args.GetString() ?? "{}"
-                        : "{}";
-                var expanded = OpenAIParallelToolCall.Expand(
-                    id,
-                    name,
-                    arguments,
-                    functionToolNames,
-                    OpenAIJson.String(item, "id") ?? string.Empty,
-                    providerOptionsName
-                );
-                if (expanded != null)
-                {
-                    content.AddRange(
-                        expanded.Select(call => new GeneratedToolCall(
-                            call.ToolCallId,
-                            call.ToolName,
-                            call.Input,
-                            call.ProviderMetadata
-                        ))
+
+                    break;
+                case OpenAIResponsesApi.McpCall mcpCall:
+                    var mcpToolName = OpenAIResponsesOutput.McpToolName(mcpCall.Name);
+                    var mcpToolCallId =
+                        mcpCall.ApprovalRequestId != null
+                            ? approvalRequestIdToDummyToolCallIdFromPrompt.TryGetValue(
+                                mcpCall.ApprovalRequestId,
+                                out var mappedToolCallId
+                            )
+                                ? mappedToolCallId
+                                : mcpCall.Id
+                            : mcpCall.Id;
+                    content.Add(
+                        new GeneratedToolCall(mcpToolCallId, mcpToolName, mcpCall.Arguments)
+                        {
+                            ProviderExecuted = true,
+                            Dynamic = true,
+                        }
                     );
-                    continue;
-                }
+                    content.Add(
+                        new GeneratedToolResult(
+                            mcpToolCallId,
+                            mcpToolName,
+                            OpenAIResponsesOutput.McpCallResult(mcpCall)
+                        )
+                        {
+                            ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(
+                                mcpCall.Id,
+                                providerOptionsName
+                            ),
+                        }
+                    );
+                    break;
+                case OpenAIResponsesApi.McpListTools:
+                    // Skip listTools: it is not exposed and not sent back.
+                    break;
+                case OpenAIResponsesApi.McpApprovalRequest approvalRequest:
+                    var approvalRequestId = approvalRequest.ApprovalRequestId ?? approvalRequest.Id;
+                    var dummyToolCallId = generateId();
+                    content.Add(
+                        new GeneratedToolCall(
+                            dummyToolCallId,
+                            OpenAIResponsesOutput.McpToolName(approvalRequest.Name),
+                            approvalRequest.Arguments
+                        )
+                        {
+                            ProviderExecuted = true,
+                            Dynamic = true,
+                        }
+                    );
+                    content.Add(
+                        new GeneratedToolApprovalRequest(approvalRequestId, dummyToolCallId)
+                    );
+                    break;
+                case OpenAIResponsesApi.WebSearchCall webSearchCall:
+                    var webSearchName = toolNameMapping?.ToCustomToolName(
+                        webSearchToolName ?? "web_search"
+                    )
+                        ?? webSearchToolName
+                        ?? "web_search";
+                    content.Add(
+                        new GeneratedToolCall(webSearchCall.Id, webSearchName, "{}")
+                        {
+                            ProviderExecuted = true,
+                        }
+                    );
+                    content.Add(
+                        new GeneratedToolResult(
+                            webSearchCall.Id,
+                            webSearchName,
+                            OpenAIResponsesOutput.WebSearchResult(webSearchCall.Action)
+                        )
+                    );
+                    foreach (var url in OpenAIResponsesOutput.WebSearchUrls(webSearchCall.Action))
+                    {
+                        content.Add(new GeneratedSource(generateId(), url, null));
+                    }
 
-                var metadata = OpenAIParallelToolCall.CallMetadata(
-                    item,
-                    providerName: providerOptionsName
-                );
-                content.Add(new GeneratedToolCall(id, name, arguments, metadata));
-            }
-            else if (type == "program")
-            {
-                content.Add(
-                    new GeneratedToolCall(
-                        OpenAIJson.String(item, "call_id") ?? "call",
-                        ProgrammaticToolName(toolNameMapping),
-                        OpenAIResponsesOutput.ProgramInput(item),
-                        OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName)
+                    break;
+                case OpenAIResponsesApi.FileSearchCall fileSearchCall:
+                    content.Add(
+                        new GeneratedToolResult(
+                            fileSearchCall.Id,
+                            "file_search",
+                            OpenAIResponsesOutput.FileSearchResult(
+                                fileSearchCall.Queries,
+                                fileSearchCall.Results
+                            )
+                        )
+                    );
+                    foreach (
+                        var (fileId, filename) in OpenAIResponsesOutput.RetrievedFiles(
+                            fileSearchCall.Results
+                        )
                     )
                     {
-                        ProviderExecuted = true,
+                        if (retrievedFileIds.Add(fileId))
+                        {
+                            content.Add(
+                                new GeneratedDocumentSource(
+                                    generateId(),
+                                    "text/plain",
+                                    filename,
+                                    filename,
+                                    OpenAIResponsesOutput.FileSearchMetadata(
+                                        fileId,
+                                        providerOptionsName
+                                    )
+                                )
+                            );
+                        }
                     }
-                );
-            }
-            else if (type == "program_output")
-            {
-                content.Add(
-                    new GeneratedToolResult(
-                        OpenAIJson.String(item, "call_id") ?? "call",
-                        ProgrammaticToolName(toolNameMapping),
-                        OpenAIResponsesOutput.ProgramOutputResult(item)
-                    )
+
+                    break;
+                case OpenAIResponsesApi.FunctionCall functionCall:
+                    hasFunctionCall = true;
+                    var expanded = OpenAIParallelToolCall.Expand(
+                        functionCall.CallId,
+                        functionCall.Name,
+                        functionCall.Arguments,
+                        functionToolNames,
+                        functionCall.Id,
+                        providerOptionsName
+                    );
+                    if (expanded != null)
                     {
-                        ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(
-                            item,
-                            providerOptionsName
-                        ),
+                        content.AddRange(
+                            expanded.Select(call => new GeneratedToolCall(
+                                call.ToolCallId,
+                                call.ToolName,
+                                call.Input,
+                                call.ProviderMetadata
+                            ))
+                        );
+                        break;
                     }
-                );
-            }
-            else if (type == "custom_tool_call")
-            {
-                hasFunctionCall = true;
-                var id = OpenAIJson.String(item, "call_id") ?? "call";
-                var name = OpenAIJson.String(item, "name") ?? string.Empty;
-                var input = OpenAIJson.String(item, "input") ?? string.Empty;
-                content.Add(
-                    new GeneratedToolCall(
-                        id,
-                        name,
-                        JsonSerializer.Serialize(input, CustomToolInputOptions),
-                        OpenAIParallelToolCall.CallMetadata(item, providerName: providerOptionsName)
-                    )
-                );
-            }
-            else if (type == "local_shell_call")
-            {
-                content.Add(
-                    new GeneratedToolCall(
-                        OpenAIJson.String(item, "call_id") ?? "call",
-                        toolNameMapping?.ToCustomToolName("local_shell") ?? "local_shell",
-                        OpenAIResponsesOutput.LocalShellCallInput(item),
-                        OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName)
-                    )
-                );
-            }
-            else if (type == "shell_call")
-            {
-                content.Add(
-                    new GeneratedToolCall(
-                        OpenAIJson.String(item, "call_id") ?? "call",
-                        toolNameMapping?.ToCustomToolName("shell") ?? "shell",
-                        OpenAIResponsesOutput.ShellCallInput(item),
-                        OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName)
-                    )
+
+                    content.Add(
+                        new GeneratedToolCall(
+                            functionCall.CallId,
+                            functionCall.Name,
+                            functionCall.Arguments,
+                            OpenAIParallelToolCall.CallMetadata(
+                                functionCall.Id,
+                                functionCall.Async,
+                                functionCall.Namespace,
+                                functionCall.Caller,
+                                providerName: providerOptionsName
+                            )
+                        )
+                    );
+                    break;
+                case OpenAIResponsesApi.Program program:
+                    content.Add(
+                        new GeneratedToolCall(
+                            program.CallId,
+                            ProgrammaticToolName(toolNameMapping),
+                            OpenAIResponsesOutput.ProgramInput(program),
+                            OpenAIResponsesOutput.ItemMetadata(program.Id, providerOptionsName)
+                        )
+                        {
+                            ProviderExecuted = true,
+                        }
+                    );
+                    break;
+                case OpenAIResponsesApi.ProgramOutput programOutput:
+                    content.Add(
+                        new GeneratedToolResult(
+                            programOutput.CallId,
+                            ProgrammaticToolName(toolNameMapping),
+                            OpenAIResponsesOutput.ProgramOutputResult(programOutput)
+                        )
+                        {
+                            ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(
+                                programOutput.Id,
+                                providerOptionsName
+                            ),
+                        }
+                    );
+                    break;
+                case OpenAIResponsesApi.CustomToolCall customToolCall:
+                    hasFunctionCall = true;
+                    content.Add(
+                        new GeneratedToolCall(
+                            customToolCall.CallId,
+                            customToolCall.Name,
+                            JsonSerializer.Serialize(customToolCall.Input, CustomToolInputOptions),
+                            OpenAIParallelToolCall.CallMetadata(
+                                customToolCall.Id,
+                                customToolCall.Async,
+                                providerName: providerOptionsName
+                            )
+                        )
+                    );
+                    break;
+                case OpenAIResponsesApi.LocalShellCallOutput localShell:
+                    content.Add(
+                        new GeneratedToolCall(
+                            localShell.Call.CallId,
+                            toolNameMapping?.ToCustomToolName("local_shell") ?? "local_shell",
+                            OpenAIResponsesOutput.LocalShellCallInput(localShell.Call),
+                            OpenAIResponsesOutput.ItemMetadata(
+                                localShell.Call.Id,
+                                providerOptionsName
+                            )
+                        )
+                    );
+                    break;
+                case OpenAIResponsesApi.ShellCall shellCall:
+                    content.Add(
+                        new GeneratedToolCall(
+                            shellCall.CallId,
+                            toolNameMapping?.ToCustomToolName("shell") ?? "shell",
+                            OpenAIResponsesOutput.ShellCallInput(shellCall),
+                            OpenAIResponsesOutput.ItemMetadata(shellCall.Id, providerOptionsName)
+                        )
+                        {
+                            ProviderExecuted = isShellProviderExecuted,
+                        }
+                    );
+                    break;
+                case OpenAIResponsesApi.ShellCallOutput shellCallOutput:
+                    content.Add(
+                        new GeneratedToolResult(
+                            shellCallOutput.CallId,
+                            toolNameMapping?.ToCustomToolName("shell") ?? "shell",
+                            OpenAIResponsesOutput.ShellCallOutputResult(shellCallOutput)
+                        )
+                    );
+                    break;
+                case OpenAIResponsesApi.ApplyPatchCall applyPatchCall:
+                    hasFunctionCall = true;
+                    content.Add(
+                        new GeneratedToolCall(
+                            applyPatchCall.CallId,
+                            toolNameMapping?.ToCustomToolName("apply_patch") ?? "apply_patch",
+                            OpenAIResponsesOutput.ApplyPatchInput(applyPatchCall),
+                            OpenAIResponsesOutput.ItemMetadata(
+                                applyPatchCall.Id,
+                                providerOptionsName
+                            )
+                        )
+                    );
+                    break;
+                case OpenAIResponsesApi.Reasoning reasoning:
+                    var reasoningValues = new JsonObject();
+                    if (!string.IsNullOrEmpty(reasoning.Id))
                     {
-                        ProviderExecuted = isShellProviderExecuted,
+                        reasoningValues["itemId"] = reasoning.Id;
                     }
-                );
-            }
-            else if (type == "shell_call_output")
-            {
-                content.Add(
-                    new GeneratedToolResult(
-                        OpenAIJson.String(item, "call_id") ?? "call",
-                        toolNameMapping?.ToCustomToolName("shell") ?? "shell",
-                        OpenAIResponsesOutput.ShellCallOutputResult(item)
-                    )
-                );
-            }
-            else if (type == "apply_patch_call")
-            {
-                hasFunctionCall = true;
-                content.Add(
-                    new GeneratedToolCall(
-                        OpenAIJson.String(item, "call_id") ?? "call",
-                        toolNameMapping?.ToCustomToolName("apply_patch") ?? "apply_patch",
-                        OpenAIResponsesOutput.ApplyPatchInput(item),
-                        OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName)
-                    )
-                );
-            }
-            else if (
-                type == "reasoning"
-                && item.TryGetProperty("summary", out var summary)
-                && summary.ValueKind == JsonValueKind.Array
-            )
-            {
-                var reasoningItemId =
-                    item.TryGetProperty("id", out var reasoningIdElement)
-                    && reasoningIdElement.ValueKind == JsonValueKind.String
-                        ? reasoningIdElement.GetString()
-                        : null;
-                var reasoningValues = new JsonObject();
-                if (!string.IsNullOrEmpty(reasoningItemId))
-                {
-                    reasoningValues["itemId"] = reasoningItemId;
-                }
 
-                reasoningValues["reasoningEncryptedContent"] =
-                    item.TryGetProperty("encrypted_content", out var encryptedElement)
-                    && encryptedElement.ValueKind == JsonValueKind.String
-                        ? encryptedElement.GetString()
-                        : null;
+                    reasoningValues["reasoningEncryptedContent"] = reasoning.EncryptedContent;
+                    JsonElement? reasoningMetadata =
+                        reasoningValues.Count > 0
+                            ? OpenAIJson.ProviderMetadata(reasoningValues, providerOptionsName)
+                            : null;
+                    if (reasoning.Summary.Count == 0)
+                    {
+                        content.Add(new GeneratedReasoning(string.Empty, reasoningMetadata));
+                    }
 
-                JsonElement? reasoningMetadata =
-                    reasoningValues.Count > 0
-                        ? OpenAIJson.ProviderMetadata(reasoningValues, providerOptionsName)
-                        : null;
-                if (summary.GetArrayLength() == 0)
-                {
-                    content.Add(new GeneratedReasoning(string.Empty, reasoningMetadata));
-                }
+                    foreach (var text in reasoning.Summary)
+                    {
+                        content.Add(new GeneratedReasoning(text, reasoningMetadata));
+                    }
 
-                foreach (var part in summary.EnumerateArray())
-                {
-                    var text =
-                        part.TryGetProperty("text", out var textElement)
-                        && textElement.ValueKind == JsonValueKind.String
-                            ? textElement.GetString() ?? string.Empty
-                            : string.Empty;
-                    content.Add(new GeneratedReasoning(text, reasoningMetadata));
-                }
+                    break;
             }
         }
 
-        string? incompleteReason = null;
-        if (
-            root.TryGetProperty("incomplete_details", out var incompleteDetails)
-            && incompleteDetails.ValueKind == JsonValueKind.Object
-            && incompleteDetails.TryGetProperty("reason", out var reasonElement)
-            && reasonElement.ValueKind == JsonValueKind.String
-        )
-        {
-            incompleteReason = reasonElement.GetString();
-        }
-
+        var incompleteReason = response.IncompleteReason;
         var finish = MapFinishReason(incompleteReason, hasFunctionCall, hasRefusal);
-
-        var responseId =
-            root.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.String
-                ? idValue.GetString()
-                : null;
-        var responseModel =
-            root.TryGetProperty("model", out var modelValue)
-            && modelValue.ValueKind == JsonValueKind.String
-                ? modelValue.GetString()
-                : null;
+        var responseId = response.Id;
+        var responseModel = response.Model;
         var providerMetadata = new JsonObject { ["responseId"] = responseId };
         if (logprobs.Count > 0)
         {
             providerMetadata["logprobs"] = logprobs;
         }
 
-        if (
-            root.TryGetProperty("service_tier", out var serviceTierValue)
-            && serviceTierValue.ValueKind == JsonValueKind.String
-        )
+        if (response.ServiceTier is { } serviceTier)
         {
-            providerMetadata["serviceTier"] = serviceTierValue.GetString();
+            providerMetadata["serviceTier"] = serviceTier;
         }
 
-        if (
-            root.TryGetProperty("reasoning", out var reasoningValue)
-            && reasoningValue.ValueKind == JsonValueKind.Object
-            && reasoningValue.TryGetProperty("context", out var reasoningContextValue)
-            && reasoningContextValue.ValueKind != JsonValueKind.Null
-        )
+        if (response.ReasoningContext is { } reasoningContext)
         {
-            providerMetadata["reasoningContext"] = JsonNode.Parse(
-                reasoningContextValue.GetRawText()
-            );
+            providerMetadata["reasoningContext"] = reasoningContext;
         }
 
-        if (PromptCacheDiagnostics(root) is { } promptCacheDiagnostics)
+        if (PromptCacheDiagnostics(response.PromptCacheDiagnostics) is { } promptCacheDiagnostics)
         {
             providerMetadata["promptCacheDiagnostics"] = promptCacheDiagnostics;
         }
@@ -1641,19 +1555,47 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         return new LanguageModelGenerateResult(
             content,
             finish,
-            OpenAIJson.ResponsesUsage(
-                root.TryGetProperty("usage", out var usage) ? usage : (JsonElement?)null
-            ),
+            OpenAIJson.ResponsesUsage(response.Usage),
             incompleteReason,
             ToCallWarnings(warnings),
             string.IsNullOrEmpty(responseId) ? null : responseId,
             OpenAIJson.ProviderMetadata(providerMetadata, providerOptionsName),
             raw,
             string.IsNullOrEmpty(responseModel) ? null : responseModel,
-            OpenAIJson.UnixSeconds(OpenAIJson.Unix(root, "created_at")),
+            OpenAIJson.UnixSeconds(response.CreatedAt is { } createdAt ? (long)createdAt : null),
             headers,
             structuredOutputText
         );
+    }
+
+    private static JsonArray LogprobsJson(IReadOnlyList<OpenAIResponsesApi.TokenLogprob> logprobs)
+    {
+        var array = new JsonArray();
+        foreach (var entry in logprobs)
+        {
+            var top = new JsonArray();
+            foreach (var alternative in entry.TopLogprobs)
+            {
+                top.Add(
+                    new JsonObject
+                    {
+                        ["token"] = alternative.Token,
+                        ["logprob"] = alternative.Logprob,
+                    }
+                );
+            }
+
+            array.Add(
+                new JsonObject
+                {
+                    ["token"] = entry.Token,
+                    ["logprob"] = entry.Logprob,
+                    ["top_logprobs"] = top,
+                }
+            );
+        }
+
+        return array;
     }
 
     internal static string ProgrammaticToolName(ToolNameMapping? toolNameMapping) =>
@@ -1746,39 +1688,30 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         return update;
     }
 
-    private static JsonObject? PromptCacheDiagnostics(JsonElement response) =>
-        response.ValueKind == JsonValueKind.Object
-        && response.TryGetProperty("prompt_cache_diagnostics", out var diagnostics)
-            ? PromptCacheDiagnostics(JsonNode.Parse(diagnostics.GetRawText()))
-            : null;
-
-    /// <summary>Returns the known <c>prompt_cache_diagnostics</c> fields, or <c>null</c> when absent or without a string <c>type</c>.</summary>
-    internal static JsonObject? PromptCacheDiagnostics(JsonNode? diagnostics)
+    /// <summary>Returns the <c>prompt_cache_diagnostics</c> fields that the response carries, or <c>null</c> when it has none.</summary>
+    internal static JsonObject? PromptCacheDiagnostics(
+        OpenAIResponsesApi.PromptCacheDiagnostics? diagnostics
+    )
     {
-        if (
-            diagnostics is not JsonObject { } source
-            || source["type"] is not JsonValue type
-            || !type.TryGetValue<string>(out _)
-        )
+        if (diagnostics is null)
         {
             return null;
         }
 
-        var result = new JsonObject();
-        foreach (
-            var key in new[]
-            {
-                "type",
-                "reason",
-                "cache_missed_tokens",
-                "comparison_reusable_tokens",
-            }
-        )
+        var result = new JsonObject { ["type"] = diagnostics.Type };
+        if (diagnostics.Reason is { } reason)
         {
-            if (source.ContainsKey(key))
-            {
-                result[key] = source[key]?.DeepClone();
-            }
+            result["reason"] = reason;
+        }
+
+        if (diagnostics.CacheMissedTokens is { } cacheMissedTokens)
+        {
+            result["cache_missed_tokens"] = cacheMissedTokens;
+        }
+
+        if (diagnostics.ComparisonReusableTokens is { } comparisonReusableTokens)
+        {
+            result["comparison_reusable_tokens"] = comparisonReusableTokens;
         }
 
         return result;

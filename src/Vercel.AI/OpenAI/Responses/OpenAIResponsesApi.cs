@@ -177,7 +177,8 @@ internal static partial class OpenAIResponsesApi
         string? ServiceTier = null,
         string? ReasoningContext = null,
         string? IncompleteReason = null,
-        Usage? Usage = null
+        Usage? Usage = null,
+        PromptCacheDiagnostics? PromptCacheDiagnostics = null
     );
 
     /// <summary>A stream chunk (<c>openaiResponsesChunkSchema</c>).</summary>
@@ -189,6 +190,7 @@ internal static partial class OpenAIResponsesApi
     /// <summary><c>response.output_text.delta</c>.</summary>
     public sealed record OutputTextDelta(
         string ItemId,
+        double? OutputIndex,
         string Delta,
         IReadOnlyList<TokenLogprob>? Logprobs
     ) : Chunk;
@@ -520,7 +522,8 @@ internal static partial class OpenAIResponsesApi
         InputTokensDetails? InputTokensDetails,
         double OutputTokens,
         OutputTokensDetails? OutputTokensDetails,
-        double? TotalTokens
+        double? TotalTokens,
+        JsonElement? Raw = null
     );
 
     /// <summary>The <c>input_tokens_details</c> of a usage.</summary>
