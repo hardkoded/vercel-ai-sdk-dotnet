@@ -203,6 +203,9 @@ public sealed class MistralTranscriptionModel : ITranscriptionModel, ITranscript
         }
     }
 
+    private static bool IsNumber(JsonElement? element) =>
+        element is { ValueKind: JsonValueKind.Number } number && number.TryGetDouble(out _);
+
     private static JsonDocument ParseResponse(string body)
     {
         JsonDocument? document = null;
@@ -235,16 +238,13 @@ public sealed class MistralTranscriptionModel : ITranscriptionModel, ITranscript
                     if (
                         segment.ValueKind != JsonValueKind.Object
                         || Present(segment, "text")?.ValueKind != JsonValueKind.String
-                        || Present(segment, "start")?.ValueKind != JsonValueKind.Number
-                        || Present(segment, "end")?.ValueKind != JsonValueKind.Number
+                        || !IsNumber(Present(segment, "start"))
+                        || !IsNumber(Present(segment, "end"))
                         || (
                             Present(segment, "type") is { } type
                             && type.ValueKind != JsonValueKind.String
                         )
-                        || (
-                            Present(segment, "score") is { } score
-                            && score.ValueKind != JsonValueKind.Number
-                        )
+                        || (Present(segment, "score") is { } score && !IsNumber(score))
                         || (
                             Present(segment, "speaker_id") is { } speaker
                             && speaker.ValueKind != JsonValueKind.String
@@ -346,7 +346,16 @@ public sealed class MistralTranscriptionModel : ITranscriptionModel, ITranscript
         {
             form.Add(new StringContent(ModelId), "model");
             var file = new ByteArrayContent(call.Audio);
-            file.Headers.ContentType = MediaTypeHeaderValue.Parse(call.MediaType);
+            if (!MediaTypeHeaderValue.TryParse(call.MediaType, out var mediaType))
+            {
+                throw new InvalidArgumentException(
+                    "mediaType",
+                    call.MediaType,
+                    "Invalid media type: " + call.MediaType
+                );
+            }
+
+            file.Headers.ContentType = mediaType;
             form.Add(file, "file", "audio." + ProviderValues.MediaTypeToExtension(call.MediaType));
             if (options != null)
             {

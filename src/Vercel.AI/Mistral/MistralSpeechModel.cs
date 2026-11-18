@@ -66,7 +66,18 @@ public sealed class MistralSpeechModel : ISpeechModel, ISpeechCaller
                 cancellationToken
             )
             .ConfigureAwait(false);
-        return new SpeechResult(result.Audio, "audio/mpeg");
+        var format = JsonNode.Parse(result.Request!.Body!)!["response_format"]!.GetValue<string>();
+        return new SpeechResult(
+            result.Audio,
+            format switch
+            {
+                "wav" => "audio/wav",
+                "pcm" => "audio/pcm",
+                "flac" => "audio/flac",
+                "opus" => "audio/opus",
+                _ => "audio/mpeg",
+            }
+        );
     }
 
     /// <inheritdoc />
@@ -96,6 +107,7 @@ public sealed class MistralSpeechModel : ISpeechModel, ISpeechCaller
 
         JsonElement raw;
         string audioData;
+        byte[] audioBytes;
         try
         {
             using var document = JsonDocument.Parse(response.Body);
@@ -110,6 +122,7 @@ public sealed class MistralSpeechModel : ISpeechModel, ISpeechCaller
             }
 
             audioData = audio.GetString()!;
+            audioBytes = Convert.FromBase64String(audioData);
         }
         catch (Exception error) when (error is JsonException or FormatException)
         {
@@ -120,7 +133,7 @@ public sealed class MistralSpeechModel : ISpeechModel, ISpeechCaller
         }
 
         return new SpeechModelResult(
-            Convert.FromBase64String(audioData),
+            audioBytes,
             warnings,
             response: new ProviderResponse(
                 response.Headers,

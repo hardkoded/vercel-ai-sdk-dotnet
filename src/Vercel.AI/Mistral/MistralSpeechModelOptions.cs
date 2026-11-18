@@ -139,7 +139,7 @@ internal static class MistralOptionValues
     {
         return new InvalidArgumentException(
             "providerOptions",
-            value.GetRawText(),
+            null,
             "invalid mistral provider options: " + reason
         );
     }
