@@ -238,6 +238,11 @@ public static class ToolApprovalValidation
             )
             {
                 ProviderExecuted = toolCall.ProviderExecuted,
+                // History can omit or alter these fields. Rebuild them from the current server-side
+                // definition before the approval policy check, just as parsing a new model tool call does.
+                ToolMetadata = tool?.Metadata,
+                Dynamic = tool?.IsDynamic == true,
+                Title = tool?.Title,
             };
             var approvalStatus = await ToolApprovalResolution
                 .ResolveToolApprovalAsync(

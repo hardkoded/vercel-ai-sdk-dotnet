@@ -67,6 +67,8 @@ With `user-approval`, the step content holds a `GeneratedToolApprovalRequest` an
 
 Set `ExperimentalToolApprovalSecret` (or `ExperimentalToolApprovalSecretBytes`) to sign each approval request with an HMAC. A response whose signature is missing or wrong throws `InvalidToolApprovalSignatureError`. Without a secret, signatures are ignored.
 
+A prompt where a local tool call has no tool result before the next user or system message (or at the end) is rejected with `MissingToolResultsError`, whose `ToolCallIds` lists the calls. Provider-executed calls are exempt. When you continue a chat after an approval, make sure the approval response reaches the model call or drop the unresolved call from the history. On continuation, the approval policy sees the current tool's `Title`, `Metadata` and dynamic flag, not the values stored in the history.
+
 ## Tool choice none
 
 When `ToolChoice` is `ToolChoice.None`, the SDK prevents local tool execution even if the model returns a tool call. Such a response throws `ToolChoiceViolationException`. The tool definitions are still sent to the model. With `StreamTextAsync`, tool parts are withheld from the stream, so client-side tools are not invoked either. Tool call repair (`RepairToolCall`) and input refinement (`RefineToolInput`) are skipped for rejected tool calls. A `PrepareStep` that returns another `ToolChoice` replaces `None` for that step. The Hugging Face Responses provider sends `tool_choice: "none"`.
