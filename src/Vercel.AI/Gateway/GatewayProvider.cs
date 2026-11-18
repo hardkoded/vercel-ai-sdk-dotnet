@@ -593,12 +593,21 @@ public sealed class GatewayProvider
     /// <c>window</c> global, so this maps <c>typeof globalThis.window !== 'undefined'</c> to the Blazor WebAssembly
     /// runtime. Tests replace it.
     /// </summary>
-    internal Func<bool> IsBrowserEnvironment { get; set; } =
-        static () =>
+    internal Func<bool> IsBrowserEnvironment { get; set; } = DetectBrowserEnvironment;
+
+    /// <summary>
+    /// Default <see cref="IsBrowserEnvironment"/> predicate. Blazor WebAssembly reports the OS description
+    /// <c>Browser</c>; the netstandard2.0 build has no <c>OperatingSystem.IsBrowser()</c>, so it reads that value.
+    /// </summary>
+    internal static bool DetectBrowserEnvironment() =>
 #if NET
-            OperatingSystem.IsBrowser();
+        OperatingSystem.IsBrowser();
 #else
-            false;
+        string.Equals(
+            System.Runtime.InteropServices.RuntimeInformation.OSDescription,
+            "Browser",
+            StringComparison.OrdinalIgnoreCase
+        );
 #endif
 
     /// <summary>Throws when called in a browser. Maps to <c>assertGatewayClientSecretServerEnvironment</c>.</summary>
