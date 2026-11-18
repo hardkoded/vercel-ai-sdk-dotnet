@@ -175,10 +175,8 @@ public sealed class OpenAICompatibleUtilsUpstreamTests
             warnings
         );
         Assert.Equal("deprecated", warnings[0].Type);
-        Assert.Equal(
-            "providerOptions key 'provider-name'. Use 'providerName' instead.",
-            warnings[0].Message
-        );
+        Assert.Equal("providerOptions key 'provider-name'", warnings[0].Setting);
+        Assert.Equal("Use 'providerName' instead.", warnings[0].Message);
     }
 
     [Fact]

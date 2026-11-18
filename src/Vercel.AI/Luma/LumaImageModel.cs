@@ -82,7 +82,10 @@ public sealed class LumaImageGeneration : ImageGenerationResult
                 compatibility.Feature,
                 compatibility.Details
             ),
-            DeprecatedWarning deprecated => new CallWarning(deprecated.Type, deprecated.Message),
+            DeprecatedWarning deprecated => CallWarning.Deprecated(
+                deprecated.Setting,
+                deprecated.Message
+            ),
             OtherWarning other => new CallWarning(other.Type, other.Message),
             _ => new CallWarning(warning.Type, warning.Type),
         };

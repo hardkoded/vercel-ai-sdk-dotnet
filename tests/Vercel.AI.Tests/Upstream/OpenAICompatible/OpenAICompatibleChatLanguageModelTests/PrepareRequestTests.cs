@@ -202,7 +202,8 @@ public sealed class PrepareRequestTests
 
         Assert.Contains(prepared.Warnings, w =>
             w.Type == "deprecated"
-            && w.Message == "providerOptions key 'test-provider'. Use 'testProvider' instead."
+            && w.Setting == "providerOptions key 'test-provider'"
+            && w.Message == "Use 'testProvider' instead."
         );
         Assert.Equal(
             result.Warnings.Select(w => (w.Type, w.Feature, w.Message)),
