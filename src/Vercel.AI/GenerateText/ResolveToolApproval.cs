@@ -11,11 +11,19 @@ namespace Vercel.AI.GenerateText;
 public sealed class ToolNeedsApprovalOptions
 {
     /// <summary>Creates the options.</summary>
-    public ToolNeedsApprovalOptions(string toolCallId, IReadOnlyList<ModelMessage> messages)
+    public ToolNeedsApprovalOptions(
+        string toolCallId,
+        IReadOnlyList<ModelMessage> messages,
+        JsonElement? context = null
+    )
     {
         ToolCallId = toolCallId ?? throw new ArgumentNullException(nameof(toolCallId));
         Messages = messages ?? throw new ArgumentNullException(nameof(messages));
+        Context = context;
     }
+
+    /// <summary>The context of the tool, validated with its <see cref="Tool.ContextSchema"/>. Null when none was given.</summary>
+    public JsonElement? Context { get; }
 
     /// <summary>Id of the tool call.</summary>
     public string ToolCallId { get; }
@@ -39,11 +47,16 @@ public static class ToolApprovalResolution
     /// <param name="toolCall">A valid tool call.</param>
     /// <param name="toolApproval">User-defined approval configuration. It takes precedence over the tool-defined settings.</param>
     /// <param name="messages">Messages that were sent to the language model to initiate the response that contained the tool call.</param>
+    /// <param name="toolsContext">The context of each tool, keyed by tool name.</param>
+    /// <param name="runtimeContext">User-defined runtime context.</param>
+    /// <exception cref="TypeValidationException">The context of the tool does not match its <see cref="Tool.ContextSchema"/>.</exception>
     public static async Task<ToolApprovalStatus> ResolveToolApprovalAsync(
         IReadOnlyList<Tool>? tools,
         GeneratedToolCall toolCall,
         ToolApprovalConfiguration? toolApproval,
-        IReadOnlyList<ModelMessage> messages
+        IReadOnlyList<ModelMessage> messages,
+        IReadOnlyDictionary<string, JsonElement>? toolsContext = null,
+        IReadOnlyDictionary<string, object?>? runtimeContext = null
     )
     {
         if (toolCall is null)
@@ -56,7 +69,15 @@ public static class ToolApprovalResolution
         {
             return Normalize(
                 await toolApproval
-                    .Function(new GenericToolApprovalOptions(toolCall, tools, messages))
+                    .Function(
+                        new GenericToolApprovalOptions(
+                            toolCall,
+                            tools,
+                            messages,
+                            toolsContext,
+                            runtimeContext
+                        )
+                    )
                     .ConfigureAwait(false)
             );
         }
@@ -93,7 +114,16 @@ public static class ToolApprovalResolution
                     ? await entry
                         .Function(
                             input,
-                            new SingleToolApprovalOptions(toolCall.ToolCallId, messages)
+                            new SingleToolApprovalOptions(
+                                toolCall.ToolCallId,
+                                messages,
+                                ToolContexts.ValidateToolContext(
+                                    toolCall.ToolName,
+                                    GetContext(toolsContext, toolCall.ToolName),
+                                    tool?.ContextSchema
+                                ),
+                                runtimeContext
+                            )
                         )
                         .ConfigureAwait(false)
                     : entry.Status;
@@ -110,13 +140,26 @@ public static class ToolApprovalResolution
             tool.NeedsApprovalFunction != null
                 ? await tool.NeedsApprovalFunction(
                         input,
-                        new ToolNeedsApprovalOptions(toolCall.ToolCallId, messages)
+                        new ToolNeedsApprovalOptions(
+                            toolCall.ToolCallId,
+                            messages,
+                            ToolContexts.ValidateToolContext(
+                                toolCall.ToolName,
+                                GetContext(toolsContext, toolCall.ToolName),
+                                tool.ContextSchema
+                            )
+                        )
                     )
                     .ConfigureAwait(false)
                 : tool.NeedsApproval;
 
         return needsApproval ? ToolApprovalStatus.UserApproval : ToolApprovalStatus.NotApplicable;
     }
+
+    private static JsonElement? GetContext(
+        IReadOnlyDictionary<string, JsonElement>? toolsContext,
+        string toolName
+    ) => toolsContext != null && toolsContext.TryGetValue(toolName, out var value) ? value : null;
 
     private static ToolApprovalStatus Normalize(ToolApprovalStatus? status) =>
         status ?? ToolApprovalStatus.NotApplicable;

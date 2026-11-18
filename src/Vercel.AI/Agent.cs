@@ -198,6 +198,8 @@ public sealed class Agent : IAgent
                 OnFinish = prepared.OnFinish,
                 OnError = prepared.OnError,
                 ToolApproval = prepared.ToolApproval,
+                ToolsContext = prepared.ToolsContext,
+                RuntimeContext = prepared.RuntimeContext,
                 ExperimentalToolApprovalSecret = prepared.ExperimentalToolApprovalSecret,
                 ExperimentalToolApprovalSecretBytes = prepared.ExperimentalToolApprovalSecretBytes,
 #pragma warning disable CS0618

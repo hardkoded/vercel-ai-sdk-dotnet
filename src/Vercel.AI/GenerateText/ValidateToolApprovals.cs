@@ -50,6 +50,12 @@ public sealed class ValidateApprovedToolApprovalsOptions
     /// <summary>Messages that were sent to the language model, without the instructions.</summary>
     public IReadOnlyList<ModelMessage> Messages { get; init; } = Array.Empty<ModelMessage>();
 
+    /// <summary>The context of each tool, keyed by tool name. Maps to <c>toolsContext</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ToolsContext { get; init; }
+
+    /// <summary>User-defined context that is passed to the approval functions. Maps to <c>runtimeContext</c>.</summary>
+    public IReadOnlyDictionary<string, object?>? RuntimeContext { get; init; }
+
     /// <summary>Secret for the HMAC signature of the approval requests. Maps to <c>toolApprovalSecret</c> given as a string.</summary>
     public string? ToolApprovalSecret { get; init; }
 
@@ -249,7 +255,9 @@ public static class ToolApprovalValidation
                     options.Tools,
                     generatedCall,
                     options.ToolApproval,
-                    options.Messages
+                    options.Messages,
+                    options.ToolsContext,
+                    options.RuntimeContext
                 )
                 .ConfigureAwait(false);
 
