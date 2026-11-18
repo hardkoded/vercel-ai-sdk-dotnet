@@ -23,7 +23,7 @@ Maps to `stringify-with-bigint-and-cycles.ts`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/StringifyWithBigIntAndCycles.cs#L14)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/StringifyWithBigIntAndCycles.cs#L15)
 
 ## Methods
 
@@ -39,7 +39,10 @@ public static string StringifyWithBigIntAndCycles(object? value)
 
 
 Serializes a value as JSON, representing [BigInteger](https://learn.microsoft.com/dotnet/api/system.numerics.biginteger) values as decimal strings and
-ancestor cycles as `"[Circular]"`. Reused objects are serialized each time. Maps to `stringifyWithBigIntAndCycles`.
+ancestor cycles as `"[Circular]"`. Reused objects are serialized each time. A [JsonConverter](https://learn.microsoft.com/dotnet/api/system.text.json.serialization.jsonconverter)
+is the .NET mapping of `toJSON`: it can return a [BigInteger](https://learn.microsoft.com/dotnet/api/system.numerics.biginteger), and an exception it throws is not hidden.
+Dates are written as ISO 8601 UTC with milliseconds, as `Date.prototype.toJSON` does, and a &lt;a href="https://learn.microsoft.com/dotnet/csharp/language-reference/keywords/null"&gt;null&lt;/a&gt;
+POCO property is omitted, as an `undefined` property is. Maps to `stringifyWithBigIntAndCycles`.
 
 **Parameters**
 
@@ -49,4 +52,4 @@ ancestor cycles as `"[Circular]"`. Reused objects are serialized each time. Maps
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/StringifyWithBigIntAndCycles.cs#L25)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/StringifyWithBigIntAndCycles.cs#L37)
