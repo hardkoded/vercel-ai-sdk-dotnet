@@ -59,11 +59,12 @@ public sealed class Agent : IAgent
         string prompt,
         CancellationToken cancellationToken = default,
         TimeoutConfiguration? timeout = null,
-        ISteering? experimentalSteering = null
+        ISteering? experimentalSteering = null,
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
     )
     {
         return GenerateAsync(
-            CreateOptions(prompt, null),
+            CreateOptions(prompt, null, experimentalSandbox),
             cancellationToken,
             timeout,
             experimentalSteering
@@ -78,11 +79,16 @@ public sealed class Agent : IAgent
         IReadOnlyList<ModelMessage> messages,
         CancellationToken cancellationToken = default,
         TimeoutConfiguration? timeout = null,
-        ISteering? experimentalSteering = null
+        ISteering? experimentalSteering = null,
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
     )
     {
         return GenerateAsync(
-            CreateOptions(null, messages ?? throw new ArgumentNullException(nameof(messages))),
+            CreateOptions(
+                null,
+                messages ?? throw new ArgumentNullException(nameof(messages)),
+                experimentalSandbox
+            ),
             cancellationToken,
             timeout,
             experimentalSteering
@@ -117,11 +123,12 @@ public sealed class Agent : IAgent
         CancellationToken cancellationToken = default,
         Vercel.AI.Util.AbortSignal? abortSignal = null,
         TimeoutConfiguration? timeout = null,
-        ISteering? experimentalSteering = null
+        ISteering? experimentalSteering = null,
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
     )
     {
         return Stream(
-            CreateOptions(prompt, null),
+            CreateOptions(prompt, null, experimentalSandbox),
             cancellationToken,
             abortSignal,
             timeout,
@@ -140,16 +147,42 @@ public sealed class Agent : IAgent
         Vercel.AI.Util.AbortSignal? abortSignal = null,
         TimeoutConfiguration? timeout = null,
         ISteering? experimentalSteering = null,
-        Func<StepResult, CancellationToken, Task>? onStepEnd = null
+        Func<StepResult, CancellationToken, Task>? onStepEnd = null,
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
     )
     {
         return Stream(
-            CreateOptions(null, messages ?? throw new ArgumentNullException(nameof(messages))),
+            CreateOptions(
+                null,
+                messages ?? throw new ArgumentNullException(nameof(messages)),
+                experimentalSandbox
+            ),
             cancellationToken,
             abortSignal,
             timeout,
             experimentalSteering,
             onStepEnd
+        );
+    }
+
+    /// <inheritdoc />
+    StreamTextResult IAgent.Stream(
+        IReadOnlyList<ModelMessage> messages,
+        CancellationToken cancellationToken,
+        Vercel.AI.Util.AbortSignal? abortSignal,
+        TimeoutConfiguration? timeout,
+        ISteering? experimentalSteering,
+        Func<StepResult, CancellationToken, Task>? onStepEnd
+    )
+    {
+        return Stream(
+            messages,
+            cancellationToken,
+            abortSignal,
+            timeout,
+            experimentalSteering,
+            onStepEnd,
+            null
         );
     }
 
@@ -194,6 +227,7 @@ public sealed class Agent : IAgent
                 ProviderOptions = prepared.ProviderOptions,
                 PrepareStep = prepared.PrepareStep,
                 ExperimentalSteering = experimentalSteering ?? prepared.ExperimentalSteering,
+                ExperimentalSandbox = prepared.ExperimentalSandbox,
                 OnStepEnd = onStepEnd ?? prepared.OnStepEnd,
                 OnFinish = prepared.OnFinish,
                 OnError = prepared.OnError,
@@ -218,7 +252,11 @@ public sealed class Agent : IAgent
         return Options.PrepareCall?.Invoke(call) ?? call;
     }
 
-    private GenerateTextOptions CreateOptions(string? prompt, IReadOnlyList<ModelMessage>? messages)
+    private GenerateTextOptions CreateOptions(
+        string? prompt,
+        IReadOnlyList<ModelMessage>? messages,
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox
+    )
     {
         return new GenerateTextOptions
         {
@@ -236,6 +274,12 @@ public sealed class Agent : IAgent
             RepairToolCall = Options.RepairToolCall,
             RefineToolInput = Options.RefineToolInput,
             Timeout = Options.Timeout,
+            ToolApproval = Options.ToolApproval,
+            ToolsContext = Options.ToolsContext,
+            RuntimeContext = Options.RuntimeContext,
+            ExperimentalToolApprovalSecret = Options.ExperimentalToolApprovalSecret,
+            ExperimentalToolApprovalSecretBytes = Options.ExperimentalToolApprovalSecretBytes,
+            ExperimentalSandbox = experimentalSandbox,
         };
     }
 }
@@ -253,8 +297,8 @@ public sealed class AgentOptions
     public Instructions? Instructions { get; set; }
 
     /// <summary>
-    /// Whether system messages are allowed in the messages passed to <see cref="Agent.GenerateAsync(IReadOnlyList{ModelMessage}, CancellationToken, TimeoutConfiguration?, ISteering?)"/>
-    /// and <see cref="Agent.Stream(IReadOnlyList{ModelMessage}, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Func{StepResult, CancellationToken, Task}?)"/>.
+    /// Whether system messages are allowed in the messages passed to <see cref="Agent.GenerateAsync(IReadOnlyList{ModelMessage}, CancellationToken, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?)"/>
+    /// and <see cref="Agent.Stream(IReadOnlyList{ModelMessage}, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Func{StepResult, CancellationToken, Task}?, Vercel.AI.ProviderUtils.ISandboxSession?)"/>.
     /// Defaults to false, which rejects them with an <see cref="InvalidPromptException"/>. Use <see cref="Instructions"/> for the system prompt instead.
     /// <see cref="PrepareCall"/> can replace it. Maps to <c>allowSystemInMessages</c>.
     /// </summary>
@@ -262,6 +306,24 @@ public sealed class AgentOptions
 
     /// <summary>Tools.</summary>
     public IReadOnlyList<Tool>? Tools { get; set; }
+
+    /// <summary>
+    /// Configures whether tools require approval before they run. See <see cref="GenerateTextOptions.ToolApproval"/>.
+    /// <see cref="PrepareCall"/> can replace it. Maps to <c>toolApproval</c>.
+    /// </summary>
+    public ToolApprovalConfiguration? ToolApproval { get; set; }
+
+    /// <summary>The context of each tool, keyed by tool name. See <see cref="GenerateTextOptions.ToolsContext"/>. <see cref="PrepareCall"/> can replace it. Maps to <c>toolsContext</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ToolsContext { get; set; }
+
+    /// <summary>User-defined context that is passed to the approval functions. See <see cref="GenerateTextOptions.RuntimeContext"/>. <see cref="PrepareCall"/> can replace it. Maps to <c>runtimeContext</c>.</summary>
+    public IReadOnlyDictionary<string, object?>? RuntimeContext { get; set; }
+
+    /// <summary>Secret for HMAC-signing tool approval requests. See <see cref="GenerateTextOptions.ExperimentalToolApprovalSecret"/>. Maps to <c>experimental_toolApprovalSecret</c>.</summary>
+    public string? ExperimentalToolApprovalSecret { get; set; }
+
+    /// <summary>The same secret as <see cref="ExperimentalToolApprovalSecret"/>, given as bytes. See <see cref="GenerateTextOptions.ExperimentalToolApprovalSecretBytes"/>.</summary>
+    public byte[]? ExperimentalToolApprovalSecretBytes { get; set; }
 
     /// <summary>Stop condition. Defaults to 10 steps.</summary>
     public StopCondition? StopWhen { get; set; }
@@ -288,19 +350,19 @@ public sealed class AgentOptions
     >? RefineToolInput { get; set; }
 
     /// <summary>
-    /// Timeout of each <see cref="Agent.GenerateAsync(string, CancellationToken, TimeoutConfiguration?, ISteering?)"/> and <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?)"/> call. See <see cref="GenerateTextOptions.Timeout"/>.
+    /// Timeout of each <see cref="Agent.GenerateAsync(string, CancellationToken, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?)"/> and <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?)"/> call. See <see cref="GenerateTextOptions.Timeout"/>.
     /// <see cref="PrepareCall"/> can replace it. Maps to <c>timeout</c> of <c>ToolLoopAgentSettings</c>.
     /// </summary>
     public TimeoutConfiguration? Timeout { get; set; }
 
     /// <summary>
-    /// Called before each <see cref="Agent.GenerateAsync(string, CancellationToken, TimeoutConfiguration?, ISteering?)"/> and <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?)"/> call with the options the agent would use,
+    /// Called before each <see cref="Agent.GenerateAsync(string, CancellationToken, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?)"/> and <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?)"/> call with the options the agent would use,
     /// including the default <see cref="GenerateTextOptions.StopWhen"/>. Return replacement options, or null to keep them.
     /// A returned options object that sets <see cref="GenerateTextOptions.StopWhen"/> replaces the default limit. Maps to <c>prepareCall</c>.
     /// </summary>
     public Func<GenerateTextOptions, GenerateTextOptions?>? PrepareCall { get; set; }
 
-    /// <summary>Called after <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?)"/> is aborted. See <see cref="StreamTextOptions.OnAbort"/>.</summary>
+    /// <summary>Called after <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?)"/> is aborted. See <see cref="StreamTextOptions.OnAbort"/>.</summary>
     public Func<StreamAbortContext, CancellationToken, Task>? OnAbort { get; set; }
 }
 

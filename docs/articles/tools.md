@@ -47,7 +47,7 @@ A call to a tool that has no `Execute` ends the loop at that step. The stop cond
 
 ## Tool approval
 
-Breaking change: `GenerateTextOptions.ApproveTool` and the `ToolApprovalRequest` class are removed. Use `ToolApproval`, which maps to upstream `toolApproval`. This applies to `GenerateTextAsync` only. `StreamTextAsync` and `Agent` do not run the local approval flow yet.
+Breaking change: `GenerateTextOptions.ApproveTool` and the `ToolApprovalRequest` class are removed. Use `ToolApproval`, which maps to upstream `toolApproval`. `AgentOptions` takes the same `ToolApproval`, `ToolsContext`, `RuntimeContext`, `ExperimentalToolApprovalSecret`, and `ExperimentalToolApprovalSecretBytes`, so `Agent.GenerateAsync` and `Agent.Stream` stop at a `user-approval` tool call like `GenerateTextAsync`. `PrepareCall` can replace them.
 
 A tool needs approval when its `NeedsApproval` is true or its `NeedsApprovalFunction` returns true. The function receives the parsed input and a `ToolNeedsApprovalOptions` (`ToolCallId`, `Messages`, `Context`). `GenerateTextOptions.ToolApproval` overrides the tool's own setting. It is a `ToolApprovalConfiguration`, which takes either a generic `GenericToolApprovalFunction` or a per-tool map:
 
@@ -368,3 +368,9 @@ Tools from `McpClient` set `ToModelOutput`, which maps upstream's `mcpToModelOut
 Behavior change: `Tool.Execute` of an MCP tool used to return the joined text of the content parts (or the raw result when there was no text). It now returns the normalized call-tool result as JSON, for example `{"content":[{"type":"text","text":"sunny"}],"isError":false}`, as upstream's `execute` returns the `CallToolResult`. Code that read the plain text from `Execute` must read `content[].text` instead. A result with `isError` still throws an `AiSdkException`.
 
 Not ported: `outputSchema` support ([#777](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/777)).
+
+## Sandbox
+
+`ISandboxSession` (maps to `Experimental_SandboxSession`) is a session that runs commands (`RunAsync`, `SpawnAsync`) and reads and writes files (`ReadFileAsync`, `ReadBinaryFileAsync`, `ReadTextFileAsync`, `WriteFileAsync`, `WriteBinaryFileAsync`, `WriteTextFileAsync`, `StatAsync`, `ListDirectoryAsync`, `DeleteFileAsync`). Its `Description` can go into the instructions of an agent. You implement it for your sandbox provider.
+
+Set `ExperimentalSandbox` on `GenerateTextOptions` or `StreamTextOptions` to pass a session to tool execution. A tool reads it as `ToolExecutionOptions.ExperimentalSandbox`. `Agent.GenerateAsync` and `Agent.Stream` take it as the `experimentalSandbox` parameter and pass it to `AgentOptions.PrepareCall` as `ExperimentalSandbox` on the options. Maps to `experimental_sandbox`.
