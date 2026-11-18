@@ -25,7 +25,7 @@ A file in an assistant message. Maps to the assistant `file` part.
 
 **Derived:** [AssistantReasoningFilePart](/api/Vercel.AI.Provider/AssistantReasoningFilePart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1209)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1014)
 
 ## Constructors
 
@@ -52,7 +52,7 @@ Creates a file part.
 | `fileName` | [string](https://learn.microsoft.com/dotnet/api/system.string) | Optional file name. |
 | `providerOptions` | [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) | Provider-specific options for this part. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1217)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1022)
 
 ## Properties
 
@@ -71,7 +71,7 @@ Inline bytes.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1270)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1075)
 
 <a id="Vercel_AI_Provider_AssistantFilePart_FileName_"></a>
 <a id="Vercel_AI_Provider_AssistantFilePart_FileName"></a>
@@ -88,7 +88,7 @@ Optional file name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1273)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1078)
 
 <a id="Vercel_AI_Provider_AssistantFilePart_MediaType_"></a>
 <a id="Vercel_AI_Provider_AssistantFilePart_MediaType"></a>
@@ -105,7 +105,7 @@ IANA media type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1264)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1069)
 
 <a id="Vercel_AI_Provider_AssistantFilePart_ProviderReference_"></a>
 <a id="Vercel_AI_Provider_AssistantFilePart_ProviderReference"></a>
@@ -122,7 +122,7 @@ Map from provider name to an uploaded file id, used when there is no URL or inli
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1276)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1081)
 
 <a id="Vercel_AI_Provider_AssistantFilePart_Url_"></a>
 <a id="Vercel_AI_Provider_AssistantFilePart_Url"></a>
@@ -139,7 +139,7 @@ Remote URL, when the file is not inlined.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1267)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1072)
 
 ## Methods
 
@@ -167,4 +167,4 @@ Creates a file part that refers to an uploaded file. Maps to `data: { type: "ref
 
 **Returns:** [AssistantFilePart](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1233)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1038)

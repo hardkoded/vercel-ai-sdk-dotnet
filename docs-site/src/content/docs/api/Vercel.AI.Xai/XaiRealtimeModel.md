@@ -111,7 +111,7 @@ Builds the xAI `session` object for a normalized session config.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L199)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L198)
 
 <a id="Vercel_AI_Xai_XaiRealtimeModel_BuildUri_"></a>
 <a id="Vercel_AI_Xai_XaiRealtimeModel_BuildUri"></a>
@@ -200,7 +200,7 @@ credential the model was constructed with. Unsupported intents throw before any 
 
 **Returns:** [Task&lt;RealtimeModelV4ServerConnection&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L158)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L157)
 
 <a id="Vercel_AI_Xai_XaiRealtimeModel_GetWebSocketConfig_"></a>
 <a id="Vercel_AI_Xai_XaiRealtimeModel_GetWebSocketConfig_System_String_System_String_"></a>
@@ -225,7 +225,7 @@ The URL and subprotocol a client opens with a client secret: the token travels a
 
 **Returns:** [RealtimeModelV4WebSocketConfig](/api/Vercel.AI.Provider/RealtimeModelV4WebSocketConfig/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L152)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L151)
 
 <a id="Vercel_AI_Xai_XaiRealtimeModel_ParseServerEvent_"></a>
 <a id="Vercel_AI_Xai_XaiRealtimeModel_ParseServerEvent_System_Text_Json_JsonElement_"></a>
@@ -248,7 +248,7 @@ Maps one xAI server event.
 
 **Returns:** [RealtimeModelV4ServerEvent](/api/Vercel.AI.Provider/RealtimeModelV4ServerEvent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L180)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L179)
 
 <a id="Vercel_AI_Xai_XaiRealtimeModel_SerializeClientEvent_"></a>
 <a id="Vercel_AI_Xai_XaiRealtimeModel_SerializeClientEvent_Vercel_AI_Provider_RealtimeModelV4ClientEvent_System_Nullable_Vercel_AI_Provider_RealtimeModelV4SessionIntent__"></a>
@@ -273,4 +273,4 @@ WebSocket.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L189)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiRealtimeModel.cs#L188)

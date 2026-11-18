@@ -87,23 +87,6 @@ The exception the tool threw, when the generation loop ran a client tool that fa
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L515)
 
-<a id="Vercel_AI_Provider_GeneratedToolResult_InputJson_"></a>
-<a id="Vercel_AI_Provider_GeneratedToolResult_InputJson"></a>
-
-### InputJson
-
-
-```csharp
-public string? InputJson { get; init; }
-```
-
-
-The JSON input of the tool call this result answers. Maps to the result's `input`.
-
-**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
-
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L530)
-
 <a id="Vercel_AI_Provider_GeneratedToolResult_IsError_"></a>
 <a id="Vercel_AI_Provider_GeneratedToolResult_IsError"></a>
 
@@ -120,23 +103,6 @@ Whether the tool failed.
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L512)
-
-<a id="Vercel_AI_Provider_GeneratedToolResult_ProviderExecuted_"></a>
-<a id="Vercel_AI_Provider_GeneratedToolResult_ProviderExecuted"></a>
-
-### ProviderExecuted
-
-
-```csharp
-public bool ProviderExecuted { get; init; }
-```
-
-
-False when the generation loop ran a client tool. A provider's own result is provider-executed. Maps to the result's `providerExecuted`.
-
-**Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
-
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L527)
 
 <a id="Vercel_AI_Provider_GeneratedToolResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Provider_GeneratedToolResult_ProviderMetadata"></a>

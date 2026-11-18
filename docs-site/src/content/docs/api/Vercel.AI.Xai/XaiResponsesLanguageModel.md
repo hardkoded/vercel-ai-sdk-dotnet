@@ -1,6 +1,6 @@
 ---
 title: "XaiResponsesLanguageModel"
-description: "xAI Responses API language model. Generate and stream requests post to /responses. Pass xAI provider-defined tools with JsonElement%7d) and the ids xai.webse..."
+description: "xAI Responses API language model. Generate and stream requests post to /responses. Pass xAI provider-defined tools with JsonElement) and the ids xai.websearc..."
 editUrl: false
 prev: false
 next: false
@@ -20,7 +20,7 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
 
 
 xAI Responses API language model. Generate and stream requests post to `/responses`.
-Pass xAI provider-defined tools with `JsonElement%7d)` and the ids `xai.web_search`,
+Pass xAI provider-defined tools with `JsonElement)` and the ids `xai.web_search`,
 `xai.x_search`, `xai.code_execution`, `xai.view_image`, `xai.view_x_video`, `xai.image_generation`,
 `xai.file_search`, and `xai.mcp`.
 

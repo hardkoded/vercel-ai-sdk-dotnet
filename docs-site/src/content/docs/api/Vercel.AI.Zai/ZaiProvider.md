@@ -124,26 +124,3 @@ Creates a provider. Pass a handler from tests.
 **Returns:** [ZaiProvider](./)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Zai/ZaiProvider.cs#L27)
-
-<a id="Vercel_AI_Zai_ZaiProvider_CreateChatModel_"></a>
-<a id="Vercel_AI_Zai_ZaiProvider_CreateChatModel_System_String_"></a>
-
-### CreateChatModel(string)
-
-
-```csharp
-public override OpenAICompatibleLanguageModel CreateChatModel(string modelId)
-```
-
-
-Creates a chat model. Providers override this when support differs by model id.
-
-**Parameters**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
-
-**Returns:** [OpenAICompatibleLanguageModel](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleLanguageModel/)
-
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Zai/ZaiProvider.cs#L39)

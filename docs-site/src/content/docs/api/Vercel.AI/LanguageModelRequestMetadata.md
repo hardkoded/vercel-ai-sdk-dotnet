@@ -23,7 +23,7 @@ Metadata for a language model request. Maps to `LanguageModelRequestMetadata`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1580)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1172)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Request HTTP body that was sent to the provider API.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1589)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1181)
 
 <a id="Vercel_AI_LanguageModelRequestMetadata_Empty_"></a>
 <a id="Vercel_AI_LanguageModelRequestMetadata_Empty"></a>
@@ -59,7 +59,7 @@ Request metadata with no messages and no body.
 
 **Value:** [LanguageModelRequestMetadata](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1583)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1175)
 
 <a id="Vercel_AI_LanguageModelRequestMetadata_Messages_"></a>
 <a id="Vercel_AI_LanguageModelRequestMetadata_Messages"></a>
@@ -76,4 +76,4 @@ The input messages that were sent to the model for this step.
 
 **Value:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1586)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1178)

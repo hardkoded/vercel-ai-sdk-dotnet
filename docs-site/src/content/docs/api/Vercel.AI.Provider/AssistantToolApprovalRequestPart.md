@@ -23,7 +23,7 @@ A request to approve a tool call, kept in an assistant message.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [AssistantContentPart](/api/Vercel.AI.Provider/AssistantContentPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1330)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1135)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a tool-approval-request part.
 | `toolCallId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `isAutomatic` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1333)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1138)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Approval id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1346)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1151)
 
 <a id="Vercel_AI_Provider_AssistantToolApprovalRequestPart_InputSchemaInput_"></a>
 <a id="Vercel_AI_Provider_AssistantToolApprovalRequestPart_InputSchemaInput"></a>
@@ -84,7 +84,7 @@ The input of the call before its input schema transformed it. Maps to `inputSche
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1361)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1166)
 
 <a id="Vercel_AI_Provider_AssistantToolApprovalRequestPart_IsAutomatic_"></a>
 <a id="Vercel_AI_Provider_AssistantToolApprovalRequestPart_IsAutomatic"></a>
@@ -101,7 +101,7 @@ Whether the approval was decided automatically, when known.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1352)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1157)
 
 <a id="Vercel_AI_Provider_AssistantToolApprovalRequestPart_Reason_"></a>
 <a id="Vercel_AI_Provider_AssistantToolApprovalRequestPart_Reason"></a>
@@ -118,7 +118,7 @@ Why the call needs approval, when a reason was given.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1355)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1160)
 
 <a id="Vercel_AI_Provider_AssistantToolApprovalRequestPart_Signature_"></a>
 <a id="Vercel_AI_Provider_AssistantToolApprovalRequestPart_Signature"></a>
@@ -135,7 +135,7 @@ HMAC-SHA256 signature that binds this request to its tool call, when the request
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1358)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1163)
 
 <a id="Vercel_AI_Provider_AssistantToolApprovalRequestPart_ToolCallId_"></a>
 <a id="Vercel_AI_Provider_AssistantToolApprovalRequestPart_ToolCallId"></a>
@@ -152,4 +152,4 @@ Id of the tool call that needs approval.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1349)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1154)
