@@ -156,16 +156,16 @@ public static class DeepSeekModelIds
     /// <summary>Known Chat Completions model ids. Upstream <c>DeepSeekModelIds['chat']</c>.</summary>
     public static IReadOnlyList<string> Chat { get; } =
     [
-        .. DeepSeekModelCatalog.LanguageDefinitions
-            .Where(d => d.Endpoints.Contains("chat"))
+        .. DeepSeekModelCatalog
+            .LanguageDefinitions.Where(d => d.Endpoints.Contains("chat"))
             .Select(d => d.ModelId),
     ];
 
     /// <summary>Known Responses model ids. Upstream <c>DeepSeekModelIds['responses']</c>.</summary>
     public static IReadOnlyList<string> Responses { get; } =
     [
-        .. DeepSeekModelCatalog.LanguageDefinitions
-            .Where(d => d.Endpoints.Contains("responses"))
+        .. DeepSeekModelCatalog
+            .LanguageDefinitions.Where(d => d.Endpoints.Contains("responses"))
             .Select(d => d.ModelId),
     ];
 }
@@ -182,7 +182,11 @@ public static class DeepSeekModelCatalog
     );
 
     // Preserve the provider page's model set and its image-input exception. Upstream languageDefinitions.
-    internal static (string ModelId, string[] Endpoints, bool Image)[] LanguageDefinitions { get; } =
+    internal static (
+        string ModelId,
+        string[] Endpoints,
+        bool Image
+    )[] LanguageDefinitions { get; } =
     [
         ("deepseek-flash", ["chat", "responses"], false),
         ("deepseek-v4-flash", ["chat"], false),
