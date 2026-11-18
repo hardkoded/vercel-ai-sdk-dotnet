@@ -10,6 +10,11 @@ namespace Vercel.AI.Provider;
 /// <summary>Writes citations in the JSON shape of the V4 specification and the UI message stream.</summary>
 internal static class CitationJson
 {
+    // UI messages are untrusted input, so provider metadata can nest deeper than the default depth of 64.
+    private static readonly JsonDocumentOptions DeepDocument = new() { MaxDepth = 4096 };
+
+    private static readonly JsonSerializerOptions DeepJson = new() { MaxDepth = 4096 };
+
     public static JsonArray ToJson(IEnumerable<Citation> citations)
     {
         var array = new JsonArray();
@@ -73,7 +78,7 @@ internal static class CitationJson
                 : (int?)null;
         var citedText = (string?)json["citedText"];
         JsonElement? metadata = source["providerMetadata"] is { } node
-            ? JsonSerializer.SerializeToElement(node)
+            ? JsonSerializer.SerializeToElement(node, DeepJson)
             : null;
         var id = (string?)source["id"] ?? string.Empty;
 
@@ -152,7 +157,7 @@ internal static class CitationJson
 
         if (metadata is { ValueKind: not (JsonValueKind.Null or JsonValueKind.Undefined) } element)
         {
-            json["providerMetadata"] = JsonNode.Parse(element.GetRawText());
+            json["providerMetadata"] = JsonNode.Parse(element.GetRawText(), null, DeepDocument);
         }
 
         return json;

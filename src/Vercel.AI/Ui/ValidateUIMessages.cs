@@ -15,6 +15,12 @@ public sealed class ValidateUIMessagesOptions
     /// <summary>The messages to validate.</summary>
     public IReadOnlyList<UIMessage>? Messages { get; set; }
 
+    /// <summary>
+    /// The messages as untyped JSON, such as a request body. They are validated structurally, and the result holds the typed
+    /// messages. Set either this or <see cref="Messages"/>. Maps to <c>messages: unknown</c>.
+    /// </summary>
+    public JsonElement? MessagesJson { get; set; }
+
     /// <summary>JSON Schema of the message metadata. Without it the metadata is not validated. Maps to <c>metadataSchema</c>.</summary>
     public JsonNode? MetadataSchema { get; set; }
 
@@ -110,7 +116,22 @@ internal static class UIMessageValidation
     {
         try
         {
-            if (options.Messages == null)
+            if (options.Messages != null && options.MessagesJson != null)
+            {
+                return SafeValidateUIMessagesResult.Fail(
+                    new InvalidArgumentException(
+                        "messages",
+                        null,
+                        "messages and messagesJson cannot both be provided"
+                    )
+                );
+            }
+
+            var messagesJson = options.MessagesJson;
+            if (
+                messagesJson is { ValueKind: JsonValueKind.Null or JsonValueKind.Undefined }
+                || (options.Messages == null && messagesJson == null)
+            )
             {
                 return SafeValidateUIMessagesResult.Fail(
                     new InvalidArgumentException(
@@ -121,25 +142,47 @@ internal static class UIMessageValidation
                 );
             }
 
-            if (options.Messages.Count == 0)
+            IReadOnlyList<UIMessage> messages;
+            if (messagesJson is { } untyped)
+            {
+                var issues = UIMessagesSchema.Validate(untyped);
+                if (issues.Count > 0)
+                {
+                    return SafeValidateUIMessagesResult.Fail(
+                        new TypeValidationException(
+                            untyped,
+                            new UIMessagesSchemaException(issues),
+                            null
+                        )
+                    );
+                }
+
+                messages = UIMessagesSchema.Read(untyped);
+            }
+            else
+            {
+                messages = options.Messages!;
+            }
+
+            if (messages.Count == 0)
             {
                 return SafeValidateUIMessagesResult.Fail(
                     new TypeValidationException(
-                        ToJsonElement(options.Messages),
+                        ToJsonElement(messages),
                         new Exception("Messages array must not be empty"),
                         null
                     )
                 );
             }
 
-            foreach (var message in options.Messages)
+            foreach (var message in messages)
             {
                 // Only an assistant message can be empty, as the last message of a chat that is waiting for a response.
                 if (message.Role != UIMessageRole.Assistant && message.Parts.Count == 0)
                 {
                     return SafeValidateUIMessagesResult.Fail(
                         new TypeValidationException(
-                            ToJsonElement(options.Messages),
+                            ToJsonElement(messages),
                             new Exception("Message must contain at least one part"),
                             null
                         )
@@ -147,14 +190,14 @@ internal static class UIMessageValidation
                 }
             }
 
-            UIMessageRawInputWarning.WarnIfUIMessageHasDeprecatedRawInput(options.Messages);
+            UIMessageRawInputWarning.WarnIfUIMessageHasDeprecatedRawInput(messages);
 
-            var validatedMessages = new List<UIMessage>(options.Messages.Count);
+            var validatedMessages = new List<UIMessage>(messages.Count);
             var shouldValidateToolParts =
                 options.Tools != null || convertMissingTerminalToolsToDynamic;
-            for (var messageIndex = 0; messageIndex < options.Messages.Count; messageIndex++)
+            for (var messageIndex = 0; messageIndex < messages.Count; messageIndex++)
             {
-                var message = options.Messages[messageIndex];
+                var message = messages[messageIndex];
                 var metadata = message.Metadata;
                 if (options.MetadataSchema != null)
                 {
