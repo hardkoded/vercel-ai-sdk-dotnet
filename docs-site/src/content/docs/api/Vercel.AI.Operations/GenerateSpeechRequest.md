@@ -23,7 +23,7 @@ Options for `CancellationToken)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [OperationRequest](/api/Vercel.AI.Operations/OperationRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L176)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L181)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Speaking instructions.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L191)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L196)
 
 <a id="Vercel_AI_Operations_GenerateSpeechRequest_Language_"></a>
 <a id="Vercel_AI_Operations_GenerateSpeechRequest_Language"></a>
@@ -59,7 +59,7 @@ Language code or `auto`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L197)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L202)
 
 <a id="Vercel_AI_Operations_GenerateSpeechRequest_Model_"></a>
 <a id="Vercel_AI_Operations_GenerateSpeechRequest_Model"></a>
@@ -76,7 +76,7 @@ Speech model.
 
 **Value:** [ISpeechCaller](/api/Vercel.AI.Operations/ISpeechCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L179)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L184)
 
 <a id="Vercel_AI_Operations_GenerateSpeechRequest_OutputFormat_"></a>
 <a id="Vercel_AI_Operations_GenerateSpeechRequest_OutputFormat"></a>
@@ -93,7 +93,7 @@ Output format such as `mp3` or `pcm`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L188)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L193)
 
 <a id="Vercel_AI_Operations_GenerateSpeechRequest_Speed_"></a>
 <a id="Vercel_AI_Operations_GenerateSpeechRequest_Speed"></a>
@@ -110,7 +110,7 @@ Playback speed.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L194)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L199)
 
 <a id="Vercel_AI_Operations_GenerateSpeechRequest_Text_"></a>
 <a id="Vercel_AI_Operations_GenerateSpeechRequest_Text"></a>
@@ -127,7 +127,7 @@ Text to speak.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L182)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L187)
 
 <a id="Vercel_AI_Operations_GenerateSpeechRequest_Voice_"></a>
 <a id="Vercel_AI_Operations_GenerateSpeechRequest_Voice"></a>
@@ -144,4 +144,4 @@ Voice id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L185)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L190)

@@ -23,7 +23,7 @@ A function tool definition sent to the model.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L656)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L665)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a function tool.
 | `inputSchema` | [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 | `strict` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L659)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L668)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Arguments of a provider-defined tool. Undefined for a function tool.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L698)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L713)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_Description_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_Description"></a>
@@ -85,7 +85,7 @@ Tool description.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L701)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L742)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_InputSchema_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_InputSchema"></a>
@@ -102,7 +102,7 @@ JSON Schema for the arguments.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L704)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L745)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_IsProviderDefined_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_IsProviderDefined"></a>
@@ -119,7 +119,7 @@ Whether this is a provider-defined tool rather than a function tool.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L695)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L710)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_Name_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_Name"></a>
@@ -136,7 +136,7 @@ Tool name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L689)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L704)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_OutputSchema_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_OutputSchema"></a>
@@ -153,7 +153,7 @@ JSON Schema for the tool result. OpenAI Responses parses the result as JSON, so 
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L712)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L753)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_ProviderOptions_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_ProviderOptions"></a>
@@ -171,7 +171,7 @@ Maps to the tool's `providerOptions`.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L718)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L759)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_ProviderToolId_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_ProviderToolId"></a>
@@ -188,7 +188,24 @@ Provider-defined tool id, or null for a function tool.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L692)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L707)
+
+<a id="Vercel_AI_Provider_LanguageModelTool_RedactArgs_"></a>
+<a id="Vercel_AI_Provider_LanguageModelTool_RedactArgs"></a>
+
+### RedactArgs
+
+
+```csharp
+public Func<JsonElement, JsonElement>? RedactArgs { get; init; }
+```
+
+
+Provider-owned telemetry view of [Args](#Vercel_AI_Provider_LanguageModelTool_Args), which hides credentials. Maps to the `redactArgs` option of a provider tool factory.
+
+**Value:** [Func&lt;JsonElement, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L718)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_Strict_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_Strict"></a>
@@ -205,23 +222,24 @@ Responses strict mode. Null means unset, which Responses sends as false.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L707)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L748)
 
 ## Methods
 
 <a id="Vercel_AI_Provider_LanguageModelTool_ProviderDefined_"></a>
-<a id="Vercel_AI_Provider_LanguageModelTool_ProviderDefined_System_String_System_String_System_Text_Json_JsonElement_"></a>
+<a id="Vercel_AI_Provider_LanguageModelTool_ProviderDefined_System_String_System_String_System_Text_Json_JsonElement_System_Func_System_Text_Json_JsonElement_System_Text_Json_JsonElement__"></a>
 
-### ProviderDefined(string, string, JsonElement)
+### `ProviderDefined(string, string, JsonElement, Func<JsonElement, JsonElement>?)`
 
 
 ```csharp
-public static LanguageModelTool ProviderDefined(string id, string name, JsonElement args)
+public static LanguageModelTool ProviderDefined(string id, string name, JsonElement args, Func<JsonElement, JsonElement>? redactArgs = null)
 ```
 
 
 Creates a provider-defined tool. Maps to `{ type: 'provider', id, name, args }`.
 &lt;code class="paramref"&gt;id&lt;/code&gt; is `<provider>.<tool>`. &lt;code class="paramref"&gt;args&lt;/code&gt; must be a JSON object.
+&lt;code class="paramref"&gt;redactArgs&lt;/code&gt; is the provider-owned telemetry view of the arguments. Maps to the `redactArgs` option of a provider tool factory.
 
 **Parameters**
 
@@ -230,7 +248,26 @@ Creates a provider-defined tool. Maps to `{ type: 'provider', id, name, args }`.
 | `id` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `name` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `args` | [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
+| `redactArgs` | [Func&lt;JsonElement, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.func-2) |  |
 
 **Returns:** [LanguageModelTool](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L683)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L693)
+
+<a id="Vercel_AI_Provider_LanguageModelTool_RedactTelemetryArgs_"></a>
+<a id="Vercel_AI_Provider_LanguageModelTool_RedactTelemetryArgs"></a>
+
+### RedactTelemetryArgs()
+
+
+```csharp
+public JsonElement? RedactTelemetryArgs()
+```
+
+
+Applies [RedactArgs](#Vercel_AI_Provider_LanguageModelTool_RedactArgs) to [Args](#Vercel_AI_Provider_LanguageModelTool_Args) for telemetry, leaving [Args](#Vercel_AI_Provider_LanguageModelTool_Args) unchanged. Returns [Args](#Vercel_AI_Provider_LanguageModelTool_Args) when the tool has no
+redactor, and null when the redactor throws, so a broken redactor neither exposes credentials nor fails the call. Maps to `redactTelemetryValue`.
+
+**Returns:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L724)

@@ -147,7 +147,7 @@ Deletes a file.
 
 **Returns:** [Task&lt;XaiFileDeleteResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L357)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L360)
 
 <a id="Vercel_AI_Xai_XaiFiles_DownloadAsync_"></a>
 <a id="Vercel_AI_Xai_XaiFiles_DownloadAsync_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -171,7 +171,7 @@ Downloads file bytes.
 
 **Returns:** [Task&lt;XaiFileDownload&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L322)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L324)
 
 <a id="Vercel_AI_Xai_XaiFiles_GetMetadataAsync_"></a>
 <a id="Vercel_AI_Xai_XaiFiles_GetMetadataAsync_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -195,7 +195,7 @@ Reads file metadata.
 
 **Returns:** [Task&lt;XaiFileResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L302)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L303)
 
 <a id="Vercel_AI_Xai_XaiFiles_UploadAsync_"></a>
 <a id="Vercel_AI_Xai_XaiFiles_UploadAsync_Vercel_AI_Xai_XaiFileUpload_System_Threading_CancellationToken_"></a>

@@ -65,7 +65,7 @@ public sealed class UIMessageStreamResponse
 }
 
 /// <summary>Builds UI message stream responses. Maps to <c>createUIMessageStreamResponse</c>.</summary>
-public static class UIMessageStreamResponses
+public static partial class UIMessageStreamResponses
 {
     /// <summary>
     /// Creates a response from a UI message stream. The stream is transformed to Server-Sent Events (SSE) format.

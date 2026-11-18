@@ -26,7 +26,7 @@ Maps to `Omit<LanguageModelResponseMetadata, 'messages' | 'body'>`.
 
 **Derived:** [StepResponse](/api/Vercel.AI/StepResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1188)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1618)
 
 ## Constructors
 
@@ -52,7 +52,7 @@ Creates response metadata.
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `headers` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1191)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1621)
 
 ## Properties
 
@@ -71,7 +71,7 @@ Response headers. &lt;a href="https://learn.microsoft.com/dotnet/csharp/language
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1214)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1644)
 
 <a id="Vercel_AI_LanguageModelResponseMetadata_Id_"></a>
 <a id="Vercel_AI_LanguageModelResponseMetadata_Id"></a>
@@ -88,7 +88,7 @@ ID for the generated response.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1205)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1635)
 
 <a id="Vercel_AI_LanguageModelResponseMetadata_ModelId_"></a>
 <a id="Vercel_AI_LanguageModelResponseMetadata_ModelId"></a>
@@ -105,7 +105,7 @@ The ID of the response model that was used to generate the response.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1211)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1641)
 
 <a id="Vercel_AI_LanguageModelResponseMetadata_Timestamp_"></a>
 <a id="Vercel_AI_LanguageModelResponseMetadata_Timestamp"></a>
@@ -122,4 +122,4 @@ Timestamp for the start of the generated response.
 
 **Value:** [DateTimeOffset](https://learn.microsoft.com/dotnet/api/system.datetimeoffset)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1208)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1638)

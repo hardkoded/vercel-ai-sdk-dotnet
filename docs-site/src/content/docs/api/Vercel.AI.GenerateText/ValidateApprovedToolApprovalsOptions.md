@@ -99,7 +99,24 @@ Refines the parsed input of a tool, keyed by tool name. Maps to `refineToolInput
 
 **Value:** [IReadOnlyDictionary&lt;string, Func&lt;JsonElement, CancellationToken, Task&lt;JsonElement&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L66)
+
+<a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_RuntimeContext_"></a>
+<a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_RuntimeContext"></a>
+
+### RuntimeContext
+
+
+```csharp
+public IReadOnlyDictionary<string, object?>? RuntimeContext { get; init; }
+```
+
+
+User-defined context that is passed to the approval functions. Maps to `runtimeContext`.
+
+**Value:** [IReadOnlyDictionary&lt;string, object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L57)
 
 <a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_ToolApproval_"></a>
 <a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_ToolApproval"></a>
@@ -133,7 +150,7 @@ Secret for the HMAC signature of the approval requests. Maps to `toolApprovalSec
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L60)
 
 <a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_ToolApprovalSecretBytes_"></a>
 <a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_ToolApprovalSecretBytes"></a>
@@ -150,7 +167,7 @@ The same secret given as bytes. It is used when [ToolApprovalSecret](#Vercel_AI_
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L63)
 
 <a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_Tools_"></a>
 <a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_Tools"></a>
@@ -168,3 +185,20 @@ The available tools.
 **Value:** [IReadOnlyList&lt;Tool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L45)
+
+<a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_ToolsContext_"></a>
+<a id="Vercel_AI_GenerateText_ValidateApprovedToolApprovalsOptions_ToolsContext"></a>
+
+### ToolsContext
+
+
+```csharp
+public IReadOnlyDictionary<string, JsonElement>? ToolsContext { get; init; }
+```
+
+
+The context of each tool, keyed by tool name. Maps to `toolsContext`.
+
+**Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolApprovals.cs#L54)

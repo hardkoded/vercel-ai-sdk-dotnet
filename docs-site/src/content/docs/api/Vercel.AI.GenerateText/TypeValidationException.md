@@ -25,7 +25,7 @@ Tool context failed schema validation. Maps to `TypeValidationError`.
 
 **Implements:** [ISerializable](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.iserializable)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolContext.cs#L10)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolContext.cs#L11)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates the exception.
 | `field` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `entityName` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolContext.cs#L13)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolContext.cs#L14)
 
 ## Properties
 
@@ -69,7 +69,7 @@ Field and entity that failed.
 
 **Value:** [ToolValidationContext](/api/Vercel.AI.GenerateText/ToolValidationContext/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolContext.cs#L24)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolContext.cs#L25)
 
 <a id="Vercel_AI_GenerateText_TypeValidationException_Value_"></a>
 <a id="Vercel_AI_GenerateText_TypeValidationException_Value"></a>
@@ -86,4 +86,4 @@ Value that failed validation.
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolContext.cs#L21)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolContext.cs#L22)

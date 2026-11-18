@@ -2,24 +2,29 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Operations;
 using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 using Vercel.AI.Ui;
 using Vercel.AI.Util;
 
 namespace Vercel.AI.AspNetCore;
 
 /// <summary>Options of <see cref="UIMessageStreamConverter.CreateAgentUIStreamAsync"/>. Maps to the options of <c>createAgentUIStream</c>.</summary>
-public sealed class CreateAgentUIStreamOptions
+public class CreateAgentUIStreamOptions
 {
     /// <summary>The agent to run. Maps to <c>agent</c>.</summary>
     public IAgent? Agent { get; set; }
 
-    /// <summary>The input UI messages. Maps to <c>uiMessages</c>.</summary>
+    /// <summary>The input UI messages. Maps to <c>uiMessages</c>. Set <see cref="UIMessagesJson"/> instead for messages that are not typed yet.</summary>
     public IReadOnlyList<UIMessage>? UIMessages { get; set; }
+
+    /// <summary>The input UI messages as a JSON array that the call validates, like the <c>unknown[]</c> of <c>uiMessages</c>. Set either this or <see cref="UIMessages"/>.</summary>
+    public JsonElement? UIMessagesJson { get; set; }
 
     /// <summary>Converts custom UI data parts to text or file model message parts. Maps to <c>convertDataPart</c>.</summary>
     public Func<DataUIPart, UserContentPart?>? ConvertDataPart { get; set; }
@@ -36,8 +41,15 @@ public sealed class CreateAgentUIStreamOptions
     /// </summary>
     public ISteering? ExperimentalSteering { get; set; }
 
+    /// <summary>The sandbox environment that is passed through to tool execution. Maps to <c>experimental_sandbox</c>.</summary>
+    public ISandboxSession? ExperimentalSandbox { get; set; }
+
     /// <summary>Called when each generation step ends. Maps to <c>onStepEnd</c>.</summary>
     public Func<StepResult, CancellationToken, Task>? OnStepEnd { get; set; }
+
+    /// <summary>Deprecated alias for <see cref="OnStepEnd"/>. Maps to <c>onStepFinish</c>.</summary>
+    [Obsolete("Use OnStepEnd instead.")]
+    public Func<StepResult, CancellationToken, Task>? OnStepFinish { get; set; }
 
     /// <summary>Called with the accumulated UI message after each step. Maps to <c>onUIMessageStepEnd</c>.</summary>
     public Func<UIMessageStreamOnStepEndEvent, Task>? OnUIMessageStepEnd { get; set; }
@@ -65,8 +77,10 @@ public static partial class UIMessageStreamConverter
 
         var agent = options.Agent
             ?? throw new ArgumentException("Agent is required.", nameof(options));
-        var uiMessages = options.UIMessages
-            ?? throw new ArgumentException("UIMessages is required.", nameof(options));
+        if (options.UIMessages is null && options.UIMessagesJson is null)
+        {
+            throw new ArgumentException("UIMessages is required.", nameof(options));
+        }
 
         // other agents would ignore the steering object and never resolve its messages:
         if (options.ExperimentalSteering != null && agent is not Agent)
@@ -82,7 +96,12 @@ public static partial class UIMessageStreamConverter
 
         var validatedMessages = await UIMessageValidation
             .ValidateUIMessagesForAgentAsync(
-                new ValidateUIMessagesOptions { Messages = uiMessages, Tools = tools }
+                new ValidateUIMessagesOptions
+                {
+                    Messages = options.UIMessages,
+                    MessagesJson = options.UIMessagesJson,
+                    Tools = tools,
+                }
             )
             .ConfigureAwait(false);
 
@@ -101,7 +120,10 @@ public static partial class UIMessageStreamConverter
             options.AbortSignal,
             options.Timeout,
             options.ExperimentalSteering,
-            options.OnStepEnd
+#pragma warning disable CS0618
+            options.OnStepEnd ?? options.OnStepFinish,
+#pragma warning restore CS0618
+            options.ExperimentalSandbox
         );
 
         var streamOptions = options.UIMessageStreamOptions;

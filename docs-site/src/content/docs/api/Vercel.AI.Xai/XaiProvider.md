@@ -123,7 +123,7 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [XaiProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L120)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L121)
 
 <a id="Vercel_AI_Xai_XaiProvider_CreateChatModel_"></a>
 <a id="Vercel_AI_Xai_XaiProvider_CreateChatModel_System_String_"></a>
@@ -151,7 +151,7 @@ Creates a Chat Completions model. Upstream xAI has no chat model; use [LanguageM
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L61)
 
 <a id="Vercel_AI_Xai_XaiProvider_FileStore_"></a>
 <a id="Vercel_AI_Xai_XaiProvider_FileStore"></a>
@@ -168,7 +168,7 @@ Returns a file store.
 
 **Returns:** [IFileStore](/api/Vercel.AI.Provider/IFileStore/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L76)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L77)
 
 <a id="Vercel_AI_Xai_XaiProvider_Files_"></a>
 <a id="Vercel_AI_Xai_XaiProvider_Files"></a>
@@ -185,7 +185,7 @@ xAI file store.
 
 **Returns:** [XaiFiles](/api/Vercel.AI.Xai/XaiFiles/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L70)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L71)
 
 <a id="Vercel_AI_Xai_XaiProvider_LanguageModel_"></a>
 <a id="Vercel_AI_Xai_XaiProvider_LanguageModel_System_String_"></a>
@@ -208,7 +208,7 @@ Creates a Responses API model, like [ResponsesModel(string)](#Vercel_AI_Xai_XaiP
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L48)
 
 <a id="Vercel_AI_Xai_XaiProvider_RealtimeModel_"></a>
 <a id="Vercel_AI_Xai_XaiProvider_RealtimeModel_System_String_"></a>
@@ -231,7 +231,7 @@ Returns a realtime model.
 
 **Returns:** [IRealtimeModel](/api/Vercel.AI.Provider/IRealtimeModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L94)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L95)
 
 <a id="Vercel_AI_Xai_XaiProvider_ResponsesModel_"></a>
 <a id="Vercel_AI_Xai_XaiProvider_ResponsesModel_System_String_"></a>
@@ -254,7 +254,7 @@ Creates a Responses API model. The provider id is `xai.responses`.
 
 **Returns:** [XaiResponsesLanguageModel](/api/Vercel.AI.Xai/XaiResponsesLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L54)
 
 <a id="Vercel_AI_Xai_XaiProvider_TranscriptionModel_"></a>
 <a id="Vercel_AI_Xai_XaiProvider_TranscriptionModel"></a>
@@ -271,7 +271,7 @@ Creates an xAI model for speech-to-text transcription. xAI's default transcripti
 
 **Returns:** [XaiTranscriptionModel](/api/Vercel.AI.Xai/XaiTranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L88)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L89)
 
 <a id="Vercel_AI_Xai_XaiProvider_TranscriptionModel_System_String_"></a>
 
@@ -293,7 +293,7 @@ Creates an xAI model for speech-to-text transcription. An empty &lt;code class="
 
 **Returns:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L82)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L83)
 
 <a id="Vercel_AI_Xai_XaiProvider_Video_"></a>
 <a id="Vercel_AI_Xai_XaiProvider_Video_System_String_"></a>
@@ -316,7 +316,7 @@ Creates a video model. Same as [VideoModel(string)](#Vercel_AI_Xai_XaiProvider_V
 
 **Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L114)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L115)
 
 <a id="Vercel_AI_Xai_XaiProvider_VideoModel_"></a>
 <a id="Vercel_AI_Xai_XaiProvider_VideoModel_System_String_"></a>
@@ -339,4 +339,4 @@ Creates a video model. The provider id is `xai.video`.
 
 **Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L109)

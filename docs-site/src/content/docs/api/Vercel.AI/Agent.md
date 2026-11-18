@@ -25,7 +25,7 @@ An agent that calls tools until [StopWhen](/api/Vercel.AI/StopWhen/) matches. Ma
 
 **Implements:** [IAgent](/api/Vercel.AI/IAgent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L32)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates an agent. The default stop condition is 10 steps.
 | `options` | [AgentOptions](/api/Vercel.AI/AgentOptions/) |  |
 | `client` | [IAiClient](/api/Vercel.AI/IAiClient/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L37)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Agent options.
 
 **Value:** [AgentOptions](/api/Vercel.AI/AgentOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L49)
 
 <a id="Vercel_AI_Agent_Tools_"></a>
 <a id="Vercel_AI_Agent_Tools"></a>
@@ -85,18 +85,18 @@ The tools of the agent. Maps to `tools`.
 
 **Value:** [IReadOnlyList&lt;Tool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L52)
 
 ## Methods
 
 <a id="Vercel_AI_Agent_GenerateAsync_"></a>
-<a id="Vercel_AI_Agent_GenerateAsync_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_ModelMessage__System_Threading_CancellationToken_Vercel_AI_Prompt_TimeoutConfiguration_Vercel_AI_GenerateText_ISteering_"></a>
+<a id="Vercel_AI_Agent_GenerateAsync_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_ModelMessage__System_Threading_CancellationToken_Vercel_AI_Prompt_TimeoutConfiguration_Vercel_AI_GenerateText_ISteering_Vercel_AI_ProviderUtils_ISandboxSession_"></a>
 
-### `GenerateAsync(IReadOnlyList<ModelMessage>, CancellationToken, TimeoutConfiguration?, ISteering?)`
+### `GenerateAsync(IReadOnlyList<ModelMessage>, CancellationToken, TimeoutConfiguration?, ISteering?, ISandboxSession?)`
 
 
 ```csharp
-public Task<GenerateTextResult> GenerateAsync(IReadOnlyList<ModelMessage> messages, CancellationToken cancellationToken = default, TimeoutConfiguration? timeout = null, ISteering? experimentalSteering = null)
+public Task<GenerateTextResult> GenerateAsync(IReadOnlyList<ModelMessage> messages, CancellationToken cancellationToken = default, TimeoutConfiguration? timeout = null, ISteering? experimentalSteering = null, ISandboxSession? experimentalSandbox = null)
 ```
 
 
@@ -111,18 +111,19 @@ Generates a reply to &lt;code class="paramref"&gt;messages&lt;/code&gt;. System 
 | `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
 | `timeout` | [TimeoutConfiguration](/api/Vercel.AI.Prompt/TimeoutConfiguration/) |  |
 | `experimentalSteering` | [ISteering](/api/Vercel.AI.GenerateText/ISteering/) |  |
+| `experimentalSandbox` | [ISandboxSession](/api/Vercel.AI.ProviderUtils/ISandboxSession/) |  |
 
 **Returns:** [Task&lt;GenerateTextResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L79)
 
-<a id="Vercel_AI_Agent_GenerateAsync_System_String_System_Threading_CancellationToken_Vercel_AI_Prompt_TimeoutConfiguration_Vercel_AI_GenerateText_ISteering_"></a>
+<a id="Vercel_AI_Agent_GenerateAsync_System_String_System_Threading_CancellationToken_Vercel_AI_Prompt_TimeoutConfiguration_Vercel_AI_GenerateText_ISteering_Vercel_AI_ProviderUtils_ISandboxSession_"></a>
 
-### GenerateAsync(string, CancellationToken, TimeoutConfiguration?, ISteering?)
+### GenerateAsync(string, CancellationToken, TimeoutConfiguration?, ISteering?, ISandboxSession?)
 
 
 ```csharp
-public Task<GenerateTextResult> GenerateAsync(string prompt, CancellationToken cancellationToken = default, TimeoutConfiguration? timeout = null, ISteering? experimentalSteering = null)
+public Task<GenerateTextResult> GenerateAsync(string prompt, CancellationToken cancellationToken = default, TimeoutConfiguration? timeout = null, ISteering? experimentalSteering = null, ISandboxSession? experimentalSandbox = null)
 ```
 
 
@@ -138,19 +139,20 @@ Generates a reply to &lt;code class="paramref"&gt;prompt&lt;/code&gt;.
 | `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
 | `timeout` | [TimeoutConfiguration](/api/Vercel.AI.Prompt/TimeoutConfiguration/) |  |
 | `experimentalSteering` | [ISteering](/api/Vercel.AI.GenerateText/ISteering/) |  |
+| `experimentalSandbox` | [ISandboxSession](/api/Vercel.AI.ProviderUtils/ISandboxSession/) |  |
 
 **Returns:** [Task&lt;GenerateTextResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L59)
 
 <a id="Vercel_AI_Agent_Stream_"></a>
-<a id="Vercel_AI_Agent_Stream_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_ModelMessage__System_Threading_CancellationToken_Vercel_AI_Util_AbortSignal_Vercel_AI_Prompt_TimeoutConfiguration_Vercel_AI_GenerateText_ISteering_System_Func_Vercel_AI_StepResult_System_Threading_CancellationToken_System_Threading_Tasks_Task__"></a>
+<a id="Vercel_AI_Agent_Stream_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_ModelMessage__System_Threading_CancellationToken_Vercel_AI_Util_AbortSignal_Vercel_AI_Prompt_TimeoutConfiguration_Vercel_AI_GenerateText_ISteering_System_Func_Vercel_AI_StepResult_System_Threading_CancellationToken_System_Threading_Tasks_Task__Vercel_AI_ProviderUtils_ISandboxSession_"></a>
 
-### `Stream(IReadOnlyList<ModelMessage>, CancellationToken, AbortSignal?, TimeoutConfiguration?, ISteering?, Func<StepResult, CancellationToken, Task>?)`
+### `Stream(IReadOnlyList<ModelMessage>, CancellationToken, AbortSignal?, TimeoutConfiguration?, ISteering?, Func<StepResult, CancellationToken, Task>?, ISandboxSession?)`
 
 
 ```csharp
-public StreamTextResult Stream(IReadOnlyList<ModelMessage> messages, CancellationToken cancellationToken = default, AbortSignal? abortSignal = null, TimeoutConfiguration? timeout = null, ISteering? experimentalSteering = null, Func<StepResult, CancellationToken, Task>? onStepEnd = null)
+public StreamTextResult Stream(IReadOnlyList<ModelMessage> messages, CancellationToken cancellationToken = default, AbortSignal? abortSignal = null, TimeoutConfiguration? timeout = null, ISteering? experimentalSteering = null, Func<StepResult, CancellationToken, Task>? onStepEnd = null, ISandboxSession? experimentalSandbox = null)
 ```
 
 
@@ -168,18 +170,19 @@ Streams a reply to &lt;code class="paramref"&gt;messages&lt;/code&gt;. System me
 | `timeout` | [TimeoutConfiguration](/api/Vercel.AI.Prompt/TimeoutConfiguration/) |  |
 | `experimentalSteering` | [ISteering](/api/Vercel.AI.GenerateText/ISteering/) |  |
 | `onStepEnd` | [Func&lt;StepResult, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3) |  |
+| `experimentalSandbox` | [ISandboxSession](/api/Vercel.AI.ProviderUtils/ISandboxSession/) |  |
 
 **Returns:** [StreamTextResult](/api/Vercel.AI/StreamTextResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L137)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L146)
 
-<a id="Vercel_AI_Agent_Stream_System_String_System_Threading_CancellationToken_Vercel_AI_Util_AbortSignal_Vercel_AI_Prompt_TimeoutConfiguration_Vercel_AI_GenerateText_ISteering_"></a>
+<a id="Vercel_AI_Agent_Stream_System_String_System_Threading_CancellationToken_Vercel_AI_Util_AbortSignal_Vercel_AI_Prompt_TimeoutConfiguration_Vercel_AI_GenerateText_ISteering_Vercel_AI_ProviderUtils_ISandboxSession_"></a>
 
-### Stream(string, CancellationToken, AbortSignal?, TimeoutConfiguration?, ISteering?)
+### Stream(string, CancellationToken, AbortSignal?, TimeoutConfiguration?, ISteering?, ISandboxSession?)
 
 
 ```csharp
-public StreamTextResult Stream(string prompt, CancellationToken cancellationToken = default, AbortSignal? abortSignal = null, TimeoutConfiguration? timeout = null, ISteering? experimentalSteering = null)
+public StreamTextResult Stream(string prompt, CancellationToken cancellationToken = default, AbortSignal? abortSignal = null, TimeoutConfiguration? timeout = null, ISteering? experimentalSteering = null, ISandboxSession? experimentalSandbox = null)
 ```
 
 
@@ -196,7 +199,8 @@ Streams a reply to &lt;code class="paramref"&gt;prompt&lt;/code&gt;. &lt;code cl
 | `abortSignal` | [AbortSignal](/api/Vercel.AI.Util/AbortSignal/) |  |
 | `timeout` | [TimeoutConfiguration](/api/Vercel.AI.Prompt/TimeoutConfiguration/) |  |
 | `experimentalSteering` | [ISteering](/api/Vercel.AI.GenerateText/ISteering/) |  |
+| `experimentalSandbox` | [ISandboxSession](/api/Vercel.AI.ProviderUtils/ISandboxSession/) |  |
 
 **Returns:** [StreamTextResult](/api/Vercel.AI/StreamTextResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L115)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L123)

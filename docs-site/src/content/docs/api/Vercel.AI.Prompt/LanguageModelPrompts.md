@@ -27,14 +27,39 @@ Prompt conversion before a model call. Maps to `convert-to-language-model-prompt
 
 ## Methods
 
-<a id="Vercel_AI_Prompt_LanguageModelPrompts_ConvertToLanguageModelPromptAsync_"></a>
-<a id="Vercel_AI_Prompt_LanguageModelPrompts_ConvertToLanguageModelPromptAsync_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_ModelMessage__System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Func_System_Collections_Generic_IReadOnlyList_Vercel_AI_Util_DownloadRequestItem__System_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Vercel_AI_Util_DownloadResult____System_Threading_CancellationToken_"></a>
+<a id="Vercel_AI_Prompt_LanguageModelPrompts_ConvertToLanguageModelMessage_"></a>
+<a id="Vercel_AI_Prompt_LanguageModelPrompts_ConvertToLanguageModelMessage_Vercel_AI_Provider_ModelMessage_System_Collections_Generic_IReadOnlyDictionary_System_String_Vercel_AI_Util_DownloadResult__System_String_"></a>
 
-### `ConvertToLanguageModelPromptAsync(IReadOnlyList<ModelMessage>, IReadOnlyDictionary<string, string>, Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>?, CancellationToken)`
+### `ConvertToLanguageModelMessage(ModelMessage, IReadOnlyDictionary<string, DownloadResult>, string?)`
 
 
 ```csharp
-public static Task<IReadOnlyList<ModelMessage>> ConvertToLanguageModelPromptAsync(IReadOnlyList<ModelMessage> messages, IReadOnlyDictionary<string, string> supportedUrls, Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>? download, CancellationToken abortSignal = default)
+public static ModelMessage ConvertToLanguageModelMessage(ModelMessage message, IReadOnlyDictionary<string, DownloadResult> downloadedAssets, string? provider = null)
+```
+
+
+Converts a message to its language model form. Maps to `convertToLanguageModelMessage`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `message` | [ModelMessage](/api/Vercel.AI.Provider/ModelMessage/) | The message to convert. |
+| `downloadedAssets` | [IReadOnlyDictionary&lt;string, DownloadResult&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) | Downloaded data by URL. Only available if the model does not support URLs. |
+| `provider` | [string](https://learn.microsoft.com/dotnet/api/system.string) | Provider of the model. It is only used to convert the deprecated `file-id` and `image-file-id` tool result parts with a string file id. |
+
+**Returns:** [ModelMessage](/api/Vercel.AI.Provider/ModelMessage/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/ConvertToLanguageModelPrompt.cs#L102)
+
+<a id="Vercel_AI_Prompt_LanguageModelPrompts_ConvertToLanguageModelPromptAsync_"></a>
+<a id="Vercel_AI_Prompt_LanguageModelPrompts_ConvertToLanguageModelPromptAsync_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_ModelMessage__System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Func_System_Collections_Generic_IReadOnlyList_Vercel_AI_Util_DownloadRequestItem__System_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Vercel_AI_Util_DownloadResult____System_Threading_CancellationToken_System_String_"></a>
+
+### `ConvertToLanguageModelPromptAsync(IReadOnlyList<ModelMessage>, IReadOnlyDictionary<string, string>, Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>?, CancellationToken, string?)`
+
+
+```csharp
+public static Task<IReadOnlyList<ModelMessage>> ConvertToLanguageModelPromptAsync(IReadOnlyList<ModelMessage> messages, IReadOnlyDictionary<string, string> supportedUrls, Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>? download, CancellationToken abortSignal = default, string? provider = null)
 ```
 
 
@@ -48,10 +73,11 @@ Downloads the files whose URLs the model cannot read itself and inlines their by
 | `supportedUrls` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) | The model's [SupportedUrls](/api/Vercel.AI.Provider/ILanguageModel/#Vercel_AI_Provider_ILanguageModel_SupportedUrls). |
 | `download` | [Func&lt;IReadOnlyList&lt;DownloadRequestItem&gt;, Task&lt;IReadOnlyList&lt;DownloadResult&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2) | Custom download function. When it is null, URLs are downloaded with [DefaultDownloadFunction](/api/Vercel.AI.Util/DefaultDownloadFunction/). |
 | `abortSignal` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) | Cancellation for the downloads. |
+| `provider` | [string](https://learn.microsoft.com/dotnet/api/system.string) | Provider of the model. It is only used to convert the deprecated `file-id` and `image-file-id` tool result parts with a string file id. |
 
 **Returns:** [Task&lt;IReadOnlyList&lt;ModelMessage&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/ConvertToLanguageModelPrompt.cs#L21)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/ConvertToLanguageModelPrompt.cs#L22)
 
 <a id="Vercel_AI_Prompt_LanguageModelPrompts_DownloadAssetsAsync_"></a>
 <a id="Vercel_AI_Prompt_LanguageModelPrompts_DownloadAssetsAsync_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_ModelMessage__System_Func_System_Collections_Generic_IReadOnlyList_Vercel_AI_Util_DownloadRequestItem__System_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Vercel_AI_Util_DownloadResult____System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -77,4 +103,4 @@ Downloads files from URLs in the user messages. Maps to `downloadAssets`.
 
 **Returns:** [Task&lt;IReadOnlyDictionary&lt;string, DownloadResult&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1) — Downloaded data by URL. Only URLs the download function returned data for.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/ConvertToLanguageModelPrompt.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/ConvertToLanguageModelPrompt.cs#L131)

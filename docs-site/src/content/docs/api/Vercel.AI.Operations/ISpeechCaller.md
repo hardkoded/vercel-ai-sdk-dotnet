@@ -21,6 +21,6 @@ public interface ISpeechCaller
 
 Speech model used by [GenerateSpeech](/api/Vercel.AI.Operations/GenerateSpeech/).
 
-**Derived:** [CartesiaSpeechModel](/api/Vercel.AI.Cartesia/CartesiaSpeechModel/), [FalSpeechModel](/api/Vercel.AI.Fal/FalSpeechModel/), [FishAudioProvider.FishSpeechModel](/api/Vercel.AI.FishAudio/FishAudioProvider.FishSpeechModel/), [GoogleSpeechModel](/api/Vercel.AI.Google/GoogleSpeechModel/), [OpenAISpeechModel](/api/Vercel.AI.OpenAI/OpenAISpeechModel/)
+**Derived:** [CartesiaSpeechModel](/api/Vercel.AI.Cartesia/CartesiaSpeechModel/), [FalSpeechModel](/api/Vercel.AI.Fal/FalSpeechModel/), [FishAudioProvider.FishSpeechModel](/api/Vercel.AI.FishAudio/FishAudioProvider.FishSpeechModel/), [GoogleSpeechModel](/api/Vercel.AI.Google/GoogleSpeechModel/), [MistralSpeechModel](/api/Vercel.AI.Mistral/MistralSpeechModel/), [OpenAISpeechModel](/api/Vercel.AI.OpenAI/OpenAISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L95)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L100)

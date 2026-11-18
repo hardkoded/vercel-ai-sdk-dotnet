@@ -23,7 +23,7 @@ The approval setting of one tool: a status or a function that produces a status 
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L145)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L168)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates an entry whose status is produced for each call.
 | --- | --- | --- |
 | `function` | [SingleToolApprovalFunction](/api/Vercel.AI.GenerateText/SingleToolApprovalFunction/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L154)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L177)
 
 <a id="Vercel_AI_GenerateText_ToolApprovalEntry__ctor_Vercel_AI_GenerateText_ToolApprovalStatus_"></a>
 
@@ -66,7 +66,7 @@ Creates an entry with a fixed status.
 | --- | --- | --- |
 | `status` | [ToolApprovalStatus](/api/Vercel.AI.GenerateText/ToolApprovalStatus/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L148)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L171)
 
 ## Properties
 
@@ -85,7 +85,7 @@ The function that produces the status, or null when [Status](#Vercel_AI_Generate
 
 **Value:** [SingleToolApprovalFunction](/api/Vercel.AI.GenerateText/SingleToolApprovalFunction/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L163)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L186)
 
 <a id="Vercel_AI_GenerateText_ToolApprovalEntry_Status_"></a>
 <a id="Vercel_AI_GenerateText_ToolApprovalEntry_Status"></a>
@@ -102,7 +102,7 @@ The fixed status, or null when [Function](#Vercel_AI_GenerateText_ToolApprovalEn
 
 **Value:** [ToolApprovalStatus](/api/Vercel.AI.GenerateText/ToolApprovalStatus/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L160)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L183)
 
 ## Operators
 
@@ -127,4 +127,4 @@ Converts a status to an entry.
 
 **Returns:** [ToolApprovalEntry](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L166)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L189)

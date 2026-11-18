@@ -23,7 +23,7 @@ Passed to [OnToolExecutionEnd](/api/Vercel.AI/GenerateTextOptions/#Vercel_AI_Gen
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ToolExecutionStartEvent](/api/Vercel.AI/ToolExecutionStartEvent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L979)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1409)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates an event.
 | `toolOutput` | [ExecutedTool](/api/Vercel.AI/ExecutedTool/) |  |
 | `toolExecutionTime` | [TimeSpan](https://learn.microsoft.com/dotnet/api/system.timespan) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L982)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1412)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Time the tool took. Maps to `toolExecutionMs`.
 
 **Value:** [TimeSpan](https://learn.microsoft.com/dotnet/api/system.timespan)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L998)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1428)
 
 <a id="Vercel_AI_ToolExecutionEndEvent_ToolOutput_"></a>
 <a id="Vercel_AI_ToolExecutionEndEvent_ToolOutput"></a>
@@ -85,4 +85,4 @@ The result of the call. [IsError](/api/Vercel.AI/ExecutedTool/#Vercel_AI_Execute
 
 **Value:** [ExecutedTool](/api/Vercel.AI/ExecutedTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L995)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1425)

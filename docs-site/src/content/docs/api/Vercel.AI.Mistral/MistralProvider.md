@@ -147,3 +147,49 @@ Creates a provider. Pass a handler from tests.
 **Returns:** [MistralProvider](./)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L30)
+
+<a id="Vercel_AI_Mistral_MistralProvider_SpeechModel_"></a>
+<a id="Vercel_AI_Mistral_MistralProvider_SpeechModel_System_String_"></a>
+
+### SpeechModel(string)
+
+
+```csharp
+public override ISpeechModel SpeechModel(string modelId)
+```
+
+
+Returns a speech model.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L48)
+
+<a id="Vercel_AI_Mistral_MistralProvider_TranscriptionModel_"></a>
+<a id="Vercel_AI_Mistral_MistralProvider_TranscriptionModel_System_String_"></a>
+
+### TranscriptionModel(string)
+
+
+```csharp
+public override ITranscriptionModel TranscriptionModel(string modelId)
+```
+
+
+Returns a transcription model.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L52)
