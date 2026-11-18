@@ -220,6 +220,12 @@ public sealed class ToolExecutionOptions
 
     /// <summary>The sandbox environment that the tool is operating in. Maps to <c>experimental_sandbox</c>.</summary>
     public Vercel.AI.ProviderUtils.ISandboxSession? ExperimentalSandbox { get; init; }
+
+    /// <summary>
+    /// The context of this tool from <see cref="GenerateTextOptions.ToolsContext"/>, validated with <see cref="Tool.ContextSchema"/>.
+    /// Maps to <c>context</c>.
+    /// </summary>
+    public JsonElement? Context { get; init; }
 }
 
 /// <summary>The result of executing a tool.</summary>
@@ -1398,8 +1404,14 @@ public class ToolExecutionStartEvent
         Messages = messages;
     }
 
+    /// <summary>Unique identifier of the generation this tool call belongs to. Maps to <c>callId</c>.</summary>
+    public string? CallId { get; init; }
+
     /// <summary>The call about to run.</summary>
     public GeneratedToolCall ToolCall { get; }
+
+    /// <summary>The validated context of the tool. Maps to <c>toolContext</c>.</summary>
+    public JsonElement? ToolContext { get; init; }
 
     /// <summary>The messages the model received in the step that made the call.</summary>
     public IReadOnlyList<ModelMessage> Messages { get; }

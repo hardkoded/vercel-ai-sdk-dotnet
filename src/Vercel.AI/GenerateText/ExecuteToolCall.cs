@@ -12,141 +12,130 @@ namespace Vercel.AI.GenerateText;
 /// <summary>Tool call execution. Maps to <c>execute-tool-call.ts</c>.</summary>
 internal static class ToolCallExecution
 {
-    /// <summary>Executes a single tool call and manages its lifecycle callbacks. Maps to <c>executeToolCall</c>.</summary>
-    internal static async Task<(ExecutedTool Executed, double ElapsedMs)> ExecuteToolCall(
-        GeneratedToolCall call,
-        GenerateTextOptions options,
-        IReadOnlyList<ModelMessage> stepMessages,
+    /// <summary>
+    /// Executes a single tool call and manages its lifecycle callbacks. Returns null when the tool is missing or has no execute function.
+    /// Maps to <c>executeToolCall</c>. <paramref name="now"/> stands for upstream's module-level <c>now</c> and is the same clock
+    /// the loop uses. <c>runInTracingChannelSpan</c> is not ported, because the port has no telemetry dispatcher (#1380).
+    /// </summary>
+    internal static async Task<(ExecutedTool Output, double ToolExecutionMs)?> ExecuteToolCall(
+        GeneratedToolCall toolCall,
+        IReadOnlyList<Tool>? tools,
+        IReadOnlyDictionary<string, JsonElement>? toolsContext,
+        string callId,
+        IReadOnlyList<ModelMessage> messages,
+        CancellationToken abortSignal,
         Func<double> now,
-        CancellationToken cancellationToken,
-        Action<ExecutedTool>? onPreliminaryToolResult = null
+        TimeoutConfiguration? timeout = null,
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null,
+        Action<ExecutedTool>? onPreliminaryToolResult = null,
+        IReadOnlyList<
+            Func<ToolExecutionStartEvent, CancellationToken, Task>
+        >? onToolExecutionStart = null,
+        IReadOnlyList<Func<ToolExecutionEndEvent, CancellationToken, Task>>? onToolExecutionEnd =
+            null,
+        Func<ExecuteToolInTelemetryContextParams, Task>? executeToolInTelemetryContext = null
     )
     {
-        var tool = Generation.FindTool(options, call.ToolName);
+        var tool = Generation.FindTool(tools, toolCall.ToolName);
 
         if (tool == null || !Generation.HasExecutor(tool))
         {
-            return (
-                new ExecutedTool(
-                    call.ToolCallId,
-                    call.ToolName,
-                    "{\"error\":\"Tool has no execute function.\"}",
-                    true
-                )
-                {
-                    InputJson = call.ArgumentsJson,
-                    Dynamic = call.Dynamic,
-                    Title = call.Title,
-                    ToolMetadata = call.ToolMetadata,
-                    ModelOutputType = "error-text",
-                    ModelOutput = "Tool has no execute function.",
-                },
-                0
-            );
+            return null;
         }
 
-        if (options.OnToolExecutionStart != null)
+        JsonElement? toolContext = null;
+        if (toolsContext != null && toolsContext.TryGetValue(toolCall.ToolName, out var rawContext))
         {
-            await Generation
-                .NotifyAsync(
-                    () =>
-                        options.OnToolExecutionStart(
-                            new ToolExecutionStartEvent(call, stepMessages),
-                            cancellationToken
-                        ),
-                    cancellationToken
-                )
-                .ConfigureAwait(false);
+            toolContext = rawContext;
         }
+
+        toolContext = ToolContexts.ValidateToolContext(
+            toolCall.ToolName,
+            toolContext,
+            tool.ContextSchema
+        );
+
+        var startEvent = new ToolExecutionStartEvent(toolCall, messages)
+        {
+            CallId = callId,
+            ToolContext = toolContext,
+        };
+
+        await NotifyAsync(onToolExecutionStart, startEvent, abortSignal).ConfigureAwait(false);
 
         // Like upstream, the tool timeout starts after onToolExecutionStart and cancels only this tool, not the call.
-        var toolTimeoutMs = TimeoutConfiguration.GetToolTimeoutMs(options.Timeout, call.ToolName);
+        var toolTimeoutMs = TimeoutConfiguration.GetToolTimeoutMs(timeout, toolCall.ToolName);
         using var toolTimeout =
             toolTimeoutMs != null
-                ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+                ? CancellationTokenSource.CreateLinkedTokenSource(abortSignal)
                 : null;
         toolTimeout?.CancelAfter(toolTimeoutMs!.Value);
-        var toolToken = toolTimeout?.Token ?? cancellationToken;
+        var toolToken = toolTimeout?.Token ?? abortSignal;
 
-        var startMs = now();
+        var toolExecutionMs = 0d;
         ExecutedTool executed;
         try
         {
             using var arguments = JsonDocument.Parse(
-                string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson
+                string.IsNullOrWhiteSpace(toolCall.ArgumentsJson) ? "{}" : toolCall.ArgumentsJson
             );
             var input = arguments.RootElement.Clone();
-            string output;
-            if (tool.ExecuteStream != null)
-            {
-                // Like upstream's executeTool, each streamed value is a preliminary result and the last one is the final result.
-                var last = default(string);
-                await foreach (
-                    var part in Vercel
-                        .AI.ProviderUtils.ToolExecution.ExecuteStreamAsync(
-                            tool.ExecuteStream(
-                                input,
-                                new ToolExecutionOptions(call.ToolCallId, stepMessages, toolToken)
-                                {
-                                    ExperimentalSandbox = options.ExperimentalSandbox,
-                                }
-                            ),
-                            toolToken
-                        )
-                        .ConfigureAwait(false)
-                )
-                {
-                    if (part.Type == "preliminary")
-                    {
-                        onPreliminaryToolResult?.Invoke(
-                            new ExecutedTool(
-                                call.ToolCallId,
-                                call.ToolName,
-                                string.IsNullOrEmpty(part.Output) ? "null" : part.Output,
-                                false
-                            )
-                            {
-                                InputJson = call.ArgumentsJson,
-                                Dynamic = call.Dynamic,
-                                Title = call.Title,
-                                ToolMetadata = call.ToolMetadata,
-                                Preliminary = true,
-                            }
-                        );
-                    }
-                    else
-                    {
-                        last = part.Output;
-                    }
-                }
+            var output = default(string);
 
-                output = last!;
+            async Task Execute()
+            {
+                var startMs = now();
+                try
+                {
+                    output = await RunToolAsync(
+                            tool,
+                            toolCall,
+                            input,
+                            messages,
+                            toolToken,
+                            toolContext,
+                            experimentalSandbox,
+                            onPreliminaryToolResult
+                        )
+                        .ConfigureAwait(false);
+                }
+                finally
+                {
+                    toolExecutionMs = now() - startMs;
+                }
+            }
+
+            // Integration wrappers keep nested AI SDK calls associated with this tool execution.
+            if (executeToolInTelemetryContext != null)
+            {
+                await executeToolInTelemetryContext(
+                        new ExecuteToolInTelemetryContextParams(
+                            callId,
+                            toolCall.ToolCallId,
+                            toolCall,
+                            messages,
+                            toolContext,
+                            Execute
+                        )
+                    )
+                    .ConfigureAwait(false);
             }
             else
             {
-                output =
-                    tool.ExecuteWithOptions != null
-                        ? await tool.ExecuteWithOptions(
-                                input,
-                                new ToolExecutionOptions(call.ToolCallId, stepMessages, toolToken)
-                                {
-                                    ExperimentalSandbox = options.ExperimentalSandbox,
-                                }
-                            )
-                            .ConfigureAwait(false)
-                        : await tool.Execute!(input, toolToken).ConfigureAwait(false);
+                await Execute().ConfigureAwait(false);
             }
 
             output = string.IsNullOrEmpty(output) ? "null" : output;
             var modelOutput = tool.ToModelOutput?.Invoke(
-                new ToolModelOutputCall(call.ToolCallId, input, output)
+                new ToolModelOutputCall(toolCall.ToolCallId, input, output)
             );
-            executed = new ExecutedTool(call.ToolCallId, call.ToolName, output, false)
+            executed = new ExecutedTool(toolCall.ToolCallId, toolCall.ToolName, output, false)
             {
-                InputJson = call.ArgumentsJson,
-                Dynamic = call.Dynamic,
-                Title = call.Title,
-                ToolMetadata = call.ToolMetadata,
+                InputJson = toolCall.ArgumentsJson,
+                Dynamic = toolCall.Dynamic,
+                Title = toolCall.Title,
+                ToolMetadata = toolCall.ToolMetadata,
+                ProviderMetadata = toolCall.ProviderMetadata,
                 ModelOutputType = modelOutput is ContentToolModelOutput ? null : modelOutput?.Type,
                 ModelOutput =
                     modelOutput is ContentToolModelOutput
@@ -157,7 +146,7 @@ internal static class ToolCallExecution
                     : null,
             };
         }
-        catch (Exception thrown) when (!cancellationToken.IsCancellationRequested)
+        catch (Exception thrown) when (!abortSignal.IsCancellationRequested)
         {
             // A tool that stops on its token reports the timeout, as upstream reports the abort reason of the tool signal.
             var exception =
@@ -168,34 +157,143 @@ internal static class ToolCallExecution
                     ? new TimeoutError("The operation was aborted due to timeout")
                     : thrown;
             var error = JsonSerializer.Serialize(new { error = exception.Message });
-            executed = new ExecutedTool(call.ToolCallId, call.ToolName, error, true)
+            executed = new ExecutedTool(toolCall.ToolCallId, toolCall.ToolName, error, true)
             {
-                InputJson = call.ArgumentsJson,
-                Dynamic = call.Dynamic,
-                Title = call.Title,
-                ToolMetadata = call.ToolMetadata,
+                InputJson = toolCall.ArgumentsJson,
+                Dynamic = toolCall.Dynamic,
+                Title = toolCall.Title,
+                ToolMetadata = toolCall.ToolMetadata,
+                ProviderMetadata = toolCall.ProviderMetadata,
                 ModelOutputType = "error-text",
                 ModelOutput = ErrorMessage.ToErrorString(exception),
                 Error = exception,
             };
         }
 
-        var elapsedMs = now() - startMs;
-        if (options.OnToolExecutionEnd != null)
-        {
-            var elapsed = TimeSpan.FromMilliseconds(elapsedMs);
-            await Generation
-                .NotifyAsync(
-                    () =>
-                        options.OnToolExecutionEnd(
-                            new ToolExecutionEndEvent(call, stepMessages, executed, elapsed),
-                            cancellationToken
-                        ),
-                    cancellationToken
+        await NotifyAsync(
+                onToolExecutionEnd,
+                new ToolExecutionEndEvent(
+                    toolCall,
+                    messages,
+                    executed,
+                    TimeSpan.FromMilliseconds(toolExecutionMs)
                 )
-                .ConfigureAwait(false);
+                {
+                    CallId = callId,
+                    ToolContext = toolContext,
+                },
+                abortSignal
+            )
+            .ConfigureAwait(false);
+
+        return (executed, toolExecutionMs);
+    }
+
+    // Maps to the `executeTool` call of upstream: every streamed value is a preliminary result and the last one is the final result.
+    private static async Task<string?> RunToolAsync(
+        Tool tool,
+        GeneratedToolCall toolCall,
+        JsonElement input,
+        IReadOnlyList<ModelMessage> messages,
+        CancellationToken toolToken,
+        JsonElement? toolContext,
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox,
+        Action<ExecutedTool>? onPreliminaryToolResult
+    )
+    {
+        var executionOptions = new ToolExecutionOptions(toolCall.ToolCallId, messages, toolToken)
+        {
+            Context = toolContext,
+            ExperimentalSandbox = experimentalSandbox,
+        };
+
+        if (tool.ExecuteStream == null)
+        {
+            return tool.ExecuteWithOptions != null
+                ? await tool.ExecuteWithOptions(input, executionOptions).ConfigureAwait(false)
+                : await tool.Execute!(input, toolToken).ConfigureAwait(false);
         }
 
-        return (executed, elapsedMs);
+        var last = default(string);
+        await foreach (
+            var part in Vercel
+                .AI.ProviderUtils.ToolExecution.ExecuteStreamAsync(
+                    tool.ExecuteStream(input, executionOptions),
+                    toolToken
+                )
+                .ConfigureAwait(false)
+        )
+        {
+            if (part.Type == "preliminary")
+            {
+                onPreliminaryToolResult?.Invoke(
+                    new ExecutedTool(
+                        toolCall.ToolCallId,
+                        toolCall.ToolName,
+                        string.IsNullOrEmpty(part.Output) ? "null" : part.Output,
+                        false
+                    )
+                    {
+                        InputJson = toolCall.ArgumentsJson,
+                        Dynamic = toolCall.Dynamic,
+                        Title = toolCall.Title,
+                        ToolMetadata = toolCall.ToolMetadata,
+                        ProviderMetadata = toolCall.ProviderMetadata,
+                        Preliminary = true,
+                    }
+                );
+            }
+            else
+            {
+                last = part.Output;
+            }
+        }
+
+        return last;
+    }
+
+    // Maps to upstream's `notify`: it calls every listener and ignores an error a listener throws.
+    private static async Task NotifyAsync<TEvent>(
+        IReadOnlyList<Func<TEvent, CancellationToken, Task>>? callbacks,
+        TEvent @event,
+        CancellationToken cancellationToken
+    )
+    {
+        if (callbacks == null)
+        {
+            return;
+        }
+
+        foreach (var callback in callbacks)
+        {
+            await Generation
+                .NotifyAsync(() => callback(@event, cancellationToken), cancellationToken)
+                .ConfigureAwait(false);
+        }
     }
 }
+
+/// <summary>The <see cref="GenerateTextOptions"/> tool execution callbacks as the lists that <c>executeToolCall</c> takes (<c>Arrayable</c>).</summary>
+internal static class ToolExecutionCallbacks
+{
+    internal static IReadOnlyList<Func<ToolExecutionStartEvent, CancellationToken, Task>>? Start(
+        GenerateTextOptions options
+    ) => options.OnToolExecutionStart == null ? null : [options.OnToolExecutionStart];
+
+    internal static IReadOnlyList<Func<ToolExecutionEndEvent, CancellationToken, Task>>? End(
+        GenerateTextOptions options
+    ) => options.OnToolExecutionEnd == null ? null : [options.OnToolExecutionEnd];
+}
+
+/// <summary>
+/// The parameters of the <c>executeToolInTelemetryContext</c> wrapper of <c>executeToolCall</c>.
+/// Maps to <c>Partial&lt;ToolExecutionStartEvent&gt; &amp; { callId, toolCallId, execute }</c>.
+/// </summary>
+internal sealed record ExecuteToolInTelemetryContextParams(
+    string CallId,
+    string ToolCallId,
+    GeneratedToolCall ToolCall,
+    IReadOnlyList<ModelMessage> Messages,
+    JsonElement? ToolContext,
+    Func<Task> Execute
+);

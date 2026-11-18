@@ -11,7 +11,6 @@ namespace Vercel.AI.Tests.Upstream.GenerateText.ExecuteToolCall;
 
 /// <summary>
 /// Port of <c>execute-tool-call.test.ts</c> &gt; <c>executeToolCall</c> &gt; <c>timeout</c>.
-/// Each test runs one tool call through <c>GenerateTextAsync</c>, which calls <c>ToolCallExecution.ExecuteToolCall</c>. The signature is not upstream's yet (#1317).
 /// A tool receives a <see cref="CancellationToken"/>, so "an abort signal" is a token that can be cancelled, and "no abort signal" is the token the caller passed.
 /// </summary>
 public sealed class ExecuteToolCallTimeoutTests
@@ -28,40 +27,17 @@ public sealed class ExecuteToolCallTimeoutTests
         );
     }
 
-    private static async Task<GenerateTextResult> Run(
+    private static async Task<(ExecutedTool Output, double ToolExecutionMs)?> Run(
         Tool tool,
         TimeoutConfiguration? timeout,
         CancellationToken token = default
-    )
-    {
-        var model = new DelegateModel
-        {
-            Generate = (_, _) =>
-                Task.FromResult(
-                    new LanguageModelGenerateResult(
-                        new GeneratedContent[]
-                        {
-                            new GeneratedToolCall("call-1", "testTool", "{ \"value\": \"test\" }"),
-                        },
-                        FinishReason.ToolCalls,
-                        OptionsTimeoutSupport.Usage,
-                        "tool-calls"
-                    )
-                ),
-        };
-
-        return await Client()
-            .GenerateTextAsync(
-                new GenerateTextOptions
-                {
-                    Model = model,
-                    Prompt = "test-input",
-                    Tools = new[] { tool },
-                    Timeout = timeout,
-                },
-                token
-            );
-    }
+    ) =>
+        await ExecuteToolCallSupport.Execute(
+            ExecuteToolCallSupport.CreateToolCall(),
+            [tool],
+            timeout: timeout,
+            abortSignal: token
+        );
 
     [Fact]
     [UpstreamTest(
@@ -75,7 +51,7 @@ public sealed class ExecuteToolCallTimeoutTests
             new TimeoutConfiguration { ToolMs = 5000 }
         );
 
-        var toolResult = Assert.Single(result.ToolResults);
+        var toolResult = result!.Value.Output;
         Assert.False(toolResult.IsError);
         Assert.Equal("\"test-result\"", toolResult.OutputJson);
     }

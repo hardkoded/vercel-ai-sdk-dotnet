@@ -83,14 +83,17 @@ public sealed class OnPreliminaryToolResultCallbackTests
         tool.ExecuteStream = execute;
         var preliminary = new List<ExecutedTool>();
 
-        var (executed, _) = await ToolCallExecution.ExecuteToolCall(
+        var result = await ToolCallExecution.ExecuteToolCall(
             new GeneratedToolCall("call-1", "testTool", "{ \"value\": \"test\" }"),
-            new GenerateTextOptions { Model = new TestLanguageModel(), Tools = new[] { tool } },
+            [tool],
+            new Dictionary<string, JsonElement>(),
+            "test-telemetry-call-id",
             Array.Empty<ModelMessage>(),
-            () => 0,
             CancellationToken.None,
-            preliminary.Add
+            () => 0,
+            onPreliminaryToolResult: preliminary.Add
         );
+        var executed = result!.Value.Output;
 
         return (preliminary, executed);
     }
