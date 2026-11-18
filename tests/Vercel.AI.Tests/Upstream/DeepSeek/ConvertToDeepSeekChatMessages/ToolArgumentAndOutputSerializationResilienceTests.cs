@@ -2,8 +2,11 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
+using System.Numerics;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
+using static Vercel.AI.ProviderUtils.StringifyWithBigIntAndCyclesUtil;
 using static Vercel.AI.Tests.Upstream.DeepSeek.ConvertToDeepSeekChatMessages.ConvertToDeepSeekChatMessagesSupport;
 
 namespace Vercel.AI.Tests.Upstream.DeepSeek.ConvertToDeepSeekChatMessages;
@@ -76,20 +79,74 @@ public sealed class ToolArgumentAndOutputSerializationResilienceTests
 
     [Fact]
     [UpstreamTest(
-        Prefix + "preserves reused non-circular objects in tool outputs",
-        Coverage = UpstreamCoverage.Partial,
+        Prefix + "safely serializes BigInt and circular structures in tool call arguments",
+        Coverage = UpstreamCoverage.Covered,
         Commit = "3bea041f28e65f371e640d2c70c302776a46387f",
-        Note = "The port's tool output is JSON text, so a shared object reference cannot be expressed. The text repeats the object."
+        Note = "The port's tool call input is JSON text, so the object graph goes through StringifyWithBigIntAndCycles before the converter."
+    )]
+    public void Safely_serializes_BigInt_and_circular_structures_in_tool_call_arguments()
+    {
+        var cyclicInput = new Dictionary<string, object?>
+        {
+            ["id"] = BigInteger.Parse("12345678901234567890", CultureInfo.InvariantCulture),
+        };
+        cyclicInput["self"] = cyclicInput;
+
+        var result = Run(
+            "deepseek-chat",
+            [Assistant(Call("call-2", "process", StringifyWithBigIntAndCycles(cyclicInput)))]
+        );
+
+        var args = result.Messages[0]!["tool_calls"]![0]!["function"]!["arguments"]!.GetValue<string>();
+        Assert.Contains("\"id\":\"12345678901234567890\"", args);
+        Assert.Contains("\"self\":\"[Circular]\"", args);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "safely serializes BigInt and circular structures in tool responses",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f",
+        Note = "The port's tool output is JSON text, so the object graph goes through StringifyWithBigIntAndCycles before the converter."
+    )]
+    public void Safely_serializes_BigInt_and_circular_structures_in_tool_responses()
+    {
+        var cyclicOutput = new Dictionary<string, object?>
+        {
+            ["count"] = BigInteger.Parse("999999999999999999", CultureInfo.InvariantCulture),
+        };
+        cyclicOutput["self"] = cyclicOutput;
+
+        var result = Run(
+            "deepseek-chat",
+            [ToolJson("call-3", "getData", StringifyWithBigIntAndCycles(cyclicOutput))]
+        );
+
+        var content = result.Messages[0]!["content"]!.GetValue<string>();
+        Assert.Contains("\"count\":\"999999999999999999\"", content);
+        Assert.Contains("\"self\":\"[Circular]\"", content);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "preserves reused non-circular objects in tool outputs",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3bea041f28e65f371e640d2c70c302776a46387f",
+        Note = "The port's tool output is JSON text, so the shared object graph goes through StringifyWithBigIntAndCycles before the converter."
     )]
     public void Preserves_reused_non_circular_objects_in_tool_outputs()
     {
+        var shared = new Dictionary<string, object?> { ["city"] = "Paris" };
+
         var result = Run(
             "deepseek-chat",
             [
                 ToolJson(
                     "call-4",
                     "getData",
-                    """{"first":{"city":"Paris"},"second":{"city":"Paris"}}"""
+                    StringifyWithBigIntAndCycles(
+                        new Dictionary<string, object?> { ["first"] = shared, ["second"] = shared }
+                    )
                 ),
             ]
         );
