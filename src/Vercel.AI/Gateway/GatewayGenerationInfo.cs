@@ -15,25 +15,17 @@ public sealed class GatewayConfig
     /// <summary>Gets or sets the base URL of the Gateway.</summary>
     public string BaseUrl { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the function that resolves the request headers.</summary>
-    public Func<IReadOnlyDictionary<string, string?>>? Headers { get; set; }
-
-    /// <summary>Gets or sets the asynchronous function that resolves the request headers. Takes precedence over <see cref="Headers"/>. Upstream's <c>headers</c> is async.</summary>
+    /// <summary>Gets or sets the asynchronous function that resolves the request headers (upstream <c>headers</c>).</summary>
     public Func<
         CancellationToken,
         Task<IReadOnlyDictionary<string, string?>>
-    >? HeadersAsync { get; set; }
+    >? Headers { get; set; }
 
     internal async Task<IReadOnlyDictionary<string, string?>?> ResolveHeadersAsync(
         CancellationToken cancellationToken
     )
     {
-        if (HeadersAsync is not null)
-        {
-            return await HeadersAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        return Headers?.Invoke();
+        return Headers is null ? null : await Headers(cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Gets or sets the HTTP client (stands in for upstream's <c>fetch</c>).</summary>

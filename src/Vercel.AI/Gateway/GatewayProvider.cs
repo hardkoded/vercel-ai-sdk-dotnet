@@ -661,7 +661,7 @@ public sealed class GatewayProvider
         return new GatewayConfig
         {
             BaseUrl = Options.BaseUrl,
-            HeadersAsync = async cancellationToken =>
+            Headers = async cancellationToken =>
             {
                 var headers = await GetHeadersAsync(cancellationToken).ConfigureAwait(false);
                 onResolved?.Invoke(headers);
