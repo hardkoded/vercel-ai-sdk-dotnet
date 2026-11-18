@@ -87,6 +87,9 @@ internal static class ToolCallExecution
                             tool.ExecuteStream(
                                 input,
                                 new ToolExecutionOptions(call.ToolCallId, stepMessages, toolToken)
+                                {
+                                    ExperimentalSandbox = options.ExperimentalSandbox,
+                                }
                             ),
                             toolToken
                         )
@@ -126,6 +129,9 @@ internal static class ToolCallExecution
                         ? await tool.ExecuteWithOptions(
                                 input,
                                 new ToolExecutionOptions(call.ToolCallId, stepMessages, toolToken)
+                                {
+                                    ExperimentalSandbox = options.ExperimentalSandbox,
+                                }
                             )
                             .ConfigureAwait(false)
                         : await tool.Execute!(input, toolToken).ConfigureAwait(false);

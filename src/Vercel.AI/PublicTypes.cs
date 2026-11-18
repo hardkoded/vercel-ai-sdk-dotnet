@@ -217,6 +217,9 @@ public sealed class ToolExecutionOptions
 
     /// <summary>Cancellation signal of the call.</summary>
     public CancellationToken AbortSignal { get; }
+
+    /// <summary>The sandbox environment that the tool is operating in. Maps to <c>experimental_sandbox</c>.</summary>
+    public Vercel.AI.ProviderUtils.ISandboxSession? ExperimentalSandbox { get; init; }
 }
 
 /// <summary>The result of executing a tool.</summary>
@@ -1233,6 +1236,9 @@ public class GenerateTextOptions
     /// at the next step boundary. A steering object can only be used for one generation. Maps to <c>experimental_steering</c>.
     /// </summary>
     public Vercel.AI.GenerateText.ISteering? ExperimentalSteering { get; set; }
+
+    /// <summary>The sandbox environment that is passed through to tool execution. Maps to <c>experimental_sandbox</c>.</summary>
+    public Vercel.AI.ProviderUtils.ISandboxSession? ExperimentalSandbox { get; set; }
 
     /// <summary>
     /// Called after each provider model call returns, before tools run and before <see cref="OnStepEnd"/>.
