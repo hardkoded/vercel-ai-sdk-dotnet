@@ -102,7 +102,8 @@ public sealed class GatewayErrorFactoryTests
     [Fact]
     [UpstreamTest(
         "packages/gateway/src/errors/create-gateway-error.test.ts::Valid error responses > access_policy_denied::creates GatewayAccessPolicyDeniedError with the policy ids and removed values",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "b8c01eb49d82fd32efe8a2a1e4cd02fbb2b7ae97"
     )]
     public void Creates_an_access_policy_denied_error_with_policy_ids_and_removed_values()
     {
@@ -128,7 +129,8 @@ public sealed class GatewayErrorFactoryTests
     [Fact]
     [UpstreamTest(
         "packages/gateway/src/errors/create-gateway-error.test.ts::Valid error responses > access_policy_denied::ignores extra keys in param",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "b8c01eb49d82fd32efe8a2a1e4cd02fbb2b7ae97"
     )]
     public void Ignores_extra_keys_in_the_access_policy_param()
     {
@@ -149,7 +151,8 @@ public sealed class GatewayErrorFactoryTests
     [Fact]
     [UpstreamTest(
         "packages/gateway/src/errors/create-gateway-error.test.ts::Valid error responses > access_policy_denied::leaves the arrays undefined when the response has no param",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "b8c01eb49d82fd32efe8a2a1e4cd02fbb2b7ae97"
     )]
     public void Leaves_the_access_policy_arrays_unset_when_the_response_has_no_param()
     {
@@ -168,7 +171,8 @@ public sealed class GatewayErrorFactoryTests
     [Fact]
     [UpstreamTest(
         "packages/gateway/src/errors/create-gateway-error.test.ts::Valid error responses > access_policy_denied::keeps the arrays that are present when others are missing",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "b8c01eb49d82fd32efe8a2a1e4cd02fbb2b7ae97"
     )]
     public void Keeps_the_access_policy_arrays_that_are_present_when_others_are_missing()
     {
@@ -190,7 +194,8 @@ public sealed class GatewayErrorFactoryTests
     [InlineData("{\"policyIds\":[1,2]}")]
     [UpstreamTest(
         "packages/gateway/src/errors/create-gateway-error.test.ts::Valid error responses > access_policy_denied::leaves the arrays undefined when param is %s",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "b8c01eb49d82fd32efe8a2a1e4cd02fbb2b7ae97"
     )]
     public void Leaves_the_access_policy_arrays_unset_when_the_param_is_invalid(string param)
     {
@@ -982,7 +987,8 @@ public sealed class GatewayErrorTypeTests
     [Fact]
     [UpstreamTest(
         "packages/gateway/src/errors/gateway-error-types.test.ts::GatewayAccessPolicyDeniedError::should create error with default values",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "b8c01eb49d82fd32efe8a2a1e4cd02fbb2b7ae97"
     )]
     public void Access_policy_denied_error_defaults()
     {
@@ -1000,7 +1006,8 @@ public sealed class GatewayErrorTypeTests
     [Fact]
     [UpstreamTest(
         "packages/gateway/src/errors/gateway-error-types.test.ts::GatewayAccessPolicyDeniedError::should be distinguishable from GatewayForbiddenError",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "b8c01eb49d82fd32efe8a2a1e4cd02fbb2b7ae97"
     )]
     public void Access_policy_denied_error_is_distinguishable_from_forbidden()
     {
