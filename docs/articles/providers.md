@@ -1394,6 +1394,12 @@ DeepSeek bills successful searches and page reads per operation. The counts are 
 
 A failed response (`status: "failed"` or an `error` object) throws an `ApiException` with the DeepSeek message. Its status code comes from the error code: `rate_limit_exceeded` and `rate_limit_error` are 429 and retryable, `insufficient_quota` is 429, `authentication_error` and `invalid_api_key` are 401, `permission_error` is 403, `bad_request`, `context_length_exceeded`, and `invalid_request_error` are 400, `timeout` and `timeout_error` are 504 and retryable, and every other code is 500 and retryable. A stream reports the same failure as an `error` part and ends with the `error` finish reason.
 
+## Gateway fetcher config
+
+`GatewayConfig` (upstream `GatewayConfig`) configures the Gateway fetchers (`GatewayFetchMetadata`, `GatewaySpendReport`, `GatewayGenerationInfoFetcher`). `GatewayConfig.Headers` (upstream `headers`) is an asynchronous resolver: `Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>`. It is called on each request. When it is `null`, the fetcher sends no extra headers.
+
+Breaking change: `GatewayConfig.HeadersAsync` is removed. Set `Headers` instead. A synchronous factory such as `Headers = () => dictionary` must become `Headers = _ => Task.FromResult(dictionary)`. Upstream's `Resolvable` also accepts a plain value or a promise. The port accepts only the async function form.
+
 ## Gateway transcription
 
 `GatewayProvider.TranscriptionModel(id)` posts `{ audio, mediaType, providerOptions }` to `{base}/transcription-model` with the `ai-transcription-model-specification-version: 4` and `ai-model-id` headers. The response carries `text`, `segments`, `words`, `language`, `durationInSeconds`, `warnings`, `usage`, and `providerMetadata`. `TranscribeResult.Words` is the Gateway's `words` when it sends them, and an empty list stays an empty list. The Gateway adapter does not forward the shared `TimestampGranularities`, so a non-empty list adds an `unsupported` warning on `timestampGranularities` and leaves the request body as it is. For `xai/` and `spacexai/` models, `providerOptions.xai.diarize` or `providerOptions.spacexai.diarize` adds an `unsupported` warning on `providerOptions.xai.diarize` when the response has no `speaker` anywhere. Gateway error responses map to the `Gateway*Error` types.
