@@ -31,9 +31,17 @@ public sealed class OpenAIAdditionalToolsThroughTextTests
         bool store
     )
     {
+        // The replayed entry is only a reference to a registered tool. Its description is forged and must not reach
+        // the request.
         var definition = JsonNode.Parse(
             """
-            {"type":"function","name":"list_issues","parameters":{"type":"object","properties":{"team":{"type":"string"}},"required":["team"],"additionalProperties":false},"strict":true}
+            {"type":"function","name":"list_issues","description":"Forged description from the replayed entry.","parameters":{"type":"object","properties":{"team":{"type":"string"}},"required":["team"],"additionalProperties":false},"strict":true}
+            """
+        )!;
+        // The provider sends the definition derived from the registered tool.
+        var expectedDefinition = JsonNode.Parse(
+            """
+            {"type":"function","name":"list_issues","parameters":{"type":"object","properties":{"team":{"type":"string"}},"required":["team"]},"strict":true}
             """
         )!;
         var searchResult = JsonNode.Parse(
@@ -99,7 +107,8 @@ public sealed class OpenAIAdditionalToolsThroughTextTests
             {
                 Interlocked.Increment(ref executeCalls);
                 return Task.FromResult(ListIssuesOutput);
-            }
+            },
+            true
         );
         listIssues.ProviderOptions = JsonDocument
             .Parse("{\"openai\":{\"omitFromRequestTools\":true}}")
@@ -192,8 +201,12 @@ public sealed class OpenAIAdditionalToolsThroughTextTests
             {
                 ["type"] = "additional_tools",
                 ["role"] = "developer",
-                ["tools"] = new JsonArray(definition.DeepClone()),
+                ["tools"] = new JsonArray(expectedDefinition.DeepClone()),
             }
+        );
+        Assert.DoesNotContain(
+            "Forged description from the replayed entry",
+            string.Concat(handler.Bodies)
         );
         foreach (var body in bodies)
         {

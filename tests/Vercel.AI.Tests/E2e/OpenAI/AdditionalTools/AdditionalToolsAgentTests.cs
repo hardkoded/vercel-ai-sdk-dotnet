@@ -37,11 +37,12 @@ public sealed class AdditionalToolsAgentTests
         var client = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "unused" }));
         var listIssues = Tool.Function(
             "linear__list_issues",
-            null,
+            "List Linear issues.",
             "{\"type\":\"object\",\"properties\":{}}",
             (_, _) => Task.FromResult("{\"issues\":[\"Synthetic issue\"]}")
         );
-        // This replaces activeTools: ['connection_search'].
+        // Omission only affects serialization (this replaces the original activeTools: ['connection_search']); it
+        // does not restrict which registered tools a user may run.
         listIssues.ProviderOptions = JsonDocument
             .Parse("{\"openai\":{\"omitFromRequestTools\":true}}")
             .RootElement.Clone();
