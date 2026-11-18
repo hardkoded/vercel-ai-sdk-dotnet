@@ -420,6 +420,35 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 SupportsAsyncToolCalling = capabilities.SupportsAsyncToolCalling,
             }
         );
+        var allowedTools = ParseAllowedTools(openai);
+        var allowedToolNames =
+            allowedTools == null
+                ? null
+                : new HashSet<string>(
+                    allowedTools.ToolNames.Select(name => toolNameMapping.ToProviderToolName(name))
+                );
+        var additionalToolResolutions = new Dictionary<string, AdditionalToolResolution?>();
+
+        // Prompts can contain client-supplied conversation history. Only the tools registered for this request may
+        // be loaded from such history; each entry resolves to the definition derived from its registered tool. Cache
+        // the resolutions because replayed history can repeat an entry.
+        AdditionalToolResolution? FindAdditionalToolForRequest(string type, string name)
+        {
+            var key = type + ":" + name;
+            if (!additionalToolResolutions.TryGetValue(key, out var resolution))
+            {
+                resolution = OpenAIResponsesPrepareTools.FindAdditionalToolDefinition(
+                    options.Tools,
+                    (type, name),
+                    providerOptionsName,
+                    allowedToolNames
+                );
+                additionalToolResolutions[key] = resolution;
+            }
+
+            return resolution;
+        }
+
         var converted = ConvertInput(
             options.Prompt,
             systemMode,
@@ -439,7 +468,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             hasLocalShellTool: options.Tools?.Any(tool =>
                 tool.IsProviderDefined && tool.ProviderToolId == "openai.local_shell"
             ) == true,
-            hasPreviousResponseId: OpenAIJson.String(openai, "previousResponseId") != null
+            hasPreviousResponseId: OpenAIJson.String(openai, "previousResponseId") != null,
+            findAdditionalToolDefinition: FindAdditionalToolForRequest
         );
         warnings.AddRange(converted.Warnings);
 
@@ -1756,10 +1786,13 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         ToolNameMapping? toolNameMapping = null,
         bool hasApplyPatchTool = false,
         bool hasLocalShellTool = false,
-        bool hasPreviousResponseId = false
+        bool hasPreviousResponseId = false,
+        Func<string, string, AdditionalToolResolution?>? findAdditionalToolDefinition = null
     )
     {
         var input = new JsonArray();
+        var seenAdditionalToolWarnings = new HashSet<string>();
+        var droppedAdditionalToolNames = new List<string>();
         var programmaticToolCallIds = new HashSet<string>();
         var parallelToolResultGroups =
             hasConversation || hasPreviousResponseId
@@ -1822,9 +1855,16 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                             input.Add(ConfigurationUpdate(messageEffort, normalizedFormat));
                         }
 
-                        if (messageAdditionalTools is { Count: > 0 })
+                        var resolvedMessageAdditionalTools = FilterAdditionalTools(
+                            messageAdditionalTools,
+                            findAdditionalToolDefinition,
+                            seenAdditionalToolWarnings,
+                            droppedAdditionalToolNames,
+                            warnings
+                        );
+                        if (resolvedMessageAdditionalTools != null)
                         {
-                            input.Add(AdditionalToolsItem(messageAdditionalTools));
+                            input.Add(AdditionalToolsItem(resolvedMessageAdditionalTools));
                         }
 
                         break;
@@ -2288,7 +2328,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                                 input,
                                 parallelResultGroup,
                                 outputSchemaToolNames,
-                                providerOptionsName
+                                providerOptionsName,
+                                findAdditionalToolDefinition,
+                                seenAdditionalToolWarnings,
+                                droppedAdditionalToolNames,
+                                warnings
                             );
                         }
 
@@ -2386,11 +2430,15 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
                     input.Add(toolResultItem);
 
-                    var additionalTools = ToolResultAdditionalTools(
+                    var additionalTools = ResolveAdditionalTools(
                         tool.ProviderMetadata,
-                        providerOptionsName
+                        providerOptionsName,
+                        findAdditionalToolDefinition,
+                        seenAdditionalToolWarnings,
+                        droppedAdditionalToolNames,
+                        warnings
                     );
-                    if (additionalTools is { Count: > 0 })
+                    if (additionalTools != null)
                     {
                         input.Add(AdditionalToolsItem(additionalTools));
                     }
@@ -2399,6 +2447,18 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 default:
                     throw new AiSdkException("Unsupported role: " + message.Role);
             }
+        }
+
+        if (droppedAdditionalToolNames.Count > 0)
+        {
+            warnings.Add(
+                new OpenAICallWarning(
+                    "unsupported",
+                    "additionalTools",
+                    "additional tool definitions are only sent for tools registered in the request; dropped the definitions of unregistered tools: "
+                        + FormatDroppedToolNames(droppedAdditionalToolNames)
+                )
+            );
         }
 
         return new ResponsesInput(input, warnings);
@@ -2510,7 +2570,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         JsonArray input,
         ParallelToolResultGroup group,
         ISet<string>? outputSchemaToolNames,
-        string providerOptionsName
+        string providerOptionsName,
+        Func<string, string, AdditionalToolResolution?>? findAdditionalToolDefinition,
+        ISet<string> seenAdditionalToolWarnings,
+        List<string> droppedAdditionalToolNames,
+        List<OpenAICallWarning> warnings
     )
     {
         var texts = new List<string>();
@@ -2571,8 +2635,15 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         foreach (var result in group.Results)
         {
             if (
-                ToolResultAdditionalTools(result.ProviderMetadata, providerOptionsName) is
-                { Count: > 0 } additionalTools
+                ResolveAdditionalTools(
+                    result.ProviderMetadata,
+                    providerOptionsName,
+                    findAdditionalToolDefinition,
+                    seenAdditionalToolWarnings,
+                    droppedAdditionalToolNames,
+                    warnings
+                ) is
+                { } additionalTools
             )
             {
                 input.Add(AdditionalToolsItem(additionalTools));
@@ -3188,6 +3259,241 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 ["status"] = status.GetValue<string>(),
             }
         );
+    }
+
+    // Replaces the additionalTools of a tool result with the definitions of the tools registered for this request.
+    private static JsonArray? ResolveAdditionalTools(
+        JsonElement? toolResultOptions,
+        string providerOptionsName,
+        Func<string, string, AdditionalToolResolution?>? findAdditionalToolDefinition,
+        ISet<string> seenWarnings,
+        List<string> droppedToolNames,
+        List<OpenAICallWarning> warnings
+    ) =>
+        FilterAdditionalTools(
+            ToolResultAdditionalTools(toolResultOptions, providerOptionsName),
+            findAdditionalToolDefinition,
+            seenWarnings,
+            droppedToolNames,
+            warnings
+        );
+
+    // Prompts can contain replayed conversation history, so their tool definitions are not trusted. An entry only
+    // selects a registered tool: the provider sends the definition derived from the registered tool, and entries
+    // for tools that are not registered are dropped.
+    private static JsonArray? FilterAdditionalTools(
+        JsonArray? additionalTools,
+        Func<string, string, AdditionalToolResolution?>? findAdditionalToolDefinition,
+        ISet<string> seenWarnings,
+        List<string> droppedToolNames,
+        List<OpenAICallWarning> warnings
+    )
+    {
+        if (additionalTools == null || additionalTools.Count == 0)
+        {
+            return null;
+        }
+
+        var resolvedTools = new JsonArray();
+        var seenDefinitions = new HashSet<string>();
+        foreach (var node in additionalTools)
+        {
+            var additionalTool = node!.AsObject();
+            var type = additionalTool["type"]!.GetValue<string>();
+            var name = additionalTool["name"]!.GetValue<string>();
+            var resolved = findAdditionalToolDefinition?.Invoke(type, name);
+            if (resolved == null)
+            {
+                AddUnique(droppedToolNames, name);
+                continue;
+            }
+
+            foreach (var warning in resolved.Warnings)
+            {
+                AddWarning(
+                    new OpenAICallWarning(
+                        warning.Type,
+                        warning.Feature,
+                        warning.Feature == null ? null : warning.Message,
+                        warning.Feature == null ? warning.Message : null
+                    ),
+                    seenWarnings,
+                    warnings
+                );
+            }
+
+            if (resolved.Definition == null)
+            {
+                continue;
+            }
+
+            PushDefinitionMismatchWarning(
+                additionalTool,
+                resolved.Definition,
+                seenWarnings,
+                warnings
+            );
+            var definition = NarrowNamespaceDefinition(
+                resolved.Definition,
+                additionalTool,
+                droppedToolNames
+            );
+            if (definition == null)
+            {
+                continue;
+            }
+
+            // Replayed history can repeat an entry; send each definition once.
+            if (seenDefinitions.Add(definition.ToJsonString()))
+            {
+                // The resolution is cached per request, and a node has one parent.
+                resolvedTools.Add(definition.DeepClone());
+            }
+        }
+
+        return resolvedTools.Count > 0 ? resolvedTools : null;
+    }
+
+    // A namespace entry names the tools to load. Send only the registered tools of the namespace that the entry
+    // names, so an entry cannot load more of a namespace than it asked for.
+    private static JsonObject? NarrowNamespaceDefinition(
+        JsonObject registeredDefinition,
+        JsonObject additionalTool,
+        List<string> droppedToolNames
+    )
+    {
+        if (
+            registeredDefinition["type"]?.GetValue<string>() != "namespace"
+            || additionalTool["type"]?.GetValue<string>() != "namespace"
+        )
+        {
+            return registeredDefinition;
+        }
+
+        var requestedToolNames = additionalTool["tools"]!
+            .AsArray()
+            .Select(tool => tool!["name"]!.GetValue<string>())
+            .ToList();
+        var registeredTools = registeredDefinition["tools"]!.AsArray();
+        var registeredToolNames = new HashSet<string>(
+            registeredTools.Select(tool => tool!["name"]!.GetValue<string>())
+        );
+        foreach (var toolName in requestedToolNames)
+        {
+            if (!registeredToolNames.Contains(toolName))
+            {
+                AddUnique(droppedToolNames, toolName);
+            }
+        }
+
+        var tools = new JsonArray();
+        foreach (var tool in registeredTools)
+        {
+            if (requestedToolNames.Contains(tool!["name"]!.GetValue<string>()))
+            {
+                tools.Add(tool.DeepClone());
+            }
+        }
+
+        if (tools.Count == 0)
+        {
+            return null;
+        }
+
+        var narrowed = (JsonObject)registeredDefinition.DeepClone();
+        narrowed["tools"] = tools;
+        return narrowed;
+    }
+
+    // The entry in the history is not sent, so a strict or defer_loading value that differs from the registered
+    // tool is ignored. Warn instead of silently changing the behavior the entry asks for.
+    private static void PushDefinitionMismatchWarning(
+        JsonObject additionalTool,
+        JsonObject definition,
+        ISet<string> seenWarnings,
+        List<OpenAICallWarning> warnings
+    )
+    {
+        if (
+            additionalTool["type"]?.GetValue<string>() != "function"
+            || definition["type"]?.GetValue<string>() != "function"
+        )
+        {
+            return;
+        }
+
+        var mismatchedFields = new List<string>();
+        if (
+            additionalTool["strict"] is { } strict
+            && strict.GetValue<bool>() != definition["strict"]?.GetValue<bool>()
+        )
+        {
+            mismatchedFields.Add("strict");
+        }
+
+        if (
+            additionalTool["defer_loading"] is { } deferLoading
+            && deferLoading.GetValue<bool>()
+                != (definition["defer_loading"]?.GetValue<bool>() ?? false)
+        )
+        {
+            mismatchedFields.Add("defer_loading");
+        }
+
+        if (mismatchedFields.Count == 0)
+        {
+            return;
+        }
+
+        AddWarning(
+            new OpenAICallWarning(
+                "unsupported",
+                "additionalTools entry \"" + definition["name"]!.GetValue<string>() + "\"",
+                "the history entry sets "
+                    + string.Join(" and ", mismatchedFields)
+                    + " differently from the registered tool; the registered definition is sent"
+            ),
+            seenWarnings,
+            warnings
+        );
+    }
+
+    private static void AddWarning(
+        OpenAICallWarning warning,
+        ISet<string> seenWarnings,
+        List<OpenAICallWarning> warnings
+    )
+    {
+        var signature =
+            warning.Type + "\n" + warning.Feature + "\n" + warning.Details + "\n" + warning.Message;
+        if (seenWarnings.Add(signature))
+        {
+            warnings.Add(warning);
+        }
+    }
+
+    private static void AddUnique(List<string> names, string name)
+    {
+        if (!names.Contains(name))
+        {
+            names.Add(name);
+        }
+    }
+
+    private static string FormatDroppedToolNames(List<string> names)
+    {
+        const int maxNames = 5;
+        const int maxNameLength = 80;
+        var formattedNames = names
+            .Take(maxNames)
+            .Select(name =>
+                JsonSerializer.Serialize(
+                    name.Length > maxNameLength ? name.Substring(0, maxNameLength) + "..." : name
+                )
+            );
+        return names.Count > maxNames
+            ? string.Join(", ", formattedNames) + " and " + (names.Count - maxNames) + " more"
+            : string.Join(", ", formattedNames);
     }
 
     private static JsonObject AdditionalToolsItem(JsonArray tools) =>

@@ -295,6 +295,247 @@ internal static class OpenAIResponsesPrepareTools
         );
     }
 
+    /// <summary>
+    /// Resolves an <c>additionalTools</c> entry from the prompt to the definition of the tool registered for this
+    /// request. Maps to <c>findAdditionalToolDefinition</c>.
+    /// </summary>
+    /// <remarks>
+    /// Prompts contain replayable conversation history, so a supplied entry only selects a registered tool: the
+    /// provider sends the definition derived from that tool, never the definition text from the history. Only the
+    /// selected tool is prepared. Returns null when no registered tool matches.
+    /// </remarks>
+    /// <param name="tools">The tools registered for the request.</param>
+    /// <param name="additionalTool">The <c>type</c> and <c>name</c> of the entry.</param>
+    /// <param name="providerOptionsName">Provider options name of the model, such as <c>azure</c>.</param>
+    /// <param name="allowedToolNames">Provider tool names that the request's <c>allowedTools</c> option permits.</param>
+    public static AdditionalToolResolution? FindAdditionalToolDefinition(
+        IReadOnlyList<LanguageModelTool>? tools,
+        (string Type, string Name) additionalTool,
+        string providerOptionsName = "openai",
+        ISet<string>? allowedToolNames = null
+    )
+    {
+        var warnings = new List<CallWarning>();
+        if (additionalTool.Type == "namespace")
+        {
+            var namespaceTools = new JsonArray();
+            string? description = null;
+            foreach (var tool in tools ?? Array.Empty<LanguageModelTool>())
+            {
+                if (tool.IsProviderDefined)
+                {
+                    continue;
+                }
+
+                var openaiOptions = GetOpenAIToolOptions(tool, providerOptionsName);
+                var toolNamespace = OpenAIJson.Child(openaiOptions, "namespace");
+                if (OpenAIJson.String(toolNamespace, "name") != additionalTool.Name)
+                {
+                    continue;
+                }
+
+                var namespaceDescription = OpenAIJson.String(toolNamespace, "description");
+                if (description == null)
+                {
+                    description = namespaceDescription;
+                }
+                else if (description != namespaceDescription)
+                {
+                    warnings.Add(
+                        new CallWarning(
+                            "unsupported",
+                            "conflicting descriptions for OpenAI tool namespace \""
+                                + additionalTool.Name
+                                + "\"",
+                            "the first registered description is used for the loaded namespace"
+                        )
+                    );
+                }
+
+                // A definition loaded from history cannot express an allowed-callers restriction, so leave such
+                // tools out of the namespace.
+                if (OpenAIJson.Child(openaiOptions, "allowedCallers") != null)
+                {
+                    warnings.Add(
+                        new CallWarning(
+                            "unsupported",
+                            "additionalTools namespace \"" + additionalTool.Name + "\"",
+                            "tool \""
+                                + tool.Name
+                                + "\" restricts allowed callers, which a definition loaded from history cannot express; it is not loaded"
+                        )
+                    );
+                    continue;
+                }
+
+                // Tools that are part of the request tools were already prepared with their warnings; only report
+                // the warnings of hidden tools here.
+                var toolWarnings =
+                    OpenAIJson.Bool(openaiOptions, "omitFromRequestTools") == true
+                        ? warnings
+                        : new List<CallWarning>();
+                namespaceTools.Add(
+                    ToAdditionalFunctionTool(
+                        PrepareFunctionTool(tool, openaiOptions, null, null, toolWarnings)
+                    )
+                );
+            }
+
+            if (description == null)
+            {
+                return null;
+            }
+
+            if (allowedToolNames != null)
+            {
+                return new AdditionalToolResolution(
+                    null,
+                    new[]
+                    {
+                        new CallWarning(
+                            "unsupported",
+                            "additionalTools namespace \"" + additionalTool.Name + "\"",
+                            "tool namespaces cannot be loaded while allowedTools restricts the callable tools; the entry is not loaded"
+                        ),
+                    }
+                );
+            }
+
+            if (namespaceTools.Count == 0)
+            {
+                // Every member was filtered out; warnings already explain why.
+                return new AdditionalToolResolution(null, warnings);
+            }
+
+            return new AdditionalToolResolution(
+                new JsonObject
+                {
+                    ["type"] = "namespace",
+                    ["name"] = additionalTool.Name,
+                    ["description"] = description,
+                    ["tools"] = namespaceTools,
+                },
+                warnings
+            );
+        }
+
+        foreach (var tool in tools ?? Array.Empty<LanguageModelTool>())
+        {
+            if (additionalTool.Type == "function" && !tool.IsProviderDefined)
+            {
+                var openaiOptions = GetOpenAIToolOptions(tool, providerOptionsName);
+
+                // Namespaced functions are only sent as part of their namespace.
+                if (
+                    tool.Name != additionalTool.Name
+                    || OpenAIJson.Child(openaiOptions, "namespace") != null
+                )
+                {
+                    continue;
+                }
+
+                if (allowedToolNames != null && !allowedToolNames.Contains(tool.Name))
+                {
+                    return NotLoaded(
+                        "additionalTools entry \"" + tool.Name + "\"",
+                        "the tool is not part of allowedTools for this request; the entry is not loaded"
+                    );
+                }
+
+                // A definition loaded from history cannot express an allowed-callers restriction, so do not load
+                // the tool at all.
+                if (OpenAIJson.Child(openaiOptions, "allowedCallers") != null)
+                {
+                    return NotLoaded(
+                        "additionalTools entry \"" + tool.Name + "\"",
+                        "the registered tool restricts allowed callers, which a definition loaded from history cannot express; the entry is not loaded"
+                    );
+                }
+
+                // Tools that are part of the request tools were already prepared with their warnings; only report
+                // the warnings of hidden tools here.
+                var omitFromRequestTools =
+                    OpenAIJson.Bool(openaiOptions, "omitFromRequestTools") == true;
+                var toolWarnings = omitFromRequestTools ? warnings : new List<CallWarning>();
+                return new AdditionalToolResolution(
+                    ToAdditionalFunctionTool(
+                        PrepareFunctionTool(tool, openaiOptions, null, null, toolWarnings)
+                    ),
+                    omitFromRequestTools ? warnings : new List<CallWarning>()
+                );
+            }
+
+            if (
+                additionalTool.Type == "custom"
+                && tool.IsProviderDefined
+                && tool.ProviderToolId == "openai.custom"
+                && tool.Name == additionalTool.Name
+            )
+            {
+                if (allowedToolNames != null && !allowedToolNames.Contains(tool.Name))
+                {
+                    return NotLoaded(
+                        "additionalTools entry \"" + tool.Name + "\"",
+                        "the tool is not part of allowedTools for this request; the entry is not loaded"
+                    );
+                }
+
+                var args = OpenAIResponsesToolArgs.Validate("openai.custom", tool.Args)
+                    ?? new JsonObject();
+                var definition = new JsonObject { ["type"] = "custom", ["name"] = tool.Name };
+                if (args["description"] is { } customDescription)
+                {
+                    definition["description"] = customDescription.DeepClone();
+                }
+
+                if (args["format"] is { } format)
+                {
+                    definition["format"] = format.DeepClone();
+                }
+
+                return new AdditionalToolResolution(definition, warnings);
+            }
+        }
+
+        return null;
+    }
+
+    private static AdditionalToolResolution NotLoaded(string feature, string details) =>
+        new(null, new[] { new CallWarning("unsupported", feature, details) });
+
+    // Options under the provider name win, then the "openai" ones.
+    private static JsonElement? GetOpenAIToolOptions(
+        LanguageModelTool tool,
+        string providerOptionsName
+    )
+    {
+        if (tool.ProviderOptions is not { } providerOptions)
+        {
+            return null;
+        }
+
+        return OpenAIJson.Child(providerOptions, providerOptionsName)
+            ?? OpenAIJson.Child(providerOptions, "openai");
+    }
+
+    private static JsonObject ToAdditionalFunctionTool(JsonObject function)
+    {
+        var result = new JsonObject
+        {
+            ["type"] = "function",
+            ["name"] = function["name"]!.DeepClone(),
+        };
+        foreach (var key in new[] { "description", "parameters", "strict", "defer_loading" })
+        {
+            if (function[key] is { } value)
+            {
+                result[key] = value.DeepClone();
+            }
+        }
+
+        return result;
+    }
+
     private static JsonNode AllowedToolChoice(
         OpenAIResponsesAllowedTools allowedTools,
         Dictionary<string, AllowedResolution> resolutions,
@@ -810,4 +1051,17 @@ internal static class OpenAIResponsesPrepareTools
             },
         };
     }
+}
+
+/// <summary>The result of <see cref="OpenAIResponsesPrepareTools.FindAdditionalToolDefinition"/>.</summary>
+internal sealed class AdditionalToolResolution(
+    JsonObject? definition,
+    IReadOnlyList<CallWarning> warnings
+)
+{
+    /// <summary>The definition derived from the registered tool, or null when the entry cannot be loaded.</summary>
+    public JsonObject? Definition { get; } = definition;
+
+    /// <summary>Warnings of the resolved tool.</summary>
+    public IReadOnlyList<CallWarning> Warnings { get; } = warnings;
 }

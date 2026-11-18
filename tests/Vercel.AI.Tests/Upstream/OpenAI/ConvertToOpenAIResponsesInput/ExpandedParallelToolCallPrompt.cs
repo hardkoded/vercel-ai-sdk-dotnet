@@ -139,7 +139,8 @@ internal static class ExpandedParallelToolCallPrompt
         IReadOnlyList<ModelMessage> prompt,
         string systemMessageMode = "system",
         bool hasConversation = false,
-        bool hasPreviousResponseId = false
+        bool hasPreviousResponseId = false,
+        Func<string, string, AdditionalToolResolution?>? findAdditionalToolDefinition = null
     )
     {
         var converted = OpenAIResponsesLanguageModel.ConvertInput(
@@ -151,7 +152,8 @@ internal static class ExpandedParallelToolCallPrompt
             hasConversation || hasPreviousResponseId,
             true,
             hasConversation: hasConversation,
-            hasPreviousResponseId: hasPreviousResponseId
+            hasPreviousResponseId: hasPreviousResponseId,
+            findAdditionalToolDefinition: findAdditionalToolDefinition
         );
         return (converted.Input, converted.Warnings.Count);
     }
