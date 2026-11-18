@@ -283,17 +283,27 @@ internal static class LanguageModelCallStreaming
         }
 
         var disposal = new EnumeratorDisposal(new StreamResultDisposal(enumerator, streamResult));
-        var transform = new Transform(
-            options,
-            model,
-            messages,
-            instructions,
-            instructionCount,
-            effectiveCallId,
-            callOptions.ToolChoice,
-            now,
-            callStartTimestampMs
-        );
+        Transform transform;
+        try
+        {
+            transform = new Transform(
+                options,
+                model,
+                messages,
+                instructions,
+                instructionCount,
+                effectiveCallId,
+                callOptions.ToolChoice,
+                now,
+                callStartTimestampMs
+            );
+        }
+        catch
+        {
+            await disposal.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
+
         return new StreamLanguageModelCallResult
         {
             Stream = transform.RunAsync(enumerator, disposal, cancellationToken),
