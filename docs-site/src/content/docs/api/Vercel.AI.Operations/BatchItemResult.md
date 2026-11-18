@@ -23,7 +23,7 @@ Normalized batch item.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L420)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L434)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Text content.
 
 **Value:** [IReadOnlyList&lt;BatchContentPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L432)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L446)
 
 <a id="Vercel_AI_Operations_BatchItemResult_ErrorCode_"></a>
 <a id="Vercel_AI_Operations_BatchItemResult_ErrorCode"></a>
@@ -59,7 +59,7 @@ Error code.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L471)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L485)
 
 <a id="Vercel_AI_Operations_BatchItemResult_ErrorMessage_"></a>
 <a id="Vercel_AI_Operations_BatchItemResult_ErrorMessage"></a>
@@ -76,7 +76,7 @@ Error message.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L468)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L482)
 
 <a id="Vercel_AI_Operations_BatchItemResult_ErrorStatusCode_"></a>
 <a id="Vercel_AI_Operations_BatchItemResult_ErrorStatusCode"></a>
@@ -93,7 +93,7 @@ HTTP status code of a failed provider response.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L477)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L491)
 
 <a id="Vercel_AI_Operations_BatchItemResult_ErrorType_"></a>
 <a id="Vercel_AI_Operations_BatchItemResult_ErrorType"></a>
@@ -110,7 +110,7 @@ Error type reported by the provider.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L474)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L488)
 
 <a id="Vercel_AI_Operations_BatchItemResult_FinishReason_"></a>
 <a id="Vercel_AI_Operations_BatchItemResult_FinishReason"></a>
@@ -127,7 +127,7 @@ Finish reason.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L438)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L452)
 
 <a id="Vercel_AI_Operations_BatchItemResult_Id_"></a>
 <a id="Vercel_AI_Operations_BatchItemResult_Id"></a>
@@ -144,7 +144,7 @@ Request id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L426)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L440)
 
 <a id="Vercel_AI_Operations_BatchItemResult_ImageUsage_"></a>
 <a id="Vercel_AI_Operations_BatchItemResult_ImageUsage"></a>
@@ -161,7 +161,7 @@ Image usage.
 
 **Value:** [OperationUsage](/api/Vercel.AI.Operations/OperationUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L447)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L461)
 
 <a id="Vercel_AI_Operations_BatchItemResult_Images_"></a>
 <a id="Vercel_AI_Operations_BatchItemResult_Images"></a>
@@ -178,7 +178,43 @@ Images.
 
 **Value:** [IReadOnlyList&lt;GeneratedImage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L459)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L473)
+
+<a id="Vercel_AI_Operations_BatchItemResult_Output_"></a>
+<a id="Vercel_AI_Operations_BatchItemResult_Output"></a>
+
+### Output
+
+
+```csharp
+public JsonElement? Output { get; set; }
+```
+
+
+The parsed output of a successful text item. Only set when `BatchRequestOptions.Output` is passed to
+`GetBatchResults` and the text parsed. Maps to `output`.
+
+**Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L497)
+
+<a id="Vercel_AI_Operations_BatchItemResult_OutputError_"></a>
+<a id="Vercel_AI_Operations_BatchItemResult_OutputError"></a>
+
+### OutputError
+
+
+```csharp
+public BatchError? OutputError { get; set; }
+```
+
+
+Why no [Output](#Vercel_AI_Operations_BatchItemResult_Output) is available. A parsing failure does not fail the item: [Text](#Vercel_AI_Operations_BatchItemResult_Text) and
+[Usage](#Vercel_AI_Operations_BatchItemResult_Usage) remain available. Maps to `outputError`.
+
+**Value:** [BatchError](/api/Vercel.AI.Operations/BatchError/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L503)
 
 <a id="Vercel_AI_Operations_BatchItemResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_BatchItemResult_ProviderMetadata"></a>
@@ -195,7 +231,7 @@ Provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L465)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L479)
 
 <a id="Vercel_AI_Operations_BatchItemResult_RawFinishReason_"></a>
 <a id="Vercel_AI_Operations_BatchItemResult_RawFinishReason"></a>
@@ -212,7 +248,7 @@ Raw finish reason.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L441)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L455)
 
 <a id="Vercel_AI_Operations_BatchItemResult_ResponseId_"></a>
 <a id="Vercel_AI_Operations_BatchItemResult_ResponseId"></a>
@@ -229,7 +265,7 @@ Response id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L450)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L464)
 
 <a id="Vercel_AI_Operations_BatchItemResult_ResponseModelId_"></a>
 <a id="Vercel_AI_Operations_BatchItemResult_ResponseModelId"></a>
@@ -246,7 +282,7 @@ Response model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L456)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L470)
 
 <a id="Vercel_AI_Operations_BatchItemResult_Status_"></a>
 <a id="Vercel_AI_Operations_BatchItemResult_Status"></a>
@@ -263,7 +299,7 @@ Status.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L429)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L443)
 
 <a id="Vercel_AI_Operations_BatchItemResult_Text_"></a>
 <a id="Vercel_AI_Operations_BatchItemResult_Text"></a>
@@ -280,7 +316,7 @@ Joined text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L435)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L449)
 
 <a id="Vercel_AI_Operations_BatchItemResult_Timestamp_"></a>
 <a id="Vercel_AI_Operations_BatchItemResult_Timestamp"></a>
@@ -297,7 +333,7 @@ Response timestamp.
 
 **Value:** [DateTime?](https://learn.microsoft.com/dotnet/api/system.datetime)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L453)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L467)
 
 <a id="Vercel_AI_Operations_BatchItemResult_Type_"></a>
 <a id="Vercel_AI_Operations_BatchItemResult_Type"></a>
@@ -314,7 +350,7 @@ Item type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L423)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L437)
 
 <a id="Vercel_AI_Operations_BatchItemResult_Usage_"></a>
 <a id="Vercel_AI_Operations_BatchItemResult_Usage"></a>
@@ -331,7 +367,7 @@ Text usage.
 
 **Value:** [BatchUsage](/api/Vercel.AI.Operations/BatchUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L444)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L458)
 
 <a id="Vercel_AI_Operations_BatchItemResult_Warnings_"></a>
 <a id="Vercel_AI_Operations_BatchItemResult_Warnings"></a>
@@ -348,4 +384,4 @@ Image warnings.
 
 **Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L462)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L476)
