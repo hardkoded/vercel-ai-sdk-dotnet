@@ -214,4 +214,17 @@ public sealed class SafeValidateUIMessagesTests : WarningsOff
         var error = Assert.IsType<TypeValidationException>(result.Error);
         Assert.Contains("No data schema found for data part bar", error.Message);
     }
+
+    [UpstreamTest(
+        Suite + "should return failure result for invalid message structure",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    [Fact]
+    public async Task Should_return_failure_result_for_invalid_message_structure()
+    {
+        var result = await SafeValidate("""[{"role":"user"}]""");
+
+        Assert.False(result.Success);
+        Assert.IsType<TypeValidationException>(result.Error);
+    }
 }

@@ -13,7 +13,25 @@ internal static class ValidateUiMessagesSupport
 {
     internal const string Prefix = "packages/ai/src/ui/validate-ui-messages.test.ts::";
 
-    internal static JsonElement Json(string json) => JsonDocument.Parse(json).RootElement.Clone();
+    internal static JsonElement Json(string json) =>
+        JsonDocument.Parse(json, new JsonDocumentOptions { MaxDepth = 4096 }).RootElement.Clone();
+
+    /// <summary>The paths of the issues of a failed validation. Maps to <c>getIssuePaths</c>.</summary>
+    internal static List<string> GetIssuePaths(Exception? error) =>
+        ((UIMessagesSchemaException)error!.InnerException!)
+            .Issues.Select(issue =>
+                string.Join(
+                    "/",
+                    issue.Path.Select(segment =>
+                        Convert.ToString(segment, System.Globalization.CultureInfo.InvariantCulture)
+                    )
+                )
+            )
+            .ToList();
+
+    /// <summary>A JSON array nested <paramref name="depth"/> levels deep around an empty array.</summary>
+    internal static string NestedArrays(int depth, string innermost = "[]") =>
+        new string('[', depth) + innermost + new string(']', depth);
 
     internal static IReadOnlyList<UIMessage> Messages(string json) =>
         ((JsonArray)JsonNode.Parse(json)!)
@@ -44,7 +62,7 @@ internal static class ValidateUiMessagesSupport
         Ai.ValidateUIMessagesAsync(
             new ValidateUIMessagesOptions
             {
-                Messages = Messages(messagesJson),
+                MessagesJson = Json(messagesJson),
                 Tools = tools,
                 MetadataSchema = metadataSchema,
                 DataSchemas = dataSchemas,
@@ -61,7 +79,7 @@ internal static class ValidateUiMessagesSupport
         Ai.SafeValidateUIMessagesAsync(
             new ValidateUIMessagesOptions
             {
-                Messages = Messages(messagesJson),
+                MessagesJson = Json(messagesJson),
                 Tools = tools,
                 MetadataSchema = metadataSchema,
                 DataSchemas = dataSchemas,

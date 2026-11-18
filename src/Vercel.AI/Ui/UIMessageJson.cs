@@ -14,6 +14,11 @@ namespace Vercel.AI.Ui;
 /// </summary>
 internal static class UIMessageJson
 {
+    // UI messages are untrusted input, so metadata can nest deeper than the default depth of 64.
+    private static readonly JsonDocumentOptions DeepDocument = new() { MaxDepth = 4096 };
+
+    private static readonly JsonSerializerOptions DeepJson = new() { MaxDepth = 4096 };
+
     private static readonly string[] ToolStates =
     [
         "input-streaming",
@@ -470,12 +475,13 @@ internal static class UIMessageJson
     private static JsonElement? Element(JsonObject json, string key) =>
         json.ContainsKey(key) ? ToElement(json[key]) : null;
 
-    private static JsonNode? ToNode(JsonElement element) => JsonNode.Parse(element.GetRawText());
+    private static JsonNode? ToNode(JsonElement element) =>
+        JsonNode.Parse(element.GetRawText(), null, DeepDocument);
 
     private static JsonElement ToElement(JsonNode? node) =>
         node == null
             ? JsonSerializer.SerializeToElement<object?>(null)
-            : JsonSerializer.SerializeToElement(node);
+            : JsonSerializer.SerializeToElement(node, DeepJson);
 
     private static void Set(JsonObject json, string key, string? value)
     {
