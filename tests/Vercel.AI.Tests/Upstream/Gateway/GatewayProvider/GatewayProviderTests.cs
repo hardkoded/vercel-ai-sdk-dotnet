@@ -7,6 +7,7 @@ using Vercel.AI.Gateway;
 namespace Vercel.AI.Tests.Upstream.Gateway.GatewayProviderTests;
 
 /// <summary>Port of the <c>getAvailableModels</c> tests of <c>gateway-provider.test.ts</c> &gt; <c>GatewayProvider &gt; createGateway</c>.</summary>
+[Collection("GatewayAuthEnvironment")]
 public sealed class GatewayProviderTests
 {
     private const string Prefix =
@@ -105,5 +106,91 @@ public sealed class GatewayProviderTests
         currentTime = currentTime.AddMinutes(2);
         await provider.GetAvailableModelsAsync();
         Assert.Equal(2, server.Calls.Count);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix
+            + "::should pass o11y headers to GatewayLanguageModel when environment variables are set",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Asserts the headers of the provider's O11yHeaders. The upstream test reads them from the GatewayLanguageModel constructor config, which the port does not mock."
+    )]
+    public void Should_pass_o11y_headers_to_GatewayLanguageModel_when_environment_variables_are_set()
+    {
+        using var environment = new VercelEnvironmentVariables(
+            ("VERCEL_DEPLOYMENT_ID", "test-deployment"),
+            ("VERCEL_ENV", "test"),
+            ("VERCEL_REGION", "iad1"),
+            ("VERCEL_PROJECT_ID", "prj_test123")
+        );
+        using var context = VercelRequestContext.Use(
+            new Dictionary<string, string?> { ["x-vercel-id"] = "test-request-id" }
+        );
+        var provider = GatewayProvider.Create(
+            new GatewayOptions { BaseUrl = "https://api.example.com", ApiKey = "test-api-key" },
+            new GatewayTestServer("{}")
+        );
+
+        var o11yHeaders = provider.O11yHeaders().ToList();
+
+        Assert.Equal(
+            [
+                new KeyValuePair<string, string>("ai-o11y-deployment-id", "test-deployment"),
+                new KeyValuePair<string, string>("ai-o11y-environment", "test"),
+                new KeyValuePair<string, string>("ai-o11y-region", "iad1"),
+                new KeyValuePair<string, string>("ai-o11y-request-id", "test-request-id"),
+                new KeyValuePair<string, string>("ai-o11y-project-id", "prj_test123"),
+            ],
+            o11yHeaders
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "::should not include undefined o11y headers",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Asserts the headers of the provider's O11yHeaders. The upstream test reads them from the GatewayLanguageModel constructor config, which the port does not mock."
+    )]
+    public void Should_not_include_undefined_o11y_headers()
+    {
+        using var environment = new VercelEnvironmentVariables(
+            ("VERCEL_DEPLOYMENT_ID", null),
+            ("VERCEL_ENV", null),
+            ("VERCEL_REGION", null),
+            ("VERCEL_PROJECT_ID", null)
+        );
+        using var context = VercelRequestContext.Use(null);
+        var provider = GatewayProvider.Create(
+            new GatewayOptions { BaseUrl = "https://api.example.com", ApiKey = "test-api-key" },
+            new GatewayTestServer("{}")
+        );
+
+        Assert.Empty(provider.O11yHeaders());
+    }
+
+    private sealed class VercelEnvironmentVariables : IDisposable
+    {
+        private readonly (string Name, string? Previous)[] _previous;
+
+        public VercelEnvironmentVariables(params (string Name, string? Value)[] variables)
+        {
+            _previous = variables
+                .Select(variable =>
+                    (variable.Name, Environment.GetEnvironmentVariable(variable.Name))
+                )
+                .ToArray();
+            foreach (var (name, value) in variables)
+            {
+                Environment.SetEnvironmentVariable(name, value);
+            }
+        }
+
+        public void Dispose()
+        {
+            foreach (var (name, previous) in _previous)
+            {
+                Environment.SetEnvironmentVariable(name, previous);
+            }
+        }
     }
 }

@@ -28,7 +28,8 @@ public sealed class GatewayOptions
     /// <summary>
     /// Observability headers sent on every request. When null, they come from <c>VERCEL_DEPLOYMENT_ID</c>
     /// (<c>ai-o11y-deployment-id</c>), <c>VERCEL_ENV</c> (<c>ai-o11y-environment</c>), <c>VERCEL_REGION</c>
-    /// (<c>ai-o11y-region</c>), and <c>VERCEL_PROJECT_ID</c> (<c>ai-o11y-project-id</c>).
+    /// (<c>ai-o11y-region</c>), the <c>x-vercel-id</c> header of the <see cref="VercelRequestContext"/> (<c>ai-o11y-request-id</c>),
+    /// and <c>VERCEL_PROJECT_ID</c> (<c>ai-o11y-project-id</c>).
     /// </summary>
     public IReadOnlyDictionary<string, string>? O11yHeaders { get; set; }
 
@@ -254,11 +255,14 @@ public sealed class GatewayProvider
                 ("ai-o11y-deployment-id", "VERCEL_DEPLOYMENT_ID"),
                 ("ai-o11y-environment", "VERCEL_ENV"),
                 ("ai-o11y-region", "VERCEL_REGION"),
+                ("ai-o11y-request-id", null),
                 ("ai-o11y-project-id", "VERCEL_PROJECT_ID"),
             }
         )
         {
-            var value = Environment.GetEnvironmentVariable(variable);
+            var value = variable is null
+                ? VercelEnvironment.GetVercelRequestId()
+                : Environment.GetEnvironmentVariable(variable);
             if (!string.IsNullOrEmpty(value))
             {
                 headers.Add(new KeyValuePair<string, string>(name, value!));

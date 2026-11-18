@@ -63,14 +63,21 @@ internal static class VercelOidcToken
     }
 
     /// <summary>
-    /// Reads the OIDC token from <c>VERCEL_OIDC_TOKEN</c>. Upstream first reads the <c>x-vercel-oidc-token</c> request header
-    /// from the Vercel request context, which has no .NET counterpart.
+    /// Reads the OIDC token from the <c>x-vercel-oidc-token</c> header of the Vercel request context
+    /// (<see cref="VercelRequestContext"/>), then from <c>VERCEL_OIDC_TOKEN</c> when the header is absent (upstream <c>??</c>).
+    /// The refresh in <see cref="GetVercelOidcTokenAsync"/> only updates <c>VERCEL_OIDC_TOKEN</c>, so an expired request
+    /// header token is still the one found afterwards, as upstream; hosts must supply a fresh request token.
     /// </summary>
     public static string GetVercelOidcTokenSync()
     {
-        var token = Environment.GetEnvironmentVariable(
-            VercelEnvironment.OidcTokenEnvironmentVariable
-        );
+        var token = VercelEnvironment.GetContextHeader("x-vercel-oidc-token");
+        if (token is null)
+        {
+            token = Environment.GetEnvironmentVariable(
+                VercelEnvironment.OidcTokenEnvironmentVariable
+            );
+        }
+
         if (string.IsNullOrEmpty(token))
         {
             throw new InvalidOperationException(
