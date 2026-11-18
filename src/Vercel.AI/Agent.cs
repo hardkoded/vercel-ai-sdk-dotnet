@@ -249,7 +249,16 @@ public sealed class Agent : IAgent
 
     private GenerateTextOptions Prepare(GenerateTextOptions call)
     {
-        return Options.PrepareCall?.Invoke(call) ?? call;
+        var prepared = Options.PrepareCall?.Invoke(call) ?? call;
+
+        // Like upstream, the sandbox of the call is passed to tool execution after prepareCall, so prepareCall cannot drop or replace it.
+        if (!ReferenceEquals(prepared.ExperimentalSandbox, call.ExperimentalSandbox))
+        {
+            prepared = prepared.ShallowCopy();
+            prepared.ExperimentalSandbox = call.ExperimentalSandbox;
+        }
+
+        return prepared;
     }
 
     private GenerateTextOptions CreateOptions(

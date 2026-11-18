@@ -18,7 +18,10 @@ public class SandboxProcessOptions
     /// </summary>
     public IReadOnlyDictionary<string, string>? Env { get; init; }
 
-    /// <summary>Token that aborts the command. When it is cancelled, the running process is killed. Maps to <c>abortSignal</c>.</summary>
+    /// <summary>
+    /// Token that aborts the command. When it is cancelled, the running process is killed. For <see cref="ISandboxSession.SpawnAsync"/>, a cancelled token also
+    /// cancels <see cref="ISandboxProcess.WaitAsync"/>, even when the caller passes no token to it. A normal exit still returns its exit code. Maps to <c>abortSignal</c>.
+    /// </summary>
     public CancellationToken AbortSignal { get; init; }
 }
 
@@ -36,7 +39,7 @@ public sealed class SandboxSpawnOptions : SandboxProcessOptions
 public class SandboxPathOptions
 {
     /// <summary>Path to operate on. Maps to <c>path</c>.</summary>
-    public string Path { get; init; } = string.Empty;
+    public string Path { get; protected init; } = string.Empty;
 
     /// <summary>Token that aborts the operation. Maps to <c>abortSignal</c>.</summary>
     public CancellationToken AbortSignal { get; init; }
@@ -73,22 +76,43 @@ public sealed class SandboxDeleteFileOptions : SandboxPathOptions { }
 /// <summary>Options of <see cref="ISandboxSession.WriteFileAsync"/>. Maps to <c>SandboxWriteFileOptions</c>.</summary>
 public sealed class SandboxWriteFileOptions : SandboxPathOptions
 {
+    /// <summary>Creates the options. The content is required, and an empty stream is a valid payload.</summary>
+    public SandboxWriteFileOptions(string path, Stream content)
+    {
+        Path = path ?? throw new ArgumentNullException(nameof(path));
+        Content = content ?? throw new ArgumentNullException(nameof(content));
+    }
+
     /// <summary>Content to write to the file. Maps to <c>content</c>.</summary>
-    public Stream Content { get; init; } = Stream.Null;
+    public Stream Content { get; }
 }
 
 /// <summary>Options of <see cref="ISandboxSession.WriteBinaryFileAsync"/>. Maps to <c>SandboxWriteBinaryFileOptions</c>.</summary>
 public sealed class SandboxWriteBinaryFileOptions : SandboxPathOptions
 {
+    /// <summary>Creates the options. The content is required, and an empty array is a valid payload.</summary>
+    public SandboxWriteBinaryFileOptions(string path, byte[] content)
+    {
+        Path = path ?? throw new ArgumentNullException(nameof(path));
+        Content = content ?? throw new ArgumentNullException(nameof(content));
+    }
+
     /// <summary>Content to write to the file. Maps to <c>content</c>.</summary>
-    public byte[] Content { get; init; } = [];
+    public byte[] Content { get; }
 }
 
 /// <summary>Options of <see cref="ISandboxSession.WriteTextFileAsync"/>. Maps to <c>SandboxWriteTextFileOptions</c>.</summary>
 public sealed class SandboxWriteTextFileOptions : SandboxPathOptions
 {
+    /// <summary>Creates the options. The content is required, and an empty string is a valid payload.</summary>
+    public SandboxWriteTextFileOptions(string path, string content)
+    {
+        Path = path ?? throw new ArgumentNullException(nameof(path));
+        Content = content ?? throw new ArgumentNullException(nameof(content));
+    }
+
     /// <summary>Content to write to the file. Maps to <c>content</c>.</summary>
-    public string Content { get; init; } = string.Empty;
+    public string Content { get; }
 
     /// <summary>Text encoding used to encode the string to bytes. Defaults to <c>utf-8</c>. Maps to <c>encoding</c>.</summary>
     public string? Encoding { get; init; }
@@ -220,7 +244,10 @@ public interface ISandboxSession
     /// <summary>Deletes one file. Returns true when the file was deleted and false when it does not exist. Maps to <c>deleteFile</c>.</summary>
     Task<bool> DeleteFileAsync(SandboxDeleteFileOptions options);
 
-    /// <summary>Spawns a long-running process. Returns immediately with a handle. Maps to <c>spawn</c>.</summary>
+    /// <summary>
+    /// Spawns a long-running process. Returns immediately with a handle. When <see cref="SandboxSpawnOptions.Stdin"/> is true, the implementation must either return a process whose
+    /// <see cref="ISandboxProcess.Stdin"/> is not null or throw before it starts the command. Maps to <c>spawn</c>.
+    /// </summary>
     Task<ISandboxProcess> SpawnAsync(SandboxSpawnOptions options);
 
     /// <summary>Runs a command in the sandbox. Maps to <c>run</c>.</summary>

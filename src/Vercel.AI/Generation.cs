@@ -644,6 +644,15 @@ internal static class Generation
             var instructionCount = InstructionMessages(instructions).Count;
             var initialMessages = messages.Skip(instructionCount).ToArray();
             var responseMessages = new List<ModelMessage>();
+            await ProcessInitialApprovalsAsync(
+                    options,
+                    messages,
+                    instructionCount,
+                    responseMessages,
+                    options.NowMs ?? DefaultNowMs,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             var stop = options.StopWhen ?? StopWhen.IsStepCount(1);
             var current = model;
             buffer.Add(new StartPart());
