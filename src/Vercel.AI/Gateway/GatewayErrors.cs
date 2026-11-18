@@ -595,14 +595,19 @@ public static class GatewayErrors
                     ReadStringProperty(param, "ruleId")
                 );
             case "access_policy_denied":
+                TryReadAccessPolicyParam(param, out var policyFields);
                 return new GatewayAccessPolicyDeniedError(
                     message,
                     statusCode,
                     cause,
                     generationId,
-                    ReadStringArrayProperty(param, "policyIds"),
-                    ReadStringArrayProperty(param, "removedModels"),
-                    ReadStringArrayProperty(param, "removedProviders")
+                    policyFields.TryGetValue("policyIds", out var policyIds) ? policyIds : null,
+                    policyFields.TryGetValue("removedModels", out var removedModels)
+                        ? removedModels
+                        : null,
+                    policyFields.TryGetValue("removedProviders", out var removedProviders)
+                        ? removedProviders
+                        : null
                 );
             default:
                 return new GatewayInternalServerError(message, statusCode, cause, generationId);
@@ -737,16 +742,6 @@ public static class GatewayErrors
 
     // Upstream's accessPolicyDeniedParamSchema: each field is optional, and a field that is
     // not an array of strings invalidates the whole param, leaving all three undefined.
-    private static IReadOnlyList<string>? ReadStringArrayProperty(JsonElement element, string name)
-    {
-        if (!TryReadAccessPolicyParam(element, out var fields))
-        {
-            return null;
-        }
-
-        return fields.TryGetValue(name, out var values) ? values : null;
-    }
-
     private static bool TryReadAccessPolicyParam(
         JsonElement element,
         out Dictionary<string, List<string>> fields

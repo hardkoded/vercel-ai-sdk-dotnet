@@ -12,6 +12,9 @@ namespace Vercel.AI.Tests;
 
 public sealed class GatewayErrorFactoryTests
 {
+    private const string AccessMsg =
+        "Access policy denied: model openai/gpt-5 is not allowed by the access policies that apply to this request (policies: ap_1).";
+
     [Fact]
     [UpstreamTest(
         "packages/gateway/src/errors/create-gateway-error.test.ts::Valid error responses::should create GatewayAuthenticationError for authentication_error type",
@@ -95,9 +98,6 @@ public sealed class GatewayErrorFactoryTests
         );
         Assert.Null(error.RuleId);
     }
-
-    private const string AccessMsg =
-        "Access policy denied: model openai/gpt-5 is not allowed by the access policies that apply to this request (policies: ap_1).";
 
     [Fact]
     [UpstreamTest(
