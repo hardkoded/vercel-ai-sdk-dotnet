@@ -1831,6 +1831,7 @@ internal static class Generation
         }
 
         var stepInputMessages = messages.ToArray();
+        var toolCallsCallId = NewCallId();
 
         // Each valid call to a known tool gets its approval status. A call that needs a user decision waits for it, and
         // an automatic denial settles the call without running it.
@@ -1906,22 +1907,32 @@ internal static class Generation
                     ),
                     async (call, _) =>
                     {
-                        var (executed, executionMs) = await ToolCallExecution
+                        var result = await ToolCallExecution
                             .ExecuteToolCall(
                                 call,
-                                options,
+                                options.Tools,
+                                options.ToolsContext,
+                                toolCallsCallId,
                                 stepInputMessages,
-                                timing.Now,
                                 cancellationToken,
-                                onPreliminaryToolResult
+                                timing.Now,
+                                options.Timeout,
+                                options.ExperimentalSandbox,
+                                onPreliminaryToolResult,
+                                ToolExecutionCallbacks.Start(options),
+                                ToolExecutionCallbacks.End(options)
                             )
                             .ConfigureAwait(false);
-                        return (Executed: executed, ElapsedMs: executionMs);
+                        return result;
                     },
                     cancellationToken
                 )
                 .ConfigureAwait(false);
-            foreach (var (executed, elapsedMs) in executions)
+            foreach (
+                var (executed, elapsedMs) in executions
+                    .Where(result => result != null)
+                    .Select(result => result!.Value)
+            )
             {
                 toolExecutionMs[executed.ToolCallId] = elapsedMs;
 
@@ -2560,11 +2571,14 @@ internal static class Generation
         };
     }
 
-    internal static Tool? FindTool(GenerateTextOptions options, string name)
+    internal static Tool? FindTool(GenerateTextOptions options, string name) =>
+        FindTool(options.Tools, name);
+
+    internal static Tool? FindTool(IReadOnlyList<Tool>? tools, string name)
     {
-        if (options.Tools != null)
+        if (tools != null)
         {
-            foreach (var candidate in options.Tools)
+            foreach (var candidate in tools)
             {
                 if (string.Equals(candidate.Name, name, StringComparison.Ordinal))
                 {
@@ -2680,6 +2694,7 @@ internal static class Generation
         }
 
         var stepMessages = messages.ToArray();
+        var approvalCallId = NewCallId();
         var executions = await ToolCallConcurrencyScheduler
             .MapWithConcurrency(
                 validated.ApprovedToolApprovals,
@@ -2693,18 +2708,31 @@ internal static class Generation
                         approval.ToolCall.ToolName,
                         approval.ToolCall.Input.GetRawText()
                     );
-                    var (executed, _) = await ToolCallExecution
+                    var result = await ToolCallExecution
                         .ExecuteToolCall(
                             call,
-                            options,
+                            options.Tools,
+                            options.ToolsContext,
+                            approvalCallId,
                             stepMessages,
-                            now,
                             cancellationToken,
+                            now,
+                            options.Timeout,
+                            options.ExperimentalSandbox,
                             emit == null
                                 ? null
-                                : preliminary => emit(new ToolResultPart(preliminary))
+                                : preliminary => emit(new ToolResultPart(preliminary)),
+                            ToolExecutionCallbacks.Start(options),
+                            ToolExecutionCallbacks.End(options)
                         )
                         .ConfigureAwait(false);
+                    if (result == null)
+                    {
+                        return null;
+                    }
+
+                    var executed = result.Value.Output;
+
                     emit?.Invoke(
                         executed.IsError
                             ? new ToolErrorPart(executed)
@@ -2717,7 +2745,7 @@ internal static class Generation
             .ConfigureAwait(false);
 
         var toolMessages = new List<ToolModelMessage>();
-        foreach (var executed in executions)
+        foreach (var executed in executions.OfType<ExecutedTool>())
         {
             toolMessages.Add(
                 executed.ModelOutputContent != null
@@ -3091,6 +3119,9 @@ internal static class Generation
 
         return parts;
     }
+
+    // Stands for the call id that upstream generates once for each generateText or streamText call.
+    private static string NewCallId() => "call-" + Guid.NewGuid().ToString("N");
 
     // Upstream's `notify` ignores an error a callback throws, so a faulty listener cannot break generation.
     internal static async Task NotifyAsync(Func<Task> callback, CancellationToken cancellationToken)
