@@ -57,6 +57,7 @@ Errors, downloads, warnings, and helpers.
 | [LogWarnings](/api/Vercel.AI.Util/LogWarnings/) | Logs provider warnings. Set Logger to false to suppress them, or to a delegate to replace the default emitter. |
 | [LogWarningsOptions](/api/Vercel.AI.Util/LogWarningsOptions/) | Arguments passed to Log(LogWarningsOptions). |
 | [MergeAbortSignals](/api/Vercel.AI.Util/MergeAbortSignals/) | Combines abort signals and timeout durations. |
+| [MissingToolResultsError](/api/Vercel.AI.Util/MissingToolResultsError/) | A tool call has no tool result before the next user or system message. Maps to MissingToolResultsError. |
 | [ModelWarning](/api/Vercel.AI.Util/ModelWarning/) | A warning returned by a model provider. |
 | [NoSuchModelError](/api/Vercel.AI.Util/NoSuchModelError/) | A provider has no model with the requested id. Maps to NoSuchModelError. |
 | [NoSuchProviderError](/api/Vercel.AI.Util/NoSuchProviderError/) | A registry has no provider with the requested id. Maps to NoSuchProviderError. |

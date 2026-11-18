@@ -45,7 +45,52 @@ public static class LanguageModelPrompts
             converted.Add(ConvertToLanguageModelMessage(message, downloaded, provider));
         }
 
+        ThrowIfToolResultsAreMissing(converted);
         return converted;
+    }
+
+    // The tool-call bookkeeping at the end of convertToLanguageModelPrompt: every tool call needs a result before the next user or system message.
+    private static void ThrowIfToolResultsAreMissing(IReadOnlyList<ModelMessage> messages)
+    {
+        var toolCallIds = new List<string>();
+        foreach (var message in messages)
+        {
+            switch (message)
+            {
+                case AssistantModelMessage assistant:
+                    foreach (var part in assistant.Parts)
+                    {
+                        if (
+                            part is AssistantToolCallPart { ToolCall.ProviderExecuted: false } call
+                            && !toolCallIds.Contains(call.ToolCall.ToolCallId)
+                        )
+                        {
+                            toolCallIds.Add(call.ToolCall.ToolCallId);
+                        }
+                    }
+
+                    break;
+                case ToolModelMessage tool:
+                    foreach (var result in tool.Results)
+                    {
+                        toolCallIds.Remove(result.ToolCallId);
+                    }
+
+                    break;
+                case UserModelMessage or SystemModelMessage:
+                    if (toolCallIds.Count > 0)
+                    {
+                        throw new MissingToolResultsError(toolCallIds.ToArray());
+                    }
+
+                    break;
+            }
+        }
+
+        if (toolCallIds.Count > 0)
+        {
+            throw new MissingToolResultsError(toolCallIds.ToArray());
+        }
     }
 
     /// <summary>
@@ -516,6 +561,13 @@ public static class LanguageModelPrompts
         var parts = new List<AssistantContentPart>(assistant.Parts.Count);
         foreach (var part in assistant.Parts)
         {
+            // The approval requests are not part of the prompt.
+            if (part is AssistantToolApprovalRequestPart)
+            {
+                changed = true;
+                continue;
+            }
+
             if (part is AssistantToolResultPart toolResult)
             {
                 var output = ConvertToolResult(toolResult.Output, downloaded, provider, warnings);
