@@ -106,6 +106,54 @@ public sealed class WhenAProviderExecutedToolEmitsToolApprovalRequestTests
 
     [Fact]
     [UpstreamTest(
+        Suite + "should add provider-executed tool approval request to UI message stream",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_add_provider_executed_tool_approval_request_to_UI_message_stream()
+    {
+        var chunks = await SingleProviderExecutedToolCallAndResultTests.ReadUiChunks(Run());
+
+        var expected = System.Text.Json.Nodes.JsonNode.Parse(
+            """
+            [
+              { "type": "start" },
+              { "type": "start-step" },
+              { "input": { "query": "test" }, "providerExecuted": true, "toolCallId": "mcp-call-1", "toolName": "mcp_tool", "type": "tool-input-available" },
+              { "approvalId": "mcp-approval-1", "toolCallId": "mcp-call-1", "type": "tool-approval-request" },
+              { "type": "finish-step" },
+              { "finishReason": "tool-calls", "type": "finish" }
+            ]
+            """
+        );
+        Assert.True(
+            System.Text.Json.Nodes.JsonNode.DeepEquals(expected, chunks),
+            chunks.ToJsonString()
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Suite + "should add provider-executed tool approval request to response messages",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_add_provider_executed_tool_approval_request_to_response_messages()
+    {
+        var messages = await Run().ResponseMessages;
+
+        var assistant = Assert.IsType<AssistantModelMessage>(Assert.Single(messages));
+        Assert.Equal(2, assistant.Parts.Count);
+        var call = Assert.IsType<AssistantToolCallPart>(assistant.Parts[0]).ToolCall;
+        Assert.True(call.ProviderExecuted);
+        Assert.Equal("mcp-call-1", call.ToolCallId);
+        Assert.Equal("mcp_tool", call.ToolName);
+        var request = Assert.IsType<AssistantToolApprovalRequestPart>(assistant.Parts[1]);
+        Assert.Equal("mcp-approval-1", request.ApprovalId);
+        Assert.Equal("mcp-call-1", request.ToolCallId);
+        Assert.Null(request.IsAutomatic);
+    }
+
+    [Fact]
+    [UpstreamTest(
         Suite + "should have tool-calls finish reason",
         Coverage = UpstreamCoverage.Covered
     )]
