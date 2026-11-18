@@ -12,6 +12,9 @@ namespace Vercel.AI.Tests.SmoothStream;
 public sealed class DocumentVisibilityTests : SmoothStreamTestBase
 {
     [Fact]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/smooth-stream.test.ts::smoothStream > document visibility::should skip delays while the document is hidden"
+    )]
     public async Task ShouldSkipDelaysWhileTheDocumentIsHidden()
     {
         await Run(
@@ -29,6 +32,9 @@ public sealed class DocumentVisibilityTests : SmoothStreamTestBase
     }
 
     [Fact]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/smooth-stream.test.ts::smoothStream > document visibility::should resume without delays when the document becomes hidden"
+    )]
     public async Task ShouldResumeWithoutDelaysWhenTheDocumentBecomesHidden()
     {
         var hidden = false;
