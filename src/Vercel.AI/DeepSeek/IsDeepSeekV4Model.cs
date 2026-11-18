@@ -16,6 +16,6 @@ internal static class IsDeepSeekV4Model
     {
         return DeepSeekModelCatalog
             .GetDeepSeekLanguageModelEntry(modelId)
-            .ReasoningAssistantHistory;
+            .Language.Reasoning.AssistantHistory;
     }
 }
