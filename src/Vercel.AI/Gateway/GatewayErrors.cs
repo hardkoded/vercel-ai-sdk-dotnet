@@ -273,6 +273,45 @@ public sealed class GatewayForbiddenError : GatewayError
     }
 }
 
+/// <summary>An AI Gateway access policy that applies to the request does not allow the requested model or provider.</summary>
+public sealed class GatewayAccessPolicyDeniedError : GatewayError
+{
+    /// <summary>Creates an access policy denied error. The default message is <c>Access policy denied</c>.</summary>
+    public GatewayAccessPolicyDeniedError(
+        string? message = null,
+        int statusCode = 403,
+        Exception? cause = null,
+        string? generationId = null,
+        IReadOnlyList<string>? policyIds = null,
+        IReadOnlyList<string>? removedModels = null,
+        IReadOnlyList<string>? removedProviders = null
+    )
+        : base(message ?? "Access policy denied", statusCode, cause, generationId, null)
+    {
+        PolicyIds = policyIds;
+        RemovedModels = removedModels;
+        RemovedProviders = removedProviders;
+    }
+
+    /// <inheritdoc />
+    public override string Type => "access_policy_denied";
+
+    /// <summary>IDs of the access policies that denied the request, when the gateway includes them.</summary>
+    public IReadOnlyList<string>? PolicyIds { get; }
+
+    /// <summary>Models the access policies removed, when the gateway includes them.</summary>
+    public IReadOnlyList<string>? RemovedModels { get; }
+
+    /// <summary>Providers the access policies removed, when the gateway includes them.</summary>
+    public IReadOnlyList<string>? RemovedProviders { get; }
+
+    /// <summary>True when <paramref name="error"/> is this error.</summary>
+    public static new bool IsInstance(Exception? error)
+    {
+        return error is GatewayAccessPolicyDeniedError;
+    }
+}
+
 /// <summary>The Gateway error body could not be read.</summary>
 public sealed class GatewayResponseError : GatewayError
 {
@@ -555,6 +594,16 @@ public static class GatewayErrors
                     generationId,
                     ReadStringProperty(param, "ruleId")
                 );
+            case "access_policy_denied":
+                return new GatewayAccessPolicyDeniedError(
+                    message,
+                    statusCode,
+                    cause,
+                    generationId,
+                    ReadStringArrayProperty(param, "policyIds"),
+                    ReadStringArrayProperty(param, "removedModels"),
+                    ReadStringArrayProperty(param, "removedProviders")
+                );
             default:
                 return new GatewayInternalServerError(message, statusCode, cause, generationId);
         }
@@ -684,5 +733,59 @@ public static class GatewayErrors
         }
 
         return value.GetString();
+    }
+
+    // Upstream's accessPolicyDeniedParamSchema: each field is optional, and a field that is
+    // not an array of strings invalidates the whole param, leaving all three undefined.
+    private static IReadOnlyList<string>? ReadStringArrayProperty(JsonElement element, string name)
+    {
+        if (!TryReadAccessPolicyParam(element, out var fields))
+        {
+            return null;
+        }
+
+        return fields.TryGetValue(name, out var values) ? values : null;
+    }
+
+    private static bool TryReadAccessPolicyParam(
+        JsonElement element,
+        out Dictionary<string, List<string>> fields
+    )
+    {
+        fields = [];
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        foreach (var name in new[] { "policyIds", "removedModels", "removedProviders" })
+        {
+            if (!element.TryGetProperty(name, out var value))
+            {
+                continue;
+            }
+
+            if (value.ValueKind != JsonValueKind.Array)
+            {
+                fields = [];
+                return false;
+            }
+
+            var list = new List<string>();
+            foreach (var item in value.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.String)
+                {
+                    fields = [];
+                    return false;
+                }
+
+                list.Add(item.GetString()!);
+            }
+
+            fields[name] = list;
+        }
+
+        return true;
     }
 }

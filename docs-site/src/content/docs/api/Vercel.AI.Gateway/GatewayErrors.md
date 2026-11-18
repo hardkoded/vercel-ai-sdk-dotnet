@@ -23,7 +23,7 @@ Parses Gateway auth headers and error bodies.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L355)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L394)
 
 ## Fields
 
@@ -41,7 +41,7 @@ Header that carries `api-key` or `oidc`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L362)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L401)
 
 <a id="Vercel_AI_Gateway_GatewayErrors_TeamHeader"></a>
 
@@ -57,7 +57,7 @@ Header that carries the Vercel AI Gateway team.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L365)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L404)
 
 ## Methods
 
@@ -84,7 +84,7 @@ and API call errors are read as Gateway error bodies. Maps to `asGatewayError`.
 
 **Returns:** [GatewayError](/api/Vercel.AI.Gateway/GatewayError/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L394)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L433)
 
 <a id="Vercel_AI_Gateway_GatewayErrors_Create_"></a>
 <a id="Vercel_AI_Gateway_GatewayErrors_Create_System_Text_Json_JsonElement_System_Int32_System_String_System_String_System_Exception_System_Nullable_System_Boolean__"></a>
@@ -112,7 +112,7 @@ Maps a Gateway JSON body to a typed error. Invalid bodies become [GatewayRespons
 
 **Returns:** [GatewayError](/api/Vercel.AI.Gateway/GatewayError/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L481)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L520)
 
 <a id="Vercel_AI_Gateway_GatewayErrors_ExtractApiCallResponse_"></a>
 <a id="Vercel_AI_Gateway_GatewayErrors_ExtractApiCallResponse_Vercel_AI_Util_ApiCallError_"></a>
@@ -136,7 +136,7 @@ A missing body yields an empty object. Maps to `extractApiCallResponse`.
 
 **Returns:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L451)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L490)
 
 <a id="Vercel_AI_Gateway_GatewayErrors_FromResponseBody_"></a>
 <a id="Vercel_AI_Gateway_GatewayErrors_FromResponseBody_System_String_System_Int32_System_String_System_Exception_"></a>
@@ -162,7 +162,7 @@ Maps an HTTP error body. Non-JSON bodies become [GatewayResponseError](/api/Verc
 
 **Returns:** [GatewayError](/api/Vercel.AI.Gateway/GatewayError/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L564)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L613)
 
 <a id="Vercel_AI_Gateway_GatewayErrors_ParseAuthMethod_"></a>
 <a id="Vercel_AI_Gateway_GatewayErrors_ParseAuthMethod_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__"></a>
@@ -185,4 +185,4 @@ Reads [AuthMethodHeader](#Vercel_AI_Gateway_GatewayErrors_AuthMethodHeader). Any
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L368)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L407)

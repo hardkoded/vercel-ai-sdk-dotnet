@@ -96,6 +96,119 @@ public sealed class GatewayErrorFactoryTests
         Assert.Null(error.RuleId);
     }
 
+    private const string AccessMsg =
+        "Access policy denied: model openai/gpt-5 is not allowed by the access policies that apply to this request (policies: ap_1).";
+
+    [Fact]
+    [UpstreamTest(
+        "packages/gateway/src/errors/create-gateway-error.test.ts::Valid error responses > access_policy_denied::creates GatewayAccessPolicyDeniedError with the policy ids and removed values",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Creates_an_access_policy_denied_error_with_policy_ids_and_removed_values()
+    {
+        var error = Create(
+            "{\"error\":{\"message\":\""
+                + AccessMsg
+                + "\",\"type\":\"access_policy_denied\",\"param\":{\"policyIds\":[\"ap_1\",\"ap_2\"],\"removedModels\":[\"openai/gpt-5\"],\"removedProviders\":[\"openai\"]}},\"generationId\":\"gen_123\"}",
+            403
+        );
+        var denied = Assert.IsType<GatewayAccessPolicyDeniedError>(error);
+        Assert.True(GatewayAccessPolicyDeniedError.IsInstance(error));
+        Assert.False(GatewayForbiddenError.IsInstance(error));
+        Assert.Equal("access_policy_denied", error.Type);
+        Assert.Equal(403, error.StatusCode);
+        Assert.False(error.IsRetryable);
+        Assert.Equal(AccessMsg + " [gen_123]", error.Message);
+        Assert.Equal("gen_123", error.GenerationId);
+        Assert.Equal(["ap_1", "ap_2"], denied.PolicyIds);
+        Assert.Equal(["openai/gpt-5"], denied.RemovedModels);
+        Assert.Equal(["openai"], denied.RemovedProviders);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/gateway/src/errors/create-gateway-error.test.ts::Valid error responses > access_policy_denied::ignores extra keys in param",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Ignores_extra_keys_in_the_access_policy_param()
+    {
+        var error = Create(
+            "{\"error\":{\"message\":\""
+                + AccessMsg
+                + "\",\"type\":\"access_policy_denied\",\"param\":{\"name\":\"AccessPolicyDeniedError\",\"type\":\"access_policy_denied\",\"statusCode\":403,\"message\":\""
+                + AccessMsg
+                + "\",\"policyIds\":[\"ap_1\"],\"removedModels\":[],\"removedProviders\":[\"openai\"]}}}",
+            403
+        );
+        var denied = Assert.IsType<GatewayAccessPolicyDeniedError>(error);
+        Assert.Equal(["ap_1"], denied.PolicyIds);
+        Assert.Empty(denied.RemovedModels!);
+        Assert.Equal(["openai"], denied.RemovedProviders);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/gateway/src/errors/create-gateway-error.test.ts::Valid error responses > access_policy_denied::leaves the arrays undefined when the response has no param",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Leaves_the_access_policy_arrays_unset_when_the_response_has_no_param()
+    {
+        var error = Create(
+            "{\"error\":{\"message\":\"" + AccessMsg + "\",\"type\":\"access_policy_denied\"}}",
+            403
+        );
+        var denied = Assert.IsType<GatewayAccessPolicyDeniedError>(error);
+        Assert.Equal(403, error.StatusCode);
+        Assert.Equal(AccessMsg, error.Message);
+        Assert.Null(denied.PolicyIds);
+        Assert.Null(denied.RemovedModels);
+        Assert.Null(denied.RemovedProviders);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/gateway/src/errors/create-gateway-error.test.ts::Valid error responses > access_policy_denied::keeps the arrays that are present when others are missing",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Keeps_the_access_policy_arrays_that_are_present_when_others_are_missing()
+    {
+        var error = Create(
+            "{\"error\":{\"message\":\""
+                + AccessMsg
+                + "\",\"type\":\"access_policy_denied\",\"param\":{\"policyIds\":[\"ap_1\"]}}}",
+            403
+        );
+        var denied = Assert.IsType<GatewayAccessPolicyDeniedError>(error);
+        Assert.Equal(["ap_1"], denied.PolicyIds);
+        Assert.Null(denied.RemovedModels);
+        Assert.Null(denied.RemovedProviders);
+    }
+
+    [Theory]
+    [InlineData("\"model\"")]
+    [InlineData("null")]
+    [InlineData("{\"policyIds\":[1,2]}")]
+    [UpstreamTest(
+        "packages/gateway/src/errors/create-gateway-error.test.ts::Valid error responses > access_policy_denied::leaves the arrays undefined when param is %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Leaves_the_access_policy_arrays_unset_when_the_param_is_invalid(string param)
+    {
+        var error = Create(
+            "{\"error\":{\"message\":\""
+                + AccessMsg
+                + "\",\"type\":\"access_policy_denied\",\"param\":"
+                + param
+                + "}}",
+            403
+        );
+        var denied = Assert.IsType<GatewayAccessPolicyDeniedError>(error);
+        Assert.Equal(403, error.StatusCode);
+        Assert.Null(denied.PolicyIds);
+        Assert.Null(denied.RemovedModels);
+        Assert.Null(denied.RemovedProviders);
+    }
+
     [Fact]
     [UpstreamTest(
         "packages/gateway/src/errors/create-gateway-error.test.ts::Valid error responses::should create GatewayRateLimitError for rate_limit_exceeded type",
@@ -864,6 +977,39 @@ public sealed class GatewayErrorTypeTests
         var error = new GatewayRateLimitError();
         Assert.True(GatewayRateLimitError.IsInstance(error));
         Assert.True(GatewayError.IsInstance(error));
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/gateway/src/errors/gateway-error-types.test.ts::GatewayAccessPolicyDeniedError::should create error with default values",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Access_policy_denied_error_defaults()
+    {
+        var error = new GatewayAccessPolicyDeniedError();
+        Assert.Equal("GatewayAccessPolicyDeniedError", error.GetType().Name);
+        Assert.Equal("access_policy_denied", error.Type);
+        Assert.Equal("Access policy denied", error.Message);
+        Assert.Equal(403, error.StatusCode);
+        Assert.False(error.IsRetryable);
+        Assert.Null(error.PolicyIds);
+        Assert.Null(error.RemovedModels);
+        Assert.Null(error.RemovedProviders);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/gateway/src/errors/gateway-error-types.test.ts::GatewayAccessPolicyDeniedError::should be distinguishable from GatewayForbiddenError",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Access_policy_denied_error_is_distinguishable_from_forbidden()
+    {
+        var denied = new GatewayAccessPolicyDeniedError();
+        var forbidden = new GatewayForbiddenError();
+        Assert.True(GatewayAccessPolicyDeniedError.IsInstance(denied));
+        Assert.True(GatewayError.IsInstance(denied));
+        Assert.False(GatewayForbiddenError.IsInstance(denied));
+        Assert.False(GatewayAccessPolicyDeniedError.IsInstance(forbidden));
     }
 
     [Fact]
