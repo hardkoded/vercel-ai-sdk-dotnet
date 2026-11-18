@@ -21,6 +21,7 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [Batch](/api/Vercel.AI.Operations/Batch/) | Batch operations. Maps to startBatch, getBatchStatus, getBatchResults, listBatches, and cancelBatch. |
 | [BatchCancelResult](/api/Vercel.AI.Operations/BatchCancelResult/) | Cancellation result. |
 | [BatchContentPart](/api/Vercel.AI.Operations/BatchContentPart/) | One content part inside a batch text result. |
+| [BatchError](/api/Vercel.AI.Operations/BatchError/) | An error of a batch item. Maps to BatchError. |
 | [BatchImageGeneration](/api/Vercel.AI.Operations/BatchImageGeneration/) | A provider image generation inside a batch item. |
 | [BatchItem](/api/Vercel.AI.Operations/BatchItem/) | One raw batch item. |
 | [BatchItemResult](/api/Vercel.AI.Operations/BatchItemResult/) | Normalized batch item. |

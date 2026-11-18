@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Text.Json;
+using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Operations;
@@ -353,6 +354,19 @@ public sealed class BatchTextGeneration
 
     /// <summary>Provider metadata.</summary>
     public JsonElement? ProviderMetadata { get; set; }
+
+    /// <summary>The text a JSON output parses instead of the joined text parts. Maps to <c>structuredOutputText</c>.</summary>
+    public string? StructuredOutputText { get; set; }
+}
+
+/// <summary>An error of a batch item. Maps to <c>BatchError</c>.</summary>
+public sealed class BatchError
+{
+    /// <summary>Error message.</summary>
+    public string Message { get; set; } = string.Empty;
+
+    /// <summary>Error type, for example the name of the error.</summary>
+    public string? Type { get; set; }
 }
 
 /// <summary>A provider image generation inside a batch item.</summary>
@@ -475,6 +489,18 @@ public sealed class BatchItemResult
 
     /// <summary>HTTP status code of a failed provider response.</summary>
     public int? ErrorStatusCode { get; set; }
+
+    /// <summary>
+    /// The parsed output of a successful text item. Only set when <c>BatchRequestOptions.Output</c> is passed to
+    /// <c>GetBatchResults</c> and the text parsed. Maps to <c>output</c>.
+    /// </summary>
+    public JsonElement? Output { get; set; }
+
+    /// <summary>
+    /// Why no <see cref="Output"/> is available. A parsing failure does not fail the item: <see cref="Text"/> and
+    /// <see cref="Usage"/> remain available. Maps to <c>outputError</c>.
+    /// </summary>
+    public BatchError? OutputError { get; set; }
 }
 
 /// <summary>A version-2 batch reference.</summary>
@@ -767,6 +793,13 @@ public sealed class BatchRequestOptions : OperationRequest
     /// <summary>Tools used to parse client tool calls. They are not executed.</summary>
     public IReadOnlyList<BatchTool>? Tools { get; set; }
 
+    /// <summary>
+    /// Specification for structured data in the text responses. Its response format is sent with every text request
+    /// in the batch; image requests ignore it. Pass the same value to <c>GetBatchResults</c> to parse and
+    /// validate each result.
+    /// </summary>
+    public OutputSpec? Output { get; set; }
+
     /// <summary>Total timeout in milliseconds.</summary>
     public int? TimeoutMs { get; set; }
 
@@ -884,7 +917,7 @@ public static class Batch
                         item.Id,
                         item.Type,
                         item.Model,
-                        TextOptions(item, prepared)
+                        TextOptions(item, prepared, request.Output)
                     )
                 );
             }
@@ -1132,6 +1165,10 @@ public static class Batch
             result.Timestamp = item.Text.Timestamp;
             result.ResponseModelId = item.Text.ModelId;
             result.ProviderMetadata = item.Text.ProviderMetadata;
+            if (request.Output != null)
+            {
+                ParseBatchOutput(result, item.Text, request.Output);
+            }
         }
 
         return result;
@@ -1351,7 +1388,11 @@ public static class Batch
             : string.Empty;
     }
 
-    private static JsonElement TextOptions(BatchRequest request, List<JsonElement> tools)
+    private static JsonElement TextOptions(
+        BatchRequest request,
+        List<JsonElement> tools,
+        OutputSpec? output
+    )
     {
         var prompt = OperationJson.Parse(
             "[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":"
@@ -1372,6 +1413,11 @@ public static class Batch
             ["reasoning"] = request.Reasoning,
             ["providerOptions"] = request.ProviderOptions,
         };
+        if (output != null)
+        {
+            options["responseFormat"] = ResponseFormat(output);
+        }
+
         if (tools.Count > 0)
         {
             options["tools"] = tools;
@@ -1384,6 +1430,68 @@ public static class Batch
         }
 
         return OperationJson.Serialize(options);
+    }
+
+    // Maps to the responseFormat of an output specification.
+    private static Dictionary<string, object?> ResponseFormat(OutputSpec output)
+    {
+        if (!output.IsJson)
+        {
+            return new Dictionary<string, object?> { ["type"] = "text" };
+        }
+
+        return new Dictionary<string, object?>
+        {
+            ["type"] = "json",
+            ["schema"] = output.Schema,
+            ["name"] = output.SchemaName,
+            ["description"] = output.SchemaDescription,
+        };
+    }
+
+    // Maps to parseBatchOutput. Failures are reported as OutputError so that one malformed item does not affect the
+    // rest of the batch or discard the item's text and usage.
+    private static void ParseBatchOutput(
+        BatchItemResult result,
+        BatchTextGeneration text,
+        OutputSpec output
+    )
+    {
+        var finishReason = text.FinishReason;
+
+        // Same conditions as generateText: stop responses and non-empty responses that are not tool calls.
+        if (
+            !(
+                finishReason == "stop"
+                || (finishReason != "tool-calls" && (result.Text ?? string.Empty).Length > 0)
+            )
+        )
+        {
+            var error = new NoOutputGeneratedException();
+            result.OutputError = new BatchError { Message = error.Message, Type = error.Name };
+            return;
+        }
+
+        var textForOutput = output.IsJson
+            ? text.StructuredOutputText ?? result.Text ?? string.Empty
+            : result.Text ?? string.Empty;
+        try
+        {
+            result.Output = output.ParseCompleteOutput(textForOutput);
+        }
+        catch (Exception error)
+            when (error is ProviderUtils.JsonParseException or ProviderUtils.TypeValidationException
+            )
+        {
+            result.OutputError = new BatchError
+            {
+                Message =
+                    error is ProviderUtils.TypeValidationException
+                        ? "No object generated: response did not match schema."
+                        : "No object generated: could not parse the response.",
+                Type = "AI_NoObjectGeneratedError",
+            };
+        }
     }
 
     private static JsonElement ImageOptions(BatchRequest request, ImagePromptParts parts)

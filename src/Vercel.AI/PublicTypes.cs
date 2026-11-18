@@ -680,6 +680,12 @@ public abstract class OutputSpec
     private sealed class TextOutput : OutputSpec
     {
         public static readonly TextOutput Instance = new();
+
+        // Maps to Output.text parseCompleteOutput: the text as is, without a schema.
+        internal override JsonElement ParseCompleteOutput(string text)
+        {
+            return JsonSerializer.SerializeToElement(text);
+        }
     }
 
     private sealed class ObjectOutput : OutputSpec

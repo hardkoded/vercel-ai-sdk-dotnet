@@ -824,7 +824,7 @@ public sealed class BatchTests
         }
     }
 
-    private sealed class BatchFake : IBatchApi
+    internal sealed class BatchFake : IBatchApi
     {
         public string Provider => "test";
 
