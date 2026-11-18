@@ -97,7 +97,9 @@ public sealed class ToolArgumentAndOutputSerializationResilienceTests
             [Assistant(Call("call-2", "process", StringifyWithBigIntAndCycles(cyclicInput)))]
         );
 
-        var args = result.Messages[0]!["tool_calls"]![0]!["function"]!["arguments"]!.GetValue<string>();
+        var args = result.Messages[0]!["tool_calls"]![0]!["function"]![
+            "arguments"
+        ]!.GetValue<string>();
         Assert.Contains("\"id\":\"12345678901234567890\"", args);
         Assert.Contains("\"self\":\"[Circular]\"", args);
     }
