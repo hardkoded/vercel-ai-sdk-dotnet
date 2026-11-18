@@ -113,6 +113,9 @@ public sealed class ModelStreamPart
     /// <summary>Usage on <c>finish</c>.</summary>
     public OperationUsage? Usage { get; set; }
 
+    /// <summary>The raw provider usage object of a transcription <c>finish</c> part. Maps to <c>usage</c> typed <c>JSONObject</c>.</summary>
+    public JsonElement? UsageValue { get; set; }
+
     /// <summary>Start of a <c>transcript-partial</c> or <c>transcript-final</c> part, in seconds.</summary>
     public double? StartSecond { get; set; }
 

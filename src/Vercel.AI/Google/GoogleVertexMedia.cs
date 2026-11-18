@@ -951,6 +951,7 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
                     Segments = new List<TranscriptSegment>(),
                     Language = _language,
                     Usage = usage,
+                    UsageValue = _usageMetadata,
                     ProviderMetadata = metadata,
                 }
             );
