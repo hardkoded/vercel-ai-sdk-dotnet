@@ -279,9 +279,9 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
         )
         {
             warnings.Add(
-                new CallWarning(
-                    "deprecated",
-                    "providerOptions key '" + rawName + "'. Use '" + camel + "' instead."
+                CallWarning.Deprecated(
+                    "providerOptions key \'" + rawName + "\'",
+                    "Use \'" + camel + "\' instead."
                 )
             );
         }

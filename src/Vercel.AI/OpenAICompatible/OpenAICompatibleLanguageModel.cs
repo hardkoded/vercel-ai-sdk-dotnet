@@ -656,9 +656,9 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         if (OpenAICompatibleChat.HasOptions(options.ProviderOptions, "openai-compatible"))
         {
             warnings.Add(
-                new CallWarning(
-                    "deprecated",
-                    "providerOptions key 'openai-compatible'. Use 'openaiCompatible' instead."
+                CallWarning.Deprecated(
+                    "providerOptions key \'openai-compatible\'",
+                    "Use \'openaiCompatible\' instead."
                 )
             );
         }
@@ -670,9 +670,9 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         )
         {
             warnings.Add(
-                new CallWarning(
-                    "deprecated",
-                    "providerOptions key '" + rawName + "'. Use '" + camel + "' instead."
+                CallWarning.Deprecated(
+                    "providerOptions key \'" + rawName + "\'",
+                    "Use \'" + camel + "\' instead."
                 )
             );
         }

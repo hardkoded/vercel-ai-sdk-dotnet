@@ -863,9 +863,9 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
         if (OpenAICompatibleChat.HasOptions(providerOptions, "openai-compatible"))
         {
             warnings.Add(
-                new CallWarning(
-                    "deprecated",
-                    "providerOptions key 'openai-compatible'. Use 'openaiCompatible' instead."
+                CallWarning.Deprecated(
+                    "providerOptions key \'openai-compatible\'",
+                    "Use \'openaiCompatible\' instead."
                 )
             );
         }
@@ -1184,9 +1184,9 @@ public static class OpenAICompatibleImages
         )
         {
             warnings.Add(
-                new CallWarning(
-                    "deprecated",
-                    "providerOptions key '" + raw + "'. Use '" + camel + "' instead."
+                CallWarning.Deprecated(
+                    "providerOptions key \'" + raw + "\'",
+                    "Use \'" + camel + "\' instead."
                 )
             );
         }
