@@ -5,8 +5,8 @@
 using System.Text.Json;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
-using Vercel.AI.Ui;
 using Vercel.AI.Testing;
+using Vercel.AI.Ui;
 using Vercel.AI.Util;
 using static Vercel.AI.Tests.Upstream.GenerateText.GenerateText.ToolExecutionApprovalSupport;
 
@@ -159,16 +159,15 @@ public sealed class ApprovedToolContinuationTests
         };
         tool.IsDynamic = field == "dynamic";
         var emptyInput = JsonDocument.Parse("{}").RootElement.Clone();
-        var signature =
-            secret is null
-                ? null
-                : ToolApprovalSignatures.SignToolApproval(
-                    secret,
-                    "approval",
-                    "call",
-                    "readTheme",
-                    emptyInput
-                );
+        var signature = secret is null
+            ? null
+            : ToolApprovalSignatures.SignToolApproval(
+                secret,
+                "approval",
+                "call",
+                "readTheme",
+                emptyInput
+            );
         var messages = UIMessageConversion.ConvertToModelMessages(
             new[]
             {
@@ -285,7 +284,10 @@ public sealed class ApprovedToolContinuationTests
                     Model = model,
                     Messages = messages,
                     Tools = new[] { tool },
-                    ToolApproval = new ToolApprovalConfiguration { { "set_theme", "user-approval" } },
+                    ToolApproval = new ToolApprovalConfiguration
+                    {
+                        { "set_theme", "user-approval" },
+                    },
                 }
             );
 
