@@ -44,6 +44,14 @@ public sealed class MistralProvider : OpenAICompatibleProvider
         return new MistralConversationLanguageModel(this, modelId);
     }
 
+    /// <inheritdoc />
+    public override ISpeechModel SpeechModel(string modelId) =>
+        new MistralSpeechModel(this, modelId);
+
+    /// <inheritdoc />
+    public override ITranscriptionModel TranscriptionModel(string modelId) =>
+        new MistralTranscriptionModel(this, modelId);
+
     private static string? ResolveReasoningEffort(
         string modelId,
         string? reasoning,

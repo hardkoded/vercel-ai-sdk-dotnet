@@ -69,9 +69,11 @@ public sealed class SpeechModelResult
         byte[]? audio,
         IReadOnlyList<OperationWarning>? warnings = null,
         JsonElement? providerMetadata = null,
-        ProviderResponse? response = null
+        ProviderResponse? response = null,
+        ProviderRequest? request = null
     )
     {
+        Request = request;
         Audio = audio ?? Array.Empty<byte>();
         Warnings = warnings ?? Array.Empty<OperationWarning>();
         ProviderMetadata = providerMetadata;
@@ -89,6 +91,9 @@ public sealed class SpeechModelResult
 
     /// <summary>Response metadata.</summary>
     public ProviderResponse Response { get; }
+
+    /// <summary>Request metadata, such as the body sent to the provider. Maps to <c>request</c>.</summary>
+    public ProviderRequest? Request { get; }
 }
 
 /// <summary>Speech model used by <see cref="GenerateSpeech"/>.</summary>

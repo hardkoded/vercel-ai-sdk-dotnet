@@ -364,6 +364,44 @@ The model keeps no history between calls. Pass the previous messages, including 
 
 System messages become `instructions`, joined with a blank line. The sampling settings go in `completion_args` (`max_tokens`, `temperature`, `top_p`, `frequency_penalty`, `presence_penalty`, `stop`, `random_seed`, `reasoning_effort`, `response_format`, `tool_choice`). `TopK` is reported as an `unsupported` warning. The request sets `store` to `false`. Mistral accepts `reasoning_effort` `none` and `high` here, and only on the models listed for the Conversations API, so other models get an `unsupported` warning when `Reasoning` is set. The `mistral` provider options `reasoningEffort`, `structuredOutputs`, and `strictJsonSchema` apply. `safePrompt`, `documentImageLimit`, `documentPageLimit`, `promptCacheKey`, and `parallelToolCalls` are Chat API options: they are not sent and each adds an `unsupported` warning. User images and PDFs are kept as `image_url` and `document_url` parts, and `SupportedUrls` is `application/pdf` for `https` URLs. `OpenAICompatibleOptions.GenerateId` sets the id generator for sources, as upstream `generateId` does.
 
+## Mistral transcription
+
+`MistralProvider.TranscriptionModel(id)` returns a `MistralTranscriptionModel` with provider id `mistral.transcription`. It implements `ITranscriptionModel` and `ITranscriptionCaller`, so it works with `Transcribe`. It posts a multipart request to `{base}/audio/transcriptions`. It does not stream yet; realtime transcription is tracked in #834.
+
+```csharp
+var result = await Transcribe.TranscribeAsync(new TranscribeRequest
+{
+    Model = (ITranscriptionCaller)mistral.TranscriptionModel("voxtral-mini-transcribe-3-0"),
+    Audio = await File.ReadAllBytesAsync("audio.mp3"),
+});
+```
+
+Read the options from `providerOptions.mistral`. `MistralTranscriptionModelOptions.Parse` validates them and throws `InvalidArgumentException` (`invalid mistral provider options`) for a bad shape or range.
+
+- `language`: the language of the audio, such as `en`.
+- `returnLanguage`: return the detected language. It cannot be `true` when `language` is set; the model throws `InvalidArgumentException`.
+- `temperature`: the sampling temperature.
+- `timestampGranularities`: `segment` and `word`, sent as repeated `timestamp_granularities` fields. For model ids whose catalog entry has `LanguageWithTimestamps` unset (the legacy ids `voxtral-mini-2507`, `voxtral-mini-2602`, and `voxtral-mini-latest`), combining it with `language` throws `InvalidArgumentException`. Other and unknown model ids send the combination to Mistral.
+- `diarize`: identify speakers. Mistral validates the timestamp requirement.
+- `contextBias`: words, phrases, or descriptions that guide spelling. Entries must not be empty. They are sent as repeated `context_bias` fields, with no entry limit in the SDK.
+- `targetStreamingDelayMs`, `speakerReferences`, and `turnDetection` are realtime only. They are not sent and each adds an `unsupported` warning.
+
+The result carries the text, language, segments, and duration (`prompt_audio_seconds`, else the end of the last segment). `Usage` is the raw Mistral usage. Token and prompt-audio usage is in `ProviderMetadata.mistral.usage`, and segments with a type, score, or speaker id are in `ProviderMetadata.mistral.segments`. `Response.ModelId` is the model id Mistral returns.
+
+## Mistral speech
+
+`MistralProvider.SpeechModel(id)` returns a `MistralSpeechModel` with provider id `mistral.speech`. It implements `ISpeechModel` and `ISpeechCaller`, so it works with `GenerateSpeech`. It posts a non-streaming JSON request to `{base}/audio/speech` and decodes the `audio_data` base64 string.
+
+`Voice` maps to `voice_id`. `OutputFormat` accepts the formats the catalog lists (`mp3`, `wav`, `pcm`, `flac`, `opus`) and defaults to `mp3`; any other format adds an `unsupported` warning and sends `mp3`. `Speed` and `Language` always add an `unsupported` warning. `Instructions` adds one when the catalog declares the model without instruction support. Put tags such as `[emotion=happy]` and `[pace=slow]` in the text.
+
+`MistralSpeechModelOptions` reads `providerOptions.mistral`:
+
+- `refAudio`: base64 reference audio for one-off voice cloning. It takes precedence over `Voice`.
+- `expressiveness`: a number from 1 to 5.
+- `phonemeHints`: a map from words to non-empty lists of IPA phonemes.
+
+`SpeechModelResult.Request.Body` and the `RequestBodyValues` of an `ApiException` replace `ref_audio` with `[redacted]`. Only use reference audio with the speaker's explicit consent.
+
 ## Baseten
 
 ### DeepSeek V4 Pro structured output
