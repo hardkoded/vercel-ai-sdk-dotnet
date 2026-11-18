@@ -371,8 +371,8 @@ public sealed class DeepSeekChatLanguageModel : ILanguageModel
                 SupportsStructuredOutputs = _config.SupportsStructuredOutputs,
             }
         );
-        var supportsStructuredOutputs = capabilities.StructuredOutputJsonSchema;
-        var supportsPenaltySampling = capabilities.SamplingPenalties;
+        var supportsStructuredOutputs = capabilities.Language.StructuredOutput.JsonSchema;
+        var supportsPenaltySampling = capabilities.Language.Sampling.Penalties;
 
         // A JSON schema alone asks for a JSON response, as upstream's responseFormat of type json.
         var jsonResponse =
@@ -388,7 +388,7 @@ public sealed class DeepSeekChatLanguageModel : ILanguageModel
             options.JsonSchema,
             ModelId,
             ProviderOptionsName,
-            capabilities.EndpointsAssistantPrefixCompletion,
+            capabilities.Language.Endpoints.AssistantPrefixCompletion,
             supportsStructuredOutputs
         );
         var warnings = new List<CallWarning>(converted.Warnings);
@@ -426,7 +426,9 @@ public sealed class DeepSeekChatLanguageModel : ILanguageModel
         var tools = DeepSeekPrepareTools.PrepareTools(
             options.Tools,
             options.ToolChoice,
-            capabilities.ToolsStrict
+            capabilities.Language.Tools.Strict is { IsUnknown: false } strictTools
+                ? strictTools.IsSupported
+                : null
         );
 
         var thinkingType = deepseekOptions.Thinking?.Type;
@@ -442,7 +444,7 @@ public sealed class DeepSeekChatLanguageModel : ILanguageModel
         }
 
         string? thinking = null;
-        if (capabilities.ReasoningConfigurable)
+        if (capabilities.Language.Reasoning.Configurable)
         {
             if (thinkingType != null)
             {
@@ -455,9 +457,9 @@ public sealed class DeepSeekChatLanguageModel : ILanguageModel
         }
 
         var isThinkingEnabled =
-            capabilities.ReasoningConfigurable
+            capabilities.Language.Reasoning.Configurable
             && thinking != "disabled"
-            && (thinking != null || capabilities.ReasoningEnabledByDefault);
+            && (thinking != null || capabilities.Language.Reasoning.EnabledByDefault);
 
         if (isThinkingEnabled && options.Temperature != null)
         {
