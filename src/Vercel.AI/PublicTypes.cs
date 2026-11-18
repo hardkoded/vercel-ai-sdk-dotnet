@@ -677,6 +677,12 @@ public abstract class OutputSpec
         return null;
     }
 
+    // Maps to createArrayStreamParser. Built-in arrays return a parser that scans only the new text of each delta. Other outputs return null.
+    internal virtual Util.ArrayOutputStreamParser? CreateArrayStreamParser()
+    {
+        return null;
+    }
+
     private sealed class TextOutput : OutputSpec
     {
         public static readonly TextOutput Instance = new();
@@ -824,6 +830,11 @@ public abstract class OutputSpec
             }
 
             return JsonSerializer.SerializeToElement(parsed);
+        }
+
+        internal override Util.ArrayOutputStreamParser? CreateArrayStreamParser()
+        {
+            return Util.ArrayOutputStream.CreateArrayOutputStreamParser(_elementSchemaNode, true);
         }
 
         internal override Func<
@@ -1792,6 +1803,9 @@ public sealed class TextDeltaPart : TextStreamPart
 
     /// <summary>Provider metadata of the delta.</summary>
     public JsonElement? ProviderMetadata { get; }
+
+    // The partial output after this delta, for the first text block of a step with a structured output.
+    internal JsonElement? PartialOutput { get; init; }
 }
 
 /// <summary>A text block ended. Maps to <c>text-end</c>.</summary>
