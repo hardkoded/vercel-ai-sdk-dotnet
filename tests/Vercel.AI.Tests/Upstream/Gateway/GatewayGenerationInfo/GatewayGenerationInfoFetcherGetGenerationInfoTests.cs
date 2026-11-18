@@ -319,10 +319,10 @@ public sealed class GatewayGenerationInfoFetcherGetGenerationInfoTests
             new GatewayConfig
             {
                 BaseUrl = "https://api.example.com",
-                Headers = headers
-                    ?? (
-                        () =>
-                            new Dictionary<string, string?>
+                Headers = _ =>
+                    Task.FromResult(
+                        headers?.Invoke()
+                            ?? new Dictionary<string, string?>
                             {
                                 ["Authorization"] = "Bearer test-token",
                             }

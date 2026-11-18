@@ -51,32 +51,15 @@ Gets or sets the base URL of the Gateway.
 
 
 ```csharp
-public Func<IReadOnlyDictionary<string, string?>>? Headers { get; set; }
+public Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? Headers { get; set; }
 ```
 
 
-Gets or sets the function that resolves the request headers.
-
-**Value:** [Func&lt;IReadOnlyDictionary&lt;string, string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
-
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayGenerationInfo.cs#L19)
-
-<a id="Vercel_AI_Gateway_GatewayConfig_HeadersAsync_"></a>
-<a id="Vercel_AI_Gateway_GatewayConfig_HeadersAsync"></a>
-
-### HeadersAsync
-
-
-```csharp
-public Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? HeadersAsync { get; set; }
-```
-
-
-Gets or sets the asynchronous function that resolves the request headers. Takes precedence over [Headers](#Vercel_AI_Gateway_GatewayConfig_Headers). Upstream's `headers` is async.
+Gets or sets the asynchronous function that resolves the request headers (upstream `headers`).
 
 **Value:** [Func&lt;CancellationToken, Task&lt;IReadOnlyDictionary&lt;string, string&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayGenerationInfo.cs#L22)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayGenerationInfo.cs#L19)
 
 <a id="Vercel_AI_Gateway_GatewayConfig_Http_"></a>
 <a id="Vercel_AI_Gateway_GatewayConfig_Http"></a>

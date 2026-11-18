@@ -32,10 +32,13 @@ internal sealed class GatewayTestServer : HttpMessageHandler
         return new GatewayConfig
         {
             BaseUrl = "https://api.example.com",
-            Headers = headers
-                ?? (
-                    () =>
-                        new Dictionary<string, string?> { ["Authorization"] = "Bearer test-token" }
+            Headers = _ =>
+                Task.FromResult(
+                    headers?.Invoke()
+                        ?? new Dictionary<string, string?>
+                        {
+                            ["Authorization"] = "Bearer test-token",
+                        }
                 ),
             Http = new ProviderHttp(
                 new HttpClient(server, disposeHandler: false),

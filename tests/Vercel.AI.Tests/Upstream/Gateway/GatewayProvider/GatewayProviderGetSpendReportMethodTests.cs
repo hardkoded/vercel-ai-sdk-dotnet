@@ -40,7 +40,7 @@ public sealed class GatewayProviderGetSpendReportMethodTests
         );
         var config = provider.CreateConfig();
         Assert.Equal("https://ai-gateway.vercel.sh/v4/ai", config.BaseUrl);
-        Assert.NotNull(config.HeadersAsync);
+        Assert.NotNull(config.Headers);
         Assert.Same(provider.Http, config.Http);
     }
 
