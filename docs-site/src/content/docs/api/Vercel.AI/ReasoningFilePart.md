@@ -23,7 +23,7 @@ A file the model generated as part of its reasoning. A URL has been downloaded b
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [TextStreamPart](/api/Vercel.AI/TextStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1716)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2124)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a reasoning-file part.
 | `file` | [GeneratedFile](/api/Vercel.AI.Provider/GeneratedFile/) |  |
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1719)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2127)
 
 ## Properties
 
@@ -66,7 +66,7 @@ The file, with its bytes.
 
 **Value:** [GeneratedFile](/api/Vercel.AI.Provider/GeneratedFile/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1727)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2135)
 
 <a id="Vercel_AI_ReasoningFilePart_ProviderMetadata_"></a>
 <a id="Vercel_AI_ReasoningFilePart_ProviderMetadata"></a>
@@ -83,4 +83,4 @@ Provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1730)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2138)

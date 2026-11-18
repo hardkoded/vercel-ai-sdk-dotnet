@@ -23,7 +23,7 @@ An assistant message.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ModelMessage](/api/Vercel.AI.Provider/ModelMessage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1170)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1365)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates an assistant message from ordered parts. The text, reasoning, and tool c
 | --- | --- | --- |
 | `parts` | [IReadOnlyList&lt;AssistantContentPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1213)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1408)
 
 <a id="Vercel_AI_Provider_AssistantModelMessage__ctor_System_String_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_GeneratedToolCall__System_String_"></a>
 
@@ -68,7 +68,7 @@ Creates an assistant message.
 | `toolCalls` | [IReadOnlyList&lt;GeneratedToolCall&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `reasoning` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1173)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1368)
 
 <a id="Vercel_AI_Provider_AssistantModelMessage__ctor_System_String_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_GeneratedToolCall__System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_Text_Json_JsonElement__"></a>
 
@@ -92,7 +92,7 @@ Creates an assistant message whose reasoning carries provider options, such as a
 | `reasoning` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `reasoningProviderOptions` | [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1184)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1379)
 
 <a id="Vercel_AI_Provider_AssistantModelMessage__ctor_System_String_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_GeneratedToolCall__System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_Text_Json_JsonElement__System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_AssistantContentPart__"></a>
 
@@ -117,7 +117,7 @@ the parts are the reasoning, the text, and the tool calls, in that order.
 | `reasoningProviderOptions` | [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 | `parts` | [IReadOnlyList&lt;AssistantContentPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1196)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1391)
 
 ## Properties
 
@@ -136,7 +136,7 @@ The content parts in the order the model produced them, each with its own provid
 
 **Value:** [IReadOnlyList&lt;AssistantContentPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1329)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1524)
 
 <a id="Vercel_AI_Provider_AssistantModelMessage_ProviderOptions_"></a>
 <a id="Vercel_AI_Provider_AssistantModelMessage_ProviderOptions"></a>
@@ -153,7 +153,7 @@ Provider-specific options for this message, such as an Amazon Bedrock `cachePoin
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1314)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1509)
 
 <a id="Vercel_AI_Provider_AssistantModelMessage_Reasoning_"></a>
 <a id="Vercel_AI_Provider_AssistantModelMessage_Reasoning"></a>
@@ -170,7 +170,7 @@ Reasoning text, when the provider returned it.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1323)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1518)
 
 <a id="Vercel_AI_Provider_AssistantModelMessage_ReasoningProviderOptions_"></a>
 <a id="Vercel_AI_Provider_AssistantModelMessage_ReasoningProviderOptions"></a>
@@ -187,7 +187,7 @@ Provider options of the reasoning part, such as an OpenAI `itemId`.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1326)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1521)
 
 <a id="Vercel_AI_Provider_AssistantModelMessage_Text_"></a>
 <a id="Vercel_AI_Provider_AssistantModelMessage_Text"></a>
@@ -204,7 +204,7 @@ Assistant text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1317)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1512)
 
 <a id="Vercel_AI_Provider_AssistantModelMessage_ToolCalls_"></a>
 <a id="Vercel_AI_Provider_AssistantModelMessage_ToolCalls"></a>
@@ -221,7 +221,7 @@ Tool calls made in this turn.
 
 **Value:** [IReadOnlyList&lt;GeneratedToolCall&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1320)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1515)
 
 ## Methods
 
@@ -247,4 +247,4 @@ This is how a generate result is replayed as history. Sources and files have no 
 
 **Returns:** [AssistantModelMessage](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1226)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1421)

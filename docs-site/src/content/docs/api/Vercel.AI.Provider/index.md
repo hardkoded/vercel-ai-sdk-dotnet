@@ -46,6 +46,9 @@ Language model, embedding, image, and other model contracts.
 | [ErrorStreamPart](/api/Vercel.AI.Provider/ErrorStreamPart/) | A stream error from the provider. |
 | [EvaluationResult](/api/Vercel.AI.Provider/EvaluationResult/) | Deprecated name of RubricResult. |
 | [FileContentPart](/api/Vercel.AI.Provider/FileContentPart/) | A file or image in a user message. |
+| [FileDataContentPart](/api/Vercel.AI.Provider/FileDataContentPart/) | A deprecated file-data part inside a tool result. Use FileContentPart with inline data instead. Maps to { type: 'file-data', data, mediaType, filename?, providerOptions } in the tool result content. |
+| [FileIdContentPart](/api/Vercel.AI.Provider/FileIdContentPart/) | A deprecated file-id part inside a tool result. Use JsonElement%7d) instead. Maps to { type: 'file-id', fileId, providerOptions } in the tool result content, where fileId is a string or a map from provider name to file id. |
+| [FileReferenceContentPart](/api/Vercel.AI.Provider/FileReferenceContentPart/) | A deprecated file-reference part inside a tool result. Use JsonElement%7d) instead. Maps to { type: 'file-reference', providerReference, providerOptions } in the tool result content. |
 | [FileStreamPart](/api/Vercel.AI.Provider/FileStreamPart/) | A file in a model stream. The data is inline bytes or a URL the SDK downloads before it emits the file. Maps to the file stream part. |
 | [FileUrlContentPart](/api/Vercel.AI.Provider/FileUrlContentPart/) | A deprecated file-url part inside a tool result. Use FileContentPart with a URL instead. Maps to { type: 'file-url', url, mediaType?, providerOptions } in the tool result content. |
 | [FinishReasons](/api/Vercel.AI.Provider/FinishReasons/) | Maps provider finish-reason strings onto FinishReason. |
@@ -64,6 +67,9 @@ Language model, embedding, image, and other model contracts.
 | [GeneratedToolCall](/api/Vercel.AI.Provider/GeneratedToolCall/) | A function tool call. |
 | [GeneratedToolResult](/api/Vercel.AI.Provider/GeneratedToolResult/) | A tool result: one the provider produced itself, such as a web or file search, or one the generation loop produced by running a client tool. |
 | [ImageCallOptions](/api/Vercel.AI.Provider/ImageCallOptions/) | Image call settings. |
+| [ImageDataContentPart](/api/Vercel.AI.Provider/ImageDataContentPart/) | A deprecated image-data part inside a tool result. Use FileContentPart with inline data instead. Maps to { type: 'image-data', data, mediaType, providerOptions } in the tool result content. |
+| [ImageFileIdContentPart](/api/Vercel.AI.Provider/ImageFileIdContentPart/) | A deprecated image-file-id part inside a tool result. Use JsonElement%7d) with the image media type instead. Maps to { type: 'image-file-id', fileId, providerOptions } in the tool result content, where fileId is a string or a map from provider name to file id. |
+| [ImageFileReferenceContentPart](/api/Vercel.AI.Provider/ImageFileReferenceContentPart/) | A deprecated image-file-reference part inside a tool result. Use JsonElement%7d) with the image media type instead. Maps to { type: 'image-file-reference', providerReference, providerOptions } in the tool result content. |
 | [ImageGenerationResult](/api/Vercel.AI.Provider/ImageGenerationResult/) | Image generation result. |
 | [ImageResponseInfo](/api/Vercel.AI.Provider/ImageResponseInfo/) | Response metadata of an image call. Maps to response of doGenerate on an image model. |
 | [ImageUrlContentPart](/api/Vercel.AI.Provider/ImageUrlContentPart/) | A deprecated image-url part inside a tool result. Use FileContentPart with the image media type and a URL instead. Maps to { type: 'image-url', url, providerOptions } in the tool result content. |

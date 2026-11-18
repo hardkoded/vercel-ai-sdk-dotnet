@@ -25,7 +25,7 @@ A prompt message.
 
 **Derived:** [AssistantModelMessage](/api/Vercel.AI.Provider/AssistantModelMessage/), [SystemModelMessage](/api/Vercel.AI.Provider/SystemModelMessage/), [ToolApprovalResponseModelMessage](/api/Vercel.AI.Provider/ToolApprovalResponseModelMessage/), [ToolModelMessage](/api/Vercel.AI.Provider/ToolModelMessage/), [UserModelMessage](/api/Vercel.AI.Provider/UserModelMessage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L722)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L763)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a message with a role.
 | --- | --- | --- |
 | `role` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L725)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L766)
 
 ## Properties
 
@@ -67,4 +67,4 @@ Message role.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L731)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L772)
