@@ -98,6 +98,13 @@ public sealed class Tool
     >? NeedsApprovalFunction { get; set; }
 
     /// <summary>
+    /// Validates and normalizes the context of this tool, from <see cref="GenerateTextOptions.ToolsContext"/>, before it reaches
+    /// an approval function. It returns the validated context, with any defaults applied, and throws when the context is invalid.
+    /// Null passes the context through unchanged. Maps to <c>contextSchema</c>.
+    /// </summary>
+    public Func<JsonElement, JsonElement>? ContextSchema { get; set; }
+
+    /// <summary>
     /// Provider options of the tool, keyed by provider name, such as <c>{ "openai": { "omitFromRequestTools": true } }</c>.
     /// Maps to the tool's <c>providerOptions</c>.
     /// </summary>
@@ -1271,6 +1278,15 @@ public class GenerateTextOptions
     /// (or a function) for each tool. It takes precedence over <see cref="Tool.NeedsApproval"/>. Maps to <c>toolApproval</c>.
     /// </summary>
     public ToolApprovalConfiguration? ToolApproval { get; set; }
+
+    /// <summary>
+    /// The context of each tool, keyed by tool name. It is validated with the <see cref="Tool.ContextSchema"/> of the tool and then
+    /// passed to the approval functions. Maps to <c>toolsContext</c>.
+    /// </summary>
+    public IReadOnlyDictionary<string, JsonElement>? ToolsContext { get; set; }
+
+    /// <summary>User-defined context that is passed to the approval functions. Maps to <c>runtimeContext</c>.</summary>
+    public IReadOnlyDictionary<string, object?>? RuntimeContext { get; set; }
 
     /// <summary>
     /// Secret for HMAC-signing tool approval requests. When it is set, each approval request is signed when it is issued, and

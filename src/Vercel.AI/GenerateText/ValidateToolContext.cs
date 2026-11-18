@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.GenerateText;
@@ -44,6 +45,37 @@ public sealed class ToolValidationContext
 /// <summary>Validates tool context. Maps to <c>validateToolContext</c>.</summary>
 public static class ToolContexts
 {
+    private static readonly JsonElement NullElement = JsonDocument
+        .Parse("null")
+        .RootElement.Clone();
+
+    /// <summary>
+    /// Validates a tool context with the context schema of a tool. Returns <paramref name="context"/> as it is when
+    /// <paramref name="contextSchema"/> is null. Otherwise returns the context that the schema produces, with its defaults applied.
+    /// A missing context is validated as a JSON <c>null</c>.
+    /// </summary>
+    /// <exception cref="TypeValidationException">The schema rejected the context.</exception>
+    public static JsonElement? ValidateToolContext(
+        string toolName,
+        JsonElement? context,
+        Func<JsonElement, JsonElement>? contextSchema
+    )
+    {
+        if (contextSchema is null)
+        {
+            return context;
+        }
+
+        try
+        {
+            return contextSchema(context ?? NullElement);
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            throw new TypeValidationException(context, "tool context", toolName);
+        }
+    }
+
     /// <summary>
     /// Returns <paramref name="context"/> when <paramref name="contextSchema"/> is null.
     /// Otherwise returns it when the schema accepts it, and throws <see cref="TypeValidationException"/> when it does not.

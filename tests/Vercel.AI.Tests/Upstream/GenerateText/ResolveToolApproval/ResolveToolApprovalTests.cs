@@ -14,9 +14,6 @@ public sealed class ResolveToolApprovalTests
     private const string Id =
         "packages/ai/src/generate-text/resolve-tool-approval.test.ts::resolveToolApproval::";
 
-    private const string ContextNote =
-        "The port has no tool context or runtime context, so toolContext and runtimeContext are not checked.";
-
     [Fact]
     [UpstreamTest(
         Id
@@ -77,19 +74,20 @@ public sealed class ResolveToolApprovalTests
     [Fact]
     [UpstreamTest(
         Id + "uses a user-defined approval callback before tool-defined approval",
-        Coverage = UpstreamCoverage.Partial,
-        Note = ContextNote
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Uses_a_user_defined_approval_callback_before_tool_defined_approval()
     {
         var toolDefinedCalls = 0;
         var userDefined = new List<(JsonElement Input, SingleToolApprovalOptions Options)>();
+        var runtimeContext = new Dictionary<string, object?>();
         var tool = WeatherTool(
             needsApprovalFunction: (_, _) =>
             {
                 toolDefinedCalls++;
                 return Task.FromResult(true);
-            }
+            },
+            contextSchema: ApiKeySchema
         );
 
         var result = await ResolveAsync(
@@ -104,7 +102,12 @@ public sealed class ResolveToolApprovalTests
                         return Task.FromResult<ToolApprovalStatus?>("approved");
                     }
                 },
-            }
+            },
+            toolsContext: new Dictionary<string, JsonElement>
+            {
+                ["weather"] = Json("{\"apiKey\":\"secret\"}"),
+            },
+            runtimeContext: runtimeContext
         );
 
         AssertStatus(result, "approved");
@@ -112,6 +115,8 @@ public sealed class ResolveToolApprovalTests
         Assert.Equal("{\"city\":\"Berlin\"}", call.Input.GetRawText());
         Assert.Equal("call-1", call.Options.ToolCallId);
         Assert.Same(Messages, call.Options.Messages);
+        Assert.Equal("{\"apiKey\":\"secret\"}", call.Options.ToolContext!.Value.GetRawText());
+        Assert.Same(runtimeContext, call.Options.RuntimeContext);
         Assert.Equal(0, toolDefinedCalls);
     }
 
@@ -143,11 +148,11 @@ public sealed class ResolveToolApprovalTests
     [UpstreamTest(
         Id
             + "passes tool input and options to a user-defined approval callback without a context schema",
-        Coverage = UpstreamCoverage.Partial,
-        Note = ContextNote
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Passes_tool_input_and_options_to_a_user_defined_approval_callback_without_a_context_schema()
     {
+        var runtimeContext = new Dictionary<string, object?>();
         var userDefined = new List<(JsonElement Input, SingleToolApprovalOptions Options)>();
 
         await ResolveAsync(
@@ -162,13 +167,17 @@ public sealed class ResolveToolApprovalTests
                         return Task.FromResult<ToolApprovalStatus?>("user-approval");
                     }
                 },
-            }
+            },
+            toolsContext: new Dictionary<string, JsonElement>(),
+            runtimeContext: runtimeContext
         );
 
         var call = Assert.Single(userDefined);
         Assert.Equal("{\"city\":\"Berlin\"}", call.Input.GetRawText());
         Assert.Equal("call-1", call.Options.ToolCallId);
         Assert.Same(Messages, call.Options.Messages);
+        Assert.Null(call.Options.ToolContext);
+        Assert.Same(runtimeContext, call.Options.RuntimeContext);
     }
 
     [Fact]
@@ -212,8 +221,7 @@ public sealed class ResolveToolApprovalTests
     [Fact]
     [UpstreamTest(
         Id + "passes tool input and validated context to a tool-defined approval callback",
-        Coverage = UpstreamCoverage.Partial,
-        Note = ContextNote
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Passes_tool_input_and_validated_context_to_a_tool_defined_approval_callback()
     {
@@ -223,15 +231,98 @@ public sealed class ResolveToolApprovalTests
             {
                 toolDefined.Add((input, options));
                 return Task.FromResult(true);
-            }
+            },
+            contextSchema: ApiKeySchema
         );
 
-        var result = await ResolveAsync(new[] { tool }, null);
+        var result = await ResolveAsync(
+            new[] { tool },
+            null,
+            toolsContext: new Dictionary<string, JsonElement>
+            {
+                ["weather"] = Json("{\"apiKey\":\"secret\"}"),
+            }
+        );
 
         AssertStatus(result, "user-approval");
         var call = Assert.Single(toolDefined);
         Assert.Equal("{\"city\":\"Berlin\"}", call.Input.GetRawText());
         Assert.Equal("call-1", call.Options.ToolCallId);
         Assert.Same(Messages, call.Options.Messages);
+        Assert.Equal("{\"apiKey\":\"secret\"}", call.Options.Context!.Value.GetRawText());
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Id + "throws TypeValidationError before invoking a user-defined approval callback",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Throws_TypeValidationError_before_invoking_a_user_defined_approval_callback()
+    {
+        var userDefinedCalls = 0;
+        var tool = WeatherTool(
+            needsApprovalFunction: (_, _) => Task.FromResult(true),
+            contextSchema: ApiKeySchema
+        );
+
+        var error = await Assert.ThrowsAsync<TypeValidationException>(() =>
+            ResolveAsync(
+                new[] { tool },
+                new ToolApprovalConfiguration
+                {
+                    {
+                        "weather",
+                        (_, _) =>
+                        {
+                            userDefinedCalls++;
+                            return Task.FromResult<ToolApprovalStatus?>("user-approval");
+                        }
+                    },
+                },
+                toolsContext: new Dictionary<string, JsonElement>
+                {
+                    ["weather"] = Json("{\"apiKey\":123}"),
+                }
+            )
+        );
+
+        Assert.Equal(0, userDefinedCalls);
+        Assert.Equal("{\"apiKey\":123}", ((JsonElement)error.Value!).GetRawText());
+        Assert.Equal("tool context", error.Context.Field);
+        Assert.Equal("weather", error.Context.EntityName);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Id + "throws TypeValidationError before invoking a tool-defined approval callback",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Throws_TypeValidationError_before_invoking_a_tool_defined_approval_callback()
+    {
+        var toolDefinedCalls = 0;
+        var tool = WeatherTool(
+            needsApprovalFunction: (_, _) =>
+            {
+                toolDefinedCalls++;
+                return Task.FromResult(true);
+            },
+            contextSchema: ApiKeySchema
+        );
+
+        var error = await Assert.ThrowsAsync<TypeValidationException>(() =>
+            ResolveAsync(
+                new[] { tool },
+                null,
+                toolsContext: new Dictionary<string, JsonElement>
+                {
+                    ["weather"] = Json("{\"apiKey\":123}"),
+                }
+            )
+        );
+
+        Assert.Equal(0, toolDefinedCalls);
+        Assert.Equal("{\"apiKey\":123}", ((JsonElement)error.Value!).GetRawText());
+        Assert.Equal("tool context", error.Context.Field);
+        Assert.Equal("weather", error.Context.EntityName);
     }
 }

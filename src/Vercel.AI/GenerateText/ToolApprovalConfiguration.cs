@@ -80,11 +80,24 @@ public sealed class ToolApprovalStatus
 public sealed class SingleToolApprovalOptions
 {
     /// <summary>Creates the options.</summary>
-    public SingleToolApprovalOptions(string toolCallId, IReadOnlyList<ModelMessage> messages)
+    public SingleToolApprovalOptions(
+        string toolCallId,
+        IReadOnlyList<ModelMessage> messages,
+        JsonElement? toolContext = null,
+        IReadOnlyDictionary<string, object?>? runtimeContext = null
+    )
     {
         ToolCallId = toolCallId ?? throw new ArgumentNullException(nameof(toolCallId));
         Messages = messages ?? throw new ArgumentNullException(nameof(messages));
+        ToolContext = toolContext;
+        RuntimeContext = runtimeContext;
     }
+
+    /// <summary>The context of the tool, validated with its <see cref="Tool.ContextSchema"/>. Null when none was given.</summary>
+    public JsonElement? ToolContext { get; }
+
+    /// <summary>The user-defined runtime context.</summary>
+    public IReadOnlyDictionary<string, object?>? RuntimeContext { get; }
 
     /// <summary>Id of the tool call.</summary>
     public string ToolCallId { get; }
@@ -112,13 +125,23 @@ public sealed class GenericToolApprovalOptions
     public GenericToolApprovalOptions(
         GeneratedToolCall toolCall,
         IReadOnlyList<Tool>? tools,
-        IReadOnlyList<ModelMessage> messages
+        IReadOnlyList<ModelMessage> messages,
+        IReadOnlyDictionary<string, JsonElement>? toolsContext = null,
+        IReadOnlyDictionary<string, object?>? runtimeContext = null
     )
     {
         ToolCall = toolCall ?? throw new ArgumentNullException(nameof(toolCall));
         Tools = tools;
         Messages = messages ?? throw new ArgumentNullException(nameof(messages));
+        ToolsContext = toolsContext;
+        RuntimeContext = runtimeContext;
     }
+
+    /// <summary>The context of each tool, keyed by tool name, as given. It is not validated.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ToolsContext { get; }
+
+    /// <summary>The user-defined runtime context.</summary>
+    public IReadOnlyDictionary<string, object?>? RuntimeContext { get; }
 
     /// <summary>The tool call that needs approval.</summary>
     public GeneratedToolCall ToolCall { get; }

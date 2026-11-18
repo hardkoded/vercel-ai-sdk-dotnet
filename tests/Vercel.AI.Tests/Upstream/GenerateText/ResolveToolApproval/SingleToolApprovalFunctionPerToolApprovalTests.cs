@@ -19,8 +19,7 @@ public sealed class SingleToolApprovalFunctionPerToolApprovalTests
     [UpstreamTest(
         Id
             + "passes the same messages reference and validated toolContext to the per-tool function",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The port has no tool context or runtime context, so toolContext and runtimeContext are not checked."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Passes_the_same_messages_reference_and_validated_toolContext_to_the_per_tool_function()
     {
@@ -29,10 +28,11 @@ public sealed class SingleToolApprovalFunctionPerToolApprovalTests
             new UserModelMessage("step 1"),
             new UserModelMessage("step 2"),
         };
+        var runtimeContext = new Dictionary<string, object?>();
         var calls = new List<(JsonElement Input, SingleToolApprovalOptions Options)>();
 
         await ResolveAsync(
-            new[] { WeatherTool() },
+            new[] { WeatherTool(contextSchema: ApiKeySchema) },
             new ToolApprovalConfiguration
             {
                 {
@@ -44,13 +44,67 @@ public sealed class SingleToolApprovalFunctionPerToolApprovalTests
                     }
                 },
             },
-            messages: modelMessages
+            messages: modelMessages,
+            toolsContext: new Dictionary<string, JsonElement>
+            {
+                ["weather"] = Json("{\"apiKey\":\"secret\"}"),
+            },
+            runtimeContext: runtimeContext
         );
 
         var call = Assert.Single(calls);
+        Assert.Equal("{\"apiKey\":\"secret\"}", call.Options.ToolContext!.Value.GetRawText());
+        Assert.Same(runtimeContext, call.Options.RuntimeContext);
         Assert.Equal("{\"city\":\"Berlin\"}", call.Input.GetRawText());
         Assert.Equal("call-1", call.Options.ToolCallId);
         Assert.Same(modelMessages, call.Options.Messages);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Id + "passes toolsContext entry through as toolContext after schema validation",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Passes_toolsContext_entry_through_as_toolContext_after_schema_validation()
+    {
+        var calls = new List<SingleToolApprovalOptions>();
+
+        await ResolveAsync(
+            new[]
+            {
+                // Stands in for z.object({ apiKey: z.string(), region: z.string().default('us-east-1') }).
+                WeatherTool(contextSchema: value =>
+                {
+                    var apiKey = ApiKeySchema(value).GetProperty("apiKey").GetString();
+                    var region = value.TryGetProperty("region", out var r)
+                        ? r.GetString()
+                        : "us-east-1";
+                    return Json("{\"apiKey\":\"" + apiKey + "\",\"region\":\"" + region + "\"}");
+                }),
+            },
+            new ToolApprovalConfiguration
+            {
+                {
+                    "weather",
+                    (_, options) =>
+                    {
+                        calls.Add(options);
+                        return Task.FromResult<ToolApprovalStatus?>("not-applicable");
+                    }
+                },
+            },
+            // The runtime value before validation omits `region`; the schema applies its default.
+            toolsContext: new Dictionary<string, JsonElement>
+            {
+                ["weather"] = Json("{\"apiKey\":\"k\"}"),
+            }
+        );
+
+        var call = Assert.Single(calls);
+        Assert.Equal(
+            "{\"apiKey\":\"k\",\"region\":\"us-east-1\"}",
+            call.ToolContext!.Value.GetRawText()
+        );
     }
 
     [Fact]

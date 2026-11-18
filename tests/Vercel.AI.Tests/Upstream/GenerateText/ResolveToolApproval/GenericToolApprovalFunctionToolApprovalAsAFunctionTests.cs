@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
 using static Vercel.AI.Tests.Upstream.GenerateText.ResolveToolApproval.ResolveToolApprovalSupport;
@@ -13,9 +14,6 @@ public sealed class GenericToolApprovalFunctionToolApprovalAsAFunctionTests
 {
     private const string Id =
         "packages/ai/src/generate-text/resolve-tool-approval.test.ts::resolveToolApproval > GenericToolApprovalFunction (toolApproval as a function)::";
-
-    private const string ContextNote =
-        "The port has no tool context or runtime context, so toolsContext and runtimeContext are not checked.";
 
     [Fact]
     [UpstreamTest(
@@ -52,13 +50,17 @@ public sealed class GenericToolApprovalFunctionToolApprovalAsAFunctionTests
     [UpstreamTest(
         Id
             + "passes toolCall, tools, toolsContext, messages, and runtimeContext to the generic function",
-        Coverage = UpstreamCoverage.Partial,
-        Note = ContextNote
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Passes_toolCall_tools_toolsContext_messages_and_runtimeContext_to_the_generic_function()
     {
         var tools = new[] { WeatherTool() };
         var toolCall = CreateToolCall();
+        var toolsContext = new Dictionary<string, JsonElement>
+        {
+            ["weather"] = Json("{\"requestId\":\"req-1\"}"),
+        };
+        var runtimeContext = new Dictionary<string, object?> { ["tenantId"] = "t-1" };
         var calls = new List<GenericToolApprovalOptions>();
 
         await ResolveAsync(
@@ -68,13 +70,17 @@ public sealed class GenericToolApprovalFunctionToolApprovalAsAFunctionTests
                 calls.Add(options);
                 return Task.FromResult<ToolApprovalStatus?>("not-applicable");
             }),
-            toolCall
+            toolCall,
+            toolsContext: toolsContext,
+            runtimeContext: runtimeContext
         );
 
         var call = Assert.Single(calls);
         Assert.Same(toolCall, call.ToolCall);
         Assert.Same(tools, call.Tools);
         Assert.Same(Messages, call.Messages);
+        Assert.Same(toolsContext, call.ToolsContext);
+        Assert.Same(runtimeContext, call.RuntimeContext);
     }
 
     [Fact]
@@ -152,8 +158,7 @@ public sealed class GenericToolApprovalFunctionToolApprovalAsAFunctionTests
     [Fact]
     [UpstreamTest(
         Id + "passes the same messages and toolsContext references to the generic function",
-        Coverage = UpstreamCoverage.Partial,
-        Note = ContextNote
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Passes_the_same_messages_and_toolsContext_references_to_the_generic_function()
     {
@@ -162,6 +167,12 @@ public sealed class GenericToolApprovalFunctionToolApprovalAsAFunctionTests
             new UserModelMessage("first"),
             new AssistantModelMessage("second", null, null),
         };
+        var toolsContext = new Dictionary<string, JsonElement>
+        {
+            ["weather"] = Json("{\"scope\":\"read\"}"),
+            ["otherTool"] = Json("{\"flag\":true}"),
+        };
+        var runtimeContext = new Dictionary<string, object?> { ["traceId"] = "trace-1" };
         var calls = new List<GenericToolApprovalOptions>();
 
         await ResolveAsync(
@@ -171,9 +182,14 @@ public sealed class GenericToolApprovalFunctionToolApprovalAsAFunctionTests
                 calls.Add(options);
                 return Task.FromResult<ToolApprovalStatus?>("not-applicable");
             }),
-            messages: modelMessages
+            messages: modelMessages,
+            toolsContext: toolsContext,
+            runtimeContext: runtimeContext
         );
 
-        Assert.Same(modelMessages, Assert.Single(calls).Messages);
+        var call = Assert.Single(calls);
+        Assert.Same(modelMessages, call.Messages);
+        Assert.Same(toolsContext, call.ToolsContext);
+        Assert.Same(runtimeContext, call.RuntimeContext);
     }
 }

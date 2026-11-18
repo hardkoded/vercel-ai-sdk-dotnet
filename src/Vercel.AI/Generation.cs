@@ -2596,6 +2596,8 @@ internal static class Generation
                 {
                     Tools = options.Tools,
                     ToolApproval = options.ToolApproval,
+                    ToolsContext = options.ToolsContext,
+                    RuntimeContext = options.RuntimeContext,
                     Messages = history,
                     ToolApprovalSecret = options.ExperimentalToolApprovalSecret,
                     ToolApprovalSecretBytes = options.ExperimentalToolApprovalSecretBytes,
@@ -2855,7 +2857,14 @@ internal static class Generation
             }
 
             var status = await ToolApprovalResolution
-                .ResolveToolApprovalAsync(options.Tools, call, options.ToolApproval, messages)
+                .ResolveToolApprovalAsync(
+                    options.Tools,
+                    call,
+                    options.ToolApproval,
+                    messages,
+                    options.ToolsContext,
+                    options.RuntimeContext
+                )
                 .ConfigureAwait(false);
             if (status.Type == ToolApprovalStatus.NotApplicableType)
             {
