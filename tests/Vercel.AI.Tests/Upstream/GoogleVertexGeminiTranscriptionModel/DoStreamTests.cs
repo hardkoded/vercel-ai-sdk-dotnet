@@ -128,7 +128,7 @@ public sealed class DoStreamTests
         Assert.Empty(finish.Segments!);
         Assert.Null(finish.Language);
         Assert.Null(finish.DurationInSeconds);
-        Assert.Equal(7, finish.Usage!.InputTokens);
+        JsonAssert.Equal(finish.UsageValue!.Value, "{\"promptTokenCount\":7}");
         JsonAssert.Equal(
             finish.ProviderMetadata!.Value,
             "{\"google\":{\"usageMetadata\":{\"promptTokenCount\":7}}}"

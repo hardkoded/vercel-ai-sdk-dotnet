@@ -272,7 +272,11 @@ public static class TranscriptionStreamEnvelope
                 );
                 SetIf(frame, "language", part.Language);
                 SetIf(frame, "durationInSeconds", part.DurationInSeconds);
-                if (part.Usage is { } usage)
+                if (part.UsageValue is { ValueKind: JsonValueKind.Object } rawUsage)
+                {
+                    frame["usage"] = JsonNode.Parse(rawUsage.GetRawText());
+                }
+                else if (part.Usage is { } usage)
                 {
                     var usageNode = new JsonObject();
                     SetIf(usageNode, "inputTokens", usage.InputTokens);
@@ -526,6 +530,10 @@ public static class TranscriptionStreamEnvelope
                         Language = GetString(part, "language"),
                         DurationInSeconds = GetNumber(part, "durationInSeconds"),
                         Usage = usage,
+                        UsageValue =
+                            usage is not null && part.TryGetProperty("usage", out var rawUsageValue)
+                                ? rawUsageValue.Clone()
+                                : null,
                     },
                     part
                 );
