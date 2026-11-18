@@ -1358,6 +1358,12 @@ public sealed class LanguageModelCallEndEvent
 
     /// <summary>Time the model call took. Maps to <c>performance.responseTimeMs</c>.</summary>
     public TimeSpan ResponseTime { get; }
+
+    /// <summary>Id of the model call, when the call has one. Maps to <c>callId</c>.</summary>
+    public string? CallId { get; init; }
+
+    /// <summary>Performance of the model call. Set for streamed calls. Maps to <c>performance</c>.</summary>
+    internal Vercel.AI.GenerateText.ModelCallPerformance? Performance { get; init; }
 }
 
 /// <summary>Passed to <see cref="GenerateTextOptions.OnToolExecutionStart"/> before a tool runs.</summary>

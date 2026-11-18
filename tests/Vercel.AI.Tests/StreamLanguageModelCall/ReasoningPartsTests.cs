@@ -2,9 +2,12 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using Vercel.AI.Gateway;
+using System.Text;
+using System.Text.Json;
+using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
-using Vercel.AI.Testing;
+using Vercel.AI.Util;
+using static Vercel.AI.Tests.StreamLanguageModelCall.StreamLanguageModelCallFixture;
 
 namespace Vercel.AI.Tests.StreamLanguageModelCall;
 
@@ -15,44 +18,39 @@ public sealed class ReasoningPartsTests
         "packages/ai/src/generate-text/stream-language-model-call.test.ts::streamLanguageModelCall > reasoning parts::";
 
     [Fact]
+    [UpstreamTest(Prefix + "should convert text to delta", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_convert_text_to_delta()
+    {
+        var result = await StreamLanguageModelCallResult([
+            new ReasoningStartStreamPart("1"),
+            new ReasoningDeltaStreamPart("1", "text"),
+            new ReasoningEndStreamPart("1"),
+        ]);
+
+        Assert.Equal(3, result.Count);
+        Assert.Equal("1", Assert.IsType<ReasoningStartPart>(result[0]).Id);
+        var delta = Assert.IsType<ReasoningDeltaPart>(result[1]);
+        Assert.Equal("1", delta.Id);
+        Assert.Equal("text", delta.Text);
+        Assert.Null(delta.ProviderMetadata);
+        Assert.Equal("1", Assert.IsType<ReasoningEndPart>(result[2]).Id);
+    }
+
+    [Fact]
     [UpstreamTest(
         Prefix + "should measure time to first output from reasoning-file parts",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Runs through StreamText and reads the step performance. The port has no StreamLanguageModelCall function, so there is no model-call-end part."
+        Coverage = UpstreamCoverage.Covered
     )]
-    public async Task Should_measure_time_to_first_output_from_reasoning_file_parts_through_StreamText()
+    public async Task Should_measure_time_to_first_output_from_reasoning_file_parts()
     {
-        var times = new Queue<double>([1000, 1250, 1600]);
-        var model = new TestLanguageModel
-        {
-            StreamParts = new LanguageModelStreamPart[]
-            {
-                new ReasoningFileStreamPart(
-                    System.Text.Encoding.UTF8.GetBytes("reasoning"),
-                    "text/plain"
-                ),
-                new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(3, 10, 13), "stop"),
-            },
-        };
-
-        var result = new AiClient(
-            GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })
-        ).StreamTextAsync(
-            new StreamTextOptions
-            {
-                Model = model,
-                Prompt = "test-input",
-                NowMs = () => times.Count > 0 ? times.Dequeue() : 1600,
-            }
+        var result = await StreamLanguageModelCallResult(
+            [
+                new ReasoningFileStreamPart(Encoding.UTF8.GetBytes("reasoning"), "text/plain"),
+                Finish(),
+            ],
+            now: Now(1000, 1250, 1600)
         );
-        var step = Assert.Single(await result.Steps);
 
-        var performance = step.Performance;
-        Assert.Equal(600, performance.ResponseTimeMs);
-        Assert.Equal(250, performance.TimeToFirstOutputMs);
-        Assert.Equal(16.666666666666668, performance.EffectiveOutputTokensPerSecond);
-        Assert.Equal(28.571428571428573, performance.OutputTokensPerSecond);
-        Assert.Equal(12, performance.InputTokensPerSecond);
-        Assert.Equal(21.666666666666668, performance.EffectiveTotalTokensPerSecond);
+        AssertTimeToFirstOutput(ModelCallEnd(result[^1]));
     }
 }

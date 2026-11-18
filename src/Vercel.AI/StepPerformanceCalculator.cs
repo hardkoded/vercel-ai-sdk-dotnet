@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI;
@@ -42,6 +43,27 @@ internal static class StepPerformanceCalculator
             InputTokensPerSecond = inputTokensPerSecond,
             TimeToFirstOutputMs = timeToFirstOutputMs,
             TimeBetweenOutputChunksMs = Gaps(outputChunkTimesMs),
+        };
+    }
+
+    // The performance of a streamed step comes from its model call, as upstream copies it from the model-call-end part.
+    public static StepPerformance Create(
+        double stepTimeMs,
+        ModelCallPerformance modelCall,
+        IReadOnlyDictionary<string, double> toolExecutionMs
+    )
+    {
+        return new StepPerformance
+        {
+            StepTimeMs = stepTimeMs,
+            ResponseTimeMs = modelCall.ResponseTimeMs,
+            ToolExecutionMs = toolExecutionMs,
+            EffectiveOutputTokensPerSecond = modelCall.EffectiveOutputTokensPerSecond,
+            EffectiveTotalTokensPerSecond = modelCall.EffectiveTotalTokensPerSecond,
+            OutputTokensPerSecond = modelCall.OutputTokensPerSecond,
+            InputTokensPerSecond = modelCall.InputTokensPerSecond,
+            TimeToFirstOutputMs = modelCall.TimeToFirstOutputMs,
+            TimeBetweenOutputChunksMs = modelCall.TimeBetweenOutputChunksMs,
         };
     }
 

@@ -52,21 +52,23 @@ internal static class Generation
         return messages;
     }
 
-    private static Instructions? ResolveInstructions(GenerateTextOptions options)
+    internal static Instructions? ResolveInstructions(GenerateTextOptions options)
     {
         return options.Instructions
             ?? (options.System != null ? Instructions.From(options.System) : null);
     }
 
     /// <summary>The leading system messages for the call's instructions. An empty string adds none.</summary>
-    private static IReadOnlyList<SystemModelMessage> InstructionMessages(
+    internal static IReadOnlyList<SystemModelMessage> InstructionMessages(
         GenerateTextOptions options
     )
     {
         return InstructionMessages(ResolveInstructions(options));
     }
 
-    private static IReadOnlyList<SystemModelMessage> InstructionMessages(Instructions? instructions)
+    internal static IReadOnlyList<SystemModelMessage> InstructionMessages(
+        Instructions? instructions
+    )
     {
         if (instructions?.Messages is { } systemMessages)
         {
@@ -689,26 +691,12 @@ internal static class Generation
 
                 // The model gets a snapshot, because the step appends its own response to `messages` afterwards.
                 var stepMessages = messages.ToArray();
-                var callOptions = CallOptions(options, stepMessages);
-                callOptions.AbortSignal = timeouts?.Signal ?? options.AbortSignal;
-                if (update?.ToolChoice != null)
-                {
-                    callOptions.ToolChoice = update.ToolChoice;
-                }
-
-                callOptions.ProviderOptions = MergeProviderOptions(
-                    callOptions.ProviderOptions,
-                    update?.ProviderOptions
-                );
-
                 var now = options.NowMs ?? DefaultNowMs;
                 var stepStartMs = now();
-                double ElapsedMs() => now() - stepStartMs;
                 var stepStarted = false;
                 var stepResponseId = Vercel.AI.ProviderUtils.JsonValues.GenerateId("aitxt-");
                 var stepResponseTimestamp = DateTimeOffset.UtcNow;
                 var stepResponseModelId = current.ModelId;
-                var outputChunkTimes = new List<double>();
                 var emittedResultIds = new HashSet<string>(StringComparer.Ordinal);
                 var text = new StringBuilder();
                 var textBlocks = new List<TextBlock>();
@@ -724,24 +712,26 @@ internal static class Generation
                 IReadOnlyList<CallWarning>? warnings = null;
                 var receivedOutput = false;
                 var usage = LanguageModelUsage.Null;
-                callOptions.IncludeRawChunks = options.Include?.RawChunks == true;
-                // Tool choice none rejects tool calls when the model call finishes. Withhold tool parts so that consumers
-                // cannot act on them before the rejection, and skip the callbacks that would repair or refine them.
-                var withholdToolParts = callOptions.ToolChoice?.Type == "none";
-                callOptions.Prompt = await LanguageModelPrompts
-                    .ConvertToLanguageModelPromptAsync(
-                        callOptions.Prompt,
-                        current.SupportedUrls,
-                        options.ExperimentalDownload,
-                        cancellationToken,
-                        current.Provider.Split('.')[0]
-                    )
-                    .ConfigureAwait(false);
-                LanguageModelStreamResult streamResult;
+                ModelCallPerformance? modelCallPerformance = null;
+                ToolChoiceViolationException? toolChoiceViolation = null;
+
+                var streamOptions = StreamLanguageModelCallOptions.From(options);
+                streamOptions.Model = current;
+                streamOptions.PromptMessages = stepMessages;
+                streamOptions.PromptInstructions = instructions;
+                streamOptions.NowMs = now;
+                streamOptions.ToolChoice = update?.ToolChoice ?? options.ToolChoice;
+                streamOptions.ProviderOptions = MergeProviderOptions(
+                    options.ProviderOptions,
+                    update?.ProviderOptions
+                );
+                streamOptions.CallAbortSignal = timeouts?.Signal ?? options.AbortSignal;
+                streamOptions.IncludeRawChunks = options.Include?.RawChunks == true;
+                StreamLanguageModelCallResult streamResult;
                 try
                 {
-                    streamResult = await current
-                        .DoStreamAsync(callOptions, cancellationToken)
+                    streamResult = await LanguageModelCallStreaming
+                        .StreamLanguageModelCall(streamOptions, cancellationToken)
                         .ConfigureAwait(false);
                 }
                 catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
@@ -779,18 +769,9 @@ internal static class Generation
                     Body = options.Include?.RequestBody == true ? streamResult.Request?.Body : null,
                     Messages = options.Include?.RequestMessages == true ? stepMessages : null,
                 };
-                IAsyncEnumerator<LanguageModelStreamPart> enumerator;
-                try
-                {
-                    enumerator = streamResult.Stream.GetAsyncEnumerator(cancellationToken);
-                }
-                catch
-                {
-                    await streamResult.DisposeAsync().ConfigureAwait(false);
-                    throw;
-                }
-
-                var disposal = abort.Track(new StreamResultDisposal(enumerator, streamResult));
+                var enumerator = streamResult.Stream.GetAsyncEnumerator(cancellationToken);
+                var disposal = abort.Track(streamResult.Disposal);
+                var nextPending = false;
                 try
                 {
                     timeouts?.StartFirstChunk();
@@ -800,6 +781,7 @@ internal static class Generation
 
                         // A model stream can ignore the token, so race each read against the abort.
                         var next = enumerator.MoveNextAsync().AsTask();
+                        nextPending = true;
                         if (await Task.WhenAny(next, abort.Signal).ConfigureAwait(false) != next)
                         {
                             _ = next.ContinueWith(
@@ -809,7 +791,9 @@ internal static class Generation
                             cancellationToken.ThrowIfCancellationRequested();
                         }
 
-                        if (!await next.ConfigureAwait(false))
+                        var hasNext = await next.ConfigureAwait(false);
+                        nextPending = false;
+                        if (!hasNext)
                         {
                             break;
                         }
@@ -820,12 +804,12 @@ internal static class Generation
                             ObserveChunkTimeout(timeouts, part);
                         }
 
-                        if (IsOutputChunk(part))
+                        if (IsOutputPart(part))
                         {
                             receivedOutput = true;
                         }
 
-                        if (!stepStarted && part is not StreamStartStreamPart)
+                        if (!stepStarted && part is not ModelCallStartPart)
                         {
                             stepStarted = true;
                             buffer.Add(new StartStepPart(null, stepRequest));
@@ -833,7 +817,7 @@ internal static class Generation
 
                         switch (part)
                         {
-                            case TextStartStreamPart textStart:
+                            case TextStartPart textStart:
                                 var startedText = TextBlock.Start(
                                     textBlocks,
                                     textStart.Id,
@@ -848,7 +832,7 @@ internal static class Generation
                                     )
                                 );
                                 break;
-                            case TextDeltaStreamPart delta:
+                            case TextDeltaPart delta:
                                 var activeText = TextBlock.Find(
                                     textBlocks,
                                     delta.Id,
@@ -856,22 +840,21 @@ internal static class Generation
                                     buffer,
                                     contentOrder
                                 );
-                                text.Append(delta.Delta);
-                                activeText.Text.Append(delta.Delta);
-                                if (delta.Delta.Length > 0 || delta.ProviderMetadata != null)
+                                text.Append(delta.Text);
+                                activeText.Text.Append(delta.Text);
+                                if (delta.Text.Length > 0 || delta.ProviderMetadata != null)
                                 {
-                                    outputChunkTimes.Add(ElapsedMs());
                                     buffer.Add(
                                         new TextDeltaPart(
                                             activeText.PartId,
-                                            delta.Delta,
+                                            delta.Text,
                                             delta.ProviderMetadata
                                         )
                                     );
                                 }
 
                                 break;
-                            case TextEndStreamPart textEnd:
+                            case TextEndPart textEnd:
                                 var ended = TextBlock.Find(
                                     textBlocks,
                                     textEnd.Id,
@@ -891,23 +874,11 @@ internal static class Generation
                                     )
                                 );
                                 break;
-                            case DocumentSourceStreamPart documentSource:
-                                documentSources.Add(
-                                    new GeneratedDocumentSource(
-                                        documentSource.Id,
-                                        documentSource.MediaType,
-                                        documentSource.Title,
-                                        documentSource.Filename,
-                                        documentSource.ProviderMetadata
-                                    )
-                                );
-                                buffer.Add(
-                                    new DocumentSourcePart(
-                                        documentSources[documentSources.Count - 1]
-                                    )
-                                );
+                            case DocumentSourcePart documentSource:
+                                documentSources.Add(documentSource.Source);
+                                buffer.Add(documentSource);
                                 break;
-                            case ReasoningStartStreamPart reasoningStart:
+                            case ReasoningStartPart reasoningStart:
                                 var startedReasoning = ReasoningBlock.Start(
                                     reasoningBlocks,
                                     reasoningStart.Id,
@@ -922,7 +893,7 @@ internal static class Generation
                                     )
                                 );
                                 break;
-                            case ReasoningEndStreamPart reasoningEnd:
+                            case ReasoningEndPart reasoningEnd:
                                 var endedReasoning = ReasoningBlock.Find(
                                     reasoningBlocks,
                                     reasoningEnd.Id,
@@ -940,7 +911,7 @@ internal static class Generation
                                     )
                                 );
                                 break;
-                            case ReasoningDeltaStreamPart reasoningDelta:
+                            case ReasoningDeltaPart reasoningDelta:
                                 var activeReasoning = ReasoningBlock.Find(
                                     reasoningBlocks,
                                     reasoningDelta.Id,
@@ -948,231 +919,105 @@ internal static class Generation
                                     buffer,
                                     contentOrder
                                 );
-                                activeReasoning.Text.Append(reasoningDelta.Delta);
+                                activeReasoning.Text.Append(reasoningDelta.Text);
                                 activeReasoning.ProviderMetadata = reasoningDelta.ProviderMetadata
                                     ?? activeReasoning.ProviderMetadata;
-                                outputChunkTimes.Add(ElapsedMs());
                                 buffer.Add(
                                     new ReasoningDeltaPart(
                                         activeReasoning.PartId,
-                                        reasoningDelta.Delta,
+                                        reasoningDelta.Text,
                                         reasoningDelta.ProviderMetadata
                                     )
                                 );
                                 break;
-                            case ToolCallStreamPart toolCall:
-                                var call = ParseProviderExecutedInput(
-                                    options,
-                                    await ParseToolCallAsync(
-                                            new GeneratedToolCall(
-                                                toolCall.ToolCallId,
-                                                toolCall.ToolName,
-                                                toolCall.ArgumentsJson,
-                                                toolCall.ProviderMetadata
-                                            )
-                                            {
-                                                ProviderExecuted = toolCall.ProviderExecuted,
-                                                Dynamic = toolCall.Dynamic,
-                                            },
-                                            options,
-                                            stepMessages,
-                                            instructions,
-                                            instructionCount,
-                                            withholdToolParts,
-                                            cancellationToken
-                                        )
-                                        .ConfigureAwait(false)
-                                );
-                                toolCalls.Add(call);
-                                toolContent.Add(call);
-                                if (withholdToolParts)
-                                {
-                                    break;
-                                }
-
-                                outputChunkTimes.Add(ElapsedMs());
-                                buffer.Add(new ToolCallPart(call));
-                                if (call.Invalid && !call.ProviderExecuted)
-                                {
-                                    emittedResultIds.Add(call.ToolCallId);
-                                    buffer.Add(new ToolErrorPart(InvalidToolResult(call)));
-                                }
-
+                            case ToolCallPart toolCallPart:
+                                toolCalls.Add(toolCallPart.ToolCall);
+                                toolContent.Add(toolCallPart.ToolCall);
+                                buffer.Add(toolCallPart);
                                 break;
-                            case ToolApprovalRequestStreamPart when withholdToolParts:
-                                break;
-                            case ToolApprovalRequestStreamPart approvalRequest:
-                                var resolvedRequest = ResolveApprovalRequest(
+                            case ToolApprovalRequestPart approvalRequest:
+                                toolContent.Add(
                                     new GeneratedToolApprovalRequest(
                                         approvalRequest.ApprovalId,
-                                        approvalRequest.ToolCallId
-                                    ),
-                                    toolContent
-                                );
-                                toolContent.Add(resolvedRequest);
-                                buffer.Add(new ToolApprovalRequestPart(resolvedRequest));
-                                break;
-                            case ToolResultStreamPart streamedResult:
-                                var providerResult = new GeneratedToolResult(
-                                    streamedResult.ToolCallId,
-                                    streamedResult.ToolName,
-                                    streamedResult.Result.GetRawText(),
-                                    streamedResult.IsError
-                                )
-                                {
-                                    ProviderMetadata = streamedResult.ProviderMetadata,
-                                };
-                                toolContent.Add(providerResult);
-                                var providerExecuted = ProviderExecutedResult(
-                                    providerResult,
-                                    toolCalls
-                                );
-                                emittedResultIds.Add(providerResult.ToolCallId);
-                                if (withholdToolParts)
-                                {
-                                    break;
-                                }
-
-                                buffer.Add(
-                                    providerResult.IsError
-                                        ? new ToolErrorPart(providerExecuted)
-                                        : new ToolResultPart(providerExecuted)
-                                );
-                                break;
-                            case ToolInputStartStreamPart
-                            or ToolInputDeltaStreamPart
-                            or ToolInputEndStreamPart when withholdToolParts:
-                                break;
-                            case ToolInputStartStreamPart inputStart:
-                                outputChunkTimes.Add(ElapsedMs());
-                                var inputStartTool = FindTool(options, inputStart.ToolName);
-                                buffer.Add(
-                                    new ToolInputStartPart(
-                                        inputStart.Id,
-                                        inputStart.ToolName,
-                                        inputStart.ProviderMetadata,
-                                        inputStart.ProviderExecuted,
-                                        inputStartTool?.IsDynamic ?? inputStart.Dynamic ?? false,
-                                        inputStart.InputEncoding,
-                                        inputStartTool?.Title
+                                        approvalRequest.ToolCall.ToolCallId
                                     )
                                     {
-                                        ToolMetadata = inputStartTool?.Metadata,
+                                        ToolCall = approvalRequest.ToolCall,
                                     }
                                 );
+                                buffer.Add(approvalRequest);
                                 break;
-                            case ToolInputDeltaStreamPart inputDelta:
-                                outputChunkTimes.Add(ElapsedMs());
-                                buffer.Add(
-                                    new ToolInputDeltaPart(
-                                        inputDelta.Id,
-                                        inputDelta.Delta,
-                                        inputDelta.ProviderMetadata
-                                    )
-                                );
+                            case ToolResultPart { Result.ProviderExecuted: true } providerResult:
+                                RecordProviderResult(providerResult.Result);
+                                buffer.Add(providerResult);
                                 break;
-                            case ToolInputEndStreamPart inputEnd:
-                                buffer.Add(
-                                    new ToolInputEndPart(inputEnd.Id, inputEnd.ProviderMetadata)
-                                );
+                            case ToolErrorPart { Result.ProviderExecuted: true } providerError:
+                                RecordProviderResult(providerError.Result);
+                                buffer.Add(providerError);
                                 break;
-                            case SourceStreamPart source:
-                                var generatedSource = new GeneratedSource(
-                                    source.Id,
-                                    source.Url,
-                                    source.Title,
-                                    source.ProviderMetadata
-                                );
-                                sources.Add(generatedSource);
-                                buffer.Add(new SourcePart(generatedSource));
+                            case ToolErrorPart invalidCallError:
+                                emittedResultIds.Add(invalidCallError.Result.ToolCallId);
+                                buffer.Add(invalidCallError);
                                 break;
-                            case FileStreamPart filePart:
-                                var generatedFile = filePart.Url is null
-                                    ? new GeneratedFile(filePart.Data!, filePart.MediaType)
-                                    : await ResolveGeneratedFileDataAsync(
-                                            new GeneratedFileUrl(filePart.Url, filePart.MediaType),
-                                            options.ExperimentalDownload,
-                                            cancellationToken
-                                        )
-                                        .ConfigureAwait(false);
-                                outputChunkTimes.Add(ElapsedMs());
-                                toolContent.Add(generatedFile);
-                                buffer.Add(new FilePart(generatedFile, filePart.ProviderMetadata));
+                            case ToolInputStartPart
+                            or ToolInputDeltaPart
+                            or ToolInputEndPart
+                            or SourcePart
+                            or RawPart
+                            or PingPart
+                            or CustomPart:
+                                if (part is SourcePart sourcePart)
+                                {
+                                    sources.Add(sourcePart.Source);
+                                }
+
+                                buffer.Add(part);
                                 break;
-                            case ReasoningFileStreamPart reasoningFilePart:
-                                var generatedReasoningFile = reasoningFilePart.Url is null
-                                    ? new GeneratedFile(
-                                        reasoningFilePart.Data!,
-                                        reasoningFilePart.MediaType
-                                    )
-                                    : await ResolveGeneratedFileDataAsync(
-                                            new GeneratedFileUrl(
-                                                reasoningFilePart.Url,
-                                                reasoningFilePart.MediaType
-                                            ),
-                                            options.ExperimentalDownload,
-                                            cancellationToken
-                                        )
-                                        .ConfigureAwait(false);
-                                var recordedReasoningFile = new GeneratedReasoningFile(
-                                    generatedReasoningFile.Data,
-                                    generatedReasoningFile.MediaType,
-                                    reasoningFilePart.ProviderMetadata
-                                );
-                                outputChunkTimes.Add(ElapsedMs());
-                                contentOrder.Add(recordedReasoningFile);
-                                buffer.Add(
-                                    new ReasoningFilePart(
-                                        generatedReasoningFile,
+                            case FilePart filePart:
+                                toolContent.Add(filePart.File);
+                                buffer.Add(filePart);
+                                break;
+                            case ReasoningFilePart reasoningFilePart:
+                                contentOrder.Add(
+                                    new GeneratedReasoningFile(
+                                        reasoningFilePart.File.Data,
+                                        reasoningFilePart.File.MediaType,
                                         reasoningFilePart.ProviderMetadata
                                     )
                                 );
+                                buffer.Add(reasoningFilePart);
                                 break;
-                            case FinishStreamPart done:
-                                finish = done.FinishReason;
-                                rawFinish = done.RawFinishReason;
-                                usage = done.Usage;
-                                providerMetadata = done.ProviderMetadata;
+                            case ModelCallEndPart modelCallEnd:
+                                finish = modelCallEnd.FinishReason;
+                                rawFinish = modelCallEnd.RawFinishReason;
+                                usage = modelCallEnd.Usage;
+                                providerMetadata = modelCallEnd.ProviderMetadata;
+                                modelCallPerformance = modelCallEnd.Performance;
                                 break;
-                            case RawStreamPart raw:
-                                if (options.Include?.RawChunks == true)
-                                {
-                                    using var rawDocument = JsonDocument.Parse(
-                                        raw.RawJson.Length == 0 ? "null" : raw.RawJson
-                                    );
-                                    buffer.Add(new RawPart(rawDocument.RootElement.Clone()));
-                                }
-
+                            case ErrorPart { Error: ToolChoiceViolationException violation }:
+                                toolChoiceViolation = violation;
                                 break;
-                            case PingStreamPart:
-                                buffer.Add(new PingPart());
-                                break;
-                            case CustomStreamPart custom:
-                                buffer.Add(new CustomPart(custom.Kind, custom.ProviderMetadata));
-                                break;
-                            case ErrorStreamPart error:
-                                buffer.Add(
-                                    new ErrorPart(error.Message) { Error = error.Exception }
-                                );
+                            case ErrorPart error:
+                                buffer.Add(error);
                                 if (options.OnError != null)
                                 {
                                     await options
                                         .OnError(
-                                            error.Exception ?? new AiSdkException(error.Message),
+                                            error.Error ?? new AiSdkException(error.Message),
                                             cancellationToken
                                         )
                                         .ConfigureAwait(false);
                                 }
 
                                 break;
-                            case ResponseMetadataStreamPart responseMetadata:
+                            case ModelCallResponseMetadataPart responseMetadata:
                                 stepResponseId = responseMetadata.Id ?? stepResponseId;
                                 stepResponseTimestamp = responseMetadata.Timestamp
                                     ?? stepResponseTimestamp;
                                 stepResponseModelId = responseMetadata.ModelId
                                     ?? stepResponseModelId;
                                 break;
-                            case StreamStartStreamPart start:
+                            case ModelCallStartPart start:
                                 warnings = start.Warnings;
                                 if (!stepStarted)
                                 {
@@ -1182,15 +1027,42 @@ internal static class Generation
 
                                 break;
                         }
+
+                        void RecordProviderResult(ExecutedTool result)
+                        {
+                            toolContent.Add(
+                                new GeneratedToolResult(
+                                    result.ToolCallId,
+                                    result.ToolName,
+                                    result.OutputJson,
+                                    result.IsError
+                                )
+                                {
+                                    ProviderMetadata = result.ProviderMetadata,
+                                }
+                            );
+                            emittedResultIds.Add(result.ToolCallId);
+                        }
                     }
                 }
                 finally
                 {
                     timeouts?.ClearModelOutput();
-                    await abort.DisposeAsync(disposal).ConfigureAwait(false);
+                    try
+                    {
+                        await abort.DisposeAsync(disposal).ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        // A read an abort left pending cannot be disposed; the provider disposal above already ended it.
+                        if (!nextPending)
+                        {
+                            await enumerator.DisposeAsync().ConfigureAwait(false);
+                        }
+                    }
                 }
 
-                var responseTimeMs = ElapsedMs();
+                var responseTimeMs = modelCallPerformance?.ResponseTimeMs ?? now() - stepStartMs;
 
                 // Providers that skip text-end or reasoning-end still produce a closed block in the stream.
                 foreach (var openText in textBlocks)
@@ -1245,29 +1117,11 @@ internal static class Generation
                     warnings,
                     providerMetadata: providerMetadata
                 );
-                if (options.OnLanguageModelCallEnd != null)
+                if (toolChoiceViolation != null)
                 {
-                    await NotifyAsync(
-                            () =>
-                                options.OnLanguageModelCallEnd(
-                                    new LanguageModelCallEndEvent(
-                                        current.Provider,
-                                        stepResponseModelId,
-                                        generated.FinishReason,
-                                        generated.Usage,
-                                        generated.Content,
-                                        stepResponseId,
-                                        generated.ProviderMetadata,
-                                        TimeSpan.FromMilliseconds(responseTimeMs)
-                                    ),
-                                    cancellationToken
-                                ),
-                            cancellationToken
-                        )
-                        .ConfigureAwait(false);
+                    throw toolChoiceViolation;
                 }
 
-                EnforceToolChoice(callOptions.ToolChoice, generated, current);
                 var stepResponse = new LanguageModelResponseMetadata(
                     stepResponseId,
                     stepResponseTimestamp,
@@ -1283,7 +1137,10 @@ internal static class Generation
                         responseMessages,
                         current,
                         cancellationToken,
-                        new StepTiming(now, stepStartMs, responseTimeMs, outputChunkTimes),
+                        new StepTiming(now, stepStartMs, responseTimeMs, Array.Empty<double>())
+                        {
+                            ModelCallPerformance = modelCallPerformance,
+                        },
                         stepRequest,
                         stepResponse,
                         null,
@@ -1449,35 +1306,35 @@ internal static class Generation
         }
     }
 
-    // Chunks that carry model output. Tells an empty incomplete stream from an incomplete stream with a partial result.
-    private static bool IsOutputChunk(LanguageModelStreamPart part)
+    // Parts that carry model output. Tells an empty incomplete stream from an incomplete stream with a partial result.
+    private static bool IsOutputPart(TextStreamPart part)
     {
         return part switch
         {
-            TextDeltaStreamPart { Delta.Length: > 0 } => true,
-            ReasoningDeltaStreamPart { Delta.Length: > 0 } => true,
-            ToolInputDeltaStreamPart { Delta.Length: > 0 } => true,
-            ToolCallStreamPart => true,
-            FileStreamPart => true,
-            ReasoningFileStreamPart => true,
+            TextDeltaPart { Text.Length: > 0 } => true,
+            ReasoningDeltaPart { Text.Length: > 0 } => true,
+            ToolInputDeltaPart { Delta.Length: > 0 } => true,
+            ToolCallPart => true,
+            FilePart => true,
+            ReasoningFilePart => true,
             _ => false,
         };
     }
 
     // A chunk of model output starts the chunkMs timeout again. A chunk without output leaves it as it is.
     // The timeout ends with the model response, so a finish part ends it before the next step or a slow consumer can trip it.
-    private static void ObserveChunkTimeout(CallTimeouts timeouts, LanguageModelStreamPart part)
+    private static void ObserveChunkTimeout(CallTimeouts timeouts, TextStreamPart part)
     {
         switch (part)
         {
-            case TextDeltaStreamPart { Delta.Length: > 0 }:
-            case ReasoningDeltaStreamPart { Delta.Length: > 0 }:
-            case ToolInputDeltaStreamPart { Delta.Length: > 0 }:
-            case ToolCallStreamPart:
+            case TextDeltaPart { Text.Length: > 0 }:
+            case ReasoningDeltaPart { Text.Length: > 0 }:
+            case ToolInputDeltaPart { Delta.Length: > 0 }:
+            case ToolCallPart:
                 timeouts.OnOutputChunk();
                 break;
-            case FinishStreamPart:
-            case ErrorStreamPart:
+            case ModelCallEndPart:
+            case ErrorPart:
                 timeouts.ClearModelOutput();
                 break;
         }
@@ -1740,7 +1597,7 @@ internal static class Generation
     }
 
     // Deep merge, as upstream mergeObjects: nested objects merge, other values from the step replace the call's.
-    private static IReadOnlyDictionary<string, JsonElement>? MergeProviderOptions(
+    internal static IReadOnlyDictionary<string, JsonElement>? MergeProviderOptions(
         IReadOnlyDictionary<string, JsonElement>? options,
         IReadOnlyDictionary<string, JsonElement>? step
     )
@@ -1789,7 +1646,7 @@ internal static class Generation
         return JsonSerializer.SerializeToElement(merged);
     }
 
-    private static ExecutedTool ProviderExecutedResult(
+    internal static ExecutedTool ProviderExecutedResult(
         GeneratedToolResult result,
         IReadOnlyList<GeneratedToolCall> toolCalls
     )
@@ -1841,7 +1698,7 @@ internal static class Generation
 
     // Maps to resolveGeneratedFileData. A generated file has no model to pass the URL through to, so a null result from a custom
     // download function cannot be honored.
-    private static async Task<GeneratedFile> ResolveGeneratedFileDataAsync(
+    internal static async Task<GeneratedFile> ResolveGeneratedFileDataAsync(
         GeneratedFileUrl remote,
         Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>? download,
         CancellationToken cancellationToken
@@ -2123,13 +1980,20 @@ internal static class Generation
             responseMessages.Skip(stepResponseStart).ToArray(),
             responseBody
         );
-        var performance = StepPerformanceCalculator.Create(
-            timing.Now() - timing.StartMs,
-            timing.ResponseTimeMs,
-            timing.OutputChunkTimesMs,
-            toolExecutionMs,
-            generated.Usage
-        );
+        var performance =
+            timing.ModelCallPerformance != null
+                ? StepPerformanceCalculator.Create(
+                    timing.Now() - timing.StartMs,
+                    timing.ModelCallPerformance,
+                    toolExecutionMs
+                )
+                : StepPerformanceCalculator.Create(
+                    timing.Now() - timing.StartMs,
+                    timing.ResponseTimeMs,
+                    timing.OutputChunkTimesMs,
+                    toolExecutionMs,
+                    generated.Usage
+                );
         return new StepResult(
             generated.Text,
             reasoning,
@@ -2204,7 +2068,7 @@ internal static class Generation
         return generated.WithContent(content);
     }
 
-    private static async Task<GeneratedToolCall> ParseToolCallAsync(
+    internal static async Task<GeneratedToolCall> ParseToolCallAsync(
         GeneratedToolCall call,
         GenerateTextOptions options,
         IReadOnlyList<ModelMessage> messages,
@@ -2312,7 +2176,7 @@ internal static class Generation
     }
 
     // The tool result of a call that failed to parse. The model reads the error the way upstream sends it: "Name: message".
-    private static ExecutedTool InvalidToolResult(GeneratedToolCall call)
+    internal static ExecutedTool InvalidToolResult(GeneratedToolCall call)
     {
         var message = ErrorMessage.ToErrorString(call.Error!);
         return new ExecutedTool(
@@ -2331,7 +2195,7 @@ internal static class Generation
         };
     }
 
-    private static double DefaultNowMs()
+    internal static double DefaultNowMs()
     {
         return Stopwatch.GetTimestamp() * 1000.0 / Stopwatch.Frequency;
     }
@@ -2351,6 +2215,9 @@ internal static class Generation
         public double ResponseTimeMs { get; } = responseTimeMs;
 
         public IReadOnlyList<double> OutputChunkTimesMs { get; } = outputChunkTimesMs;
+
+        // The performance the model call measured. Set for streamed steps.
+        public ModelCallPerformance? ModelCallPerformance { get; init; }
     }
 
     // A provider-executed tool asks for approval by tool call id; the step carries the call itself, as upstream does.
@@ -2532,35 +2399,54 @@ internal static class Generation
         ILanguageModel model
     )
     {
+        var violation = ToolChoiceViolation(
+            toolChoice,
+            generated.FinishReason,
+            generated.Content,
+            model.Provider,
+            model.ModelId
+        );
+        if (violation != null)
+        {
+            throw violation;
+        }
+    }
+
+    // Returns the violation instead of throwing it, so streamLanguageModelCall can report it as an error part.
+    internal static ToolChoiceViolationException? ToolChoiceViolation(
+        ToolChoice? toolChoice,
+        FinishReason finishReason,
+        IReadOnlyList<GeneratedContent> content,
+        string provider,
+        string modelId
+    )
+    {
         if (toolChoice is null || toolChoice.Type == "auto")
         {
-            return;
+            return null;
         }
 
         if (toolChoice.Type == "none")
         {
-            if (generated.Content.Any(part => part is GeneratedToolCall))
-            {
-                throw new ToolChoiceViolationException(
+            return content.Any(part => part is GeneratedToolCall)
+                ? new ToolChoiceViolationException(
                     "Model response contained a tool call even though tool choice was none.",
                     toolChoice,
-                    generated.FinishReason,
-                    model.Provider,
-                    model.ModelId,
-                    generated.Content
-                );
-            }
-
-            return;
+                    finishReason,
+                    provider,
+                    modelId,
+                    content
+                )
+                : null;
         }
 
-        if (generated.FinishReason == FinishReason.Interrupted)
+        if (finishReason == FinishReason.Interrupted)
         {
-            return;
+            return null;
         }
 
         var calls = new List<GeneratedToolCall>();
-        foreach (var part in generated.Content)
+        foreach (var part in content)
         {
             if (part is GeneratedToolCall call)
             {
@@ -2570,19 +2456,16 @@ internal static class Generation
 
         if (toolChoice.Type == "required")
         {
-            if (calls.Count == 0)
-            {
-                throw new ToolChoiceViolationException(
+            return calls.Count == 0
+                ? new ToolChoiceViolationException(
                     "Model response did not contain a tool call even though tool choice was required.",
                     toolChoice,
-                    generated.FinishReason,
-                    model.Provider,
-                    model.ModelId,
-                    generated.Content
-                );
-            }
-
-            return;
+                    finishReason,
+                    provider,
+                    modelId,
+                    content
+                )
+                : null;
         }
 
         if (toolChoice is ToolChoice.NamedChoice named)
@@ -2591,26 +2474,28 @@ internal static class Generation
             {
                 if (string.Equals(call.ToolName, named.ToolName, StringComparison.Ordinal))
                 {
-                    return;
+                    return null;
                 }
             }
 
-            throw new ToolChoiceViolationException(
+            return new ToolChoiceViolationException(
                 "Model response did not contain a call to the required tool '"
                     + named.ToolName
                     + "'.",
                 toolChoice,
-                generated.FinishReason,
-                model.Provider,
-                model.ModelId,
-                generated.Content
+                finishReason,
+                provider,
+                modelId,
+                content
             );
         }
+
+        return null;
     }
 
     // Upstream parses the input of a tool call with the tool's input schema. Only a provider-defined tool declared with a
     // schema is parsed here, so the input of any other call is kept as the model sent it.
-    private static GeneratedToolCall ParseProviderExecutedInput(
+    internal static GeneratedToolCall ParseProviderExecutedInput(
         GenerateTextOptions options,
         GeneratedToolCall call
     )
@@ -3466,7 +3351,11 @@ internal sealed class StreamAbort
 
     public EnumeratorDisposal Track(IAsyncDisposable enumerator)
     {
-        var disposal = new EnumeratorDisposal(enumerator);
+        return Track(new EnumeratorDisposal(enumerator));
+    }
+
+    public EnumeratorDisposal Track(EnumeratorDisposal disposal)
+    {
         Volatile.Write(ref _disposal, disposal);
         return disposal;
     }
