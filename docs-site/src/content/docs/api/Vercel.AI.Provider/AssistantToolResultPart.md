@@ -23,7 +23,7 @@ A provider-executed tool result in an assistant message.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [AssistantContentPart](/api/Vercel.AI.Provider/AssistantContentPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1413)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1608)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a tool-result part. &lt;code class="paramref"&gt;output&lt;/code&gt; car
 | `output` | [ToolModelMessage](/api/Vercel.AI.Provider/ToolModelMessage/) |  |
 | `providerOptions` | [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1416)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1611)
 
 ## Properties
 
@@ -68,7 +68,7 @@ The output, as a tool message with the same call id and name. Use its [OutputTyp
 
 **Value:** [ToolModelMessage](/api/Vercel.AI.Provider/ToolModelMessage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1436)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1631)
 
 <a id="Vercel_AI_Provider_AssistantToolResultPart_ToolCallId_"></a>
 <a id="Vercel_AI_Provider_AssistantToolResultPart_ToolCallId"></a>
@@ -85,7 +85,7 @@ Matching tool call id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1430)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1625)
 
 <a id="Vercel_AI_Provider_AssistantToolResultPart_ToolName_"></a>
 <a id="Vercel_AI_Provider_AssistantToolResultPart_ToolName"></a>
@@ -102,4 +102,4 @@ Tool name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1433)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1628)

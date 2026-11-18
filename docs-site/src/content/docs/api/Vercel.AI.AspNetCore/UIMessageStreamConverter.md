@@ -49,7 +49,55 @@ Runs the agent and streams the output as a UI message stream. Maps to `createAge
 
 **Returns:** [Task&lt;IAsyncEnumerable&lt;JsonObject&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateAgentUIStream.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateAgentUIStream.cs#L68)
+
+<a id="Vercel_AI_AspNetCore_UIMessageStreamConverter_CreateAgentUIStreamResponse_"></a>
+<a id="Vercel_AI_AspNetCore_UIMessageStreamConverter_CreateAgentUIStreamResponse_Vercel_AI_AspNetCore_CreateAgentUIStreamResponseOptions_System_Threading_CancellationToken_"></a>
+
+### CreateAgentUIStreamResponse(CreateAgentUIStreamResponseOptions, CancellationToken)
+
+
+```csharp
+public static Task<UIMessageStreamResponse> CreateAgentUIStreamResponse(CreateAgentUIStreamResponseOptions options, CancellationToken cancellationToken = default)
+```
+
+
+Runs the agent and returns a response object with a UI message stream. Maps to `createAgentUIStreamResponse`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `options` | [CreateAgentUIStreamResponseOptions](/api/Vercel.AI.AspNetCore/CreateAgentUIStreamResponseOptions/) |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;UIMessageStreamResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateAgentUIStreamResponse.cs#L41)
+
+<a id="Vercel_AI_AspNetCore_UIMessageStreamConverter_PipeAgentUIStreamToResponse_"></a>
+<a id="Vercel_AI_AspNetCore_UIMessageStreamConverter_PipeAgentUIStreamToResponse_Vercel_AI_AspNetCore_PipeAgentUIStreamToResponseOptions_System_Threading_CancellationToken_"></a>
+
+### PipeAgentUIStreamToResponse(PipeAgentUIStreamToResponseOptions, CancellationToken)
+
+
+```csharp
+public static Task PipeAgentUIStreamToResponse(PipeAgentUIStreamToResponseOptions options, CancellationToken cancellationToken = default)
+```
+
+
+Pipes the agent UI message stream to a [ServerResponse](/api/Vercel.AI.Util/ServerResponse/). Maps to `pipeAgentUIStreamToResponse`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `options` | [PipeAgentUIStreamToResponseOptions](/api/Vercel.AI.AspNetCore/PipeAgentUIStreamToResponseOptions/) |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/PipeAgentUIStreamToResponse.cs#L19)
 
 <a id="Vercel_AI_AspNetCore_UIMessageStreamConverter_ReadUIMessageStream_"></a>
 <a id="Vercel_AI_AspNetCore_UIMessageStreamConverter_ReadUIMessageStream_Vercel_AI_AspNetCore_ReadUIMessageStreamOptions_System_Threading_CancellationToken_"></a>

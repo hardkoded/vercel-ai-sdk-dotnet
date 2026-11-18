@@ -62,6 +62,22 @@ Public types in the `Vercel.AI.ProviderUtils` namespace.
 | [RetryException](/api/Vercel.AI.ProviderUtils/RetryException/) | Failure of ExponentialBackoff after at least one retry. |
 | [RetryOptions](/api/Vercel.AI.ProviderUtils/RetryOptions/) | Options for ExponentialBackoff. |
 | [RetryPolicy](/api/Vercel.AI.ProviderUtils/RetryPolicy/) | Retry policy aligned with the AI SDK defaults: 2 retries, 500–5000ms backoff, 25% jitter. Retryable statuses are 408, 429, and 500–599. Retry-After is honored up to 60 seconds. |
+| [SandboxDeleteFileOptions](/api/Vercel.AI.ProviderUtils/SandboxDeleteFileOptions/) | Options of DeleteFileAsync(SandboxDeleteFileOptions). Maps to SandboxDeleteFileOptions. |
+| [SandboxDirectoryEntry](/api/Vercel.AI.ProviderUtils/SandboxDirectoryEntry/) | Entry in a directory listing. Maps to SandboxDirectoryEntry. |
+| [SandboxFileStat](/api/Vercel.AI.ProviderUtils/SandboxFileStat/) | Information about a file or directory in the sandbox. Symbolic links are followed. Maps to SandboxFileStat. |
+| [SandboxListDirectoryOptions](/api/Vercel.AI.ProviderUtils/SandboxListDirectoryOptions/) | Options of ListDirectoryAsync(SandboxListDirectoryOptions). Maps to SandboxListDirectoryOptions. |
+| [SandboxPathOptions](/api/Vercel.AI.ProviderUtils/SandboxPathOptions/) | Options for reading, inspecting, or deleting one path in the sandbox. Maps to PathOptions. |
+| [SandboxProcessOptions](/api/Vercel.AI.ProviderUtils/SandboxProcessOptions/) | Options for executing a command in the sandbox with run or spawn. Maps to SandboxProcessOptions. |
+| [SandboxReadBinaryFileOptions](/api/Vercel.AI.ProviderUtils/SandboxReadBinaryFileOptions/) | Options of ReadBinaryFileAsync(SandboxReadBinaryFileOptions). Maps to SandboxReadBinaryFileOptions. |
+| [SandboxReadFileOptions](/api/Vercel.AI.ProviderUtils/SandboxReadFileOptions/) | Options of ReadFileAsync(SandboxReadFileOptions). Maps to SandboxReadFileOptions. |
+| [SandboxReadTextFileOptions](/api/Vercel.AI.ProviderUtils/SandboxReadTextFileOptions/) | Options of ReadTextFileAsync(SandboxReadTextFileOptions). Maps to SandboxReadTextFileOptions. |
+| [SandboxRunOptions](/api/Vercel.AI.ProviderUtils/SandboxRunOptions/) | Options of RunAsync(SandboxRunOptions). Maps to SandboxRunOptions. |
+| [SandboxRunResult](/api/Vercel.AI.ProviderUtils/SandboxRunResult/) | The result of RunAsync(SandboxRunOptions). Maps to the result of run. |
+| [SandboxSpawnOptions](/api/Vercel.AI.ProviderUtils/SandboxSpawnOptions/) | Options of SpawnAsync(SandboxSpawnOptions). Maps to SandboxSpawnOptions. |
+| [SandboxStatOptions](/api/Vercel.AI.ProviderUtils/SandboxStatOptions/) | Options of StatAsync(SandboxStatOptions). Maps to SandboxStatOptions. |
+| [SandboxWriteBinaryFileOptions](/api/Vercel.AI.ProviderUtils/SandboxWriteBinaryFileOptions/) | Options of WriteBinaryFileAsync(SandboxWriteBinaryFileOptions). Maps to SandboxWriteBinaryFileOptions. |
+| [SandboxWriteFileOptions](/api/Vercel.AI.ProviderUtils/SandboxWriteFileOptions/) | Options of WriteFileAsync(SandboxWriteFileOptions). Maps to SandboxWriteFileOptions. |
+| [SandboxWriteTextFileOptions](/api/Vercel.AI.ProviderUtils/SandboxWriteTextFileOptions/) | Options of WriteTextFileAsync(SandboxWriteTextFileOptions). Maps to SandboxWriteTextFileOptions. |
 | [SecureJson](/api/Vercel.AI.ProviderUtils/SecureJson/) | Parses JSON and rejects proto and constructor.prototype payload keys. |
 | [SerializationError](/api/Vercel.AI.ProviderUtils/SerializationError/) | A value could not be serialized. Maps to SerializationError. |
 | [SerializedModelOptions](/api/Vercel.AI.ProviderUtils/SerializedModelOptions/) | A serialized model id and config. Maps to the result of serializeModelOptions. |
@@ -91,6 +107,8 @@ Public types in the `Vercel.AI.ProviderUtils` namespace.
 
 | Type | Summary |
 | --- | --- |
+| [ISandboxProcess](/api/Vercel.AI.ProviderUtils/ISandboxProcess/) | Handle to a long-running process started with SpawnAsync(SandboxSpawnOptions). Maps to SandboxProcess. |
+| [ISandboxSession](/api/Vercel.AI.ProviderUtils/ISandboxSession/) | Sandbox session that can execute commands and read and write files. Relative paths in every method resolve against the same base directory: the directory that RunAsync(SandboxRunOptions) and SpawnAsync(SandboxSpawnOptions) start in when no working directory is given. Absolute paths are used as is. Maps to SandboxSession (ExperimentalSandboxSession). |
 | [IWebSocketLike](/api/Vercel.AI.ProviderUtils/IWebSocketLike/) | The WebSocket surface used by providers. Maps to WebSocketLike. |
 
 ## Enums
@@ -99,6 +117,8 @@ Public types in the `Vercel.AI.ProviderUtils` namespace.
 | --- | --- |
 | [ProviderOptionsResolution](/api/Vercel.AI.ProviderUtils/ProviderOptionsResolution/) | How options found under several providerOptions namespaces are combined. Maps to ProviderOptionsResolution. |
 | [RetryErrorReason](/api/Vercel.AI.ProviderUtils/RetryErrorReason/) | Why RetryException was thrown. |
+| [SandboxDirectoryEntryType](/api/Vercel.AI.ProviderUtils/SandboxDirectoryEntryType/) | Type of an entry returned by ListDirectoryAsync(SandboxListDirectoryOptions). Maps to SandboxDirectoryEntry['type']. |
+| [SandboxFileType](/api/Vercel.AI.ProviderUtils/SandboxFileType/) | Type of a path returned by StatAsync(SandboxStatOptions). Maps to SandboxFileStat['type']. |
 
 ## Delegates
 

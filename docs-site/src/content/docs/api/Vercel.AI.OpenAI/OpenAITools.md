@@ -112,7 +112,7 @@ A custom tool (`openai.custom`) with the name given in &lt;code class="paramref"
 
 **Returns:** [LanguageModelTool](/api/Vercel.AI.Provider/LanguageModelTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L665)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L667)
 
 <a id="Vercel_AI_OpenAI_OpenAITools_FileSearch_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITools_FileSearch_Vercel_AI_OpenAI_OpenAIFileSearchToolOptions_"></a>
@@ -215,7 +215,7 @@ The programmatic tool calling tool (`openai.programmatic_tool_calling`).
 
 **Returns:** [LanguageModelTool](/api/Vercel.AI.Provider/LanguageModelTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L722)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L724)
 
 <a id="Vercel_AI_OpenAI_OpenAITools_Shell_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITools_Shell_Vercel_AI_OpenAI_OpenAIShellToolOptions_"></a>
@@ -261,7 +261,7 @@ The tool search tool (`openai.tool_search`).
 
 **Returns:** [LanguageModelTool](/api/Vercel.AI.Provider/LanguageModelTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L688)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L690)
 
 <a id="Vercel_AI_OpenAI_OpenAITools_WebSearch_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITools_WebSearch_Vercel_AI_OpenAI_OpenAIWebSearchToolOptions_"></a>
@@ -307,4 +307,4 @@ The web search preview tool (`openai.web_search_preview`).
 
 **Returns:** [LanguageModelTool](/api/Vercel.AI.Provider/LanguageModelTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L702)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L704)

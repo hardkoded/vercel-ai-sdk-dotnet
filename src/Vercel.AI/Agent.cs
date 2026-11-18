@@ -23,7 +23,8 @@ public interface IAgent
         Vercel.AI.Util.AbortSignal? abortSignal = null,
         TimeoutConfiguration? timeout = null,
         ISteering? experimentalSteering = null,
-        Func<StepResult, CancellationToken, Task>? onStepEnd = null
+        Func<StepResult, CancellationToken, Task>? onStepEnd = null,
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
     );
 }
 
@@ -103,11 +104,12 @@ public sealed class Agent : IAgent
     )
     {
         var prepared = Prepare(call);
-        if (timeout != null || experimentalSteering != null)
+        if (timeout != null || experimentalSteering != null || Options.OnStepEnd != null)
         {
             prepared = prepared.ShallowCopy();
             prepared.Timeout = timeout ?? prepared.Timeout;
             prepared.ExperimentalSteering = experimentalSteering ?? prepared.ExperimentalSteering;
+            prepared.OnStepEnd = MergeStepEnd(Options.OnStepEnd, prepared.OnStepEnd);
         }
 
         return _client.GenerateTextAsync(prepared, cancellationToken);
@@ -172,7 +174,8 @@ public sealed class Agent : IAgent
         Vercel.AI.Util.AbortSignal? abortSignal,
         TimeoutConfiguration? timeout,
         ISteering? experimentalSteering,
-        Func<StepResult, CancellationToken, Task>? onStepEnd
+        Func<StepResult, CancellationToken, Task>? onStepEnd,
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox
     )
     {
         return Stream(
@@ -182,7 +185,7 @@ public sealed class Agent : IAgent
             timeout,
             experimentalSteering,
             onStepEnd,
-            null
+            experimentalSandbox
         );
     }
 
@@ -228,7 +231,7 @@ public sealed class Agent : IAgent
                 PrepareStep = prepared.PrepareStep,
                 ExperimentalSteering = experimentalSteering ?? prepared.ExperimentalSteering,
                 ExperimentalSandbox = prepared.ExperimentalSandbox,
-                OnStepEnd = onStepEnd ?? prepared.OnStepEnd,
+                OnStepEnd = MergeStepEnd(Options.OnStepEnd, onStepEnd ?? prepared.OnStepEnd),
                 OnFinish = prepared.OnFinish,
                 OnError = prepared.OnError,
                 ToolApproval = prepared.ToolApproval,
@@ -245,6 +248,43 @@ public sealed class Agent : IAgent
             },
             cancellationToken
         );
+    }
+
+    // mergeCallbacks: both callbacks run, the settings callback first, and an error of one does not stop the other
+    private static Func<StepResult, CancellationToken, Task>? MergeStepEnd(
+        Func<StepResult, CancellationToken, Task>? settings,
+        Func<StepResult, CancellationToken, Task>? call
+    )
+    {
+        if (settings is null || call is null)
+        {
+            return settings ?? call;
+        }
+
+        return async (result, cancellationToken) =>
+        {
+            await Task.WhenAll(
+                    Settle(settings, result, cancellationToken),
+                    Settle(call, result, cancellationToken)
+                )
+                .ConfigureAwait(false);
+        };
+
+        static async Task Settle(
+            Func<StepResult, CancellationToken, Task> callback,
+            StepResult result,
+            CancellationToken cancellationToken
+        )
+        {
+            try
+            {
+                await callback(result, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                // Promise.allSettled
+            }
+        }
     }
 
     private GenerateTextOptions Prepare(GenerateTextOptions call)
@@ -306,6 +346,12 @@ public sealed class AgentOptions
 
     /// <summary>Tools.</summary>
     public IReadOnlyList<Tool>? Tools { get; set; }
+
+    /// <summary>
+    /// Called when each generation step ends. It runs together with the callback of the call, and a failure of one does not stop the other.
+    /// Maps to <c>onStepEnd</c> of the <c>ToolLoopAgent</c> settings.
+    /// </summary>
+    public Func<StepResult, CancellationToken, Task>? OnStepEnd { get; set; }
 
     /// <summary>
     /// Configures whether tools require approval before they run. See <see cref="GenerateTextOptions.ToolApproval"/>.

@@ -25,7 +25,7 @@ Chat Completions language model.
 
 **Implements:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-**Derived:** [TencentChatLanguageModel](/api/Vercel.AI.Tencent/TencentChatLanguageModel/)
+**Derived:** [TencentChatLanguageModel](/api/Vercel.AI.Tencent/TencentChatLanguageModel/), [ZaiChatLanguageModel](/api/Vercel.AI.Zai/ZaiChatLanguageModel/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleLanguageModel.cs#L16)
 

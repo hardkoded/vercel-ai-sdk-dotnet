@@ -23,7 +23,7 @@ Where tool-context validation failed.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolContext.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolContext.cs#L29)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates context.
 | `field` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `entityName` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolContext.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolContext.cs#L32)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Tool name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolContext.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolContext.cs#L42)
 
 <a id="Vercel_AI_GenerateText_ToolValidationContext_Field_"></a>
 <a id="Vercel_AI_GenerateText_ToolValidationContext_Field"></a>
@@ -83,4 +83,4 @@ Field name. Tool context uses `tool context`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolContext.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ValidateToolContext.cs#L39)

@@ -28,7 +28,12 @@ Public types in the `Vercel.AI.Mistral` namespace.
 | [MistralReasoningCapabilities](/api/Vercel.AI.Mistral/MistralReasoningCapabilities/) | Reasoning support of a model. Maps to the catalog's ReasoningCapabilities. |
 | [MistralServiceCollectionExtensions](/api/Vercel.AI.Mistral/MistralServiceCollectionExtensions/) | Registers MistralProvider. |
 | [MistralSpeechCapabilities](/api/Vercel.AI.Mistral/MistralSpeechCapabilities/) | Speech capabilities of a Mistral model. Maps to the catalog's SpeechCapabilities. |
+| [MistralSpeechModel](/api/Vercel.AI.Mistral/MistralSpeechModel/) | Mistral text-to-speech model. Maps to MistralSpeechModel. |
 | [MistralSpeechModelEntry](/api/Vercel.AI.Mistral/MistralSpeechModelEntry/) | Speech model entry of the Mistral catalog. Maps to getMistralSpeechModelEntry's result. |
+| [MistralSpeechModelOptions](/api/Vercel.AI.Mistral/MistralSpeechModelOptions/) | Mistral speech options. Maps to mistralSpeechModelOptions. |
 | [MistralTools](/api/Vercel.AI.Mistral/MistralTools/) | Provider-executed tools of the Mistral Conversations API. Maps to mistralTools in tool/index.ts. |
 | [MistralTranscriptionCapabilities](/api/Vercel.AI.Mistral/MistralTranscriptionCapabilities/) | Transcription capabilities of a Mistral model. Maps to the catalog's TranscriptionCapabilities. |
+| [MistralTranscriptionModel](/api/Vercel.AI.Mistral/MistralTranscriptionModel/) | Mistral speech-to-text model. Maps to MistralTranscriptionModel. |
 | [MistralTranscriptionModelEntry](/api/Vercel.AI.Mistral/MistralTranscriptionModelEntry/) | Transcription model entry of the Mistral catalog. Maps to getMistralTranscriptionModelEntry's result. |
+| [MistralTranscriptionModelOptions](/api/Vercel.AI.Mistral/MistralTranscriptionModelOptions/) | Mistral transcription options. Maps to mistralTranscriptionModelOptions. |
+| [MistralTurnDetection](/api/Vercel.AI.Mistral/MistralTurnDetection/) | Mistral transcription turn detection settings. Maps to the turnDetection option. |

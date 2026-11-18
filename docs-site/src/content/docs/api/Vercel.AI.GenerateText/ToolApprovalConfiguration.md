@@ -37,7 +37,7 @@ var toolApproval = new ToolApprovalConfiguration
 };
 ```
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L183)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L206)
 
 ## Constructors
 
@@ -54,7 +54,7 @@ public ToolApprovalConfiguration()
 
 Creates a configuration with per-tool settings. Add them with `Add` or the indexer.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L188)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L211)
 
 <a id="Vercel_AI_GenerateText_ToolApprovalConfiguration__ctor_Vercel_AI_GenerateText_GenericToolApprovalFunction_"></a>
 
@@ -74,7 +74,7 @@ Creates a configuration with a generic function that is called for all tool call
 | --- | --- | --- |
 | `function` | [GenericToolApprovalFunction](/api/Vercel.AI.GenerateText/GenericToolApprovalFunction/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L191)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L214)
 
 ## Properties
 
@@ -93,7 +93,7 @@ The generic function, or null for a per-tool configuration.
 
 **Value:** [GenericToolApprovalFunction](/api/Vercel.AI.GenerateText/GenericToolApprovalFunction/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L197)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L220)
 
 <a id="Vercel_AI_GenerateText_ToolApprovalConfiguration_Item_"></a>
 <a id="Vercel_AI_GenerateText_ToolApprovalConfiguration_Item_System_String_"></a>
@@ -116,7 +116,7 @@ Gets or sets the approval setting of a tool.
 
 **Value:** [ToolApprovalEntry](/api/Vercel.AI.GenerateText/ToolApprovalEntry/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L200)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L223)
 
 ## Methods
 
@@ -140,7 +140,7 @@ Sets the function that produces the status of a tool.
 | `toolName` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `function` | [SingleToolApprovalFunction](/api/Vercel.AI.GenerateText/SingleToolApprovalFunction/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L216)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L239)
 
 <a id="Vercel_AI_GenerateText_ToolApprovalConfiguration_Add_System_String_Vercel_AI_GenerateText_ToolApprovalStatus_"></a>
 
@@ -161,7 +161,7 @@ Sets the status of a tool.
 | `toolName` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `status` | [ToolApprovalStatus](/api/Vercel.AI.GenerateText/ToolApprovalStatus/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L212)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L235)
 
 <a id="Vercel_AI_GenerateText_ToolApprovalConfiguration_GetEnumerator_"></a>
 <a id="Vercel_AI_GenerateText_ToolApprovalConfiguration_GetEnumerator"></a>
@@ -178,7 +178,7 @@ Returns an enumerator that iterates through the collection.
 
 **Returns:** [IEnumerator&lt;KeyValuePair&lt;string, ToolApprovalEntry&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerator-1) — An enumerator that can be used to iterate through the collection.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L226)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L249)
 
 <a id="Vercel_AI_GenerateText_ToolApprovalConfiguration_TryGetValue_"></a>
 <a id="Vercel_AI_GenerateText_ToolApprovalConfiguration_TryGetValue_System_String_Vercel_AI_GenerateText_ToolApprovalEntry__"></a>
@@ -202,7 +202,7 @@ Returns the setting of a tool. It is not found for a tool that has none, whateve
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L220)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L243)
 
 ## Operators
 
@@ -227,4 +227,4 @@ Converts a generic function to a configuration.
 
 **Returns:** [ToolApprovalConfiguration](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L207)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ToolApprovalConfiguration.cs#L230)

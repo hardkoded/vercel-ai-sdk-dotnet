@@ -220,6 +220,10 @@ var outcome = await steering.SteerAsync("I meant Paris, Texas.");
 
 `UIMessageStreamConverter.CreateAgentUIStreamAsync(new CreateAgentUIStreamOptions { Agent = agent, UIMessages = messages, ExperimentalSteering = steering })` (in `Vercel.AI.AspNetCore`) runs an agent on UI messages and returns the UI message chunks. It validates the messages, converts them, streams the agent, and accepts `ExperimentalSteering`. Steering is only supported by `Agent`. Another `IAgent` makes the call throw `InvalidArgumentException`.
 
+The options also take `UIMessagesJson` (a JSON array that the call validates, like the `unknown[]` of `uiMessages`), `ConvertDataPart` (converts custom data parts to text or file parts, and data parts are ignored when it is omitted or returns `null`), `ExperimentalSandbox` (passed through to tool execution), `OnStepEnd` (called when each generation step ends, together with `AgentOptions.OnStepEnd`), `OnUIMessageStepEnd` (called with the accumulated UI message after each step), and `UIMessageStreamOptions`. `IAgent.Stream` takes `experimentalSandbox` as well.
+
+`UIMessageStreamConverter.CreateAgentUIStreamResponse` takes the same options plus `Headers`, `Status`, `StatusText`, `KeepAliveMs`, and `ConsumeSseStream`, and returns a `UIMessageStreamResponse` whose body is the stream as Server-Sent Events. `UIMessageStreamConverter.PipeAgentUIStreamToResponse` takes the same options plus a `Response` (a `ServerResponse`) and writes the stream to it. `UIMessageStreamResponses.PipeUIMessageStreamToResponse` does the same for any UI message chunk stream.
+
 - Messages are added in the order they are sent. Each message is its own user message.
 - If the model finishes its answer while a message is waiting, the loop continues for another step.
 - Stop conditions still apply. `GenerateTextAsync` and `StreamTextAsync` stop after one step by default, so set `StopWhen` to steer them.

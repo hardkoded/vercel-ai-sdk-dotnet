@@ -23,9 +23,9 @@ A user content part.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-**Derived:** [CustomContentPart](/api/Vercel.AI.Provider/CustomContentPart/), [FileContentPart](/api/Vercel.AI.Provider/FileContentPart/), [FileUrlContentPart](/api/Vercel.AI.Provider/FileUrlContentPart/), [ImageUrlContentPart](/api/Vercel.AI.Provider/ImageUrlContentPart/), [TextContentPart](/api/Vercel.AI.Provider/TextContentPart/)
+**Derived:** [CustomContentPart](/api/Vercel.AI.Provider/CustomContentPart/), [FileContentPart](/api/Vercel.AI.Provider/FileContentPart/), [FileDataContentPart](/api/Vercel.AI.Provider/FileDataContentPart/), [FileIdContentPart](/api/Vercel.AI.Provider/FileIdContentPart/), [FileReferenceContentPart](/api/Vercel.AI.Provider/FileReferenceContentPart/), [FileUrlContentPart](/api/Vercel.AI.Provider/FileUrlContentPart/), [ImageDataContentPart](/api/Vercel.AI.Provider/ImageDataContentPart/), [ImageFileIdContentPart](/api/Vercel.AI.Provider/ImageFileIdContentPart/), [ImageFileReferenceContentPart](/api/Vercel.AI.Provider/ImageFileReferenceContentPart/), [ImageUrlContentPart](/api/Vercel.AI.Provider/ImageUrlContentPart/), [TextContentPart](/api/Vercel.AI.Provider/TextContentPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L760)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L801)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a part.
 | --- | --- | --- |
 | `type` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L763)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L804)
 
 ## Properties
 
@@ -67,4 +67,4 @@ Part type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L769)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L810)

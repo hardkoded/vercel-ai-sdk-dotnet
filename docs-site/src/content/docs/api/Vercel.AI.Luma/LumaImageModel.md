@@ -25,7 +25,7 @@ Luma Dream Machine image model. It submits a generation, polls it, and downloads
 
 **Implements:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L105)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L108)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates an image model. &lt;code class="paramref"&gt;clock&lt;/code&gt; sets the
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `clock` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L114)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L117)
 
 ## Properties
 
@@ -69,7 +69,7 @@ Luma returns one image per call.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L128)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L131)
 
 <a id="Vercel_AI_Luma_LumaImageModel_ModelId_"></a>
 <a id="Vercel_AI_Luma_LumaImageModel_ModelId"></a>
@@ -86,7 +86,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L125)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L128)
 
 <a id="Vercel_AI_Luma_LumaImageModel_Provider_"></a>
 <a id="Vercel_AI_Luma_LumaImageModel_Provider"></a>
@@ -103,7 +103,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L122)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L125)
 
 ## Methods
 
@@ -129,7 +129,7 @@ Generates images. Maps to `doGenerate` on an image model.
 
 **Returns:** [Task&lt;ImageGenerationResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L131)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L134)
 
 <a id="Vercel_AI_Luma_LumaImageModel_GenerateAsync_"></a>
 <a id="Vercel_AI_Luma_LumaImageModel_GenerateAsync_Vercel_AI_Luma_LumaImageRequest_System_Threading_CancellationToken_"></a>
@@ -153,4 +153,4 @@ Generates one image.
 
 **Returns:** [Task&lt;LumaImageGeneration&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L154)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaImageModel.cs#L157)

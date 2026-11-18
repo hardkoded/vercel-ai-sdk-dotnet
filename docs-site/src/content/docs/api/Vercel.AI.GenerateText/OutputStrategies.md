@@ -28,13 +28,13 @@ Array output schema wrapping. Maps to the array branch of `getOutputStrategy`.
 ## Methods
 
 <a id="Vercel_AI_GenerateText_OutputStrategies_WrapArrayOutputSchema_"></a>
-<a id="Vercel_AI_GenerateText_OutputStrategies_WrapArrayOutputSchema_System_Text_Json_JsonElement_"></a>
+<a id="Vercel_AI_GenerateText_OutputStrategies_WrapArrayOutputSchema_System_Text_Json_JsonElement_System_Nullable_System_Int32__System_Nullable_System_Int32__"></a>
 
-### WrapArrayOutputSchema(JsonElement)
+### WrapArrayOutputSchema(JsonElement, int?, int?)
 
 
 ```csharp
-public static JsonElement WrapArrayOutputSchema(JsonElement elementSchema)
+public static JsonElement WrapArrayOutputSchema(JsonElement elementSchema, int? minItems = null, int? maxItems = null)
 ```
 
 
@@ -46,6 +46,8 @@ so root-relative references stay valid.
 | Name | Type | Description |
 | --- | --- | --- |
 | `elementSchema` | [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
+| `minItems` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
+| `maxItems` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 
 **Returns:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 

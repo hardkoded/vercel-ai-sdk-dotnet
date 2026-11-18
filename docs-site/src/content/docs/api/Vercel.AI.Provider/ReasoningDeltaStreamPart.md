@@ -23,7 +23,7 @@ A reasoning delta.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [LanguageModelStreamPart](/api/Vercel.AI.Provider/LanguageModelStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2244)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2624)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a reasoning delta.
 | `delta` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2247)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2627)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Reasoning fragment.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2259)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2639)
 
 <a id="Vercel_AI_Provider_ReasoningDeltaStreamPart_Id_"></a>
 <a id="Vercel_AI_Provider_ReasoningDeltaStreamPart_Id"></a>
@@ -84,7 +84,7 @@ Reasoning block id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2256)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2636)
 
 <a id="Vercel_AI_Provider_ReasoningDeltaStreamPart_ProviderMetadata_"></a>
 <a id="Vercel_AI_Provider_ReasoningDeltaStreamPart_ProviderMetadata"></a>
@@ -101,4 +101,4 @@ Provider metadata for this fragment, such as a reasoning signature.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2262)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2642)

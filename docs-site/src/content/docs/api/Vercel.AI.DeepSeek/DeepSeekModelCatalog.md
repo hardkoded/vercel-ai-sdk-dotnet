@@ -43,7 +43,7 @@ named like its class.
 
 **Value:** [IReadOnlyDictionary&lt;string, DeepSeekLanguageModelEntry&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekModelCatalog.cs#L197)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekModelCatalog.cs#L201)
 
 ## Methods
 
@@ -69,4 +69,4 @@ Returns the entry of a model on an endpoint. Upstream `getDeepSeekLanguageModelE
 
 **Returns:** [DeepSeekLanguageModelEntry](/api/Vercel.AI.DeepSeek/DeepSeekLanguageModelEntry/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekModelCatalog.cs#L205)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekModelCatalog.cs#L209)
