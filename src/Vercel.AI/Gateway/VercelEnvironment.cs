@@ -13,29 +13,58 @@ namespace Vercel.AI.Gateway;
 /// </summary>
 public static class VercelRequestContext
 {
-    private static readonly AsyncLocal<IReadOnlyDictionary<string, string?>?> s_headers = new();
+    private static readonly AsyncLocal<Scope?> s_current = new();
 
-    internal static IReadOnlyDictionary<string, string?>? Headers => s_headers.Value;
+    internal static IReadOnlyDictionary<string, string?>? Headers => s_current.Value?.Headers;
 
     /// <summary>
     /// Makes <paramref name="headers"/> the request headers of the current async flow (for example <c>x-vercel-id</c> and
-    /// <c>x-vercel-oidc-token</c>) until the returned scope is disposed. Header names are matched case-insensitively.
+    /// <c>x-vercel-oidc-token</c>) until the returned scope is disposed. Header names are matched case-insensitively;
+    /// names that differ only by case must carry the same value, otherwise <see cref="ArgumentException"/> is thrown.
+    /// Disposing the scope also revokes the headers for work that captured them, and disposing twice does nothing.
     /// </summary>
     public static IDisposable Use(IReadOnlyDictionary<string, string?>? headers)
     {
-        var previous = s_headers.Value;
-        s_headers.Value = headers is null
-            ? null
-            : new Dictionary<string, string?>(
-                headers.ToDictionary(pair => pair.Key, pair => pair.Value),
-                StringComparer.OrdinalIgnoreCase
-            );
-        return new Scope(previous);
+        Dictionary<string, string?>? copy = null;
+        if (headers is not null)
+        {
+            copy = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in headers)
+            {
+                if (copy.TryGetValue(pair.Key, out var existing) && existing != pair.Value)
+                {
+                    throw new ArgumentException(
+                        $"The header '{pair.Key}' appears more than once with different values.",
+                        nameof(headers)
+                    );
+                }
+
+                copy[pair.Key] = pair.Value;
+            }
+        }
+
+        var scope = new Scope(copy, s_current.Value);
+        s_current.Value = scope;
+        return scope;
     }
 
-    private sealed class Scope(IReadOnlyDictionary<string, string?>? previous) : IDisposable
+    private sealed class Scope(IReadOnlyDictionary<string, string?>? headers, Scope? previous)
+        : IDisposable
     {
-        public void Dispose() => s_headers.Value = previous;
+        private int _disposed;
+
+        public IReadOnlyDictionary<string, string?>? Headers { get; private set; } = headers;
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) == 1)
+            {
+                return;
+            }
+
+            Headers = null;
+            s_current.Value = previous;
+        }
     }
 }
 
@@ -47,9 +76,6 @@ internal static class VercelEnvironment
 {
     private static readonly AsyncLocal<Func<CancellationToken, Task<string>>?> s_oidcTokenOverride =
         new();
-
-    /// <summary>Request header that carries the Vercel request id.</summary>
-    public const string RequestIdHeader = "x-vercel-id";
 
     /// <summary>Environment variable that carries the Vercel OIDC token.</summary>
     public const string OidcTokenEnvironmentVariable = "VERCEL_OIDC_TOKEN";
@@ -81,7 +107,7 @@ internal static class VercelEnvironment
     /// </summary>
     public static string? GetVercelRequestId()
     {
-        return GetContextHeader(RequestIdHeader);
+        return GetContextHeader("x-vercel-id");
     }
 
     /// <summary>Returns a header of the Vercel request context, or null. Maps to <c>getContext().headers?.[name]</c>.</summary>
