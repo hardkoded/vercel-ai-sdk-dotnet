@@ -545,6 +545,9 @@ internal static class Generation
         var outputSource = new TaskCompletionSource<JsonElement?>(
             TaskCreationOptions.RunContinuationsAsynchronously
         );
+        var initialResponseMessagesSource = new TaskCompletionSource<IReadOnlyList<ModelMessage>>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         var abort = new StreamAbort { SteeringRun = steeringRun };
         var timeouts = CallTimeouts.Create(
             options.Timeout,
@@ -595,7 +598,8 @@ internal static class Generation
                 finishSource,
                 usageSource,
                 stepsSource,
-                outputSource
+                outputSource,
+                initialResponseMessagesSource
             )
         );
         return new StreamTextResult(
@@ -604,7 +608,8 @@ internal static class Generation
             finishSource.Task,
             usageSource.Task,
             stepsSource.Task,
-            outputSource.Task
+            outputSource.Task,
+            initialResponseMessagesSource.Task
         )
         {
             Tools = options.Tools,
@@ -624,7 +629,8 @@ internal static class Generation
         TaskCompletionSource<FinishReason> finishSource,
         TaskCompletionSource<LanguageModelUsage> usageSource,
         TaskCompletionSource<IReadOnlyList<StepResult>> stepsSource,
-        TaskCompletionSource<JsonElement?> outputSource
+        TaskCompletionSource<JsonElement?> outputSource,
+        TaskCompletionSource<IReadOnlyList<ModelMessage>> initialResponseMessagesSource
     )
     {
         var steps = new List<StepResult>();
@@ -647,6 +653,17 @@ internal static class Generation
             var stop = options.StopWhen ?? StopWhen.IsStepCount(1);
             var current = model;
             buffer.Add(new StartPart());
+            await ProcessInitialApprovalsAsync(
+                    options,
+                    messages,
+                    instructionCount,
+                    responseMessages,
+                    options.NowMs ?? DefaultNowMs,
+                    cancellationToken,
+                    buffer.Add
+                )
+                .ConfigureAwait(false);
+            initialResponseMessagesSource.TrySetResult(responseMessages.ToArray());
             var textPartIds = new PartIdReserver();
             var reasoningPartIds = new PartIdReserver();
             // why waiting steering messages are not delivered when the stream ends:
@@ -1299,6 +1316,8 @@ internal static class Generation
         }
         finally
         {
+            // A stream that ends before the initial approvals settle has no initial response messages.
+            initialResponseMessagesSource.TrySetResult(Array.Empty<ModelMessage>());
             timeouts?.Dispose();
             abort.Registration.Dispose();
             abort.CleanupSignal();
@@ -2580,7 +2599,8 @@ internal static class Generation
         int instructionCount,
         List<ModelMessage> responseMessages,
         Func<double> now,
-        CancellationToken cancellationToken
+        CancellationToken cancellationToken,
+        Action<TextStreamPart>? emit = null
     )
     {
         var history = messages.Skip(instructionCount).ToArray();
@@ -2606,6 +2626,43 @@ internal static class Generation
                 cancellationToken
             )
             .ConfigureAwait(false);
+
+        // streamText reports every denied call, local or provider-executed, including one that already has its result.
+        if (emit != null)
+        {
+            foreach (
+                var denied in collected
+                    .DeniedToolApprovals.Where(approval => !approval.ToolCall.ProviderExecuted)
+                    .Concat(validated.DeniedToolApprovals)
+                    .Concat(collected.DeniedToolApprovals.Where(a => a.ToolCall.ProviderExecuted))
+            )
+            {
+                emit(
+                    new ToolOutputDeniedPart(denied.ToolCall.ToolCallId, denied.ToolCall.ToolName)
+                );
+            }
+
+            foreach (var invalid in validated.InvalidToolApprovals)
+            {
+                var message = ErrorMessage.ToErrorString(invalid.Error);
+                emit(
+                    new ToolErrorPart(
+                        new ExecutedTool(
+                            invalid.Approval.ToolCall.ToolCallId,
+                            invalid.Approval.ToolCall.ToolName,
+                            JsonSerializer.Serialize(new { error = message }),
+                            true
+                        )
+                        {
+                            Error = invalid.Error,
+                            InputJson = invalid.Approval.ToolCall.Input.GetRawText(),
+                            ModelOutputType = "error-text",
+                            ModelOutput = message,
+                        }
+                    )
+                );
+            }
+        }
 
         var deniedWithoutResults = collected
             .DeniedToolApprovals.Concat(validated.DeniedToolApprovals)
@@ -2637,8 +2694,22 @@ internal static class Generation
                         approval.ToolCall.Input.GetRawText()
                     );
                     var (executed, _) = await ToolCallExecution
-                        .ExecuteToolCall(call, options, stepMessages, now, cancellationToken)
+                        .ExecuteToolCall(
+                            call,
+                            options,
+                            stepMessages,
+                            now,
+                            cancellationToken,
+                            emit == null
+                                ? null
+                                : preliminary => emit(new ToolResultPart(preliminary))
+                        )
                         .ConfigureAwait(false);
+                    emit?.Invoke(
+                        executed.IsError
+                            ? new ToolErrorPart(executed)
+                            : new ToolResultPart(executed)
+                    );
                     return executed;
                 },
                 cancellationToken
@@ -3627,7 +3698,8 @@ public sealed class StreamTextResult
         Task<FinishReason> finishReason,
         Task<LanguageModelUsage> usage,
         Task<IReadOnlyList<StepResult>> steps,
-        Task<JsonElement?> output
+        Task<JsonElement?> output,
+        Task<IReadOnlyList<ModelMessage>> initialResponseMessages
     )
     {
         _buffer = buffer;
@@ -3638,7 +3710,7 @@ public sealed class StreamTextResult
         Files = FromFinalStep(steps, step => step.Files);
         Request = FromFinalStep(steps, step => step.Request);
         Response = FromFinalStep(steps, step => step.Response);
-        ResponseMessages = AllResponseMessages(steps);
+        ResponseMessages = AllResponseMessages(initialResponseMessages, steps);
         ProviderMetadata = FromFinalStep(steps, step => step.ProviderMetadata);
         Output = FromSteps(steps, output);
 
@@ -3660,12 +3732,15 @@ public sealed class StreamTextResult
         _ = Output.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
     }
 
+    // The results of the approvals that settled before the first step come first, as upstream's initialResponseMessages do.
     private static async Task<IReadOnlyList<ModelMessage>> AllResponseMessages(
+        Task<IReadOnlyList<ModelMessage>> initialResponseMessages,
         Task<IReadOnlyList<StepResult>> steps
     )
     {
         var completed = await steps.ConfigureAwait(false);
-        return completed.SelectMany(step => step.Response.Messages).ToArray();
+        var initial = await initialResponseMessages.ConfigureAwait(false);
+        return initial.Concat(completed.SelectMany(step => step.Response.Messages)).ToArray();
     }
 
     private static async Task<JsonElement?> FromSteps(
