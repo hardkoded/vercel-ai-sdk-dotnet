@@ -61,6 +61,22 @@ public sealed class AzureImageModelOptions : AzureImageModelMaiOptions
                 case "webGrounding":
                     options.WebGrounding = Flag(property);
                     break;
+                case "background" when property.Value.ValueKind != JsonValueKind.Null:
+                    var background =
+                        property.Value.ValueKind == JsonValueKind.String
+                            ? property.Value.GetString()
+                            : null;
+                    if (background is not ("transparent" or "opaque" or "auto"))
+                    {
+                        throw new InvalidArgumentException(
+                            "providerOptions.azure.background",
+                            property.Value.ToString(),
+                            "background must be 'transparent', 'opaque' or 'auto'."
+                        );
+                    }
+
+                    options.Background = background;
+                    break;
             }
         }
 

@@ -170,6 +170,11 @@ internal sealed class AzureMaiImageModel : IImageModel
             fields["web_grounding"] = webGrounding;
         }
 
+        if (maiOptions?.Background is { } background)
+        {
+            fields["background"] = background;
+        }
+
         var headers = _provider.CreateHeaders(AzureApi.Mai, options.Headers);
 
         // When one request fails the siblings are cancelled instead of left running.

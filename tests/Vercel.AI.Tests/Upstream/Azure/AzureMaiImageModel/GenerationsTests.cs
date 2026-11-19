@@ -316,4 +316,88 @@ public sealed class GenerationsTests
         Assert.Equal("Bearer entra-token", handler.Last.Headers["authorization"]);
         Assert.False(handler.Last.Headers.ContainsKey("api-key"));
     }
+
+    [Theory]
+    [InlineData("transparent")]
+    [InlineData("opaque")]
+    [UpstreamTest(
+        File + "sends background %s",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3a48c5dca4ebfc3110524190cf358cb52e952cc1"
+    )]
+    public async Task SendsBackground(string background)
+    {
+        var handler = MaiHandler();
+
+        var result = await CreateProvider(handler)
+            .Image("MAI-Image-2.7")
+            .DoGenerateAsync(
+                CallOptions("{\"azure\":{\"background\":\"" + background + "\"}}"),
+                CancellationToken.None
+            );
+
+        Assert.True(
+            JsonNode.DeepEquals(
+                JsonNode.Parse(
+                    "{\"model\":\"MAI-Image-2.7\",\"prompt\":\"A red apple\",\"background\":\""
+                        + background
+                        + "\"}"
+                ),
+                handler.Last.Json()
+            )
+        );
+        Assert.Empty(result.CallWarnings);
+    }
+
+    [Theory]
+    [InlineData("MAI-Image-2.7-Flash", null)]
+    [InlineData("my-mai-deployment", "mai")]
+    [UpstreamTest(
+        File + "drops background auto for %s (api=%s) with a warning",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3a48c5dca4ebfc3110524190cf358cb52e952cc1"
+    )]
+    public async Task DropsBackgroundAutoWithAWarning(string id, string? api)
+    {
+        var handler = MaiHandler();
+        var azure = api == null ? "" : "\"api\":\"" + api + "\",";
+
+        var result = await CreateProvider(handler)
+            .Image(id)
+            .DoGenerateAsync(
+                CallOptions("{\"azure\":{" + azure + "\"background\":\"auto\"}}"),
+                CancellationToken.None
+            );
+
+        Assert.Equal(GenerationsUrl, handler.Last.Url);
+        Assert.Null(handler.Last.Json()["background"]);
+        var warning = Assert.Single(result.CallWarnings);
+        Assert.Equal("unsupported", warning.Type);
+        Assert.Equal("providerOptions.azure.background", warning.Feature);
+        Assert.Equal(
+            "The MAI image API supports 'transparent' and 'opaque' backgrounds.",
+            warning.Message
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        File + "rejects invalid background values",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3a48c5dca4ebfc3110524190cf358cb52e952cc1"
+    )]
+    public async Task RejectsInvalidBackgroundValues()
+    {
+        var handler = MaiHandler();
+
+        await Assert.ThrowsAnyAsync<Exception>(() =>
+            CreateProvider(handler)
+                .Image("MAI-Image-2.7")
+                .DoGenerateAsync(
+                    CallOptions("{\"azure\":{\"background\":\"translucent\"}}"),
+                    CancellationToken.None
+                )
+        );
+        Assert.Empty(handler.Requests);
+    }
 }
