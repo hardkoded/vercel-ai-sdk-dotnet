@@ -123,7 +123,7 @@ public sealed class GenerateTests
 
     [Fact]
     [UpstreamTest(
-        "packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > generate > should forward toolOrder to generateText",
+        "packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > generate::should forward toolOrder to generateText",
         Coverage = UpstreamCoverage.Covered
     )]
     public async Task ShouldForwardToolOrderToGenerateText()

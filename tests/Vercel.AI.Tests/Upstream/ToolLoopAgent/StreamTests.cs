@@ -164,7 +164,7 @@ public sealed class StreamTests
 
     [Fact]
     [UpstreamTest(
-        "packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > stream > should forward toolOrder to streamText",
+        "packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > stream::should forward toolOrder to streamText",
         Coverage = UpstreamCoverage.Covered
     )]
     public async Task ShouldForwardToolOrderToStreamText()
