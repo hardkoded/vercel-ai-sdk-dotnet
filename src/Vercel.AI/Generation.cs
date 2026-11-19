@@ -240,7 +240,8 @@ internal static class Generation
 
     public static LanguageModelCallOptions CallOptions(
         GenerateTextOptions options,
-        IReadOnlyList<ModelMessage> prompt
+        IReadOnlyList<ModelMessage> prompt,
+        IReadOnlyList<string>? stepToolOrder = null
     )
     {
         return new LanguageModelCallOptions
@@ -258,7 +259,7 @@ internal static class Generation
             JsonSchema = options.Output?.Schema,
             JsonSchemaName = options.Output?.SchemaName,
             JsonSchemaDescription = options.Output?.SchemaDescription,
-            Tools = SelectTools(options),
+            Tools = SelectTools(options, stepToolOrder ?? options.ToolOrder),
             ToolChoice = options.ToolChoice ?? ToolChoice.Auto,
             Headers = options.Headers,
             ProviderOptions = options.ProviderOptions,
@@ -335,7 +336,7 @@ internal static class Generation
                     .ToArray();
 
                 // The model gets a snapshot, because the step appends its own response to `messages` afterwards.
-                var callOptions = CallOptions(options, messages.ToArray());
+                var callOptions = CallOptions(options, messages.ToArray(), update?.ToolOrder);
                 callOptions.AbortSignal = timeouts?.Signal;
                 if (update?.ToolChoice != null)
                 {
@@ -777,6 +778,7 @@ internal static class Generation
                 streamOptions.PromptInstructions = instructions;
                 streamOptions.NowMs = now;
                 streamOptions.ToolChoice = update?.ToolChoice ?? options.ToolChoice;
+                streamOptions.ToolOrder = update?.ToolOrder ?? options.ToolOrder;
                 streamOptions.ProviderOptions = MergeProviderOptions(
                     options.ProviderOptions,
                     update?.ProviderOptions
@@ -3186,7 +3188,10 @@ internal static class Generation
         catch (Exception) when (!cancellationToken.IsCancellationRequested) { }
     }
 
-    private static IReadOnlyList<LanguageModelTool>? SelectTools(GenerateTextOptions options)
+    private static IReadOnlyList<LanguageModelTool>? SelectTools(
+        GenerateTextOptions options,
+        IReadOnlyList<string>? toolOrder
+    )
     {
         if (options.Tools == null || options.Tools.Count == 0)
         {
@@ -3221,7 +3226,40 @@ internal static class Generation
             );
         }
 
-        return tools;
+        return OrderTools(tools, toolOrder);
+    }
+
+    // Tools named in toolOrder come first, in that order. The rest follow, sorted by name. Maps to orderToolEntries.
+    private static IReadOnlyList<LanguageModelTool> OrderTools(
+        List<LanguageModelTool> tools,
+        IReadOnlyList<string>? toolOrder
+    )
+    {
+        if (toolOrder == null)
+        {
+            return tools;
+        }
+
+        var listed = tools
+            .Where(tool => Contains(toolOrder, tool.Name))
+            .OrderBy(tool => IndexOfName(toolOrder, tool.Name));
+        var rest = tools
+            .Where(tool => !Contains(toolOrder, tool.Name))
+            .OrderBy(tool => tool.Name, StringComparer.Ordinal);
+        return listed.Concat(rest).ToList();
+    }
+
+    private static int IndexOfName(IReadOnlyList<string> names, string name)
+    {
+        for (var i = 0; i < names.Count; i++)
+        {
+            if (string.Equals(names[i], name, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     private static bool Contains(IReadOnlyList<string> names, string name)
