@@ -720,19 +720,7 @@ public sealed class LanguageModelTool
     /// </summary>
     public JsonElement? RedactTelemetryArgs()
     {
-        if (RedactArgs == null)
-        {
-            return Args;
-        }
-
-        try
-        {
-            return RedactArgs(Args);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        return ProviderUtils.TelemetryRedaction.RedactTelemetryValue(Args, RedactArgs);
     }
 
     /// <summary>Tool description.</summary>
@@ -2502,6 +2490,15 @@ public sealed class LanguageModelGenerateResult
     /// </summary>
     public string? StructuredOutputText { get; }
 
+    internal LanguageModelGenerateResult WithRedactRawResponse(
+        Func<JsonElement, JsonElement>? redactRawResponse
+    )
+    {
+        var result = WithContent(Content);
+        result.RedactRawResponse = redactRawResponse;
+        return result;
+    }
+
     internal LanguageModelGenerateResult WithContent(IReadOnlyList<GeneratedContent> content)
     {
         return new LanguageModelGenerateResult(
@@ -2518,7 +2515,10 @@ public sealed class LanguageModelGenerateResult
             ResponseHeaders,
             StructuredOutputText,
             Request
-        );
+        )
+        {
+            RedactRawResponse = RedactRawResponse,
+        };
     }
 
     /// <summary>Request info, when the model reports it. Maps to the <c>request</c> field of <c>doGenerate</c>.</summary>
@@ -2544,6 +2544,34 @@ public sealed class LanguageModelGenerateResult
 
     /// <summary>Raw provider response body, when the model captured it.</summary>
     public string? RawResponse { get; }
+
+    /// <summary>Provider-owned telemetry view of <see cref="RawResponse"/>, which hides credentials. Maps to the annotation of <c>withTelemetryRedaction</c> on the response body.</summary>
+    public Func<JsonElement, JsonElement>? RedactRawResponse { get; private set; }
+
+    /// <summary>
+    /// Applies <see cref="RedactRawResponse"/> to <see cref="RawResponse"/> for telemetry, leaving <see cref="RawResponse"/> unchanged. Returns null when there is no JSON
+    /// body or the redactor throws. Maps to <c>redactTelemetryValue</c>.
+    /// </summary>
+    public JsonElement? RedactTelemetryRawResponse()
+    {
+        if (string.IsNullOrWhiteSpace(RawResponse))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(RawResponse);
+            return ProviderUtils.TelemetryRedaction.RedactTelemetryValue(
+                document.RootElement.Clone(),
+                RedactRawResponse
+            );
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
 
     /// <summary>Model id reported by the provider.</summary>
     public string? ResponseModelId { get; }
@@ -3239,6 +3267,18 @@ public sealed class LanguageModelStreamRequest
 
     /// <summary>URL the request was sent to. Telemetry events carry only its origin. Maps to <c>request.url</c>.</summary>
     public string? Url { get; init; }
+
+    /// <summary>Provider-owned telemetry view of <see cref="Body"/>, which hides credentials. Maps to the annotation of <c>withTelemetryRedaction</c> on the request body.</summary>
+    public Func<JsonElement, JsonElement>? RedactBody { get; init; }
+
+    /// <summary>
+    /// Applies <see cref="RedactBody"/> to <see cref="Body"/> for telemetry, leaving <see cref="Body"/> unchanged. Returns null when there is no body or the redactor throws.
+    /// Maps to <c>redactTelemetryValue</c>.
+    /// </summary>
+    public JsonElement? RedactTelemetryBody() =>
+        Body is { } body
+            ? ProviderUtils.TelemetryRedaction.RedactTelemetryValue(body, RedactBody)
+            : null;
 }
 
 /// <summary>Response info for a stream call. Maps to the <c>response</c> field of <c>doStream</c>.</summary>

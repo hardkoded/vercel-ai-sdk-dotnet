@@ -859,7 +859,31 @@ internal static class OpenAIResponsesPrepareTools
                 else
                 {
                     var auto = new JsonObject { ["type"] = "auto" };
-                    Set(auto, "file_ids", (container as JsonObject)?["fileIds"]?.DeepClone());
+                    var containerArgs = container as JsonObject;
+                    Set(auto, "file_ids", containerArgs?["fileIds"]?.DeepClone());
+                    Set(auto, "memory_limit", containerArgs?["memoryLimit"]?.DeepClone());
+                    if (containerArgs?["networkPolicy"] is JsonObject networkPolicy)
+                    {
+                        if (networkPolicy["type"]?.GetValue<string>() == "disabled")
+                        {
+                            auto["network_policy"] = new JsonObject { ["type"] = "disabled" };
+                        }
+                        else
+                        {
+                            var allowlist = new JsonObject
+                            {
+                                ["type"] = "allowlist",
+                                ["allowed_domains"] = networkPolicy["allowedDomains"]?.DeepClone(),
+                            };
+                            Set(
+                                allowlist,
+                                "domain_secrets",
+                                networkPolicy["domainSecrets"]?.DeepClone()
+                            );
+                            auto["network_policy"] = allowlist;
+                        }
+                    }
+
                     result["container"] = auto;
                 }
 

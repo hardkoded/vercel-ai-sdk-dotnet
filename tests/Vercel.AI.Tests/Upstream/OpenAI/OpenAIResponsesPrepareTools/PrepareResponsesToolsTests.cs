@@ -84,14 +84,13 @@ public sealed class PrepareResponsesToolsTests
     [InlineData("mcp")]
     [UpstreamTest(
         Suite + "::%s supplies telemetry redaction for configuration and raw bodies",
-        Coverage = UpstreamCoverage.Partial,
+        Coverage = UpstreamCoverage.Covered,
         Commit = "9f37b45262a853f44b9ca84c8592169b38369826"
     )]
     public void Supplies_telemetry_redaction_for_configuration(string name)
     {
-        const string networkPolicy =
-            """{"type":"allowlist","allowedDomains":["example.com"],"domainSecrets":[{"domain":"example.com","name":"KEY","value":"test-secret"}]}""";
         JsonElement args;
+        string toolId;
         Func<JsonElement, JsonElement>? redact;
         if (name == "mcp")
         {
@@ -105,6 +104,7 @@ public sealed class PrepareResponsesToolsTests
                 }
             );
             args = mcp.Args;
+            toolId = mcp.ProviderToolId!;
             redact = mcp.RedactArgs;
         }
         else if (name == "shell")
@@ -129,32 +129,52 @@ public sealed class PrepareResponsesToolsTests
                 }
             );
             args = shell.ProviderToolArgs;
+            toolId = shell.ProviderToolId!;
             redact = shell.RedactArgs;
         }
         else
         {
-            using var policy = JsonDocument.Parse(networkPolicy);
             var interpreter = OpenAITools.CodeInterpreter(
-                new OpenAICodeInterpreterToolOptions { FileIds = ["file-1"] }
-            );
-            args = JsonSerializer.SerializeToElement(
-                new JsonObject
+                new OpenAICodeInterpreterToolOptions
                 {
-                    ["container"] = new JsonObject
-                    {
-                        ["networkPolicy"] = JsonNode.Parse(policy.RootElement.GetRawText()),
-                    },
+                    AllowedDomains = ["example.com"],
+                    DomainSecrets =
+                    [
+                        new OpenAIShellDomainSecret
+                        {
+                            Domain = "example.com",
+                            Name = "KEY",
+                            Value = "test-secret",
+                        },
+                    ],
                 }
             );
+            args = interpreter.Args;
+            toolId = interpreter.ProviderToolId!;
             redact = interpreter.RedactArgs;
         }
 
-        var original = args.GetRawText();
+        var originalArgs = args.GetRawText();
+        var result = Prepare(null, LanguageModelTool.ProviderDefined(toolId, "renamed", args));
+        var body = RedactOpenAIToolCredentials.WithOpenAIResponseRedaction(
+            JsonSerializer.SerializeToElement(new JsonObject { ["tools"] = result.Tools })
+        );
         Assert.NotNull(redact);
-        Assert.Contains("test-secret", original);
-        var redacted = redact!(args).GetRawText();
-        Assert.DoesNotContain("test-secret", redacted);
-        Assert.Equal(original.Replace("test-secret", "[redacted]"), redacted);
-        Assert.Equal(original, args.GetRawText());
+        foreach (
+            var (value, redacted) in new[]
+            {
+                (args.GetRawText(), redact!(args).GetRawText()),
+                (
+                    body.Value.GetRawText(),
+                    TelemetryRedaction.RedactTelemetryValue(body)!.Value.GetRawText()
+                ),
+            }
+        )
+        {
+            Assert.True(value.Contains("test-secret"), value);
+            Assert.Equal(value.Replace("test-secret", "[redacted]"), redacted);
+        }
+
+        Assert.Equal(originalArgs, args.GetRawText());
     }
 }
