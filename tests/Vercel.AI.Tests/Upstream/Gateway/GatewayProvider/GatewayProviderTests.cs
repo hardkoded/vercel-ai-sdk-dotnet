@@ -4,6 +4,7 @@
 
 using Vercel.AI.Gateway;
 using Vercel.AI.Operations;
+using Vercel.AI.Tests.Upstream.Gateway.GatewayLanguageModel;
 
 namespace Vercel.AI.Tests.Upstream.Gateway.GatewayProviderTests;
 
@@ -15,6 +16,52 @@ public sealed class GatewayProviderTests
         "packages/gateway/src/gateway-provider.test.ts::GatewayProvider > createGateway";
     private const string OneModel =
         "{\"models\":[{\"id\":\"test-model\",\"name\":\"Test\",\"specification\":{\"specificationVersion\":\"v4\",\"provider\":\"p\",\"modelId\":\"test-model\"}}]}";
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "::should use OIDC token when no API key is provided",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Checks the headers of a language model request. The upstream test mocks the GatewayLanguageModel constructor and resolves config.headers."
+    )]
+    public async Task Should_use_OIDC_token_when_no_API_key_is_provided()
+    {
+        var previousKey = Environment.GetEnvironmentVariable(
+            GatewayProvider.ApiKeyEnvironmentVariable
+        );
+        Environment.SetEnvironmentVariable(GatewayProvider.ApiKeyEnvironmentVariable, null);
+        VercelEnvironment.OidcTokenOverride = _ => Task.FromResult("mock-oidc-token");
+        try
+        {
+            var server = new GatewayLanguageModelServer { Failure = new HttpRequestException() };
+            var provider = GatewayProvider.Create(
+                new GatewayOptions
+                {
+                    BaseUrl = "https://api.example.com",
+                    Headers = new Dictionary<string, string> { ["Custom-Header"] = "value" },
+                },
+                server
+            );
+            var model = provider.LanguageModel("test-model");
+
+            await Assert.ThrowsAnyAsync<Exception>(() =>
+                model.DoGenerateAsync(
+                    GatewayLanguageModelSupport.TestPrompt,
+                    CancellationToken.None
+                )
+            );
+
+            Assert.Equal("Bearer mock-oidc-token", server.RequestHeaders["authorization"]);
+            Assert.Equal("oidc", server.RequestHeaders["ai-gateway-auth-method"]);
+        }
+        finally
+        {
+            VercelEnvironment.OidcTokenOverride = null;
+            Environment.SetEnvironmentVariable(
+                GatewayProvider.ApiKeyEnvironmentVariable,
+                previousKey
+            );
+        }
+    }
 
     [Fact]
     [UpstreamTest(

@@ -289,13 +289,15 @@ internal static class Generation
             var instructionCount = InstructionMessages(instructions).Count;
             var initialMessages = messages.Skip(instructionCount).ToArray();
             var responseMessages = new List<ModelMessage>();
+            var callId = (options.GenerateCallId ?? NewCallId)();
             await ProcessInitialApprovalsAsync(
                     options,
                     messages,
                     instructionCount,
                     responseMessages,
                     options.NowMs ?? DefaultNowMs,
-                    cancellationToken
+                    cancellationToken,
+                    callId: callId
                 )
                 .ConfigureAwait(false);
             var steps = new List<StepResult>();
@@ -356,6 +358,28 @@ internal static class Generation
                     )
                     .ConfigureAwait(false);
 
+                if (options.OnLanguageModelCallStart != null)
+                {
+                    await NotifyAsync(
+                            () =>
+                                options.OnLanguageModelCallStart(
+                                    new LanguageModelCallStartEvent
+                                    {
+                                        CallId = callId,
+                                        Provider = current.Provider,
+                                        ModelId = current.ModelId,
+                                        Instructions = instructions,
+                                        Messages = messages.Skip(instructionCount).ToArray(),
+                                        Tools = callOptions.Tools,
+                                        CallOptions = callOptions,
+                                    },
+                                    cancellationToken
+                                ),
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false);
+                }
+
                 var now = options.NowMs ?? DefaultNowMs;
                 var stepStartMs = now();
                 var modelResponse = await current
@@ -388,6 +412,7 @@ internal static class Generation
                                         TimeSpan.FromMilliseconds(responseTimeMs)
                                     )
                                     {
+                                        CallId = callId,
                                         Request = RequestOrigin.GetRequestOrigin(
                                             modelResponse.Request?.Url
                                         )
@@ -415,7 +440,8 @@ internal static class Generation
                         LanguageModelRequestMetadata.Empty,
                         GeneratedResponseInfo(generated, current),
                         ParseResponseBody(generated.RawResponse),
-                        steeringMessages: deliveredSteeringMessages
+                        steeringMessages: deliveredSteeringMessages,
+                        callId: callId
                     )
                     .ConfigureAwait(false);
                 steps.Add(step);
@@ -538,13 +564,21 @@ internal static class Generation
         ILanguageModel model,
         StreamTextOptions options,
         IAiTelemetry? telemetry,
-        CancellationToken cancellationToken
+        CancellationToken cancellationToken,
+        bool singleConsumer = false
     )
     {
         var steeringRun = Steering.StartSteeringRun(options.ExperimentalSteering);
         try
         {
-            return StartStream(model, options, telemetry, steeringRun, cancellationToken);
+            return StartStream(
+                model,
+                options,
+                telemetry,
+                steeringRun,
+                cancellationToken,
+                singleConsumer
+            );
         }
         catch
         {
@@ -559,12 +593,13 @@ internal static class Generation
         StreamTextOptions options,
         IAiTelemetry? telemetry,
         SteeringRun? steeringRun,
-        CancellationToken cancellationToken
+        CancellationToken cancellationToken,
+        bool singleConsumer
     )
     {
         Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(options.MaxRetries);
         ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency);
-        var buffer = new PartBuffer();
+        var buffer = new PartBuffer { SingleConsumer = singleConsumer };
         if (options.Output is { IsJson: true } outputSpecification)
         {
             buffer.Transform = new OutputTransformStream(outputSpecification).Transform;
@@ -693,6 +728,7 @@ internal static class Generation
             var stop = options.StopWhen ?? StopWhen.IsStepCount(1);
             var current = model;
             buffer.Add(new StartPart());
+            var callId = (options.GenerateCallId ?? NewCallId)();
             await ProcessInitialApprovalsAsync(
                     options,
                     messages,
@@ -700,7 +736,8 @@ internal static class Generation
                     responseMessages,
                     options.NowMs ?? DefaultNowMs,
                     cancellationToken,
-                    buffer.Add
+                    buffer.Add,
+                    callId
                 )
                 .ConfigureAwait(false);
             initialResponseMessagesSource.TrySetResult(responseMessages.ToArray());
@@ -776,6 +813,7 @@ internal static class Generation
                 streamOptions.PromptMessages = stepMessages;
                 streamOptions.PromptInstructions = instructions;
                 streamOptions.NowMs = now;
+                streamOptions.CallId = callId;
                 streamOptions.ToolChoice = update?.ToolChoice ?? options.ToolChoice;
                 streamOptions.ProviderOptions = MergeProviderOptions(
                     options.ProviderOptions,
@@ -1241,7 +1279,8 @@ internal static class Generation
                         null,
                         streamedApprovals,
                         deliveredSteeringMessages.Select(delivered => delivered.Message).ToArray(),
-                        preliminary => buffer.Add(new ToolResultPart(preliminary))
+                        preliminary => buffer.Add(new ToolResultPart(preliminary)),
+                        callId
                     )
                     .ConfigureAwait(false);
                 foreach (var toolResult in step.ToolResults)
@@ -1842,7 +1881,8 @@ internal static class Generation
         JsonElement? responseBody,
         StreamedApprovals? streamed = null,
         IReadOnlyList<UserModelMessage>? steeringMessages = null,
-        Action<ExecutedTool>? onPreliminaryToolResult = null
+        Action<ExecutedTool>? onPreliminaryToolResult = null,
+        string? callId = null
     )
     {
         var toolExecutionMs = new Dictionary<string, double>(StringComparer.Ordinal);
@@ -1907,7 +1947,7 @@ internal static class Generation
         }
 
         var stepInputMessages = messages.ToArray();
-        var toolCallsCallId = NewCallId();
+        var toolCallsCallId = callId ?? NewCallId();
 
         // Each valid call to a known tool gets its approval status. A call that needs a user decision waits for it, and
         // an automatic denial settles the call without running it. A streamed step decided them as the calls arrived.
@@ -2738,7 +2778,8 @@ internal static class Generation
         List<ModelMessage> responseMessages,
         Func<double> now,
         CancellationToken cancellationToken,
-        Action<TextStreamPart>? emit = null
+        Action<TextStreamPart>? emit = null,
+        string? callId = null
     )
     {
         var history = messages.Skip(instructionCount).ToArray();
@@ -2816,7 +2857,7 @@ internal static class Generation
         }
 
         var stepMessages = messages.ToArray();
-        var approvalCallId = NewCallId();
+        var approvalCallId = callId ?? NewCallId();
         var executions = await ToolCallConcurrencyScheduler
             .MapWithConcurrency(
                 validated.ApprovedToolApprovals,
@@ -3827,6 +3868,7 @@ internal sealed class PartBuffer
 {
     private readonly List<TextStreamPart> _parts = new();
     private readonly object _gate = new();
+    private bool _claimed;
     private readonly SemaphoreSlim _signal = new(0);
     private Exception? _error;
     private bool _completed;
@@ -3834,6 +3876,30 @@ internal sealed class PartBuffer
 
     // Called when the last active reader stops before the stream ends.
     public Action? OnConsumerStop { get; set; }
+
+    // Maps to retention.replay === false. The buffer then serves one consumer and drops each part once it is read.
+    public bool SingleConsumer { get; set; }
+
+    // Maps to teeStream's AI_StreamAlreadyConsumedError.
+    public void Claim()
+    {
+        if (!SingleConsumer)
+        {
+            return;
+        }
+
+        lock (_gate)
+        {
+            if (_claimed)
+            {
+                throw new AiSdkException(
+                    "This result supports one stream consumer. Choose one stream projection or response helper."
+                );
+            }
+
+            _claimed = true;
+        }
+    }
 
     // Maps to createOutputTransformStream. Rewrites the text deltas of a structured output so that each one carries a partial output.
     public Func<TextStreamPart, IEnumerable<TextStreamPart>>? Transform { get; set; }
@@ -3906,7 +3972,22 @@ internal sealed class PartBuffer
                 {
                     if (index < _parts.Count)
                     {
-                        part = _parts[index++];
+                        part = _parts[index];
+                        if (SingleConsumer)
+                        {
+                            // Nothing replays, so a part that was read is released.
+                            _parts[index] = null!;
+                            if (++index == _parts.Count)
+                            {
+                                _parts.Clear();
+                                index = 0;
+                            }
+                        }
+                        else
+                        {
+                            index++;
+                        }
+
                         ready = true;
                     }
                     else if (_completed)
@@ -4030,12 +4111,19 @@ public sealed class StreamTextResult
     /// <summary>Consumes the stream without processing the parts. Use it when only the final result or the callbacks matter. Maps to <c>consumeStream</c>.</summary>
     public async Task ConsumeStreamAsync(CancellationToken cancellationToken = default)
     {
+        _buffer.Claim();
         await foreach (var _ in _buffer.Read(cancellationToken).ConfigureAwait(false)) { }
     }
 
     /// <summary>Text deltas only.</summary>
-    public async IAsyncEnumerable<string> TextStream(
-        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    public IAsyncEnumerable<string> TextStream(CancellationToken cancellationToken = default)
+    {
+        _buffer.Claim();
+        return ReadTextStream(cancellationToken);
+    }
+
+    private async IAsyncEnumerable<string> ReadTextStream(
+        [EnumeratorCancellation] CancellationToken cancellationToken
     )
     {
         await foreach (var part in _buffer.Read(cancellationToken).ConfigureAwait(false))
@@ -4052,8 +4140,33 @@ public sealed class StreamTextResult
     /// object for object output, the complete elements for array output, the choice for choice output, and the parsed JSON
     /// so far for JSON output. Each step starts over. Maps to <c>partialOutputStream</c>.
     /// </summary>
-    public async IAsyncEnumerable<JsonElement> PartialOutputStream(
-        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    public IAsyncEnumerable<JsonElement> PartialOutputStream(
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (_buffer.SingleConsumer && OutputSpecification == null)
+        {
+            throw new Vercel.AI.Operations.UnsupportedFunctionalityException(
+                "partialOutputStream without an explicit output specification with streamTextLowMemory",
+                "'partialOutputStream without an explicit output specification with streamTextLowMemory' functionality not supported."
+            );
+        }
+
+        _buffer.Claim();
+        return ReadPartialOutputStream(cancellationToken);
+    }
+
+    /// <summary>The deprecated alias of <see cref="PartialOutputStream"/>. Maps to <c>experimental_partialOutputStream</c>.</summary>
+    [Obsolete("Use PartialOutputStream instead.")]
+    public IAsyncEnumerable<JsonElement> ExperimentalPartialOutputStream(
+        CancellationToken cancellationToken = default
+    )
+    {
+        return PartialOutputStream(cancellationToken);
+    }
+
+    private async IAsyncEnumerable<JsonElement> ReadPartialOutputStream(
+        [EnumeratorCancellation] CancellationToken cancellationToken
     )
     {
         await foreach (var (partial, isNewStep) in ReadPartialOutputs(cancellationToken))
@@ -4069,8 +4182,16 @@ public sealed class StreamTextResult
     /// The elements of an array output as each one completes. Empty for any other output. The stream fails with a
     /// type validation error when the model exceeds <c>maxItems</c>. Maps to <c>elementStream</c>.
     /// </summary>
-    public async IAsyncEnumerable<JsonElement> ElementStream(
-        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    public IAsyncEnumerable<JsonElement> ElementStream(
+        CancellationToken cancellationToken = default
+    )
+    {
+        _buffer.Claim();
+        return ReadElementStream(cancellationToken);
+    }
+
+    private async IAsyncEnumerable<JsonElement> ReadElementStream(
+        [EnumeratorCancellation] CancellationToken cancellationToken
     )
     {
         var transform = OutputSpecification?.CreateElementStreamTransform();
@@ -4146,6 +4267,7 @@ public sealed class StreamTextResult
     /// <summary>Every stream part, including tool calls, tool results, and finish.</summary>
     public IAsyncEnumerable<TextStreamPart> Stream(CancellationToken cancellationToken = default)
     {
+        _buffer.Claim();
         return _buffer.Read(cancellationToken);
     }
 
@@ -4185,4 +4307,61 @@ public sealed class StreamTextResult
     /// tool results the client ran. Completes when the stream finishes. Maps to <c>responseMessages</c>.
     /// </summary>
     public Task<IReadOnlyList<ModelMessage>> ResponseMessages { get; }
+}
+
+/// <summary>
+/// A single-consumer view of a text generation, without replay or final content members. Maps to <c>StreamTextSingleConsumerResult</c>.
+/// Choose one stream projection. A second one throws.
+/// </summary>
+public sealed class StreamTextSingleConsumerResult
+{
+    private readonly StreamTextResult _result;
+
+    internal StreamTextSingleConsumerResult(StreamTextResult result)
+    {
+        _result = result;
+    }
+
+    /// <summary>Total usage. Completes when the stream finishes. Maps to <c>totalUsage</c> and <c>usage</c>.</summary>
+    public Task<LanguageModelUsage> Usage => _result.Usage;
+
+    /// <summary>Finish reason. Completes when the stream finishes. Maps to <c>finishReason</c>.</summary>
+    public Task<FinishReason> FinishReason => _result.FinishReason;
+
+    /// <summary>Consumes the stream without processing the parts. Maps to <c>consumeStream</c>.</summary>
+    public Task ConsumeStreamAsync(CancellationToken cancellationToken = default)
+    {
+        return _result.ConsumeStreamAsync(cancellationToken);
+    }
+
+    /// <summary>Text deltas only. Maps to <c>textStream</c>.</summary>
+    public IAsyncEnumerable<string> TextStream(CancellationToken cancellationToken = default)
+    {
+        return _result.TextStream(cancellationToken);
+    }
+
+    /// <summary>Every stream part. Maps to <c>stream</c>.</summary>
+    public IAsyncEnumerable<TextStreamPart> Stream(CancellationToken cancellationToken = default)
+    {
+        return _result.Stream(cancellationToken);
+    }
+
+    /// <summary>
+    /// The partial structured output. It requires an explicit output specification, otherwise it throws
+    /// <see cref="Vercel.AI.Operations.UnsupportedFunctionalityException"/>. Maps to <c>partialOutputStream</c>.
+    /// </summary>
+    public IAsyncEnumerable<JsonElement> PartialOutputStream(
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _result.PartialOutputStream(cancellationToken);
+    }
+
+    /// <summary>The elements of an array output as each one completes. Maps to <c>elementStream</c>.</summary>
+    public IAsyncEnumerable<JsonElement> ElementStream(
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _result.ElementStream(cancellationToken);
+    }
 }
