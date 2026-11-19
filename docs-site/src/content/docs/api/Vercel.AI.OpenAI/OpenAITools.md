@@ -24,7 +24,7 @@ Factories for the OpenAI provider-defined tools, the port of upstream `openaiToo
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L358)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L370)
 
 ## Methods
 
@@ -49,7 +49,7 @@ The apply patch tool (`openai.apply_patch`). The application executes it, so the
 
 **Returns:** [Tool](/api/Vercel.AI/Tool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L504)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L516)
 
 <a id="Vercel_AI_OpenAI_OpenAITools_CodeInterpreter_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITools_CodeInterpreter_Vercel_AI_OpenAI_OpenAICodeInterpreterToolOptions_"></a>
@@ -72,7 +72,7 @@ The code interpreter tool (`openai.code_interpreter`).
 
 **Returns:** [LanguageModelTool](/api/Vercel.AI.Provider/LanguageModelTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L560)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L572)
 
 <a id="Vercel_AI_OpenAI_OpenAITools_Computer_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITools_Computer"></a>
@@ -89,7 +89,7 @@ The computer tool (`openai.computer`).
 
 **Returns:** [LanguageModelTool](/api/Vercel.AI.Provider/LanguageModelTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L521)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L533)
 
 <a id="Vercel_AI_OpenAI_OpenAITools_CustomTool_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITools_CustomTool_Vercel_AI_OpenAI_OpenAICustomToolOptions_"></a>
@@ -112,7 +112,7 @@ A custom tool (`openai.custom`) with the name given in &lt;code class="paramref"
 
 **Returns:** [LanguageModelTool](/api/Vercel.AI.Provider/LanguageModelTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L667)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L669)
 
 <a id="Vercel_AI_OpenAI_OpenAITools_FileSearch_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITools_FileSearch_Vercel_AI_OpenAI_OpenAIFileSearchToolOptions_"></a>
@@ -135,7 +135,7 @@ The file search tool (`openai.file_search`).
 
 **Returns:** [LanguageModelTool](/api/Vercel.AI.Provider/LanguageModelTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L525)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L537)
 
 <a id="Vercel_AI_OpenAI_OpenAITools_ImageGeneration_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITools_ImageGeneration_Vercel_AI_OpenAI_OpenAIImageGenerationToolOptions_"></a>
@@ -158,7 +158,7 @@ The image generation tool (`openai.image_generation`).
 
 **Returns:** [LanguageModelTool](/api/Vercel.AI.Provider/LanguageModelTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L361)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L373)
 
 <a id="Vercel_AI_OpenAI_OpenAITools_LocalShell_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITools_LocalShell"></a>
@@ -175,7 +175,7 @@ The local shell tool (`openai.local_shell`).
 
 **Returns:** [LanguageModelTool](/api/Vercel.AI.Provider/LanguageModelTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L500)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L512)
 
 <a id="Vercel_AI_OpenAI_OpenAITools_Mcp_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITools_Mcp_Vercel_AI_OpenAI_OpenAIMcpToolOptions_"></a>
@@ -198,7 +198,7 @@ The MCP tool (`openai.mcp`).
 
 **Returns:** [LanguageModelTool](/api/Vercel.AI.Provider/LanguageModelTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L434)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L446)
 
 <a id="Vercel_AI_OpenAI_OpenAITools_ProgrammaticToolCalling_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITools_ProgrammaticToolCalling"></a>
@@ -215,7 +215,7 @@ The programmatic tool calling tool (`openai.programmatic_tool_calling`).
 
 **Returns:** [LanguageModelTool](/api/Vercel.AI.Provider/LanguageModelTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L724)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L726)
 
 <a id="Vercel_AI_OpenAI_OpenAITools_Shell_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITools_Shell_Vercel_AI_OpenAI_OpenAIShellToolOptions_"></a>
@@ -238,7 +238,7 @@ The shell tool (`openai.shell`). A local call is executed by the application, so
 
 **Returns:** [Tool](/api/Vercel.AI/Tool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L580)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L604)
 
 <a id="Vercel_AI_OpenAI_OpenAITools_ToolSearch_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITools_ToolSearch_Vercel_AI_OpenAI_OpenAIToolSearchToolOptions_"></a>
@@ -261,7 +261,7 @@ The tool search tool (`openai.tool_search`).
 
 **Returns:** [LanguageModelTool](/api/Vercel.AI.Provider/LanguageModelTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L690)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L692)
 
 <a id="Vercel_AI_OpenAI_OpenAITools_WebSearch_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITools_WebSearch_Vercel_AI_OpenAI_OpenAIWebSearchToolOptions_"></a>
@@ -284,7 +284,7 @@ The web search tool (`openai.web_search`).
 
 **Returns:** [LanguageModelTool](/api/Vercel.AI.Provider/LanguageModelTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L400)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L412)
 
 <a id="Vercel_AI_OpenAI_OpenAITools_WebSearchPreview_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITools_WebSearchPreview_Vercel_AI_OpenAI_OpenAIWebSearchPreviewToolOptions_"></a>
@@ -307,4 +307,4 @@ The web search preview tool (`openai.web_search_preview`).
 
 **Returns:** [LanguageModelTool](/api/Vercel.AI.Provider/LanguageModelTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L704)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L706)

@@ -23,7 +23,7 @@ Options of [ApplyPatch(OpenAIApplyPatchToolOptions)](/api/Vercel.AI.OpenAI/OpenA
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L255)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L267)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Applies the patch operation of a call and returns its status. Maps to `execute`.
 
 **Value:** [Func&lt;OpenAIApplyPatchInput, ToolExecutionOptions, Task&lt;OpenAIApplyPatchOutput&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L258)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L270)
 
 <a id="Vercel_AI_OpenAI_OpenAIApplyPatchToolOptions_NeedsApproval_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIApplyPatchToolOptions_NeedsApproval"></a>
@@ -59,7 +59,7 @@ When true, a call needs approval before it runs. Maps to `needsApproval: true`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L265)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L277)
 
 <a id="Vercel_AI_OpenAI_OpenAIApplyPatchToolOptions_NeedsApprovalFunction_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIApplyPatchToolOptions_NeedsApprovalFunction"></a>
@@ -76,4 +76,4 @@ Decides for each call whether it needs approval. Used instead of [NeedsApproval]
 
 **Value:** [Func&lt;OpenAIApplyPatchInput, ToolNeedsApprovalOptions, Task&lt;bool&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L268)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L280)

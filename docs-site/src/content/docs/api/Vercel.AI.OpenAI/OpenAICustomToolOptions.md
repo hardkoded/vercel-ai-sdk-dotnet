@@ -23,7 +23,7 @@ Options of [CustomTool(OpenAICustomToolOptions)](/api/Vercel.AI.OpenAI/OpenAIToo
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L276)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L288)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Description of the tool.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L282)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L294)
 
 <a id="Vercel_AI_OpenAI_OpenAICustomToolOptions_GrammarDefinition_"></a>
 <a id="Vercel_AI_OpenAI_OpenAICustomToolOptions_GrammarDefinition"></a>
@@ -59,7 +59,7 @@ Grammar definition, used with [GrammarSyntax](#Vercel_AI_OpenAI_OpenAICustomTool
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L288)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L300)
 
 <a id="Vercel_AI_OpenAI_OpenAICustomToolOptions_GrammarSyntax_"></a>
 <a id="Vercel_AI_OpenAI_OpenAICustomToolOptions_GrammarSyntax"></a>
@@ -76,7 +76,7 @@ Grammar syntax of the input: `regex` or `lark`. Without it the input is unconstr
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L285)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L297)
 
 <a id="Vercel_AI_OpenAI_OpenAICustomToolOptions_Name_"></a>
 <a id="Vercel_AI_OpenAI_OpenAICustomToolOptions_Name"></a>
@@ -93,4 +93,4 @@ The tool name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L279)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L291)

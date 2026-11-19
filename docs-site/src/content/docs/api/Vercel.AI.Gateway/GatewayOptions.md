@@ -93,7 +93,7 @@ Custom headers merged into the auth headers of realtime requests.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L40)
 
 <a id="Vercel_AI_Gateway_GatewayOptions_MetadataCacheRefreshMillis_"></a>
 <a id="Vercel_AI_Gateway_GatewayOptions_MetadataCacheRefreshMillis"></a>
@@ -110,7 +110,7 @@ How frequently to refresh the metadata cache of [GetAvailableModelsAsync(Cancell
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L43)
 
 <a id="Vercel_AI_Gateway_GatewayOptions_O11yHeaders_"></a>
 <a id="Vercel_AI_Gateway_GatewayOptions_O11yHeaders"></a>
@@ -125,11 +125,12 @@ public IReadOnlyDictionary<string, string>? O11yHeaders { get; set; }
 
 Observability headers sent on every request. When null, they come from `VERCEL_DEPLOYMENT_ID`
 (`ai-o11y-deployment-id`), `VERCEL_ENV` (`ai-o11y-environment`), `VERCEL_REGION`
-(`ai-o11y-region`), and `VERCEL_PROJECT_ID` (`ai-o11y-project-id`).
+(`ai-o11y-region`), the `x-vercel-id` header of the [VercelRequestContext](/api/Vercel.AI.Gateway/VercelRequestContext/) (`ai-o11y-request-id`),
+and `VERCEL_PROJECT_ID` (`ai-o11y-project-id`).
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L34)
 
 <a id="Vercel_AI_Gateway_GatewayOptions_TeamIdOrSlug_"></a>
 <a id="Vercel_AI_Gateway_GatewayOptions_TeamIdOrSlug"></a>
@@ -146,7 +147,7 @@ Vercel team ID or slug sent as `x-vercel-ai-gateway-team` and carried in realtim
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L37)
 
 <a id="Vercel_AI_Gateway_GatewayOptions_WebSocket_"></a>
 <a id="Vercel_AI_Gateway_GatewayOptions_WebSocket"></a>
@@ -163,4 +164,4 @@ Custom WebSocket implementation for streaming transcription. Defaults to `Client
 
 **Value:** [WebSocketFactory](/api/Vercel.AI.ProviderUtils/WebSocketFactory/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L46)

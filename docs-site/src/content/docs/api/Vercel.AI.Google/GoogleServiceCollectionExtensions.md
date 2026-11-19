@@ -23,7 +23,7 @@ Registers Google and Vertex.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L602)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L610)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Adds [GoogleProvider](/api/Vercel.AI.Google/GoogleProvider/).
 
 **Returns:** [IServiceCollection](https://learn.microsoft.com/dotnet/api/microsoft.extensions.dependencyinjection.iservicecollection)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L605)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L613)
 
 <a id="Vercel_AI_Google_GoogleServiceCollectionExtensions_AddGoogleVertex_"></a>
 <a id="Vercel_AI_Google_GoogleServiceCollectionExtensions_AddGoogleVertex_Microsoft_Extensions_DependencyInjection_IServiceCollection_System_Action_Vercel_AI_Google_VertexOptions__"></a>
@@ -73,4 +73,4 @@ Adds [GoogleVertexProvider](/api/Vercel.AI.Google/GoogleVertexProvider/).
 
 **Returns:** [IServiceCollection](https://learn.microsoft.com/dotnet/api/microsoft.extensions.dependencyinjection.iservicecollection)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L625)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L633)

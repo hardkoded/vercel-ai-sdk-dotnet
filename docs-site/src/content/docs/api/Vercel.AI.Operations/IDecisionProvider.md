@@ -22,6 +22,6 @@ public interface IDecisionProvider
 A provider that returns decision models. [ProviderRegistry](/api/Vercel.AI/ProviderRegistry/) and [CustomProvider](/api/Vercel.AI/CustomProvider/) resolve
 decision models through it. Maps to the optional `decisionModel` factory of a provider.
 
-**Derived:** [AnthropicAwsProvider](/api/Vercel.AI.Anthropic/AnthropicAwsProvider/), [AnthropicProvider](/api/Vercel.AI.Anthropic/AnthropicProvider/), [CustomProvider](/api/Vercel.AI/CustomProvider/), [GatewayProvider](/api/Vercel.AI.Gateway/GatewayProvider/), [GoogleVertexAnthropicProvider](/api/Vercel.AI.Google/GoogleVertexAnthropicProvider/), [HeyGenProvider](/api/Vercel.AI.HeyGen/HeyGenProvider/), [PerplexityProvider](/api/Vercel.AI.Perplexity/PerplexityProvider/)
+**Derived:** [AnthropicAwsProvider](/api/Vercel.AI.Anthropic/AnthropicAwsProvider/), [AnthropicProvider](/api/Vercel.AI.Anthropic/AnthropicProvider/), [CustomProvider](/api/Vercel.AI/CustomProvider/), [GatewayProvider](/api/Vercel.AI.Gateway/GatewayProvider/), [GoogleVertexAnthropicProvider](/api/Vercel.AI.Google/GoogleVertexAnthropicProvider/), [HeyGenProvider](/api/Vercel.AI.HeyGen/HeyGenProvider/), [LiquidProvider](/api/Vercel.AI.Liquid/LiquidProvider/), [PerplexityProvider](/api/Vercel.AI.Perplexity/PerplexityProvider/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L258)

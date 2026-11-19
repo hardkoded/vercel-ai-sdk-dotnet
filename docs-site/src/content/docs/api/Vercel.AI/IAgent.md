@@ -23,4 +23,4 @@ An agent that streams a reply to model messages. Maps to the `Agent` interface.
 
 **Derived:** [Agent](/api/Vercel.AI/Agent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L14)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L15)

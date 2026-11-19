@@ -162,7 +162,7 @@ Maps an HTTP error body. Non-JSON bodies become [GatewayResponseError](/api/Verc
 
 **Returns:** [GatewayError](/api/Vercel.AI.Gateway/GatewayError/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L613)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L618)
 
 <a id="Vercel_AI_Gateway_GatewayErrors_ParseAuthMethod_"></a>
 <a id="Vercel_AI_Gateway_GatewayErrors_ParseAuthMethod_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__"></a>

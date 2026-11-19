@@ -25,7 +25,7 @@ Passed to [OnToolExecutionStart](/api/Vercel.AI/GenerateTextOptions/#Vercel_AI_G
 
 **Derived:** [ToolExecutionEndEvent](/api/Vercel.AI/ToolExecutionEndEvent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1392)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1428)
 
 ## Constructors
 
@@ -49,9 +49,26 @@ Creates an event.
 | `toolCall` | [GeneratedToolCall](/api/Vercel.AI.Provider/GeneratedToolCall/) |  |
 | `messages` | [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1395)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1431)
 
 ## Properties
+
+<a id="Vercel_AI_ToolExecutionStartEvent_CallId_"></a>
+<a id="Vercel_AI_ToolExecutionStartEvent_CallId"></a>
+
+### CallId
+
+
+```csharp
+public string? CallId { get; init; }
+```
+
+
+Unique identifier of the generation this tool call belongs to. Maps to `callId`.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1438)
 
 <a id="Vercel_AI_ToolExecutionStartEvent_Messages_"></a>
 <a id="Vercel_AI_ToolExecutionStartEvent_Messages"></a>
@@ -68,7 +85,7 @@ The messages the model received in the step that made the call.
 
 **Value:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1405)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1447)
 
 <a id="Vercel_AI_ToolExecutionStartEvent_ToolCall_"></a>
 <a id="Vercel_AI_ToolExecutionStartEvent_ToolCall"></a>
@@ -85,4 +102,21 @@ The call about to run.
 
 **Value:** [GeneratedToolCall](/api/Vercel.AI.Provider/GeneratedToolCall/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1402)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1441)
+
+<a id="Vercel_AI_ToolExecutionStartEvent_ToolContext_"></a>
+<a id="Vercel_AI_ToolExecutionStartEvent_ToolContext"></a>
+
+### ToolContext
+
+
+```csharp
+public JsonElement? ToolContext { get; init; }
+```
+
+
+The validated context of the tool. Maps to `toolContext`.
+
+**Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1444)

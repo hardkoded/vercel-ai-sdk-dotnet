@@ -25,7 +25,7 @@ How the model should choose tools. Maps to `toolChoice`.
 
 **Derived:** [ToolChoice.NamedChoice](/api/Vercel.AI.Provider/ToolChoice.NamedChoice/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L602)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L599)
 
 ## Properties
 
@@ -44,7 +44,7 @@ The model may call tools.
 
 **Value:** [ToolChoice](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L613)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L610)
 
 <a id="Vercel_AI_Provider_ToolChoice_None_"></a>
 <a id="Vercel_AI_Provider_ToolChoice_None"></a>
@@ -61,7 +61,7 @@ The model must not call tools.
 
 **Value:** [ToolChoice](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L616)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L613)
 
 <a id="Vercel_AI_Provider_ToolChoice_Required_"></a>
 <a id="Vercel_AI_Provider_ToolChoice_Required"></a>
@@ -78,7 +78,7 @@ The model must call a tool.
 
 **Value:** [ToolChoice](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L619)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L616)
 
 <a id="Vercel_AI_Provider_ToolChoice_Type_"></a>
 <a id="Vercel_AI_Provider_ToolChoice_Type"></a>
@@ -95,7 +95,7 @@ Choice type: auto, none, required, or tool.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L610)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L607)
 
 ## Methods
 
@@ -120,4 +120,4 @@ The model must call &lt;code class="paramref"&gt;toolName&lt;/code&gt;.
 
 **Returns:** [ToolChoice](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L622)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L619)

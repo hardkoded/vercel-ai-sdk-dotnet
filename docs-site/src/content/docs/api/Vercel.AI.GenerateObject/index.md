@@ -23,3 +23,16 @@ Public types in the `Vercel.AI.GenerateObject` namespace.
 | [GenerateObjectStepEndEvent](/api/Vercel.AI.GenerateObject/GenerateObjectStepEndEvent/) | The raw result of the one model step made by generateObject. |
 | [GenerateObjectStepStartEvent](/api/Vercel.AI.GenerateObject/GenerateObjectStepStartEvent/) | Event sent immediately before the generate-object model call. |
 | [NoObjectGeneratedException](/api/Vercel.AI.GenerateObject/NoObjectGeneratedException/) | Thrown when a model response cannot produce the requested object. Maps to NoObjectGeneratedError. |
+| [ObjectStreamErrorPart](/api/Vercel.AI.GenerateObject/ObjectStreamErrorPart/) | An error. Maps to { type: 'error' }. |
+| [ObjectStreamFinishPart](/api/Vercel.AI.GenerateObject/ObjectStreamFinishPart/) | The end of the stream. Maps to { type: 'finish' }. |
+| [ObjectStreamObjectPart](/api/Vercel.AI.GenerateObject/ObjectStreamObjectPart/) | A new partial object. Maps to { type: 'object' }. |
+| [ObjectStreamPart](/api/Vercel.AI.GenerateObject/ObjectStreamPart/) | A part of the full stream of a streamObject call. Maps to ObjectStreamPart. |
+| [ObjectStreamTextDeltaPart](/api/Vercel.AI.GenerateObject/ObjectStreamTextDeltaPart/) | A text delta of the JSON representation of the object. Maps to { type: 'text-delta' }. |
+| [StreamObjectOptions&lt;T&gt;](/api/Vercel.AI.GenerateObject/StreamObjectOptions-1/) | Options for CancellationToken). Maps to streamObject. |
+| [StreamObjectResult&lt;T&gt;](/api/Vercel.AI.GenerateObject/StreamObjectResult-1/) | The result of a streamObject call. Maps to StreamObjectResult. |
+
+## Enums
+
+| Type | Summary |
+| --- | --- |
+| [StreamObjectOutput](/api/Vercel.AI.GenerateObject/StreamObjectOutput/) | The type of the output of streamObject. Maps to the output option. |

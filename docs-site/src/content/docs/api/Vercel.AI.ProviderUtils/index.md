@@ -83,6 +83,8 @@ Public types in the `Vercel.AI.ProviderUtils` namespace.
 | [SerializedModelOptions](/api/Vercel.AI.ProviderUtils/SerializedModelOptions/) | A serialized model id and config. Maps to the result of serializeModelOptions. |
 | [SseParser](/api/Vercel.AI.ProviderUtils/SseParser/) | Reads Server-Sent Events data: lines. |
 | [StringifyWithBigIntAndCyclesUtil](/api/Vercel.AI.ProviderUtils/StringifyWithBigIntAndCyclesUtil/) | Maps to stringify-with-bigint-and-cycles.ts. |
+| [TelemetryRedactedValue](/api/Vercel.AI.ProviderUtils/TelemetryRedactedValue/) | A JSON value with the provider-owned telemetry view attached. The view is not part of the value, so the original is untouched. Maps to a value annotated by withTelemetryRedaction in @ai-sdk/provider-utils. |
+| [TelemetryRedaction](/api/Vercel.AI.ProviderUtils/TelemetryRedaction/) | Provider-owned telemetry redaction. Maps to telemetry-redaction.ts in @ai-sdk/provider-utils. |
 | [ToolExecution](/api/Vercel.AI.ProviderUtils/ToolExecution/) | Runs a tool delegate and reports preliminary and final outputs. |
 | [ToolExecution.ToolStep&lt;T&gt;](/api/Vercel.AI.ProviderUtils/ToolExecution.ToolStep-1/) | One tool output. |
 | [ToolNameMapping](/api/Vercel.AI.ProviderUtils/ToolNameMapping/) | Maps client tool names to provider tool names. Maps to ToolNameMapping. |

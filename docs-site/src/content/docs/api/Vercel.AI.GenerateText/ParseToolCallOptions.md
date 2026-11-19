@@ -23,7 +23,7 @@ Options of `CancellationToken)`. Maps to the options of `parseToolCall`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L128)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L134)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates options for &lt;code class="paramref"&gt;toolCall&lt;/code&gt;.
 | --- | --- | --- |
 | `toolCall` | [GeneratedToolCall](/api/Vercel.AI.Provider/GeneratedToolCall/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L131)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L137)
 
 ## Properties
 
@@ -65,7 +65,7 @@ The instructions given to the model. They are passed to [RepairToolCall](#Vercel
 
 **Value:** [Instructions](/api/Vercel.AI.Prompt/Instructions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L158)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L164)
 
 <a id="Vercel_AI_GenerateText_ParseToolCallOptions_Messages_"></a>
 <a id="Vercel_AI_GenerateText_ParseToolCallOptions_Messages"></a>
@@ -82,7 +82,7 @@ The messages of the current step. They are passed to [RepairToolCall](#Vercel_AI
 
 **Value:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L155)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L161)
 
 <a id="Vercel_AI_GenerateText_ParseToolCallOptions_RefineToolInput_"></a>
 <a id="Vercel_AI_GenerateText_ParseToolCallOptions_RefineToolInput"></a>
@@ -100,7 +100,7 @@ Maps to `refineToolInput`.
 
 **Value:** [IReadOnlyDictionary&lt;string, Func&lt;JsonElement, CancellationToken, Task&lt;JsonElement&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L149)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L155)
 
 <a id="Vercel_AI_GenerateText_ParseToolCallOptions_RepairToolCall_"></a>
 <a id="Vercel_AI_GenerateText_ParseToolCallOptions_RepairToolCall"></a>
@@ -117,7 +117,7 @@ Repairs a call whose tool is unknown or whose input is invalid. Maps to `repairT
 
 **Value:** [ToolCallRepairFunction](/api/Vercel.AI.GenerateText/ToolCallRepairFunction/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L143)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L149)
 
 <a id="Vercel_AI_GenerateText_ParseToolCallOptions_ToolCall_"></a>
 <a id="Vercel_AI_GenerateText_ParseToolCallOptions_ToolCall"></a>
@@ -134,7 +134,7 @@ The call to parse.
 
 **Value:** [GeneratedToolCall](/api/Vercel.AI.Provider/GeneratedToolCall/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L137)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L143)
 
 <a id="Vercel_AI_GenerateText_ParseToolCallOptions_Tools_"></a>
 <a id="Vercel_AI_GenerateText_ParseToolCallOptions_Tools"></a>
@@ -151,4 +151,4 @@ The available tools. Null means no tools were set, which differs from an empty l
 
 **Value:** [IReadOnlyList&lt;Tool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L140)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L146)

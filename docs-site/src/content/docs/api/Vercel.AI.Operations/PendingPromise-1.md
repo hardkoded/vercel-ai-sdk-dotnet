@@ -29,7 +29,7 @@ A promise that can be resolved once.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L423)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L426)
 
 ## Properties
 
@@ -48,7 +48,7 @@ True until `Resolve(%600)` or `Exception)`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L428)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L431)
 
 <a id="Vercel_AI_Operations_PendingPromise_1_IsResolved_"></a>
 <a id="Vercel_AI_Operations_PendingPromise_1_IsResolved"></a>
@@ -65,7 +65,7 @@ True after `Resolve(%600)`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L431)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L434)
 
 <a id="Vercel_AI_Operations_PendingPromise_1_Task_"></a>
 <a id="Vercel_AI_Operations_PendingPromise_1_Task"></a>
@@ -82,7 +82,7 @@ The underlying task.
 
 **Value:** [Task&lt;T&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L434)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L437)
 
 ## Methods
 
@@ -105,7 +105,7 @@ Rejects the promise when it is still pending.
 | --- | --- | --- |
 | `error` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L453)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L456)
 
 <a id="Vercel_AI_Operations_PendingPromise_1_Resolve_"></a>
 <a id="Vercel_AI_Operations_PendingPromise_1_Resolve__0_"></a>
@@ -126,4 +126,4 @@ Resolves the promise when it is still pending.
 | --- | --- | --- |
 | `value` | `T` |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L440)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L443)

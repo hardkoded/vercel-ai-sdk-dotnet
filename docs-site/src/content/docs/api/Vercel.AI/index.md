@@ -16,7 +16,9 @@ Client, text generation, streaming, tools, and agents.
 | --- | --- |
 | [AbortPart](/api/Vercel.AI/AbortPart/) | The call was aborted. It is the last part of the stream. |
 | [Agent](/api/Vercel.AI/Agent/) | An agent that calls tools until StopWhen matches. Maps to ToolLoopAgent. |
+| [Agent&lt;TCallOptions&gt;](/api/Vercel.AI/Agent-1/) | An agent that takes options on each call. Maps to ToolLoopAgent with a CALLOPTIONS type. |
 | [AgentOptions](/api/Vercel.AI/AgentOptions/) | Agent settings. |
+| [AgentOptions&lt;TCallOptions&gt;](/api/Vercel.AI/AgentOptions-1/) | Agent settings with call options. Maps to ToolLoopAgentSettings with a CALLOPTIONS type. |
 | [Ai](/api/Vercel.AI/Ai/) | Static entry points. String model ids use the AI Gateway and AIGATEWAYAPIKEY. |
 | [AiClient](/api/Vercel.AI/AiClient/) | Default IAiClient. String model ids are resolved by the AI Gateway. |
 | [AiSdkOptions](/api/Vercel.AI/AiSdkOptions/) | Options for AiSdkOptions%7d). |
@@ -74,6 +76,7 @@ Client, text generation, streaming, tools, and agents.
 | [ReasoningEndPart](/api/Vercel.AI/ReasoningEndPart/) | A reasoning block ended. Maps to reasoning-end. |
 | [ReasoningFilePart](/api/Vercel.AI/ReasoningFilePart/) | A file the model generated as part of its reasoning. A URL has been downloaded by the time this part is emitted. Maps to the reasoning-file stream part. |
 | [ReasoningStartPart](/api/Vercel.AI/ReasoningStartPart/) | A reasoning block started. Maps to reasoning-start. |
+| [RequestOrigin](/api/Vercel.AI/RequestOrigin/) | Removes credentials, paths, queries, and fragments of a request URL before telemetry. Maps to telemetry/get-request-origin.ts. |
 | [RerankingCapabilities](/api/Vercel.AI/RerankingCapabilities/) | Upstream ModelCapabilities.reranking. |
 | [RerankingDocumentCapabilities](/api/Vercel.AI/RerankingDocumentCapabilities/) | Upstream ModelCapabilities.reranking.documents. |
 | [RerankOptions](/api/Vercel.AI/RerankOptions/) | Rerank options. |
@@ -122,6 +125,7 @@ Client, text generation, streaming, tools, and agents.
 | Type | Summary |
 | --- | --- |
 | [IAgent](/api/Vercel.AI/IAgent/) | An agent that streams a reply to model messages. Maps to the Agent interface. |
+| [IAgent&lt;TCallOptions&gt;](/api/Vercel.AI/IAgent-1/) | An agent that streams a reply to model messages and takes call options. Maps to the Agent interface with a CALLOPTIONS type. |
 | [IAiClient](/api/Vercel.AI/IAiClient/) | Core AI SDK client. Maps to the ai package functions. |
 | [IAiTelemetry](/api/Vercel.AI/IAiTelemetry/) | Telemetry hook invoked around generate and stream calls. |
 | [ILanguageModelMiddleware](/api/Vercel.AI/ILanguageModelMiddleware/) | Wraps doGenerate and doStream. Maps to language-model middleware. |
