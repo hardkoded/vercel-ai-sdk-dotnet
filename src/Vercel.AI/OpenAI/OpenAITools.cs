@@ -136,6 +136,18 @@ public sealed class OpenAICodeInterpreterToolOptions
 
     /// <summary>File ids made available to an automatically created container.</summary>
     public IReadOnlyList<string>? FileIds { get; set; }
+
+    /// <summary>Memory limit of an automatically created container, such as <c>4g</c>. Maps to <c>container.memoryLimit</c>.</summary>
+    public string? MemoryLimit { get; set; }
+
+    /// <summary>Disables network access of an automatically created container. Maps to a <c>disabled</c> <c>container.networkPolicy</c>.</summary>
+    public bool NetworkDisabled { get; set; }
+
+    /// <summary>Domains an automatically created container may reach. Maps to <c>container.networkPolicy.allowedDomains</c>.</summary>
+    public IReadOnlyList<string>? AllowedDomains { get; set; }
+
+    /// <summary>Secrets injected for allowed domains. Maps to <c>container.networkPolicy.domainSecrets</c>.</summary>
+    public IReadOnlyList<OpenAIShellDomainSecret>? DomainSecrets { get; set; }
 }
 
 /// <summary>A skill available in a local shell environment.</summary>
@@ -566,10 +578,22 @@ public static class OpenAITools
         {
             args["container"] = options.ContainerId;
         }
-        else if (options?.FileIds != null)
+        else if (
+            options?.FileIds != null
+            || options?.MemoryLimit != null
+            || options?.NetworkDisabled == true
+            || options?.AllowedDomains != null
+        )
         {
             var container = new JsonObject();
             SetList(container, "fileIds", options.FileIds);
+            Set(container, "memoryLimit", options.MemoryLimit);
+            SetNetworkPolicy(
+                container,
+                options.NetworkDisabled,
+                options.AllowedDomains,
+                options.DomainSecrets
+            );
             args["container"] = container;
         }
 
@@ -586,34 +610,12 @@ public static class OpenAITools
             Set(mapped, "containerId", environment.ContainerId);
             SetList(mapped, "fileIds", environment.FileIds);
             Set(mapped, "memoryLimit", environment.MemoryLimit);
-            if (environment.NetworkDisabled)
-            {
-                mapped["networkPolicy"] = new JsonObject { ["type"] = "disabled" };
-            }
-            else if (environment.AllowedDomains != null)
-            {
-                var policy = new JsonObject { ["type"] = "allowlist" };
-                SetList(policy, "allowedDomains", environment.AllowedDomains);
-                if (environment.DomainSecrets != null)
-                {
-                    var secrets = new JsonArray();
-                    foreach (var secret in environment.DomainSecrets)
-                    {
-                        secrets.Add(
-                            new JsonObject
-                            {
-                                ["domain"] = secret.Domain,
-                                ["name"] = secret.Name,
-                                ["value"] = secret.Value,
-                            }
-                        );
-                    }
-
-                    policy["domainSecrets"] = secrets;
-                }
-
-                mapped["networkPolicy"] = policy;
-            }
+            SetNetworkPolicy(
+                mapped,
+                environment.NetworkDisabled,
+                environment.AllowedDomains,
+                environment.DomainSecrets
+            );
 
             if (environment.Skills != null)
             {
@@ -794,6 +796,43 @@ public static class OpenAITools
         }
 
         return result;
+    }
+
+    private static void SetNetworkPolicy(
+        JsonObject target,
+        bool disabled,
+        IReadOnlyList<string>? allowedDomains,
+        IReadOnlyList<OpenAIShellDomainSecret>? domainSecrets
+    )
+    {
+        if (disabled)
+        {
+            target["networkPolicy"] = new JsonObject { ["type"] = "disabled" };
+        }
+        else if (allowedDomains != null)
+        {
+            var policy = new JsonObject { ["type"] = "allowlist" };
+            SetList(policy, "allowedDomains", allowedDomains);
+            if (domainSecrets != null)
+            {
+                var secrets = new JsonArray();
+                foreach (var secret in domainSecrets)
+                {
+                    secrets.Add(
+                        new JsonObject
+                        {
+                            ["domain"] = secret.Domain,
+                            ["name"] = secret.Name,
+                            ["value"] = secret.Value,
+                        }
+                    );
+                }
+
+                policy["domainSecrets"] = secrets;
+            }
+
+            target["networkPolicy"] = policy;
+        }
     }
 
     private static LanguageModelTool Create(

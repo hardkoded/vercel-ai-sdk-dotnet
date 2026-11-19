@@ -17,7 +17,18 @@ internal static class OpenAIResponsesToolArgs
         {"type":"object","properties":{
           "container":{"anyOf":[
             {"type":"string"},
-            {"type":"object","properties":{"fileIds":{"type":"array","items":{"type":"string"}}}}]}}}
+            {"type":"object","properties":{
+               "fileIds":{"type":"array","items":{"type":"string"}},
+               "memoryLimit":{"enum":["1g","4g","16g","64g"]},
+               "networkPolicy":{"anyOf":[
+                 {"type":"object","properties":{"type":{"const":"disabled"}},"required":["type"]},
+                 {"type":"object","properties":{
+                    "type":{"const":"allowlist"},
+                    "allowedDomains":{"type":"array","items":{"type":"string"}},
+                    "domainSecrets":{"type":"array","items":{"type":"object","properties":{
+                       "domain":{"type":"string"},"name":{"type":"string"},"value":{"type":"string"}},
+                       "required":["domain","name","value"]}}},
+                  "required":["type","allowedDomains"]}]}}}]}}}
         """
     )!;
 

@@ -808,14 +808,22 @@ internal sealed class ProviderSseResponse
     /// </summary>
     public LanguageModelStreamResult ToStreamResult(
         IAsyncEnumerable<LanguageModelStreamPart> stream,
-        string requestJson
+        string requestJson,
+        Func<JsonElement, JsonElement>? redactRequestBody = null
     )
     {
         try
         {
+            var request = LanguageModelStreamRequest.FromJson(requestJson);
             return new LanguageModelStreamResult(
                 new ReleasingAsyncEnumerable<LanguageModelStreamPart>(stream, Resource),
-                LanguageModelStreamRequest.FromJson(requestJson),
+                redactRequestBody == null
+                    ? request
+                    : new LanguageModelStreamRequest(request.Body)
+                    {
+                        Url = request.Url,
+                        RedactBody = redactRequestBody,
+                    },
                 new LanguageModelStreamResponse(Headers),
                 Resource
             );

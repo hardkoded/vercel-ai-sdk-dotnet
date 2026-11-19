@@ -961,6 +961,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             WebSearchToolName(options.Tools),
             IsShellProviderExecuted(options.Tools),
             ExtractApprovalRequestIdToToolCallIdMapping(options.Prompt)
+        ).WithRedactRawResponse(
+            RedactOpenAIToolCredentials.WithOpenAIResponseRedaction(document.RootElement).Redact
         );
     }
 
@@ -993,7 +995,10 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 sse.Headers,
                 cancellationToken
             ),
-            json
+            json,
+            RedactOpenAIToolCredentials.WithOpenAIResponseRedaction(
+                JsonSerializer.SerializeToElement(prepared.Body)
+            ).Redact
         );
     }
 
