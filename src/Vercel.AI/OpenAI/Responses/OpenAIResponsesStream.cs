@@ -1015,6 +1015,14 @@ internal sealed class OpenAIResponsesStream
                 _annotations.Clear();
                 _activeOutputItemIds.Remove(outputIndex);
                 break;
+            case OpenAIResponsesApi.Compaction compaction:
+                parts.Add(
+                    new CustomStreamPart(
+                        "openai.compaction",
+                        OpenAIResponsesOutput.CompactionMetadata(compaction, _providerOptionsName)
+                    )
+                );
+                break;
             case OpenAIResponsesApi.Program program:
                 parts.Add(
                     new ToolCallStreamPart(

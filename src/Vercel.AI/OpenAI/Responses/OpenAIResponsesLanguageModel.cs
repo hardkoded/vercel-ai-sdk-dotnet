@@ -1560,6 +1560,17 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     }
 
                     break;
+                case OpenAIResponsesApi.Compaction compaction:
+                    content.Add(
+                        new GeneratedCustom(
+                            "openai.compaction",
+                            OpenAIResponsesOutput.CompactionMetadata(
+                                compaction,
+                                providerOptionsName
+                            )
+                        )
+                    );
+                    break;
             }
         }
 
@@ -2303,6 +2314,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                         );
                     }
 
+                    AddCompaction(input, assistant, providerOptionsName, store, hasConversation);
                     break;
                 case ToolApprovalResponseModelMessage approvalResponse:
                     // The denied tool result that follows an approval response is skipped upstream (execution-denied with an
@@ -3818,6 +3830,46 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
     // Stored messages of reasoning models are bound to the reasoning item that produced them. When the reasoning
     // has been removed (for example with pruneMessages), referencing the message fails, so it is sent with its content.
+    // An openai.compaction custom part is replayed as a reference when stored, else as the full compaction item.
+    private static void AddCompaction(
+        JsonArray input,
+        AssistantModelMessage assistant,
+        string providerOptionsName,
+        bool store,
+        bool hasConversation
+    )
+    {
+        foreach (var part in assistant.Parts.OfType<AssistantCustomPart>())
+        {
+            if (part.Kind != "openai.compaction")
+            {
+                continue;
+            }
+
+            var options = ProviderOptionsFor(part.ProviderOptions, providerOptionsName);
+            var id = OpenAIJson.String(options, "itemId");
+            if (id == null || hasConversation)
+            {
+                continue;
+            }
+
+            if (store)
+            {
+                input.Add(new JsonObject { ["type"] = "item_reference", ["id"] = id });
+                continue;
+            }
+
+            input.Add(
+                new JsonObject
+                {
+                    ["type"] = "compaction",
+                    ["id"] = id,
+                    ["encrypted_content"] = OpenAIJson.String(options, "encryptedContent"),
+                }
+            );
+        }
+    }
+
     private static void AddStoredText(
         JsonArray input,
         AssistantModelMessage assistant,
