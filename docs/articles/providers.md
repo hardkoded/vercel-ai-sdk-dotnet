@@ -2228,6 +2228,70 @@ var config = new RealtimeModelV4SessionConfig
 };
 ```
 
+## xAI speech
+
+`XaiProvider.SpeechModel()` creates the model for the [xAI Text to Speech API](https://docs.x.ai/developers/model-capabilities/audio/text-to-speech) (`XaiSpeechModel`, provider id `xai.speech`). The endpoint needs no model id, so the model id is empty. `XaiProvider.SpeechModel(string)` is the `ISpeechModel` factory and uses the id you pass. The model implements `ISpeechModel` and `ISpeechCaller`, so it works with `GenerateSpeech`. A request posts JSON to `{base}/tts`.
+
+```csharp
+using Vercel.AI.Xai;
+
+var xai = XaiProvider.Create(new XaiOptions { ApiKey = Environment.GetEnvironmentVariable("XAI_API_KEY") });
+var result = await GenerateSpeech.GenerateSpeechAsync(new GenerateSpeechRequest
+{
+    Model = xai.SpeechModel(),
+    Text = "Hello from the AI SDK!",
+    Voice = "ara",
+    Language = "en",
+    OutputFormat = "mp3",
+    Speed = 1.1,
+});
+```
+
+- **Text**: text to synthesize. It can contain xAI speech tags such as `[pause]`, `[laugh]`, or `<whisper>...</whisper>`.
+- **Voice**: the xAI voice id. Defaults to `eve`. Built-in ids are `eve`, `ara`, `rex`, `sal`, and `leo`. Custom voice ids are accepted too.
+- **Language**: a BCP-47 code or `auto` (the default).
+- **Speed**: speech rate multiplier from 0.7 to 1.5.
+- **OutputFormat**: `mp3` (the default), `wav`, `pcm`, `mulaw`, or `alaw`. Another value falls back to `mp3` with an `unsupported` warning on `outputFormat`.
+- **Instructions**: xAI has no such field. It adds an `unsupported` warning. Use speech tags in `Text` instead.
+
+Pass xAI controls under the `xai` key of `ProviderOptions` (`XaiSpeechModelOptions`). An invalid value throws `InvalidArgumentException` before any request.
+
+- **sampleRate** _int_: 8000, 16000, 22050, 24000, 44100, or 48000 Hz.
+- **bitRate** _int_: 32000, 64000, 96000, 128000, or 192000 bits per second. It applies to `mp3` only. For another format it is ignored with an `unsupported` warning on `providerOptions`.
+- **optimizeStreamingLatency** _int_: 0, 1, or 2. A higher value reduces the time to the first audio chunk, trading some quality.
+- **textNormalization** _bool_: normalizes written-form text into spoken form before synthesis.
+- **withTimestamps** _bool_: returns character-level timings with the audio. The API then answers with a JSON envelope, which the model decodes.
+- **replace** _map of string to string_: phrases and their spoken substitutions, such as respellings or IPA phonetics, applied before synthesis.
+
+`ProviderMetadata.xai` holds the `traceId` from the `x-trace-id` response header, and with `withTimestamps` also `duration` (seconds), `contentType`, and `audioTimestamps` (`graphChars` and `graphTimes`, where `graphTimes[i]` is the `[start, end]` interval of the character `graphChars[i]`, in seconds).
+
+## xAI image
+
+`XaiProvider.ImageModel(modelId)` (alias `XaiProvider.Image(modelId)`) creates an image model (`XaiImageModel`, provider id `xai.image`). It implements `IImageModel` and `IImageCaller`, so it works with `GenerateImage`. A call without input images posts to `{base}/images/generations`. A call with input images posts to `{base}/images/edits`, with one image as `image` and several as `images`. A URL image is sent as it is and file bytes as a base64 data URI. The model asks for `b64_json`, and when the response carries only URLs, it downloads them.
+
+```csharp
+using Vercel.AI.Xai;
+
+var xai = XaiProvider.Create(new XaiOptions { ApiKey = Environment.GetEnvironmentVariable("XAI_API_KEY") });
+var result = await GenerateImage.GenerateImageAsync(new GenerateImageRequest
+{
+    Model = xai.ImageModel("grok-imagine-image"),
+    Text = "A futuristic cityscape at sunset",
+    AspectRatio = "16:9",
+});
+```
+
+The catalog decides `MaxImagesPerCall` (3), `SupportsFileInputs`, and `SupportsMaskInputs`. For `grok-imagine-image`, `grok-imagine-image-pro`, and `grok-imagine-image-2.0` they are `true` and `false`. For another model id both are `null`. xAI does not support `Size`, so use `AspectRatio` (`1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `3:2`, `2:3`, `2:1`, `1:2`, `19.5:9`, `9:19.5`, `20:9`, `9:20`, and `auto`). `Size`, `Seed`, and a mask each add an `unsupported` warning. A response with `respect_moderation: false` throws an `AiSdkException`, because xAI replaced the image with a placeholder.
+
+Pass xAI controls under the `xai` key of `ProviderOptions` (`XaiImageModelOptions`). An invalid value throws `InvalidArgumentException` before any request.
+
+- **resolution** _string_: `1k`, `1.5k`, or `2k`. `grok-imagine-image` does not support `1.5k`.
+- **quality** _string_: `low`, `medium`, `high`, or `auto`. `grok-imagine-image-2.0` accepts `low`, `medium`, and `auto`.
+- **aspect_ratio** _string_: used when the call sets no `AspectRatio`.
+- **output_format** _string_, **sync_mode** _bool_, and **user** _string_ (a unique end-user identifier).
+
+`ProviderMetadata.xai.images` has one entry per image, with `revisedPrompt` when xAI revised the prompt. `costInUsdTicks` is the cost that xAI reports.
+
 ## xAI realtime
 
 `XaiProvider.RealtimeModel(id)` returns an `XaiRealtimeModel`. `GetWebSocketConfig(token, url)` returns a `RealtimeModelV4WebSocketConfig` with the URL and the `xai-client-secret.{token}` subprotocol. `XaiRealtimeModelOptions` has no members yet, like upstream's empty options type.
