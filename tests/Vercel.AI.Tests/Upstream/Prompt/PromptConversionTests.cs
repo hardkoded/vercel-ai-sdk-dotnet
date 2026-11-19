@@ -5,6 +5,8 @@
 using System.Text.Json;
 using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
+using Vercel.AI.Tests.Upstream.ToolLoopAgent;
 
 namespace Vercel.AI.Tests.Upstream.Prompt;
 
@@ -449,7 +451,8 @@ public sealed class PrepareToolsTests
             },
             ["withSandbox"] = new PromptTool("dynamic")
             {
-                DescriptionFactory = context => "Env: " + (context.SandboxDescription ?? "none"),
+                DescriptionFactory = context =>
+                    "Env: " + (context.ExperimentalSandbox?.Description ?? "none"),
                 InputSchema = Json("{}"),
             },
         };
@@ -459,12 +462,12 @@ public sealed class PrepareToolsTests
             {
                 ["contextual"] = new Dictionary<string, object?> { ["userName"] = "Ada" },
             },
-            sandboxDescription: "test-sandbox"
+            experimentalSandbox: new TestSandboxSession()
         );
         Assert.Equal("contextual", result![0].Name);
         Assert.Equal("User is Ada", result[0].Description);
         Assert.Equal("withSandbox", result[1].Name);
-        Assert.Equal("Env: test-sandbox", result[1].Description);
+        Assert.Equal("Env: test sandbox", result[1].Description);
     }
 
     private static Dictionary<string, PromptTool> SampleTools()

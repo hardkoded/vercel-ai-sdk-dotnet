@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Prompt;
 
@@ -10,17 +11,17 @@ namespace Vercel.AI.Prompt;
 public sealed class ToolDescriptionContext
 {
     /// <summary>Creates context.</summary>
-    public ToolDescriptionContext(object? context, string? sandboxDescription)
+    public ToolDescriptionContext(object? context, ISandboxSession? experimentalSandbox)
     {
         Context = context;
-        SandboxDescription = sandboxDescription;
+        ExperimentalSandbox = experimentalSandbox;
     }
 
     /// <summary>Per-tool context value.</summary>
     public object? Context { get; }
 
-    /// <summary>Sandbox description, when a sandbox is active.</summary>
-    public string? SandboxDescription { get; }
+    /// <summary>Sandbox session, when a sandbox is active. Maps to <c>experimental_sandbox</c>.</summary>
+    public ISandboxSession? ExperimentalSandbox { get; }
 }
 
 /// <summary>A tool passed to <see cref="PromptTools.PrepareTools"/>.</summary>
@@ -109,7 +110,7 @@ public static class PromptTools
         IReadOnlyDictionary<string, PromptTool>? tools,
         IReadOnlyList<string>? toolOrder = null,
         IReadOnlyDictionary<string, object?>? toolsContext = null,
-        string? sandboxDescription = null
+        ISandboxSession? experimentalSandbox = null
     )
     {
         if (tools is null || tools.Count == 0)
@@ -148,7 +149,7 @@ public static class PromptTools
             if (tool.DescriptionFactory != null)
             {
                 description = tool.DescriptionFactory(
-                    new ToolDescriptionContext(context, sandboxDescription)
+                    new ToolDescriptionContext(context, experimentalSandbox)
                 );
             }
 
