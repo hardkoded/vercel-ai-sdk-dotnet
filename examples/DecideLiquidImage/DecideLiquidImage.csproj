@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Answers a choice question and locates an object in an image with a Liquid decision model.</Description>
+    </PropertyGroup>
+</Project>

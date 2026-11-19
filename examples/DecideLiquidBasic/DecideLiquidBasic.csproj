@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Answers choice, boolean, and score questions with a Liquid decision model.</Description>
+    </PropertyGroup>
+</Project>

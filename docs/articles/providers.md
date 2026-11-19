@@ -65,6 +65,7 @@ Native wire protocols have their own request mappers:
 - `CerebrasModelCatalog.Entries` maps every known language model id (`LanguageModelIds`: `gpt-oss-120b`, `gemma-4-31b`) to a `CerebrasLanguageModelEntry`. `GetCerebrasLanguageModelEntry(modelId)` returns the entry of one model and accepts any model id; an unknown id gets an entry with `Unknown` support. `Language` declares the model's capabilities as `ModelCapability` values (`Inputs`, `ObjectGeneration`, `Tools`, `Reasoning`, `Sampling`) plus `StructuredOutput.JsonSchema`, which is `true` for every id. `ProviderOptions` declares per-model support for the options in `CerebrasProviderOptions.Language`. `serviceTier` needs a preview-enabled dedicated endpoint, and `queueThreshold` needs `flex` or `auto` on one. The declarations are metadata; they do not validate requests.
 - `MistralModelCatalog.Entries` maps every Mistral model id that declares capabilities to a `MistralModelEntry` with a `Language`, `Transcription`, `Speech` or `Embedding` section. `GetMistralLanguageModelEntry(modelId)`, `GetMistralTranscriptionModelEntry(modelId)` and `GetMistralSpeechModelEntry(modelId)` accept any model id; an unknown id gets an entry with `Unknown` support. The language entry declares inputs, tools, sampling and the reasoning efforts of the Chat API (`Language.Reasoning`) and the Conversations API (`Language.Endpoints.Conversation.Reasoning`). `MistralProvider` reads these efforts to resolve `reasoning` and to warn on models without reasoning configuration. `ProviderOptions` declares per-model support for the options in `MistralProviderOptions` (`Language`, `Embedding`, `Transcription`, `Speech`). The declarations are metadata; they do not validate requests.
 - HeyGen (`HEYGEN_API_KEY`) posts the state and questions to `/v3/models/decisions` through `HeyGenProvider.DecisionModel(id)` (provider id `heygen.decision`). See [HeyGen](#heygen).
+- Liquid (`LIQUID_API_KEY`) posts the state and questions to `/decisions/v1/systemone` through `LiquidProvider.DecisionModel(id)` (provider id `liquid.decision`). See [Liquid](#liquid).
 - ScaleDown (`SCALEDOWN_API_KEY`) posts the state and questions to `/v1/scaledown` through `ScaleDownProvider.DecisionModel(id)` (provider id `scaledown.decision`), and extracts text fields through `ScaleDownProvider.ExtractionModel(id)` (`/v1/chat/completions`, provider id `scaledown.extraction`). See [ScaleDown](scaledown.md).
 - Anthropic speaks the Messages API. `AnthropicAwsProvider` points that body at the AWS external endpoint. `DecisionModel(id)` answers `Decide` questions by wrapping the Messages language model in `DecisionLanguageModel` (provider id `anthropic.decision`). `AnthropicProvider` implements `IDecisionProvider`, and the deprecated `IEvaluationProvider.EvaluationModel(id)` resolves to the same model. `AnthropicProvider.EvaluationModel(id)` is a deprecated alias of `DecisionModel(id)`. `AnthropicProvider.RubricModel(id)` returns the rubric model. Anthropic tool calls emit `ToolInputStartStreamPart`, each non-empty input fragment as `ToolInputDeltaStreamPart`, and `ToolInputEndStreamPart` before `ToolCallStreamPart`; deferred tool calls pre-populated in `message_start` emit the same sequence with their complete input as one delta. A stream whose events end without a `message_stop` for the last message finishes with `FinishReason.Interrupted` and no raw finish reason, even when an earlier message in the same stream completed. A stream that ends after an error event or an invalid event gets no interrupted finish. A stream that ends before it produced any output also gets no interrupted finish, and the provider reports no finish part for it (the core no-output rejection is tracked in #769). The interrupted finish keeps the usage and provider metadata of the last completed message, or unset usage and no provider metadata when none completed.
   - `providerOptions.anthropic.includePings` (`true`, default `false`) emits a typed `PingStreamPart` for each streaming `ping` event, which `StreamTextAsync` forwards as `PingPart`. It is handled locally and never sent in the request body, and it has no effect on non-streaming calls. Pings carry no output, usage, or timeout reset, and stay out of the content, the text, and UI message streams. Raw `ping` events remain available through `Include.RawChunks` independently of this option. It applies to the Anthropic Messages implementation and the providers that wrap it (the custom provider key works too); Amazon Bedrock Converse does not emit typed pings.
@@ -693,6 +694,97 @@ HeyGen enforces its own [media limits](https://developers.heygen.com/docs/models
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `heygen-decision-1` | Yes | Yes | Yes | No | Yes | No | No |
 | `heygen-decision-1-turbo` | Yes | Yes | Yes | No | Yes | No | No |
+
+## Liquid
+
+The Liquid provider (`Vercel.AI.Liquid`) supports Liquid's hosted [decision models](https://docs.liquid.ai/lfm/models/decision-models), which classify, check, score, and locate objects in text, images, and audio in a single call with calibrated probabilities. Liquid's OpenAI-compatible chat completions API is not included.
+
+```csharp
+using Vercel.AI.Liquid;
+using Vercel.AI.OpenAICompatible;
+
+var liquid = LiquidProvider.Create(new OpenAICompatibleOptions { ApiKey = Environment.GetEnvironmentVariable("LIQUID_API_KEY") });
+```
+
+The following options are optional:
+
+- **ApiKey** _string_: The key sent as a bearer token in the `Authorization` header. Defaults to the `LIQUID_API_KEY` environment variable. The key is read when a model is used, so a missing key fails then and not when the provider is created.
+- **BaseUrl** _string_: The API URL prefix. Defaults to `https://api.liquid.ai`.
+- **Headers** _IDictionary&lt;string, string&gt;_: Additional request headers.
+
+`AddLiquid` registers the provider with dependency injection. `LanguageModel`, `EmbeddingModel`, and `ImageModel` throw an `AiSdkException`.
+
+### Decision models
+
+Use `liquid.DecisionModel(modelId)` with `Decide.DecideAsync` to call the [Liquid Decisions API](https://docs.liquid.ai/api/reference/decision-models/make-decisions) (`POST {BaseUrl}/decisions/v1/systemone`; provider id `liquid.decision`). This API is experimental and may change in patch releases. `LiquidProvider` implements `IDecisionProvider`, and `DecisionLiquidModel` implements `IDecisionCaller`.
+
+```csharp
+var result = await Decide.DecideAsync(new DecideRequest
+{
+    Model = liquid.DecisionModel("d1.2"),
+    State = "Our production API is returning 500 errors on every request. All customers are affected.",
+    Questions = new Dictionary<string, DecisionQuestion>
+    {
+        ["team"] = new("choice", "Which team should handle this ticket?", new DecisionChoiceCriteria(new Dictionary<string, DecisionInput?>
+        {
+            ["billing"] = "Charges, invoices, refunds, or payment methods",
+            ["engineering"] = "Bugs, outages, and technical malfunctions",
+            ["account"] = "Sign-in, permissions, or plan changes",
+        })),
+        ["outage"] = new("boolean", "Is the customer reporting a service outage?"),
+        ["urgency"] = new("score", "How urgent is this ticket?", new DecisionScoreCriteria(["Can wait", "Handle today", "Time-sensitive", "Blocking revenue"])),
+    },
+});
+
+result.Answers["outage"].Probability; // P(true), from 0 to 1
+result.Answers["team"].Choice;        // "billing", "engineering", or "account"
+result.Answers["urgency"].Score;      // Expected zero-based level, from 0 to 3
+```
+
+`d1.2` and `d1.2-ultra` are available. `d1.2-ultra` is the more capable model for harder decisions. Other model ids are sent unchanged. The model maps a `boolean` question to Liquid's native `noul` type and returns Choice and Score probability distributions without rounding. Every question requires instructions. Examples are in `examples/DecideLiquidBasic`, `examples/DecideLiquidImage`, and `examples/DecideLiquidAudio`.
+
+#### Images and audio
+
+Add image and audio file parts to the state. The model sends them in Liquid's top-level `images` and `audio` arrays as base64 data URLs, and keeps text and JSON parts in the native `state`. Liquid reads images and audio before the state, each in request order, so describe each input's role in the text by its order. A state that contains only files is sent as `null`.
+
+Images must be JPEG, PNG, or WebP. Audio must be WAV, MP3 (`audio/mpeg`), FLAC, or OGG. A media type without a subtype, such as `audio`, is detected from the bytes. Liquid does not accept remote URLs, so pass file data inline. `Decide.DecideAsync` downloads URL file state before it calls the model. A file whose media type is not an image or audio, a media type that is not listed, a media type that cannot be detected, a URL file, a provider reference, or an inline text file throws `UnsupportedFunctionalityException`.
+
+A single text part is sent as a string and a single JSON part as structured JSON. Other combinations of text and JSON parts are joined with newlines.
+
+#### Box questions
+
+A `box` question locates an object in a picture and requires exactly one image in the state. Box edges are fractions of the image's height (`Top`, `Bottom`) and width (`Left`, `Right`), measured from its top-left corner: read them from `Answers["id"].Box`.
+
+When Liquid does not find the object (its `found` probability is below 0.5), it returns no box. The model maps this to a `refusal` answer, so `Decide.DecideAsync` throws `DecisionRefusalError` with the question id. The `found` probability is available at `ProviderMetadata.liquid.found`.
+
+#### Confidence, legends, and response metadata
+
+`ProviderMetadata` at `liquid` has `confidence` (Choice, Score, and Box confidence, keyed by question id), `legend` (Score index-to-description maps), `found` (Box found probabilities), and `cost` (in USD, when Liquid reports it). Confidence is distinct from the selected option's probability. `Usage` keeps the input and output token counts. Liquid bills input tokens only, so `OutputTokens` is `0`.
+
+#### Decision limits
+
+The model throws `InvalidArgumentException` before any request when the call goes over these limits:
+
+| Input | Limit |
+| --- | --- |
+| Questions | 1 to 128, each with instructions |
+| Choice options | 2 to 255 |
+| Score levels | 2 to 10, all non-null |
+| Media | At most 8 images and 8 audio clips |
+| Box questions | Exactly one image in the state |
+
+Liquid enforces its own [image requirements](https://docs.liquid.ai/lfm/models/d1#image-requirements) and [audio requirements](https://docs.liquid.ai/lfm/models/d1#audio-requirements). `MaxOutputTokens`, `Reasoning`, and every `providerOptions.liquid` entry are not sent. Each becomes an `unsupported` warning. A response with a missing, extra, or invalid answer throws `InvalidResponseDataException` or an `ApiException`. A Liquid error body `{ error: { message, code } }` becomes the message `message (code)`.
+
+`DecisionLiquidModel.Serialize()` returns a `SerializedModelOptions` with the model id, `baseURL`, and the resolved request headers, including the `Authorization` header. `DecisionLiquidModel.Deserialize(options, httpClient)` restores the model. The HTTP client is not serialized.
+
+`LiquidModelCatalog.Entries` maps every known decision model id (`DecisionModelIds`) to a `ModelEntry<object>`, the shared catalog contract in `Vercel.AI`. `GetLiquidDecisionModelEntry(modelId)` returns the entry of one model and accepts any model id. The declarations are metadata; they do not validate requests.
+
+| Model | Boolean | Choice | Score | Box | Image input | Reasoning | Max output tokens |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `d1.2` | Yes | Yes | Yes | Yes | Yes | No | No |
+| `d1.2-ultra` | Yes | Yes | Yes | Yes | Yes | No | No |
+
+Both models also accept audio input.
 
 ## Kling AI
 
