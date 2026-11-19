@@ -24,7 +24,7 @@ Choose one stream projection. A second one throws.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4316)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4441)
 
 ## Properties
 
@@ -43,7 +43,7 @@ Finish reason. Completes when the stream finishes. Maps to `finishReason`.
 
 **Value:** [Task&lt;FinishReason&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4329)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4454)
 
 <a id="Vercel_AI_StreamTextSingleConsumerResult_Usage_"></a>
 <a id="Vercel_AI_StreamTextSingleConsumerResult_Usage"></a>
@@ -60,7 +60,7 @@ Total usage. Completes when the stream finishes. Maps to `totalUsage` and `usage
 
 **Value:** [Task&lt;LanguageModelUsage&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4326)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4451)
 
 ## Methods
 
@@ -85,7 +85,7 @@ Consumes the stream without processing the parts. Maps to `consumeStream`.
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4332)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4457)
 
 <a id="Vercel_AI_StreamTextSingleConsumerResult_ElementStream_"></a>
 <a id="Vercel_AI_StreamTextSingleConsumerResult_ElementStream_System_Threading_CancellationToken_"></a>
@@ -108,7 +108,7 @@ The elements of an array output as each one completes. Maps to `elementStream`.
 
 **Returns:** [IAsyncEnumerable&lt;JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4361)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4486)
 
 <a id="Vercel_AI_StreamTextSingleConsumerResult_PartialOutputStream_"></a>
 <a id="Vercel_AI_StreamTextSingleConsumerResult_PartialOutputStream_System_Threading_CancellationToken_"></a>
@@ -132,7 +132,7 @@ The partial structured output. It requires an explicit output specification, oth
 
 **Returns:** [IAsyncEnumerable&lt;JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4353)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4478)
 
 <a id="Vercel_AI_StreamTextSingleConsumerResult_Stream_"></a>
 <a id="Vercel_AI_StreamTextSingleConsumerResult_Stream_System_Threading_CancellationToken_"></a>
@@ -155,7 +155,7 @@ Every stream part. Maps to `stream`.
 
 **Returns:** [IAsyncEnumerable&lt;TextStreamPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4344)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4469)
 
 <a id="Vercel_AI_StreamTextSingleConsumerResult_TextStream_"></a>
 <a id="Vercel_AI_StreamTextSingleConsumerResult_TextStream_System_Threading_CancellationToken_"></a>
@@ -178,4 +178,4 @@ Text deltas only. Maps to `textStream`.
 
 **Returns:** [IAsyncEnumerable&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4338)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4463)

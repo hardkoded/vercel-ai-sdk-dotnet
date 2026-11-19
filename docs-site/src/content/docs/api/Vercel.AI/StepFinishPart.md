@@ -23,7 +23,7 @@ A step finished.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [TextStreamPart](/api/Vercel.AI/TextStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2379)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2421)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a step-finish part.
 | `response` | [LanguageModelResponseMetadata](/api/Vercel.AI/LanguageModelResponseMetadata/) |  |
 | `rawFinishReason` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2382)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2424)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Performance metrics of the step. Maps to `performance`.
 
 **Value:** [StepPerformance](/api/Vercel.AI/StepPerformance/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2407)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2449)
 
 <a id="Vercel_AI_StepFinishPart_ProviderMetadata_"></a>
 <a id="Vercel_AI_StepFinishPart_ProviderMetadata"></a>
@@ -84,7 +84,7 @@ Provider metadata of the step. Maps to `providerMetadata`.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2404)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2446)
 
 <a id="Vercel_AI_StepFinishPart_RawFinishReason_"></a>
 <a id="Vercel_AI_StepFinishPart_RawFinishReason"></a>
@@ -101,7 +101,7 @@ The finish reason exactly as the provider reported it, or &lt;a href="https://le
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2401)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2443)
 
 <a id="Vercel_AI_StepFinishPart_Response_"></a>
 <a id="Vercel_AI_StepFinishPart_Response"></a>
@@ -118,7 +118,7 @@ Response metadata of the step: id, model id, timestamp, and headers. Maps to `re
 
 **Value:** [LanguageModelResponseMetadata](/api/Vercel.AI/LanguageModelResponseMetadata/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2398)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2440)
 
 <a id="Vercel_AI_StepFinishPart_Step_"></a>
 <a id="Vercel_AI_StepFinishPart_Step"></a>
@@ -135,4 +135,4 @@ Completed step.
 
 **Value:** [StepResult](/api/Vercel.AI/StepResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2395)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2437)

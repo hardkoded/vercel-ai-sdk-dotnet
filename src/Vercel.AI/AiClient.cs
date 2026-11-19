@@ -44,6 +44,12 @@ public interface IAiClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>Streams a typed object. Maps to the deprecated <c>streamObject</c>.</summary>
+    StreamObjectResult<T> StreamObjectAsync<T>(
+        StreamObjectOptions<T> options,
+        CancellationToken cancellationToken = default
+    );
+
     /// <summary>Streams text and runs tools. Maps to <c>streamText</c>.</summary>
     StreamTextResult StreamTextAsync(
         StreamTextOptions options,
@@ -313,6 +319,25 @@ public sealed class AiClient : IAiClient
         }
 
         return result;
+    }
+
+    /// <inheritdoc />
+    public StreamObjectResult<T> StreamObjectAsync<T>(
+        StreamObjectOptions<T> options,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        return StreamObject.Start(
+            ResolveLanguage(options.Model, options.ModelId),
+            options,
+            _telemetry,
+            cancellationToken
+        );
     }
 
     private static async Task NotifyCallbackAsync(

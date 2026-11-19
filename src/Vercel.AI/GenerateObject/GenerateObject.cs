@@ -229,6 +229,36 @@ public sealed class GenerateObjectStepEndEvent : GenerateObjectEvent
         ProviderMetadata = step.ProviderMetadata;
     }
 
+    internal GenerateObjectStepEndEvent(
+        string callId,
+        string provider,
+        string modelId,
+        string objectText,
+        FinishReason finishReason,
+        LanguageModelUsage usage,
+        IReadOnlyList<CallWarning> warnings,
+        LanguageModelRequestMetadata request,
+        LanguageModelResponseMetadata response,
+        JsonElement? providerMetadata
+    )
+        : base(callId, provider, modelId)
+    {
+        ObjectText = objectText;
+        FinishReason = finishReason;
+        Usage = usage;
+        Warnings = warnings;
+        Request = request;
+        Response =
+            response as StepResponse
+            ?? new StepResponse(
+                response.Id,
+                response.Timestamp,
+                response.ModelId,
+                response.Headers
+            );
+        ProviderMetadata = providerMetadata;
+    }
+
     /// <summary>The only step number made by generateObject.</summary>
     public int StepNumber => 0;
 
@@ -278,8 +308,43 @@ public sealed class GenerateObjectEndEvent<T> : GenerateObjectEvent
         ProviderMetadata = result.ProviderMetadata;
     }
 
-    /// <summary>The parsed object.</summary>
+    internal GenerateObjectEndEvent(
+        string callId,
+        string provider,
+        string modelId,
+        T? value,
+        Exception? error,
+        FinishReason finishReason,
+        LanguageModelUsage usage,
+        IReadOnlyList<CallWarning> warnings,
+        LanguageModelRequestMetadata request,
+        LanguageModelResponseMetadata response,
+        JsonElement? providerMetadata
+    )
+        : base(callId, provider, modelId)
+    {
+        Object = value!;
+        Error = error;
+        FinishReason = finishReason;
+        Usage = usage;
+        Warnings = warnings;
+        Request = request;
+        Response =
+            response as StepResponse
+            ?? new StepResponse(
+                response.Id,
+                response.Timestamp,
+                response.ModelId,
+                response.Headers
+            );
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>The parsed object. It is <see langword="default"/> when <see cref="Error"/> is set, as <c>streamObject</c> reports an object that does not match the schema.</summary>
     public T Object { get; }
+
+    /// <summary>The error, such as a type validation error when the final object does not match the schema. Set only by <c>streamObject</c>.</summary>
+    public Exception? Error { get; }
 
     /// <summary>Reasoning returned by the model.</summary>
     public string? Reasoning { get; }
