@@ -110,12 +110,12 @@ public sealed class WhenUsingToolsToModelOutputTests : IAsyncLifetime
     [Fact]
     [UpstreamTest(
         Prefix + "should have a single call that contains the tool result as text",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The agent does not set the ai-sdk-agent/tool-loop user-agent header, so the test does not assert the headers."
+        Coverage = UpstreamCoverage.Covered
     )]
-    public void Should_have_a_single_call_that_contains_the_tool_result_as_text_without_headers()
+    public void Should_have_a_single_call_that_contains_the_tool_result_as_text()
     {
         var input = Assert.Single(_recordedInputs);
+        Assert.Equal("ai-sdk-agent/tool-loop", input.Headers!["user-agent"]);
         Assert.False(input.IncludeRawChunks);
         Assert.Equal("auto", input.ToolChoice!.Type);
 
