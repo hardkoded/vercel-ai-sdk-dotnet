@@ -748,22 +748,10 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
             ["input"] = input,
             ["encoding_format"] = "float",
         };
-        if (_provider.Options.ProviderName == "mistral")
+        var width = fromOptions.Dimensions ?? dimensions;
+        if (width != null)
         {
-            // Mistral names the width output_dimension and does not accept dimensions.
-            var outputDimension = MistralOutputDimension(providerOptions) ?? dimensions;
-            if (outputDimension != null)
-            {
-                body["output_dimension"] = outputDimension.Value;
-            }
-        }
-        else
-        {
-            var width = fromOptions.Dimensions ?? dimensions;
-            if (width != null)
-            {
-                body["dimensions"] = width.Value;
-            }
+            body["dimensions"] = width.Value;
         }
 
         var endUser = user ?? fromOptions.User;
@@ -833,25 +821,6 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
             warnings,
             new EmbeddingResponseInfo(response.Headers, response.Body)
         );
-    }
-
-    private static int? MistralOutputDimension(
-        IReadOnlyDictionary<string, JsonElement>? providerOptions
-    )
-    {
-        if (
-            providerOptions != null
-            && providerOptions.TryGetValue("mistral", out var bag)
-            && bag.ValueKind == JsonValueKind.Object
-            && bag.TryGetProperty("outputDimension", out var value)
-            && value.ValueKind == JsonValueKind.Number
-            && value.TryGetInt32(out var parsed)
-        )
-        {
-            return parsed;
-        }
-
-        return null;
     }
 
     private ProviderEmbeddingOptions ReadEmbeddingOptions(

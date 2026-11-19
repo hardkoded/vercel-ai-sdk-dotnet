@@ -360,6 +360,10 @@ Keys that Cohere omits are absent from the metadata. Citations that only referen
 
 Set `CohereOptions.GenerateId` to control the ids of the sources (upstream `generateId`).
 
+## Mistral embeddings
+
+`MistralProvider.EmbeddingModel(id)` creates a `MistralEmbeddingModel` (provider id `mistral.embedding`, at most 32 values per call, no parallel calls). It posts to `{base}/embeddings` with `encoding_format` set to `float`. `MistralEmbeddingModelOptions` (maps to `mistralEmbeddingModelOptions`) reads `providerOptions.mistral`: `metadata` is attached to the request, `outputDimension` is sent as `output_dimension` and wins over the `dimensions` call setting, and `outputDtype` (`float`, `int8`, `uint8`, `binary` or `ubinary`) is sent as `output_dtype`. A value of the wrong shape throws `InvalidArgumentException`. The model ids and per-model option support are in `MistralModelCatalog`.
+
 ## Mistral Conversations API
 
 `MistralProvider.Conversation(modelId)` creates a `MistralConversationLanguageModel` that calls Mistral's Conversations API (`POST {base}/conversations`, provider id `mistral.conversation`). It works with `GenerateTextAsync` and `StreamTextAsync`, and it adds Mistral's built-in web search. `MistralProvider.LanguageModel(id)` and the default chat model keep using Chat Completions, which has no web search.
