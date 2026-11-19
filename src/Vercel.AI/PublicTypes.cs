@@ -1414,6 +1414,9 @@ public sealed class LanguageModelCallEndEvent
     /// <summary>Id of the model call, when the call has one. Maps to <c>callId</c>.</summary>
     public string? CallId { get; init; }
 
+    /// <summary>Request of the model call. Only <see cref="LanguageModelStreamRequest.Url"/> is set, reduced to its origin. Maps to <c>request</c>.</summary>
+    public LanguageModelStreamRequest? Request { get; init; }
+
     /// <summary>Performance of the model call. Set for streamed calls. Maps to <c>performance</c>.</summary>
     internal Vercel.AI.GenerateText.ModelCallPerformance? Performance { get; init; }
 }
