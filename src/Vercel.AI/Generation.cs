@@ -659,14 +659,25 @@ internal static class Generation
             );
         }
 
-        buffer.OnConsumerStop = abort.Stop;
+        var producerBuffer = buffer;
+        if (options.ExperimentalTransform is { Count: > 0 } transforms)
+        {
+            // The producer writes to its own buffer. The transforms read it and feed the buffer that consumers read.
+            producerBuffer = new PartBuffer { OnConsumerStop = abort.Stop };
+            ApplyStreamTextTransforms(producerBuffer, buffer, transforms, options.Tools, abort);
+        }
+        else
+        {
+            buffer.OnConsumerStop = abort.Stop;
+        }
+
         _ = Task.Run(() =>
             ProduceAsync(
                 model,
                 options,
                 telemetry,
                 steeringRun,
-                buffer,
+                producerBuffer,
                 abort,
                 timeouts,
                 textSource,
@@ -690,6 +701,82 @@ internal static class Generation
             Tools = options.Tools,
             OutputSpecification = options.Output,
         };
+    }
+
+    // Maps to applyStreamTextTransforms.
+    private static void ApplyStreamTextTransforms(
+        PartBuffer source,
+        PartBuffer target,
+        IReadOnlyList<StreamTextTransform> transforms,
+        IReadOnlyList<Tool>? tools,
+        StreamAbort abort
+    )
+    {
+        var cancellation = new CancellationTokenSource();
+        var stopped = 0;
+        target.OnConsumerStop = () =>
+        {
+            abort.Stop();
+            try
+            {
+                cancellation.Cancel();
+            }
+            catch (Exception exception)
+                when (exception is AggregateException or ObjectDisposedException) { }
+        };
+
+        void StopStream()
+        {
+            Volatile.Write(ref stopped, 1);
+            abort.Stop();
+        }
+
+        // The gate prevents further parts from being emitted after a transform calls stopStream.
+        async IAsyncEnumerable<TextStreamPart> Gate(
+            [EnumeratorCancellation] CancellationToken cancellationToken
+        )
+        {
+            await foreach (var part in source.Read(cancellationToken).ConfigureAwait(false))
+            {
+                if (Volatile.Read(ref stopped) == 1)
+                {
+                    yield break;
+                }
+
+                yield return part;
+            }
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var stream = Gate(cancellation.Token);
+                var transformOptions = new StreamTextTransformOptions(tools, StopStream);
+                foreach (var transform in transforms)
+                {
+                    stream = transform(transformOptions)(stream, cancellation.Token);
+                }
+
+                await foreach (
+                    var part in stream.WithCancellation(cancellation.Token).ConfigureAwait(false)
+                )
+                {
+                    target.Add(part);
+                }
+
+                target.Complete();
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+                target.Complete();
+            }
+            catch (Exception exception)
+            {
+                abort.Stop();
+                target.Fail(exception);
+            }
+        });
     }
 
     private static async Task ProduceAsync(

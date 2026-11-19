@@ -82,12 +82,9 @@ public static class SmoothStream
     private static bool IsDocumentHidden() => false;
 
     /// <summary>
-    /// Creates the transform. Call the returned function with the tools to get a transform of the full stream.
+    /// Creates the transform. Pass it to <see cref="StreamTextOptions.ExperimentalTransform"/>, or call it with <see cref="StreamTextTransformOptions"/> to get a transform of the full stream.
     /// </summary>
-    public static Func<
-        IReadOnlyList<Tool>?,
-        Func<IAsyncEnumerable<TextStreamPart>, CancellationToken, IAsyncEnumerable<TextStreamPart>>
-    > Create(SmoothStreamOptions? options = null)
+    public static StreamTextTransform Create(SmoothStreamOptions? options = null)
     {
         options ??= new SmoothStreamOptions();
         var delayInMs = options.DelayInMs;
