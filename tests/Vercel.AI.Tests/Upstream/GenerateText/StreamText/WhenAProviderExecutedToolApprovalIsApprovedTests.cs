@@ -35,7 +35,7 @@ public sealed class WhenAProviderExecutedToolApprovalIsApprovedTests
     [UpstreamTest(
         Suite + "should include provider-executed tool result in content",
         Coverage = UpstreamCoverage.Partial,
-        Note = "The tool result has no input property in the port. The step content of streamText lists the text before the tool call and the tool result, where upstream keeps the stream order (tool-call, tool-result, text)."
+        Note = "The tool result has no input property in the port."
     )]
     public async Task Should_include_provider_executed_tool_result_in_content()
     {
@@ -44,14 +44,14 @@ public sealed class WhenAProviderExecutedToolApprovalIsApprovedTests
         var content = await ContentAsync(result);
 
         Assert.Equal(
-            new[] { "text", "tool-call", "tool-result" },
+            new[] { "tool-call", "tool-result", "text" },
             content.Select(part => part.Type)
         );
-        var call = Assert.IsType<GeneratedToolCall>(content[1]);
+        var call = Assert.IsType<GeneratedToolCall>(content[0]);
         Assert.True(call.ProviderExecuted);
         Assert.Equal("mcp-call-1", call.ToolCallId);
         Assert.Equal("mcp_tool", call.ToolName);
-        var toolResult = Assert.IsType<GeneratedToolResult>(content[2]);
+        var toolResult = Assert.IsType<GeneratedToolResult>(content[1]);
         Assert.True(toolResult.ProviderExecuted);
         Assert.Equal("mcp-call-1", toolResult.ToolCallId);
         Assert.Equal("mcp_tool", toolResult.ToolName);
@@ -65,7 +65,7 @@ public sealed class WhenAProviderExecutedToolApprovalIsApprovedTests
 
         Assert.Equal(
             "Here is your shortened URL: https://short.url/abc",
-            Assert.IsType<GeneratedText>(content[0]).Text
+            Assert.IsType<GeneratedText>(content[2]).Text
         );
     }
 
