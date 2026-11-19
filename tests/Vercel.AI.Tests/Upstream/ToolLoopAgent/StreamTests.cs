@@ -2,10 +2,12 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.Gateway;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Testing;
+using Vercel.AI.Tests.Upstream.GenerateText;
 
 namespace Vercel.AI.Tests.Upstream.ToolLoopAgent;
 
@@ -155,5 +157,40 @@ public sealed class StreamTests
         Assert.Equal(1, modelCallCount());
         Assert.Equal(0, executed);
         ToolLoopAgentToolCalls.AssertApprovalRequestOnly(await result.ResponseMessages);
+    }
+
+    private const string Schema =
+        "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}";
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > stream > should forward toolOrder to streamText",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task ShouldForwardToolOrderToStreamText()
+    {
+        var model = new TestLanguageModel();
+
+        var agent = new Agent(
+            new AgentOptions
+            {
+                Model = model,
+                Tools =
+                [
+                    Tool.Function("zebra", null, Schema, (_, _) => Task.FromResult("\"zebra\"")),
+                    Tool.Function("alpha", null, Schema, (_, _) => Task.FromResult("\"alpha\"")),
+                    Tool.Function("middle", null, Schema, (_, _) => Task.FromResult("\"middle\"")),
+                ],
+                ToolOrder = ["middle"],
+            },
+            ToolLoopAgentInstructions.Client()
+        );
+
+        await ToolExecutionCallbackSupport.ConsumeAsync(agent.Stream("Hello, world!"));
+
+        Assert.Equal(
+            new[] { "middle", "alpha", "zebra" },
+            model.Calls[0].Tools!.Select(tool => tool.Name)
+        );
     }
 }

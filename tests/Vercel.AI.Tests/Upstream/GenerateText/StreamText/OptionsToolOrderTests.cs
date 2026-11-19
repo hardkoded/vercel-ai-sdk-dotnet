@@ -6,7 +6,7 @@ using Vercel.AI.Gateway;
 using Vercel.AI.Testing;
 using Vercel.AI.Tests.Upstream.GenerateText;
 
-namespace Vercel.AI.Tests.StreamText;
+namespace Vercel.AI.Tests.Upstream.GenerateText.StreamText;
 
 /// <summary>Port of <c>stream-text.test.ts</c> &gt; <c>streamText</c> &gt; <c>options.toolOrder</c>.</summary>
 public sealed class OptionsToolOrderTests
