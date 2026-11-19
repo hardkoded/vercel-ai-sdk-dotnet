@@ -23,7 +23,7 @@ An `inline` skill of a `containerAuto` shell environment: a base64 encoded zip a
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [OpenAIShellContainerSkill](/api/Vercel.AI.OpenAI/OpenAIShellContainerSkill/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L172)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L184)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Base64 encoded content of the `application/zip` archive that holds the skill.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L181)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L193)
 
 <a id="Vercel_AI_OpenAI_OpenAIShellInlineSkill_Description_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIShellInlineSkill_Description"></a>
@@ -59,7 +59,7 @@ Skill description.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L178)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L190)
 
 <a id="Vercel_AI_OpenAI_OpenAIShellInlineSkill_Name_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIShellInlineSkill_Name"></a>
@@ -76,4 +76,4 @@ Skill name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L175)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L187)

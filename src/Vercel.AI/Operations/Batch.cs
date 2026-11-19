@@ -107,6 +107,9 @@ public sealed class BatchRequest
     /// <summary>Tools. They are forwarded and not executed.</summary>
     public IReadOnlyList<BatchTool>? Tools { get; set; }
 
+    /// <summary>Controls the order in which tools are sent to the provider. See <see cref="GenerateTextOptions.ToolOrder"/>. Maps to <c>toolOrder</c>.</summary>
+    public IReadOnlyList<string>? ToolOrder { get; set; }
+
     /// <summary>Tool choice such as <c>required</c>.</summary>
     public string? ToolChoice { get; set; }
 }
@@ -958,7 +961,7 @@ public static class Batch
         {
             if (item.Type == "text")
             {
-                var prepared = PrepareTools(item.Tools);
+                var prepared = PrepareTools(item.Tools, item.ToolOrder);
                 foreach (var tool in prepared)
                 {
                     var signature = tool.GetRawText();
@@ -1474,7 +1477,10 @@ public static class Batch
         };
     }
 
-    private static List<JsonElement> PrepareTools(IReadOnlyList<BatchTool>? tools)
+    private static List<JsonElement> PrepareTools(
+        IReadOnlyList<BatchTool>? tools,
+        IReadOnlyList<string>? toolOrder
+    )
     {
         var prepared = new List<JsonElement>();
         if (tools == null)
@@ -1482,7 +1488,20 @@ public static class Batch
             return prepared;
         }
 
-        foreach (var tool in tools)
+        // Listed tools come first, in order. The rest follow, sorted by name. Maps to orderToolEntries.
+        var ordered =
+            toolOrder == null
+                ? tools
+                : tools
+                    .Where(tool => toolOrder.Contains(tool.Name))
+                    .OrderBy(tool => ((List<string>)[.. toolOrder]).IndexOf(tool.Name))
+                    .Concat(
+                        tools
+                            .Where(tool => !toolOrder.Contains(tool.Name))
+                            .OrderBy(tool => tool.Name, StringComparer.Ordinal)
+                    )
+                    .ToList();
+        foreach (var tool in ordered)
         {
             var payload = new Dictionary<string, object?>
             {

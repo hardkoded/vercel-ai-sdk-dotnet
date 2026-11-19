@@ -302,14 +302,14 @@ public sealed class GatewayProvider
     )
     {
         var auth = await GetRealtimeAuthTokenAsync(cancellationToken).ConfigureAwait(false);
-        var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
+        var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var pair in CreateAuthHeaders(auth))
         {
-            ["Authorization"] = "Bearer " + auth.Token,
-            ["ai-gateway-protocol-version"] = "0.0.1",
-            ["ai-gateway-auth-method"] = auth.AuthMethod,
-            [specificationHeader] = specificationValue,
-            [modelHeader] = modelId,
-        };
+            headers[pair.Key] = pair.Value;
+        }
+
+        headers[specificationHeader] = specificationValue;
+        headers[modelHeader] = modelId;
         if (streaming is { } value)
         {
             headers["ai-language-model-streaming"] = value ? "true" : "false";

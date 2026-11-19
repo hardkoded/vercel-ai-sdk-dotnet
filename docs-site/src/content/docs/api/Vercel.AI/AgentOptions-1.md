@@ -29,7 +29,7 @@ Agent settings with call options. Maps to `ToolLoopAgentSettings` with a `CALL_O
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [AgentOptions](/api/Vercel.AI/AgentOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L925)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1006)
 
 ## Properties
 
@@ -49,7 +49,7 @@ and throws a [TypeValidationException](/api/Vercel.AI.ProviderUtils/TypeValidati
 
 **Value:** [JsonNode](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonnode)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L931)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1012)
 
 <a id="Vercel_AI_AgentOptions_1_PrepareCall_"></a>
 <a id="Vercel_AI_AgentOptions_1_PrepareCall"></a>
@@ -67,4 +67,4 @@ It replaces [PrepareCall](/api/Vercel.AI/AgentOptions/#Vercel_AI_AgentOptions_Pr
 
 **Value:** [Func&lt;GenerateTextOptions, TCallOptions, GenerateTextOptions&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L937)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1018)

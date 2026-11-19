@@ -24,7 +24,7 @@ must be set. [TunnelId](#Vercel_AI_OpenAI_OpenAIMcpToolOptions_TunnelId) cannot 
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L318)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L330)
 
 ## Properties
 
@@ -43,7 +43,7 @@ Allowed tool names.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L324)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L336)
 
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_AllowedToolsReadOnly_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_AllowedToolsReadOnly"></a>
@@ -60,7 +60,7 @@ Allow only read-only tools.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L327)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L339)
 
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_Authorization_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_Authorization"></a>
@@ -77,7 +77,7 @@ OAuth access token usable with the remote MCP server or connector (including tun
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L330)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L342)
 
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_ConnectorId_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_ConnectorId"></a>
@@ -94,7 +94,7 @@ Identifier of a service connector.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L333)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L345)
 
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_Headers_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_Headers"></a>
@@ -111,7 +111,7 @@ HTTP headers to send to the MCP server.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L336)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L348)
 
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_NeverRequireApprovalToolNames_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_NeverRequireApprovalToolNames"></a>
@@ -128,7 +128,7 @@ Tool names that never require approval.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L342)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L354)
 
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_RequireApproval_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_RequireApproval"></a>
@@ -145,7 +145,7 @@ Approval policy: `always` or `never`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L339)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L351)
 
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_ServerDescription_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_ServerDescription"></a>
@@ -162,7 +162,7 @@ Description of the server.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L345)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L357)
 
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_ServerLabel_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_ServerLabel"></a>
@@ -179,7 +179,7 @@ A label for this MCP server, used to identify it in tool calls.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L321)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L333)
 
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_ServerUrl_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_ServerUrl"></a>
@@ -196,7 +196,7 @@ URL of the MCP server.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L348)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L360)
 
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_TunnelId_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIMcpToolOptions_TunnelId"></a>
@@ -213,4 +213,4 @@ Identifier for an OpenAI Secure MCP tunnel.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L351)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L363)

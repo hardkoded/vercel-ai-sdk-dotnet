@@ -29,4 +29,4 @@ An agent that streams a reply to model messages and takes call options. Maps to 
 
 **Derived:** [Agent&lt;TCallOptions&gt;](/api/Vercel.AI/Agent-1/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L34)

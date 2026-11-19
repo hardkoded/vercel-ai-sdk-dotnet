@@ -42,6 +42,7 @@ Generated from the XML documentation of `Vercel.AI`. Regenerate it with `npm run
 - [Vercel.AI.HuggingFace](/api/Vercel.AI.HuggingFace/) — Public types in the `Vercel.AI.HuggingFace` namespace.
 - [Vercel.AI.Hume](/api/Vercel.AI.Hume/) — Public types in the `Vercel.AI.Hume` namespace.
 - [Vercel.AI.KlingAI](/api/Vercel.AI.KlingAI/) — Public types in the `Vercel.AI.KlingAI` namespace.
+- [Vercel.AI.Liquid](/api/Vercel.AI.Liquid/) — Public types in the `Vercel.AI.Liquid` namespace.
 - [Vercel.AI.Luma](/api/Vercel.AI.Luma/) — Public types in the `Vercel.AI.Luma` namespace.
 - [Vercel.AI.Mcp](/api/Vercel.AI.Mcp/) — Model Context Protocol client and transports.
 - [Vercel.AI.MiniMax](/api/Vercel.AI.MiniMax/) — Public types in the `Vercel.AI.MiniMax` namespace.

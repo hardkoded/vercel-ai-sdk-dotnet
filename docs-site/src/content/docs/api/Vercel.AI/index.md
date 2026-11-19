@@ -65,6 +65,7 @@ Client, text generation, streaming, tools, and agents.
 | [ModelProviderOptions](/api/Vercel.AI/ModelProviderOptions/) | Per-model support for the options in the provider's ProviderOptionDefinitions, keyed by the same sections and option names. Upstream ModelProviderOptions. |
 | [OutputChunkTimingStats](/api/Vercel.AI/OutputChunkTimingStats/) | Timing statistics for the gaps between generated output chunks, in milliseconds. |
 | [OutputSpec](/api/Vercel.AI/OutputSpec/) | Structured output selector. Maps to Output. |
+| [OutputSpec&lt;TOutput&gt;](/api/Vercel.AI/OutputSpec-1/) | Structured output selector whose complete output is deserialized to <code class="typeparamref">TOutput</code>. Maps to Output<OUTPUT>. |
 | [PingPart](/api/Vercel.AI/PingPart/) | A transient provider heartbeat. It contains no generated content, does not reset model-output timeouts, and is omitted from UI message streams. Providers may require an explicit opt-in. Maps to TextStreamPingPart. |
 | [PrepareStepContext](/api/Vercel.AI/PrepareStepContext/) | Context passed to prepareStep. |
 | [PrepareStepUpdate](/api/Vercel.AI/PrepareStepUpdate/) | Optional changes applied before a step. |
@@ -98,6 +99,7 @@ Client, text generation, streaming, tools, and agents.
 | [StreamTextInclude](/api/Vercel.AI/StreamTextInclude/) | What streamText keeps of the request and the provider stream. Maps to StreamTextInclude. |
 | [StreamTextOptions](/api/Vercel.AI/StreamTextOptions/) | Options for CancellationToken). |
 | [StreamTextResult](/api/Vercel.AI/StreamTextResult/) | Result of streamText. Enumerating Stream(CancellationToken) or awaiting Text consumes the same buffered events. |
+| [StreamTextSingleConsumerResult](/api/Vercel.AI/StreamTextSingleConsumerResult/) | A single-consumer view of a text generation, without replay or final content members. Maps to StreamTextSingleConsumerResult. Choose one stream projection. A second one throws. |
 | [TextDeltaPart](/api/Vercel.AI/TextDeltaPart/) | Text delta. Maps to text-delta. |
 | [TextEndPart](/api/Vercel.AI/TextEndPart/) | A text block ended. Maps to text-end. |
 | [TextStartPart](/api/Vercel.AI/TextStartPart/) | A text block started. Maps to text-start. |
