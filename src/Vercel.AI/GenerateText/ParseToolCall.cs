@@ -431,6 +431,18 @@ public static class ToolCallParser
                     )
                 );
             }
+
+            if (tool.InputTransform != null)
+            {
+                try
+                {
+                    input = tool.InputTransform(input);
+                }
+                catch (Exception exception) when (exception is not OperationCanceledException)
+                {
+                    throw new InvalidToolInputError(toolCall.ToolName, text, exception);
+                }
+            }
         }
 
         return new ParsedToolCall(toolCall.ToolCallId, toolCall.ToolName, input)

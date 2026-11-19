@@ -12,9 +12,6 @@ internal static class ValidateToolApprovalsSupport
     public const string ValueSchema =
         "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}";
 
-    public const string TransformNote =
-        "A Zod transform has no JSON Schema equivalent. A refineToolInput function stands in for it, so the schema input and the approved input differ the way a transform makes them differ.";
-
     public static JsonElement Json(string json)
     {
         using var document = JsonDocument.Parse(json);
@@ -50,9 +47,20 @@ internal static class ValidateToolApprovalsSupport
         IReadOnlyDictionary<
             string,
             Func<JsonElement, CancellationToken, Task<JsonElement>>
-        >? refine = null
-    ) =>
-        ToolApprovalValidation.ValidateApprovedToolApprovalsAsync(
+        >? refine = null,
+        (string ToolName, Func<JsonElement, JsonElement> Transform)? transform = null
+    )
+    {
+        if (transform is { } t)
+        {
+            // upstream gives the tool a schema with a transform. Here the tool carries the transform
+            foreach (var tool in tools.Where(tool => tool.Name == t.ToolName))
+            {
+                tool.InputTransform = t.Transform;
+            }
+        }
+
+        return ToolApprovalValidation.ValidateApprovedToolApprovalsAsync(
             new ValidateApprovedToolApprovalsOptions(new[] { approval })
             {
                 Tools = tools,
@@ -61,4 +69,10 @@ internal static class ValidateToolApprovalsSupport
                 RefineToolInput = refine,
             }
         );
+    }
+
+    public static (string ToolName, Func<JsonElement, JsonElement> Transform) Transform(
+        string toolName,
+        Func<JsonElement, JsonElement> transform
+    ) => (toolName, transform);
 }
