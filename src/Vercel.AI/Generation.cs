@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -469,8 +470,27 @@ internal static class Generation
 
             steeringRun?.End(steeringEndReason);
             timeouts?.EndStep();
-            var result = await ToResultAsync(steps, responseMessages, options, cancellationToken)
-                .ConfigureAwait(false);
+            // Upstream notifies onEnd before it parses the output, so onEnd still fires when parsing throws.
+            Exception? outputError = null;
+            GenerateTextResult result;
+            try
+            {
+                result = await ToResultAsync(steps, responseMessages, options, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (NoObjectGeneratedException error)
+            {
+                outputError = error;
+                result = await ToResultAsync(
+                        steps,
+                        responseMessages,
+                        options,
+                        cancellationToken,
+                        parseOutput: false
+                    )
+                    .ConfigureAwait(false);
+            }
+
             if (telemetry != null && scope != null)
             {
                 telemetry.OnUsage(scope, result.Usage);
@@ -490,6 +510,11 @@ internal static class Generation
                 {
                     // Errors in callbacks do not break the generation flow (upstream notify).
                 }
+            }
+
+            if (outputError != null)
+            {
+                ExceptionDispatchInfo.Capture(outputError).Throw();
             }
 
             return result;
