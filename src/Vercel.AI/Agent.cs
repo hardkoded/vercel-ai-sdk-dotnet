@@ -101,9 +101,17 @@ public sealed class Agent : IAgent
         CancellationToken cancellationToken,
         TimeoutConfiguration? timeout,
         ISteering? experimentalSteering
+    ) => GenerateCoreAsync(call, cancellationToken, timeout, experimentalSteering, null);
+
+    internal Task<GenerateTextResult> GenerateCoreAsync(
+        GenerateTextOptions call,
+        CancellationToken cancellationToken,
+        TimeoutConfiguration? timeout,
+        ISteering? experimentalSteering,
+        Func<GenerateTextOptions, GenerateTextOptions?>? prepareCall
     )
     {
-        var prepared = Prepare(call);
+        var prepared = Prepare(call, prepareCall);
         if (timeout != null || experimentalSteering != null || Options.OnStepEnd != null)
         {
             prepared = prepared.ShallowCopy();
@@ -196,9 +204,28 @@ public sealed class Agent : IAgent
         TimeoutConfiguration? timeout,
         ISteering? experimentalSteering,
         Func<StepResult, CancellationToken, Task>? onStepEnd = null
+    ) =>
+        StreamCore(
+            call,
+            cancellationToken,
+            abortSignal,
+            timeout,
+            experimentalSteering,
+            onStepEnd,
+            null
+        );
+
+    internal StreamTextResult StreamCore(
+        GenerateTextOptions call,
+        CancellationToken cancellationToken,
+        Vercel.AI.Util.AbortSignal? abortSignal,
+        TimeoutConfiguration? timeout,
+        ISteering? experimentalSteering,
+        Func<StepResult, CancellationToken, Task>? onStepEnd,
+        Func<GenerateTextOptions, GenerateTextOptions?>? prepareCall
     )
     {
-        var prepared = Prepare(call);
+        var prepared = Prepare(call, prepareCall);
         return _client.StreamTextAsync(
             new StreamTextOptions
             {
@@ -287,12 +314,15 @@ public sealed class Agent : IAgent
         }
     }
 
-    private GenerateTextOptions Prepare(GenerateTextOptions call)
+    private GenerateTextOptions Prepare(
+        GenerateTextOptions call,
+        Func<GenerateTextOptions, GenerateTextOptions?>? prepareCall
+    )
     {
-        return Options.PrepareCall?.Invoke(call) ?? call;
+        return (prepareCall ?? Options.PrepareCall)?.Invoke(call) ?? call;
     }
 
-    private GenerateTextOptions CreateOptions(
+    internal GenerateTextOptions CreateOptions(
         string? prompt,
         IReadOnlyList<ModelMessage>? messages,
         Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox
@@ -325,7 +355,7 @@ public sealed class Agent : IAgent
 }
 
 /// <summary>Agent settings.</summary>
-public sealed class AgentOptions
+public class AgentOptions
 {
     /// <summary>Explicit model.</summary>
     public ILanguageModel? Model { get; set; }
@@ -867,5 +897,171 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
 
         return (FallbackProvider == null ? null : fallback(FallbackProvider))
             ?? throw new NoSuchModelError(modelId, modelType);
+    }
+}
+
+/// <summary>Agent settings with call options. Maps to <c>ToolLoopAgentSettings</c> with a <c>CALL_OPTIONS</c> type.</summary>
+/// <typeparam name="TCallOptions">The type of the per-call options. Maps to <c>CALL_OPTIONS</c>.</typeparam>
+public sealed class AgentOptions<TCallOptions> : AgentOptions
+{
+    /// <summary>
+    /// The JSON schema of the call options. Each call validates its options against it before <see cref="PrepareCall"/> runs
+    /// and throws a <see cref="Vercel.AI.ProviderUtils.TypeValidationException"/> (context field <c>options</c>) on a mismatch. Maps to <c>callOptionsSchema</c>.
+    /// </summary>
+    public System.Text.Json.Nodes.JsonNode? CallOptionsSchema { get; set; }
+
+    /// <summary>
+    /// Called before each call with the options the agent would use and the validated call options. Return replacement options, or null to keep them.
+    /// It replaces <see cref="AgentOptions.PrepareCall"/>, which <see cref="Agent{TCallOptions}"/> ignores. Maps to <c>prepareCall</c>.
+    /// </summary>
+    public new Func<
+        GenerateTextOptions,
+        TCallOptions,
+        GenerateTextOptions?
+    >? PrepareCall { get; set; }
+}
+
+/// <summary>An agent that takes options on each call. Maps to <c>ToolLoopAgent</c> with a <c>CALL_OPTIONS</c> type.</summary>
+/// <typeparam name="TCallOptions">The type of the per-call options. Maps to <c>CALL_OPTIONS</c>.</typeparam>
+public sealed class Agent<TCallOptions>
+{
+    private static readonly System.Text.Json.JsonSerializerOptions s_json = new(
+        System.Text.Json.JsonSerializerDefaults.Web
+    );
+
+    private readonly Agent _agent;
+
+    /// <summary>Creates an agent. The default stop condition is 10 steps.</summary>
+    public Agent(AgentOptions<TCallOptions> options, IAiClient? client = null)
+    {
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        Options = options;
+        _agent = new Agent(options, client);
+    }
+
+    /// <summary>Agent options.</summary>
+    public AgentOptions<TCallOptions> Options { get; }
+
+    /// <summary>The tools of the agent. Maps to <c>tools</c>.</summary>
+    public IReadOnlyList<Tool>? Tools => Options.Tools;
+
+    /// <summary>
+    /// Generates a reply to <paramref name="prompt"/> with <paramref name="options"/>, which are validated against
+    /// <see cref="AgentOptions{TCallOptions}.CallOptionsSchema"/> first. Maps to <c>generate</c>.
+    /// </summary>
+    public Task<GenerateTextResult> GenerateAsync(
+        string prompt,
+        TCallOptions options,
+        CancellationToken cancellationToken = default,
+        TimeoutConfiguration? timeout = null,
+        ISteering? experimentalSteering = null,
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
+    )
+    {
+        var prepare = PrepareFor(options);
+        return _agent.GenerateCoreAsync(
+            _agent.CreateOptions(prompt, null, experimentalSandbox),
+            cancellationToken,
+            timeout,
+            experimentalSteering,
+            prepare
+        );
+    }
+
+    /// <summary>Generates a reply to <paramref name="messages"/> with <paramref name="options"/>. Maps to <c>generate</c>.</summary>
+    public Task<GenerateTextResult> GenerateAsync(
+        IReadOnlyList<ModelMessage> messages,
+        TCallOptions options,
+        CancellationToken cancellationToken = default,
+        TimeoutConfiguration? timeout = null,
+        ISteering? experimentalSteering = null,
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
+    )
+    {
+        var prepare = PrepareFor(options);
+        return _agent.GenerateCoreAsync(
+            _agent.CreateOptions(
+                null,
+                messages ?? throw new ArgumentNullException(nameof(messages)),
+                experimentalSandbox
+            ),
+            cancellationToken,
+            timeout,
+            experimentalSteering,
+            prepare
+        );
+    }
+
+    /// <summary>Streams a reply to <paramref name="prompt"/> with <paramref name="options"/>. Maps to <c>stream</c>.</summary>
+    public StreamTextResult Stream(
+        string prompt,
+        TCallOptions options,
+        CancellationToken cancellationToken = default,
+        Vercel.AI.Util.AbortSignal? abortSignal = null,
+        TimeoutConfiguration? timeout = null,
+        ISteering? experimentalSteering = null,
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
+    )
+    {
+        var prepare = PrepareFor(options);
+        return _agent.StreamCore(
+            _agent.CreateOptions(prompt, null, experimentalSandbox),
+            cancellationToken,
+            abortSignal,
+            timeout,
+            experimentalSteering,
+            null,
+            prepare
+        );
+    }
+
+    /// <summary>Streams a reply to <paramref name="messages"/> with <paramref name="options"/>. Maps to <c>stream</c>.</summary>
+    public StreamTextResult Stream(
+        IReadOnlyList<ModelMessage> messages,
+        TCallOptions options,
+        CancellationToken cancellationToken = default,
+        Vercel.AI.Util.AbortSignal? abortSignal = null,
+        TimeoutConfiguration? timeout = null,
+        ISteering? experimentalSteering = null,
+        Func<StepResult, CancellationToken, Task>? onStepEnd = null,
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
+    )
+    {
+        var prepare = PrepareFor(options);
+        return _agent.StreamCore(
+            _agent.CreateOptions(
+                null,
+                messages ?? throw new ArgumentNullException(nameof(messages)),
+                experimentalSandbox
+            ),
+            cancellationToken,
+            abortSignal,
+            timeout,
+            experimentalSteering,
+            onStepEnd,
+            prepare
+        );
+    }
+
+    // prepareCall: validateTypes({ value: options, schema: callOptionsSchema, context: { field: 'options' } })
+    private Func<GenerateTextOptions, GenerateTextOptions?> PrepareFor(TCallOptions options)
+    {
+        var validated = options;
+        if (Options.CallOptionsSchema is not null && options is not null)
+        {
+            var element = System.Text.Json.JsonSerializer.SerializeToElement(options, s_json);
+            var projected = Vercel.AI.ProviderUtils.JsonParsing.ValidateTypes(
+                element,
+                Options.CallOptionsSchema,
+                new Vercel.AI.ProviderUtils.TypeValidationContext { Field = "options" }
+            );
+            validated = projected.Deserialize<TCallOptions>(s_json)!;
+        }
+
+        return call => Options.PrepareCall?.Invoke(call, validated);
     }
 }
