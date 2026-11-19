@@ -64,23 +64,17 @@ public sealed class ToolPartsTransformedApprovalInputTests : WarningsOff
         );
     }
 
-    [UpstreamTest(
-        Suite + "should preserve input matching the reconstructed schema output",
-        Note = "The input schema is JSON Schema, so ExperimentalRefineToolInput stands in for z.string().transform(Number)."
-    )]
+    [UpstreamTest(Suite + "should preserve input matching the reconstructed schema output")]
     [Theory]
     [MemberData(nameof(States))]
     public async Task Should_preserve_input_matching_the_reconstructed_schema_output(string state)
     {
         var json = CreateMessages(state, "{\"count\":3}");
 
-        AssertMessages(json, await Validate(json, CountTools(), refine: CountRefine()));
+        AssertMessages(json, await Validate(json, CountTools()));
     }
 
-    [UpstreamTest(
-        Suite + "should not expose mismatched input %j as a validated static tool part",
-        Note = "The input schema is JSON Schema, so ExperimentalRefineToolInput stands in for z.string().transform(Number)."
-    )]
+    [UpstreamTest(Suite + "should not expose mismatched input %j as a validated static tool part")]
     [Theory]
     [MemberData(nameof(MismatchedInputs))]
     public async Task Should_not_expose_mismatched_input_as_a_validated_static_tool_part(
@@ -93,7 +87,7 @@ public sealed class ToolPartsTransformedApprovalInputTests : WarningsOff
 
         if (state == "output-error")
         {
-            var result = await Validate(json, CountTools(), refine: CountRefine());
+            var result = await Validate(json, CountTools());
             var part = Assert.IsType<ToolUIPart>(result[0].Parts[0]);
             Assert.True(part.IsDynamic);
             Assert.Equal("count", part.ToolName);
@@ -102,7 +96,7 @@ public sealed class ToolPartsTransformedApprovalInputTests : WarningsOff
         else
         {
             var error = await Assert.ThrowsAsync<TypeValidationException>(() =>
-                Validate(json, CountTools(), refine: CountRefine())
+                Validate(json, CountTools())
             );
             Assert.Contains("does not match the output reconstructed", error.Message);
         }
