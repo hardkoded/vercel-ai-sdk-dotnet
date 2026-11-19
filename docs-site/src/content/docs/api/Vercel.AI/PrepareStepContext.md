@@ -23,7 +23,7 @@ Context passed to `prepareStep`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1023)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1044)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates context.
 | `stepNumber` | [int](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `steps` | [IReadOnlyList&lt;StepResult&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1026)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1047)
 
 <a id="Vercel_AI_PrepareStepContext__ctor_System_Int32_System_Collections_Generic_IReadOnlyList_Vercel_AI_StepResult__System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_ModelMessage__Vercel_AI_Provider_ILanguageModel_"></a>
 
@@ -70,7 +70,7 @@ Creates context with the prompt and model the step is about to use.
 | `messages` | [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `model` | [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1033)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1054)
 
 <a id="Vercel_AI_PrepareStepContext__ctor_System_Int32_System_Collections_Generic_IReadOnlyList_Vercel_AI_StepResult__System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_ModelMessage__Vercel_AI_Provider_ILanguageModel_Vercel_AI_Prompt_Instructions_Vercel_AI_Prompt_Instructions_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_ModelMessage__System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_ModelMessage__"></a>
 
@@ -97,9 +97,26 @@ Creates context with the instructions and the initial and response messages of t
 | `initialMessages` | [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `responseMessages` | [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1046)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1067)
 
 ## Properties
+
+<a id="Vercel_AI_PrepareStepContext_ExperimentalSandbox_"></a>
+<a id="Vercel_AI_PrepareStepContext_ExperimentalSandbox"></a>
+
+### ExperimentalSandbox
+
+
+```csharp
+public ISandboxSession? ExperimentalSandbox { get; init; }
+```
+
+
+The sandbox environment that the step is operating in. Maps to `experimental_sandbox`.
+
+**Value:** [ISandboxSession](/api/Vercel.AI.ProviderUtils/ISandboxSession/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1118)
 
 <a id="Vercel_AI_PrepareStepContext_ExperimentalSteeringMessages_"></a>
 <a id="Vercel_AI_PrepareStepContext_ExperimentalSteeringMessages"></a>
@@ -119,7 +136,7 @@ steering messages of previous steps from [Steps](#Vercel_AI_PrepareStepContext_S
 
 **Value:** [IReadOnlyList&lt;UserModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1094)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1115)
 
 <a id="Vercel_AI_PrepareStepContext_InitialInstructions_"></a>
 <a id="Vercel_AI_PrepareStepContext_InitialInstructions"></a>
@@ -136,7 +153,7 @@ The instructions the call started with. Null when there are none.
 
 **Value:** [Instructions](/api/Vercel.AI.Prompt/Instructions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1074)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1095)
 
 <a id="Vercel_AI_PrepareStepContext_InitialMessages_"></a>
 <a id="Vercel_AI_PrepareStepContext_InitialMessages"></a>
@@ -153,7 +170,7 @@ The messages the call started with, without the instructions. Empty when the cal
 
 **Value:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1077)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1098)
 
 <a id="Vercel_AI_PrepareStepContext_Instructions_"></a>
 <a id="Vercel_AI_PrepareStepContext_Instructions"></a>
@@ -170,7 +187,7 @@ The instructions the step is about to send. A [Instructions](/api/Vercel.AI/Prep
 
 **Value:** [Instructions](/api/Vercel.AI.Prompt/Instructions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1071)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1092)
 
 <a id="Vercel_AI_PrepareStepContext_Messages_"></a>
 <a id="Vercel_AI_PrepareStepContext_Messages"></a>
@@ -187,7 +204,7 @@ The messages the step is about to send, without the instructions: the prompt plu
 
 **Value:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1068)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1089)
 
 <a id="Vercel_AI_PrepareStepContext_Model_"></a>
 <a id="Vercel_AI_PrepareStepContext_Model"></a>
@@ -204,7 +221,7 @@ The model the step is about to use, or null when the caller built the context wi
 
 **Value:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1083)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1104)
 
 <a id="Vercel_AI_PrepareStepContext_ResponseMessages_"></a>
 <a id="Vercel_AI_PrepareStepContext_ResponseMessages"></a>
@@ -221,7 +238,7 @@ The response messages the earlier steps added. Empty when the caller built the c
 
 **Value:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1080)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1101)
 
 <a id="Vercel_AI_PrepareStepContext_StepNumber_"></a>
 <a id="Vercel_AI_PrepareStepContext_StepNumber"></a>
@@ -238,7 +255,7 @@ Zero-based step index about to run.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1065)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1086)
 
 <a id="Vercel_AI_PrepareStepContext_Steps_"></a>
 <a id="Vercel_AI_PrepareStepContext_Steps"></a>
@@ -255,4 +272,4 @@ Steps already completed.
 
 **Value:** [IReadOnlyList&lt;StepResult&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1086)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1107)
