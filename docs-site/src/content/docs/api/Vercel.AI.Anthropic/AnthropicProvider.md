@@ -15,7 +15,7 @@ Namespace: [Vercel.AI.Anthropic](/api/Vercel.AI.Anthropic/)
 
 
 ```csharp
-public class AnthropicProvider : ProviderBase, IBatchProvider, IDecisionProvider, IEvaluationProvider, IExtractionProvider
+public class AnthropicProvider : ProviderBase, IBatchProvider, IDecisionProvider, IExtractionProvider, IEvaluationProvider
 ```
 
 
@@ -23,7 +23,7 @@ Anthropic Messages provider.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/)
 
-**Implements:** [IBatchProvider](/api/Vercel.AI.Operations/IBatchProvider/), [IDecisionProvider](/api/Vercel.AI.Operations/IDecisionProvider/), [IEvaluationProvider](/api/Vercel.AI.Operations/IEvaluationProvider/), [IExtractionProvider](/api/Vercel.AI.Operations/IExtractionProvider/)
+**Implements:** [IBatchProvider](/api/Vercel.AI.Operations/IBatchProvider/), [IDecisionProvider](/api/Vercel.AI.Operations/IDecisionProvider/), [IExtractionProvider](/api/Vercel.AI.Operations/IExtractionProvider/), [IEvaluationProvider](/api/Vercel.AI.Operations/IEvaluationProvider/)
 
 **Derived:** [AnthropicAwsProvider](/api/Vercel.AI.Anthropic/AnthropicAwsProvider/), [GoogleVertexAnthropicProvider](/api/Vercel.AI.Google/GoogleVertexAnthropicProvider/)
 

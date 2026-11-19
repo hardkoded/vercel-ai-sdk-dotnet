@@ -76,7 +76,7 @@ Audio channel of a `transcript-partial` or `transcript-final` part.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L123)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L126)
 
 <a id="Vercel_AI_Operations_ModelStreamPart_Delta_"></a>
 <a id="Vercel_AI_Operations_ModelStreamPart_Delta"></a>
@@ -127,7 +127,7 @@ End of a `transcript-final` part, in seconds.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L120)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L123)
 
 <a id="Vercel_AI_Operations_ModelStreamPart_Error_"></a>
 <a id="Vercel_AI_Operations_ModelStreamPart_Error"></a>
@@ -331,7 +331,7 @@ Start of a `transcript-partial` or `transcript-final` part, in seconds.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L117)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L120)
 
 <a id="Vercel_AI_Operations_ModelStreamPart_Text_"></a>
 <a id="Vercel_AI_Operations_ModelStreamPart_Text"></a>
@@ -400,6 +400,23 @@ Usage on `finish`.
 **Value:** [OperationUsage](/api/Vercel.AI.Operations/OperationUsage/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L114)
+
+<a id="Vercel_AI_Operations_ModelStreamPart_UsageValue_"></a>
+<a id="Vercel_AI_Operations_ModelStreamPart_UsageValue"></a>
+
+### UsageValue
+
+
+```csharp
+public JsonElement? UsageValue { get; set; }
+```
+
+
+The raw provider usage object of a transcription `finish` part. Maps to `usage` typed `JSONObject`.
+
+**Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L117)
 
 <a id="Vercel_AI_Operations_ModelStreamPart_Warnings_"></a>
 <a id="Vercel_AI_Operations_ModelStreamPart_Warnings"></a>

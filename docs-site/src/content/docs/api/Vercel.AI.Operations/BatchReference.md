@@ -23,7 +23,7 @@ A version-2 batch reference.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L481)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L507)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a reference.
 | `id` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `provider` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L484)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L510)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Batch id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L495)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L521)
 
 <a id="Vercel_AI_Operations_BatchReference_Provider_"></a>
 <a id="Vercel_AI_Operations_BatchReference_Provider"></a>
@@ -84,7 +84,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L498)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L524)
 
 <a id="Vercel_AI_Operations_BatchReference_Version_"></a>
 <a id="Vercel_AI_Operations_BatchReference_Version"></a>
@@ -101,4 +101,4 @@ Reference version. Only 2 is accepted.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L492)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L518)

@@ -16,7 +16,9 @@ Public types in the `Vercel.AI.Mistral` namespace.
 | --- | --- |
 | [MistralConversationEndpointCapabilities](/api/Vercel.AI.Mistral/MistralConversationEndpointCapabilities/) | Conversations API capabilities. Maps to capabilities.language.endpoints.conversation. |
 | [MistralConversationLanguageModel](/api/Vercel.AI.Mistral/MistralConversationLanguageModel/) | Mistral Conversations API language model, with support for web search. Maps to MistralConversationLanguageModel in mistral-conversation-language-model.ts. |
+| [MistralEmbeddingModel](/api/Vercel.AI.Mistral/MistralEmbeddingModel/) | Mistral text embedding model. Maps to MistralEmbeddingModel. |
 | [MistralEmbeddingModelEntry](/api/Vercel.AI.Mistral/MistralEmbeddingModelEntry/) | Embedding model entry of the Mistral catalog. |
+| [MistralEmbeddingModelOptions](/api/Vercel.AI.Mistral/MistralEmbeddingModelOptions/) | Mistral embedding provider options. Maps to MistralEmbeddingModelOptions. |
 | [MistralLanguageCapabilities](/api/Vercel.AI.Mistral/MistralLanguageCapabilities/) | Language capabilities of a Mistral model. Maps to the catalog's LanguageCapabilities. |
 | [MistralLanguageEndpointCapabilities](/api/Vercel.AI.Mistral/MistralLanguageEndpointCapabilities/) | Per-endpoint capabilities. Maps to capabilities.language.endpoints. |
 | [MistralLanguageModelChatOptions](/api/Vercel.AI.Mistral/MistralLanguageModelChatOptions/) | Mistral language model provider options. Maps to MistralLanguageModelChatOptions. |

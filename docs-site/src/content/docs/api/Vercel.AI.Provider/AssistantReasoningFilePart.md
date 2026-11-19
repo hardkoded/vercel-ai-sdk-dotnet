@@ -23,7 +23,7 @@ A file the model produced as part of its reasoning. Maps to the assistant `reaso
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [AssistantContentPart](/api/Vercel.AI.Provider/AssistantContentPart/) → [AssistantFilePart](/api/Vercel.AI.Provider/AssistantFilePart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1280)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1265)
 
 ## Constructors
 
@@ -49,4 +49,4 @@ Creates a reasoning-file part.
 | `data` | [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte) | Inline bytes. |
 | `providerOptions` | [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) | Provider-specific options for this part. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1287)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1272)
