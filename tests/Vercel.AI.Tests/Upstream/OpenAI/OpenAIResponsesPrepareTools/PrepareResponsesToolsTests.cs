@@ -164,7 +164,10 @@ public sealed class PrepareResponsesToolsTests
             var (value, redacted) in new[]
             {
                 (args.GetRawText(), redact!(args).GetRawText()),
-                (body.Value.GetRawText(), TelemetryRedaction.RedactTelemetryValue(body)!.Value.GetRawText()),
+                (
+                    body.Value.GetRawText(),
+                    TelemetryRedaction.RedactTelemetryValue(body)!.Value.GetRawText()
+                ),
             }
         )
         {

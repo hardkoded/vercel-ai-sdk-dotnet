@@ -948,22 +948,23 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             OpenAIJson.Bool(namedOptions, "logprobs") == true
             || OpenAIJson.Int(namedOptions, "logprobs") is not null and not 0;
         return Parse(
-            parsedResponse,
-            prepared.Warnings,
-            response.Body,
-            response.Headers,
-            GenerateId,
-            OpenAIParallelToolCall.FunctionToolNames(options.Tools),
-            CreateToolNameMapping(options.Tools),
-            options.JsonResponse || options.JsonSchema != null,
-            _providerOptionsName,
-            collectLogprobs,
-            WebSearchToolName(options.Tools),
-            IsShellProviderExecuted(options.Tools),
-            ExtractApprovalRequestIdToToolCallIdMapping(options.Prompt)
-        ).WithRedactRawResponse(
-            RedactOpenAIToolCredentials.WithOpenAIResponseRedaction(document.RootElement).Redact
-        );
+                parsedResponse,
+                prepared.Warnings,
+                response.Body,
+                response.Headers,
+                GenerateId,
+                OpenAIParallelToolCall.FunctionToolNames(options.Tools),
+                CreateToolNameMapping(options.Tools),
+                options.JsonResponse || options.JsonSchema != null,
+                _providerOptionsName,
+                collectLogprobs,
+                WebSearchToolName(options.Tools),
+                IsShellProviderExecuted(options.Tools),
+                ExtractApprovalRequestIdToToolCallIdMapping(options.Prompt)
+            )
+            .WithRedactRawResponse(
+                RedactOpenAIToolCredentials.WithOpenAIResponseRedaction(document.RootElement).Redact
+            );
     }
 
     /// <inheritdoc />
@@ -996,9 +997,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 cancellationToken
             ),
             json,
-            RedactOpenAIToolCredentials.WithOpenAIResponseRedaction(
-                JsonSerializer.SerializeToElement(prepared.Body)
-            ).Redact
+            RedactOpenAIToolCredentials
+                .WithOpenAIResponseRedaction(JsonSerializer.SerializeToElement(prepared.Body))
+                .Redact
         );
     }
 

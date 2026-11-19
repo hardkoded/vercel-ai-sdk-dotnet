@@ -3276,7 +3276,9 @@ public sealed class LanguageModelStreamRequest
     /// Maps to <c>redactTelemetryValue</c>.
     /// </summary>
     public JsonElement? RedactTelemetryBody() =>
-        Body is { } body ? ProviderUtils.TelemetryRedaction.RedactTelemetryValue(body, RedactBody) : null;
+        Body is { } body
+            ? ProviderUtils.TelemetryRedaction.RedactTelemetryValue(body, RedactBody)
+            : null;
 }
 
 /// <summary>Response info for a stream call. Maps to the <c>response</c> field of <c>doStream</c>.</summary>

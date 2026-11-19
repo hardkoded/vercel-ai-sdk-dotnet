@@ -118,9 +118,10 @@ internal static class RedactOpenAIToolCredentials
                 continue;
             }
 
-            var type = tool["type"]?.GetValueKind() == JsonValueKind.String
-                ? tool["type"]!.GetValue<string>()
-                : null;
+            var type =
+                tool["type"]?.GetValueKind() == JsonValueKind.String
+                    ? tool["type"]!.GetValue<string>()
+                    : null;
             using var document = JsonDocument.Parse(tool.ToJsonString());
             tools[index] = JsonNode.Parse(
                 RedactOpenAIToolArgs(type, document.RootElement, true).GetRawText()

@@ -875,7 +875,11 @@ internal static class OpenAIResponsesPrepareTools
                                 ["type"] = "allowlist",
                                 ["allowed_domains"] = networkPolicy["allowedDomains"]?.DeepClone(),
                             };
-                            Set(allowlist, "domain_secrets", networkPolicy["domainSecrets"]?.DeepClone());
+                            Set(
+                                allowlist,
+                                "domain_secrets",
+                                networkPolicy["domainSecrets"]?.DeepClone()
+                            );
                             auto["network_policy"] = allowlist;
                         }
                     }
