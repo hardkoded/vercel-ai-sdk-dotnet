@@ -29,7 +29,7 @@ The result of a `streamObject` call. Maps to `StreamObjectResult`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L227)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L244)
 
 ## Properties
 
@@ -48,7 +48,7 @@ The reason why the generation finished. Resolved when the response is finished.
 
 **Value:** [Task&lt;FinishReason&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L265)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L282)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_Object_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_Object"></a>
@@ -65,7 +65,7 @@ The generated object. Resolved when the response is finished.
 
 **Value:** [Task&lt;T&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L268)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L285)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_ProviderMetadata_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_ProviderMetadata"></a>
@@ -82,7 +82,7 @@ Additional provider-specific metadata.
 
 **Value:** [Task&lt;JsonElement?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L256)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L273)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_Request_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_Request"></a>
@@ -99,7 +99,7 @@ Additional request information.
 
 **Value:** [Task&lt;LanguageModelRequestMetadata&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L259)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L276)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_Response_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_Response"></a>
@@ -116,7 +116,7 @@ Additional response information.
 
 **Value:** [Task&lt;LanguageModelResponseMetadata&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L262)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L279)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_Usage_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_Usage"></a>
@@ -133,7 +133,7 @@ The token usage of the generated response. Resolved when the response is finishe
 
 **Value:** [Task&lt;LanguageModelUsage&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L253)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L270)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_Warnings_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_Warnings"></a>
@@ -150,7 +150,7 @@ Warnings from the model provider (e.g. unsupported settings).
 
 **Value:** [Task&lt;IReadOnlyList&lt;CallWarning&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L250)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L267)
 
 ## Methods
 
@@ -182,7 +182,7 @@ Errors are suppressed (use `OnError` instead).
 | --- | --- |
 | [UnsupportedFunctionalityException](/api/Vercel.AI.Operations/UnsupportedFunctionalityException/) | The output is not an array. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L292)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L309)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_FullStream_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_FullStream_System_Threading_CancellationToken_"></a>
@@ -206,7 +206,7 @@ stream, such as network errors, are thrown.
 
 **Returns:** [IAsyncEnumerable&lt;ObjectStreamPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L327)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L344)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_PartialObjectStream_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_PartialObjectStream_System_Threading_CancellationToken_"></a>
@@ -230,7 +230,7 @@ Errors are suppressed (use `OnError` instead).
 
 **Returns:** [IAsyncEnumerable&lt;JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L274)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L291)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_PipeTextStreamToResponse_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_PipeTextStreamToResponse_Vercel_AI_Util_ServerResponse_System_Nullable_System_Int32__System_String_Vercel_AI_Util_HeaderCollection_"></a>
@@ -257,7 +257,7 @@ and writes each text delta as a separate chunk. Maps to `pipeTextStreamToRespons
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L346)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L363)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_TextStream_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_TextStream_System_Threading_CancellationToken_"></a>
@@ -281,7 +281,7 @@ finished, the object is valid JSON that can be parsed. Errors are suppressed.
 
 **Returns:** [IAsyncEnumerable&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L310)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L327)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_ToTextStreamResponse_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectResult_1_ToTextStreamResponse_System_Nullable_System_Int32__System_String_Vercel_AI_Util_HeaderCollection_"></a>
@@ -308,4 +308,4 @@ Maps to `toTextStreamResponse`.
 
 **Returns:** [TextStreamResponse](/api/Vercel.AI.Util/TextStreamResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L336)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L353)

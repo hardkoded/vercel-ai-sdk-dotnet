@@ -56,6 +56,23 @@ public sealed class StreamObjectOptions<T>
     public IReadOnlyList<ModelMessage>? Messages { get; set; }
 
     /// <summary>
+    /// Whether system messages are allowed in <see cref="Messages"/>. Default: <see langword="false"/>, which throws an
+    /// <see cref="InvalidPromptException"/> for a system message; use <see cref="Instructions"/> instead. Maps to <c>allowSystemInMessages</c>.
+    /// </summary>
+    public bool AllowSystemInMessages { get; set; }
+
+    /// <summary>
+    /// Custom download function to use for URLs. By default, files are downloaded if the model does not support the URL for the
+    /// given media type. The function receives one <see cref="DownloadRequestItem"/> per prompt URL, with
+    /// <see cref="DownloadRequestItem.IsUrlSupportedByModel"/> set, and returns <c>null</c> for a URL the model can read itself.
+    /// Maps to <c>experimental_download</c>.
+    /// </summary>
+    public Func<
+        IReadOnlyList<DownloadRequestItem>,
+        Task<IReadOnlyList<DownloadResult>>
+    >? ExperimentalDownload { get; set; }
+
+    /// <summary>
     /// JSON Schema for the generated object. For array output it is the schema of one element. Not supported for enum and
     /// no-schema output.
     /// </summary>
@@ -776,6 +793,8 @@ internal static class StreamObject
                 Instructions = options.Instructions,
                 Prompt = options.Prompt,
                 Messages = options.Messages,
+                AllowSystemInMessages = options.AllowSystemInMessages,
+                ExperimentalDownload = options.ExperimentalDownload,
                 Output = ResponseFormat(jsonSchema),
                 MaxOutputTokens = options.MaxOutputTokens,
                 Temperature = options.Temperature,

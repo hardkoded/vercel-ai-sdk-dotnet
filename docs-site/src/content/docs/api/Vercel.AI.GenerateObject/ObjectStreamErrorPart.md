@@ -23,7 +23,7 @@ An error. Maps to `{ type: 'error' }`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ObjectStreamPart](/api/Vercel.AI.GenerateObject/ObjectStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L183)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L200)
 
 ## Properties
 
@@ -42,4 +42,4 @@ The error.
 
 **Value:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L192)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L209)

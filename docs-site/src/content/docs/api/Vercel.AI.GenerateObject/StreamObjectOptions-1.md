@@ -33,6 +33,24 @@ Options for `CancellationToken)`. Maps to `streamObject`.
 
 ## Properties
 
+<a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_AllowSystemInMessages_"></a>
+<a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_AllowSystemInMessages"></a>
+
+### AllowSystemInMessages
+
+
+```csharp
+public bool AllowSystemInMessages { get; set; }
+```
+
+
+Whether system messages are allowed in `Messages`. Default: &lt;a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool"&gt;false&lt;/a&gt;, which throws an
+[InvalidPromptException](/api/Vercel.AI.Prompt/InvalidPromptException/) for a system message; use `Instructions` instead. Maps to `allowSystemInMessages`.
+
+**Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L62)
+
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_EnumValues_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_EnumValues"></a>
 
@@ -48,7 +66,27 @@ The enum values that the model should use. Only for enum output. Maps to `enum`.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L88)
+
+<a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_ExperimentalDownload_"></a>
+<a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_ExperimentalDownload"></a>
+
+### ExperimentalDownload
+
+
+```csharp
+public Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>? ExperimentalDownload { get; set; }
+```
+
+
+Custom download function to use for URLs. By default, files are downloaded if the model does not support the URL for the
+given media type. The function receives one [DownloadRequestItem](/api/Vercel.AI.Util/DownloadRequestItem/) per prompt URL, with
+[IsUrlSupportedByModel](/api/Vercel.AI.Util/DownloadRequestItem/#Vercel_AI_Util_DownloadRequestItem_IsUrlSupportedByModel) set, and returns `null` for a URL the model can read itself.
+Maps to `experimental_download`.
+
+**Value:** [Func&lt;IReadOnlyList&lt;DownloadRequestItem&gt;, Task&lt;IReadOnlyList&lt;DownloadResult&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L70)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_FrequencyPenalty_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_FrequencyPenalty"></a>
@@ -65,7 +103,7 @@ Frequency penalty.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L92)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L109)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Headers_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Headers"></a>
@@ -82,7 +120,7 @@ Extra headers forwarded to the model.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L121)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Instructions_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Instructions"></a>
@@ -116,7 +154,7 @@ Maximum output tokens.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L94)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_MaxRetries_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_MaxRetries"></a>
@@ -133,7 +171,7 @@ Retries for provider calls made by this request.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L101)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L118)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Messages_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Messages"></a>
@@ -202,7 +240,7 @@ callback task completes.
 
 **Value:** [Func&lt;Exception, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L129)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L146)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_OnFinish_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_OnFinish"></a>
@@ -219,7 +257,7 @@ Called when the LLM response and the final object validation are finished.
 
 **Value:** [Func&lt;GenerateObjectEndEvent&lt;T&gt;, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L132)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L149)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_OnStart_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_OnStart"></a>
@@ -236,7 +274,7 @@ Called when the streamObject operation begins, before the LLM call is made.
 
 **Value:** [Func&lt;GenerateObjectStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L117)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L134)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_OnStepEnd_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_OnStepEnd"></a>
@@ -253,7 +291,7 @@ Called when the model streaming step completes, with the raw accumulated text be
 
 **Value:** [Func&lt;GenerateObjectStepEndEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L123)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L140)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_OnStepStart_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_OnStepStart"></a>
@@ -270,7 +308,7 @@ Called when the model call (step) begins, before the provider is called.
 
 **Value:** [Func&lt;GenerateObjectStepStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L120)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L137)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Output_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Output"></a>
@@ -304,7 +342,7 @@ Presence penalty.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L89)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L106)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Prompt_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Prompt"></a>
@@ -338,7 +376,7 @@ Provider-specific options.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L107)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L124)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Reasoning_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Reasoning"></a>
@@ -355,7 +393,7 @@ Reasoning effort.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L98)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L115)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_RepairText_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_RepairText"></a>
@@ -372,7 +410,7 @@ Attempts to repair text that failed JSON parsing or schema validation.
 
 **Value:** [Func&lt;GenerateObjectRepairContext, CancellationToken, Task&lt;string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L110)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L127)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Schema_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Schema"></a>
@@ -390,7 +428,7 @@ no-schema output.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L79)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_SchemaDescription_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_SchemaDescription"></a>
@@ -407,7 +445,7 @@ Optional schema description forwarded to the provider.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L85)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_SchemaName_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_SchemaName"></a>
@@ -424,7 +462,7 @@ Optional schema name forwarded to the provider.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L82)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Seed_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Seed"></a>
@@ -441,7 +479,7 @@ Random seed.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L95)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L112)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_SerializerOptions_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_SerializerOptions"></a>
@@ -458,7 +496,7 @@ Serializer settings used to materialize &lt;code class="typeparamref"&gt;T&lt;/c
 
 **Value:** [JsonSerializerOptions](https://learn.microsoft.com/dotnet/api/system.text.json.jsonserializeroptions)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L91)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_System_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_System"></a>
@@ -492,7 +530,7 @@ Temperature.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L97)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_TopK_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_TopK"></a>
@@ -509,7 +547,7 @@ Top-k sampling.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L86)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L103)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_TopP_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_TopP"></a>
@@ -526,4 +564,4 @@ Top-p sampling.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L100)
