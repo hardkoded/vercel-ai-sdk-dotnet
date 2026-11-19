@@ -588,7 +588,9 @@ public static partial class UIMessageStreamConverter
     {
         try
         {
-            return result.ModelOutput ?? result.Error?.Message ?? result.OutputJson;
+            return result.Error != null
+                ? ErrorMessage.ToErrorString(result.Error)
+                : result.OutputJson;
         }
         catch (Exception)
         {

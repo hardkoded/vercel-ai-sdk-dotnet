@@ -528,9 +528,6 @@ public sealed class GeneratedToolResult : GeneratedContent
 
     /// <summary>The JSON input of the tool call this result answers. Maps to the result's <c>input</c>.</summary>
     public string? InputJson { get; init; }
-
-    // The tool message the loop already built when it ran the tool, so ToResponseMessages does not run toModelOutput twice.
-    internal ToolModelMessage? ModelMessage { get; init; }
 }
 
 /// <summary>

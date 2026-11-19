@@ -126,9 +126,6 @@ internal static class ToolCallExecution
             }
 
             output = string.IsNullOrEmpty(output) ? "null" : output;
-            var modelOutput = tool.ToModelOutput?.Invoke(
-                new ToolModelOutputCall(toolCall.ToolCallId, input, output)
-            );
             executed = new ExecutedTool(toolCall.ToolCallId, toolCall.ToolName, output, false)
             {
                 InputJson = toolCall.ArgumentsJson,
@@ -136,14 +133,6 @@ internal static class ToolCallExecution
                 Title = toolCall.Title,
                 ToolMetadata = toolCall.ToolMetadata,
                 ProviderMetadata = toolCall.ProviderMetadata,
-                ModelOutputType = modelOutput is ContentToolModelOutput ? null : modelOutput?.Type,
-                ModelOutput =
-                    modelOutput is ContentToolModelOutput
-                        ? null
-                        : Generation.ModelOutputText(modelOutput),
-                ModelOutputContent = modelOutput is ContentToolModelOutput content
-                    ? Generation.ToUserContent(content.Value)
-                    : null,
             };
         }
         catch (Exception thrown) when (!abortSignal.IsCancellationRequested)
@@ -164,8 +153,6 @@ internal static class ToolCallExecution
                 Title = toolCall.Title,
                 ToolMetadata = toolCall.ToolMetadata,
                 ProviderMetadata = toolCall.ProviderMetadata,
-                ModelOutputType = "error-text",
-                ModelOutput = ErrorMessage.ToErrorString(exception),
                 Error = exception,
             };
         }

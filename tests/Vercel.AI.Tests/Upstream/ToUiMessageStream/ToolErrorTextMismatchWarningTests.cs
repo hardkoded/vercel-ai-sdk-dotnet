@@ -37,7 +37,6 @@ public sealed class ToolErrorTextMismatchWarningTests
         {
             Dynamic = true,
             Error = new JsError("execution failed"),
-            ModelOutput = "Error: execution failed",
         }
     );
 
@@ -98,7 +97,6 @@ public sealed class ToolErrorTextMismatchWarningTests
             {
                 Dynamic = true,
                 Error = new JsError("execution failed"),
-                ModelOutput = "Error: execution failed",
             }
         );
         var logged = await Consume(
@@ -271,7 +269,7 @@ public sealed class ToolErrorTextMismatchWarningTests
             new ExecutedTool("call-1", "test-tool", "{}", true)
             {
                 Dynamic = true,
-                ModelOutput = "Error: invalid tool input",
+                Error = new JsError("invalid tool input"),
             }
         );
         var logged = await Consume(

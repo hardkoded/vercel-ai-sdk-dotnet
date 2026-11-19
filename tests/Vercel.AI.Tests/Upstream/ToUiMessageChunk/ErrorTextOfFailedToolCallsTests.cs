@@ -129,7 +129,6 @@ public sealed class ErrorTextOfFailedToolCallsTests
             {
                 Dynamic = true,
                 Error = new JsError("tool failed"),
-                ModelOutput = "Error: tool failed",
             }
         );
 

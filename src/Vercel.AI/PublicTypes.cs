@@ -282,15 +282,6 @@ public sealed class ExecutedTool
 
     /// <summary>True when the result is preliminary: a tool streamed it before its final result. Maps to the result's <c>preliminary</c>.</summary>
     public bool? Preliminary { get; init; }
-
-    /// <summary>The output type sent to the model. Null means it is inferred from <see cref="OutputJson"/>.</summary>
-    internal string? ModelOutputType { get; init; }
-
-    /// <summary>The output sent to the model, such as an error message. Null means <see cref="OutputJson"/>.</summary>
-    internal string? ModelOutput { get; init; }
-
-    /// <summary>Typed text and file parts sent to the model for a content output.</summary>
-    internal IReadOnlyList<UserContentPart>? ModelOutputContent { get; init; }
 }
 
 /// <summary>One language-model step, including any tool results from that step.</summary>

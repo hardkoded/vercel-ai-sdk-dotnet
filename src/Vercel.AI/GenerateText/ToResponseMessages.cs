@@ -259,16 +259,11 @@ internal static class ToResponseMessages
     }
 
     // Maps to the createToolModelOutput step: the model output of a client tool result or error.
-    private static ToolModelMessage CreateToolMessage(
+    internal static ToolModelMessage CreateToolMessage(
         GeneratedToolResult result,
         IReadOnlyList<Tool>? tools
     )
     {
-        if (result.ModelMessage != null)
-        {
-            return result.ModelMessage;
-        }
-
         if (result.IsError)
         {
             return new ToolModelMessage(
