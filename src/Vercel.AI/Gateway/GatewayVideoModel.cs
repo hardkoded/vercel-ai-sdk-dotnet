@@ -109,7 +109,7 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
         call = call ?? throw new ArgumentNullException(nameof(call));
 
         // Built outside the try so a missing key surfaces as it is.
-        var headers = Headers(call.Headers);
+        var headers = await HeadersAsync(call.Headers, cancellationToken).ConfigureAwait(false);
         headers["accept"] = "text/event-stream";
         var url = _provider.Route("video-model");
         var body = BuildRequestBody(call).ToJsonString();
@@ -172,7 +172,7 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
     )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
-        var headers = Headers(call.Headers);
+        var headers = await HeadersAsync(call.Headers, cancellationToken).ConfigureAwait(false);
         var body = BuildRequestBody(call);
 
         // The spec option is webhookUrl. The Gateway's wire contract for a completion webhook is callbackUrl.
@@ -217,7 +217,7 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
     )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
-        var headers = Headers(call.Headers);
+        var headers = await HeadersAsync(call.Headers, cancellationToken).ConfigureAwait(false);
         var body = new JsonObject
         {
             ["operation"] = JsonSerializer.SerializeToNode(call.Operation),
@@ -600,7 +600,10 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
         return new ProviderResponse(headers, timestamp: DateTime.UtcNow, modelId: ModelId);
     }
 
-    private Dictionary<string, string?> Headers(IReadOnlyDictionary<string, string> callHeaders)
+    private async Task<Dictionary<string, string?>> HeadersAsync(
+        IReadOnlyDictionary<string, string> callHeaders,
+        CancellationToken cancellationToken
+    )
     {
         var extra = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         foreach (var pair in callHeaders)
@@ -608,14 +611,17 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
             extra[pair.Key] = pair.Value;
         }
 
-        return _provider.Headers(
-            "ai-video-model-specification-version",
-            "4",
-            "ai-model-id",
-            ModelId,
-            null,
-            extra
-        );
+        return await _provider
+            .HeadersAsync(
+                "ai-video-model-specification-version",
+                "4",
+                "ai-model-id",
+                ModelId,
+                null,
+                extra,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
     }
 
     private async Task<(

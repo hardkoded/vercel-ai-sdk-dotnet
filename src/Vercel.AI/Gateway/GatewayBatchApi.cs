@@ -28,9 +28,12 @@ public sealed class GatewayBatchApi : BatchResultsApiBase
         CancellationToken cancellationToken
     )
     {
-        var headers = _provider.BatchHeaders(
-            call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)
-        );
+        var headers = await _provider
+            .BatchHeadersAsync(
+                call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var body = new JsonObject { ["batchId"] = call.BatchId }.ToJsonString();
         try
         {
