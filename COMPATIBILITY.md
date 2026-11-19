@@ -58,6 +58,7 @@ Not emitted yet, because the core stream does not surface them:
 ## Provider notes
 
 - Gateway language, embedding, image, transcription, and video calls use `https://ai-gateway.vercel.sh/v4/ai`, the V4 specification headers, `ai-gateway-protocol-version: 0.0.1`, and `ai-gateway-auth-method` (`api-key`, or `oidc` when no key is set). They are not only the OpenAI-compatible `/v1/chat/completions` route.
+- The Gateway model id lists (`GatewayModelId`, `GatewayDecisionModelId`, `GatewayExtractionModelId`, and the other `Gateway*ModelId` classes in `src/Vercel.AI/Gateway/Gateway*ModelSettings.cs`) are generated from `https://ai-gateway.vercel.sh/v1/models` by `dotnet run --project scripts/Vercel.AI.Gateway.Scripts` from the repo root (upstream `packages/gateway/scripts/generate-model-settings.ts`). Upstream emits TypeScript string unions; the port emits one `const string` per id, and Gateway models still accept any string.
 - OpenResponses defaults to `https://ai-gateway.vercel.sh/v1/responses`.
 - Azure OpenAI uses the `/openai/v1` URLs with API version `v1` and the `api-key` header. `UseDeploymentBasedUrls` switches to the deployments URLs.
 - Amazon Bedrock uses the Converse API and Signature Version 4. Streaming calls `/converse-stream` and decodes the AWS event stream.
