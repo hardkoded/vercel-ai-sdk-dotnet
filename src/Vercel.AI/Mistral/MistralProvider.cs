@@ -45,6 +45,10 @@ public sealed class MistralProvider : OpenAICompatibleProvider
     }
 
     /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId) =>
+        new MistralEmbeddingModel(this, modelId);
+
+    /// <inheritdoc />
     public override ISpeechModel SpeechModel(string modelId) =>
         new MistralSpeechModel(this, modelId);
 

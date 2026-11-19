@@ -118,7 +118,8 @@ public sealed class DoEmbedTests
             new OpenAICompatibleOptions { ApiKey = "test-api-key" },
             capture
         );
-        var model = (OpenAICompatibleEmbeddingModel)provider.EmbeddingModel("mistral-embed");
+        var model = (Vercel.AI.Mistral.MistralEmbeddingModel)
+            provider.EmbeddingModel("mistral-embed");
 
         var result = await model.DoEmbedAsync(TestValues, null, CancellationToken.None);
 
@@ -167,16 +168,14 @@ public sealed class DoEmbedTests
         var options = new OpenAICompatibleOptions { ApiKey = "test-api-key" };
         options.Headers["Custom-Provider-Header"] = "provider-header-value";
         var provider = MistralProvider.Create(options, capture);
-        var model = (OpenAICompatibleEmbeddingModel)provider.EmbeddingModel("mistral-embed");
+        var model = (Vercel.AI.Mistral.MistralEmbeddingModel)
+            provider.EmbeddingModel("mistral-embed");
         var requestHeaders = new Dictionary<string, string?>
         {
             ["Custom-Request-Header"] = "request-header-value",
         };
 
-        await model.DoEmbedAsync(
-            new EmbeddingCallOptions(TestValues) { Headers = requestHeaders },
-            CancellationToken.None
-        );
+        await model.DoEmbedAsync(TestValues, null, CancellationToken.None, headers: requestHeaders);
 
         var headers = capture.Requests[0].Headers;
         Assert.Equal("Bearer test-api-key", headers["Authorization"]);
