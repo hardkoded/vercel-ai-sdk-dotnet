@@ -455,7 +455,14 @@ internal static class Generation
 #pragma warning restore CS0618
             if (onEnd != null)
             {
-                await onEnd(result, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await onEnd(result, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception) when (!cancellationToken.IsCancellationRequested)
+                {
+                    // Errors in callbacks do not break the generation flow (upstream notify).
+                }
             }
 
             return result;
@@ -1334,7 +1341,14 @@ internal static class Generation
 #pragma warning restore CS0618
             if (onEnd != null)
             {
-                await onEnd(result, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await onEnd(result, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception) when (!cancellationToken.IsCancellationRequested)
+                {
+                    // Errors in callbacks do not break the generation flow (upstream notify).
+                }
             }
 
             buffer.Complete();
