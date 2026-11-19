@@ -21,7 +21,8 @@ internal static class OptionsOutputSupport
     internal static StreamTextResult Stream(
         ILanguageModel model,
         OutputSpec? output = null,
-        Func<GenerateTextResult, CancellationToken, Task>? onEnd = null
+        Func<GenerateTextResult, CancellationToken, Task>? onEnd = null,
+        Func<string>? generateCallId = null
     )
     {
         return new AiClient(
@@ -33,6 +34,8 @@ internal static class OptionsOutputSupport
                 Prompt = "prompt",
                 Output = output,
                 OnEnd = onEnd,
+                GenerateCallId = generateCallId,
+                NowMs = generateCallId == null ? null : () => 0,
                 StopWhen = StopWhen.IsStepCount(2),
             }
         );

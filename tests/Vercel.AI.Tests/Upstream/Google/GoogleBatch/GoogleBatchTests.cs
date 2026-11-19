@@ -441,6 +441,41 @@ public sealed class GoogleBatchTests
 
     [Fact]
     [UpstreamTest(
+        "packages/google/src/google-batch.test.ts::GoogleBatch::starts an inline image generation batch"
+    )]
+    public async Task Starts_an_inline_image_generation_batch()
+    {
+        var handler = new GoogleBatchRecorder().Json(
+            Create,
+            Operation(new JsonObject(), new JsonObject { ["done"] = false })
+        );
+        var batch = CreateBatch(handler);
+        var request = new NormalizedBatchRequest(
+            "image-1",
+            "image",
+            "gemini-2.5-flash",
+            JsonDocument
+                .Parse(
+                    """
+                    {"prompt":"A red panda","n":1,"aspectRatio":"16:9","seed":42,"providerOptions":{}}
+                    """
+                )
+                .RootElement.Clone()
+        );
+
+        await batch.DoStartAsync(StartCall([request]), CancellationToken.None);
+
+        var call = Assert.Single(handler.Calls);
+        JsonAssert.Equal(
+            call.BodyJson,
+            """
+            {"batch":{"displayName":"ai-sdk-batch-test-id","inputConfig":{"requests":{"requests":[{"metadata":{"key":"image-1"},"request":{"contents":[{"role":"user","parts":[{"text":"A red panda"}]}],"generationConfig":{"seed":42,"responseModalities":["IMAGE"],"imageConfig":{"aspectRatio":"16:9"}}}}]}}}}
+            """
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
         "packages/google/src/google-batch.test.ts::GoogleBatch::cancels a batch",
         Coverage = UpstreamCoverage.Partial,
         Note = "Does not assert that the abort signal reaches fetch."

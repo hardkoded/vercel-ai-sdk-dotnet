@@ -239,8 +239,8 @@ public sealed class CreateSteeringTests
         var steering = Create();
         var run = Start(steering);
 
-        _ = steering.QueueAsync("first", new SteerOptions { Id = "queued-1" });
-        _ = steering.QueueAsync("second", new SteerOptions { Id = "queued-2" });
+        _ = steering.QueueAsync("first", new QueueOptions { Id = "queued-1" });
+        _ = steering.QueueAsync("second", new QueueOptions { Id = "queued-2" });
 
         Assert.False(run.HasPendingMessages());
         Assert.Empty(run.TakeMessages());
@@ -273,7 +273,7 @@ public sealed class CreateSteeringTests
         var steering = Create();
         var run = Start(steering);
 
-        var outcome = steering.QueueAsync("too late", new SteerOptions { Id = "queued-1" });
+        var outcome = steering.QueueAsync("too late", new QueueOptions { Id = "queued-1" });
         run.End(SteeringNotDeliveredReason.StopCondition);
 
         var notDelivered = SteeringAssert.NotDelivered(
@@ -295,7 +295,7 @@ public sealed class CreateSteeringTests
 
         var steered = steering.SteerAsync("first", new SteerOptions { Id = "message-1" });
 
-        Assert.Same(steered, steering.QueueAsync("retry", new SteerOptions { Id = "message-1" }));
+        Assert.Same(steered, steering.QueueAsync("retry", new QueueOptions { Id = "message-1" }));
     }
 
     [Fact]
@@ -373,12 +373,12 @@ public sealed class CreateSteeringTests
             SteerOptions? options = null
         ) => throw new NotSupportedException();
 
-        public Task<SteeringOutcome> QueueAsync(string message, SteerOptions? options = null) =>
+        public Task<SteeringOutcome> QueueAsync(string message, QueueOptions? options = null) =>
             throw new NotSupportedException();
 
         public Task<SteeringOutcome> QueueAsync(
             UserModelMessage message,
-            SteerOptions? options = null
+            QueueOptions? options = null
         ) => throw new NotSupportedException();
     }
 }

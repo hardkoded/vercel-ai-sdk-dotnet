@@ -258,6 +258,26 @@ public sealed class GenerateTextBehaviorTests
 
     [Fact]
     [UpstreamTest(
+        "packages/ai/src/generate-text/generate-text.test.ts::generateText > result.files::should contain file content parts from all steps in result.content",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Content_includes_file_parts_from_every_step()
+    {
+        var result = await TwoStepAsync(
+            files0: new[] { File("c3RlcC0w") },
+            files1: new[] { File("c3RlcC0x") }
+        );
+        var fileParts = result.Content.OfType<GeneratedFile>().ToArray();
+        Assert.Equal(
+            new[] { "c3RlcC0w", "c3RlcC0x" },
+            fileParts.Select(part => Convert.ToBase64String(part.Data)).ToArray()
+        );
+        Assert.All(fileParts, part => Assert.Equal("text/plain", part.MediaType));
+        Assert.Single(result.FinalStep.Content.OfType<GeneratedFile>());
+    }
+
+    [Fact]
+    [UpstreamTest(
         "packages/ai/src/generate-text/generate-text.test.ts::generateText > result.files::should send files from all steps to onFinish",
         Coverage = UpstreamCoverage.Covered
     )]

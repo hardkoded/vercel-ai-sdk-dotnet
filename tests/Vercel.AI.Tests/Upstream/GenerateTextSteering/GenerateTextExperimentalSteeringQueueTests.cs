@@ -151,7 +151,7 @@ public sealed class GenerateTextExperimentalSteeringQueueTests
         var steering = CreateSteering();
         var outcome = steering.QueueAsync(
             "Then update the readme.",
-            new SteerOptions { Id = "queued-1" }
+            new QueueOptions { Id = "queued-1" }
         );
 
         var model = SteeringTestModel.Generate(_ => TextResponse("It is sunny in Paris."));
@@ -230,7 +230,7 @@ public sealed class GenerateTextExperimentalSteeringQueueTests
             );
 
         SteeringAssert.NotDelivered(
-            await steering.QueueAsync("Then update the readme.", new SteerOptions { Id = "late" }),
+            await steering.QueueAsync("Then update the readme.", new QueueOptions { Id = "late" }),
             SteeringNotDeliveredReason.Finished
         );
     }

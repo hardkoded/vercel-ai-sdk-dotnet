@@ -74,6 +74,8 @@ A stream that ends without a finish part after it produced output keeps the part
 
 When `DoStreamAsync` fails before returning a provider stream, `StreamTextAsync` emits an `ErrorPart`, calls `OnError`, and completes its text and full-part streams without throwing from enumeration. If no earlier step completed, `Text` rejects with `NoOutputGeneratedException` and the message `No output generated. Check the stream for errors.` An `ErrorStreamPart` received during a provider stream also calls `OnError`; a following finish part still completes the step and calls `OnEnd`.
 
+The `GenerateTextResult` that `OnEnd` receives also exposes `CallId`, `StepNumber`, `Provider`, `ToolsContext`, `RuntimeContext`, `RawFinishReason`, `TotalUsage` (same as `Usage`), and the `StaticToolCalls`, `DynamicToolCalls`, `StaticToolResults`, and `DynamicToolResults` of every step. Each `StepResult` carries `CallId`, `StepNumber`, `ToolsContext`, `RuntimeContext`, and the same static/dynamic splits.
+
 ## Cancel a stream
 
 Cancel the `CancellationToken` you passed to `StreamTextAsync`, or set `StreamTextOptions.AbortSignal` to cancel with a reason. The call rejects `Text`, `Steps`, `FinishReason`, and `Usage` at once. It does not wait for your callbacks or for the provider to close the response. A reason that is an exception is the exception the tasks fault with. A token faults them with an `OperationCanceledException`.
@@ -101,7 +103,7 @@ controller.Abort(new JsError("manual abort"));
 
 ## Sources and citations
 
-`Sources` on a step or a `GenerateTextResult` is the retrieved reference set: the URLs a search returned, which can include more references than the model cites in its answer. Inline references hang off the text they support instead. `GeneratedText.Citations` is an optional list of `Citation` values on each text part in `StepResult.Content` (or `GenerateTextResult.Content`, the last step). Use `Citations` to render inline references and `Sources` to list what was retrieved.
+`Sources` on a step or a `GenerateTextResult` is the retrieved reference set: the URLs a search returned, which can include more references than the model cites in its answer. Inline references hang off the text they support instead. `GeneratedText.Citations` is an optional list of `Citation` values on each text part in `StepResult.Content` (or `GenerateTextResult.Content`, which spans every step). Use `Citations` to render inline references and `Sources` to list what was retrieved.
 
 A `Citation` has:
 
@@ -258,6 +260,26 @@ PrepareStep = context => new PrepareStepUpdate
 },
 ```
 
+### Interrupting the current model call
+
+A steering message waits for the current step by default. Pass `new SteerOptions { Interrupt = true }` to cut the current model call short when the model has not produced any output yet, e.g. for a correction like "stop, use the other file":
+
+```csharp
+await steering.SteerAsync("Stop, use the other file.", new SteerOptions { Interrupt = true });
+```
+
+- When the model call has not produced any text, reasoning, tool input, or tool call yet, it is cancelled and made again in the same step with the message. The step keeps its step number and does not count toward stop conditions.
+- `GenerateTextAsync` receives the output of a model call all at once, so the call can be cancelled until it returns. A response that is almost complete is discarded.
+- When output has already started, or tools are running, the message is added at the next step boundary like any other steering message. Running tools are never interrupted. Stop conditions apply to that next step: with the default of one step, the message is not delivered and `SteerAsync` reports the reason `StopCondition`.
+- `PrepareStep` runs again for the new model call and receives the message in `PrepareStepContext.ExperimentalSteeringMessages`. It gets the same instructions and messages as its first call for the step.
+- `OnLanguageModelCallStart` is called again for the new model call. `OnLanguageModelCallEnd` is not called for the cancelled one.
+- `StreamTextAsync` closes the text and reasoning parts of the cancelled call and streams the `SteeringMessagePart` before the new output. A part that was closed before it got any content stays in the UI message as an empty text or reasoning part. It streams one `StartStepPart` and one `FinishStepPart` for the step.
+- A caller abort or a timeout wins over an interrupt: the call ends and the message is reported as not delivered with the reason `Aborted`. The step timeout keeps running when the step is redone.
+- A cancelled model call can still be billed by the provider. It is not included in the usage of the result.
+- `QueueAsync` takes `QueueOptions`, which has no `Interrupt`, because a queued message waits for the task to finish.
+
+> Stop conditions and usage do not limit interrupts. Each interrupt makes another model call in the same step, so a stop condition like `StopWhen.IsStepCount` does not count it, and the usage of the result leaves out the cancelled calls. If your users can send interrupting messages, limit how many you accept for one call and set a `Timeout`.
+
 ### Queueing messages
 
 `SteerAsync` changes what the agent is doing right now. Use `QueueAsync` for a follow-up that should wait until the agent has finished its current task. A queued message is added once the model finishes its current task, i.e. when it gives a final answer without tool calls. The loop then continues with the message, so the agent works through the queue one task at a time:
@@ -279,7 +301,7 @@ PrepareStep = context => new PrepareStepUpdate
 - `Aborted`: the loop was aborted.
 - `Error`: the loop failed.
 
-Pass `new SteerOptions { Id = id }` to make retries safe. Sending a message again with the same `Id` returns the outcome of the first message.
+Pass `new SteerOptions { Id = id }` (or `new QueueOptions { Id = id }`) to make retries safe. Sending a message again with the same `Id` returns the outcome of the first message. A message that is sent again does not interrupt again.
 
 ### Saving and showing steering messages
 

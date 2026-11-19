@@ -321,10 +321,7 @@ public sealed class OptionsOutputObjectOutputTests
     }
 
     [Fact]
-    [UpstreamTest(
-        Prefix + "should call onFinish with the correct content",
-        Coverage = UpstreamCoverage.Partial
-    )]
+    [UpstreamTest(Prefix + "should call onFinish with the correct content")]
     public async Task Should_call_onFinish_with_the_correct_content()
     {
         GenerateTextResult? finished = null;
@@ -344,12 +341,34 @@ public sealed class OptionsOutputObjectOutputTests
             {
                 finished = value;
                 return Task.CompletedTask;
-            }
+            },
+            () => "test-telemetry-call-id"
         );
 
         await result.ConsumeStreamAsync();
 
         Assert.NotNull(finished);
+        Assert.Equal("test-telemetry-call-id", finished.CallId);
+        Assert.Equal("test-telemetry-call-id", finished.FinalStep.CallId);
+        Assert.Equal(0, finished.StepNumber);
+        Assert.Equal(0, finished.FinalStep.StepNumber);
+        Assert.Empty(finished.RuntimeContext);
+        Assert.Empty(finished.ToolsContext);
+        Assert.Empty(finished.FinalStep.RuntimeContext);
+        Assert.Empty(finished.FinalStep.ToolsContext);
+        Assert.Empty(finished.DynamicToolCalls);
+        Assert.Empty(finished.DynamicToolResults);
+        Assert.Empty(finished.StaticToolCalls);
+        Assert.Empty(finished.StaticToolResults);
+        Assert.Equal(13, finished.TotalUsage.TotalTokens);
+        Assert.Equal("test", finished.Provider);
+        Assert.Equal(finished.Response.ModelId, finished.ModelId);
+        Assert.Equal("stop", finished.RawFinishReason);
+        Assert.Null(finished.Request.Messages);
+        Assert.Null(finished.Request.Body);
+        Assert.Equal(0, finished.FinalStep.Performance.StepTimeMs);
+        Assert.Equal(0, finished.FinalStep.Performance.ResponseTimeMs);
+        Assert.Empty(finished.FinalStep.Performance.ToolExecutionMs);
         var text = Assert.IsType<GeneratedText>(Assert.Single(finished.Content));
         Assert.Equal("{ \"value\": \"Hello, world!\" }", text.Text);
         Assert.Empty(finished.Files);
@@ -371,7 +390,7 @@ public sealed class OptionsOutputObjectOutputTests
             Assert.Single(finished.ResponseMessages)
         );
         Assert.Equal("{ \"value\": \"Hello, world!\" }", message.Text);
-        Assert.Equal(finished.Response.ModelId, finished.FinalStep.ModelId);
+        Assert.Equal(finished.Response.ModelId, finished.ModelId);
     }
 
     private static StreamTextResult StreamWithOnEnd(

@@ -23,7 +23,7 @@ Result of `streamText`. Enumerating [Stream(CancellationToken)](#Vercel_AI_Strea
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4293)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4612)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Files generated in the last step. Completes when the stream finishes. Maps to `f
 
 **Value:** [Task&lt;IReadOnlyList&lt;GeneratedFile&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4604)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4923)
 
 <a id="Vercel_AI_StreamTextResult_FinishReason_"></a>
 <a id="Vercel_AI_StreamTextResult_FinishReason"></a>
@@ -59,7 +59,7 @@ Finish reason. Completes when the stream finishes.
 
 **Value:** [Task&lt;FinishReason&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4592)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4911)
 
 <a id="Vercel_AI_StreamTextResult_Output_"></a>
 <a id="Vercel_AI_StreamTextResult_Output"></a>
@@ -76,7 +76,7 @@ The parsed structured output, or null when no output is set. Completes when the 
 
 **Value:** [Task&lt;JsonElement?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4586)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4905)
 
 <a id="Vercel_AI_StreamTextResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_StreamTextResult_ProviderMetadata"></a>
@@ -93,7 +93,7 @@ Provider metadata of the last step. Completes when the stream finishes. Maps to 
 
 **Value:** [Task&lt;JsonElement?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4589)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4908)
 
 <a id="Vercel_AI_StreamTextResult_RawFinishReason_"></a>
 <a id="Vercel_AI_StreamTextResult_RawFinishReason"></a>
@@ -110,7 +110,7 @@ The finish reason exactly as the provider reported it, or &lt;a href="https://le
 
 **Value:** [Task&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4595)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4914)
 
 <a id="Vercel_AI_StreamTextResult_Request_"></a>
 <a id="Vercel_AI_StreamTextResult_Request"></a>
@@ -129,7 +129,7 @@ Completes when the stream finishes. Maps to `request`.
 
 **Value:** [Task&lt;LanguageModelRequestMetadata&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4611)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4930)
 
 <a id="Vercel_AI_StreamTextResult_Response_"></a>
 <a id="Vercel_AI_StreamTextResult_Response"></a>
@@ -146,7 +146,7 @@ Additional response information of the last step, with the messages that step ad
 
 **Value:** [Task&lt;StepResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4614)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4933)
 
 <a id="Vercel_AI_StreamTextResult_ResponseMessages_"></a>
 <a id="Vercel_AI_StreamTextResult_ResponseMessages"></a>
@@ -164,7 +164,7 @@ tool results the client ran. Completes when the stream finishes. Maps to `respon
 
 **Value:** [Task&lt;IReadOnlyList&lt;ModelMessage&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4620)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4939)
 
 <a id="Vercel_AI_StreamTextResult_Steps_"></a>
 <a id="Vercel_AI_StreamTextResult_Steps"></a>
@@ -181,7 +181,7 @@ Completed steps. Completes when the stream finishes.
 
 **Value:** [Task&lt;IReadOnlyList&lt;StepResult&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4601)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4920)
 
 <a id="Vercel_AI_StreamTextResult_Text_"></a>
 <a id="Vercel_AI_StreamTextResult_Text"></a>
@@ -198,7 +198,7 @@ Full text from the last step. Completes when the stream finishes.
 
 **Value:** [Task&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4583)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4902)
 
 <a id="Vercel_AI_StreamTextResult_Usage_"></a>
 <a id="Vercel_AI_StreamTextResult_Usage"></a>
@@ -215,7 +215,7 @@ Total usage. Completes when the stream finishes.
 
 **Value:** [Task&lt;LanguageModelUsage&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4598)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4917)
 
 ## Methods
 
@@ -240,7 +240,7 @@ Consumes the stream without processing the parts. Use it when only the final res
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4379)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4698)
 
 <a id="Vercel_AI_StreamTextResult_ElementStream_"></a>
 <a id="Vercel_AI_StreamTextResult_ElementStream_System_Threading_CancellationToken_"></a>
@@ -264,7 +264,7 @@ type validation error when the model exceeds `maxItems`. Maps to `elementStream`
 
 **Returns:** [IAsyncEnumerable&lt;JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4493)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4812)
 
 <a id="Vercel_AI_StreamTextResult_ExperimentalPartialOutputStream_"></a>
 <a id="Vercel_AI_StreamTextResult_ExperimentalPartialOutputStream_System_Threading_CancellationToken_"></a>
@@ -292,7 +292,7 @@ The deprecated alias of [PartialOutputStream(CancellationToken)](#Vercel_AI_Stre
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4468)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4787)
 
 <a id="Vercel_AI_StreamTextResult_PartialOutputStream_"></a>
 <a id="Vercel_AI_StreamTextResult_PartialOutputStream_System_Threading_CancellationToken_"></a>
@@ -317,7 +317,7 @@ so far for JSON output. Each step starts over. Maps to `partialOutputStream`.
 
 **Returns:** [IAsyncEnumerable&lt;JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4451)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4770)
 
 <a id="Vercel_AI_StreamTextResult_PipeTextStreamToResponseAsync_"></a>
 <a id="Vercel_AI_StreamTextResult_PipeTextStreamToResponseAsync_Vercel_AI_Util_ServerResponse_System_Nullable_System_Int32__System_String_Vercel_AI_Util_HeaderCollection_System_Threading_CancellationToken_"></a>
@@ -344,7 +344,7 @@ Writes the text deltas to &lt;code class="paramref"&gt;response&lt;/code&gt; as 
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4404)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4723)
 
 <a id="Vercel_AI_StreamTextResult_Stream_"></a>
 <a id="Vercel_AI_StreamTextResult_Stream_System_Threading_CancellationToken_"></a>
@@ -367,7 +367,7 @@ Every stream part, including tool calls, tool results, and finish.
 
 **Returns:** [IAsyncEnumerable&lt;TextStreamPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4576)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4895)
 
 <a id="Vercel_AI_StreamTextResult_TextStream_"></a>
 <a id="Vercel_AI_StreamTextResult_TextStream_System_Threading_CancellationToken_"></a>
@@ -390,7 +390,7 @@ Text deltas only.
 
 **Returns:** [IAsyncEnumerable&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4427)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4746)
 
 <a id="Vercel_AI_StreamTextResult_ToTextStreamResponse_"></a>
 <a id="Vercel_AI_StreamTextResult_ToTextStreamResponse_System_Nullable_System_Int32__System_String_Vercel_AI_Util_HeaderCollection_System_Threading_CancellationToken_"></a>
@@ -416,4 +416,4 @@ Builds a `text/plain` response of the text deltas. Each delta is its own UTF-8 b
 
 **Returns:** [TextStreamResponse](/api/Vercel.AI.Util/TextStreamResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4388)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L4707)
