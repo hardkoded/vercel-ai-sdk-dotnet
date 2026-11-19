@@ -55,7 +55,7 @@ public sealed class OptionsOnLanguageModelCallStartAndOnLanguageModelCallEndTest
     [UpstreamTest(
         "packages/ai/src/generate-text/stream-text.test.ts::streamText > options.onLanguageModelCallStart and onLanguageModelCallEnd::should fire the model-call callbacks before tool execution and step finish",
         Coverage = UpstreamCoverage.Partial,
-        Note = "The port has no onStepStart, onLanguageModelCallStart, callId, or performance on the event. See #623."
+        Note = "The port has no onStepStart or performance on the event. See #623."
     )]
     public async Task Should_fire_the_model_call_callbacks_before_tool_execution_and_step_finish()
     {
@@ -71,6 +71,12 @@ public sealed class OptionsOnLanguageModelCallStartAndOnLanguageModelCallEndTest
                         Model = model,
                         Prompt = "test-input",
                         Tools = new[] { Tool1() },
+                        OnLanguageModelCallStart = (_, _) =>
+                        {
+                            callOrder.Add("onLanguageModelCallStart");
+                            return Task.CompletedTask;
+                        },
+                        GenerateCallId = () => "test-telemetry-call-id",
                         OnLanguageModelCallEnd = (e, _) =>
                         {
                             callOrder.Add("onLanguageModelCallEnd");
@@ -99,6 +105,7 @@ public sealed class OptionsOnLanguageModelCallStartAndOnLanguageModelCallEndTest
         Assert.Equal(
             new[]
             {
+                "onLanguageModelCallStart",
                 "onLanguageModelCallEnd",
                 "onToolExecutionStart",
                 "onToolExecutionEnd",
@@ -107,6 +114,7 @@ public sealed class OptionsOnLanguageModelCallStartAndOnLanguageModelCallEndTest
             callOrder
         );
         var end = Assert.Single(events);
+        Assert.Equal("test-telemetry-call-id", end.CallId);
         Assert.Equal("response-model", end.ModelId);
         Assert.Equal("response-1", end.ResponseId);
         Assert.Equal("test", end.Provider);

@@ -95,13 +95,14 @@ public sealed class GatewayExtractionModel : IExtractionCaller
                     HttpMethod.Post,
                     _provider.Route("extraction-model"),
                     body.ToJsonString(),
-                    _provider.Headers(
+                    await _provider.HeadersAsync(
                         "ai-extraction-model-specification-version",
                         "4",
                         "ai-model-id",
                         ModelId,
                         null,
-                        headers
+                        headers,
+                        cancellationToken
                     ),
                     cancellationToken
                 )
