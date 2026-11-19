@@ -7,7 +7,7 @@ using Vercel.AI.Testing;
 
 namespace Vercel.AI.Tests.Upstream.ToolLoopAgent;
 
-/// <summary>Port of <c>tool-loop-agent.test.ts</c> &gt; <c>ToolLoopAgent</c> &gt; <c>generate</c>, the sandbox tests.</summary>
+/// <summary>Port of <c>tool-loop-agent.test.ts</c> &gt; <c>ToolLoopAgent</c> &gt; <c>generate</c>, the sandbox and user-agent tests.</summary>
 public sealed class GenerateTests
 {
     [Fact]
@@ -69,5 +69,50 @@ public sealed class GenerateTests
         await agent.GenerateAsync("test", experimentalSandbox: sandbox);
 
         Assert.Same(sandbox, recordedSandbox);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > generate::should tag the user-agent with the agent identifier",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task ShouldTagTheUserAgentWithTheAgentIdentifier()
+    {
+        var model = new TestLanguageModel();
+        var agent = new Agent(
+            new AgentOptions { Model = model },
+            ToolLoopAgentInstructions.Client()
+        );
+
+        await agent.GenerateAsync("Hello, world!");
+
+        Assert.Contains(
+            "ai-sdk-agent/tool-loop",
+            Assert.Single(model.Calls).Headers!["user-agent"]
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > generate::should preserve a caller-provided user-agent",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task ShouldPreserveACallerProvidedUserAgent()
+    {
+        var model = new TestLanguageModel();
+        var agent = new Agent(
+            new AgentOptions
+            {
+                Model = model,
+                Headers = new Dictionary<string, string?> { ["user-agent"] = "my-app/1.0" },
+            },
+            ToolLoopAgentInstructions.Client()
+        );
+
+        await agent.GenerateAsync("Hello, world!");
+
+        var ua = Assert.Single(model.Calls).Headers!["user-agent"];
+        Assert.Contains("my-app/1.0", ua);
+        Assert.Contains("ai-sdk-agent/tool-loop", ua);
     }
 }

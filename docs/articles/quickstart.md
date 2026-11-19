@@ -73,6 +73,8 @@ var tools = await client.GenerateTextAsync(new GenerateTextOptions
 
 `AgentOptions.Timeout` takes the same configuration for every `Agent.GenerateAsync` and `Agent.Stream` call. `PrepareCall` can replace it. Maps to `timeout` of `ToolLoopAgentSettings`. `Agent.GenerateAsync` and `Agent.Stream` also take a `timeout` argument for one call. It replaces both `AgentOptions.Timeout` and the timeout that `PrepareCall` returns.
 
+`AgentOptions.Headers` sets extra HTTP headers for every request. `Agent` appends `ai-sdk-agent/tool-loop` to the `user-agent` header, keeping a caller-provided value, so usage can be attributed to the agent. Maps to `agentHeaders` of `ToolLoopAgent`.
+
 When a limit passes, the `CancellationToken` of the model call and of every tool call is cancelled, and `LanguageModelCallOptions.AbortSignal` aborts with a `TimeoutError` reason. `GenerateTextAsync` throws that `TimeoutError`. The results of `StreamTextAsync` fault with it, as they do for any abort reason that is an exception. The model and the tools must observe the token to stop early. `AbortSignal` is `null` when the call has no timeout and no `StreamTextOptions.AbortSignal`.
 
 Before this option worked, `Timeout` was a `TimeSpan?` that the call ignored. A `TimeSpan` still converts to a `TimeoutConfiguration`, so code that assigns a `TimeSpan` compiles and now takes effect. Code that assigns a `TimeSpan?` or reads `Timeout.Value` no longer compiles. `Timeout.InfiniteTimeSpan` means no timeout.

@@ -6,6 +6,7 @@ using System.Text.Json;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
 
 namespace Vercel.AI;
@@ -131,14 +132,11 @@ public sealed class Agent : IAgent
         Func<GenerateTextOptions, GenerateTextOptions?>? prepareCall
     )
     {
-        var prepared = Prepare(call, prepareCall);
-        if (timeout != null || experimentalSteering != null || Options.OnStepEnd != null)
-        {
-            prepared = prepared.ShallowCopy();
-            prepared.Timeout = timeout ?? prepared.Timeout;
-            prepared.ExperimentalSteering = experimentalSteering ?? prepared.ExperimentalSteering;
-            prepared.OnStepEnd = MergeStepEnd(Options.OnStepEnd, prepared.OnStepEnd);
-        }
+        var prepared = Prepare(call, prepareCall).ShallowCopy();
+        prepared.Headers = AgentHeaders(prepared.Headers);
+        prepared.Timeout = timeout ?? prepared.Timeout;
+        prepared.ExperimentalSteering = experimentalSteering ?? prepared.ExperimentalSteering;
+        prepared.OnStepEnd = MergeStepEnd(Options.OnStepEnd, prepared.OnStepEnd);
 
         return _client.GenerateTextAsync(prepared, cancellationToken);
     }
@@ -273,7 +271,7 @@ public sealed class Agent : IAgent
                 Reasoning = prepared.Reasoning,
                 MaxRetries = prepared.MaxRetries,
                 Timeout = timeout ?? prepared.Timeout,
-                Headers = prepared.Headers,
+                Headers = AgentHeaders(prepared.Headers),
                 ProviderOptions = prepared.ProviderOptions,
                 PrepareStep = prepared.PrepareStep,
                 ExperimentalSteering = experimentalSteering ?? prepared.ExperimentalSteering,
@@ -298,6 +296,14 @@ public sealed class Agent : IAgent
     }
 
     // mergeCallbacks: both callbacks run, the settings callback first, and an error of one does not stop the other
+    // Maps to ToolLoopAgent.agentHeaders: tags outgoing requests so usage can be attributed to the agent.
+    private static IReadOnlyDictionary<string, string?> AgentHeaders(
+        IReadOnlyDictionary<string, string?>? headers
+    ) =>
+        ProviderValues
+            .WithUserAgentSuffix(headers, "ai-sdk-agent/tool-loop")
+            .ToDictionary(pair => pair.Key, pair => (string?)pair.Value);
+
     private static Func<StepResult, CancellationToken, Task>? MergeStepEnd(
         Func<StepResult, CancellationToken, Task>? settings,
         Func<StepResult, CancellationToken, Task>? call
@@ -360,6 +366,7 @@ public sealed class Agent : IAgent
             StopWhen = Options.StopWhen ?? StopWhen.CreateDefaultStopCondition(10),
             Temperature = Options.Temperature,
             MaxOutputTokens = Options.MaxOutputTokens,
+            Headers = Options.Headers,
             ToolCallConcurrency = Options.ToolCallConcurrency,
             RepairToolCall = Options.RepairToolCall,
             RefineToolInput = Options.RefineToolInput,
@@ -429,6 +436,9 @@ public class AgentOptions
 
     /// <summary>Maximum output tokens.</summary>
     public int? MaxOutputTokens { get; set; }
+
+    /// <summary>Additional HTTP headers sent with every request. The agent appends <c>ai-sdk-agent/tool-loop</c> to the <c>user-agent</c> header.</summary>
+    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
 
     /// <summary>
     /// Maximum number of tool calls that may execute concurrently within a step. See <see cref="GenerateTextOptions.ToolCallConcurrency"/>.
