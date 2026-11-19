@@ -38,7 +38,7 @@ public enum SmoothStreamChunking
 /// <summary>Options of <see cref="SmoothStream.Create"/>. Maps to the options of <c>smoothStream</c>.</summary>
 public sealed class SmoothStreamOptions
 {
-    /// <summary>The delay in milliseconds between each chunk. Defaults to 10ms. Set to <c>null</c> to skip the delay.</summary>
+    /// <summary>The delay in milliseconds between each chunk. Defaults to 10ms. Set to <c>null</c> to skip the delay. The delay is skipped while the document is hidden, which never happens in .NET.</summary>
     public int? DelayInMs { get; set; } = 10;
 
     /// <summary>Controls how the text is chunked for streaming. Defaults to <see cref="SmoothStreamChunking.Word"/>.</summary>
@@ -55,6 +55,12 @@ public sealed class SmoothStreamOptions
 
     /// <summary>Internal. For test use only. Maps to <c>_internal.delay</c>.</summary>
     internal Func<int?, CancellationToken, Task>? Delay { get; set; }
+
+    /// <summary>
+    /// Internal. For test use only. Replaces <see cref="SmoothStream"/>'s <c>isDocumentHidden</c>, which upstream reads
+    /// from the <c>document</c> global that tests stub. .NET has no document, so the default is never hidden.
+    /// </summary>
+    internal Func<bool>? IsDocumentHidden { get; set; }
 }
 
 /// <summary>Smooths text and reasoning streaming output. Maps to <c>smoothStream</c>.</summary>
@@ -71,6 +77,10 @@ public static class SmoothStream
         TimeSpan.FromSeconds(1)
     );
 
+    // Maps to isDocumentHidden. Browsers heavily throttle timers in hidden documents, which would stall the smoothing
+    // delay and, through backpressure, the whole stream. .NET has no document, so it is never hidden.
+    private static bool IsDocumentHidden() => false;
+
     /// <summary>
     /// Creates the transform. Call the returned function with the tools to get a transform of the full stream.
     /// </summary>
@@ -83,11 +93,19 @@ public static class SmoothStream
         var delayInMs = options.DelayInMs;
         var delay = options.Delay
             ?? ((ms, ct) => ms is int m ? Task.Delay(m, ct) : Task.CompletedTask);
+        var isDocumentHidden = options.IsDocumentHidden ?? IsDocumentHidden;
         var detectChunk = CreateDetector(options);
 
         return _ =>
             (stream, cancellationToken) =>
-                Transform(stream, detectChunk, delayInMs, delay, cancellationToken);
+                Transform(
+                    stream,
+                    detectChunk,
+                    delayInMs,
+                    delay,
+                    isDocumentHidden,
+                    cancellationToken
+                );
     }
 
     private static Func<string, string?> CreateDetector(SmoothStreamOptions options)
@@ -161,6 +179,7 @@ public static class SmoothStream
         Func<string, string?> detectChunk,
         int? delayInMs,
         Func<int?, CancellationToken, Task> delay,
+        Func<bool> isDocumentHidden,
         [EnumeratorCancellation] CancellationToken cancellationToken
     )
     {
@@ -264,7 +283,8 @@ public static class SmoothStream
                 yield return CreateDelta(type, id, match, providerMetadata);
                 buffer = buffer.Substring(match.Length);
 
-                await delay(delayInMs, cancellationToken).ConfigureAwait(false);
+                await delay(isDocumentHidden() ? null : delayInMs, cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             if (buffer.Length == 0)
