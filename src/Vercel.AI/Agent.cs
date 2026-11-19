@@ -256,6 +256,7 @@ public sealed class Agent : IAgent
                 AllowSystemInMessages = prepared.AllowSystemInMessages,
                 Tools = prepared.Tools,
                 ActiveTools = prepared.ActiveTools,
+                ToolOrder = prepared.ToolOrder,
                 ToolCallConcurrency = prepared.ToolCallConcurrency,
                 ToolChoice = prepared.ToolChoice,
                 StopWhen = prepared.StopWhen,
@@ -370,6 +371,7 @@ public sealed class Agent : IAgent
             Temperature = Options.Temperature,
             MaxOutputTokens = Options.MaxOutputTokens,
             Headers = Options.Headers,
+            ToolOrder = Options.ToolOrder,
             ToolCallConcurrency = Options.ToolCallConcurrency,
             RepairToolCall = Options.RepairToolCall,
             RefineToolInput = Options.RefineToolInput,
@@ -442,6 +444,9 @@ public class AgentOptions
 
     /// <summary>Additional HTTP headers sent with every request. The agent appends <c>ai-sdk-agent/tool-loop</c> to the <c>user-agent</c> header.</summary>
     public IReadOnlyDictionary<string, string?>? Headers { get; set; }
+
+    /// <summary>Controls the order in which tools are sent to the provider. See <see cref="GenerateTextOptions.ToolOrder"/>. <see cref="PrepareCall"/> can replace it.</summary>
+    public IReadOnlyList<string>? ToolOrder { get; set; }
 
     /// <summary>
     /// Maximum number of tool calls that may execute concurrently within a step. See <see cref="GenerateTextOptions.ToolCallConcurrency"/>.

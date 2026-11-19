@@ -23,7 +23,7 @@ Options for batch operations.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [OperationRequest](/api/Vercel.AI.Operations/OperationRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L773)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L837)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Batch reference.
 
 **Value:** [BatchReference](/api/Vercel.AI.Operations/BatchReference/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L779)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L843)
 
 <a id="Vercel_AI_Operations_BatchRequestOptions_Cursor_"></a>
 <a id="Vercel_AI_Operations_BatchRequestOptions_Cursor"></a>
@@ -59,7 +59,7 @@ Page cursor.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L791)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L855)
 
 <a id="Vercel_AI_Operations_BatchRequestOptions_Download_"></a>
 <a id="Vercel_AI_Operations_BatchRequestOptions_Download"></a>
@@ -76,7 +76,7 @@ Downloads file URLs inside results.
 
 **Value:** [Func&lt;string, CancellationToken, Task&lt;DownloadedMedia&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L807)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L871)
 
 <a id="Vercel_AI_Operations_BatchRequestOptions_Limit_"></a>
 <a id="Vercel_AI_Operations_BatchRequestOptions_Limit"></a>
@@ -93,7 +93,7 @@ Page size.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L788)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L852)
 
 <a id="Vercel_AI_Operations_BatchRequestOptions_Output_"></a>
 <a id="Vercel_AI_Operations_BatchRequestOptions_Output"></a>
@@ -112,7 +112,7 @@ validate each result.
 
 **Value:** [OutputSpec](/api/Vercel.AI/OutputSpec/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L801)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L865)
 
 <a id="Vercel_AI_Operations_BatchRequestOptions_Provider_"></a>
 <a id="Vercel_AI_Operations_BatchRequestOptions_Provider"></a>
@@ -129,7 +129,7 @@ Batch API or a provider that exposes one. Null uses [Default](/api/Vercel.AI.Ope
 
 **Value:** `ApiOrProvider&lt;IBatchApi, IBatchProvider&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L776)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L840)
 
 <a id="Vercel_AI_Operations_BatchRequestOptions_Requests_"></a>
 <a id="Vercel_AI_Operations_BatchRequestOptions_Requests"></a>
@@ -146,7 +146,7 @@ Requests to start.
 
 **Value:** [IReadOnlyList&lt;BatchRequest&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L782)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L846)
 
 <a id="Vercel_AI_Operations_BatchRequestOptions_TimeoutMs_"></a>
 <a id="Vercel_AI_Operations_BatchRequestOptions_TimeoutMs"></a>
@@ -163,7 +163,7 @@ Total timeout in milliseconds.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L804)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L868)
 
 <a id="Vercel_AI_Operations_BatchRequestOptions_Tools_"></a>
 <a id="Vercel_AI_Operations_BatchRequestOptions_Tools"></a>
@@ -180,7 +180,7 @@ Tools used to parse client tool calls. They are not executed.
 
 **Value:** [IReadOnlyList&lt;BatchTool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L794)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L858)
 
 <a id="Vercel_AI_Operations_BatchRequestOptions_WebhookUrl_"></a>
 <a id="Vercel_AI_Operations_BatchRequestOptions_WebhookUrl"></a>
@@ -197,4 +197,4 @@ Webhook URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L785)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L849)

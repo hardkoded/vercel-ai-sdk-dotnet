@@ -640,6 +640,60 @@ public abstract class OutputSpec
         return new JsonOutput(name, description);
     }
 
+    /// <summary>
+    /// JSON object output deserialized to <typeparamref name="TOutput"/>. Maps to <c>Output.object</c> with an
+    /// inferred output type.
+    /// </summary>
+    public static OutputSpec<TOutput> Object<TOutput>(
+        JsonElement schema,
+        string? name = null,
+        string? description = null
+    )
+    {
+        return new TypedOutput<TOutput>(Object(schema, name, description));
+    }
+
+    /// <summary>JSON object output from a schema string, deserialized to <typeparamref name="TOutput"/>.</summary>
+    public static OutputSpec<TOutput> Object<TOutput>(
+        string jsonSchema,
+        string? name = null,
+        string? description = null
+    )
+    {
+        return new TypedOutput<TOutput>(Object(jsonSchema, name, description));
+    }
+
+    /// <summary>
+    /// Array output whose elements are deserialized to <typeparamref name="TElement"/>. Maps to <c>Output.array</c>
+    /// with an inferred element type.
+    /// </summary>
+    public static OutputSpec<IReadOnlyList<TElement>> Array<TElement>(
+        JsonElement elementSchema,
+        int? minItems = null,
+        int? maxItems = null,
+        string? name = null,
+        string? description = null
+    )
+    {
+        return new TypedOutput<IReadOnlyList<TElement>>(
+            Array(elementSchema, minItems, maxItems, name, description)
+        );
+    }
+
+    /// <summary>Array output with the element schema as a string, deserialized to <typeparamref name="TElement"/>.</summary>
+    public static OutputSpec<IReadOnlyList<TElement>> Array<TElement>(
+        string elementJsonSchema,
+        int? minItems = null,
+        int? maxItems = null,
+        string? name = null,
+        string? description = null
+    )
+    {
+        return new TypedOutput<IReadOnlyList<TElement>>(
+            Array(elementJsonSchema, minItems, maxItems, name, description)
+        );
+    }
+
     internal virtual JsonElement? Schema => null;
 
     internal virtual string? SchemaName => null;
@@ -1040,6 +1094,56 @@ public abstract class OutputSpec
     }
 }
 
+/// <summary>
+/// Structured output selector whose complete output is deserialized to <typeparamref name="TOutput"/>.
+/// Maps to <c>Output&lt;OUTPUT&gt;</c>.
+/// </summary>
+/// <typeparam name="TOutput">The type of the parsed output.</typeparam>
+public abstract class OutputSpec<TOutput> : OutputSpec
+{
+    private static readonly JsonSerializerOptions s_options = new(JsonSerializerDefaults.Web);
+
+    internal OutputSpec() { }
+
+    // Maps to the typed result of parseCompleteOutput. A mismatch throws JsonException.
+    internal TOutput? Deserialize(JsonElement output)
+    {
+        return output.Deserialize<TOutput>(s_options);
+    }
+}
+
+// Gives a built-in output specification an output type. Every behavior is the one of the inner specification.
+internal sealed class TypedOutput<TOutput>(OutputSpec inner) : OutputSpec<TOutput>
+{
+    internal override JsonElement? Schema => inner.Schema;
+
+    internal override string? SchemaName => inner.SchemaName;
+
+    internal override string? SchemaDescription => inner.SchemaDescription;
+
+    internal override bool IsJson => inner.IsJson;
+
+    internal override JsonElement ParseCompleteOutput(string text)
+    {
+        return inner.ParseCompleteOutput(text);
+    }
+
+    internal override JsonElement? ParsePartialOutput(string text)
+    {
+        return inner.ParsePartialOutput(text);
+    }
+
+    internal override Func<JsonElement, IEnumerable<JsonElement>>? CreateElementStreamTransform()
+    {
+        return inner.CreateElementStreamTransform();
+    }
+
+    internal override Util.ArrayOutputStreamParser? CreateArrayStreamParser()
+    {
+        return inner.CreateArrayStreamParser();
+    }
+}
+
 /// <summary>Context passed to <c>prepareStep</c>.</summary>
 public sealed class PrepareStepContext
 {
@@ -1133,6 +1237,9 @@ public sealed class PrepareStepUpdate
     /// <summary>Replacement tool choice for this step.</summary>
     public ToolChoice? ToolChoice { get; set; }
 
+    /// <summary>Overrides the order in which tools are sent to the provider for this step. See <see cref="GenerateTextOptions.ToolOrder"/>. Maps to <c>toolOrder</c>.</summary>
+    public IReadOnlyList<string>? ToolOrder { get; set; }
+
     /// <summary>
     /// Provider options for this step, such as an Anthropic container id. They are deep-merged onto the call's provider options.
     /// </summary>
@@ -1149,6 +1256,9 @@ public class GenerateTextOptions
 {
     /// <summary>The clock for step timing in milliseconds. Tests replace it. Maps to <c>_internal.now</c>.</summary>
     internal Func<double>? NowMs { get; set; }
+
+    /// <summary>Generates the id of the call. Maps to <c>_internal.generateCallId</c>.</summary>
+    internal Func<string>? GenerateCallId { get; set; }
 
     /// <summary>A shallow copy of these options, so a caller can change one property without changing the original.</summary>
     internal GenerateTextOptions ShallowCopy() => (GenerateTextOptions)MemberwiseClone();
@@ -1196,6 +1306,12 @@ public class GenerateTextOptions
 
     /// <summary>Tool names allowed on this call. Null allows every tool.</summary>
     public IReadOnlyList<string>? ActiveTools { get; set; }
+
+    /// <summary>
+    /// Controls the order in which tools are sent to the provider. The list can be partial. Tools not listed are sent after the listed tools,
+    /// sorted alphabetically. This can improve provider-side caching by keeping tool definitions in a stable order. Maps to <c>toolOrder</c>.
+    /// </summary>
+    public IReadOnlyList<string>? ToolOrder { get; set; }
 
     /// <summary>
     /// Maximum number of tool calls that may execute concurrently within a step. Set to 1 to execute them one at a time in model order.
@@ -1268,6 +1384,16 @@ public class GenerateTextOptions
 
     /// <summary>The sandbox environment that is passed through to tool execution. Maps to <c>experimental_sandbox</c>.</summary>
     public Vercel.AI.ProviderUtils.ISandboxSession? ExperimentalSandbox { get; set; }
+
+    /// <summary>
+    /// Called immediately before each provider model call begins. An exception it throws is ignored.
+    /// Maps to <c>onLanguageModelCallStart</c>.
+    /// </summary>
+    public Func<
+        LanguageModelCallStartEvent,
+        CancellationToken,
+        Task
+    >? OnLanguageModelCallStart { get; set; }
 
     /// <summary>
     /// Called after each provider model call returns, before tools run and before <see cref="OnStepEnd"/>.
@@ -1363,6 +1489,31 @@ public class GenerateTextOptions
         string,
         Func<JsonElement, CancellationToken, Task<JsonElement>>
     >? RefineToolInput { get; set; }
+}
+
+/// <summary>Passed to <see cref="GenerateTextOptions.OnLanguageModelCallStart"/> before the model is called.</summary>
+public sealed class LanguageModelCallStartEvent
+{
+    /// <summary>Id of the model call.</summary>
+    public string CallId { get; init; } = string.Empty;
+
+    /// <summary>Provider id of the model.</summary>
+    public string Provider { get; init; } = string.Empty;
+
+    /// <summary>Model id.</summary>
+    public string ModelId { get; init; } = string.Empty;
+
+    /// <summary>Instructions of the call.</summary>
+    public Instructions? Instructions { get; init; }
+
+    /// <summary>Messages of the call, without the instructions.</summary>
+    public IReadOnlyList<ModelMessage> Messages { get; init; } = [];
+
+    /// <summary>Tools offered to the model.</summary>
+    public IReadOnlyList<LanguageModelTool>? Tools { get; init; }
+
+    /// <summary>Call settings.</summary>
+    public LanguageModelCallOptions CallOptions { get; init; } = new();
 }
 
 /// <summary>Passed to <see cref="GenerateTextOptions.OnLanguageModelCallEnd"/> after a provider model call returns.</summary>
@@ -1470,9 +1621,42 @@ public sealed class ToolExecutionEndEvent : ToolExecutionStartEvent
     public TimeSpan ToolExecutionTime { get; }
 }
 
+/// <summary>The options a <see cref="StreamTextTransform"/> receives. Maps to the argument of <c>StreamTextTransform</c>.</summary>
+public sealed class StreamTextTransformOptions
+{
+    /// <summary>Creates the options.</summary>
+    public StreamTextTransformOptions(IReadOnlyList<Tool>? tools = null, Action? stopStream = null)
+    {
+        Tools = tools ?? [];
+        StopStream = stopStream ?? (() => { });
+    }
+
+    /// <summary>The tools that are accessible to and can be called by the model. Maps to <c>tools</c>.</summary>
+    public IReadOnlyList<Tool> Tools { get; }
+
+    /// <summary>Stops the source stream. No further part reaches the transform after it is called. Maps to <c>stopStream</c>.</summary>
+    public Action StopStream { get; }
+}
+
+/// <summary>
+/// A transformation that is applied to the stream of parts. It receives the stream and returns the transformed stream.
+/// The transformation must maintain the stream structure for <c>StreamTextAsync</c> to work correctly. Maps to <c>StreamTextTransform</c>.
+/// </summary>
+public delegate Func<
+    IAsyncEnumerable<TextStreamPart>,
+    CancellationToken,
+    IAsyncEnumerable<TextStreamPart>
+> StreamTextTransform(StreamTextTransformOptions options);
+
 /// <summary>Options for <see cref="IAiClient.StreamTextAsync"/>.</summary>
 public sealed class StreamTextOptions : GenerateTextOptions
 {
+    /// <summary>
+    /// Optional stream transformations, applied in order. They must maintain the stream structure for <c>StreamTextAsync</c> to work correctly.
+    /// Use <see cref="GenerateText.SmoothStream.Create"/> to smooth the text output. Maps to <c>experimental_transform</c>.
+    /// </summary>
+    public IReadOnlyList<StreamTextTransform>? ExperimentalTransform { get; set; }
+
     /// <summary>What to retain of the request in the <see cref="StartStepPart"/>. Maps to <c>include</c>.</summary>
     public StreamTextInclude? Include { get; set; }
 

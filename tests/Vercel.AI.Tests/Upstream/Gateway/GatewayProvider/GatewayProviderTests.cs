@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.Gateway;
+using Vercel.AI.Operations;
+using Vercel.AI.Tests.Upstream.Gateway.GatewayLanguageModel;
 
 namespace Vercel.AI.Tests.Upstream.Gateway.GatewayProviderTests;
 
@@ -14,6 +16,52 @@ public sealed class GatewayProviderTests
         "packages/gateway/src/gateway-provider.test.ts::GatewayProvider > createGateway";
     private const string OneModel =
         "{\"models\":[{\"id\":\"test-model\",\"name\":\"Test\",\"specification\":{\"specificationVersion\":\"v4\",\"provider\":\"p\",\"modelId\":\"test-model\"}}]}";
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "::should use OIDC token when no API key is provided",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Checks the headers of a language model request. The upstream test mocks the GatewayLanguageModel constructor and resolves config.headers."
+    )]
+    public async Task Should_use_OIDC_token_when_no_API_key_is_provided()
+    {
+        var previousKey = Environment.GetEnvironmentVariable(
+            GatewayProvider.ApiKeyEnvironmentVariable
+        );
+        Environment.SetEnvironmentVariable(GatewayProvider.ApiKeyEnvironmentVariable, null);
+        VercelEnvironment.OidcTokenOverride = _ => Task.FromResult("mock-oidc-token");
+        try
+        {
+            var server = new GatewayLanguageModelServer { Failure = new HttpRequestException() };
+            var provider = GatewayProvider.Create(
+                new GatewayOptions
+                {
+                    BaseUrl = "https://api.example.com",
+                    Headers = new Dictionary<string, string> { ["Custom-Header"] = "value" },
+                },
+                server
+            );
+            var model = provider.LanguageModel("test-model");
+
+            await Assert.ThrowsAnyAsync<Exception>(() =>
+                model.DoGenerateAsync(
+                    GatewayLanguageModelSupport.TestPrompt,
+                    CancellationToken.None
+                )
+            );
+
+            Assert.Equal("Bearer mock-oidc-token", server.RequestHeaders["authorization"]);
+            Assert.Equal("oidc", server.RequestHeaders["ai-gateway-auth-method"]);
+        }
+        finally
+        {
+            VercelEnvironment.OidcTokenOverride = null;
+            Environment.SetEnvironmentVariable(
+                GatewayProvider.ApiKeyEnvironmentVariable,
+                previousKey
+            );
+        }
+    }
 
     [Fact]
     [UpstreamTest(
@@ -166,6 +214,118 @@ public sealed class GatewayProviderTests
         );
 
         Assert.Empty(provider.O11yHeaders());
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "::should reuse gateway headers and fetch for imageModel",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Upstream reads the headers, fetch and o11yHeaders from the internal model config. The port asserts the same values on the request the image model sends through the custom HTTP handler."
+    )]
+    public async Task Should_reuse_gateway_headers_and_fetch_for_imageModel()
+    {
+        using var context = VercelRequestContext.Use(
+            new Dictionary<string, string?> { ["x-vercel-id"] = "mock-request-id" }
+        );
+        var handler = new UpstreamRecordingHandler("{\"images\":[\"base64-image-1\"]}");
+        var provider = GatewayProvider.Create(
+            new GatewayOptions
+            {
+                BaseUrl = "https://api.example.com",
+                ApiKey = "test-api-key",
+                Headers = new Dictionary<string, string> { ["Custom-Header"] = "value" },
+            },
+            handler
+        );
+
+        var model = Assert.IsType<Vercel.AI.Gateway.GatewayImageModel>(
+            provider.ImageModel("openai/gpt-image-1")
+        );
+        await model.DoGenerateAsync(
+            new ImageModelCall(
+                "Test prompt",
+                null,
+                null,
+                1,
+                null,
+                null,
+                null,
+                default,
+                new Dictionary<string, string>(),
+                CancellationToken.None
+            ),
+            CancellationToken.None
+        );
+
+        Assert.Equal(1, handler.Calls);
+        AssertReusedGatewayHeaders(handler);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "::should reuse gateway headers and fetch for videoModel",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Upstream reads the headers, fetch and o11yHeaders from the internal model config. The port asserts the same values on the request the video model sends through the custom HTTP handler."
+    )]
+    public async Task Should_reuse_gateway_headers_and_fetch_for_videoModel()
+    {
+        using var context = VercelRequestContext.Use(
+            new Dictionary<string, string?> { ["x-vercel-id"] = "mock-request-id" }
+        );
+        var handler = new UpstreamRecordingHandler(
+            "data: {\"type\":\"result\",\"videos\":[{\"type\":\"base64\",\"data\":\"base64-video-1\",\"mediaType\":\"video/mp4\"}]}\n\n"
+        );
+        var provider = GatewayProvider.Create(
+            new GatewayOptions
+            {
+                BaseUrl = "https://api.example.com",
+                ApiKey = "test-api-key",
+                Headers = new Dictionary<string, string> { ["Custom-Header"] = "value" },
+            },
+            handler
+        );
+
+        var model = Assert.IsType<Vercel.AI.Gateway.GatewayVideoModel>(
+            provider.VideoModel("google/veo-2.0-generate-001")
+        );
+        await model.DoGenerateAsync(
+            new VideoModelCall(
+                "Test prompt",
+                1,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                default,
+                new Dictionary<string, string>(),
+                CancellationToken.None,
+                null,
+                null
+            ),
+            CancellationToken.None
+        );
+
+        Assert.Equal(1, handler.Calls);
+        AssertReusedGatewayHeaders(handler);
+    }
+
+    private static void AssertReusedGatewayHeaders(UpstreamRecordingHandler handler)
+    {
+        Assert.Equal("Bearer test-api-key", handler.Headers["Authorization"]);
+        Assert.Equal("value", handler.Headers["custom-header"]);
+        Assert.True(handler.Headers.ContainsKey("ai-gateway-protocol-version"));
+        Assert.Equal("api-key", handler.Headers["ai-gateway-auth-method"]);
+        Assert.StartsWith(
+            "ai-sdk-gateway/",
+            handler.Headers["user-agent"],
+            StringComparison.Ordinal
+        );
+        Assert.Equal("mock-request-id", handler.Headers["ai-o11y-request-id"]);
     }
 
     private sealed class VercelEnvironmentVariables : IDisposable

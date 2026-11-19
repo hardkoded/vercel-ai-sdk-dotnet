@@ -275,7 +275,7 @@ public IBatchApi? ExperimentalBatch()
 ```
 
 
-Gemini Batch API. Downloads batch results.
+Gemini Batch API. Starts, reads, cancels, and lists batches and downloads their results.
 
 **Returns:** [IBatchApi](/api/Vercel.AI.Operations/IBatchApi/)
 

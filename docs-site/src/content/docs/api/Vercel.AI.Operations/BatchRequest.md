@@ -322,6 +322,23 @@ Tool choice such as `required`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L114)
+
+<a id="Vercel_AI_Operations_BatchRequest_ToolOrder_"></a>
+<a id="Vercel_AI_Operations_BatchRequest_ToolOrder"></a>
+
+### ToolOrder
+
+
+```csharp
+public IReadOnlyList<string>? ToolOrder { get; set; }
+```
+
+
+Controls the order in which tools are sent to the provider. See [ToolOrder](/api/Vercel.AI/GenerateTextOptions/#Vercel_AI_GenerateTextOptions_ToolOrder). Maps to `toolOrder`.
+
+**Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
+
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L111)
 
 <a id="Vercel_AI_Operations_BatchRequest_Tools_"></a>

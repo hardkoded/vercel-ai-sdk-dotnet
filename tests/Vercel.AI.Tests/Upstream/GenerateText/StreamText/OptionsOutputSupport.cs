@@ -18,7 +18,11 @@ internal static class OptionsOutputSupport
         return Stream(new TestLanguageModel { StreamParts = parts }, output);
     }
 
-    internal static StreamTextResult Stream(ILanguageModel model, OutputSpec? output = null)
+    internal static StreamTextResult Stream(
+        ILanguageModel model,
+        OutputSpec? output = null,
+        Func<GenerateTextResult, CancellationToken, Task>? onEnd = null
+    )
     {
         return new AiClient(
             GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })
@@ -28,6 +32,7 @@ internal static class OptionsOutputSupport
                 Model = model,
                 Prompt = "prompt",
                 Output = output,
+                OnEnd = onEnd,
                 StopWhen = StopWhen.IsStepCount(2),
             }
         );

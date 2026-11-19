@@ -108,29 +108,11 @@ internal sealed class ModelCallEndPart : TextStreamPart
     public ModelCallPerformance Performance { get; }
 }
 
-/// <summary>Passed to <see cref="StreamLanguageModelCallOptions.OnLanguageModelCallStart"/> before the model is called.</summary>
-internal sealed class LanguageModelCallStartEvent
+/// <summary>Passed to <see cref="StreamLanguageModelCallOptions.OnStart"/> with the converted prompt. Maps to the <c>{ promptMessages }</c> argument of <c>onStart</c>.</summary>
+internal sealed class StreamLanguageModelCallStartEvent
 {
-    /// <summary>Id of the model call.</summary>
-    public string CallId { get; init; } = string.Empty;
-
-    /// <summary>Provider id of the model.</summary>
-    public string Provider { get; init; } = string.Empty;
-
-    /// <summary>Model id.</summary>
-    public string ModelId { get; init; } = string.Empty;
-
-    /// <summary>Instructions of the call.</summary>
-    public Instructions? Instructions { get; init; }
-
-    /// <summary>Messages of the call, without the instructions.</summary>
-    public IReadOnlyList<ModelMessage> Messages { get; init; } = [];
-
-    /// <summary>Tools offered to the model.</summary>
-    public IReadOnlyList<LanguageModelTool>? Tools { get; init; }
-
-    /// <summary>Call settings.</summary>
-    public LanguageModelCallOptions CallOptions { get; init; } = new();
+    /// <summary>The fully converted prompt, before the model call starts.</summary>
+    public IReadOnlyList<ModelMessage> PromptMessages { get; init; } = [];
 }
 
 /// <summary>Options of <see cref="LanguageModelCallStreaming.StreamLanguageModelCall"/>.</summary>
@@ -142,15 +124,11 @@ internal sealed class StreamLanguageModelCallOptions : GenerateTextOptions
     /// <summary>Whether to include raw provider chunks in the stream. Maps to <c>includeRawChunks</c>.</summary>
     public bool IncludeRawChunks { get; set; }
 
-    /// <summary>Called before the model is called. Maps to <c>onLanguageModelCallStart</c>.</summary>
-    public Func<
-        LanguageModelCallStartEvent,
-        CancellationToken,
-        Task
-    >? OnLanguageModelCallStart { get; set; }
-
-    /// <summary>Generates the id of the call. Maps to <c>_internal.generateCallId</c>.</summary>
-    public Func<string>? GenerateCallId { get; set; }
+    /// <summary>
+    /// Receives the fully converted prompt before the model call starts. Prompt conversion downloads URLs, so it runs once per step
+    /// and telemetry callbacks reuse its result. Maps to <c>onStart</c>.
+    /// </summary>
+    public Func<StreamLanguageModelCallStartEvent, CancellationToken, Task>? OnStart { get; set; }
 
     /// <summary>Whether to collect the content of the call for <see cref="GenerateTextOptions.OnLanguageModelCallEnd"/>. Maps to <c>_internal.collectContent</c>.</summary>
     public bool CollectContent { get; set; } = true;
@@ -241,6 +219,23 @@ internal static class LanguageModelCallStreaming
                 model.Provider.Split('.')[0]
             )
             .ConfigureAwait(false);
+
+        if (options.OnStart != null)
+        {
+            await Generation
+                .NotifyAsync(
+                    () =>
+                        options.OnStart(
+                            new StreamLanguageModelCallStartEvent
+                            {
+                                PromptMessages = callOptions.Prompt,
+                            },
+                            cancellationToken
+                        ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+        }
 
         if (options.OnLanguageModelCallStart != null)
         {

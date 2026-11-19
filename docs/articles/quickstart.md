@@ -26,6 +26,8 @@ In ASP.NET Core, `services.AddAiSdk()` registers `IAiClient` and a named `HttpCl
 
 ## Model call callbacks
 
+`GenerateTextOptions.OnLanguageModelCallStart` runs immediately before each provider call begins, after the prompt is prepared. Its `LanguageModelCallStartEvent` carries `CallId`, `Provider`, `ModelId`, `Instructions`, `Messages`, `Tools` and `CallOptions` (the call settings). `CallId` is the same for every model call of one `GenerateTextAsync` or `StreamTextAsync` call, and the `LanguageModelCallEndEvent` carries the same `CallId`. `StreamTextOptions` calls it too, once for each step. An exception it throws is ignored.
+
 `GenerateTextOptions.OnLanguageModelCallEnd` runs after each provider call returns, before tools run and before `OnStepEnd`. Its `LanguageModelCallEndEvent` carries `Provider`, `ModelId`, `FinishReason`, `Usage`, `Content`, `ResponseId`, `ProviderMetadata` and `ResponseTime`. It fires even when a tool then cancels the call, so the provider metadata of that call is not lost. `StreamTextOptions` calls it too, after the stream of a step ends.
 
 `GenerateObjectAsync<T>` is the deprecated typed-object counterpart to upstream `generateObject`; prefer `GenerateTextAsync` with `OutputSpec.Object`. It parses a provider-selected `StructuredOutputText` while its `OnStepEnd` callback still receives all raw text. Invalid JSON, schema mismatches, and empty responses throw `NoObjectGeneratedException`, which preserves the selected `Text`, `Cause`, `Response`, `Usage`, and `FinishReason`.

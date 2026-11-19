@@ -107,6 +107,9 @@ public sealed class BatchRequest
     /// <summary>Tools. They are forwarded and not executed.</summary>
     public IReadOnlyList<BatchTool>? Tools { get; set; }
 
+    /// <summary>Controls the order in which tools are sent to the provider. See <see cref="GenerateTextOptions.ToolOrder"/>. Maps to <c>toolOrder</c>.</summary>
+    public IReadOnlyList<string>? ToolOrder { get; set; }
+
     /// <summary>Tool choice such as <c>required</c>.</summary>
     public string? ToolChoice { get; set; }
 }
@@ -431,7 +434,7 @@ public sealed class BatchItem
 }
 
 /// <summary>Normalized batch item.</summary>
-public sealed class BatchItemResult
+public class BatchItemResult
 {
     /// <summary>Item type.</summary>
     public string Type { get; set; } = string.Empty;
@@ -501,6 +504,67 @@ public sealed class BatchItemResult
     /// <see cref="Usage"/> remain available. Maps to <c>outputError</c>.
     /// </summary>
     public BatchError? OutputError { get; set; }
+}
+
+/// <summary>
+/// Normalized batch item whose parsed output has the type of the <see cref="OutputSpec{TOutput}"/> passed to
+/// <c>GetBatchResults</c>. Maps to <c>BatchItemResult&lt;OUTPUT&gt;</c>.
+/// </summary>
+/// <typeparam name="TOutput">The type of the parsed output.</typeparam>
+public sealed class BatchItemResult<TOutput> : BatchItemResult
+{
+    /// <summary>
+    /// The parsed output of a successful text item. Not set when <see cref="BatchItemResult.OutputError"/> is set.
+    /// Maps to <c>output</c>.
+    /// </summary>
+    public new TOutput? Output { get; set; }
+
+    internal static BatchItemResult<TOutput> From(BatchItemResult item, OutputSpec<TOutput> output)
+    {
+        var typed = new BatchItemResult<TOutput>
+        {
+            Type = item.Type,
+            Id = item.Id,
+            Status = item.Status,
+            Content = item.Content,
+            Text = item.Text,
+            FinishReason = item.FinishReason,
+            RawFinishReason = item.RawFinishReason,
+            Usage = item.Usage,
+            ImageUsage = item.ImageUsage,
+            ResponseId = item.ResponseId,
+            Timestamp = item.Timestamp,
+            ResponseModelId = item.ResponseModelId,
+            Images = item.Images,
+            Warnings = item.Warnings,
+            ProviderMetadata = item.ProviderMetadata,
+            ErrorMessage = item.ErrorMessage,
+            ErrorCode = item.ErrorCode,
+            ErrorType = item.ErrorType,
+            ErrorStatusCode = item.ErrorStatusCode,
+            OutputError = item.OutputError,
+        };
+        ((BatchItemResult)typed).Output = item.Output;
+        if (item.Output is { } json)
+        {
+            try
+            {
+                typed.Output = output.Deserialize(json);
+            }
+            catch (Exception error)
+                when (error is JsonException or NotSupportedException or InvalidOperationException)
+            {
+                typed.OutputError = new BatchError
+                {
+                    Message =
+                        "No object generated: response did not deserialize to the output type.",
+                    Type = "AI_NoObjectGeneratedError",
+                };
+            }
+        }
+
+        return typed;
+    }
 }
 
 /// <summary>A version-2 batch reference.</summary>
@@ -894,7 +958,7 @@ public static class Batch
         {
             if (item.Type == "text")
             {
-                var prepared = PrepareTools(item.Tools);
+                var prepared = PrepareTools(item.Tools, item.ToolOrder);
                 foreach (var tool in prepared)
                 {
                     var signature = tool.GetRawText();
@@ -1009,7 +1073,57 @@ public static class Batch
             ct => api.DoGetResultsAsync(Call(api, request, ct, request.Batch!.Id), ct),
             null
         );
-        return ReadResults(opening, request, scope, token);
+        return ReadResults(opening, request, request.Output, scope, token);
+    }
+
+    /// <summary>
+    /// Like <see cref="GetBatchResults(BatchRequestOptions, CancellationToken)"/>, but parses each text result with
+    /// <paramref name="output"/> and exposes it as <typeparamref name="TOutput"/>.
+    /// </summary>
+    public static async IAsyncEnumerable<BatchItemResult<TOutput>> GetBatchResults<TOutput>(
+        BatchRequestOptions request,
+        OutputSpec<TOutput> output,
+        [System.Runtime.CompilerServices.EnumeratorCancellation]
+            CancellationToken cancellationToken = default
+    )
+    {
+        if (request == null)
+        {
+            throw new ArgumentNullException(nameof(request));
+        }
+
+        if (output == null)
+        {
+            throw new ArgumentNullException(nameof(output));
+        }
+
+        if (request.Output != null && !ReferenceEquals(request.Output, output))
+        {
+            throw new ArgumentException(
+                "request.Output must be the same specification as output.",
+                nameof(output)
+            );
+        }
+
+        var api = Resolve(request);
+        ValidateReference(api, request.Batch);
+        var scope = Token(request, cancellationToken);
+        var token = scope.Token;
+        var opening = OperationRetry.ExecuteAsync(
+            request.MaxRetries,
+            token,
+            request.AbortReason,
+            ct => api.DoGetResultsAsync(Call(api, request, ct, request.Batch!.Id), ct),
+            null
+        );
+        await foreach (
+            var item in ReadResults(opening, request, output, scope, token)
+                .WithCancellation(cancellationToken)
+                .ConfigureAwait(false)
+        )
+        {
+            yield return BatchItemResult<TOutput>.From(item, output);
+        }
     }
 
     /// <summary>Reads every result of <see cref="GetBatchResults"/> into a list.</summary>
@@ -1032,6 +1146,7 @@ public static class Batch
     private static async IAsyncEnumerable<BatchItemResult> ReadResults(
         Task<IAsyncEnumerable<BatchItem>> opening,
         BatchRequestOptions request,
+        OutputSpec? output,
         BatchTokenScope scope,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken
     )
@@ -1043,7 +1158,7 @@ public static class Batch
                 var item in items.WithCancellation(cancellationToken).ConfigureAwait(false)
             )
             {
-                yield return await ConvertAsync(item, request, cancellationToken)
+                yield return await ConvertAsync(item, request, output, cancellationToken)
                     .ConfigureAwait(false);
             }
         }
@@ -1056,6 +1171,7 @@ public static class Batch
     private static async Task<BatchItemResult> ConvertAsync(
         BatchItem item,
         BatchRequestOptions request,
+        OutputSpec? output,
         CancellationToken cancellationToken
     )
     {
@@ -1165,9 +1281,9 @@ public static class Batch
             result.Timestamp = item.Text.Timestamp;
             result.ResponseModelId = item.Text.ModelId;
             result.ProviderMetadata = item.Text.ProviderMetadata;
-            if (request.Output != null)
+            if (output != null)
             {
-                ParseBatchOutput(result, item.Text, request.Output);
+                ParseBatchOutput(result, item.Text, output);
             }
         }
 
@@ -1358,7 +1474,10 @@ public static class Batch
         };
     }
 
-    private static List<JsonElement> PrepareTools(IReadOnlyList<BatchTool>? tools)
+    private static List<JsonElement> PrepareTools(
+        IReadOnlyList<BatchTool>? tools,
+        IReadOnlyList<string>? toolOrder
+    )
     {
         var prepared = new List<JsonElement>();
         if (tools == null)
@@ -1366,7 +1485,20 @@ public static class Batch
             return prepared;
         }
 
-        foreach (var tool in tools)
+        // Listed tools come first, in order. The rest follow, sorted by name. Maps to orderToolEntries.
+        var ordered =
+            toolOrder == null
+                ? tools
+                : tools
+                    .Where(tool => toolOrder.Contains(tool.Name))
+                    .OrderBy(tool => ((List<string>)[.. toolOrder]).IndexOf(tool.Name))
+                    .Concat(
+                        tools
+                            .Where(tool => !toolOrder.Contains(tool.Name))
+                            .OrderBy(tool => tool.Name, StringComparer.Ordinal)
+                    )
+                    .ToList();
+        foreach (var tool in ordered)
         {
             var payload = new Dictionary<string, object?>
             {
