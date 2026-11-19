@@ -12,15 +12,20 @@ public sealed class AzureModelRequestConfig
         string? speechVoiceModel,
         string? transcribeName,
         bool transcribeSupportsTimestamps,
-        bool maiStreamingTranscription
+        bool maiStreamingTranscription,
+        IReadOnlyDictionary<string, bool>? imageProviderOptions = null
     )
     {
+        ImageProviderOptions = imageProviderOptions;
         MaiImage = maiImage;
         SpeechVoiceModel = speechVoiceModel;
         TranscribeName = transcribeName;
         TranscribeSupportsTimestamps = transcribeSupportsTimestamps;
         MaiStreamingTranscription = maiStreamingTranscription;
     }
+
+    /// <summary>Image provider options the model supports, by name. Null for models without an image entry. Maps to <c>providerOptions.image</c>.</summary>
+    public IReadOnlyDictionary<string, bool>? ImageProviderOptions { get; }
 
     /// <summary>True when the model uses the MAI image API. Maps to <c>image.api === 'mai'</c>.</summary>
     public bool MaiImage { get; }
@@ -48,8 +53,10 @@ public static class AzureModelCatalog
         ["mai-image-2.5"] = Image(),
         ["mai-image-2.5-flash"] = Image(),
         ["mai-image-2.5-pro"] = Image(),
-        ["mai-image-2.6"] = Image(),
-        ["mai-image-2.6-flash"] = Image(),
+        ["mai-image-2.6"] = Image(webGrounding: true),
+        ["mai-image-2.6-flash"] = Image(webGrounding: true),
+        ["mai-image-2.7"] = Image(webGrounding: true, background: true),
+        ["mai-image-2.7-flash"] = Image(webGrounding: true, background: true),
         ["mai-voice-2.1-flash"] = Speech("MAI-Voice-2.1-Flash"),
         ["mai-voice-2.1"] = Speech("MAI-Voice-2.1"),
         ["mai-voice-2-flash"] = Speech("MAI-Voice-2-Flash"),
@@ -83,9 +90,22 @@ public static class AzureModelCatalog
         return Entries.TryGetValue(modelId.ToLowerInvariant(), out var entry) ? entry : null;
     }
 
-    private static AzureModelRequestConfig Image()
+    private static AzureModelRequestConfig Image(bool webGrounding = false, bool background = false)
     {
-        return new AzureModelRequestConfig(true, null, null, false, false);
+        return new AzureModelRequestConfig(
+            true,
+            null,
+            null,
+            false,
+            false,
+            new Dictionary<string, bool>(StringComparer.Ordinal)
+            {
+                ["api"] = true,
+                ["autoAspectRatio"] = webGrounding,
+                ["webGrounding"] = webGrounding,
+                ["background"] = background,
+            }
+        );
     }
 
     private static AzureModelRequestConfig Speech(string voiceModel)

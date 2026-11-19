@@ -81,4 +81,29 @@ public sealed class AzureMaiImageGenerateImageIntegrationTests
         Assert.Equal(10, result.Usage.InputTokens);
         Assert.Equal(2048, result.Usage.OutputTokens);
     }
+
+    [Fact]
+    [UpstreamTest(
+        File + "sends a transparent background for MAI-Image-2.7 models",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task SendsATransparentBackgroundForMaiImage27Models()
+    {
+        var handler = Handler();
+
+        var result = await GenerateImage.GenerateImageAsync(
+            new GenerateImageRequest
+            {
+                Model = CreateProvider(handler).Image("MAI-Image-2.7-Flash"),
+                Text = "A red apple",
+                ProviderOptions = Json("{\"azure\":{\"background\":\"transparent\"}}"),
+            }
+        );
+
+        Assert.Equal(GenerationsUrl, handler.Last.Url);
+        Assert.Equal("MAI-Image-2.7-Flash", (string?)handler.Last.Json()["model"]);
+        Assert.Equal("A red apple", (string?)handler.Last.Json()["prompt"]);
+        Assert.Equal("transparent", (string?)handler.Last.Json()["background"]);
+        Assert.Empty(result.Warnings);
+    }
 }

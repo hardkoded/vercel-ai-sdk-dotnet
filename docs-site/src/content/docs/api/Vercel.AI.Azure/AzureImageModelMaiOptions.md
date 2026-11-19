@@ -41,11 +41,29 @@ public bool? AutoAspectRatio { get; set; }
 ```
 
 
-Let the model pick the output aspect ratio from the prompt and any reference images. MAI-Image-2.6 models only.
+Let the model pick the output aspect ratio from the prompt and any reference images. MAI-Image-2.6 and MAI-Image-2.7 models only.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureMaiImageModelOptions.cs#L16)
+
+<a id="Vercel_AI_Azure_AzureImageModelMaiOptions_Background_"></a>
+<a id="Vercel_AI_Azure_AzureImageModelMaiOptions_Background"></a>
+
+### Background
+
+
+```csharp
+public string? Background { get; set; }
+```
+
+
+Image background: `transparent` returns a PNG with an alpha channel, the API defaults to `opaque`.
+MAI-Image-2.7 models only. OpenAI image deployments also accept `auto`; the MAI image API does not send it.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureMaiImageModelOptions.cs#L25)
 
 <a id="Vercel_AI_Azure_AzureImageModelMaiOptions_WebGrounding_"></a>
 <a id="Vercel_AI_Azure_AzureImageModelMaiOptions_WebGrounding"></a>
@@ -58,7 +76,7 @@ public bool? WebGrounding { get; set; }
 ```
 
 
-Ground generation in Bing web search results. MAI-Image-2.6 models only.
+Ground generation in Bing web search results. MAI-Image-2.6 and MAI-Image-2.7 models only.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 

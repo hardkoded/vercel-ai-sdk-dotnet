@@ -180,4 +180,55 @@ public sealed class EditsTests
             )
         );
     }
+
+    [Fact]
+    [UpstreamTest(File + "sends background as a form field", Coverage = UpstreamCoverage.Covered)]
+    public async Task SendsBackgroundAsAFormField()
+    {
+        var handler = new AzureImageHandler(() => AzureImageHandler.JsonResponse(MaiResponse));
+        var options = new ImageCallOptions("A red apple")
+        {
+            Count = 1,
+            Files = new[] { ImageModelFile.FromFile(new byte[] { 1 }, "image/png") },
+            ProviderOptions = ProviderOptionsOf("{\"azure\":{\"background\":\"transparent\"}}"),
+        };
+
+        await CreateProvider(handler)
+            .Image("MAI-Image-2.7-Flash")
+            .DoGenerateAsync(options, CancellationToken.None);
+
+        Assert.Equal(EditsUrl, handler.Last.Url);
+        Assert.Equal(
+            "transparent",
+            handler.Last.Parts().Single(part => part.Name == "background").Text
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        File + "drops background auto from edits with a warning",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task DropsBackgroundAutoFromEditsWithAWarning()
+    {
+        var handler = new AzureImageHandler(() => AzureImageHandler.JsonResponse(MaiResponse));
+        var options = new ImageCallOptions("A red apple")
+        {
+            Count = 1,
+            Files = new[] { ImageModelFile.FromFile(new byte[] { 1 }, "image/png") },
+            ProviderOptions = ProviderOptionsOf("{\"azure\":{\"background\":\"auto\"}}"),
+        };
+
+        var result = await CreateProvider(handler)
+            .Image("MAI-Image-2.7")
+            .DoGenerateAsync(options, CancellationToken.None);
+
+        Assert.DoesNotContain(handler.Last.Parts(), part => part.Name == "background");
+        Assert.Contains(result.CallWarnings, warning =>
+            warning.Type == "unsupported"
+            && warning.Feature == "providerOptions.azure.background"
+            && warning.Message
+                == "The MAI image API supports 'transparent' and 'opaque' backgrounds."
+        );
+    }
 }

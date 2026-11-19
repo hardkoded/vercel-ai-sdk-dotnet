@@ -4,6 +4,7 @@
 
 using Vercel.AI.Azure;
 using Vercel.AI.Operations;
+using Vercel.AI.Provider;
 using static Vercel.AI.Tests.Upstream.Azure.AzureImageTestSupport;
 
 namespace Vercel.AI.Tests.Upstream.Azure.AzureMaiImageModel;
@@ -19,6 +20,8 @@ public sealed class ApiRoutingTests
     [InlineData("MAI-Image-2.6", null, "mai")]
     [InlineData("mai-image-2.6-flash", null, "mai")]
     [InlineData("MAI-Image-2.5-Pro", null, "mai")]
+    [InlineData("MAI-Image-2.7", null, "mai")]
+    [InlineData("mai-image-2.7-flash", null, "mai")]
     [InlineData("gpt-image-1", null, "openai")]
     [InlineData("mai-image-custom", null, "openai")]
     [InlineData("MAI-Image-2.6", "openai", "openai")]
@@ -208,5 +211,84 @@ public sealed class ApiRoutingTests
 
         Assert.Equal("MAI-Image-2.6", restored.ModelId);
         Assert.Equal(1, restored.MaxImagesPerCall);
+    }
+
+    [Theory]
+    [InlineData("gpt-image-1", null, "auto")]
+    [InlineData("gpt-image-1", null, "transparent")]
+    [InlineData("MAI-Image-2.7", "openai", "auto")]
+    [InlineData("MAI-Image-2.7", "openai", "opaque")]
+    [UpstreamTest(
+        File + "sends %s (api=%s) background %s to the OpenAI API without warnings",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task SendsBackgroundToTheOpenAIApiWithoutWarnings(
+        string id,
+        string? api,
+        string background
+    )
+    {
+        var handler = new AzureImageHandler(() => AzureImageHandler.JsonResponse(OpenAIResponse));
+        var azure = api == null ? "" : "\"api\":\"" + api + "\",";
+
+        var result = await CreateProvider(handler)
+            .Image(id)
+            .DoGenerateAsync(
+                CallOptions("{\"azure\":{" + azure + "\"background\":\"" + background + "\"}}"),
+                CancellationToken.None
+            );
+
+        Assert.Equal(
+            "https://test-resource.openai.azure.com/openai/v1/images/generations?api-version=v1",
+            handler.Last.Url
+        );
+        Assert.Equal(background, (string?)handler.Last.Json()["background"]);
+        Assert.Empty(result.CallWarnings);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        File + "sends background to OpenAI image edits without warnings",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task SendsBackgroundToOpenAIImageEditsWithoutWarnings()
+    {
+        var handler = new AzureImageHandler(() => AzureImageHandler.JsonResponse(OpenAIResponse));
+        var options = new ImageCallOptions("A red apple")
+        {
+            Count = 1,
+            Files = new[] { ImageModelFile.FromFile(new byte[] { 137, 80, 78, 71 }, "image/png") },
+            ProviderOptions = ProviderOptionsOf("{\"azure\":{\"background\":\"auto\"}}"),
+        };
+
+        var result = await CreateProvider(handler)
+            .Image("gpt-image-1")
+            .DoGenerateAsync(options, CancellationToken.None);
+
+        Assert.Equal("auto", handler.Last.Parts().Single(part => part.Name == "background").Text);
+        Assert.Empty(result.CallWarnings);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        File + "advertises background only for MAI-Image-2.7 models",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void AdvertisesBackgroundOnlyForMaiImage27Models()
+    {
+        foreach (var id in new[] { "mai-image-2.7", "mai-image-2.7-flash" })
+        {
+            var options = AzureModelCatalog.GetAzureModelEntry(id)!.ImageProviderOptions!;
+            Assert.True(options["autoAspectRatio"]);
+            Assert.True(options["webGrounding"]);
+            Assert.True(options["background"]);
+        }
+
+        foreach (var id in new[] { "mai-image-2.5", "mai-image-2.6", "mai-image-2.6-flash" })
+        {
+            Assert.False(
+                AzureModelCatalog.GetAzureModelEntry(id)!.ImageProviderOptions!["background"]
+            );
+        }
     }
 }

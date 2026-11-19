@@ -27,6 +27,23 @@ Request routing of an Azure-owned model. Maps to `AzureRequestConfig` in `azure-
 
 ## Properties
 
+<a id="Vercel_AI_Azure_AzureModelRequestConfig_ImageProviderOptions_"></a>
+<a id="Vercel_AI_Azure_AzureModelRequestConfig_ImageProviderOptions"></a>
+
+### ImageProviderOptions
+
+
+```csharp
+public IReadOnlyDictionary<string, bool>? ImageProviderOptions { get; }
+```
+
+
+Image provider options the model supports, by name. Null for models without an image entry. Maps to `providerOptions.image`.
+
+**Value:** [IReadOnlyDictionary&lt;string, bool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureModelCatalog.cs#L28)
+
 <a id="Vercel_AI_Azure_AzureModelRequestConfig_MaiImage_"></a>
 <a id="Vercel_AI_Azure_AzureModelRequestConfig_MaiImage"></a>
 
@@ -42,7 +59,7 @@ True when the model uses the MAI image API. Maps to `image.api === 'mai'`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureModelCatalog.cs#L26)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureModelCatalog.cs#L31)
 
 <a id="Vercel_AI_Azure_AzureModelRequestConfig_MaiStreamingTranscription_"></a>
 <a id="Vercel_AI_Azure_AzureModelRequestConfig_MaiStreamingTranscription"></a>
@@ -59,7 +76,7 @@ True when the model uses MAI streaming transcription. Maps to `transcription.api
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureModelCatalog.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureModelCatalog.cs#L43)
 
 <a id="Vercel_AI_Azure_AzureModelRequestConfig_SpeechVoiceModel_"></a>
 <a id="Vercel_AI_Azure_AzureModelRequestConfig_SpeechVoiceModel"></a>
@@ -76,7 +93,7 @@ Voice model name for the Azure Speech API, for example `MAI-Voice-2`. Maps to `s
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureModelCatalog.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureModelCatalog.cs#L34)
 
 <a id="Vercel_AI_Azure_AzureModelRequestConfig_TranscribeName_"></a>
 <a id="Vercel_AI_Azure_AzureModelRequestConfig_TranscribeName"></a>
@@ -93,7 +110,7 @@ Model name for the Azure Speech transcription API. Maps to `transcription.name`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureModelCatalog.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureModelCatalog.cs#L37)
 
 <a id="Vercel_AI_Azure_AzureModelRequestConfig_TranscribeSupportsTimestamps_"></a>
 <a id="Vercel_AI_Azure_AzureModelRequestConfig_TranscribeSupportsTimestamps"></a>
@@ -110,4 +127,4 @@ True when the Speech transcription model returns timestamps. Maps to `transcript
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureModelCatalog.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureModelCatalog.cs#L40)

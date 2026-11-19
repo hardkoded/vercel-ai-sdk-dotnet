@@ -97,6 +97,7 @@ public sealed class AzureImageModel : IImageModel, IImageCaller
         }
 
         var azureOptions = AzureImageModelOptions.Parse(options.ProviderOptionsElement);
+        // `background` is shared with the OpenAI API, so it is not MAI-only.
         var maiOptions = new AzureImageModelMaiOptions
         {
             AutoAspectRatio = azureOptions.AutoAspectRatio,
@@ -104,8 +105,32 @@ public sealed class AzureImageModel : IImageModel, IImageCaller
         };
         if ((azureOptions.Api ?? (IsDefaultMai ? "mai" : "openai")) == "mai")
         {
-            return await _mai.DoGenerateAsync(options, maiOptions, cancellationToken)
+            if (azureOptions.Background != "auto")
+            {
+                maiOptions.Background = azureOptions.Background;
+                return await _mai.DoGenerateAsync(options, maiOptions, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            var maiResult = await _mai.DoGenerateAsync(options, maiOptions, cancellationToken)
                 .ConfigureAwait(false);
+            var maiWarnings = maiResult
+                .CallWarnings.Append(
+                    new CallWarning(
+                        "unsupported",
+                        "providerOptions.azure.background",
+                        "The MAI image API supports 'transparent' and 'opaque' backgrounds."
+                    )
+                )
+                .ToList();
+            return new ImageGenerationResult(
+                maiResult.Images,
+                maiWarnings,
+                maiResult.Response,
+                maiResult.Usage,
+                maiResult.ProviderMetadata,
+                maiResult.IsRetryable
+            );
         }
 
         var shape = options.Files is { Count: > 0 }
