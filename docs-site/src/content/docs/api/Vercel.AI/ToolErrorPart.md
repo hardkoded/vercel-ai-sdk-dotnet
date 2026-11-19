@@ -23,7 +23,7 @@ A tool call failed or was denied. A successful call is a [ToolResultPart](/api/V
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [TextStreamPart](/api/Vercel.AI/TextStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2159)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2301)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates a tool-error part.
 | --- | --- | --- |
 | `result` | [ExecutedTool](/api/Vercel.AI/ExecutedTool/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2162)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2304)
 
 ## Properties
 
@@ -65,4 +65,4 @@ The failed tool result. [OutputJson](/api/Vercel.AI/ExecutedTool/#Vercel_AI_Exec
 
 **Value:** [ExecutedTool](/api/Vercel.AI/ExecutedTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2169)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2311)
