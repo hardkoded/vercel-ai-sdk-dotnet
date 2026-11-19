@@ -442,7 +442,8 @@ internal static class Generation
                         GeneratedResponseInfo(generated, current),
                         ParseResponseBody(generated.RawResponse),
                         steeringMessages: deliveredSteeringMessages,
-                        callId: callId
+                        callId: callId,
+                        stepNumber: steps.Count
                     )
                     .ConfigureAwait(false);
                 steps.Add(step);
@@ -1383,7 +1384,8 @@ internal static class Generation
                         streamedApprovals,
                         deliveredSteeringMessages.Select(delivered => delivered.Message).ToArray(),
                         null,
-                        callId
+                        callId,
+                        steps.Count
                     )
                     .ConfigureAwait(false);
                 foreach (var toolResult in step.ToolResults)
@@ -1985,7 +1987,8 @@ internal static class Generation
         StreamedApprovals? streamed = null,
         IReadOnlyList<UserModelMessage>? steeringMessages = null,
         Action<ExecutedTool>? onPreliminaryToolResult = null,
-        string? callId = null
+        string? callId = null,
+        int stepNumber = 0
     )
     {
         var toolExecutionMs = new Dictionary<string, double>(StringComparer.Ordinal);
@@ -2275,6 +2278,10 @@ internal static class Generation
             generated.RawFinishReason
         )
         {
+            CallId = callId ?? string.Empty,
+            StepNumber = stepNumber,
+            ToolsContext = options.ToolsContext ?? StepResult.EmptyToolsContext,
+            RuntimeContext = options.RuntimeContext ?? StepResult.EmptyRuntimeContext,
             StructuredOutputText = generated.StructuredOutputText,
             ExperimentalSteeringMessages = steeringMessages is { Count: > 0 }
                 ? steeringMessages
