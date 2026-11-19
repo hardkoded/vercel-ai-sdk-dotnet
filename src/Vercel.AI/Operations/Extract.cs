@@ -45,8 +45,11 @@ public sealed class ExtractionResult
 /// <summary>Options for <see cref="Extract.ExtractAsync"/>.</summary>
 public sealed class ExtractRequest : OperationRequest
 {
-    /// <summary>An extraction model instance.</summary>
+    /// <summary>An extraction model instance. Wins over <see cref="ModelId"/> when both are set.</summary>
     public IExtractionCaller? Model { get; set; }
+
+    /// <summary>A model id resolved through <see cref="DecisionModels.DefaultProvider"/>, or Gateway when none is set.</summary>
+    public string? ModelId { get; set; }
 
     /// <summary>
     /// Shared state: a string, a JSON object, or a list of parts. A JSON array is not valid state.
@@ -94,7 +97,7 @@ public static class Extract
             throw new ArgumentNullException(nameof(request));
         }
 
-        var model = DecisionModels.ResolveExtractionModel(request.Model);
+        var model = DecisionModels.ResolveExtractionModel(request.Model, request.ModelId);
 
         LanguageModelCallPreparation.PrepareLanguageModelCallOptions(
             new LanguageModelCallOptionsInput { MaxOutputTokens = request.MaxOutputTokens }

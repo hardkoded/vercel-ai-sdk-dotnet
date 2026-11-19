@@ -43,7 +43,10 @@ public class GoogleOptions
 }
 
 /// <summary>Google Gemini provider.</summary>
-public class GoogleProvider : ProviderBase, Operations.IBatchProvider
+public class GoogleProvider
+    : ProviderBase,
+        Operations.IBatchProvider,
+        Operations.IExtractionProvider
 {
     /// <summary>Provider id.</summary>
     public const string ProviderName = "google";
@@ -180,6 +183,11 @@ public class GoogleProvider : ProviderBase, Operations.IBatchProvider
     public GoogleDecisionModel EvaluationModel(string modelId)
     {
         return DecisionModel(modelId);
+    }
+
+    Operations.IExtractionCaller? Operations.IExtractionProvider.ExtractionModel(string modelId)
+    {
+        return ExtractionModel(modelId);
     }
 
     /// <summary>Experimental typed field extraction model that uses Gemini structured output. The provider id is <c>google.extraction</c>.</summary>

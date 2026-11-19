@@ -14,6 +14,7 @@ Vercel AI Gateway provider.
 
 | Type | Summary |
 | --- | --- |
+| [GatewayAccessPolicyDeniedError](/api/Vercel.AI.Gateway/GatewayAccessPolicyDeniedError/) | An AI Gateway access policy that applies to the request does not allow the requested model or provider. |
 | [GatewayAuthenticationError](/api/Vercel.AI.Gateway/GatewayAuthenticationError/) | Authentication failed. |
 | [GatewayBatchApi](/api/Vercel.AI.Gateway/GatewayBatchApi/) | AI Gateway batch API. Downloads the JSONL results of a batch. |
 | [GatewayConfig](/api/Vercel.AI.Gateway/GatewayConfig/) | Configuration shared by Gateway fetchers (GatewayConfig). |
@@ -22,6 +23,7 @@ Vercel AI Gateway provider.
 | [GatewayEmbeddingModel](/api/Vercel.AI.Gateway/GatewayEmbeddingModel/) | Gateway embedding model. |
 | [GatewayError](/api/Vercel.AI.Gateway/GatewayError/) | Base class for AI Gateway errors. The message includes [generationId] when one was returned. |
 | [GatewayErrors](/api/Vercel.AI.Gateway/GatewayErrors/) | Parses Gateway auth headers and error bodies. |
+| [GatewayExtractionModel](/api/Vercel.AI.Gateway/GatewayExtractionModel/) | Extracts typed field values through the Gateway /extraction-model route. Maps to GatewayExtractionModel. |
 | [GatewayFailedDependencyError](/api/Vercel.AI.Gateway/GatewayFailedDependencyError/) | A dependency required by the Gateway request was unavailable. Status 424 is not retried. |
 | [GatewayFetchMetadata](/api/Vercel.AI.Gateway/GatewayFetchMetadata/) | Fetches the available models (GET /config) and the credits (GET /v1/credits) from the Gateway. |
 | [GatewayFetchMetadataResponse](/api/Vercel.AI.Gateway/GatewayFetchMetadataResponse/) | The models the Gateway offers. Maps to GatewayFetchMetadataResponse. |
@@ -88,6 +90,7 @@ Vercel AI Gateway provider.
 | [TakoWebResult](/api/Vercel.AI.Gateway/TakoWebResult/) | A web result of a Tako search response. Maps to TakoWebResult. |
 | [TakoWebSourceConfig](/api/Vercel.AI.Gateway/TakoWebSourceConfig/) | Options of the web source. Maps to TakoWebSourceConfig. |
 | [V4Json](/api/Vercel.AI.Gateway/V4Json/) | Serializes call options and parses results in the Language Model V4 JSON shape the Gateway expects. |
+| [VercelRequestContext](/api/Vercel.AI.Gateway/VercelRequestContext/) | The ambient Vercel request context. Maps to the @vercel/request-context object that Vercel stores on globalThis[Symbol.for('@vercel/request-context')] and that getContext in @vercel/oidc reads. A .NET host supplies it with String%7d), for example from ASP.NET Core middleware. |
 
 ## Structs
 

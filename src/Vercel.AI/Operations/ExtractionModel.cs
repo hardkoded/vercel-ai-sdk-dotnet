@@ -278,3 +278,10 @@ public interface IExtractionCaller
         CancellationToken cancellationToken
     );
 }
+
+/// <summary>A provider that returns extraction models. String model ids resolve through it. Maps to the optional <c>extractionModel</c> factory of a provider.</summary>
+public interface IExtractionProvider
+{
+    /// <summary>Returns an extraction model, or null when the provider has no such model.</summary>
+    IExtractionCaller? ExtractionModel(string modelId);
+}

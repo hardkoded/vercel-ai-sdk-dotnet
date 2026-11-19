@@ -96,12 +96,35 @@ public static class DecisionModels
             );
     }
 
-    /// <summary>Maps to <c>resolveExtractionModel</c>. Only model instances are accepted. A model that is not <c>v4</c> throws.</summary>
-    public static IExtractionCaller ResolveExtractionModel(IExtractionCaller? model)
+    /// <summary>Message thrown when the default provider has no extraction models.</summary>
+    public const string MissingExtractionProviderMessage =
+        "The default provider does not support extraction models.";
+
+    /// <summary>
+    /// Maps to <c>resolveExtractionModel</c>. <paramref name="model"/> wins when set. Otherwise <paramref name="modelId"/> goes through
+    /// <see cref="DefaultProvider"/>, or Gateway when none is set. A model that is not <c>v4</c> throws.
+    /// </summary>
+    public static IExtractionCaller ResolveExtractionModel(
+        IExtractionCaller? model,
+        string? modelId = null
+    )
     {
         if (model is null)
         {
-            throw new InvalidArgumentException("model", null, "must be an extraction model");
+            if (string.IsNullOrWhiteSpace(modelId))
+            {
+                throw new InvalidArgumentException("model", null, "must be an extraction model");
+            }
+
+            var provider = DefaultProvider
+                ?? (GatewayFactory != null ? GatewayFactory() : SharedGateway.Value);
+            if (provider is not IExtractionProvider extraction)
+            {
+                throw new InvalidOperationException(MissingExtractionProviderMessage);
+            }
+
+            model = extraction.ExtractionModel(modelId!)
+                ?? throw new NoSuchModelError(modelId!, "extractionModel");
         }
 
         return model.SpecificationVersion == "v4"

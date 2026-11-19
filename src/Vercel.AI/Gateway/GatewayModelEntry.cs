@@ -43,6 +43,7 @@ public sealed class GatewayLanguageModelEntry
         "decision",
         // Keep "evaluation" until Gateway migrates its model catalog to "decision".
         "evaluation",
+        "extraction",
         "image",
         "language",
         "realtime",

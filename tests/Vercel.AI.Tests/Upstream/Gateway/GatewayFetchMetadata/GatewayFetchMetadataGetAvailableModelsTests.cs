@@ -240,6 +240,7 @@ public sealed class GatewayFetchMetadataGetAvailableModelsTests
             "embedding",
             "decision",
             "evaluation",
+            "extraction",
             "image",
             "language",
             "realtime",
