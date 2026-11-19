@@ -9,7 +9,7 @@ namespace Vercel.AI.Gateway;
 /// <summary>
 /// The ambient Vercel request context. Maps to the <c>@vercel/request-context</c> object that Vercel stores on
 /// <c>globalThis[Symbol.for('@vercel/request-context')]</c> and that <c>getContext</c> in <c>@vercel/oidc</c> reads.
-/// A .NET host supplies it with <see cref="Use"/>, for example from ASP.NET Core middleware.
+/// A .NET host supplies it with <see cref="Use(IReadOnlyDictionary{string, string})"/>, for example from ASP.NET Core middleware.
 /// </summary>
 public static class VercelRequestContext
 {
@@ -48,12 +48,35 @@ public static class VercelRequestContext
         return scope;
     }
 
-    private sealed class Scope(IReadOnlyDictionary<string, string?>? headers, Scope? previous)
-        : IDisposable
+    /// <summary>
+    /// Makes <paramref name="get"/> the provider of the request headers of the current async flow, until the returned
+    /// scope is disposed. Maps to the <c>get</c> method of the <c>@vercel/request-context</c> object. The function runs
+    /// on every lookup. A null <paramref name="get"/> is a context without a <c>get</c> method, and a function that
+    /// returns null is a context without headers: both read as no headers.
+    /// </summary>
+    public static IDisposable Use(Func<IReadOnlyDictionary<string, string?>?>? get)
     {
+        var scope = new Scope(get, s_current.Value);
+        s_current.Value = scope;
+        return scope;
+    }
+
+    private sealed class Scope : IDisposable
+    {
+        private readonly Scope? _previous;
+        private Func<IReadOnlyDictionary<string, string?>?>? _get;
         private int _disposed;
 
-        public IReadOnlyDictionary<string, string?>? Headers { get; private set; } = headers;
+        public Scope(IReadOnlyDictionary<string, string?>? headers, Scope? previous)
+            : this(headers is null ? null : () => headers, previous) { }
+
+        public Scope(Func<IReadOnlyDictionary<string, string?>?>? get, Scope? previous)
+        {
+            _get = get;
+            _previous = previous;
+        }
+
+        public IReadOnlyDictionary<string, string?>? Headers => _get?.Invoke();
 
         public void Dispose()
         {
@@ -62,8 +85,8 @@ public static class VercelRequestContext
                 return;
             }
 
-            Headers = null;
-            s_current.Value = previous;
+            _get = null;
+            s_current.Value = _previous;
         }
     }
 }
