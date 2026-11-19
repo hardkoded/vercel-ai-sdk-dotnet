@@ -346,6 +346,31 @@ public sealed class AiClient : IAiClient
         );
     }
 
+    /// <summary>
+    /// Streams text with a single consumer, without replay or final content members. It accepts the same options as
+    /// <see cref="StreamTextAsync"/>. Maps to <c>streamTextLowMemory</c>.
+    /// </summary>
+    public StreamTextSingleConsumerResult StreamTextLowMemoryAsync(
+        StreamTextOptions options,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        return new StreamTextSingleConsumerResult(
+            Generation.Stream(
+                ResolveLanguage(options.Model, options.ModelId),
+                options,
+                _telemetry,
+                cancellationToken,
+                singleConsumer: true
+            )
+        );
+    }
+
     /// <inheritdoc />
     public async Task<float[]> EmbedAsync(
         EmbedOptions options,
@@ -829,6 +854,15 @@ public static class Ai
     )
     {
         return DefaultClient.Value.StreamTextAsync(options, cancellationToken);
+    }
+
+    /// <summary>Streams text with a single consumer, without replay. Maps to <c>streamTextLowMemory</c>.</summary>
+    public static StreamTextSingleConsumerResult StreamTextLowMemoryAsync(
+        StreamTextOptions options,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return DefaultClient.Value.StreamTextLowMemoryAsync(options, cancellationToken);
     }
 
     /// <summary>Embeds one value.</summary>

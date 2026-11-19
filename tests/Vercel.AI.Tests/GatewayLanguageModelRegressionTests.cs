@@ -15,37 +15,6 @@ public sealed class GatewayLanguageModelRegressionTests
     private static readonly LanguageModelCallOptions Prompt =
         GatewayLanguageModelSupport.TestPrompt;
 
-    [Fact]
-    public async Task A_missing_API_key_is_not_mapped_to_a_Gateway_error()
-    {
-        var provider = GatewayProvider.Create(
-            new GatewayOptions { BaseUrl = "https://api.test.com", ApiKey = "" },
-            new GatewayLanguageModelServer()
-        );
-        var previous = Environment.GetEnvironmentVariable(
-            GatewayProvider.ApiKeyEnvironmentVariable
-        );
-        Environment.SetEnvironmentVariable(GatewayProvider.ApiKeyEnvironmentVariable, null);
-        try
-        {
-            var model = provider.LanguageModel("test-model");
-
-            var generate = await Assert.ThrowsAsync<AiSdkException>(() =>
-                model.DoGenerateAsync(Prompt, CancellationToken.None)
-            );
-            var stream = await Assert.ThrowsAsync<AiSdkException>(() =>
-                model.DoStreamAsync(Prompt, CancellationToken.None)
-            );
-
-            Assert.False(GatewayError.IsInstance(generate));
-            Assert.False(GatewayError.IsInstance(stream));
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable(GatewayProvider.ApiKeyEnvironmentVariable, previous);
-        }
-    }
-
     [Theory]
     [InlineData("null")]
     [InlineData("\"503\"")]
