@@ -301,14 +301,14 @@ public sealed class GatewayProvider
     )
     {
         var key = ApiKeys.Require(Options.ApiKey, ApiKeyEnvironmentVariable);
-        var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
+        var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var pair in CreateAuthHeaders((key, "api-key")))
         {
-            ["Authorization"] = "Bearer " + key,
-            ["ai-gateway-protocol-version"] = "0.0.1",
-            ["ai-gateway-auth-method"] = "api-key",
-            [specificationHeader] = specificationValue,
-            [modelHeader] = modelId,
-        };
+            headers[pair.Key] = pair.Value;
+        }
+
+        headers[specificationHeader] = specificationValue;
+        headers[modelHeader] = modelId;
         if (streaming is { } value)
         {
             headers["ai-language-model-streaming"] = value ? "true" : "false";
