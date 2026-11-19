@@ -334,6 +334,26 @@ public sealed class StepResult
         Files = files ?? Array.Empty<GeneratedFile>();
     }
 
+    /// <summary>Unique identifier of the generation call this step belongs to. Maps to <c>callId</c>.</summary>
+    public string CallId { get; internal init; } = string.Empty;
+
+    /// <summary>Zero-based index of this step. Maps to <c>stepNumber</c>.</summary>
+    public int StepNumber { get; internal init; }
+
+    /// <summary>The context of each tool in this step, keyed by tool name. Empty when none was set. Maps to <c>toolsContext</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement> ToolsContext { get; internal init; } =
+        EmptyToolsContext;
+
+    /// <summary>The user-defined runtime context of this step. Empty when none was set. Maps to <c>runtimeContext</c>.</summary>
+    public IReadOnlyDictionary<string, object?> RuntimeContext { get; internal init; } =
+        EmptyRuntimeContext;
+
+    internal static IReadOnlyDictionary<string, JsonElement> EmptyToolsContext { get; } =
+        new Dictionary<string, JsonElement>();
+
+    internal static IReadOnlyDictionary<string, object?> EmptyRuntimeContext { get; } =
+        new Dictionary<string, object?>();
+
     /// <summary>Text generated in this step.</summary>
     public string Text { get; }
 
@@ -361,6 +381,22 @@ public sealed class StepResult
 
     /// <summary>Tool results from this step.</summary>
     public IReadOnlyList<ExecutedTool> ToolResults { get; }
+
+    /// <summary>Static tool calls from this step. Maps to <c>staticToolCalls</c>.</summary>
+    public IReadOnlyList<GeneratedToolCall> StaticToolCalls =>
+        ToolCalls.Where(call => !call.Dynamic).ToArray();
+
+    /// <summary>Dynamic tool calls from this step. Maps to <c>dynamicToolCalls</c>.</summary>
+    public IReadOnlyList<GeneratedToolCall> DynamicToolCalls =>
+        ToolCalls.Where(call => call.Dynamic).ToArray();
+
+    /// <summary>Static tool results from this step. Maps to <c>staticToolResults</c>.</summary>
+    public IReadOnlyList<ExecutedTool> StaticToolResults =>
+        ToolResults.Where(result => !result.Dynamic).ToArray();
+
+    /// <summary>Dynamic tool results from this step. Maps to <c>dynamicToolResults</c>.</summary>
+    public IReadOnlyList<ExecutedTool> DynamicToolResults =>
+        ToolResults.Where(result => result.Dynamic).ToArray();
 
     /// <summary>Finish reason.</summary>
     public FinishReason FinishReason { get; }
@@ -1885,6 +1921,46 @@ public sealed class GenerateTextResult
         Warnings = warnings;
         Files = files;
     }
+
+    /// <summary>Unique identifier of this generation call. Maps to <c>callId</c>.</summary>
+    public string CallId => FinalStep.CallId;
+
+    /// <summary>Zero-based index of the final step. Maps to <c>stepNumber</c>.</summary>
+    public int StepNumber => FinalStep.StepNumber;
+
+    /// <summary>Provider id of the model that produced the final step. Maps to <c>model.provider</c>.</summary>
+    public string? Provider => FinalStep.Provider;
+
+    /// <summary>Model id of the model that produced the final step. Maps to <c>model.modelId</c>.</summary>
+    public string? ModelId => FinalStep.ModelId;
+
+    /// <summary>Tool context from the final step. Maps to <c>toolsContext</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement> ToolsContext => FinalStep.ToolsContext;
+
+    /// <summary>Runtime context from the final step. Maps to <c>runtimeContext</c>.</summary>
+    public IReadOnlyDictionary<string, object?> RuntimeContext => FinalStep.RuntimeContext;
+
+    /// <summary>Usage summed across steps. Maps to the deprecated <c>totalUsage</c>; same as <see cref="Usage"/>.</summary>
+    public LanguageModelUsage TotalUsage => Usage;
+
+    /// <summary>Static tool calls from every step. Maps to <c>staticToolCalls</c>.</summary>
+    public IReadOnlyList<GeneratedToolCall> StaticToolCalls =>
+        ToolCalls.Where(call => !call.Dynamic).ToArray();
+
+    /// <summary>Dynamic tool calls from every step. Maps to <c>dynamicToolCalls</c>.</summary>
+    public IReadOnlyList<GeneratedToolCall> DynamicToolCalls =>
+        ToolCalls.Where(call => call.Dynamic).ToArray();
+
+    /// <summary>Static tool results from every step. Maps to <c>staticToolResults</c>.</summary>
+    public IReadOnlyList<ExecutedTool> StaticToolResults =>
+        ToolResults.Where(result => !result.Dynamic).ToArray();
+
+    /// <summary>Dynamic tool results from every step. Maps to <c>dynamicToolResults</c>.</summary>
+    public IReadOnlyList<ExecutedTool> DynamicToolResults =>
+        ToolResults.Where(result => result.Dynamic).ToArray();
+
+    /// <summary>The finish reason of the final step, as the provider reported it. Maps to <c>rawFinishReason</c>.</summary>
+    public string? RawFinishReason => FinalStep.RawFinishReason;
 
     /// <summary>The last completed step.</summary>
     public StepResult FinalStep

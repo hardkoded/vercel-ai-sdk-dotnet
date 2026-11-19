@@ -74,6 +74,8 @@ A stream that ends without a finish part after it produced output keeps the part
 
 When `DoStreamAsync` fails before returning a provider stream, `StreamTextAsync` emits an `ErrorPart`, calls `OnError`, and completes its text and full-part streams without throwing from enumeration. If no earlier step completed, `Text` rejects with `NoOutputGeneratedException` and the message `No output generated. Check the stream for errors.` An `ErrorStreamPart` received during a provider stream also calls `OnError`; a following finish part still completes the step and calls `OnEnd`.
 
+The `GenerateTextResult` that `OnEnd` receives also exposes `CallId`, `StepNumber`, `Provider`, `ToolsContext`, `RuntimeContext`, `RawFinishReason`, `TotalUsage` (same as `Usage`), and the `StaticToolCalls`, `DynamicToolCalls`, `StaticToolResults`, and `DynamicToolResults` of every step. Each `StepResult` carries `CallId`, `StepNumber`, `ToolsContext`, `RuntimeContext`, and the same static/dynamic splits.
+
 ## Cancel a stream
 
 Cancel the `CancellationToken` you passed to `StreamTextAsync`, or set `StreamTextOptions.AbortSignal` to cancel with a reason. The call rejects `Text`, `Steps`, `FinishReason`, and `Usage` at once. It does not wait for your callbacks or for the provider to close the response. A reason that is an exception is the exception the tasks fault with. A token faults them with an `OperationCanceledException`.
