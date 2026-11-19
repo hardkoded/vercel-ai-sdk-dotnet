@@ -106,6 +106,24 @@ and a JSON string otherwise.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L33)
 
+<a id="Vercel_AI_GenerateText_ParsedToolCall_InputSchemaInput_"></a>
+<a id="Vercel_AI_GenerateText_ParsedToolCall_InputSchemaInput"></a>
+
+### InputSchemaInput
+
+
+```csharp
+public JsonElement? InputSchemaInput { get; init; }
+```
+
+
+The input as it was parsed, before the input schema and [RefineToolInput](/api/Vercel.AI.GenerateText/ParseToolCallOptions/#Vercel_AI_GenerateText_ParseToolCallOptions_RefineToolInput) changed it.
+Maps to `setToolCallInputSchemaInput`.
+
+**Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L57)
+
 <a id="Vercel_AI_GenerateText_ParsedToolCall_Invalid_"></a>
 <a id="Vercel_AI_GenerateText_ParsedToolCall_Invalid"></a>
 
@@ -139,7 +157,7 @@ True when the provider executed the tool.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L63)
 
 <a id="Vercel_AI_GenerateText_ParsedToolCall_ProviderMetadata_"></a>
 <a id="Vercel_AI_GenerateText_ParsedToolCall_ProviderMetadata"></a>
@@ -156,7 +174,7 @@ Provider-specific metadata of the call, as the model returned it.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L66)
 
 <a id="Vercel_AI_GenerateText_ParsedToolCall_Title_"></a>
 <a id="Vercel_AI_GenerateText_ParsedToolCall_Title"></a>
@@ -173,7 +191,7 @@ Display title of the tool.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L60)
 
 <a id="Vercel_AI_GenerateText_ParsedToolCall_ToolCallId_"></a>
 <a id="Vercel_AI_GenerateText_ParsedToolCall_ToolCallId"></a>
@@ -207,7 +225,7 @@ Metadata of the tool. It stays apart from [ProviderMetadata](#Vercel_AI_Generate
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/ParseToolCall.cs#L69)
 
 <a id="Vercel_AI_GenerateText_ParsedToolCall_ToolName_"></a>
 <a id="Vercel_AI_GenerateText_ParsedToolCall_ToolName"></a>

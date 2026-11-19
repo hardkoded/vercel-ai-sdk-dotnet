@@ -29,7 +29,7 @@ Async queue used to hand stream parts to one consumer.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L466)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L469)
 
 ## Methods
 
@@ -52,7 +52,7 @@ Completes the queue, optionally with an error.
 | --- | --- | --- |
 | `error` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L496)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L499)
 
 <a id="Vercel_AI_Operations_PartQueue_1_Dequeue_"></a>
 <a id="Vercel_AI_Operations_PartQueue_1_Dequeue"></a>
@@ -69,7 +69,7 @@ Removes the next part. Call after `CancellationToken)` returns true.
 
 **Returns:** `T`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L566)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L569)
 
 <a id="Vercel_AI_Operations_PartQueue_1_Enqueue_"></a>
 <a id="Vercel_AI_Operations_PartQueue_1_Enqueue__0_"></a>
@@ -90,7 +90,7 @@ Adds a part.
 | --- | --- | --- |
 | `item` | `T` |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L475)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L478)
 
 <a id="Vercel_AI_Operations_PartQueue_1_WaitAsync_"></a>
 <a id="Vercel_AI_Operations_PartQueue_1_WaitAsync_System_Threading_CancellationToken_"></a>
@@ -113,4 +113,4 @@ Reads the next part. Returns false when the queue is complete.
 
 **Returns:** [Task&lt;bool&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L519)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L522)

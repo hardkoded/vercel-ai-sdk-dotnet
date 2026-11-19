@@ -25,7 +25,7 @@ Batch API that downloads results. Start, status, cancel, and list throw unless a
 
 **Implements:** [IBatchApi](/api/Vercel.AI.Operations/IBatchApi/)
 
-**Derived:** [AnthropicBatchApi](/api/Vercel.AI.Anthropic/AnthropicBatchApi/), [GatewayBatchApi](/api/Vercel.AI.Gateway/GatewayBatchApi/), [GoogleBatchApi](/api/Vercel.AI.Google/GoogleBatchApi/), [OpenAIBatchApi](/api/Vercel.AI.OpenAI/OpenAIBatchApi/)
+**Derived:** [AnthropicBatchApi](/api/Vercel.AI.Anthropic/AnthropicBatchApi/), [GatewayBatchApi](/api/Vercel.AI.Gateway/GatewayBatchApi/), [GoogleBatchApi](/api/Vercel.AI.Google/GoogleBatchApi/), [OpenAIBatchApi](/api/Vercel.AI.OpenAI/OpenAIBatchApi/), [XaiBatch](/api/Vercel.AI.Xai/XaiBatch/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L19)
 

@@ -23,7 +23,7 @@ Request info for a stream call. Maps to the `request` field of `doStream`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3151)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3250)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates request info.
 | --- | --- | --- |
 | `body` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3154)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3253)
 
 ## Properties
 
@@ -65,7 +65,41 @@ Request body sent to the provider, for debugging.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3167)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3266)
+
+<a id="Vercel_AI_Provider_LanguageModelStreamRequest_RedactBody_"></a>
+<a id="Vercel_AI_Provider_LanguageModelStreamRequest_RedactBody"></a>
+
+### RedactBody
+
+
+```csharp
+public Func<JsonElement, JsonElement>? RedactBody { get; init; }
+```
+
+
+Provider-owned telemetry view of [Body](#Vercel_AI_Provider_LanguageModelStreamRequest_Body), which hides credentials. Maps to the annotation of `withTelemetryRedaction` on the request body.
+
+**Value:** [Func&lt;JsonElement, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3272)
+
+<a id="Vercel_AI_Provider_LanguageModelStreamRequest_Url_"></a>
+<a id="Vercel_AI_Provider_LanguageModelStreamRequest_Url"></a>
+
+### Url
+
+
+```csharp
+public string? Url { get; init; }
+```
+
+
+URL the request was sent to. Telemetry events carry only its origin. Maps to `request.url`.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3269)
 
 ## Methods
 
@@ -90,4 +124,22 @@ Creates request info from the JSON text that was sent.
 
 **Returns:** [LanguageModelStreamRequest](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3160)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3259)
+
+<a id="Vercel_AI_Provider_LanguageModelStreamRequest_RedactTelemetryBody_"></a>
+<a id="Vercel_AI_Provider_LanguageModelStreamRequest_RedactTelemetryBody"></a>
+
+### RedactTelemetryBody()
+
+
+```csharp
+public JsonElement? RedactTelemetryBody()
+```
+
+
+Applies [RedactBody](#Vercel_AI_Provider_LanguageModelStreamRequest_RedactBody) to [Body](#Vercel_AI_Provider_LanguageModelStreamRequest_Body) for telemetry, leaving [Body](#Vercel_AI_Provider_LanguageModelStreamRequest_Body) unchanged. Returns null when there is no body or the redactor throws.
+Maps to `redactTelemetryValue`.
+
+**Returns:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3278)

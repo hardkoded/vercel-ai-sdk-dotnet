@@ -21,6 +21,6 @@ public interface IBatchApi
 
 Batch API.
 
-**Derived:** [AnthropicBatchApi](/api/Vercel.AI.Anthropic/AnthropicBatchApi/), [GatewayBatchApi](/api/Vercel.AI.Gateway/GatewayBatchApi/), [GoogleBatchApi](/api/Vercel.AI.Google/GoogleBatchApi/), [OpenAIBatchApi](/api/Vercel.AI.OpenAI/OpenAIBatchApi/), [BatchResultsApiBase](/api/Vercel.AI.ProviderUtils/BatchResultsApiBase/)
+**Derived:** [AnthropicBatchApi](/api/Vercel.AI.Anthropic/AnthropicBatchApi/), [GatewayBatchApi](/api/Vercel.AI.Gateway/GatewayBatchApi/), [GoogleBatchApi](/api/Vercel.AI.Google/GoogleBatchApi/), [OpenAIBatchApi](/api/Vercel.AI.OpenAI/OpenAIBatchApi/), [BatchResultsApiBase](/api/Vercel.AI.ProviderUtils/BatchResultsApiBase/), [XaiBatch](/api/Vercel.AI.Xai/XaiBatch/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L690)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L777)

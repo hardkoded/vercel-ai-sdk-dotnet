@@ -240,7 +240,8 @@ internal static class Generation
 
     public static LanguageModelCallOptions CallOptions(
         GenerateTextOptions options,
-        IReadOnlyList<ModelMessage> prompt
+        IReadOnlyList<ModelMessage> prompt,
+        IReadOnlyList<string>? stepToolOrder = null
     )
     {
         return new LanguageModelCallOptions
@@ -258,7 +259,7 @@ internal static class Generation
             JsonSchema = options.Output?.Schema,
             JsonSchemaName = options.Output?.SchemaName,
             JsonSchemaDescription = options.Output?.SchemaDescription,
-            Tools = SelectTools(options),
+            Tools = SelectTools(options, stepToolOrder ?? options.ToolOrder),
             ToolChoice = options.ToolChoice ?? ToolChoice.Auto,
             Headers = options.Headers,
             ProviderOptions = options.ProviderOptions,
@@ -337,7 +338,7 @@ internal static class Generation
                     .ToArray();
 
                 // The model gets a snapshot, because the step appends its own response to `messages` afterwards.
-                var callOptions = CallOptions(options, messages.ToArray());
+                var callOptions = CallOptions(options, messages.ToArray(), update?.ToolOrder);
                 callOptions.AbortSignal = timeouts?.Signal;
                 if (update?.ToolChoice != null)
                 {
@@ -659,14 +660,25 @@ internal static class Generation
             );
         }
 
-        buffer.OnConsumerStop = abort.Stop;
+        var producerBuffer = buffer;
+        if (options.ExperimentalTransform is { Count: > 0 } transforms)
+        {
+            // The producer writes to its own buffer. The transforms read it and feed the buffer that consumers read.
+            producerBuffer = new PartBuffer { OnConsumerStop = abort.Stop };
+            ApplyStreamTextTransforms(producerBuffer, buffer, transforms, options.Tools, abort);
+        }
+        else
+        {
+            buffer.OnConsumerStop = abort.Stop;
+        }
+
         _ = Task.Run(() =>
             ProduceAsync(
                 model,
                 options,
                 telemetry,
                 steeringRun,
-                buffer,
+                producerBuffer,
                 abort,
                 timeouts,
                 textSource,
@@ -690,6 +702,82 @@ internal static class Generation
             Tools = options.Tools,
             OutputSpecification = options.Output,
         };
+    }
+
+    // Maps to applyStreamTextTransforms.
+    private static void ApplyStreamTextTransforms(
+        PartBuffer source,
+        PartBuffer target,
+        IReadOnlyList<StreamTextTransform> transforms,
+        IReadOnlyList<Tool>? tools,
+        StreamAbort abort
+    )
+    {
+        var cancellation = new CancellationTokenSource();
+        var stopped = 0;
+        target.OnConsumerStop = () =>
+        {
+            abort.Stop();
+            try
+            {
+                cancellation.Cancel();
+            }
+            catch (Exception exception)
+                when (exception is AggregateException or ObjectDisposedException) { }
+        };
+
+        void StopStream()
+        {
+            Volatile.Write(ref stopped, 1);
+            abort.Stop();
+        }
+
+        // The gate prevents further parts from being emitted after a transform calls stopStream.
+        async IAsyncEnumerable<TextStreamPart> Gate(
+            [EnumeratorCancellation] CancellationToken cancellationToken
+        )
+        {
+            await foreach (var part in source.Read(cancellationToken).ConfigureAwait(false))
+            {
+                if (Volatile.Read(ref stopped) == 1)
+                {
+                    yield break;
+                }
+
+                yield return part;
+            }
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var stream = Gate(cancellation.Token);
+                var transformOptions = new StreamTextTransformOptions(tools, StopStream);
+                foreach (var transform in transforms)
+                {
+                    stream = transform(transformOptions)(stream, cancellation.Token);
+                }
+
+                await foreach (
+                    var part in stream.WithCancellation(cancellation.Token).ConfigureAwait(false)
+                )
+                {
+                    target.Add(part);
+                }
+
+                target.Complete();
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+                target.Complete();
+            }
+            catch (Exception exception)
+            {
+                abort.Stop();
+                target.Fail(exception);
+            }
+        });
     }
 
     private static async Task ProduceAsync(
@@ -815,6 +903,7 @@ internal static class Generation
                 streamOptions.NowMs = now;
                 streamOptions.CallId = callId;
                 streamOptions.ToolChoice = update?.ToolChoice ?? options.ToolChoice;
+                streamOptions.ToolOrder = update?.ToolOrder ?? options.ToolOrder;
                 streamOptions.ProviderOptions = MergeProviderOptions(
                     options.ProviderOptions,
                     update?.ProviderOptions
@@ -3227,7 +3316,10 @@ internal static class Generation
         catch (Exception) when (!cancellationToken.IsCancellationRequested) { }
     }
 
-    private static IReadOnlyList<LanguageModelTool>? SelectTools(GenerateTextOptions options)
+    private static IReadOnlyList<LanguageModelTool>? SelectTools(
+        GenerateTextOptions options,
+        IReadOnlyList<string>? toolOrder
+    )
     {
         if (options.Tools == null || options.Tools.Count == 0)
         {
@@ -3262,7 +3354,40 @@ internal static class Generation
             );
         }
 
-        return tools;
+        return OrderTools(tools, toolOrder);
+    }
+
+    // Tools named in toolOrder come first, in that order. The rest follow, sorted by name. Maps to orderToolEntries.
+    private static IReadOnlyList<LanguageModelTool> OrderTools(
+        List<LanguageModelTool> tools,
+        IReadOnlyList<string>? toolOrder
+    )
+    {
+        if (toolOrder == null)
+        {
+            return tools;
+        }
+
+        var listed = tools
+            .Where(tool => Contains(toolOrder, tool.Name))
+            .OrderBy(tool => IndexOfName(toolOrder, tool.Name));
+        var rest = tools
+            .Where(tool => !Contains(toolOrder, tool.Name))
+            .OrderBy(tool => tool.Name, StringComparer.Ordinal);
+        return listed.Concat(rest).ToList();
+    }
+
+    private static int IndexOfName(IReadOnlyList<string> names, string name)
+    {
+        for (var i = 0; i < names.Count; i++)
+        {
+            if (string.Equals(names[i], name, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     // Maps to resolveToolDescription in prepare-tools.ts.

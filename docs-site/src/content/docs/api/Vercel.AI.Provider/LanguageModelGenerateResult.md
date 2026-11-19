@@ -23,7 +23,7 @@ Result of `CancellationToken)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2389)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2448)
 
 ## Constructors
 
@@ -58,7 +58,7 @@ Creates a generate result.
 | `structuredOutputText` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `request` | [LanguageModelStreamRequest](/api/Vercel.AI.Provider/LanguageModelStreamRequest/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2392)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2451)
 
 ## Properties
 
@@ -77,7 +77,7 @@ Generated content parts.
 
 **Value:** [IReadOnlyList&lt;GeneratedContent&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2424)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2483)
 
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_FinishReason_"></a>
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_FinishReason"></a>
@@ -94,7 +94,7 @@ Normalized finish reason.
 
 **Value:** [FinishReason](/api/Vercel.AI.Provider/FinishReason/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2457)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2528)
 
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_ProviderMetadata"></a>
@@ -111,7 +111,7 @@ Provider metadata for this call, keyed by provider name.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2472)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2543)
 
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_RawFinishReason_"></a>
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_RawFinishReason"></a>
@@ -128,7 +128,7 @@ Provider finish reason, when it differs from [FinishReason](#Vercel_AI_Provider_
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2460)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2531)
 
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_RawResponse_"></a>
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_RawResponse"></a>
@@ -145,7 +145,24 @@ Raw provider response body, when the model captured it.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2475)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2546)
+
+<a id="Vercel_AI_Provider_LanguageModelGenerateResult_RedactRawResponse_"></a>
+<a id="Vercel_AI_Provider_LanguageModelGenerateResult_RedactRawResponse"></a>
+
+### RedactRawResponse
+
+
+```csharp
+public Func<JsonElement, JsonElement>? RedactRawResponse { get; }
+```
+
+
+Provider-owned telemetry view of [RawResponse](#Vercel_AI_Provider_LanguageModelGenerateResult_RawResponse), which hides credentials. Maps to the annotation of `withTelemetryRedaction` on the response body.
+
+**Value:** [Func&lt;JsonElement, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2549)
 
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_Request_"></a>
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_Request"></a>
@@ -162,7 +179,7 @@ Request info, when the model reports it. Maps to the `request` field of `doGener
 
 **Value:** [LanguageModelStreamRequest](/api/Vercel.AI.Provider/LanguageModelStreamRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2454)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2525)
 
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_ResponseHeaders_"></a>
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_ResponseHeaders"></a>
@@ -179,7 +196,7 @@ HTTP response headers.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2484)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2583)
 
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_ResponseId_"></a>
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_ResponseId"></a>
@@ -196,7 +213,7 @@ Provider response id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2469)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2540)
 
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_ResponseModelId_"></a>
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_ResponseModelId"></a>
@@ -213,7 +230,7 @@ Model id reported by the provider.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2478)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2577)
 
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_ResponseTimestamp_"></a>
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_ResponseTimestamp"></a>
@@ -230,7 +247,7 @@ Provider timestamp for the response.
 
 **Value:** [DateTimeOffset?](https://learn.microsoft.com/dotnet/api/system.datetimeoffset)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2481)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2580)
 
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_StructuredOutputText_"></a>
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_StructuredOutputText"></a>
@@ -250,7 +267,7 @@ back to the text parts. Maps to `structuredOutputText`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2432)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2491)
 
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_Text_"></a>
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_Text"></a>
@@ -267,7 +284,7 @@ Concatenated text parts.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2487)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2586)
 
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_Usage_"></a>
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_Usage"></a>
@@ -284,7 +301,7 @@ Token usage.
 
 **Value:** [LanguageModelUsage](/api/Vercel.AI.Provider/LanguageModelUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2463)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2534)
 
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_Warnings_"></a>
 <a id="Vercel_AI_Provider_LanguageModelGenerateResult_Warnings"></a>
@@ -301,4 +318,24 @@ Call warnings.
 
 **Value:** [IReadOnlyList&lt;CallWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2466)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2537)
+
+## Methods
+
+<a id="Vercel_AI_Provider_LanguageModelGenerateResult_RedactTelemetryRawResponse_"></a>
+<a id="Vercel_AI_Provider_LanguageModelGenerateResult_RedactTelemetryRawResponse"></a>
+
+### RedactTelemetryRawResponse()
+
+
+```csharp
+public JsonElement? RedactTelemetryRawResponse()
+```
+
+
+Applies [RedactRawResponse](#Vercel_AI_Provider_LanguageModelGenerateResult_RedactRawResponse) to [RawResponse](#Vercel_AI_Provider_LanguageModelGenerateResult_RawResponse) for telemetry, leaving [RawResponse](#Vercel_AI_Provider_LanguageModelGenerateResult_RawResponse) unchanged. Returns null when there is no JSON
+body or the redactor throws. Maps to `redactTelemetryValue`.
+
+**Returns:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2555)

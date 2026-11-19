@@ -169,6 +169,20 @@ Providers keep the error status:
 - A `LanguageModelTool` with `OutputSchema` is sent to OpenAI Responses as `output_schema`. Its `text` and `execution-denied` results are then sent as JSON string literals, because OpenAI parses the result as JSON.
 - Google sends `error-text`, `error-json`, and `execution-denied` on `functionResponse.response.error`. Successful results stay on `response.content`.
 
+## Tool order
+
+`ToolOrder` on `GenerateTextOptions`, `StreamTextOptions` and `AgentOptions` controls the order in which tools are sent to the provider. The list can be partial. Tools not listed are sent after the listed tools, sorted alphabetically. Without it, tools keep the order you passed them in. A stable order can improve provider-side caching. `PrepareStepUpdate.ToolOrder` overrides it for one step.
+
+```csharp
+await client.GenerateTextAsync(new GenerateTextOptions
+{
+    Model = model,
+    Tools = [zebra, alpha, middle],
+    Prompt = "...",
+    ToolOrder = ["middle"], // sent as middle, alpha, zebra
+});
+```
+
 ## Tool input validation
 
 Before the loop runs a tool, `ToolCallParser.ParseToolCallAsync` parses the call's input and validates it against the tool's `InputSchema`. Empty input counts as `{}`. A call that fails is not executed. It comes back with `Invalid` and `Dynamic` set and the failure in `Error`: a `NoSuchToolError` when the tool is unknown (`AvailableTools` is null when no tools were set), or an `InvalidToolInputError` when the input is not valid JSON or does not match the schema. `GenerateTextAsync`, `StreamTextAsync`, and `Agent` run this parse on every tool call of a model response, with the tools the model was offered (`ActiveTools` narrows them). The validator covers `type`, `enum`, `const`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `maxItems`, `minLength`, `maxLength`, `minimum`, `maximum`, `anyOf`, `oneOf` and `allOf`.

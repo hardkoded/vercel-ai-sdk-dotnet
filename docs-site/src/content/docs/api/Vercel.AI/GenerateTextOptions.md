@@ -25,7 +25,7 @@ Options for `CancellationToken)`. Property names follow `generateText`.
 
 **Derived:** [StreamTextOptions](/api/Vercel.AI/StreamTextOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1148)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1252)
 
 ## Properties
 
@@ -44,7 +44,7 @@ Tool names allowed on this call. Null allows every tool.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1201)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1305)
 
 <a id="Vercel_AI_GenerateTextOptions_AllowSystemInMessages_"></a>
 <a id="Vercel_AI_GenerateTextOptions_AllowSystemInMessages"></a>
@@ -62,7 +62,7 @@ Use [Instructions](#Vercel_AI_GenerateTextOptions_Instructions) for the system p
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1195)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1299)
 
 <a id="Vercel_AI_GenerateTextOptions_ExperimentalDownload_"></a>
 <a id="Vercel_AI_GenerateTextOptions_ExperimentalDownload"></a>
@@ -85,7 +85,7 @@ Maps to `experimental_download`.
 
 **Value:** [Func&lt;IReadOnlyList&lt;DownloadRequestItem&gt;, Task&lt;IReadOnlyList&lt;DownloadResult&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1168)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1272)
 
 <a id="Vercel_AI_GenerateTextOptions_ExperimentalRepairToolCall_"></a>
 <a id="Vercel_AI_GenerateTextOptions_ExperimentalRepairToolCall"></a>
@@ -108,7 +108,7 @@ Maps to `experimental_repairToolCall`.
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1368)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1472)
 
 <a id="Vercel_AI_GenerateTextOptions_ExperimentalSandbox_"></a>
 <a id="Vercel_AI_GenerateTextOptions_ExperimentalSandbox"></a>
@@ -125,7 +125,7 @@ The sandbox environment that is passed through to tool execution. Maps to `exper
 
 **Value:** [ISandboxSession](/api/Vercel.AI.ProviderUtils/ISandboxSession/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1273)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1377)
 
 <a id="Vercel_AI_GenerateTextOptions_ExperimentalSteering_"></a>
 <a id="Vercel_AI_GenerateTextOptions_ExperimentalSteering"></a>
@@ -143,7 +143,7 @@ at the next step boundary. A steering object can only be used for one generation
 
 **Value:** [ISteering](/api/Vercel.AI.GenerateText/ISteering/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1270)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1374)
 
 <a id="Vercel_AI_GenerateTextOptions_ExperimentalToolApprovalSecret_"></a>
 <a id="Vercel_AI_GenerateTextOptions_ExperimentalToolApprovalSecret"></a>
@@ -162,7 +162,7 @@ Maps to `experimental_toolApprovalSecret` given as a string. See also [Experimen
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1348)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1452)
 
 <a id="Vercel_AI_GenerateTextOptions_ExperimentalToolApprovalSecretBytes_"></a>
 <a id="Vercel_AI_GenerateTextOptions_ExperimentalToolApprovalSecretBytes"></a>
@@ -180,7 +180,7 @@ The same secret as [ExperimentalToolApprovalSecret](#Vercel_AI_GenerateTextOptio
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1354)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1458)
 
 <a id="Vercel_AI_GenerateTextOptions_FrequencyPenalty_"></a>
 <a id="Vercel_AI_GenerateTextOptions_FrequencyPenalty"></a>
@@ -197,7 +197,7 @@ Frequency penalty.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1234)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1338)
 
 <a id="Vercel_AI_GenerateTextOptions_Headers_"></a>
 <a id="Vercel_AI_GenerateTextOptions_Headers"></a>
@@ -214,7 +214,7 @@ Extra headers forwarded to the language model.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1258)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1362)
 
 <a id="Vercel_AI_GenerateTextOptions_Instructions_"></a>
 <a id="Vercel_AI_GenerateTextOptions_Instructions"></a>
@@ -231,7 +231,7 @@ System prompt: a string, one [SystemModelMessage](/api/Vercel.AI.Provider/System
 
 **Value:** [Instructions](/api/Vercel.AI.Prompt/Instructions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1183)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1287)
 
 <a id="Vercel_AI_GenerateTextOptions_MaxOutputTokens_"></a>
 <a id="Vercel_AI_GenerateTextOptions_MaxOutputTokens"></a>
@@ -248,7 +248,7 @@ Maximum output tokens.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1219)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1323)
 
 <a id="Vercel_AI_GenerateTextOptions_MaxRetries_"></a>
 <a id="Vercel_AI_GenerateTextOptions_MaxRetries"></a>
@@ -265,7 +265,7 @@ Retries for provider calls made by this request. Providers that own their HTTP s
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1249)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1353)
 
 <a id="Vercel_AI_GenerateTextOptions_Messages_"></a>
 <a id="Vercel_AI_GenerateTextOptions_Messages"></a>
@@ -282,7 +282,7 @@ Full prompt. Maps to `messages`.
 
 **Value:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1189)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1293)
 
 <a id="Vercel_AI_GenerateTextOptions_Model_"></a>
 <a id="Vercel_AI_GenerateTextOptions_Model"></a>
@@ -299,7 +299,7 @@ Explicit language model. Wins over [ModelId](#Vercel_AI_GenerateTextOptions_Mode
 
 **Value:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1177)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1281)
 
 <a id="Vercel_AI_GenerateTextOptions_ModelId_"></a>
 <a id="Vercel_AI_GenerateTextOptions_ModelId"></a>
@@ -316,7 +316,7 @@ Gateway model id such as `openai/gpt-4.1-mini`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1174)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1278)
 
 <a id="Vercel_AI_GenerateTextOptions_OnEnd_"></a>
 <a id="Vercel_AI_GenerateTextOptions_OnEnd"></a>
@@ -333,7 +333,7 @@ Called when all steps are finished and the response is complete. Maps to `onEnd`
 
 **Value:** [Func&lt;GenerateTextResult, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1315)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1419)
 
 <a id="Vercel_AI_GenerateTextOptions_OnError_"></a>
 <a id="Vercel_AI_GenerateTextOptions_OnError"></a>
@@ -350,7 +350,7 @@ Called when generation fails. Maps to `onError`.
 
 **Value:** [Func&lt;Exception, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1322)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1426)
 
 <a id="Vercel_AI_GenerateTextOptions_OnFinish_"></a>
 <a id="Vercel_AI_GenerateTextOptions_OnFinish"></a>
@@ -372,7 +372,7 @@ Deprecated alias for [OnEnd](#Vercel_AI_GenerateTextOptions_OnEnd); [OnEnd](#Ver
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1318)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1422)
 
 <a id="Vercel_AI_GenerateTextOptions_OnLanguageModelCallEnd_"></a>
 <a id="Vercel_AI_GenerateTextOptions_OnLanguageModelCallEnd"></a>
@@ -390,7 +390,7 @@ Maps to `onLanguageModelCallEnd`.
 
 **Value:** [Func&lt;LanguageModelCallEndEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1289)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1393)
 
 <a id="Vercel_AI_GenerateTextOptions_OnLanguageModelCallStart_"></a>
 <a id="Vercel_AI_GenerateTextOptions_OnLanguageModelCallStart"></a>
@@ -408,7 +408,7 @@ Maps to `onLanguageModelCallStart`.
 
 **Value:** [Func&lt;LanguageModelCallStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1279)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1383)
 
 <a id="Vercel_AI_GenerateTextOptions_OnStepEnd_"></a>
 <a id="Vercel_AI_GenerateTextOptions_OnStepEnd"></a>
@@ -425,7 +425,7 @@ Called after each step. Maps to `onStepEnd`.
 
 **Value:** [Func&lt;StepResult, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1312)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1416)
 
 <a id="Vercel_AI_GenerateTextOptions_OnToolExecutionEnd_"></a>
 <a id="Vercel_AI_GenerateTextOptions_OnToolExecutionEnd"></a>
@@ -443,7 +443,7 @@ Maps to `onToolExecutionEnd`.
 
 **Value:** [Func&lt;ToolExecutionEndEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1309)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1413)
 
 <a id="Vercel_AI_GenerateTextOptions_OnToolExecutionStart_"></a>
 <a id="Vercel_AI_GenerateTextOptions_OnToolExecutionStart"></a>
@@ -461,7 +461,7 @@ or a call that is invalid or not approved. An exception it throws is ignored. Ma
 
 **Value:** [Func&lt;ToolExecutionStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1299)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1403)
 
 <a id="Vercel_AI_GenerateTextOptions_Output_"></a>
 <a id="Vercel_AI_GenerateTextOptions_Output"></a>
@@ -478,7 +478,7 @@ Structured output.
 
 **Value:** [OutputSpec](/api/Vercel.AI/OutputSpec/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1216)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1320)
 
 <a id="Vercel_AI_GenerateTextOptions_PrepareStep_"></a>
 <a id="Vercel_AI_GenerateTextOptions_PrepareStep"></a>
@@ -495,7 +495,7 @@ Called before each step. Maps to `prepareStep`.
 
 **Value:** [Func&lt;PrepareStepContext, PrepareStepUpdate&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1264)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1368)
 
 <a id="Vercel_AI_GenerateTextOptions_PresencePenalty_"></a>
 <a id="Vercel_AI_GenerateTextOptions_PresencePenalty"></a>
@@ -512,7 +512,7 @@ Presence penalty.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1231)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1335)
 
 <a id="Vercel_AI_GenerateTextOptions_Prompt_"></a>
 <a id="Vercel_AI_GenerateTextOptions_Prompt"></a>
@@ -529,7 +529,7 @@ A single user prompt.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1186)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1290)
 
 <a id="Vercel_AI_GenerateTextOptions_ProviderOptions_"></a>
 <a id="Vercel_AI_GenerateTextOptions_ProviderOptions"></a>
@@ -546,7 +546,7 @@ Provider-specific options.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1261)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1365)
 
 <a id="Vercel_AI_GenerateTextOptions_Reasoning_"></a>
 <a id="Vercel_AI_GenerateTextOptions_Reasoning"></a>
@@ -564,7 +564,7 @@ A provider option with the same setting wins when both are set.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1246)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1350)
 
 <a id="Vercel_AI_GenerateTextOptions_RefineToolInput_"></a>
 <a id="Vercel_AI_GenerateTextOptions_RefineToolInput"></a>
@@ -582,7 +582,7 @@ A tool without an entry keeps its parsed input. Maps to `experimental_refineTool
 
 **Value:** [IReadOnlyDictionary&lt;string, Func&lt;JsonElement, CancellationToken, Task&lt;JsonElement&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1375)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1479)
 
 <a id="Vercel_AI_GenerateTextOptions_RepairToolCall_"></a>
 <a id="Vercel_AI_GenerateTextOptions_RepairToolCall"></a>
@@ -600,7 +600,7 @@ Return the repaired call, or null to keep the error. Maps to `repairToolCall`.
 
 **Value:** [ToolCallRepairFunction](/api/Vercel.AI.GenerateText/ToolCallRepairFunction/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1362)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1466)
 
 <a id="Vercel_AI_GenerateTextOptions_RuntimeContext_"></a>
 <a id="Vercel_AI_GenerateTextOptions_RuntimeContext"></a>
@@ -617,7 +617,7 @@ User-defined context that is passed to the approval functions. Maps to `runtimeC
 
 **Value:** [IReadOnlyDictionary&lt;string, object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1341)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1445)
 
 <a id="Vercel_AI_GenerateTextOptions_Seed_"></a>
 <a id="Vercel_AI_GenerateTextOptions_Seed"></a>
@@ -634,7 +634,7 @@ Seed.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1240)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1344)
 
 <a id="Vercel_AI_GenerateTextOptions_StopSequences_"></a>
 <a id="Vercel_AI_GenerateTextOptions_StopSequences"></a>
@@ -651,7 +651,7 @@ Stop sequences.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1237)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1341)
 
 <a id="Vercel_AI_GenerateTextOptions_StopWhen_"></a>
 <a id="Vercel_AI_GenerateTextOptions_StopWhen"></a>
@@ -668,7 +668,7 @@ When to stop the tool loop. Defaults to one step.
 
 **Value:** [StopCondition](/api/Vercel.AI/StopCondition/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1213)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1317)
 
 <a id="Vercel_AI_GenerateTextOptions_System_"></a>
 <a id="Vercel_AI_GenerateTextOptions_System"></a>
@@ -685,7 +685,7 @@ System prompt. [Instructions](#Vercel_AI_GenerateTextOptions_Instructions) wins 
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1180)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1284)
 
 <a id="Vercel_AI_GenerateTextOptions_Temperature_"></a>
 <a id="Vercel_AI_GenerateTextOptions_Temperature"></a>
@@ -702,7 +702,7 @@ Temperature.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1222)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1326)
 
 <a id="Vercel_AI_GenerateTextOptions_Timeout_"></a>
 <a id="Vercel_AI_GenerateTextOptions_Timeout"></a>
@@ -720,7 +720,7 @@ Aborts the call with a [TimeoutError](/api/Vercel.AI.Util/TimeoutError/) when a 
 
 **Value:** [TimeoutConfiguration](/api/Vercel.AI.Prompt/TimeoutConfiguration/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1255)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1359)
 
 <a id="Vercel_AI_GenerateTextOptions_ToolApproval_"></a>
 <a id="Vercel_AI_GenerateTextOptions_ToolApproval"></a>
@@ -738,7 +738,7 @@ Configures whether tools require approval before they run: a generic function fo
 
 **Value:** [ToolApprovalConfiguration](/api/Vercel.AI.GenerateText/ToolApprovalConfiguration/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1332)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1436)
 
 <a id="Vercel_AI_GenerateTextOptions_ToolCallConcurrency_"></a>
 <a id="Vercel_AI_GenerateTextOptions_ToolCallConcurrency"></a>
@@ -756,7 +756,7 @@ Null runs every tool call at once. Values below 1 throw [InvalidArgumentError](/
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1207)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1311)
 
 <a id="Vercel_AI_GenerateTextOptions_ToolChoice_"></a>
 <a id="Vercel_AI_GenerateTextOptions_ToolChoice"></a>
@@ -773,7 +773,7 @@ Tool selection mode.
 
 **Value:** [ToolChoice](/api/Vercel.AI.Provider/ToolChoice/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1210)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1314)
 
 <a id="Vercel_AI_GenerateTextOptions_Tools_"></a>
 <a id="Vercel_AI_GenerateTextOptions_Tools"></a>
@@ -790,7 +790,7 @@ Tools available to the model.
 
 **Value:** [IReadOnlyList&lt;Tool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1198)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1302)
 
 <a id="Vercel_AI_GenerateTextOptions_ToolsContext_"></a>
 <a id="Vercel_AI_GenerateTextOptions_ToolsContext"></a>
@@ -808,7 +808,7 @@ passed to the approval functions. Maps to `toolsContext`.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1338)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1442)
 
 <a id="Vercel_AI_GenerateTextOptions_TopK_"></a>
 <a id="Vercel_AI_GenerateTextOptions_TopK"></a>
@@ -825,7 +825,7 @@ Top-k.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1228)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1332)
 
 <a id="Vercel_AI_GenerateTextOptions_TopP_"></a>
 <a id="Vercel_AI_GenerateTextOptions_TopP"></a>
@@ -842,4 +842,4 @@ Top-p.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1225)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1329)

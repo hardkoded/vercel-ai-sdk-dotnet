@@ -122,7 +122,7 @@ Maps to `parseTranscriptionStreamPart`.
 
 **Returns:** [ModelStreamPart](/api/Vercel.AI.Operations/ModelStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L346)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/TranscriptionStreamEnvelope.cs#L350)
 
 <a id="Vercel_AI_ProviderUtils_TranscriptionStreamEnvelope_SerializeTranscriptionStreamPart_"></a>
 <a id="Vercel_AI_ProviderUtils_TranscriptionStreamEnvelope_SerializeTranscriptionStreamPart_Vercel_AI_Operations_ModelStreamPart_"></a>

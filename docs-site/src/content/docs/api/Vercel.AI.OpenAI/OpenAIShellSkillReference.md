@@ -23,7 +23,7 @@ A `skillReference` skill of a `containerAuto` shell environment.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [OpenAIShellContainerSkill](/api/Vercel.AI.OpenAI/OpenAIShellContainerSkill/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L161)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L173)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Provider reference of the skill, keyed by provider name. The `openai` entry is t
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L164)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L176)
 
 <a id="Vercel_AI_OpenAI_OpenAIShellSkillReference_Version_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIShellSkillReference_Version"></a>
@@ -59,4 +59,4 @@ Skill version. Defaults to `latest`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L168)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L180)

@@ -15,7 +15,7 @@ Namespace: [Vercel.AI.Google](/api/Vercel.AI.Google/)
 
 
 ```csharp
-public sealed class GoogleVertexProvider : GoogleProvider, IBatchProvider
+public sealed class GoogleVertexProvider : GoogleProvider, IBatchProvider, IExtractionProvider
 ```
 
 
@@ -23,7 +23,7 @@ Google Vertex AI provider.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/) → [GoogleProvider](/api/Vercel.AI.Google/GoogleProvider/)
 
-**Implements:** [IBatchProvider](/api/Vercel.AI.Operations/IBatchProvider/)
+**Implements:** [IBatchProvider](/api/Vercel.AI.Operations/IBatchProvider/), [IExtractionProvider](/api/Vercel.AI.Operations/IExtractionProvider/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L303)
 

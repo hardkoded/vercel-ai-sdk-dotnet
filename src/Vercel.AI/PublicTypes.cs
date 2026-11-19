@@ -1243,6 +1243,9 @@ public sealed class PrepareStepUpdate
     /// <summary>Replacement tool choice for this step.</summary>
     public ToolChoice? ToolChoice { get; set; }
 
+    /// <summary>Overrides the order in which tools are sent to the provider for this step. See <see cref="GenerateTextOptions.ToolOrder"/>. Maps to <c>toolOrder</c>.</summary>
+    public IReadOnlyList<string>? ToolOrder { get; set; }
+
     /// <summary>
     /// Provider options for this step, such as an Anthropic container id. They are deep-merged onto the call's provider options.
     /// </summary>
@@ -1309,6 +1312,12 @@ public class GenerateTextOptions
 
     /// <summary>Tool names allowed on this call. Null allows every tool.</summary>
     public IReadOnlyList<string>? ActiveTools { get; set; }
+
+    /// <summary>
+    /// Controls the order in which tools are sent to the provider. The list can be partial. Tools not listed are sent after the listed tools,
+    /// sorted alphabetically. This can improve provider-side caching by keeping tool definitions in a stable order. Maps to <c>toolOrder</c>.
+    /// </summary>
+    public IReadOnlyList<string>? ToolOrder { get; set; }
 
     /// <summary>
     /// Maximum number of tool calls that may execute concurrently within a step. Set to 1 to execute them one at a time in model order.
@@ -1618,9 +1627,42 @@ public sealed class ToolExecutionEndEvent : ToolExecutionStartEvent
     public TimeSpan ToolExecutionTime { get; }
 }
 
+/// <summary>The options a <see cref="StreamTextTransform"/> receives. Maps to the argument of <c>StreamTextTransform</c>.</summary>
+public sealed class StreamTextTransformOptions
+{
+    /// <summary>Creates the options.</summary>
+    public StreamTextTransformOptions(IReadOnlyList<Tool>? tools = null, Action? stopStream = null)
+    {
+        Tools = tools ?? [];
+        StopStream = stopStream ?? (() => { });
+    }
+
+    /// <summary>The tools that are accessible to and can be called by the model. Maps to <c>tools</c>.</summary>
+    public IReadOnlyList<Tool> Tools { get; }
+
+    /// <summary>Stops the source stream. No further part reaches the transform after it is called. Maps to <c>stopStream</c>.</summary>
+    public Action StopStream { get; }
+}
+
+/// <summary>
+/// A transformation that is applied to the stream of parts. It receives the stream and returns the transformed stream.
+/// The transformation must maintain the stream structure for <c>StreamTextAsync</c> to work correctly. Maps to <c>StreamTextTransform</c>.
+/// </summary>
+public delegate Func<
+    IAsyncEnumerable<TextStreamPart>,
+    CancellationToken,
+    IAsyncEnumerable<TextStreamPart>
+> StreamTextTransform(StreamTextTransformOptions options);
+
 /// <summary>Options for <see cref="IAiClient.StreamTextAsync"/>.</summary>
 public sealed class StreamTextOptions : GenerateTextOptions
 {
+    /// <summary>
+    /// Optional stream transformations, applied in order. They must maintain the stream structure for <c>StreamTextAsync</c> to work correctly.
+    /// Use <see cref="GenerateText.SmoothStream.Create"/> to smooth the text output. Maps to <c>experimental_transform</c>.
+    /// </summary>
+    public IReadOnlyList<StreamTextTransform>? ExperimentalTransform { get; set; }
+
     /// <summary>What to retain of the request in the <see cref="StartStepPart"/>. Maps to <c>include</c>.</summary>
     public StreamTextInclude? Include { get; set; }
 

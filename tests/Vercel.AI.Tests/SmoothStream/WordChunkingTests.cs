@@ -34,7 +34,9 @@ public sealed class WordChunkingTests
                     return Task.CompletedTask;
                 },
         };
-        var transform = Vercel.AI.GenerateText.SmoothStream.Create(options)(null);
+        var transform = Vercel.AI.GenerateText.SmoothStream.Create(options)(
+            new Vercel.AI.StreamTextTransformOptions()
+        );
         await foreach (var part in transform(From(input), default))
         {
             _events.Add(part);

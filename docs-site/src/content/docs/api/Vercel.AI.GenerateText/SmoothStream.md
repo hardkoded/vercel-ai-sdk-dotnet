@@ -23,7 +23,7 @@ Smooths text and reasoning streaming output. Maps to `smoothStream`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/SmoothStream.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/SmoothStream.cs#L67)
 
 ## Methods
 
@@ -48,4 +48,4 @@ Creates the transform. Call the returned function with the tools to get a transf
 
 **Returns:** [Func&lt;IReadOnlyList&lt;Tool&gt;, Func&lt;IAsyncEnumerable&lt;TextStreamPart&gt;, CancellationToken, IAsyncEnumerable&lt;TextStreamPart&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/SmoothStream.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/SmoothStream.cs#L87)

@@ -1840,7 +1840,16 @@ Results are retrieved separately, so pass the same `Output` to `Batch.GetBatchRe
 
 To get a typed output, build the specification with a type argument, for example `OutputSpec.Object<Translation>(schema)` (or `OutputSpec.Array<Item>(elementSchema)`), and call `Batch.GetBatchResults<TOutput>(request, output)`. Each item is a `BatchItemResult<TOutput>` whose `Output` is a `TOutput?` (property names match the JSON case-insensitively, camelCase by default) and whose `OutputError` is set instead when parsing or deserializing failed. `BatchRequestOptions.Output` still takes any `OutputSpec`, so a typed specification can be passed to `StartBatchAsync` as is. Typed specifications for `Text`, `Choice`, and `Json` are not part of this port yet.
 
-The Google provider does not start batches in this port, so the upstream guard that rejects an output schema there has no counterpart (tracked in a follow-up issue).
+The Google Batch API does not reliably enforce JSON schemas, so `GoogleBatchApi.DoStartAsync` throws `UnsupportedFunctionalityException` (`Functionality` is `structured output schemas in Google batches`) for a `text` request whose response format is JSON with a schema, before it sends a request. `Output` without a schema (JSON mode) is allowed and sends `responseMimeType: application/json`. To send a schema-less request while keeping a schema for validation, set `providerOptions.google.structuredOutputs` to `false`: the schema is not sent, and you validate the results with `Batch.GetBatchResults` and the same `Output`.
+
+## Google Batch
+
+`GoogleProvider.ExperimentalBatch()` (upstream `experimental_batch()`) returns the Gemini Batch API. Its provider id is `google.generative-ai.batch`.
+
+- `DoStartAsync` accepts `text` requests. Every request in a batch must use the same model, because the model is part of the endpoint (`models/<id>:batchGenerateContent`). Other types throw `UnsupportedFunctionalityException` (`batch request type: <type>`) before a request is sent. The batch display name is `ai-sdk-batch-<id>`, with the id from `GoogleOptions.GenerateId`. Requests are sent inline while the creation body stays under 20,000,000 bytes. Beyond that, the requests are uploaded as a JSONL file with the resumable upload protocol and the batch references it (`inputConfig.fileName`). A file over 2 GB throws `InvalidArgumentException`. The start result then has `ProviderMetadata.google.inputFileId` and, when Google reports it, `inputFileExpiresAt`. A `webhookUrl` is sent as `webhookConfig.uris`. Request warnings keep their request id.
+- `DoGetStatusAsync` maps `metadata.state` (`BATCH_STATE_` or `JOB_STATE_` prefix) to `pending`, `completed`, or `failed`. Without a state, `done` and `error` decide. Int64 counts arrive as strings and are normalized, and an omitted pending, successful, or failed count is `0`. A top-level `error` becomes `ErrorMessage` and `ErrorCode`.
+- `DoCancelAsync` posts to `<batch id>:cancel`. `DoListAsync` reads `batches` with `pageSize` (`Limit`) and `pageToken` (`Cursor`), and returns `nextPageToken` as `NextCursor`.
+- Image requests are not started by this port yet (tracked in a follow-up issue).
 
 ## Batch result downloads
 
