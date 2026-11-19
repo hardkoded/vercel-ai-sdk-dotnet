@@ -178,6 +178,7 @@ public sealed class DoGenerateStatefulChainingTests
     [Theory]
     [InlineData("gemini-4-hydrogen")]
     [InlineData("gemini-4-hydrogen-eap")]
+    [InlineData("gemini-4-neon")]
     [UpstreamTest(
         Prefix + "passes the xhigh thinking level for %s",
         Coverage = UpstreamCoverage.Covered,

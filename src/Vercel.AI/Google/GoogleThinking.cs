@@ -21,7 +21,7 @@ public static class GoogleThinking
         "max",
     ];
     private static readonly Regex Hydrogen = new(
-        @"(^|[/.])gemini-4-hydrogen(?:-|\z)",
+        @"(^|[/.])gemini-4-(?:hydrogen|neon)(?:-|\z)",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
         TimeSpan.FromMilliseconds(100)
     );
