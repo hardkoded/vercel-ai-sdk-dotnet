@@ -85,8 +85,22 @@ public sealed class NotDeliveredSteeringOutcome : SteeringOutcome
     public SteeringNotDeliveredReason Reason { get; }
 }
 
-/// <summary>Options of <see cref="ISteering.SteerAsync(string, SteerOptions?)"/> and <see cref="ISteering.QueueAsync(string, SteerOptions?)"/>.</summary>
+/// <summary>Options of <c>SteerAsync</c>.</summary>
 public sealed class SteerOptions
+{
+    /// <summary>The id of the message. Sending a message again with the same id returns the outcome of the first message.</summary>
+    public string? Id { get; set; }
+
+    /// <summary>
+    /// Cancels the current model call when it has not produced any output yet, and makes it again in the same step with the message.
+    /// Otherwise the message is added at the next step boundary. Running tools are never interrupted. A cancelled model call can still be billed
+    /// by the provider, and it is not included in the usage. The step is not counted again, so stop conditions do not limit how often a step is redone.
+    /// </summary>
+    public bool Interrupt { get; set; }
+}
+
+/// <summary>Options of <c>QueueAsync</c>. Queued messages wait for the task, so they cannot interrupt.</summary>
+public sealed class QueueOptions
 {
     /// <summary>The id of the message. Sending a message again with the same id returns the outcome of the first message.</summary>
     public string? Id { get; set; }
@@ -114,10 +128,10 @@ public interface ISteering
     /// The run then continues with the message unless a stop condition is met. Queued messages are delivered one per task, in order,
     /// after any waiting steering messages. The task never faults.
     /// </summary>
-    Task<SteeringOutcome> QueueAsync(string message, SteerOptions? options = null);
+    Task<SteeringOutcome> QueueAsync(string message, QueueOptions? options = null);
 
-    /// <inheritdoc cref="QueueAsync(string, SteerOptions?)"/>
-    Task<SteeringOutcome> QueueAsync(UserModelMessage message, SteerOptions? options = null);
+    /// <inheritdoc cref="QueueAsync(string, QueueOptions?)"/>
+    Task<SteeringOutcome> QueueAsync(UserModelMessage message, QueueOptions? options = null);
 }
 
 /// <summary>A message that <see cref="SteeringRun.ResolveTakenMessages"/> delivered.</summary>
@@ -139,6 +153,12 @@ internal abstract class SteeringRun
         int stepNumber,
         IReadOnlyList<ModelMessage> sentMessages
     );
+
+    /// <summary>
+    /// Watches for interrupting messages while a model call has not produced any output yet. Calls <paramref name="onInterrupt"/> at most once,
+    /// right away when an interrupting message is already waiting. Returns a function that stops watching.
+    /// </summary>
+    public abstract Action WatchInterrupt(Action onInterrupt);
 
     public abstract void End(SteeringNotDeliveredReason reason);
 }
@@ -205,21 +225,26 @@ public static class Steering
         private List<PendingSteer> _pending = [];
         private List<PendingSteer> _taken = [];
 
+        // An interrupt that arrived while no model call was watching, e.g. during prepareStep or tool execution.
+        // It is dropped when the messages are taken at a step boundary, because they are then delivered without cancelling a model call.
+        private bool _interruptRequested;
+        private Action? _onInterrupt;
+
         public Task<SteeringOutcome> SteerAsync(string message, SteerOptions? options = null) =>
-            Add(ToUserMessage(message), options?.Id, queue: false);
+            Add(ToUserMessage(message), options?.Id, options?.Interrupt == true, queue: false);
 
         public Task<SteeringOutcome> SteerAsync(
             UserModelMessage message,
             SteerOptions? options = null
-        ) => Add(message, options?.Id, queue: false);
+        ) => Add(message, options?.Id, options?.Interrupt == true, queue: false);
 
-        public Task<SteeringOutcome> QueueAsync(string message, SteerOptions? options = null) =>
-            Add(ToUserMessage(message), options?.Id, queue: true);
+        public Task<SteeringOutcome> QueueAsync(string message, QueueOptions? options = null) =>
+            Add(ToUserMessage(message), options?.Id, interrupt: false, queue: true);
 
         public Task<SteeringOutcome> QueueAsync(
             UserModelMessage message,
-            SteerOptions? options = null
-        ) => Add(message, options?.Id, queue: true);
+            QueueOptions? options = null
+        ) => Add(message, options?.Id, interrupt: false, queue: true);
 
         internal SteeringRun StartRun()
         {
@@ -243,7 +268,12 @@ public static class Steering
         private static UserModelMessage ToUserMessage(string message) =>
             new(message ?? throw new ArgumentNullException(nameof(message)));
 
-        private Task<SteeringOutcome> Add(UserModelMessage message, string? id, bool queue)
+        private Task<SteeringOutcome> Add(
+            UserModelMessage message,
+            string? id,
+            bool interrupt,
+            bool queue
+        )
         {
             if (message == null)
             {
@@ -251,6 +281,8 @@ public static class Steering
             }
 
             id ??= GenerateSteeringId();
+            Action? onInterrupt = null;
+            Task<SteeringOutcome> result;
             lock (_gate)
             {
                 if (_outcomes.TryGetValue(id, out var existing))
@@ -279,8 +311,31 @@ public static class Steering
                 }
 
                 _outcomes[id] = outcome;
-                return outcome;
+                if (interrupt && _state != RunState.Ended)
+                {
+                    onInterrupt = RequestInterrupt();
+                }
+
+                result = outcome;
             }
+
+            // The watcher runs outside the lock, so it can call back into the steering object.
+            onInterrupt?.Invoke();
+            return result;
+        }
+
+        // Returns the watcher to call, or null when no model call is watching and the interrupt waits for one.
+        private Action? RequestInterrupt()
+        {
+            var onInterrupt = _onInterrupt;
+            if (onInterrupt == null)
+            {
+                _interruptRequested = true;
+                return null;
+            }
+
+            _onInterrupt = null;
+            return onInterrupt;
         }
 
         private sealed class Run(DefaultSteering owner) : SteeringRun
@@ -319,8 +374,40 @@ public static class Steering
 
                     owner._taken = [.. owner._taken, .. owner._pending];
                     owner._pending = [];
+                    owner._interruptRequested = false;
                     return owner._taken.ConvertAll(taken => taken.Message);
                 }
+            }
+
+            public override Action WatchInterrupt(Action onInterrupt)
+            {
+                lock (owner._gate)
+                {
+                    if (owner._state != RunState.Running)
+                    {
+                        return static () => { };
+                    }
+
+                    if (!owner._interruptRequested)
+                    {
+                        owner._onInterrupt = onInterrupt;
+                        return () =>
+                        {
+                            lock (owner._gate)
+                            {
+                                if (owner._onInterrupt == onInterrupt)
+                                {
+                                    owner._onInterrupt = null;
+                                }
+                            }
+                        };
+                    }
+
+                    owner._interruptRequested = false;
+                }
+
+                onInterrupt();
+                return static () => { };
             }
 
             public override IReadOnlyList<DeliveredSteeringMessage> ResolveTakenMessages(
@@ -375,6 +462,8 @@ public static class Steering
                     owner._pending = [];
                     owner._queued.Clear();
                     owner._state = RunState.Ended;
+                    owner._interruptRequested = false;
+                    owner._onInterrupt = null;
                 }
 
                 foreach (var steer in notDelivered)

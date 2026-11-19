@@ -143,6 +143,24 @@ internal static class Generation
         return stepOptions;
     }
 
+    /// <summary>
+    /// What a step that a steering interrupt cancelled keeps for its redo. The redo is the same step: it keeps its number, its timeout, and the
+    /// steering messages that the step already delivered. Maps to the <c>redo</c> parameter of <c>streamStep</c> and to the state of
+    /// <c>redoInterruptedStepAttempts</c>.
+    /// </summary>
+    private sealed record StepRedo(
+        Instructions? Instructions,
+        List<ModelMessage> Messages,
+        int InstructionCount,
+        ILanguageModel Model,
+        IReadOnlyList<UserModelMessage> SteeringMessages,
+        IReadOnlyList<UserModelMessage> DeliveredSteeringMessages
+    )
+    {
+        // The start-step part of the step was streamed by a cancelled model call.
+        public bool StartStepStreamed { get; set; }
+    }
+
     // Maps to the shouldStartNextStep of generateText and streamText. A step with no client tool calls continues
     // only for a waiting steering message, and `endReason` says why the waiting messages are not delivered when the loop ends.
     // Tracks provider-executed tool calls that support deferred results (e.g. code_execution in programmatic tool calling).
@@ -306,13 +324,38 @@ internal static class Generation
             // why waiting steering messages are not delivered when the loop ends:
             var pendingDeferredToolCalls = new Dictionary<string, string>();
             var steeringEndReason = SteeringNotDeliveredReason.Finished;
+            // A step that a steering interrupt cancelled is made again as the same step:
+            StepRedo? redo = null;
             while (steps.Count < HardStepCap)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                timeouts?.StartStep();
-                var steeringMessages = steeringRun?.TakeMessages()
-                    ?? Array.Empty<UserModelMessage>();
-                messages.AddRange(steeringMessages);
+                if (redo == null)
+                {
+                    timeouts?.StartStep();
+                }
+
+                var takenMessages = steeringRun?.TakeMessages() ?? Array.Empty<UserModelMessage>();
+                IReadOnlyList<UserModelMessage> steeringMessages = takenMessages;
+                if (redo != null)
+                {
+                    // prepareStep runs again for the redo. It gets the instructions and messages that the step started with,
+                    // not the ones that it returned for the cancelled model call:
+                    instructions = redo.Instructions;
+                    messages = [.. redo.Messages];
+                    instructionCount = redo.InstructionCount;
+                    current = redo.Model;
+                    steeringMessages = [.. redo.SteeringMessages, .. takenMessages];
+                }
+
+                messages.AddRange(takenMessages);
+                var stepStart = new StepRedo(
+                    instructions,
+                    [.. messages],
+                    instructionCount,
+                    current,
+                    steeringMessages,
+                    []
+                );
                 var update = PrepareStep(
                     options,
                     steps,
@@ -331,10 +374,17 @@ internal static class Generation
                 }
 
                 // steering messages are delivered when they are in the messages that are sent to the model after prepareStep:
-                var deliveredSteeringMessages = steeringRun
-                    ?.ResolveTakenMessages(steps.Count, messages)
-                    .Select(delivered => delivered.Message)
-                    .ToArray();
+                var deliveredSteeringMessages = new List<UserModelMessage>(
+                    redo?.DeliveredSteeringMessages ?? []
+                );
+                if (steeringRun != null)
+                {
+                    deliveredSteeringMessages.AddRange(
+                        steeringRun
+                            .ResolveTakenMessages(steps.Count, messages)
+                            .Select(delivered => delivered.Message)
+                    );
+                }
 
                 // The model gets a snapshot, because the step appends its own response to `messages` afterwards.
                 var callOptions = CallOptions(options, messages.ToArray());
@@ -382,9 +432,38 @@ internal static class Generation
 
                 var now = options.NowMs ?? DefaultNowMs;
                 var stepStartMs = now();
-                var modelResponse = await current
-                    .DoGenerateAsync(callOptions, cancellationToken)
-                    .ConfigureAwait(false);
+                LanguageModelGenerateResult modelResponse;
+                var interrupt =
+                    steeringRun == null
+                        ? null
+                        : new StepInterrupt(steeringRun, timeouts?.Signal, cancellationToken);
+                try
+                {
+                    if (interrupt != null)
+                    {
+                        callOptions.AbortSignal = interrupt.Signal;
+                    }
+
+                    modelResponse = await current
+                        .DoGenerateAsync(callOptions, interrupt?.Token ?? cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                catch (Exception)
+                    when (interrupt is { IsRequested: true }
+                        // A caller abort or a timeout wins over an interrupt: the run ends instead of making the model call again.
+                        && !cancellationToken.IsCancellationRequested
+                        && timeouts?.Signal.Aborted != true
+                    )
+                {
+                    redo = stepStart with { DeliveredSteeringMessages = deliveredSteeringMessages };
+                    continue;
+                }
+                finally
+                {
+                    interrupt?.Dispose();
+                }
+
+                redo = null;
                 var responseTimeMs = now() - stepStartMs;
                 var generated = await ParseToolCallsAsync(
                         modelResponse,
@@ -833,13 +912,38 @@ internal static class Generation
             // why waiting steering messages are not delivered when the stream ends:
             var pendingDeferredToolCalls = new Dictionary<string, string>();
             var steeringEndReason = SteeringNotDeliveredReason.Finished;
+            // A step that a steering interrupt cancelled is made again as the same step:
+            StepRedo? redo = null;
             while (steps.Count < HardStepCap)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                timeouts?.StartStep();
-                var steeringMessages = steeringRun?.TakeMessages()
-                    ?? Array.Empty<UserModelMessage>();
-                messages.AddRange(steeringMessages);
+                if (redo == null)
+                {
+                    timeouts?.StartStep();
+                }
+
+                var takenMessages = steeringRun?.TakeMessages() ?? Array.Empty<UserModelMessage>();
+                IReadOnlyList<UserModelMessage> steeringMessages = takenMessages;
+                if (redo != null)
+                {
+                    // prepareStep runs again for the redo. It gets the instructions and messages that the step started with,
+                    // not the ones that it returned for the cancelled model call:
+                    instructions = redo.Instructions;
+                    messages = [.. redo.Messages];
+                    instructionCount = redo.InstructionCount;
+                    current = redo.Model;
+                    steeringMessages = [.. redo.SteeringMessages, .. takenMessages];
+                }
+
+                messages.AddRange(takenMessages);
+                var stepStart = new StepRedo(
+                    instructions,
+                    [.. messages],
+                    instructionCount,
+                    current,
+                    steeringMessages,
+                    []
+                );
                 var update = PrepareStep(
                     options,
                     steps,
@@ -863,6 +967,12 @@ internal static class Generation
                     steps.Count,
                     messages
                 ) ?? Array.Empty<DeliveredSteeringMessage>();
+                var stepDeliveredMessages = new List<UserModelMessage>(
+                    redo?.DeliveredSteeringMessages ?? []
+                );
+                stepDeliveredMessages.AddRange(
+                    deliveredSteeringMessages.Select(delivered => delivered.Message)
+                );
                 foreach (var delivered in deliveredSteeringMessages)
                 {
                     buffer.Add(
@@ -874,7 +984,8 @@ internal static class Generation
                 var stepMessages = messages.ToArray();
                 var now = options.NowMs ?? DefaultNowMs;
                 var stepStartMs = now();
-                var stepStarted = false;
+                // The start-step part of a step is streamed once, even when a cancelled model call already streamed it:
+                var stepStarted = redo?.StartStepStreamed == true;
                 var stepResponseId = Vercel.AI.ProviderUtils.JsonValues.GenerateId("aitxt-");
                 var stepResponseTimestamp = DateTimeOffset.UtcNow;
                 var stepResponseModelId = current.ModelId;
@@ -906,14 +1017,44 @@ internal static class Generation
                     options.ProviderOptions,
                     update?.ProviderOptions
                 );
-                streamOptions.CallAbortSignal = timeouts?.Signal ?? options.AbortSignal;
                 streamOptions.IncludeRawChunks = options.Include?.RawChunks == true;
+                using var interrupt =
+                    steeringRun == null
+                        ? null
+                        : new StepInterrupt(
+                            steeringRun,
+                            timeouts?.Signal ?? options.AbortSignal,
+                            cancellationToken
+                        );
+                streamOptions.CallAbortSignal = interrupt?.Signal
+                    ?? timeouts?.Signal
+                    ?? options.AbortSignal;
+                var attemptToken = interrupt?.Token ?? cancellationToken;
+
+                // A caller abort or a timeout wins over an interrupt: the run ends instead of making the model call again.
+                bool IsInterrupted() =>
+                    interrupt is { IsRequested: true }
+                    && !cancellationToken.IsCancellationRequested
+                    && !abort.Stopped
+                    && abort.Error == null
+                    && timeouts?.Signal.Aborted != true
+                    && options.AbortSignal?.Aborted != true;
+
                 StreamLanguageModelCallResult streamResult;
                 try
                 {
                     streamResult = await LanguageModelCallStreaming
-                        .StreamLanguageModelCall(streamOptions, cancellationToken)
+                        .StreamLanguageModelCall(streamOptions, attemptToken)
                         .ConfigureAwait(false);
+                }
+                catch (Exception) when (IsInterrupted())
+                {
+                    redo = stepStart with
+                    {
+                        DeliveredSteeringMessages = stepDeliveredMessages,
+                        StartStepStreamed = stepStarted,
+                    };
+                    continue;
                 }
                 catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
                 {
@@ -950,9 +1091,12 @@ internal static class Generation
                     Body = options.Include?.RequestBody == true ? streamResult.Request?.Body : null,
                     Messages = options.Include?.RequestMessages == true ? stepMessages : null,
                 };
-                var enumerator = streamResult.Stream.GetAsyncEnumerator(cancellationToken);
+                var enumerator = streamResult.Stream.GetAsyncEnumerator(attemptToken);
                 var disposal = abort.Track(streamResult.Disposal);
                 var nextPending = false;
+                // The model call can only be interrupted until it produces output:
+                var interruptWindowClosed = interrupt == null;
+                var attemptInterrupted = false;
                 try
                 {
                     timeouts?.StartFirstChunk();
@@ -960,15 +1104,35 @@ internal static class Generation
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        // A model stream can ignore the token, so race each read against the abort.
+                        // A model stream can ignore the token, so race each read against the abort and the interrupt.
                         var next = enumerator.MoveNextAsync().AsTask();
                         nextPending = true;
-                        if (await Task.WhenAny(next, abort.Signal).ConfigureAwait(false) != next)
+                        var raced = interruptWindowClosed
+                            ? await Task.WhenAny(next, abort.Signal).ConfigureAwait(false)
+                            : await Task.WhenAny(next, abort.Signal, interrupt!.Requested)
+                                .ConfigureAwait(false);
+                        if (raced != next)
                         {
                             _ = next.ContinueWith(
                                 task => _ = task.Exception,
                                 TaskContinuationOptions.OnlyOnFaulted
                             );
+                            if (raced == interrupt?.Requested && IsInterrupted())
+                            {
+                                // The interrupt cancelled the read. A stream cannot be disposed while it is read, so the read gets
+                                // a moment to end:
+                                if (
+                                    await Task.WhenAny(next, Task.Delay(InterruptReadTimeout))
+                                        .ConfigureAwait(false) == next
+                                )
+                                {
+                                    nextPending = false;
+                                }
+
+                                attemptInterrupted = true;
+                                break;
+                            }
+
                             cancellationToken.ThrowIfCancellationRequested();
                         }
 
@@ -979,7 +1143,32 @@ internal static class Generation
                             break;
                         }
 
+                        if (!interruptWindowClosed && IsInterrupted())
+                        {
+                            attemptInterrupted = true;
+                            break;
+                        }
+
                         var part = enumerator.Current;
+                        // A tool input start is not output, but it ends the window as well, because a UI already shows a pending tool call for it.
+                        if (
+                            !interruptWindowClosed
+                            && (
+                                IsOutputPart(part)
+                                || part is ToolInputStartPart
+                                || part is ModelCallEndPart
+                            )
+                        )
+                        {
+                            interruptWindowClosed = true;
+                            if (!interrupt!.TryClose())
+                            {
+                                // An interrupt cancelled the model call as the first output arrived. The output is discarded.
+                                attemptInterrupted = true;
+                                break;
+                            }
+                        }
+
                         if (timeouts != null)
                         {
                             ObserveChunkTimeout(timeouts, part);
@@ -1266,6 +1455,10 @@ internal static class Generation
                         }
                     }
                 }
+                catch (Exception) when (!interruptWindowClosed && IsInterrupted())
+                {
+                    attemptInterrupted = true;
+                }
                 finally
                 {
                     timeouts?.ClearModelOutput();
@@ -1315,6 +1508,18 @@ internal static class Generation
                     }
                 }
 
+                // The step is not finished, its model call is made again:
+                if (attemptInterrupted)
+                {
+                    redo = stepStart with
+                    {
+                        DeliveredSteeringMessages = stepDeliveredMessages,
+                        StartStepStreamed = stepStarted,
+                    };
+                    continue;
+                }
+
+                redo = null;
                 if (!stepStarted)
                 {
                     buffer.Add(new StartStepPart(null, stepRequest));
@@ -1365,7 +1570,7 @@ internal static class Generation
                         stepResponse,
                         null,
                         streamedApprovals,
-                        deliveredSteeringMessages.Select(delivered => delivered.Message).ToArray(),
+                        stepDeliveredMessages,
                         preliminary => buffer.Add(new ToolResultPart(preliminary)),
                         callId
                     )
@@ -1533,6 +1738,9 @@ internal static class Generation
             abort.Dispose();
         }
     }
+
+    // How long an interrupt waits for the read of the cancelled model stream to end before it disposes the stream.
+    private static readonly TimeSpan InterruptReadTimeout = TimeSpan.FromSeconds(5);
 
     // Parts that carry model output. Tells an empty incomplete stream from an incomplete stream with a partial result.
     private static bool IsOutputPart(TextStreamPart part)
