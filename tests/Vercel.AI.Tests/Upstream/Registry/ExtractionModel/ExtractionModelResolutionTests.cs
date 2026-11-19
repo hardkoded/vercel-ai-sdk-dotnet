@@ -24,7 +24,8 @@ public sealed class ExtractionModelResolutionTests : DecisionDefaultProviderFixt
     [Fact]
     [UpstreamTest(
         Prefix + "returns model instances unchanged",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff"
     )]
     public void Returns_model_instances_unchanged()
     {
@@ -34,7 +35,8 @@ public sealed class ExtractionModelResolutionTests : DecisionDefaultProviderFixt
     [Fact]
     [UpstreamTest(
         Prefix + "reports that Gateway has no extraction models yet",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff"
     )]
     public void Reports_that_Gateway_has_no_extraction_models_yet()
     {
@@ -49,7 +51,8 @@ public sealed class ExtractionModelResolutionTests : DecisionDefaultProviderFixt
     [Fact]
     [UpstreamTest(
         Prefix + "requires an explicitly configured default provider to support extraction",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff"
     )]
     public void Requires_an_explicitly_configured_default_provider_to_support_extraction()
     {
@@ -64,7 +67,8 @@ public sealed class ExtractionModelResolutionTests : DecisionDefaultProviderFixt
     [UpstreamTest(
         Prefix
             + "validates versions returned by model instances, aliases, registries, and defaults",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff"
     )]
     public void Validates_versions_returned_by_model_instances_aliases_registries_and_defaults()
     {
@@ -90,7 +94,8 @@ public sealed class ExtractionModelResolutionTests : DecisionDefaultProviderFixt
     [Fact]
     [UpstreamTest(
         Prefix + "preserves errors thrown by provider factories",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff"
     )]
     public void Preserves_errors_thrown_by_provider_factories()
     {
@@ -107,7 +112,8 @@ public sealed class ExtractionModelResolutionTests : DecisionDefaultProviderFixt
     [Fact]
     [UpstreamTest(
         Prefix + "reports missing models returned by the default provider",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff"
     )]
     public void Reports_missing_models_returned_by_the_default_provider()
     {
@@ -125,7 +131,8 @@ public sealed class ExtractionModelResolutionTests : DecisionDefaultProviderFixt
     [InlineData("registry")]
     [UpstreamTest(
         Prefix + "extracts with %s model resolution and forwards options in one call",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff"
     )]
     public async Task Extracts_with_model_resolution_and_forwards_options_in_one_call(
         string resolution

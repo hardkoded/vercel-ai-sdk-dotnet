@@ -21,7 +21,8 @@ public sealed class CustomExtractionModelsTests : DecisionDefaultProviderFixture
     [Fact]
     [UpstreamTest(
         Prefix + "resolves an alias before consulting the fallback",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff"
     )]
     public void Resolves_an_alias_before_consulting_the_fallback()
     {
@@ -41,7 +42,8 @@ public sealed class CustomExtractionModelsTests : DecisionDefaultProviderFixture
     [Fact]
     [UpstreamTest(
         Prefix + "resolves string aliases through the configured default provider",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff"
     )]
     public void Resolves_string_aliases_through_the_configured_default_provider()
     {
@@ -62,6 +64,7 @@ public sealed class CustomExtractionModelsTests : DecisionDefaultProviderFixture
     [UpstreamTest(
         Prefix + "preserves extraction when adapting a legacy fallback",
         Coverage = UpstreamCoverage.Partial,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff",
         Note = "Checks a fallback provider that has an extraction factory. .NET has no ProviderV2 or ProviderV3 to adapt. Issue #391."
     )]
     public void Preserves_extraction_when_adapting_a_legacy_fallback()
@@ -80,7 +83,8 @@ public sealed class CustomExtractionModelsTests : DecisionDefaultProviderFixture
     [InlineData("__proto__")]
     [UpstreamTest(
         Prefix + "reports missing alias %s without treating inherited properties as models",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff"
     )]
     public void Reports_missing_alias_without_treating_inherited_properties_as_models(
         string modelId
@@ -96,7 +100,8 @@ public sealed class CustomExtractionModelsTests : DecisionDefaultProviderFixture
     [Fact]
     [UpstreamTest(
         Prefix + "reports an unavailable fallback model",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff"
     )]
     public void Reports_an_unavailable_fallback_model()
     {

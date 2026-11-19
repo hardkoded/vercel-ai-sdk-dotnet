@@ -20,7 +20,8 @@ public sealed class ExtractionRegistryTests
     [Fact]
     [UpstreamTest(
         Prefix + "preserves model identity, receiver, and colons inside model IDs",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff"
     )]
     public void Preserves_model_identity_receiver_and_colons_inside_model_IDs()
     {
@@ -33,6 +34,7 @@ public sealed class ExtractionRegistryTests
     [UpstreamTest(
         Prefix + "preserves legacy provider extensions and custom separators",
         Coverage = UpstreamCoverage.Partial,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff",
         Note = "Checks the custom separator. .NET has no ProviderV3 to adapt. Issue #391."
     )]
     public void Preserves_legacy_provider_extensions_and_custom_separators()
@@ -50,7 +52,8 @@ public sealed class ExtractionRegistryTests
     [Fact]
     [UpstreamTest(
         Prefix + "preserves the receiver when adapting video models",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff"
     )]
     public void Preserves_the_receiver_when_adapting_video_models()
     {
@@ -65,7 +68,8 @@ public sealed class ExtractionRegistryTests
     [Fact]
     [UpstreamTest(
         Prefix + "identifies unknown providers with the existing marker-based error",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff"
     )]
     public void Identifies_unknown_providers_with_the_existing_marker_based_error()
     {
@@ -100,7 +104,8 @@ public sealed class ExtractionRegistryTests
     [InlineData(true)]
     [UpstreamTest(
         Prefix + "reports missing extraction capabilities or models",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff"
     )]
     public void Reports_missing_extraction_capabilities_or_models(bool hasFactory)
     {
