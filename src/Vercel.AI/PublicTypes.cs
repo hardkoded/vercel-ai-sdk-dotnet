@@ -1298,7 +1298,11 @@ public class GenerateTextOptions
     /// <summary>Called after each step. Maps to <c>onStepEnd</c>.</summary>
     public Func<StepResult, CancellationToken, Task>? OnStepEnd { get; set; }
 
-    /// <summary>Called when generation finishes. Maps to <c>onFinish</c>.</summary>
+    /// <summary>Called when all steps are finished and the response is complete. Maps to <c>onEnd</c>.</summary>
+    public Func<GenerateTextResult, CancellationToken, Task>? OnEnd { get; set; }
+
+    /// <summary>Deprecated alias for <see cref="OnEnd"/>; <see cref="OnEnd"/> wins when both are set. Maps to <c>onFinish</c>.</summary>
+    [Obsolete("Use OnEnd instead.")]
     public Func<GenerateTextResult, CancellationToken, Task>? OnFinish { get; set; }
 
     /// <summary>Called when generation fails. Maps to <c>onError</c>.</summary>
@@ -1481,7 +1485,7 @@ public sealed class StreamTextOptions : GenerateTextOptions
     /// <summary>
     /// Called after the call is aborted, with the steps that finished before it. It does not delay the rejection of the
     /// results. The stream ends with an <see cref="AbortPart"/> after it returns. <see cref="GenerateTextOptions.OnError"/> and
-    /// <see cref="GenerateTextOptions.OnFinish"/> are not called. Maps to <c>onAbort</c>.
+    /// <see cref="GenerateTextOptions.OnEnd"/> are not called. Maps to <c>onAbort</c>.
     /// </summary>
     public Func<StreamAbortContext, CancellationToken, Task>? OnAbort { get; set; }
 }

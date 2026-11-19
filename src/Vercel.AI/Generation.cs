@@ -450,9 +450,19 @@ internal static class Generation
                 telemetry.OnFinish(scope, result.FinishReason);
             }
 
-            if (options.OnFinish != null)
+#pragma warning disable CS0618 // OnFinish is the deprecated alias of OnEnd
+            var onEnd = options.OnEnd ?? options.OnFinish;
+#pragma warning restore CS0618
+            if (onEnd != null)
             {
-                await options.OnFinish(result, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await onEnd(result, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception) when (!cancellationToken.IsCancellationRequested)
+                {
+                    // Errors in callbacks do not break the generation flow (upstream notify).
+                }
             }
 
             return result;
@@ -1326,9 +1336,19 @@ internal static class Generation
                 );
             }
             stepsSource.TrySetResult(result.Steps);
-            if (options.OnFinish != null)
+#pragma warning disable CS0618 // OnFinish is the deprecated alias of OnEnd
+            var onEnd = options.OnEnd ?? options.OnFinish;
+#pragma warning restore CS0618
+            if (onEnd != null)
             {
-                await options.OnFinish(result, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await onEnd(result, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception) when (!cancellationToken.IsCancellationRequested)
+                {
+                    // Errors in callbacks do not break the generation flow (upstream notify).
+                }
             }
 
             buffer.Complete();

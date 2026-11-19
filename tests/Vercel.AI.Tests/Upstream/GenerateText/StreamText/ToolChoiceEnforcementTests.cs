@@ -318,7 +318,7 @@ public sealed class ToolChoiceEnforcementTests
                     errors.Add(error);
                     return Task.CompletedTask;
                 },
-                OnFinish = (e, _) =>
+                OnEnd = (e, _) =>
                 {
                     onEnd.Add(e);
                     return Task.CompletedTask;

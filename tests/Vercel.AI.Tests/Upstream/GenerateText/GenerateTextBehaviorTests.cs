@@ -1182,7 +1182,9 @@ public sealed class GenerateTextBehaviorTests
                     Model = model,
                     Prompt = "prompt",
                     StopWhen = StopWhen.IsStepCount(3),
+#pragma warning disable CS0618 // upstream registers onFinish here
                     OnFinish = onFinish,
+#pragma warning restore CS0618
                     Tools = new[]
                     {
                         Tool.Function("tool1", null, "{\"type\":\"object\"}", (_, _) =>
@@ -1222,7 +1224,9 @@ public sealed class GenerateTextBehaviorTests
                     Model = model,
                     Prompt = "test-input",
                     StopWhen = StopWhen.IsStepCount(3),
+#pragma warning disable CS0618 // upstream registers onFinish here
                     OnFinish = onFinish,
+#pragma warning restore CS0618
                     Tools = new[]
                     {
                         Tool.Function(

@@ -73,7 +73,7 @@ public sealed class AbortSignalHandlingTests
                             modelCallEnds.Add(e);
                             return Task.CompletedTask;
                         },
-                        OnFinish = (_, _) =>
+                        OnEnd = (_, _) =>
                         {
                             finished = true;
                             return Task.CompletedTask;
