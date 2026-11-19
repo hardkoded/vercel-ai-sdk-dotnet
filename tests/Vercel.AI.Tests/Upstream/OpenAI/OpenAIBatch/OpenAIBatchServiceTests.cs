@@ -614,6 +614,9 @@ public sealed class OpenAIBatchServiceTests
             ["reason"] = "input_changed",
             ["cache_missed_tokens"] = 1200,
         };
+        firstBody["input_transformations"] = System.Text.Json.Nodes.JsonNode.Parse(
+            "[{\"id\":\"rs_1\",\"type\":\"reasoning\",\"action\":\"removed\",\"reason\":\"prefix_mismatch\"}]"
+        );
         var first = ResultLine("france", firstBody);
         var second = ResultLine("germany", ResponsesResultBody("Berlin"));
         var handler = new ChunkedHandler()
@@ -645,6 +648,13 @@ public sealed class OpenAIBatchServiceTests
         Assert.Equal("cache_miss", diagnostics.GetProperty("type").GetString());
         Assert.Equal("input_changed", diagnostics.GetProperty("reason").GetString());
         Assert.Equal(1200, diagnostics.GetProperty("cache_missed_tokens").GetInt32());
+        var transformation = Assert.Single(
+            openai.GetProperty("inputTransformations").EnumerateArray()
+        );
+        Assert.Equal("rs_1", transformation.GetProperty("id").GetString());
+        Assert.Equal("reasoning", transformation.GetProperty("type").GetString());
+        Assert.Equal("removed", transformation.GetProperty("action").GetString());
+        Assert.Equal("prefix_mismatch", transformation.GetProperty("reason").GetString());
         Assert.Equal("germany", results[1].Id);
         Assert.Equal("succeeded", results[1].Status);
         Assert.Equal("Berlin", Assert.Single(results[1].Text!.Content).Text);

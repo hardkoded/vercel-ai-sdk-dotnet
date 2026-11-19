@@ -1033,6 +1033,16 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
             openai["promptCacheDiagnostics"] = promptCacheDiagnostics;
         }
 
+        if (
+            OpenAIResponsesLanguageModel.InputTransformations(
+                OpenAIResponsesSchema.ParseResponse(body)?.InputTransformations
+            ) is
+            { } inputTransformations
+        )
+        {
+            openai["inputTransformations"] = inputTransformations;
+        }
+
         var item = new BatchItem("text", id, "succeeded");
         item.Text = new BatchTextGeneration
         {
