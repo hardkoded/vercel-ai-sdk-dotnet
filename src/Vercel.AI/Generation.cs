@@ -2191,7 +2191,8 @@ internal static class Generation
         return tools;
     }
 
-    // The tool result content of an executed tool. ToResponseMessages builds its model output.
+    // .NET-only: the port keeps ExecutedTool apart from GeneratedToolResult, where upstream has one tool-result part. This maps the executed
+    // tool to the step content tool-result that upstream builds in runToolsTransformation/generateText. ToResponseMessages builds its model output.
     private static GeneratedToolResult ToGeneratedToolResult(ExecutedTool executed) =>
         new(
             executed.ToolCallId,
