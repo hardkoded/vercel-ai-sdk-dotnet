@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using Vercel.AI.Provider;
 using static Vercel.AI.Tests.ToResponseMessages.ResponseMessagesAssert;
 
@@ -31,14 +32,41 @@ public sealed class ToolApprovalRequestTests
     [UpstreamTest(
         Prefix + "should preserve schema input when the approved input was transformed",
         Coverage = UpstreamCoverage.Partial,
-        Note = "The tool call is built by hand with InputSchemaInput set. The port's ParseToolCallAsync does not run an input schema transform, so it cannot produce it."
+        Note = "The port's tool input schemas are JSON Schema and have no transform, so the input is transformed with RefineToolInput, which keeps the schema input like upstream's parseToolCall."
     )]
-    public void Should_preserve_schema_input_when_the_approved_input_was_transformed()
+    public async Task Should_preserve_schema_input_when_the_approved_input_was_transformed()
     {
-        var toolCall = new GeneratedToolCall("count-call", "count", "{\"count\":3}")
+        var count = new Tool(
+            "count",
+            null,
+            Json("{\"type\":\"object\",\"properties\":{\"count\":{\"type\":\"string\"}}}"),
+            null
+        );
+        var options = new GenerateTextOptions
         {
-            InputSchemaInput = Json("{\"count\":\"3\"}"),
+            Tools = [count],
+            RefineToolInput = new Dictionary<
+                string,
+                Func<JsonElement, CancellationToken, Task<JsonElement>>
+            >
+            {
+                ["count"] = (input, _) =>
+                    Task.FromResult(
+                        Json(
+                            "{\"count\":" + int.Parse(input.GetProperty("count").GetString()!) + "}"
+                        )
+                    ),
+            },
         };
+        var toolCall = await Generation.ParseToolCallAsync(
+            new GeneratedToolCall("count-call", "count", "{\"count\":\"3\"}"),
+            options,
+            [],
+            null,
+            0,
+            false,
+            CancellationToken.None
+        );
 
         var result = ToResponse(
             [
@@ -48,7 +76,7 @@ public sealed class ToolApprovalRequestTests
                     ToolCall = toolCall,
                 },
             ],
-            [TestTool("count")]
+            [count]
         );
 
         var assistant = Assistant(result, 0);

@@ -2158,6 +2158,7 @@ internal static class Generation
             Dynamic = parsed.Dynamic,
             Invalid = parsed.Invalid,
             Error = parsed.Error,
+            InputSchemaInput = parsed.InputSchemaInput,
             Title = parsed.Title,
             ToolMetadata = parsed.ToolMetadata,
         };
@@ -2616,6 +2617,7 @@ internal static class Generation
         {
             ProviderExecuted = true,
             Dynamic = call.Dynamic,
+            InputSchemaInput = call.InputSchemaInput,
             Title = call.Title,
             ToolMetadata = call.ToolMetadata,
         };

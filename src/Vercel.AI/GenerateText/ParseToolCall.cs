@@ -50,6 +50,12 @@ public sealed class ParsedToolCall
     /// </summary>
     public Exception? Error { get; init; }
 
+    /// <summary>
+    /// The input as it was parsed, before the input schema and <see cref="ParseToolCallOptions.RefineToolInput"/> changed it.
+    /// Maps to <c>setToolCallInputSchemaInput</c>.
+    /// </summary>
+    public JsonElement? InputSchemaInput { get; init; }
+
     /// <summary>Display title of the tool.</summary>
     public string? Title { get; init; }
 
@@ -401,6 +407,8 @@ public static class ToolCallParser
             throw new InvalidToolInputError(toolCall.ToolName, text, exception);
         }
 
+        var schemaInput = input;
+
         // a provider tool's schema is a Zod object upstream, which drops the properties it does not declare before it validates
         if (tool.IsProviderDefined && tool.InputSchema.ValueKind == JsonValueKind.Object)
         {
@@ -448,6 +456,7 @@ public static class ToolCallParser
         return new ParsedToolCall(toolCall.ToolCallId, toolCall.ToolName, input)
         {
             Dynamic = tool.IsDynamic,
+            InputSchemaInput = schemaInput,
             Title = tool.Title,
             ProviderExecuted = toolCall.ProviderExecuted,
             ProviderMetadata = toolCall.ProviderMetadata,
