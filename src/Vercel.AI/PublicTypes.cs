@@ -1391,6 +1391,12 @@ public class GenerateTextOptions
     /// <summary>The sandbox environment that is passed through to tool execution. Maps to <c>experimental_sandbox</c>.</summary>
     public Vercel.AI.ProviderUtils.ISandboxSession? ExperimentalSandbox { get; set; }
 
+    /// <summary>Called when the generation begins, before any model call. An exception it throws is ignored. Maps to <c>onStart</c>.</summary>
+    public Func<GenerateTextStartEvent, CancellationToken, Task>? OnStart { get; set; }
+
+    /// <summary>Called when each step begins, before the provider is called. An exception it throws is ignored. Maps to <c>onStepStart</c>.</summary>
+    public Func<GenerateTextStepStartEvent, CancellationToken, Task>? OnStepStart { get; set; }
+
     /// <summary>
     /// Called immediately before each provider model call begins. An exception it throws is ignored.
     /// Maps to <c>onLanguageModelCallStart</c>.
@@ -1495,6 +1501,137 @@ public class GenerateTextOptions
         string,
         Func<JsonElement, CancellationToken, Task<JsonElement>>
     >? RefineToolInput { get; set; }
+}
+
+/// <summary>Passed to <see cref="GenerateTextOptions.OnStart"/> when the generation begins, before any model call. Maps to <c>GenerateTextStartEvent</c>.</summary>
+public sealed class GenerateTextStartEvent
+{
+    /// <summary>Unique identifier for this generation call, used to correlate events. Maps to <c>callId</c>.</summary>
+    public string CallId { get; init; } = string.Empty;
+
+    /// <summary>Identifies the operation type, <c>ai.generateText</c>. Maps to <c>operationId</c>.</summary>
+    public string OperationId { get; init; } = "ai.generateText";
+
+    /// <summary>The provider identifier. Maps to <c>provider</c>.</summary>
+    public string Provider { get; init; } = string.Empty;
+
+    /// <summary>The model identifier. Maps to <c>modelId</c>.</summary>
+    public string ModelId { get; init; } = string.Empty;
+
+    /// <summary>Instructions of the call. Maps to <c>instructions</c>.</summary>
+    public Instructions? Instructions { get; init; }
+
+    /// <summary>Messages of the call, without the instructions. Maps to <c>messages</c>.</summary>
+    public IReadOnlyList<ModelMessage> Messages { get; init; } = [];
+
+    /// <summary>The tools available for this generation. Maps to <c>tools</c>.</summary>
+    public IReadOnlyList<Tool>? Tools { get; init; }
+
+    /// <summary>The tool choice strategy for this generation. Maps to <c>toolChoice</c>.</summary>
+    public ToolChoice? ToolChoice { get; init; }
+
+    /// <summary>Limits which tools are available for the model to call. Maps to <c>activeTools</c>.</summary>
+    public IReadOnlyList<string>? ActiveTools { get; init; }
+
+    /// <summary>Controls the order in which tools are sent to the provider. Maps to <c>toolOrder</c>.</summary>
+    public IReadOnlyList<string>? ToolOrder { get; init; }
+
+    /// <summary>Maximum output tokens. Maps to <c>maxOutputTokens</c>.</summary>
+    public int? MaxOutputTokens { get; init; }
+
+    /// <summary>Temperature. Maps to <c>temperature</c>.</summary>
+    public double? Temperature { get; init; }
+
+    /// <summary>Top-p. Maps to <c>topP</c>.</summary>
+    public double? TopP { get; init; }
+
+    /// <summary>Top-k. Maps to <c>topK</c>.</summary>
+    public int? TopK { get; init; }
+
+    /// <summary>Presence penalty. Maps to <c>presencePenalty</c>.</summary>
+    public double? PresencePenalty { get; init; }
+
+    /// <summary>Frequency penalty. Maps to <c>frequencyPenalty</c>.</summary>
+    public double? FrequencyPenalty { get; init; }
+
+    /// <summary>Stop sequences. Maps to <c>stopSequences</c>.</summary>
+    public IReadOnlyList<string>? StopSequences { get; init; }
+
+    /// <summary>Seed. Maps to <c>seed</c>.</summary>
+    public int? Seed { get; init; }
+
+    /// <summary>Reasoning effort. Maps to <c>reasoning</c>.</summary>
+    public string? Reasoning { get; init; }
+
+    /// <summary>Maximum number of retries for failed requests. Maps to <c>maxRetries</c>.</summary>
+    public int MaxRetries { get; init; }
+
+    /// <summary>Timeout configuration for the generation. Maps to <c>timeout</c>.</summary>
+    public TimeoutConfiguration? Timeout { get; init; }
+
+    /// <summary>Additional HTTP headers sent with the request. Maps to <c>headers</c>.</summary>
+    public IReadOnlyDictionary<string, string?>? Headers { get; init; }
+
+    /// <summary>Additional provider-specific options. Maps to <c>providerOptions</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
+
+    /// <summary>The output specification for structured outputs, if configured. Maps to <c>output</c>.</summary>
+    public OutputSpec? Output { get; init; }
+
+    /// <summary>Tool context, keyed by tool name. Maps to <c>toolsContext</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ToolsContext { get; init; }
+
+    /// <summary>User-defined runtime context. Maps to <c>runtimeContext</c>.</summary>
+    public IReadOnlyDictionary<string, object?>? RuntimeContext { get; init; }
+}
+
+/// <summary>Passed to <see cref="GenerateTextOptions.OnStepStart"/> when a step begins, before the provider is called. Maps to <c>GenerateTextStepStartEvent</c>.</summary>
+public sealed class GenerateTextStepStartEvent
+{
+    /// <summary>Unique identifier for this generation call, used to correlate events. Maps to <c>callId</c>.</summary>
+    public string CallId { get; init; } = string.Empty;
+
+    /// <summary>The provider identifier. Maps to <c>provider</c>.</summary>
+    public string Provider { get; init; } = string.Empty;
+
+    /// <summary>The model identifier. Maps to <c>modelId</c>.</summary>
+    public string ModelId { get; init; } = string.Empty;
+
+    /// <summary>Zero-based index of the current step. Maps to <c>stepNumber</c>.</summary>
+    public int StepNumber { get; init; }
+
+    /// <summary>Instructions of the step. Maps to <c>instructions</c>.</summary>
+    public Instructions? Instructions { get; init; }
+
+    /// <summary>Messages of the step, without the instructions. Maps to <c>messages</c>.</summary>
+    public IReadOnlyList<ModelMessage> Messages { get; init; } = [];
+
+    /// <summary>The tools available for this generation. Maps to <c>tools</c>.</summary>
+    public IReadOnlyList<Tool>? Tools { get; init; }
+
+    /// <summary>The tool choice configuration for this step. Maps to <c>toolChoice</c>.</summary>
+    public ToolChoice? ToolChoice { get; init; }
+
+    /// <summary>Limits which tools are available for this step. Maps to <c>activeTools</c>.</summary>
+    public IReadOnlyList<string>? ActiveTools { get; init; }
+
+    /// <summary>Controls the order in which tools are sent to the provider for this step. Maps to <c>toolOrder</c>.</summary>
+    public IReadOnlyList<string>? ToolOrder { get; init; }
+
+    /// <summary>Results of the previous steps, empty for the first step. Maps to <c>steps</c>.</summary>
+    public IReadOnlyList<StepResult> Steps { get; init; } = [];
+
+    /// <summary>Additional provider-specific options for this step. Maps to <c>providerOptions</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
+
+    /// <summary>The output specification for structured outputs, if configured. Maps to <c>output</c>.</summary>
+    public OutputSpec? Output { get; init; }
+
+    /// <summary>User-defined runtime context. Maps to <c>runtimeContext</c>.</summary>
+    public IReadOnlyDictionary<string, object?>? RuntimeContext { get; init; }
+
+    /// <summary>Tool context, keyed by tool name. Maps to <c>toolsContext</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ToolsContext { get; init; }
 }
 
 /// <summary>Passed to <see cref="GenerateTextOptions.OnLanguageModelCallStart"/> before the model is called.</summary>

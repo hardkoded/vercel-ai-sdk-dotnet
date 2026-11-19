@@ -281,7 +281,9 @@ internal static class Generation
         var steeringRun = Steering.StartSteeringRun(options.ExperimentalSteering);
         try
         {
-            Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(options.MaxRetries);
+            var resolvedMaxRetries = Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
+                options.MaxRetries
+            );
             ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency);
             WarnUnsupportedTimeouts(options, model);
             using var scope = telemetry?.Begin("generateText", model.ModelId);
@@ -292,6 +294,46 @@ internal static class Generation
             var initialMessages = messages.Skip(instructionCount).ToArray();
             var responseMessages = new List<ModelMessage>();
             var callId = (options.GenerateCallId ?? NewCallId)();
+            if (options.OnStart != null)
+            {
+                await NotifyAsync(
+                        () =>
+                            options.OnStart(
+                                new GenerateTextStartEvent
+                                {
+                                    CallId = callId,
+                                    Provider = model.Provider,
+                                    ModelId = model.ModelId,
+                                    Instructions = initialInstructions,
+                                    Messages = initialMessages,
+                                    Tools = options.Tools,
+                                    ToolChoice = options.ToolChoice,
+                                    ActiveTools = options.ActiveTools,
+                                    ToolOrder = options.ToolOrder,
+                                    MaxOutputTokens = options.MaxOutputTokens,
+                                    Temperature = options.Temperature,
+                                    TopP = options.TopP,
+                                    TopK = options.TopK,
+                                    PresencePenalty = options.PresencePenalty,
+                                    FrequencyPenalty = options.FrequencyPenalty,
+                                    StopSequences = options.StopSequences,
+                                    Seed = options.Seed,
+                                    Reasoning = options.Reasoning,
+                                    MaxRetries = resolvedMaxRetries,
+                                    Timeout = options.Timeout,
+                                    Headers = options.Headers,
+                                    ProviderOptions = options.ProviderOptions,
+                                    Output = options.Output,
+                                    ToolsContext = options.ToolsContext,
+                                    RuntimeContext = options.RuntimeContext,
+                                },
+                                cancellationToken
+                            ),
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
+            }
+
             await ProcessInitialApprovalsAsync(
                     options,
                     messages,
@@ -359,6 +401,36 @@ internal static class Generation
                         current.Provider.Split('.')[0]
                     )
                     .ConfigureAwait(false);
+
+                if (options.OnStepStart != null)
+                {
+                    await NotifyAsync(
+                            () =>
+                                options.OnStepStart(
+                                    new GenerateTextStepStartEvent
+                                    {
+                                        CallId = callId,
+                                        Provider = current.Provider,
+                                        ModelId = current.ModelId,
+                                        StepNumber = steps.Count,
+                                        Instructions = instructions,
+                                        Messages = messages.Skip(instructionCount).ToArray(),
+                                        Tools = options.Tools,
+                                        ToolChoice = update?.ToolChoice ?? options.ToolChoice,
+                                        ActiveTools = options.ActiveTools,
+                                        ToolOrder = update?.ToolOrder ?? options.ToolOrder,
+                                        Steps = steps.ToArray(),
+                                        ProviderOptions = callOptions.ProviderOptions,
+                                        Output = options.Output,
+                                        ToolsContext = options.ToolsContext,
+                                        RuntimeContext = options.RuntimeContext,
+                                    },
+                                    cancellationToken
+                                ),
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false);
+                }
 
                 if (options.OnLanguageModelCallStart != null)
                 {
