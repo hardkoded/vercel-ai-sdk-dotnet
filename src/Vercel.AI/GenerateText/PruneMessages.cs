@@ -145,7 +145,9 @@ public static class MessagePruning
             throw new ArgumentNullException(nameof(options));
         }
 
-        var groups = Group(options.Messages ?? Array.Empty<ModelMessage>());
+        var groups = Group(
+            ToolModelMessage.ExpandApprovalResponses(options.Messages ?? Array.Empty<ModelMessage>())
+        );
 
         if (options.Reasoning != PruneReasoning.None)
         {

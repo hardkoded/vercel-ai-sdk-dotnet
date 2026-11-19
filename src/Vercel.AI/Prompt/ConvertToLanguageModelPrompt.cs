@@ -32,6 +32,7 @@ public static class LanguageModelPrompts
             throw new ArgumentNullException(nameof(messages));
         }
 
+        messages = ToolModelMessage.ExpandApprovalResponses(messages);
         var downloaded = await DownloadAssetsAsync(
                 messages,
                 download ?? DefaultDownloadFunction.Create(null, abortSignal),

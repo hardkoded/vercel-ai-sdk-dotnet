@@ -67,32 +67,31 @@ public sealed class WhenASingleToolIsAutomaticallyApprovedTests
     [Fact]
     [UpstreamTest(
         Id + "should produce response messages with automatic approval metadata",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Upstream puts the approval response and the tool result in one tool message. The port keeps the approval response as its own tool-role message, followed by the tool message."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_produce_response_messages_with_automatic_approval_metadata()
     {
         var run = await RunAsync();
 
         var messages = await run.Result.ResponseMessages;
-        Assert.Equal(4, messages.Count);
+        Assert.Equal(3, messages.Count);
         var assistant = Assert.IsType<AssistantModelMessage>(messages[0]);
         Assert.Equal(2, assistant.Parts.Count);
         AssertToolCallPart(assistant.Parts[0], "call-1", "tool1", "{\"value\":\"value\"}");
         AssertApprovalRequestPart(assistant.Parts[1], "id-1", "call-1", isAutomatic: true);
-        var response = Assert.IsType<ToolApprovalResponseModelMessage>(messages[1]);
+        var response = Assert.Single(Assert.IsType<ToolModelMessage>(messages[1]).ApprovalResponses);
         Assert.Equal("id-1", response.ApprovalId);
         Assert.True(response.Approved);
         Assert.False(response.ProviderExecuted);
         Assert.Equal("trusted internal tool", response.Reason);
         AssertToolResult(
-            Assert.IsType<ToolModelMessage>(messages[2]),
+            Assert.IsType<ToolModelMessage>(messages[1]),
             "call-1",
             "tool1",
             "text",
             "result1"
         );
-        AssertText(messages[3], "Hello, world!");
+        AssertText(messages[2], "Hello, world!");
     }
 
     [Fact]
