@@ -3211,7 +3211,7 @@ internal static class Generation
                     )
                     : new LanguageModelTool(
                         tool.Name,
-                        tool.Description,
+                        ResolveToolDescription(tool, options),
                         tool.InputSchema,
                         tool.Strict
                     )
@@ -3222,6 +3222,28 @@ internal static class Generation
         }
 
         return tools;
+    }
+
+    // Maps to resolveToolDescription in prepare-tools.ts.
+    private static string? ResolveToolDescription(Tool tool, GenerateTextOptions options)
+    {
+        if (tool.DescriptionFactory == null)
+        {
+            return tool.Description;
+        }
+
+        object? context = null;
+        if (options.ToolsContext != null && options.ToolsContext.TryGetValue(tool.Name, out var value))
+        {
+            context = value;
+        }
+
+        return tool.DescriptionFactory(
+            new Vercel.AI.Prompt.ToolDescriptionContext(
+                context,
+                options.ExperimentalSandbox?.Description
+            )
+        );
     }
 
     private static bool Contains(IReadOnlyList<string> names, string name)

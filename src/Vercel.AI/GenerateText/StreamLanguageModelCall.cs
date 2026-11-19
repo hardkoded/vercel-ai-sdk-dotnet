@@ -133,6 +133,19 @@ internal sealed class LanguageModelCallStartEvent
     public LanguageModelCallOptions CallOptions { get; init; } = new();
 }
 
+/// <summary>
+/// The parameters of the <c>executeLanguageModelCallInTelemetryContext</c> wrapper.
+/// Maps to <c>Partial&lt;LanguageModelCallStartEvent&gt; &amp; { callId, execute }</c>.
+/// </summary>
+internal sealed record ExecuteLanguageModelCallInTelemetryContextParams(
+    LanguageModelCallStartEvent Event,
+    Func<Task<LanguageModelStreamResult>> Execute
+)
+{
+    /// <summary>Id of the model call.</summary>
+    public string CallId => Event.CallId;
+}
+
 /// <summary>Options of <see cref="LanguageModelCallStreaming.StreamLanguageModelCall"/>.</summary>
 internal sealed class StreamLanguageModelCallOptions : GenerateTextOptions
 {
@@ -148,6 +161,15 @@ internal sealed class StreamLanguageModelCallOptions : GenerateTextOptions
         CancellationToken,
         Task
     >? OnLanguageModelCallStart { get; set; }
+
+    /// <summary>
+    /// Runs the model call in a telemetry-integration-specific context. Receives the start event of the call and an
+    /// <c>Execute</c> function that performs it. Maps to <c>executeLanguageModelCallInTelemetryContext</c>.
+    /// </summary>
+    public Func<
+        ExecuteLanguageModelCallInTelemetryContextParams,
+        Task<LanguageModelStreamResult>
+    >? ExecuteLanguageModelCallInTelemetryContext { get; set; }
 
     /// <summary>Generates the id of the call. Maps to <c>_internal.generateCallId</c>.</summary>
     public Func<string>? GenerateCallId { get; set; }
@@ -242,24 +264,21 @@ internal static class LanguageModelCallStreaming
             )
             .ConfigureAwait(false);
 
+        var startEvent = new LanguageModelCallStartEvent
+        {
+            CallId = effectiveCallId,
+            Provider = model.Provider,
+            ModelId = model.ModelId,
+            Instructions = instructions,
+            Messages = messages.Skip(instructionCount).ToArray(),
+            Tools = callOptions.Tools,
+            CallOptions = callOptions,
+        };
         if (options.OnLanguageModelCallStart != null)
         {
             await Generation
                 .NotifyAsync(
-                    () =>
-                        options.OnLanguageModelCallStart(
-                            new LanguageModelCallStartEvent
-                            {
-                                CallId = effectiveCallId,
-                                Provider = model.Provider,
-                                ModelId = model.ModelId,
-                                Instructions = instructions,
-                                Messages = messages.Skip(instructionCount).ToArray(),
-                                Tools = callOptions.Tools,
-                                CallOptions = callOptions,
-                            },
-                            cancellationToken
-                        ),
+                    () => options.OnLanguageModelCallStart(startEvent, cancellationToken),
                     cancellationToken
                 )
                 .ConfigureAwait(false);
@@ -267,9 +286,13 @@ internal static class LanguageModelCallStreaming
 
         var now = options.NowMs ?? Generation.DefaultNowMs;
         var callStartTimestampMs = now();
-        var streamResult = await model
-            .DoStreamAsync(callOptions, cancellationToken)
-            .ConfigureAwait(false);
+        Task<LanguageModelStreamResult> Execute() =>
+            model.DoStreamAsync(callOptions, cancellationToken);
+        var streamResult = await (
+            options.ExecuteLanguageModelCallInTelemetryContext is { } wrap
+                ? wrap(new ExecuteLanguageModelCallInTelemetryContextParams(startEvent, Execute))
+                : Execute()
+        ).ConfigureAwait(false);
 
         IAsyncEnumerator<LanguageModelStreamPart> enumerator;
         try
