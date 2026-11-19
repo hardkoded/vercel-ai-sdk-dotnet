@@ -259,6 +259,8 @@ static async IAsyncEnumerable<string> Attractions(string city)
 
 `StreamTextAsync` emits each streamed output as a `ToolResultPart` whose `ExecutedTool.Preliminary` is true, then one final `ToolResultPart` with the last output. In the UI message stream, a preliminary result is a `tool-output-available` chunk with `preliminary: true`. Only the final result reaches `StepResult.ToolResults`, the step content, and the model. `GenerateTextAsync` runs the tool the same way and keeps only the final result. A tool that yields nothing has the output `null`.
 
+A provider-executed tool can stream preliminary results too, such as the partial images of OpenAI image generation. `ToolResultStreamPart.Preliminary` marks them, `StreamTextAsync` forwards the flag on the `ToolResultPart`, and only the final result reaches the step content.
+
 The approval flow of `streamText` is not ported yet ([#847](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/847)), so an approved call does not stream its preliminary results.
 
 ## Custom tools

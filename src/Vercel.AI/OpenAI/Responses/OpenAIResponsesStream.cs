@@ -320,6 +320,23 @@ internal sealed class OpenAIResponsesStream
                 }
 
                 break;
+            case OpenAIResponsesApi.ImageGenerationCallPartialImage partialImage:
+                parts.Add(
+                    new ToolResultStreamPart(
+                        partialImage.ItemId,
+                        ToCustomToolName("image_generation"),
+                        JsonSerializer.SerializeToElement(
+                            new Dictionary<string, string>
+                            {
+                                ["result"] = partialImage.PartialImageB64,
+                            }
+                        )
+                    )
+                    {
+                        Preliminary = true,
+                    }
+                );
+                break;
             case OpenAIResponsesApi.OutputItemDone done:
                 OutputItemDone(parts, done);
                 break;

@@ -1165,7 +1165,11 @@ internal static class Generation
                                 buffer.Add(approvalRequest);
                                 break;
                             case ToolResultPart { Result.ProviderExecuted: true } providerResult:
-                                RecordProviderResult(providerResult.Result);
+                                if (providerResult.Result.Preliminary != true)
+                                {
+                                    RecordProviderResult(providerResult.Result);
+                                }
+
                                 buffer.Add(providerResult);
                                 break;
                             case ToolErrorPart { Result.ProviderExecuted: true } providerError:
@@ -1868,7 +1872,8 @@ internal static class Generation
 
     internal static ExecutedTool ProviderExecutedResult(
         GeneratedToolResult result,
-        IReadOnlyList<GeneratedToolCall> toolCalls
+        IReadOnlyList<GeneratedToolCall> toolCalls,
+        bool? preliminary = null
     )
     {
         string? input = null;
@@ -1895,6 +1900,7 @@ internal static class Generation
             Dynamic = matched?.Dynamic ?? false,
             Title = matched?.Title,
             ToolMetadata = matched?.ToolMetadata,
+            Preliminary = preliminary,
         };
     }
 
