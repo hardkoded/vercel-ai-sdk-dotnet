@@ -964,6 +964,16 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             )
             .WithRedactRawResponse(
                 RedactOpenAIToolCredentials.WithOpenAIResponseRedaction(document.RootElement).Redact
+            )
+            .WithRequest(
+                new LanguageModelStreamRequest(JsonSerializer.SerializeToElement(prepared.Body))
+                {
+                    RedactBody = RedactOpenAIToolCredentials
+                        .WithOpenAIResponseRedaction(
+                            JsonSerializer.SerializeToElement(prepared.Body)
+                        )
+                        .Redact,
+                }
             );
     }
 
