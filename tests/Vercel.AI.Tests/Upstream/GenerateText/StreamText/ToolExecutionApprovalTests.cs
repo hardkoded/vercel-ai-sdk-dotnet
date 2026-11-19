@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.AspNetCore;
 using Vercel.AI.GenerateText;
@@ -15,6 +16,9 @@ namespace Vercel.AI.Tests.Upstream.GenerateText.StreamText;
 /// <summary>Port of <c>stream-text.test.ts</c> &gt; <c>streamText &gt; tool execution approval</c>.</summary>
 public sealed class ToolExecutionApprovalTests
 {
+    private const string CountSchema =
+        "{\"type\":\"object\",\"properties\":{\"count\":{\"type\":\"string\"}},\"required\":[\"count\"],\"additionalProperties\":false}";
+
     private const string Id =
         "packages/ai/src/generate-text/stream-text.test.ts::streamText > tool execution approval::";
 
@@ -137,6 +141,100 @@ public sealed class ToolExecutionApprovalTests
         var part = Assert.Single(assistant.Parts.OfType<AssistantToolApprovalRequestPart>());
         Assert.Equal("id-1", part.ApprovalId);
         Assert.Equal("requires operator review", part.Reason);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Id
+            + "should execute transformed approved input after a persisted UI message round trip",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_execute_transformed_approved_input_after_a_persisted_UI_message_round_trip()
+    {
+        var executeInputs = new List<string>();
+        var tool = Tool.Function(
+            "count",
+            null,
+            CountSchema,
+            (input, _) =>
+            {
+                executeInputs.Add(input.GetRawText());
+                return Task.FromResult(input.GetProperty("count").GetInt32().ToString());
+            }
+        );
+        tool.InputTransform = input =>
+            JsonSerializer.SerializeToElement(
+                new { count = double.Parse(input.GetProperty("count").GetString()!) }
+            );
+        var tools = new[] { tool };
+        var toolsByName = new Dictionary<string, Tool> { ["count"] = tool };
+
+        var firstResult = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = new ScriptedModel(_ =>
+                        new LanguageModelStreamPart[]
+                        {
+                            new StreamStartStreamPart(Array.Empty<CallWarning>()),
+                            new ToolCallStreamPart("count-call", "count", "{\"count\":\"3\"}"),
+                            new FinishStreamPart(FinishReason.ToolCalls, ToolExecutionApprovalStreamSupport.Usage, null),
+                        }
+                    ),
+                    Tools = tools,
+                    ToolApproval = new ToolApprovalConfiguration { { "count", "user-approval" } },
+                    Prompt = "Count three items.",
+                    GenerateId = StreamMockId("id"),
+                    NowMs = () => 0,
+                }
+            );
+
+        var uiMessage = await ReadLastUiMessageAsync(await UiChunksAsync(firstResult));
+        var persisted = (JsonObject)
+            JsonNode.Parse(UIMessageJson.ToJson(uiMessage).ToJsonString())!;
+        var toolPart = persisted["parts"]!
+            .AsArray()
+            .Select(part => part!.AsObject())
+            .FirstOrDefault(part => part["type"]!.GetValue<string>() == "tool-count");
+
+        if (toolPart == null || toolPart["state"]!.GetValue<string>() != "approval-requested")
+        {
+            throw new InvalidOperationException("Expected a count tool approval request.");
+        }
+
+        toolPart["state"] = "approval-responded";
+        toolPart["approval"]!["approved"] = true;
+
+        var validatedMessages = await UIMessageValidation.ValidateUIMessagesAsync(
+            new ValidateUIMessagesOptions
+            {
+                Messages = new[] { UIMessageJson.FromJson(persisted) },
+                Tools = toolsByName,
+            }
+        );
+        var modelMessages = UIMessageConversion.ConvertToModelMessages(
+            validatedMessages,
+            new ConvertToModelMessagesOptions { Tools = toolsByName }
+        );
+
+        var secondResult = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = new ScriptedModel(_ => TextStep("Done")),
+                    Tools = tools,
+                    ToolApproval = new ToolApprovalConfiguration { { "count", "user-approval" } },
+                    Messages = new ModelMessage[]
+                    {
+                        new UserModelMessage("Count three items."),
+                    }
+                        .Concat(modelMessages)
+                        .ToArray(),
+                }
+            );
+
+        Assert.Equal("Done", await secondResult.Text);
+        Assert.Equal(["{\"count\":3}"], executeInputs);
     }
 
     [Fact]
