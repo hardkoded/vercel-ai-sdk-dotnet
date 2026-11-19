@@ -355,6 +355,19 @@ internal static class UIMessageValidation
                     ToSchema(tool.InputSchema),
                     inputContext
                 ) ?? validatedInput;
+
+                // A Zod schema's parse returns its output, so the transform of the schema applies to the validated input.
+                if (tool.InputTransform != null && inputToValidate != null)
+                {
+                    try
+                    {
+                        validatedInput = tool.InputTransform(validatedInput);
+                    }
+                    catch (Exception error) when (error is not OperationCanceledException)
+                    {
+                        throw new TypeValidationException(inputToValidate, error, inputContext);
+                    }
+                }
             }
             catch (TypeValidationException error)
             {
