@@ -41,9 +41,6 @@ public static class RequestOrigin
             return request;
         }
 
-        return new LanguageModelStreamRequest(request.Body)
-        {
-            Url = GetRequestOrigin(request.Url),
-        };
+        return new LanguageModelStreamRequest(request.Body) { Url = GetRequestOrigin(request.Url) };
     }
 }

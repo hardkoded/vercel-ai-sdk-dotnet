@@ -371,12 +371,12 @@ internal static class Generation
                                         TimeSpan.FromMilliseconds(responseTimeMs)
                                     )
                                     {
-                                        Request =
-                                            RequestOrigin.GetRequestOrigin(
-                                                modelResponse.Request?.Url
-                                            ) is { } origin
-                                                ? new LanguageModelStreamRequest { Url = origin }
-                                                : null,
+                                        Request = RequestOrigin.GetRequestOrigin(
+                                            modelResponse.Request?.Url
+                                        )
+                                            is { } origin
+                                            ? new LanguageModelStreamRequest { Url = origin }
+                                            : null,
                                     },
                                     cancellationToken
                                 ),

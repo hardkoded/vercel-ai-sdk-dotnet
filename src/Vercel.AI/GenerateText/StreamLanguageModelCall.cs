@@ -844,7 +844,8 @@ internal static class LanguageModelCallStreaming
                                 )
                                 {
                                     CallId = callId,
-                                    Request = RequestOrigin.GetRequestOrigin(request?.Url) is { } origin
+                                    Request = RequestOrigin.GetRequestOrigin(request?.Url)
+                                        is { } origin
                                         ? new LanguageModelStreamRequest { Url = origin }
                                         : null,
                                     Performance = performance,
