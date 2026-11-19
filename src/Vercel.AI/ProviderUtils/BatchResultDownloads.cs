@@ -22,6 +22,9 @@ public abstract class BatchResultsApiBase : IBatchApi
     public abstract string Provider { get; }
 
     /// <inheritdoc />
+    public abstract IReadOnlyDictionary<string, string> SupportedUrls { get; }
+
+    /// <inheritdoc />
     public virtual bool CanCancel => false;
 
     /// <inheritdoc />

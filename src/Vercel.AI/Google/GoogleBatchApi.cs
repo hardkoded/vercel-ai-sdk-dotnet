@@ -23,6 +23,11 @@ public sealed class GoogleBatchApi : BatchResultsApiBase
     public override string Provider => _provider.ModelProvider + ".batch";
 
     /// <inheritdoc />
+    /// <remarks>Batch prompt conversion happens before the model is known, so only URL support shared by every batch model is advertised.</remarks>
+    public override IReadOnlyDictionary<string, string> SupportedUrls =>
+        _provider.GetSupportedUrls(null);
+
+    /// <inheritdoc />
     public override async Task<IAsyncEnumerable<BatchItem>> DoGetResultsAsync(
         BatchOperationCall call,
         CancellationToken cancellationToken

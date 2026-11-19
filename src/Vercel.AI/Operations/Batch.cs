@@ -779,6 +779,9 @@ public interface IBatchApi
     /// <summary>Provider id.</summary>
     string Provider { get; }
 
+    /// <summary>Supported URL patterns (regular expression text) by media type for requests in this batch API.</summary>
+    IReadOnlyDictionary<string, string> SupportedUrls { get; }
+
     /// <summary>True when cancellation is implemented.</summary>
     bool CanCancel { get; }
 

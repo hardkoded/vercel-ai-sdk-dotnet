@@ -38,6 +38,10 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
     }
 
     /// <inheritdoc />
+    public override IReadOnlyDictionary<string, string> SupportedUrls =>
+        OpenAIResponsesLanguageModel.ResponsesSupportedUrls;
+
+    /// <inheritdoc />
     public override string Provider => _provider.Name + ".batch";
 
     /// <inheritdoc />
