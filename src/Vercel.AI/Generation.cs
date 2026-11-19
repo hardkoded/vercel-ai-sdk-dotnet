@@ -530,6 +530,11 @@ internal static class Generation
         Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(options.MaxRetries);
         ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency);
         var buffer = new PartBuffer();
+        if (options.Output is { IsJson: true } outputSpecification)
+        {
+            buffer.Transform = new OutputTransformStream(outputSpecification).Transform;
+        }
+
         var textSource = new TaskCompletionSource<string>(
             TaskCreationOptions.RunContinuationsAsynchronously
         );
@@ -3342,6 +3347,20 @@ internal static class Generation
             }
         }
 
+        // Without a JSON output, the output is the text of a stop response or a non-empty response that is not a tool call.
+        // Maps to `output ?? text()`.
+        if (
+            parseOutput
+            && outputSpec is not { IsJson: true }
+            && (
+                last.FinishReason == FinishReason.Stop
+                || (last.FinishReason != FinishReason.ToolCalls && last.Text.Length > 0)
+            )
+        )
+        {
+            output = JsonSerializer.SerializeToElement(last.Text);
+        }
+
         return new GenerateTextResult(
             last.Text,
             last.ReasoningText,
@@ -3608,6 +3627,154 @@ internal sealed class EnumeratorDisposal
     }
 }
 
+// Maps to createOutputTransformStream. Text deltas are held back until the partial output changes, so that each published
+// delta carries the partial output that its text produces. The array output parses only the new text of each delta.
+internal sealed class OutputTransformStream
+{
+    private readonly OutputSpec _output;
+    private string? _firstTextChunkId;
+    private readonly StringBuilder _text = new();
+    private readonly StringBuilder _textChunk = new();
+    private JsonElement? _textProviderMetadata;
+    private Util.ArrayOutputStreamParser? _arrayStreamParser;
+    private JsonElement? _lastArrayPartial;
+    private string? _lastPublishedValue;
+    private bool _hasPublishedValue;
+
+    public OutputTransformStream(OutputSpec output)
+    {
+        _output = output;
+        _arrayStreamParser = Util.ArrayOutputStream.CreateArrayStreamParser(output);
+    }
+
+    public IEnumerable<TextStreamPart> Transform(TextStreamPart chunk)
+    {
+        if (chunk is StartStepPart)
+        {
+            ResetOutputState();
+        }
+
+        // Ensure that the last text chunk is published before the step finish.
+        if (chunk is StepFinishPart && _textChunk.Length > 0)
+        {
+            yield return PublishTextChunk(null);
+        }
+
+        if (chunk is not (TextDeltaPart or TextStartPart or TextEndPart))
+        {
+            yield return chunk;
+            yield break;
+        }
+
+        // The partial output follows the first text block of the step.
+        var id = chunk switch
+        {
+            TextDeltaPart delta => delta.Id,
+            TextStartPart start => start.Id,
+            _ => ((TextEndPart)chunk).Id,
+        };
+        if (_firstTextChunkId == null)
+        {
+            _firstTextChunkId = id;
+        }
+        else if (id != _firstTextChunkId)
+        {
+            yield return chunk;
+            yield break;
+        }
+
+        if (chunk is TextStartPart)
+        {
+            yield return chunk;
+            yield break;
+        }
+
+        if (chunk is TextEndPart)
+        {
+            if (_textChunk.Length > 0)
+            {
+                yield return PublishTextChunk(null);
+            }
+
+            yield return chunk;
+            yield break;
+        }
+
+        var textDelta = (TextDeltaPart)chunk;
+        _text.Append(textDelta.Text);
+        _textChunk.Append(textDelta.Text);
+        _textProviderMetadata = textDelta.ProviderMetadata ?? _textProviderMetadata;
+
+        if (textDelta.Text.Length == 0 && textDelta.ProviderMetadata != null)
+        {
+            yield return chunk;
+            yield break;
+        }
+
+        // Built-in arrays publish only changed snapshots, so growing arrays do not need
+        // to be reparsed, revalidated, or serialized on every chunk.
+        if (_arrayStreamParser != null)
+        {
+            var parsed = _arrayStreamParser(textDelta.Text);
+            if (!ReferenceEquals(parsed, Util.ArrayOutputStreamParseResult.Fallback))
+            {
+                if (parsed != null)
+                {
+                    _lastArrayPartial = JsonSerializer.SerializeToElement(parsed.Partial);
+                    yield return PublishTextChunk(_lastArrayPartial);
+                }
+
+                yield break;
+            }
+
+            _arrayStreamParser = null;
+            if (_lastArrayPartial != null)
+            {
+                _lastPublishedValue = _lastArrayPartial.Value.GetRawText();
+                _hasPublishedValue = true;
+            }
+        }
+
+        // Only publish if the partial output can be parsed, and only if it changed.
+        if (_output.ParsePartialOutput(_text.ToString()) is { } partial)
+        {
+            var currentValue = partial.GetRawText();
+            if (!_hasPublishedValue || currentValue != _lastPublishedValue)
+            {
+                _lastPublishedValue = currentValue;
+                _hasPublishedValue = true;
+                yield return PublishTextChunk(partial);
+            }
+        }
+    }
+
+    private TextDeltaPart PublishTextChunk(JsonElement? partialOutput)
+    {
+        var part = new TextDeltaPart(
+            _firstTextChunkId!,
+            _textChunk.ToString(),
+            _textProviderMetadata
+        )
+        {
+            PartialOutput = partialOutput,
+        };
+        _textChunk.Clear();
+        return part;
+    }
+
+    private void ResetOutputState()
+    {
+        _arrayStreamParser = Util.ArrayOutputStream.CreateArrayStreamParser(_output);
+        _lastArrayPartial = null;
+        _firstTextChunkId = null;
+        _text.Clear();
+        _textChunk.Clear();
+        _textProviderMetadata = null;
+        _lastPublishedValue = null;
+        _hasPublishedValue = false;
+    }
+}
+
 internal sealed class PartBuffer
 {
     private readonly List<TextStreamPart> _parts = new();
@@ -3620,14 +3787,33 @@ internal sealed class PartBuffer
     // Called when the last active reader stops before the stream ends.
     public Action? OnConsumerStop { get; set; }
 
+    // Maps to createOutputTransformStream. Rewrites the text deltas of a structured output so that each one carries a partial output.
+    public Func<TextStreamPart, IEnumerable<TextStreamPart>>? Transform { get; set; }
+
     public void Add(TextStreamPart part)
     {
+        var added = 0;
         lock (_gate)
         {
-            _parts.Add(part);
+            if (Transform == null)
+            {
+                _parts.Add(part);
+                added = 1;
+            }
+            else
+            {
+                foreach (var transformed in Transform(part))
+                {
+                    _parts.Add(transformed);
+                    added++;
+                }
+            }
         }
 
-        _signal.Release();
+        if (added > 0)
+        {
+            _signal.Release(added);
+        }
     }
 
     public void Complete()
@@ -3822,24 +4008,12 @@ public sealed class StreamTextResult
         [EnumeratorCancellation] CancellationToken cancellationToken = default
     )
     {
-        string? lastPublishedValue = null;
         await foreach (var (partial, isNewStep) in ReadPartialOutputs(cancellationToken))
         {
-            if (isNewStep)
+            if (!isNewStep)
             {
-                lastPublishedValue = null;
-                continue;
+                yield return partial!.Value;
             }
-
-            // Only publish a value that changed.
-            var currentValue = partial!.Value.GetRawText();
-            if (currentValue == lastPublishedValue)
-            {
-                continue;
-            }
-
-            lastPublishedValue = currentValue;
-            yield return partial.Value;
         }
     }
 
@@ -3871,12 +4045,13 @@ public sealed class StreamTextResult
         }
     }
 
-    // The partial output after each text delta of the first text block of a step. A step start is reported with isNewStep.
+    // The partial output after each text delta of the first text block of a step that changes it. A step start is reported with isNewStep.
+    // The partial outputs of a structured output are on the text deltas. Text output has none, so the text so far is the partial output.
     private async IAsyncEnumerable<(JsonElement? Partial, bool IsNewStep)> ReadPartialOutputs(
         [EnumeratorCancellation] CancellationToken cancellationToken
     )
     {
-        var output = OutputSpecification ?? OutputSpec.Text();
+        var isText = OutputSpecification is not { IsJson: true };
         string? firstTextChunkId = null;
         var text = new StringBuilder();
         await foreach (var part in _buffer.Read(cancellationToken).ConfigureAwait(false))
@@ -3889,9 +4064,18 @@ public sealed class StreamTextResult
                 continue;
             }
 
-            // The partial output follows the first text block of the step.
             if (part is not TextDeltaPart delta)
             {
+                continue;
+            }
+
+            if (!isText)
+            {
+                if (delta.PartialOutput is { } partial)
+                {
+                    yield return (partial, false);
+                }
+
                 continue;
             }
 
@@ -3901,16 +4085,13 @@ public sealed class StreamTextResult
                 continue;
             }
 
-            text.Append(delta.Text);
-            if (delta.Text.Length == 0 && delta.ProviderMetadata != null)
+            if (delta.Text.Length == 0)
             {
                 continue;
             }
 
-            if (output.ParsePartialOutput(text.ToString()) is { } partial)
-            {
-                yield return (partial, false);
-            }
+            text.Append(delta.Text);
+            yield return (JsonSerializer.SerializeToElement(text.ToString()), false);
         }
     }
 

@@ -14,6 +14,68 @@ public sealed class OptionsOutputObjectOutputTests
         "packages/ai/src/generate-text/stream-text.test.ts::streamText > options.output > object output::";
 
     [Fact]
+    [UpstreamTest(
+        Prefix + "should set responseFormat to json and send schema as part of the responseFormat"
+    )]
+    public async Task Should_set_responseFormat_to_json_and_send_schema_as_part_of_the_responseFormat()
+    {
+        var model = new Vercel.AI.Testing.TestLanguageModel
+        {
+            StreamParts = OptionsOutputSupport.Text(
+                "{ ",
+                "\"value\": ",
+                "\"Hello, ",
+                "world",
+                "!\"",
+                " }"
+            ),
+        };
+        var result = OptionsOutputSupport.Stream(
+            model,
+            OutputSpec.Object(OptionsOutputSupport.ValueSchema)
+        );
+
+        await result.ConsumeStreamAsync();
+
+        var call = Assert.Single(model.Calls);
+        Assert.NotNull(call.JsonSchema);
+        Assert.Equal(
+            "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"],\"additionalProperties\":false}",
+            call.JsonSchema!.Value.GetRawText()
+        );
+        Assert.Null(call.Tools);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should send valid partial text fragments")]
+    public async Task Should_send_valid_partial_text_fragments()
+    {
+        var result = OptionsOutputSupport.Stream(
+            OptionsOutputSupport.Text("{ ", "\"value\": ", "\"Hello, ", "world", "!\"", " }"),
+            OutputSpec.Object(OptionsOutputSupport.ValueSchema)
+        );
+
+        var fragments = new List<string>();
+        await foreach (var fragment in result.TextStream())
+        {
+            fragments.Add(fragment);
+        }
+
+        Assert.Equal(
+            new[]
+            {
+                "{ ",
+                // key difference: need to combine after `:`
+                "\"value\": \"Hello, ",
+                "world",
+                "!\"",
+                " }",
+            },
+            fragments
+        );
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "should send partial output stream")]
     public async Task Should_send_partial_output_stream()
     {
