@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Extracts text fields and a list from text with an AI Gateway extraction model.</Description>
+    </PropertyGroup>
+</Project>

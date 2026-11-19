@@ -58,6 +58,7 @@ public sealed class GatewayProvider
     : ProviderBase,
         Operations.IBatchProvider,
         Operations.IDecisionProvider,
+        Operations.IExtractionProvider,
         Operations.IEvaluationProvider
 #pragma warning restore CS0618
 {
@@ -240,6 +241,24 @@ public sealed class GatewayProvider
         return DecisionModel(modelId);
     }
 #pragma warning restore CS0618
+
+    /// <summary>Extraction model routed through <c>/extraction-model</c>. Maps to <c>extractionModel</c>.</summary>
+    public GatewayExtractionModel ExtractionModel(string modelId)
+    {
+        return new GatewayExtractionModel(this, modelId);
+    }
+
+    /// <summary>Alias of <see cref="ExtractionModel"/>. Maps to <c>extraction</c>.</summary>
+    public GatewayExtractionModel Extraction(string modelId)
+    {
+        return ExtractionModel(modelId);
+    }
+
+    /// <inheritdoc />
+    Operations.IExtractionCaller Operations.IExtractionProvider.ExtractionModel(string modelId)
+    {
+        return ExtractionModel(modelId);
+    }
 
     internal IEnumerable<KeyValuePair<string, string>> O11yHeaders()
     {

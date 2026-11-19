@@ -27,6 +27,22 @@ Resolves decision models, including string model ids. Maps to `resolveDecisionMo
 
 ## Fields
 
+<a id="Vercel_AI_Operations_DecisionModels_MissingExtractionProviderMessage"></a>
+
+### MissingExtractionProviderMessage
+
+
+```csharp
+public const string MissingExtractionProviderMessage = "The default provider does not support extraction models."
+```
+
+
+Message thrown when the default provider has no extraction models.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionModels.cs#L100)
+
 <a id="Vercel_AI_Operations_DecisionModels_MissingProviderMessage"></a>
 
 ### MissingProviderMessage
@@ -108,24 +124,26 @@ Resolves a decision model. &lt;code class="paramref"&gt;model&lt;/code&gt; wins 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionModels.cs#L35)
 
 <a id="Vercel_AI_Operations_DecisionModels_ResolveExtractionModel_"></a>
-<a id="Vercel_AI_Operations_DecisionModels_ResolveExtractionModel_Vercel_AI_Operations_IExtractionCaller_"></a>
+<a id="Vercel_AI_Operations_DecisionModels_ResolveExtractionModel_Vercel_AI_Operations_IExtractionCaller_System_String_"></a>
 
-### ResolveExtractionModel(IExtractionCaller?)
+### ResolveExtractionModel(IExtractionCaller?, string?)
 
 
 ```csharp
-public static IExtractionCaller ResolveExtractionModel(IExtractionCaller? model)
+public static IExtractionCaller ResolveExtractionModel(IExtractionCaller? model, string? modelId = null)
 ```
 
 
-Maps to `resolveExtractionModel`. Only model instances are accepted. A model that is not `v4` throws.
+Maps to `resolveExtractionModel`. &lt;code class="paramref"&gt;model&lt;/code&gt; wins when set. Otherwise &lt;code class="paramref"&gt;modelId&lt;/code&gt; goes through
+[DefaultProvider](#Vercel_AI_Operations_DecisionModels_DefaultProvider), or Gateway when none is set. A model that is not `v4` throws.
 
 **Parameters**
 
 | Name | Type | Description |
 | --- | --- | --- |
 | `model` | [IExtractionCaller](/api/Vercel.AI.Operations/IExtractionCaller/) |  |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
 **Returns:** [IExtractionCaller](/api/Vercel.AI.Operations/IExtractionCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionModels.cs#L100)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionModels.cs#L107)

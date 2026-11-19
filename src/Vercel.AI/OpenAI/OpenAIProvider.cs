@@ -95,7 +95,10 @@ public sealed class PreparedResponsesTools
 }
 
 /// <summary>OpenAI provider: Chat Completions, Responses, embeddings, images, speech, transcription, files, and batches.</summary>
-public sealed class OpenAIProvider : OpenAICompatibleProvider, Operations.IBatchProvider
+public sealed class OpenAIProvider
+    : OpenAICompatibleProvider,
+        Operations.IBatchProvider,
+        Operations.IExtractionProvider
 {
     /// <summary>Provider id.</summary>
     public const string ProviderId = "openai";
@@ -159,6 +162,11 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider, Operations.IBatch
     public OpenAIDecisionModel DecisionModel(string modelId)
     {
         return new OpenAIDecisionModel(this, modelId);
+    }
+
+    Operations.IExtractionCaller? Operations.IExtractionProvider.ExtractionModel(string modelId)
+    {
+        return ExtractionModel(modelId);
     }
 
     /// <summary>Experimental typed field extraction model that uses the Responses API. The provider id is <c>openai.extraction</c>.</summary>
