@@ -28,6 +28,9 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
         _provider.ModelProvider.Replace(".messages", string.Empty) + ".batch";
 
     /// <inheritdoc />
+    public override IReadOnlyDictionary<string, string> SupportedUrls => _provider.SupportedUrls;
+
+    /// <inheritdoc />
     public override bool CanCancel => true;
 
     /// <inheritdoc />

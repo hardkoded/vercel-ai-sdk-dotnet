@@ -35,6 +35,10 @@ public sealed class XaiBatch : BatchResultsApiBase
     public override string Provider => "xai.batch";
 
     /// <inheritdoc />
+    public override IReadOnlyDictionary<string, string> SupportedUrls =>
+        XaiResponsesLanguageModel.ResponsesSupportedUrls;
+
+    /// <inheritdoc />
     public override bool CanCancel => true;
 
     /// <inheritdoc />

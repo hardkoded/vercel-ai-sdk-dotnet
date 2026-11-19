@@ -828,6 +828,9 @@ public sealed class BatchTests
     {
         public string Provider => "test";
 
+        public IReadOnlyDictionary<string, string> SupportedUrls { get; } =
+            new Dictionary<string, string>();
+
         public bool CanCancel { get; set; } = true;
 
         public bool CanList { get; set; } = true;
