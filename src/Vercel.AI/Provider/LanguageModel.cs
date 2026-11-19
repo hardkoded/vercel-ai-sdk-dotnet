@@ -2499,6 +2499,28 @@ public sealed class LanguageModelGenerateResult
         return result;
     }
 
+    internal LanguageModelGenerateResult WithRequest(LanguageModelStreamRequest? request)
+    {
+        return new LanguageModelGenerateResult(
+            Content,
+            FinishReason,
+            Usage,
+            RawFinishReason,
+            Warnings,
+            ResponseId,
+            ProviderMetadata,
+            RawResponse,
+            ResponseModelId,
+            ResponseTimestamp,
+            ResponseHeaders,
+            StructuredOutputText,
+            request
+        )
+        {
+            RedactRawResponse = RedactRawResponse,
+        };
+    }
+
     internal LanguageModelGenerateResult WithContent(IReadOnlyList<GeneratedContent> content)
     {
         return new LanguageModelGenerateResult(
