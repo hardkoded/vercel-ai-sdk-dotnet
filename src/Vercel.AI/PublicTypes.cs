@@ -105,6 +105,13 @@ public sealed class Tool
     public Func<JsonElement, JsonElement>? ContextSchema { get; set; }
 
     /// <summary>
+    /// Transforms the input of a call after it matches <see cref="InputSchema"/>, as a Zod <c>.transform</c> on the input schema does.
+    /// It returns the schema output, which the tool, the callbacks, and the approval check see, and throws when the input is invalid.
+    /// Null passes the input through unchanged.
+    /// </summary>
+    public Func<JsonElement, JsonElement>? InputTransform { get; set; }
+
+    /// <summary>
     /// Provider options of the tool, keyed by provider name, such as <c>{ "openai": { "omitFromRequestTools": true } }</c>.
     /// Maps to the tool's <c>providerOptions</c>.
     /// </summary>

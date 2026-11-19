@@ -161,6 +161,25 @@ JSON Schema for the arguments. Undefined for a provider-defined tool declared wi
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L49)
 
+<a id="Vercel_AI_Tool_InputTransform_"></a>
+<a id="Vercel_AI_Tool_InputTransform"></a>
+
+### InputTransform
+
+
+```csharp
+public Func<JsonElement, JsonElement>? InputTransform { get; set; }
+```
+
+
+Transforms the input of a call after it matches [InputSchema](#Vercel_AI_Tool_InputSchema), as a Zod `.transform` on the input schema does.
+It returns the schema output, which the tool, the callbacks, and the approval check see, and throws when the input is invalid.
+Null passes the input through unchanged.
+
+**Value:** [Func&lt;JsonElement, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L112)
+
 <a id="Vercel_AI_Tool_IsDynamic_"></a>
 <a id="Vercel_AI_Tool_IsDynamic"></a>
 
@@ -193,7 +212,7 @@ Whether this is a provider-defined tool, which the provider executes. Maps to `{
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L143)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L150)
 
 <a id="Vercel_AI_Tool_Metadata_"></a>
 <a id="Vercel_AI_Tool_Metadata"></a>
@@ -299,7 +318,7 @@ Maps to the tool's `providerOptions`.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L111)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L118)
 
 <a id="Vercel_AI_Tool_ProviderToolArgs_"></a>
 <a id="Vercel_AI_Tool_ProviderToolArgs"></a>
@@ -316,7 +335,7 @@ Arguments of a provider-defined tool. Undefined for a function tool.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L140)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L147)
 
 <a id="Vercel_AI_Tool_ProviderToolId_"></a>
 <a id="Vercel_AI_Tool_ProviderToolId"></a>
@@ -333,7 +352,7 @@ Provider-defined tool id (`<provider>.<tool>`), or null for a function tool.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L137)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L144)
 
 <a id="Vercel_AI_Tool_RedactArgs_"></a>
 <a id="Vercel_AI_Tool_RedactArgs"></a>
@@ -351,7 +370,7 @@ Maps to the `redactArgs` option of a provider tool factory.
 
 **Value:** [Func&lt;JsonElement, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L123)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L130)
 
 <a id="Vercel_AI_Tool_Strict_"></a>
 <a id="Vercel_AI_Tool_Strict"></a>
@@ -386,7 +405,7 @@ The loop then continues until the result arrives. Maps to `supportsDeferredResul
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L117)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L124)
 
 <a id="Vercel_AI_Tool_Title_"></a>
 <a id="Vercel_AI_Tool_Title"></a>
@@ -449,7 +468,7 @@ Creates a dynamic tool from a JSON schema string. Maps to `dynamicTool`.
 
 **Returns:** [Tool](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L169)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L176)
 
 <a id="Vercel_AI_Tool_Function_"></a>
 <a id="Vercel_AI_Tool_Function_System_String_System_String_System_String_System_Func_System_Text_Json_JsonElement_System_Threading_CancellationToken_System_Threading_Tasks_Task_System_String___System_Nullable_System_Boolean__"></a>
@@ -476,7 +495,7 @@ Creates a tool from a JSON schema string.
 
 **Returns:** [Tool](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L182)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L189)
 
 <a id="Vercel_AI_Tool_ProviderDefined_"></a>
 <a id="Vercel_AI_Tool_ProviderDefined_System_String_System_String_System_Text_Json_JsonElement_"></a>
@@ -502,7 +521,7 @@ Declares a provider-defined tool. The provider executes it, so it has no [Execut
 
 **Returns:** [Tool](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L149)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L156)
 
 <a id="Vercel_AI_Tool_ProviderDefined_System_String_System_String_System_Text_Json_JsonElement_System_Text_Json_JsonElement_"></a>
 
@@ -528,4 +547,4 @@ schema, so a property the schema does not declare is dropped, as a Zod object do
 
 **Returns:** [Tool](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L158)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L165)

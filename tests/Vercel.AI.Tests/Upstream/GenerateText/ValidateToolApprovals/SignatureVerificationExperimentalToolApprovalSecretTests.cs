@@ -26,8 +26,7 @@ public sealed class SignatureVerificationExperimentalToolApprovalSecretTests
     [UpstreamTest(
         Id
             + "should preserve signed transformed input or reject it when schema input is missing (schema input: %s)",
-        Coverage = UpstreamCoverage.Partial,
-        Note = TransformNote
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_preserve_signed_transformed_input_or_reject_it_when_schema_input_is_missing(
         bool hasInputSchemaInput
@@ -68,7 +67,7 @@ public sealed class SignatureVerificationExperimentalToolApprovalSecretTests
                 },
             },
             Secret,
-            Refine("tool1", input =>
+            transform: ValidateToolApprovalsSupport.Transform("tool1", input =>
                 Json("{\"count\":" + (input.GetProperty("count").GetInt32() + 1) + "}")
             )
         );
@@ -125,8 +124,7 @@ public sealed class SignatureVerificationExperimentalToolApprovalSecretTests
     [UpstreamTest(
         Id
             + "should not transform a signed input after verification when schema input metadata is missing",
-        Coverage = UpstreamCoverage.Partial,
-        Note = TransformNote
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_not_transform_a_signed_input_after_verification_when_schema_input_metadata_is_missing()
     {
@@ -152,7 +150,7 @@ public sealed class SignatureVerificationExperimentalToolApprovalSecretTests
             approval,
             new[] { tool },
             secret: Secret,
-            refine: Refine("tool1", input =>
+            transform: ValidateToolApprovalsSupport.Transform("tool1", input =>
                 Json("{\"value\":" + (input.GetProperty("value").GetInt32() + 1) + "}")
             )
         );

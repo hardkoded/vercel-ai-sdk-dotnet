@@ -19,8 +19,7 @@ public sealed class ValidateApprovedToolApprovalsTests
     [UpstreamTest(
         Id + "should reject signed approvals changed by an in-place schema validator",
         Commit = "3c09e0011c718c33f9287c5487c1f95190aeb772",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "A tool input schema is plain JSON Schema, with no custom validate function that can change the value in place, and a JsonElement is immutable. A refineToolInput function that returns a changed input stands in for the validator."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_reject_signed_approvals_changed_by_an_in_place_schema_validator()
     {
@@ -38,7 +37,7 @@ public sealed class ValidateApprovedToolApprovalsTests
             approval,
             new[] { ExecutableTool("tool1", "{\"type\":\"object\"}") },
             secret: secret,
-            refine: Refine("tool1", input =>
+            transform: ValidateToolApprovalsSupport.Transform("tool1", input =>
                 Json(
                     "{\"counter\":{\"value\":"
                         + (input.GetProperty("counter").GetProperty("value").GetInt32() + 1)
@@ -116,8 +115,7 @@ public sealed class ValidateApprovedToolApprovalsTests
     [Fact]
     [UpstreamTest(
         Id + "should keep approvals whose schema input transforms to the approved input",
-        Coverage = UpstreamCoverage.Partial,
-        Note = TransformNote
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_keep_approvals_whose_schema_input_transforms_to_the_approved_input()
     {
@@ -134,7 +132,7 @@ public sealed class ValidateApprovedToolApprovalsTests
         var result = await ValidateAsync(
             approval,
             new[] { tool },
-            refine: Refine("tool1", input =>
+            transform: ValidateToolApprovalsSupport.Transform("tool1", input =>
                 Json(
                     "{\"count\":"
                         + int.Parse(
@@ -153,8 +151,7 @@ public sealed class ValidateApprovedToolApprovalsTests
     [Fact]
     [UpstreamTest(
         Id + "should reject approvals when missing schema input would change the approved input",
-        Coverage = UpstreamCoverage.Partial,
-        Note = TransformNote
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_reject_approvals_when_missing_schema_input_would_change_the_approved_input()
     {
@@ -167,7 +164,7 @@ public sealed class ValidateApprovedToolApprovalsTests
         var result = await ValidateAsync(
             approval,
             new[] { tool },
-            refine: Refine("tool1", input =>
+            transform: ValidateToolApprovalsSupport.Transform("tool1", input =>
                 Json(
                     "{\"safe\":"
                         + int.Parse(
@@ -190,8 +187,7 @@ public sealed class ValidateApprovedToolApprovalsTests
     [Fact]
     [UpstreamTest(
         Id + "should keep approvals whose schema input reshapes to the approved input",
-        Coverage = UpstreamCoverage.Partial,
-        Note = TransformNote
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_keep_approvals_whose_schema_input_reshapes_to_the_approved_input()
     {
@@ -208,7 +204,7 @@ public sealed class ValidateApprovedToolApprovalsTests
         var result = await ValidateAsync(
             approval,
             new[] { tool },
-            refine: Refine("tool1", input =>
+            transform: ValidateToolApprovalsSupport.Transform("tool1", input =>
                 Json(
                     "{\"count\":"
                         + int.Parse(
@@ -256,8 +252,7 @@ public sealed class ValidateApprovedToolApprovalsTests
     [Fact]
     [UpstreamTest(
         Id + "should reject approvals whose transformed schema output was changed",
-        Coverage = UpstreamCoverage.Partial,
-        Note = TransformNote
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_reject_approvals_whose_transformed_schema_output_was_changed()
     {
@@ -274,7 +269,7 @@ public sealed class ValidateApprovedToolApprovalsTests
         var result = await ValidateAsync(
             approval,
             new[] { tool },
-            refine: Refine("tool1", input =>
+            transform: ValidateToolApprovalsSupport.Transform("tool1", input =>
                 Json(
                     "{\"count\":"
                         + int.Parse(

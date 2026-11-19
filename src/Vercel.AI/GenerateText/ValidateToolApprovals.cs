@@ -193,6 +193,11 @@ public static class ToolApprovalValidation
                     else
                     {
                         var revalidatedInput = value;
+                        if (tool.InputTransform != null)
+                        {
+                            revalidatedInput = tool.InputTransform(value);
+                        }
+
                         if (
                             options.RefineToolInput != null
                             && options.RefineToolInput.TryGetValue(
