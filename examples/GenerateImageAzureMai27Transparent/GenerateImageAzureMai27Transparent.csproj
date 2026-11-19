@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Generates a transparent-background image with Azure MAI-Image-2.7.</Description>
+    </PropertyGroup>
+</Project>

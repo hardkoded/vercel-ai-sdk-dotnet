@@ -36,6 +36,14 @@ public sealed class OpenAIResponsesPreparedRequest
 /// <summary>OpenAI Responses API language model.</summary>
 public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 {
+    /// <summary>URLs the Responses API reads itself. Maps to <c>openaiResponsesSupportedUrls</c>.</summary>
+    internal static readonly IReadOnlyDictionary<string, string> ResponsesSupportedUrls =
+        new Dictionary<string, string>
+        {
+            ["image/*"] = "^https?://.*\\z",
+            ["application/pdf"] = "^https?://.*\\z",
+        };
+
     private static readonly JsonSerializerOptions CustomToolInputOptions = new()
     {
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
@@ -114,12 +122,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<string, string> SupportedUrls { get; } =
-        new Dictionary<string, string>
-        {
-            ["image/*"] = "^https?://.*\\z",
-            ["application/pdf"] = "^https?://.*\\z",
-        };
+    public IReadOnlyDictionary<string, string> SupportedUrls => ResponsesSupportedUrls;
 
     /// <inheritdoc />
     public string Provider => _providerName + ".responses";
@@ -964,6 +967,16 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             )
             .WithRedactRawResponse(
                 RedactOpenAIToolCredentials.WithOpenAIResponseRedaction(document.RootElement).Redact
+            )
+            .WithRequest(
+                new LanguageModelStreamRequest(JsonSerializer.SerializeToElement(prepared.Body))
+                {
+                    RedactBody = RedactOpenAIToolCredentials
+                        .WithOpenAIResponseRedaction(
+                            JsonSerializer.SerializeToElement(prepared.Body)
+                        )
+                        .Redact,
+                }
             );
     }
 

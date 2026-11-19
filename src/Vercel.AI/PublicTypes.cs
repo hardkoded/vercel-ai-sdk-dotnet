@@ -36,6 +36,12 @@ public sealed class Tool
     /// <summary>Tool description.</summary>
     public string? Description { get; }
 
+    /// <summary>
+    /// Resolves the description per call from the context of the tool and the sandbox, instead of the fixed <see cref="Description"/>.
+    /// Maps to a function-valued <c>description</c>.
+    /// </summary>
+    public Func<Vercel.AI.Prompt.ToolDescriptionContext, string>? DescriptionFactory { get; set; }
+
     /// <summary>Display title of the tool. Parsed calls of the tool carry it.</summary>
     public string? Title { get; set; }
 
@@ -567,10 +573,10 @@ public static class StopWhen
 /// <summary>Structured output selector. Maps to <c>Output</c>.</summary>
 public abstract class OutputSpec
 {
-    /// <summary>Plain text output.</summary>
-    public static OutputSpec Text()
+    /// <summary>Plain text output. The output type is <see cref="string"/>. Maps to <c>Output.text</c>.</summary>
+    public static OutputSpec<string> Text()
     {
-        return TextOutput.Instance;
+        return new TypedOutput<string>(TextOutput.Instance);
     }
 
     /// <summary>JSON object output validated against <paramref name="schema"/>.</summary>
@@ -625,19 +631,19 @@ public abstract class OutputSpec
     }
 
     /// <summary>Choice output. The model answers with <c>{ "result": option }</c> and the output is the option. Maps to <c>Output.choice</c>.</summary>
-    public static OutputSpec Choice(
+    public static OutputSpec<string> Choice(
         IReadOnlyList<string> options,
         string? name = null,
         string? description = null
     )
     {
-        return new ChoiceOutput(options, name, description);
+        return new TypedOutput<string>(new ChoiceOutput(options, name, description));
     }
 
     /// <summary>Unstructured JSON output. The output is the parsed JSON value. Maps to <c>Output.json</c>.</summary>
-    public static OutputSpec Json(string? name = null, string? description = null)
+    public static OutputSpec<JsonElement> Json(string? name = null, string? description = null)
     {
-        return new JsonOutput(name, description);
+        return new TypedOutput<JsonElement>(new JsonOutput(name, description));
     }
 
     /// <summary>

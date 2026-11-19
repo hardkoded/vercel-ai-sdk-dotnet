@@ -4,7 +4,7 @@
 
 namespace Vercel.AI.Gateway;
 
-/// <summary>Known AI Gateway realtime model ids. Maps to <c>GatewayRealtimeModelId</c>; any other string is accepted too.</summary>
+/// <summary>Known AI Gateway model ids. Maps to <c>GatewayRealtimeModelId</c>; any other string is accepted too.</summary>
 public static class GatewayRealtimeModelId
 {
     /// <summary><c>elevenlabs/eleven-realtime-v1-max</c>.</summary>

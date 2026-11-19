@@ -52,7 +52,7 @@ Creates a Responses model for &lt;code class="paramref"&gt;modelId&lt;/code&gt;.
 | `provider` | [XaiProvider](/api/Vercel.AI.Xai/XaiProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiResponsesLanguageModel.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiResponsesLanguageModel.cs#L44)
 
 ## Properties
 
@@ -71,7 +71,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiResponsesLanguageModel.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiResponsesLanguageModel.cs#L68)
 
 <a id="Vercel_AI_Xai_XaiResponsesLanguageModel_Provider_"></a>
 <a id="Vercel_AI_Xai_XaiResponsesLanguageModel_Provider"></a>
@@ -88,7 +88,7 @@ Provider id, such as `openai`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiResponsesLanguageModel.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiResponsesLanguageModel.cs#L65)
 
 <a id="Vercel_AI_Xai_XaiResponsesLanguageModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Xai_XaiResponsesLanguageModel_SpecificationVersion"></a>
@@ -105,7 +105,7 @@ Always `V4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiResponsesLanguageModel.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiResponsesLanguageModel.cs#L59)
 
 <a id="Vercel_AI_Xai_XaiResponsesLanguageModel_SupportedUrls_"></a>
 <a id="Vercel_AI_Xai_XaiResponsesLanguageModel_SupportedUrls"></a>
@@ -123,7 +123,7 @@ must match. Prompt file URLs that match are passed through. All others are downl
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiResponsesLanguageModel.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiResponsesLanguageModel.cs#L62)
 
 ## Methods
 
@@ -149,7 +149,7 @@ Generates a complete result.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiResponsesLanguageModel.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiResponsesLanguageModel.cs#L71)
 
 <a id="Vercel_AI_Xai_XaiResponsesLanguageModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_Xai_XaiResponsesLanguageModel_DoStreamAsync_Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_"></a>
@@ -173,4 +173,4 @@ Streams partial results. The result carries the stream with the request and resp
 
 **Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiResponsesLanguageModel.cs#L114)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiResponsesLanguageModel.cs#L117)

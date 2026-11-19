@@ -26,6 +26,7 @@
         <Project Path="examples/DecideScaleDownMixedQuestions/DecideScaleDownMixedQuestions.csproj" />
         <Project Path="examples/GatewayToolTakoSearchVariableCost/GatewayToolTakoSearchVariableCost.csproj" />
         <Project Path="examples/GenerateStructuredData/GenerateStructuredData.csproj" />
+        <Project Path="examples/GenerateImageAzureMai27Transparent/GenerateImageAzureMai27Transparent.csproj" />
         <Project Path="examples/GenerateVertexAnthropicOutputObjectNative/GenerateVertexAnthropicOutputObjectNative.csproj" />
         <Project Path="examples/StreamVertexAnthropicOutputObjectNative/StreamVertexAnthropicOutputObjectNative.csproj" />
         <Project Path="examples/GenerateText/GenerateText.csproj" />
@@ -63,6 +64,9 @@
     </Folder>
     <Folder Name="/src/">
         <Project Path="src/Vercel.AI/Vercel.AI.csproj" />
+    </Folder>
+    <Folder Name="/scripts/">
+        <Project Path="scripts/Vercel.AI.Gateway.Scripts/Vercel.AI.Gateway.Scripts.csproj" />
     </Folder>
     <Folder Name="/tests/">
         <Project Path="tests/Vercel.AI.Tests/Vercel.AI.Tests.csproj" />

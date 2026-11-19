@@ -44,7 +44,7 @@ True when cancellation is implemented.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleBatchApi.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleBatchApi.cs#L39)
 
 <a id="Vercel_AI_Google_GoogleBatchApi_CanList_"></a>
 <a id="Vercel_AI_Google_GoogleBatchApi_CanList"></a>
@@ -61,7 +61,7 @@ True when listing is implemented.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleBatchApi.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleBatchApi.cs#L42)
 
 <a id="Vercel_AI_Google_GoogleBatchApi_Provider_"></a>
 <a id="Vercel_AI_Google_GoogleBatchApi_Provider"></a>
@@ -79,6 +79,25 @@ Provider id.
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleBatchApi.cs#L31)
+
+<a id="Vercel_AI_Google_GoogleBatchApi_SupportedUrls_"></a>
+<a id="Vercel_AI_Google_GoogleBatchApi_SupportedUrls"></a>
+
+### SupportedUrls
+
+
+```csharp
+public override IReadOnlyDictionary<string, string> SupportedUrls { get; }
+```
+
+
+Supported URL patterns (regular expression text) by media type for requests in this batch API.
+
+**Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+Batch prompt conversion happens before the model is known, so only URL support shared by every batch model is advertised.
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleBatchApi.cs#L35)
 
 ## Methods
 
@@ -104,7 +123,7 @@ Cancels a batch.
 
 **Returns:** [Task&lt;BatchCancelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleBatchApi.cs#L274)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleBatchApi.cs#L279)
 
 <a id="Vercel_AI_Google_GoogleBatchApi_DoGetResultsAsync_"></a>
 <a id="Vercel_AI_Google_GoogleBatchApi_DoGetResultsAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -129,7 +148,7 @@ Errors found while reading, such as a malformed row, throw from the stream.
 
 **Returns:** [Task&lt;IAsyncEnumerable&lt;BatchItem&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleBatchApi.cs#L343)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleBatchApi.cs#L348)
 
 <a id="Vercel_AI_Google_GoogleBatchApi_DoGetStatusAsync_"></a>
 <a id="Vercel_AI_Google_GoogleBatchApi_DoGetStatusAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -153,7 +172,7 @@ Reads status.
 
 **Returns:** [Task&lt;BatchStatus&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleBatchApi.cs#L264)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleBatchApi.cs#L269)
 
 <a id="Vercel_AI_Google_GoogleBatchApi_DoListAsync_"></a>
 <a id="Vercel_AI_Google_GoogleBatchApi_DoListAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -177,7 +196,7 @@ Lists batches. The implementation is invoked on this instance.
 
 **Returns:** [Task&lt;BatchListResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleBatchApi.cs#L293)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleBatchApi.cs#L298)
 
 <a id="Vercel_AI_Google_GoogleBatchApi_DoStartAsync_"></a>
 <a id="Vercel_AI_Google_GoogleBatchApi_DoStartAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -201,4 +220,4 @@ Starts a batch.
 
 **Returns:** [Task&lt;BatchStartResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleBatchApi.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleBatchApi.cs#L45)

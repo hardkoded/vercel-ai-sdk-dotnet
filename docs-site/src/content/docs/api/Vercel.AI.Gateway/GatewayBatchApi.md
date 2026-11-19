@@ -46,6 +46,23 @@ Provider id.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayBatchApi.cs#L23)
 
+<a id="Vercel_AI_Gateway_GatewayBatchApi_SupportedUrls_"></a>
+<a id="Vercel_AI_Gateway_GatewayBatchApi_SupportedUrls"></a>
+
+### SupportedUrls
+
+
+```csharp
+public override IReadOnlyDictionary<string, string> SupportedUrls { get; }
+```
+
+
+Supported URL patterns (regular expression text) by media type for requests in this batch API.
+
+**Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayBatchApi.cs#L26)
+
 ## Methods
 
 <a id="Vercel_AI_Gateway_GatewayBatchApi_DoGetResultsAsync_"></a>
@@ -71,4 +88,4 @@ Errors found while reading, such as a malformed row, throw from the stream.
 
 **Returns:** [Task&lt;IAsyncEnumerable&lt;BatchItem&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayBatchApi.cs#L26)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayBatchApi.cs#L30)

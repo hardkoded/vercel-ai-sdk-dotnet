@@ -337,12 +337,12 @@ public sealed class GatewayProvider
     )
     {
         var auth = await GetRealtimeAuthTokenAsync(cancellationToken).ConfigureAwait(false);
-        var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
+        var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var pair in CreateAuthHeaders(auth))
         {
-            ["Authorization"] = "Bearer " + auth.Token,
-            ["ai-gateway-protocol-version"] = "0.0.1",
-            ["ai-gateway-auth-method"] = auth.AuthMethod,
-        };
+            headers[pair.Key] = pair.Value;
+        }
+
         if (extra != null)
         {
             foreach (var pair in extra)

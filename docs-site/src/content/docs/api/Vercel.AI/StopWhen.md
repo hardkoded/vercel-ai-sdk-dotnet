@@ -23,7 +23,7 @@ Stop-condition factories. Maps to `isStepCount`, `hasToolCall`, and `isLoopFinis
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L407)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L413)
 
 ## Methods
 
@@ -48,7 +48,7 @@ Stops when any of &lt;code class="paramref"&gt;toolNames&lt;/code&gt; was called
 
 **Returns:** [StopCondition](/api/Vercel.AI/StopCondition/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L421)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L427)
 
 <a id="Vercel_AI_StopWhen_IsLoopFinished_"></a>
 <a id="Vercel_AI_StopWhen_IsLoopFinished"></a>
@@ -65,7 +65,7 @@ A stop condition that never stops the loop. The loop still ends when a step does
 
 **Returns:** [StopCondition](/api/Vercel.AI/StopCondition/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L436)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L442)
 
 <a id="Vercel_AI_StopWhen_IsStepCount_"></a>
 <a id="Vercel_AI_StopWhen_IsStepCount_System_Int32_"></a>
@@ -88,7 +88,7 @@ Stops when the number of completed steps equals &lt;code class="paramref"&gt;cou
 
 **Returns:** [StopCondition](/api/Vercel.AI/StopCondition/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L410)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L416)
 
 <a id="Vercel_AI_StopWhen_IsStopConditionMet_"></a>
 <a id="Vercel_AI_StopWhen_IsStopConditionMet_System_Collections_Generic_IReadOnlyList_System_Func_System_Collections_Generic_IReadOnlyList_Vercel_AI_StepResult__System_Threading_Tasks_Task_System_Boolean____System_Collections_Generic_IReadOnlyList_Vercel_AI_StepResult__"></a>
@@ -112,4 +112,4 @@ Returns true when any stop condition returns true. Maps to `isStopConditionMet`.
 
 **Returns:** [Task&lt;bool&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L442)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L448)

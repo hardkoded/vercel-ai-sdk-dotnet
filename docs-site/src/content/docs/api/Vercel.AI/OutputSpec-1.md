@@ -30,4 +30,4 @@ Maps to `Output<OUTPUT>`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [OutputSpec](/api/Vercel.AI/OutputSpec/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1102)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1108)

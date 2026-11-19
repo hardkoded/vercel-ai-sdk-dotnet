@@ -44,7 +44,7 @@ True when cancellation is implemented.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatchApi.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatchApi.cs#L34)
 
 <a id="Vercel_AI_Anthropic_AnthropicBatchApi_CanList_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicBatchApi_CanList"></a>
@@ -61,7 +61,7 @@ True when listing is implemented.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatchApi.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatchApi.cs#L37)
 
 <a id="Vercel_AI_Anthropic_AnthropicBatchApi_Provider_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicBatchApi_Provider"></a>
@@ -79,6 +79,23 @@ Provider id.
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatchApi.cs#L27)
+
+<a id="Vercel_AI_Anthropic_AnthropicBatchApi_SupportedUrls_"></a>
+<a id="Vercel_AI_Anthropic_AnthropicBatchApi_SupportedUrls"></a>
+
+### SupportedUrls
+
+
+```csharp
+public override IReadOnlyDictionary<string, string> SupportedUrls { get; }
+```
+
+
+Supported URL patterns (regular expression text) by media type for requests in this batch API.
+
+**Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatchApi.cs#L31)
 
 ## Methods
 
@@ -104,7 +121,7 @@ Cancels a batch.
 
 **Returns:** [Task&lt;BatchCancelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatchApi.cs#L208)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatchApi.cs#L211)
 
 <a id="Vercel_AI_Anthropic_AnthropicBatchApi_DoGetResultsAsync_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicBatchApi_DoGetResultsAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -129,7 +146,7 @@ Errors found while reading, such as a malformed row, throw from the stream.
 
 **Returns:** [Task&lt;IAsyncEnumerable&lt;BatchItem&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatchApi.cs#L464)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatchApi.cs#L467)
 
 <a id="Vercel_AI_Anthropic_AnthropicBatchApi_DoGetStatusAsync_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicBatchApi_DoGetStatusAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -153,7 +170,7 @@ Reads status.
 
 **Returns:** [Task&lt;BatchStatus&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatchApi.cs#L196)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatchApi.cs#L199)
 
 <a id="Vercel_AI_Anthropic_AnthropicBatchApi_DoListAsync_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicBatchApi_DoListAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -177,7 +194,7 @@ Lists batches. The implementation is invoked on this instance.
 
 **Returns:** [Task&lt;BatchListResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatchApi.cs#L222)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatchApi.cs#L225)
 
 <a id="Vercel_AI_Anthropic_AnthropicBatchApi_DoStartAsync_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicBatchApi_DoStartAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -201,4 +218,4 @@ Starts a batch.
 
 **Returns:** [Task&lt;BatchStartResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatchApi.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicBatchApi.cs#L40)

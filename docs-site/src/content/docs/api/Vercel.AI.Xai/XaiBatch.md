@@ -45,7 +45,7 @@ True when cancellation is implemented.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiBatch.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiBatch.cs#L42)
 
 <a id="Vercel_AI_Xai_XaiBatch_CanList_"></a>
 <a id="Vercel_AI_Xai_XaiBatch_CanList"></a>
@@ -62,7 +62,7 @@ True when listing is implemented.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiBatch.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiBatch.cs#L45)
 
 <a id="Vercel_AI_Xai_XaiBatch_Provider_"></a>
 <a id="Vercel_AI_Xai_XaiBatch_Provider"></a>
@@ -80,6 +80,23 @@ Provider id.
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiBatch.cs#L35)
+
+<a id="Vercel_AI_Xai_XaiBatch_SupportedUrls_"></a>
+<a id="Vercel_AI_Xai_XaiBatch_SupportedUrls"></a>
+
+### SupportedUrls
+
+
+```csharp
+public override IReadOnlyDictionary<string, string> SupportedUrls { get; }
+```
+
+
+Supported URL patterns (regular expression text) by media type for requests in this batch API.
+
+**Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiBatch.cs#L38)
 
 ## Methods
 
@@ -105,7 +122,7 @@ Cancels a batch.
 
 **Returns:** [Task&lt;BatchCancelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiBatch.cs#L162)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiBatch.cs#L166)
 
 <a id="Vercel_AI_Xai_XaiBatch_DoGetResultsAsync_"></a>
 <a id="Vercel_AI_Xai_XaiBatch_DoGetResultsAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -130,7 +147,7 @@ Errors found while reading, such as a malformed row, throw from the stream.
 
 **Returns:** [Task&lt;IAsyncEnumerable&lt;BatchItem&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiBatch.cs#L219)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiBatch.cs#L223)
 
 <a id="Vercel_AI_Xai_XaiBatch_DoGetStatusAsync_"></a>
 <a id="Vercel_AI_Xai_XaiBatch_DoGetStatusAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -154,7 +171,7 @@ Reads status.
 
 **Returns:** [Task&lt;BatchStatus&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiBatch.cs#L150)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiBatch.cs#L154)
 
 <a id="Vercel_AI_Xai_XaiBatch_DoListAsync_"></a>
 <a id="Vercel_AI_Xai_XaiBatch_DoListAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -178,7 +195,7 @@ Lists batches. The implementation is invoked on this instance.
 
 **Returns:** [Task&lt;BatchListResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiBatch.cs#L179)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiBatch.cs#L183)
 
 <a id="Vercel_AI_Xai_XaiBatch_DoStartAsync_"></a>
 <a id="Vercel_AI_Xai_XaiBatch_DoStartAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -203,4 +220,4 @@ Uploads the requests as `batch.jsonl`, then creates a batch from the uploaded fi
 
 **Returns:** [Task&lt;BatchStartResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiBatch.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiBatch.cs#L51)

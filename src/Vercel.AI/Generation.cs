@@ -1218,7 +1218,11 @@ internal static class Generation
                                 buffer.Add(executedResult);
                                 break;
                             case ToolResultPart { Result.ProviderExecuted: true } providerResult:
-                                RecordProviderResult(providerResult.Result);
+                                if (providerResult.Result.Preliminary != true)
+                                {
+                                    RecordProviderResult(providerResult.Result);
+                                }
+
                                 buffer.Add(providerResult);
                                 break;
                             case ToolErrorPart { Result.ProviderExecuted: true } providerError:
@@ -1929,7 +1933,8 @@ internal static class Generation
 
     internal static ExecutedTool ProviderExecutedResult(
         GeneratedToolResult result,
-        IReadOnlyList<GeneratedToolCall> toolCalls
+        IReadOnlyList<GeneratedToolCall> toolCalls,
+        bool? preliminary = null
     )
     {
         string? input = null;
@@ -1956,6 +1961,7 @@ internal static class Generation
             Dynamic = matched?.Dynamic ?? false,
             Title = matched?.Title,
             ToolMetadata = matched?.ToolMetadata,
+            Preliminary = preliminary,
         };
     }
 
@@ -3419,7 +3425,7 @@ internal static class Generation
                     )
                     : new LanguageModelTool(
                         tool.Name,
-                        tool.Description,
+                        ResolveToolDescription(tool, options),
                         tool.InputSchema,
                         tool.Strict
                     )
@@ -3463,6 +3469,28 @@ internal static class Generation
         }
 
         return -1;
+    }
+
+    // Maps to resolveToolDescription in prepare-tools.ts.
+    private static string? ResolveToolDescription(Tool tool, GenerateTextOptions options)
+    {
+        if (tool.DescriptionFactory == null)
+        {
+            return tool.Description;
+        }
+
+        object? context = null;
+        if (
+            options.ToolsContext != null
+            && options.ToolsContext.TryGetValue(tool.Name, out var value)
+        )
+        {
+            context = value;
+        }
+
+        return tool.DescriptionFactory(
+            new Vercel.AI.Prompt.ToolDescriptionContext(context, options.ExperimentalSandbox)
+        );
     }
 
     private static bool Contains(IReadOnlyList<string> names, string name)

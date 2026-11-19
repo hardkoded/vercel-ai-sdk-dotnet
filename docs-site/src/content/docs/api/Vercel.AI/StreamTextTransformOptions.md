@@ -23,7 +23,7 @@ The options a [StreamTextTransform](/api/Vercel.AI/StreamTextTransform/) receive
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1625)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1631)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates the options.
 | `tools` | [IReadOnlyList&lt;Tool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `stopStream` | [Action](https://learn.microsoft.com/dotnet/api/system.action) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1628)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1634)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Stops the source stream. No further part reaches the transform after it is calle
 
 **Value:** [Action](https://learn.microsoft.com/dotnet/api/system.action)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1638)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1644)
 
 <a id="Vercel_AI_StreamTextTransformOptions_Tools_"></a>
 <a id="Vercel_AI_StreamTextTransformOptions_Tools"></a>
@@ -83,4 +83,4 @@ The tools that are accessible to and can be called by the model. Maps to `tools`
 
 **Value:** [IReadOnlyList&lt;Tool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1635)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1641)

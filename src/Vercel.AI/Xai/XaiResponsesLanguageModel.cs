@@ -28,6 +28,15 @@ public sealed class XaiReasoning : GeneratedReasoning
 /// </summary>
 public sealed class XaiResponsesLanguageModel : ILanguageModel
 {
+    /// <summary>URLs the Responses API reads itself. Maps to <c>xaiResponsesSupportedUrls</c>.</summary>
+    internal static readonly IReadOnlyDictionary<string, string> ResponsesSupportedUrls =
+        new Dictionary<string, string>
+        {
+            ["image/*"] = "^https?://.*\\z",
+            ["application/pdf"] = "^https?://.*\\z",
+            ["text/*"] = "^https?://.*\\z",
+        };
+
     private readonly XaiProvider _provider;
     private readonly Func<string> _generateId;
 
@@ -50,13 +59,7 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<string, string> SupportedUrls { get; } =
-        new Dictionary<string, string>
-        {
-            ["image/*"] = "^https?://.*\\z",
-            ["application/pdf"] = "^https?://.*\\z",
-            ["text/*"] = "^https?://.*\\z",
-        };
+    public IReadOnlyDictionary<string, string> SupportedUrls => ResponsesSupportedUrls;
 
     /// <inheritdoc />
     public string Provider => XaiProvider.ProviderId + ".responses";

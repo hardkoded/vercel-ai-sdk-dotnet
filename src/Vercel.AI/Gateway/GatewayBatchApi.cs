@@ -23,6 +23,10 @@ public sealed class GatewayBatchApi : BatchResultsApiBase
     public override string Provider => "gateway.batch";
 
     /// <inheritdoc />
+    public override IReadOnlyDictionary<string, string> SupportedUrls { get; } =
+        new Dictionary<string, string> { ["*/*"] = ".*" };
+
+    /// <inheritdoc />
     public override async Task<IAsyncEnumerable<BatchItem>> DoGetResultsAsync(
         BatchOperationCall call,
         CancellationToken cancellationToken

@@ -11,6 +11,7 @@ Unofficial port of vercel/ai. Apache-2.0. Not an official Vercel product. Parity
 
 - `generateText` → `GenerateTextAsync`
 - `streamText` → `StreamTextAsync` (returns `StreamTextResult`)
+- `streamObject` (deprecated) → `StreamObjectAsync<T>` (returns `StreamObjectResult<T>`; `Output` is `Object`, `Array`, `Enum` or `NoSchema`; read `PartialObjectStream()`, `ElementStream()`, `TextStream()`, `FullStream()`, and the `Object` task; `AllowSystemInMessages` and `ExperimentalDownload` as on `GenerateTextOptions`)
 - `AbortSignal` → `CancellationToken`
 - `tool()` → `Tool.Function(name, description, jsonSchema, execute)`
 - `stopWhen: isStepCount(n)` → `StopWhen.IsStepCount(n)`

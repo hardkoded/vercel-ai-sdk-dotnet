@@ -199,16 +199,17 @@ public sealed class XaiImageModel : IImageModel, IImageCaller
         }
 
         var hasAllBase64 = data.All(image => image.B64Json != null);
-        var images = new List<object?>();
-        foreach (var image in data)
-        {
-            images.Add(
-                hasAllBase64
-                    ? image.B64Json
-                    : await DownloadImageAsync(image.Url!, headers, cancellationToken)
-                        .ConfigureAwait(false)
-            );
-        }
+        // Upstream downloads URL-only images with Promise.all.
+        object?[] images = hasAllBase64
+            ? data.Select(image => (object?)image.B64Json).ToArray()
+            : await Task.WhenAll(
+                    data.Select(async image =>
+                        (object?)
+                            await DownloadImageAsync(image.Url!, headers, cancellationToken)
+                                .ConfigureAwait(false)
+                    )
+                )
+                .ConfigureAwait(false);
 
         var metadata = new JsonObject
         {
