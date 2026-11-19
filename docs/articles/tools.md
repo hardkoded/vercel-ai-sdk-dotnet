@@ -380,3 +380,15 @@ Not ported: `outputSchema` support ([#777](https://github.com/hardkoded/vercel-a
 `ISandboxSession` (maps to `Experimental_SandboxSession`) is a session that runs commands (`RunAsync`, `SpawnAsync`) and reads and writes files (`ReadFileAsync`, `ReadBinaryFileAsync`, `ReadTextFileAsync`, `WriteFileAsync`, `WriteBinaryFileAsync`, `WriteTextFileAsync`, `StatAsync`, `ListDirectoryAsync`, `DeleteFileAsync`). Its `Description` can go into the instructions of an agent. You implement it for your sandbox provider.
 
 Set `ExperimentalSandbox` on `GenerateTextOptions` or `StreamTextOptions` to pass a session to tool execution. A tool reads it as `ToolExecutionOptions.ExperimentalSandbox`. `Agent.GenerateAsync` and `Agent.Stream` take it as the `experimentalSandbox` parameter and pass it to `AgentOptions.PrepareCall` as `ExperimentalSandbox` on the options. `PrepareStepContext.ExperimentalSandbox` is the sandbox the step operates in. Return a `PrepareStepUpdate` with `ExperimentalSandbox` to change it for tool execution in that step only. Maps to `experimental_sandbox`.
+
+A tool `DescriptionFactory` on `PromptTool` receives a `ToolDescriptionContext`. Its `Context` is the tool's context value and its `ExperimentalSandbox` is the active `ISandboxSession`, so a description can read the sandbox. `PromptTools.PrepareTools` takes the session as the `experimentalSandbox` parameter. Maps to the `experimental_sandbox` argument of `prepareTools`.
+
+```csharp
+var tool = new PromptTool("function")
+{
+    DescriptionFactory = context => "Env: " + (context.ExperimentalSandbox?.Description ?? "none"),
+};
+var prepared = PromptTools.PrepareTools(tools, experimentalSandbox: session);
+```
+
+**Breaking change:** `ToolDescriptionContext.SandboxDescription` and the `sandboxDescription` parameter of `PromptTools.PrepareTools` are removed. Pass the session as `experimentalSandbox` and read `context.ExperimentalSandbox?.Description`.

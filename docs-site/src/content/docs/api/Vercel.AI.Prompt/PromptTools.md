@@ -28,13 +28,13 @@ Tool preparation. Maps to `prepareTools`.
 ## Methods
 
 <a id="Vercel_AI_Prompt_PromptTools_PrepareTools_"></a>
-<a id="Vercel_AI_Prompt_PromptTools_PrepareTools_System_Collections_Generic_IReadOnlyDictionary_System_String_Vercel_AI_Prompt_PromptTool__System_Collections_Generic_IReadOnlyList_System_String__System_Collections_Generic_IReadOnlyDictionary_System_String_System_Object__System_String_"></a>
+<a id="Vercel_AI_Prompt_PromptTools_PrepareTools_System_Collections_Generic_IReadOnlyDictionary_System_String_Vercel_AI_Prompt_PromptTool__System_Collections_Generic_IReadOnlyList_System_String__System_Collections_Generic_IReadOnlyDictionary_System_String_System_Object__Vercel_AI_ProviderUtils_ISandboxSession_"></a>
 
-### `PrepareTools(IReadOnlyDictionary<string, PromptTool>?, IReadOnlyList<string>?, IReadOnlyDictionary<string, object?>?, string?)`
+### `PrepareTools(IReadOnlyDictionary<string, PromptTool>?, IReadOnlyList<string>?, IReadOnlyDictionary<string, object?>?, ISandboxSession?)`
 
 
 ```csharp
-public static IReadOnlyList<PreparedTool>? PrepareTools(IReadOnlyDictionary<string, PromptTool>? tools, IReadOnlyList<string>? toolOrder = null, IReadOnlyDictionary<string, object?>? toolsContext = null, string? sandboxDescription = null)
+public static IReadOnlyList<PreparedTool>? PrepareTools(IReadOnlyDictionary<string, PromptTool>? tools, IReadOnlyList<string>? toolOrder = null, IReadOnlyDictionary<string, object?>? toolsContext = null, ISandboxSession? experimentalSandbox = null)
 ```
 
 
@@ -48,7 +48,7 @@ Converts tools into the language-model list. Returns null when &lt;code class="p
 | `tools` | [IReadOnlyDictionary&lt;string, PromptTool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 | `toolOrder` | [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `toolsContext` | [IReadOnlyDictionary&lt;string, object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
-| `sandboxDescription` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `experimentalSandbox` | [ISandboxSession](/api/Vercel.AI.ProviderUtils/ISandboxSession/) |  |
 
 **Returns:** [IReadOnlyList&lt;PreparedTool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
