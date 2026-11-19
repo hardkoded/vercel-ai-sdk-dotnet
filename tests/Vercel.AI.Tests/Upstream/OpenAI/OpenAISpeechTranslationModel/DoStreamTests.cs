@@ -603,7 +603,7 @@ public sealed class DoStreamTests
         TranslationModel model,
         AudioChunkStream? audio = null,
         string? sourceLanguage = null,
-        string? outputAudioFormat = null,
+        AudioFormat? outputAudioFormat = null,
         bool? includeRawChunks = null,
         AudioFormat? inputAudioFormat = null,
         CancellationToken cancellationToken = default,

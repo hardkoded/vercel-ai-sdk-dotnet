@@ -119,13 +119,13 @@ Model id resolved through [Default](/api/Vercel.AI.Operations/SpeechTranslationM
 
 
 ```csharp
-public string? OutputAudioFormat { get; set; }
+public AudioFormat? OutputAudioFormat { get; set; }
 ```
 
 
 Output audio format.
 
-**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+**Value:** [AudioFormat](/api/Vercel.AI.Operations/AudioFormat/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L142)
 

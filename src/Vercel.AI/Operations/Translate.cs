@@ -15,7 +15,7 @@ public sealed class TranslationStreamCall
         AudioFormat inputAudioFormat,
         string targetLanguage,
         string? sourceLanguage,
-        string? outputAudioFormat,
+        AudioFormat? outputAudioFormat,
         JsonElement providerOptions,
         IReadOnlyDictionary<string, string> headers,
         bool? includeRawChunks,
@@ -48,7 +48,7 @@ public sealed class TranslationStreamCall
     public string? SourceLanguage { get; }
 
     /// <summary>Requested output audio format.</summary>
-    public string? OutputAudioFormat { get; }
+    public AudioFormat? OutputAudioFormat { get; }
 
     /// <summary>Provider options.</summary>
     public JsonElement ProviderOptions { get; }
@@ -138,8 +138,8 @@ public sealed class StreamTranslateRequest : OperationRequest
     /// <summary>Source language.</summary>
     public string? SourceLanguage { get; set; }
 
-    /// <summary>Output audio format.</summary>
-    public string? OutputAudioFormat { get; set; }
+    /// <summary>Output audio format. A plain string converts to a format with no rate.</summary>
+    public AudioFormat? OutputAudioFormat { get; set; }
 
     /// <summary>Requests raw provider chunks.</summary>
     public bool? IncludeRawChunks { get; set; }
