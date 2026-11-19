@@ -24,7 +24,7 @@ Console.WriteLine(await stream.FinishReason);
 
 ## Partial output stream
 
-Set `Output` and enumerate `PartialOutputStream` for the structured output as it grows. Each value is a `JsonElement`. With `OutputSpec.Object`, it is the partial object, repaired from the JSON text so far. With `OutputSpec.Array`, it is the array of elements that are complete so far, and the repaired last element is left out. With `OutputSpec.Choice`, it is the option, published only when it is not ambiguous. With `OutputSpec.Json`, it is the JSON parsed so far. With text output (no `Output`, or `OutputSpec.Text()`), it is the text so far as a JSON string. A value is published only when it differs from the last one, each step starts over, `TextStream()` and the `TextDeltaPart` of a structured output carry text that is held back until the partial output changes (for `OutputSpec.Object`, a delta that ends after a key joins the next one), `OutputSpec.Array` scans only the new text of each delta, and text that the model streams in a later text block of a step is ignored. The partial object and the partial elements are not validated against the schema, except that an element of a partial array that does not match the element schema is left out. Maps to `partialOutputStream`.
+Set `Output` and enumerate `PartialOutputStream` for the structured output as it grows. Each value is a `JsonElement`. With `OutputSpec.Object`, it is the partial object, repaired from the JSON text so far. With `OutputSpec.Array`, it is the array of elements that are complete so far, and the repaired last element is left out. With `OutputSpec.Choice`, it is the option, published only when it is not ambiguous. With `OutputSpec.Json`, it is the JSON parsed so far. With text output (no `Output`, or `OutputSpec.Text()`), it is the text so far as a JSON string. A value is published only when it differs from the last one, each step starts over, `TextStream()` and the `TextDeltaPart` of a structured output carry text that is held back until the partial output changes (for `OutputSpec.Object`, a delta that ends after a key joins the next one), `OutputSpec.Array` scans only the new text of each delta, and text that the model streams in a later text block of a step is ignored. The partial object and the partial elements are not validated against the schema, except that an element of a partial array that does not match the element schema is left out. Maps to `partialOutputStream`. `ExperimentalPartialOutputStream()` is the deprecated alias (upstream `experimental_partialOutputStream`).
 
 For `OutputSpec.Array`, enumerate `ElementStream()` to get each element once, as soon as it is complete. The stream fails with a `TypeValidationException` when the model sends more elements than `maxItems`. It is empty for any other output. Maps to `elementStream`.
 
@@ -39,6 +39,15 @@ await foreach (var partialObject in result.PartialOutputStream())
 {
     Console.WriteLine(partialObject);
 }
+```
+
+## Single-consumer stream
+
+`Ai.StreamTextLowMemoryAsync(options)` (or `AiClient.StreamTextLowMemoryAsync`) takes the same options as `StreamTextAsync` and returns a `StreamTextSingleConsumerResult`. It has no replay: a part is released once the consumer reads it, and the result serves one stream projection (`Stream()`, `TextStream()`, `PartialOutputStream()`, `ElementStream()`, or `ConsumeStreamAsync()`). A second projection throws an `AiSdkException` ("This result supports one stream consumer"). `Usage` and `FinishReason` can be awaited at any time. `PartialOutputStream()` without an explicit `Output` throws `UnsupportedFunctionalityException`. Maps to `streamTextLowMemory`.
+
+```csharp
+var result = Ai.StreamTextLowMemoryAsync(new StreamTextOptions { Model = model, Prompt = "Hi" });
+await foreach (var delta in result.TextStream()) { Console.Write(delta); }
 ```
 
 ## UI message stream

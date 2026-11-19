@@ -646,6 +646,60 @@ public abstract class OutputSpec
         return new JsonOutput(name, description);
     }
 
+    /// <summary>
+    /// JSON object output deserialized to <typeparamref name="TOutput"/>. Maps to <c>Output.object</c> with an
+    /// inferred output type.
+    /// </summary>
+    public static OutputSpec<TOutput> Object<TOutput>(
+        JsonElement schema,
+        string? name = null,
+        string? description = null
+    )
+    {
+        return new TypedOutput<TOutput>(Object(schema, name, description));
+    }
+
+    /// <summary>JSON object output from a schema string, deserialized to <typeparamref name="TOutput"/>.</summary>
+    public static OutputSpec<TOutput> Object<TOutput>(
+        string jsonSchema,
+        string? name = null,
+        string? description = null
+    )
+    {
+        return new TypedOutput<TOutput>(Object(jsonSchema, name, description));
+    }
+
+    /// <summary>
+    /// Array output whose elements are deserialized to <typeparamref name="TElement"/>. Maps to <c>Output.array</c>
+    /// with an inferred element type.
+    /// </summary>
+    public static OutputSpec<IReadOnlyList<TElement>> Array<TElement>(
+        JsonElement elementSchema,
+        int? minItems = null,
+        int? maxItems = null,
+        string? name = null,
+        string? description = null
+    )
+    {
+        return new TypedOutput<IReadOnlyList<TElement>>(
+            Array(elementSchema, minItems, maxItems, name, description)
+        );
+    }
+
+    /// <summary>Array output with the element schema as a string, deserialized to <typeparamref name="TElement"/>.</summary>
+    public static OutputSpec<IReadOnlyList<TElement>> Array<TElement>(
+        string elementJsonSchema,
+        int? minItems = null,
+        int? maxItems = null,
+        string? name = null,
+        string? description = null
+    )
+    {
+        return new TypedOutput<IReadOnlyList<TElement>>(
+            Array(elementJsonSchema, minItems, maxItems, name, description)
+        );
+    }
+
     internal virtual JsonElement? Schema => null;
 
     internal virtual string? SchemaName => null;
@@ -1046,6 +1100,56 @@ public abstract class OutputSpec
     }
 }
 
+/// <summary>
+/// Structured output selector whose complete output is deserialized to <typeparamref name="TOutput"/>.
+/// Maps to <c>Output&lt;OUTPUT&gt;</c>.
+/// </summary>
+/// <typeparam name="TOutput">The type of the parsed output.</typeparam>
+public abstract class OutputSpec<TOutput> : OutputSpec
+{
+    private static readonly JsonSerializerOptions s_options = new(JsonSerializerDefaults.Web);
+
+    internal OutputSpec() { }
+
+    // Maps to the typed result of parseCompleteOutput. A mismatch throws JsonException.
+    internal TOutput? Deserialize(JsonElement output)
+    {
+        return output.Deserialize<TOutput>(s_options);
+    }
+}
+
+// Gives a built-in output specification an output type. Every behavior is the one of the inner specification.
+internal sealed class TypedOutput<TOutput>(OutputSpec inner) : OutputSpec<TOutput>
+{
+    internal override JsonElement? Schema => inner.Schema;
+
+    internal override string? SchemaName => inner.SchemaName;
+
+    internal override string? SchemaDescription => inner.SchemaDescription;
+
+    internal override bool IsJson => inner.IsJson;
+
+    internal override JsonElement ParseCompleteOutput(string text)
+    {
+        return inner.ParseCompleteOutput(text);
+    }
+
+    internal override JsonElement? ParsePartialOutput(string text)
+    {
+        return inner.ParsePartialOutput(text);
+    }
+
+    internal override Func<JsonElement, IEnumerable<JsonElement>>? CreateElementStreamTransform()
+    {
+        return inner.CreateElementStreamTransform();
+    }
+
+    internal override Util.ArrayOutputStreamParser? CreateArrayStreamParser()
+    {
+        return inner.CreateArrayStreamParser();
+    }
+}
+
 /// <summary>Context passed to <c>prepareStep</c>.</summary>
 public sealed class PrepareStepContext
 {
@@ -1155,6 +1259,9 @@ public class GenerateTextOptions
 {
     /// <summary>The clock for step timing in milliseconds. Tests replace it. Maps to <c>_internal.now</c>.</summary>
     internal Func<double>? NowMs { get; set; }
+
+    /// <summary>Generates the id of the call. Maps to <c>_internal.generateCallId</c>.</summary>
+    internal Func<string>? GenerateCallId { get; set; }
 
     /// <summary>A shallow copy of these options, so a caller can change one property without changing the original.</summary>
     internal GenerateTextOptions ShallowCopy() => (GenerateTextOptions)MemberwiseClone();
@@ -1276,6 +1383,16 @@ public class GenerateTextOptions
     public Vercel.AI.ProviderUtils.ISandboxSession? ExperimentalSandbox { get; set; }
 
     /// <summary>
+    /// Called immediately before each provider model call begins. An exception it throws is ignored.
+    /// Maps to <c>onLanguageModelCallStart</c>.
+    /// </summary>
+    public Func<
+        LanguageModelCallStartEvent,
+        CancellationToken,
+        Task
+    >? OnLanguageModelCallStart { get; set; }
+
+    /// <summary>
     /// Called after each provider model call returns, before tools run and before <see cref="OnStepEnd"/>.
     /// Maps to <c>onLanguageModelCallEnd</c>.
     /// </summary>
@@ -1369,6 +1486,31 @@ public class GenerateTextOptions
         string,
         Func<JsonElement, CancellationToken, Task<JsonElement>>
     >? RefineToolInput { get; set; }
+}
+
+/// <summary>Passed to <see cref="GenerateTextOptions.OnLanguageModelCallStart"/> before the model is called.</summary>
+public sealed class LanguageModelCallStartEvent
+{
+    /// <summary>Id of the model call.</summary>
+    public string CallId { get; init; } = string.Empty;
+
+    /// <summary>Provider id of the model.</summary>
+    public string Provider { get; init; } = string.Empty;
+
+    /// <summary>Model id.</summary>
+    public string ModelId { get; init; } = string.Empty;
+
+    /// <summary>Instructions of the call.</summary>
+    public Instructions? Instructions { get; init; }
+
+    /// <summary>Messages of the call, without the instructions.</summary>
+    public IReadOnlyList<ModelMessage> Messages { get; init; } = [];
+
+    /// <summary>Tools offered to the model.</summary>
+    public IReadOnlyList<LanguageModelTool>? Tools { get; init; }
+
+    /// <summary>Call settings.</summary>
+    public LanguageModelCallOptions CallOptions { get; init; } = new();
 }
 
 /// <summary>Passed to <see cref="GenerateTextOptions.OnLanguageModelCallEnd"/> after a provider model call returns.</summary>
