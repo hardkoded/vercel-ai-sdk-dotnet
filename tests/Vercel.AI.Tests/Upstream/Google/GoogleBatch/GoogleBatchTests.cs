@@ -23,7 +23,8 @@ public sealed class GoogleBatchTests
     private const string UploadSession =
         "https://generativelanguage.googleapis.com/upload/v1beta/files/session-123";
     private const string Batches = "https://generativelanguage.googleapis.com/v1beta/batches";
-    private const string Batch = "https://generativelanguage.googleapis.com/v1beta/batches/batch-123";
+    private const string Batch =
+        "https://generativelanguage.googleapis.com/v1beta/batches/batch-123";
     private const string CancelUrl =
         "https://generativelanguage.googleapis.com/v1beta/batches/batch-123:cancel";
 
@@ -217,16 +218,14 @@ public sealed class GoogleBatchTests
 
         var error = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() =>
             batch.DoStartAsync(
-                StartCall(
-                    [
-                        new NormalizedBatchRequest(
-                            "audio-1",
-                            "audio",
-                            "gemini-2.5-flash",
-                            JsonDocument.Parse("{}").RootElement
-                        ),
-                    ]
-                ),
+                StartCall([
+                    new NormalizedBatchRequest(
+                        "audio-1",
+                        "audio",
+                        "gemini-2.5-flash",
+                        JsonDocument.Parse("{}").RootElement
+                    ),
+                ]),
                 CancellationToken.None
             )
         );
@@ -248,15 +247,13 @@ public sealed class GoogleBatchTests
 
         var error = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() =>
             batch.DoStartAsync(
-                StartCall(
-                    [
-                        Request(
-                            "schema",
-                            "Hello",
-                            ",\"responseFormat\":{\"type\":\"json\",\"schema\":{\"type\":\"object\",\"properties\":{}}}"
-                        ),
-                    ]
-                ),
+                StartCall([
+                    Request(
+                        "schema",
+                        "Hello",
+                        ",\"responseFormat\":{\"type\":\"json\",\"schema\":{\"type\":\"object\",\"properties\":{}}}"
+                    ),
+                ]),
                 CancellationToken.None
             )
         );
@@ -278,23 +275,19 @@ public sealed class GoogleBatchTests
         var batch = CreateBatch(handler);
 
         await batch.DoStartAsync(
-            StartCall(
-                [
-                    Request(
-                        "schema",
-                        "Hello",
-                        ",\"responseFormat\":{\"type\":\"json\",\"schema\":{\"type\":\"object\",\"properties\":{}}},\"providerOptions\":{\"google\":{\"structuredOutputs\":false}}"
-                    ),
-                ]
-            ),
+            StartCall([
+                Request(
+                    "schema",
+                    "Hello",
+                    ",\"responseFormat\":{\"type\":\"json\",\"schema\":{\"type\":\"object\",\"properties\":{}}},\"providerOptions\":{\"google\":{\"structuredOutputs\":false}}"
+                ),
+            ]),
             CancellationToken.None
         );
 
-        var generationConfig = handler
-            .Calls[0]
-            .BodyJson["batch"]!["inputConfig"]!["requests"]!["requests"]![0]!["request"]![
-            "generationConfig"
-        ]!.AsObject();
+        var generationConfig = handler.Calls[0].BodyJson["batch"]!["inputConfig"]!["requests"]![
+            "requests"
+        ]![0]!["request"]!["generationConfig"]!.AsObject();
         Assert.Equal("application/json", (string?)generationConfig["responseMimeType"]);
         Assert.False(generationConfig.ContainsKey("responseJsonSchema"));
     }
@@ -315,11 +308,9 @@ public sealed class GoogleBatchTests
             CancellationToken.None
         );
 
-        var generationConfig = handler
-            .Calls[0]
-            .BodyJson["batch"]!["inputConfig"]!["requests"]!["requests"]![0]!["request"]![
-            "generationConfig"
-        ]!;
+        var generationConfig = handler.Calls[0].BodyJson["batch"]!["inputConfig"]!["requests"]![
+            "requests"
+        ]![0]!["request"]!["generationConfig"]!;
         Assert.Equal("application/json", (string?)generationConfig["responseMimeType"]);
     }
 
@@ -335,12 +326,10 @@ public sealed class GoogleBatchTests
 
         var error = await Assert.ThrowsAsync<InvalidArgumentException>(() =>
             batch.DoStartAsync(
-                StartCall(
-                    [
-                        Request("flash", "Hello"),
-                        Request("pro", "Hello", modelId: "gemini-2.5-pro"),
-                    ]
-                ),
+                StartCall([
+                    Request("flash", "Hello"),
+                    Request("pro", "Hello", modelId: "gemini-2.5-pro"),
+                ]),
                 CancellationToken.None
             )
         );
@@ -377,9 +366,8 @@ public sealed class GoogleBatchTests
                 new JsonObject { ["done"] = false }
             )
         );
-        var batch = CreateBatch(
-            handler,
-            options => options.Headers["Provider-Header"] = "provider"
+        var batch = CreateBatch(handler, options =>
+            options.Headers["Provider-Header"] = "provider"
         );
         var request = new NormalizedBatchRequest(
             "france",
@@ -460,13 +448,14 @@ public sealed class GoogleBatchTests
     public async Task Cancels_a_batch()
     {
         var handler = new GoogleBatchRecorder().Json(CancelUrl, new JsonObject());
-        var batch = CreateBatch(
-            handler,
-            options => options.Headers["Provider-Header"] = "provider"
+        var batch = CreateBatch(handler, options =>
+            options.Headers["Provider-Header"] = "provider"
         );
 
         var result = await batch.DoCancelAsync(
-            OperationCall(headers: new Dictionary<string, string> { ["Operation-Header"] = "operation" }),
+            OperationCall(
+                headers: new Dictionary<string, string> { ["Operation-Header"] = "operation" }
+            ),
             CancellationToken.None
         );
 
@@ -523,9 +512,8 @@ public sealed class GoogleBatchTests
                 ["nextPageToken"] = "page-token-2",
             }
         );
-        var batch = CreateBatch(
-            handler,
-            options => options.Headers["Provider-Header"] = "provider"
+        var batch = CreateBatch(handler, options =>
+            options.Headers["Provider-Header"] = "provider"
         );
 
         var page = await batch.DoListAsync(
@@ -567,10 +555,7 @@ public sealed class GoogleBatchTests
         Assert.Equal("test-api-key", call.Headers["x-goog-api-key"]);
         Assert.Equal("provider", call.Headers["provider-header"]);
         Assert.Equal("operation", call.Headers["operation-header"]);
-        Assert.Equal(
-            "?pageSize=2&pageToken=page-token-1",
-            new Uri(call.FullUrl).Query
-        );
+        Assert.Equal("?pageSize=2&pageToken=page-token-1", new Uri(call.FullUrl).Query);
     }
 
     [Theory]
@@ -623,9 +608,8 @@ public sealed class GoogleBatchTests
         var emptyBodyBytes = Encoding.UTF8.GetByteCount(InlineBody(""));
         var prompt = new string('a', 20_000_000 - emptyBodyBytes);
         Assert.Equal(20_000_000, Encoding.UTF8.GetByteCount(InlineBody(prompt)));
-        var batch = CreateBatch(
-            handler,
-            options => options.Headers["Provider-Header"] = "provider"
+        var batch = CreateBatch(handler, options =>
+            options.Headers["Provider-Header"] = "provider"
         );
 
         var result = await batch.DoStartAsync(
@@ -651,7 +635,10 @@ public sealed class GoogleBatchTests
         Assert.Equal("test-api-key", handler.Calls[0].Headers["x-goog-api-key"]);
         Assert.Equal("resumable", handler.Calls[0].Headers["x-goog-upload-protocol"]);
         Assert.Equal("start", handler.Calls[0].Headers["x-goog-upload-command"]);
-        Assert.Equal("application/jsonl", handler.Calls[0].Headers["x-goog-upload-header-content-type"]);
+        Assert.Equal(
+            "application/jsonl",
+            handler.Calls[0].Headers["x-goog-upload-header-content-type"]
+        );
         Assert.Equal("upload, finalize", handler.Calls[1].Headers["x-goog-upload-command"]);
         Assert.Equal("0", handler.Calls[1].Headers["x-goog-upload-offset"]);
         Assert.DoesNotContain("x-goog-api-key", handler.Calls[1].Headers.Keys);
@@ -702,9 +689,9 @@ public sealed class GoogleBatchTests
         var batch = CreateBatch(handler);
 
         await batch.DoStartAsync(
-            StartCall(
-                [Request("request-1", inputType == "file" ? new string('a', 20_000_000) : "Hello")]
-            ),
+            StartCall([
+                Request("request-1", inputType == "file" ? new string('a', 20_000_000) : "Hello"),
+            ]),
             CancellationToken.None
         );
 

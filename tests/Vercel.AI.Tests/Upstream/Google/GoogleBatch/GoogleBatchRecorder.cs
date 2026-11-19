@@ -64,7 +64,15 @@ internal sealed class GoogleBatchRecorder : HttpMessageHandler
             request.Content == null
                 ? string.Empty
                 : await request.Content.ReadAsStringAsync(cancellationToken);
-        Calls.Add(new RecordedCall(request.Method.Method, url, request.RequestUri.AbsoluteUri, headers, body));
+        Calls.Add(
+            new RecordedCall(
+                request.Method.Method,
+                url,
+                request.RequestUri.AbsoluteUri,
+                headers,
+                body
+            )
+        );
         return _routes.TryGetValue(url, out var respond)
             ? respond()
             : new HttpResponseMessage(HttpStatusCode.NotFound)

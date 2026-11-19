@@ -7,8 +7,8 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Vercel.AI.Operations;
 using Vercel.AI.OpenAI;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -65,24 +65,22 @@ public sealed class GoogleBatchApi : BatchResultsApiBase
 
         var inlineInputBytes = Utf8Length(
             BatchBody(
-                new JsonObject
-                {
-                    ["requests"] = new JsonObject { ["requests"] = new JsonArray() },
-                }
+                new JsonObject { ["requests"] = new JsonObject { ["requests"] = new JsonArray() } }
             )
         );
         StringBuilder? fileParts = null;
 
         foreach (var request in requests)
         {
-            var prepared = request.Type == "text"
-                ? PrepareTextRequest(request)
-                : throw new UnsupportedFunctionalityException(
-                    "batch request type: " + request.Type,
-                    "The Google Batch API does not support batch requests with type \""
-                        + request.Type
-                        + "\" yet."
-                );
+            var prepared =
+                request.Type == "text"
+                    ? PrepareTextRequest(request)
+                    : throw new UnsupportedFunctionalityException(
+                        "batch request type: " + request.Type,
+                        "The Google Batch API does not support batch requests with type \""
+                            + request.Type
+                            + "\" yet."
+                    );
             var inlinedRequest = new JsonObject
             {
                 ["request"] = prepared.Body.DeepClone(),
@@ -103,7 +101,11 @@ public sealed class GoogleBatchApi : BatchResultsApiBase
                     fileParts = new StringBuilder();
                     foreach (var previous in inlinedRequests)
                     {
-                        AppendFileLine(fileParts, previous["metadata"]!["key"]!.GetValue<string>(), previous["request"]!);
+                        AppendFileLine(
+                            fileParts,
+                            previous["metadata"]!["key"]!.GetValue<string>(),
+                            previous["request"]!
+                        );
                     }
 
                     inlinedRequests.Clear();
@@ -133,7 +135,9 @@ public sealed class GoogleBatchApi : BatchResultsApiBase
 
         var headers = await BatchHeadersAsync(call, cancellationToken).ConfigureAwait(false);
         var baseUrl = _provider.Options.BaseUrl.TrimEnd('/');
-        var createUri = new Uri(baseUrl + "/" + GoogleModelPath.Get(modelId) + ":batchGenerateContent");
+        var createUri = new Uri(
+            baseUrl + "/" + GoogleModelPath.Get(modelId) + ":batchGenerateContent"
+        );
 
         if (fileParts == null)
         {
@@ -228,7 +232,11 @@ public sealed class GoogleBatchApi : BatchResultsApiBase
             || Str(fileInfo, "name") is not { } fileName
         )
         {
-            throw new ApiException("Invalid JSON response", 200, Encoding.UTF8.GetString(uploaded.Body));
+            throw new ApiException(
+                "Invalid JSON response",
+                200,
+                Encoding.UTF8.GetString(uploaded.Body)
+            );
         }
 
         var fileOperation = await SendOperationAsync(
@@ -316,7 +324,10 @@ public sealed class GoogleBatchApi : BatchResultsApiBase
         }
 
         var batches = new List<ListedBatch>();
-        if (page.TryGetProperty("operations", out var operations) && operations.ValueKind == JsonValueKind.Array)
+        if (
+            page.TryGetProperty("operations", out var operations)
+            && operations.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var operation in operations.EnumerateArray())
             {
@@ -551,11 +562,7 @@ public sealed class GoogleBatchApi : BatchResultsApiBase
 
     private static BatchStartResult Fill(JsonElement operation, List<BatchRequestWarning> warnings)
     {
-        var result = new BatchStartResult
-        {
-            Id = Str(operation, "name")!,
-            Warnings = warnings,
-        };
+        var result = new BatchStartResult { Id = Str(operation, "name")!, Warnings = warnings };
         return ConvertStatus(operation, result);
     }
 
@@ -564,7 +571,11 @@ public sealed class GoogleBatchApi : BatchResultsApiBase
     {
         var metadata = operation.TryGetProperty("metadata", out var m) ? m : default;
         var rawStatus = Str(metadata, "state");
-        var stats = metadata.ValueKind == JsonValueKind.Object && metadata.TryGetProperty("batchStats", out var s) ? s : default;
+        var stats =
+            metadata.ValueKind == JsonValueKind.Object
+            && metadata.TryGetProperty("batchStats", out var s)
+                ? s
+                : default;
         var counts = ProviderValues.NormalizeBatchRequestCounts(
             ParseCount(stats, "requestCount", false),
             ParseCount(stats, "pendingRequestCount", true),
@@ -575,8 +586,7 @@ public sealed class GoogleBatchApi : BatchResultsApiBase
             operation.TryGetProperty("error", out var e) && e.ValueKind == JsonValueKind.Object
                 ? e
                 : (JsonElement?)null;
-        var done =
-            operation.TryGetProperty("done", out var d) && d.ValueKind == JsonValueKind.True;
+        var done = operation.TryGetProperty("done", out var d) && d.ValueKind == JsonValueKind.True;
         target.Status = MapStatus(rawStatus, done, error != null);
         target.RawStatus = rawStatus;
         target.RequestCounts =
@@ -625,11 +635,12 @@ public sealed class GoogleBatchApi : BatchResultsApiBase
             return done ? "completed" : "pending";
         }
 
-        var normalized = rawStatus.StartsWith("BATCH_STATE_", StringComparison.Ordinal)
-            ? rawStatus.Substring("BATCH_STATE_".Length)
+        var normalized =
+            rawStatus.StartsWith("BATCH_STATE_", StringComparison.Ordinal)
+                ? rawStatus.Substring("BATCH_STATE_".Length)
             : rawStatus.StartsWith("JOB_STATE_", StringComparison.Ordinal)
                 ? rawStatus.Substring("JOB_STATE_".Length)
-                : rawStatus;
+            : rawStatus;
         return normalized switch
         {
             "SUCCEEDED" => "completed",
