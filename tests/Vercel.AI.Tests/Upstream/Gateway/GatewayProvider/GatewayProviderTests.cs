@@ -65,6 +65,49 @@ public sealed class GatewayProviderTests
 
     [Fact]
     [UpstreamTest(
+        Prefix + "::should pass teamIdOrSlug with OIDC requests",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Checks the headers of a language model request. The upstream test mocks the GatewayLanguageModel constructor and resolves config.headers."
+    )]
+    public async Task Should_pass_teamIdOrSlug_with_OIDC_requests()
+    {
+        var previousKey = Environment.GetEnvironmentVariable(
+            GatewayProvider.ApiKeyEnvironmentVariable
+        );
+        Environment.SetEnvironmentVariable(GatewayProvider.ApiKeyEnvironmentVariable, null);
+        VercelEnvironment.OidcTokenOverride = _ => Task.FromResult("mock-oidc-token");
+        try
+        {
+            var server = new GatewayLanguageModelServer { Failure = new HttpRequestException() };
+            var provider = GatewayProvider.Create(
+                new GatewayOptions { TeamIdOrSlug = "vercel" },
+                server
+            );
+            var model = provider.LanguageModel("test-model");
+
+            await Assert.ThrowsAnyAsync<Exception>(() =>
+                model.DoGenerateAsync(
+                    GatewayLanguageModelSupport.TestPrompt,
+                    CancellationToken.None
+                )
+            );
+
+            Assert.Equal("Bearer mock-oidc-token", server.RequestHeaders["authorization"]);
+            Assert.Equal("vercel", server.RequestHeaders["x-vercel-ai-gateway-team"]);
+            Assert.Equal("oidc", server.RequestHeaders["ai-gateway-auth-method"]);
+        }
+        finally
+        {
+            VercelEnvironment.OidcTokenOverride = null;
+            Environment.SetEnvironmentVariable(
+                GatewayProvider.ApiKeyEnvironmentVariable,
+                previousKey
+            );
+        }
+    }
+
+    [Fact]
+    [UpstreamTest(
         Prefix + "::should fetch available models",
         Coverage = UpstreamCoverage.Partial,
         Note = "Checks the base URL and the call through the HTTP handler. The upstream test mocks the GatewayFetchMetadata constructor."
