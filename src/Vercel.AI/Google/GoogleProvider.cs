@@ -130,7 +130,7 @@ public class GoogleProvider
         "video/3gpp",
     };
 
-    /// <summary>Gemini Batch API. Downloads batch results.</summary>
+    /// <summary>Gemini Batch API. Starts, reads, cancels, and lists batches and downloads their results.</summary>
     public Operations.IBatchApi? ExperimentalBatch()
     {
         return new GoogleBatchApi(this);
