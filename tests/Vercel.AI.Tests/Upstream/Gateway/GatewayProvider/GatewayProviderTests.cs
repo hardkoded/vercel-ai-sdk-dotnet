@@ -159,7 +159,7 @@ public sealed class GatewayProviderTests
             ("VERCEL_REGION", null),
             ("VERCEL_PROJECT_ID", null)
         );
-        using var context = VercelRequestContext.Use(null);
+        using var context = VercelRequestContext.Use(headers: null);
         var provider = GatewayProvider.Create(
             new GatewayOptions { BaseUrl = "https://api.example.com", ApiKey = "test-api-key" },
             new GatewayTestServer("{}")

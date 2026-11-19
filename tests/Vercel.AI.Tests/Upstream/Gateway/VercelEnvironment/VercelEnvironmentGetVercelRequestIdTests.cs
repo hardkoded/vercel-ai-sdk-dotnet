@@ -46,7 +46,7 @@ public sealed class VercelEnvironmentGetVercelRequestIdTests
     )]
     public void Should_return_undefined_when_no_headers_are_available()
     {
-        using var _ = VercelRequestContext.Use(null);
+        using var _ = VercelRequestContext.Use(headers: null);
 
         Assert.Null(Vercel.AI.Gateway.VercelEnvironment.GetVercelRequestId());
     }
@@ -64,13 +64,11 @@ public sealed class VercelEnvironmentGetVercelRequestIdTests
     [Fact]
     [UpstreamTest(
         "packages/gateway/src/vercel-environment.test.ts::getVercelRequestId::should handle missing get method in request context",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The port's context is a headers dictionary and has no get method, so this repeats the no-headers state."
+        Coverage = UpstreamCoverage.Covered
     )]
     public void Should_handle_missing_get_method_in_request_context()
     {
-        // The port's context is a headers dictionary, so a context without a `get` method is the same as no headers.
-        using var _ = VercelRequestContext.Use(null);
+        using var _ = VercelRequestContext.Use(get: null);
 
         Assert.Null(Vercel.AI.Gateway.VercelEnvironment.GetVercelRequestId());
     }
