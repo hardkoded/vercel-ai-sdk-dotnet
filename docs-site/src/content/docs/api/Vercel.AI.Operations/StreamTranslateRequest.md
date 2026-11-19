@@ -123,7 +123,7 @@ public AudioFormat? OutputAudioFormat { get; set; }
 ```
 
 
-Output audio format.
+Output audio format. A plain string converts to a format with no rate.
 
 **Value:** [AudioFormat](/api/Vercel.AI.Operations/AudioFormat/)
 

@@ -23,7 +23,7 @@ Passed to [OnLanguageModelCallStart](/api/Vercel.AI/GenerateTextOptions/#Vercel_
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1382)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1486)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Id of the model call.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1385)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1489)
 
 <a id="Vercel_AI_LanguageModelCallStartEvent_CallOptions_"></a>
 <a id="Vercel_AI_LanguageModelCallStartEvent_CallOptions"></a>
@@ -59,7 +59,7 @@ Call settings.
 
 **Value:** [LanguageModelCallOptions](/api/Vercel.AI.Provider/LanguageModelCallOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1403)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1507)
 
 <a id="Vercel_AI_LanguageModelCallStartEvent_Instructions_"></a>
 <a id="Vercel_AI_LanguageModelCallStartEvent_Instructions"></a>
@@ -76,7 +76,7 @@ Instructions of the call.
 
 **Value:** [Instructions](/api/Vercel.AI.Prompt/Instructions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1394)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1498)
 
 <a id="Vercel_AI_LanguageModelCallStartEvent_Messages_"></a>
 <a id="Vercel_AI_LanguageModelCallStartEvent_Messages"></a>
@@ -93,7 +93,7 @@ Messages of the call, without the instructions.
 
 **Value:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1397)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1501)
 
 <a id="Vercel_AI_LanguageModelCallStartEvent_ModelId_"></a>
 <a id="Vercel_AI_LanguageModelCallStartEvent_ModelId"></a>
@@ -110,7 +110,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1391)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1495)
 
 <a id="Vercel_AI_LanguageModelCallStartEvent_Provider_"></a>
 <a id="Vercel_AI_LanguageModelCallStartEvent_Provider"></a>
@@ -127,7 +127,7 @@ Provider id of the model.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1388)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1492)
 
 <a id="Vercel_AI_LanguageModelCallStartEvent_Tools_"></a>
 <a id="Vercel_AI_LanguageModelCallStartEvent_Tools"></a>
@@ -144,4 +144,4 @@ Tools offered to the model.
 
 **Value:** [IReadOnlyList&lt;LanguageModelTool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1400)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1504)

@@ -25,7 +25,7 @@ Status fields shared by start, list, and status calls.
 
 **Derived:** [BatchStartResult](/api/Vercel.AI.Operations/BatchStartResult/), [ListedBatch](/api/Vercel.AI.Operations/ListedBatch/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L544)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L631)
 
 ## Properties
 
@@ -44,7 +44,7 @@ Creation time.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L556)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L643)
 
 <a id="Vercel_AI_Operations_BatchStatus_ErrorCode_"></a>
 <a id="Vercel_AI_Operations_BatchStatus_ErrorCode"></a>
@@ -61,7 +61,7 @@ Code of the batch-level error.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L565)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L652)
 
 <a id="Vercel_AI_Operations_BatchStatus_ErrorMessage_"></a>
 <a id="Vercel_AI_Operations_BatchStatus_ErrorMessage"></a>
@@ -78,7 +78,7 @@ Message of the batch-level error.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L562)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L649)
 
 <a id="Vercel_AI_Operations_BatchStatus_ExpiresAt_"></a>
 <a id="Vercel_AI_Operations_BatchStatus_ExpiresAt"></a>
@@ -95,7 +95,7 @@ Expiry time.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L559)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L646)
 
 <a id="Vercel_AI_Operations_BatchStatus_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_BatchStatus_ProviderMetadata"></a>
@@ -112,7 +112,7 @@ Provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L568)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L655)
 
 <a id="Vercel_AI_Operations_BatchStatus_RawStatus_"></a>
 <a id="Vercel_AI_Operations_BatchStatus_RawStatus"></a>
@@ -129,7 +129,7 @@ Provider status string.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L550)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L637)
 
 <a id="Vercel_AI_Operations_BatchStatus_RequestCounts_"></a>
 <a id="Vercel_AI_Operations_BatchStatus_RequestCounts"></a>
@@ -146,7 +146,7 @@ Request counts.
 
 **Value:** [BatchRequestCounts](/api/Vercel.AI.Operations/BatchRequestCounts/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L553)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L640)
 
 <a id="Vercel_AI_Operations_BatchStatus_Status_"></a>
 <a id="Vercel_AI_Operations_BatchStatus_Status"></a>
@@ -163,4 +163,4 @@ Status name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L547)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L634)

@@ -95,6 +95,38 @@ Array output. Each element is validated against &lt;code class="paramref"&gt;ele
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L602)
 
+<a id="Vercel_AI_OutputSpec_Array__1_System_String_System_Nullable_System_Int32__System_Nullable_System_Int32__System_String_System_String_"></a>
+
+### `Array<TElement>(string, int?, int?, string?, string?)`
+
+
+```csharp
+public static OutputSpec<IReadOnlyList<TElement>> Array<TElement>(string elementJsonSchema, int? minItems = null, int? maxItems = null, string? name = null, string? description = null)
+```
+
+
+Array output with the element schema as a string, deserialized to &lt;code class="typeparamref"&gt;TElement&lt;/code&gt;.
+
+**Type parameters**
+
+| Name | Description |
+| --- | --- |
+| `TElement` |  |
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `elementJsonSchema` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `minItems` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
+| `maxItems` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
+| `name` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `description` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** `OutputSpec&lt;IReadOnlyList&lt;TElement&gt;&gt;`
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L684)
+
 <a id="Vercel_AI_OutputSpec_Array__1_System_Text_Json_JsonElement_System_Nullable_System_Int32__System_Nullable_System_Int32__System_String_System_String_"></a>
 
 ### `Array<TElement>(JsonElement, int?, int?, string?, string?)`

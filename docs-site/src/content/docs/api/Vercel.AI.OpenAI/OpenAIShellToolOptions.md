@@ -23,7 +23,7 @@ Options of [Shell(OpenAIShellToolOptions)](/api/Vercel.AI.OpenAI/OpenAITools/#Ve
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L231)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L243)
 
 ## Properties
 
@@ -42,7 +42,7 @@ The shell environment.
 
 **Value:** [OpenAIShellEnvironment](/api/Vercel.AI.OpenAI/OpenAIShellEnvironment/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L234)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L246)
 
 <a id="Vercel_AI_OpenAI_OpenAIShellToolOptions_Execute_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIShellToolOptions_Execute"></a>
@@ -59,7 +59,7 @@ Executes the shell commands of a local call and returns their output. Maps to `e
 
 **Value:** [Func&lt;OpenAIShellInput, ToolExecutionOptions, Task&lt;OpenAIShellOutput&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L237)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L249)
 
 <a id="Vercel_AI_OpenAI_OpenAIShellToolOptions_NeedsApproval_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIShellToolOptions_NeedsApproval"></a>
@@ -76,7 +76,7 @@ When true, a call needs approval before it runs. Maps to `needsApproval: true`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L244)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L256)
 
 <a id="Vercel_AI_OpenAI_OpenAIShellToolOptions_NeedsApprovalFunction_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIShellToolOptions_NeedsApprovalFunction"></a>
@@ -93,4 +93,4 @@ Decides for each call whether it needs approval. Used instead of [NeedsApproval]
 
 **Value:** [Func&lt;OpenAIShellInput, ToolNeedsApprovalOptions, Task&lt;bool&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L247)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAITools.cs#L259)

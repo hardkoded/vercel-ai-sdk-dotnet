@@ -89,7 +89,7 @@ public int? DelayInMs { get; set; }
 ```
 
 
-The delay in milliseconds between each chunk. Defaults to 10ms. Set to `null` to skip the delay.
+The delay in milliseconds between each chunk. Defaults to 10ms. Set to `null` to skip the delay. The delay is skipped while the document is hidden, which never happens in .NET.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 

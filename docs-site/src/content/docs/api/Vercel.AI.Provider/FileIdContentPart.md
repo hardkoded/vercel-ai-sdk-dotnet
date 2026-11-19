@@ -24,7 +24,7 @@ Maps to `{ type: 'file-id', fileId, providerOptions }` in the tool result conten
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [UserContentPart](/api/Vercel.AI.Provider/UserContentPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L997)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L982)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a file-id part from a map from provider name to file id.
 | --- | --- | --- |
 | `fileIds` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1007)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L992)
 
 <a id="Vercel_AI_Provider_FileIdContentPart__ctor_System_String_"></a>
 
@@ -67,7 +67,7 @@ Creates a file-id part from a single file id. The provider of the model is used 
 | --- | --- | --- |
 | `fileId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1000)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L985)
 
 ## Properties
 
@@ -86,7 +86,7 @@ The file id, when it is a string. Exactly one of [FileId](#Vercel_AI_Provider_Fi
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1014)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L999)
 
 <a id="Vercel_AI_Provider_FileIdContentPart_FileIds_"></a>
 <a id="Vercel_AI_Provider_FileIdContentPart_FileIds"></a>
@@ -103,7 +103,7 @@ The map from provider name to file id, when the file id is a record.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1017)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1002)
 
 <a id="Vercel_AI_Provider_FileIdContentPart_ProviderOptions_"></a>
 <a id="Vercel_AI_Provider_FileIdContentPart_ProviderOptions"></a>
@@ -120,4 +120,4 @@ Provider-specific options for this part.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1020)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1005)

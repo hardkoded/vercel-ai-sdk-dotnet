@@ -25,6 +25,7 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [BatchImageGeneration](/api/Vercel.AI.Operations/BatchImageGeneration/) | A provider image generation inside a batch item. |
 | [BatchItem](/api/Vercel.AI.Operations/BatchItem/) | One raw batch item. |
 | [BatchItemResult](/api/Vercel.AI.Operations/BatchItemResult/) | Normalized batch item. |
+| [BatchItemResult&lt;TOutput&gt;](/api/Vercel.AI.Operations/BatchItemResult-1/) | Normalized batch item whose parsed output has the type of the OutputSpec%601 passed to GetBatchResults. Maps to BatchItemResult<OUTPUT>. |
 | [BatchListResult](/api/Vercel.AI.Operations/BatchListResult/) | A page of batches. |
 | [BatchModels](/api/Vercel.AI.Operations/BatchModels/) | Default provider used when a batch call omits one. |
 | [BatchModelUsage](/api/Vercel.AI.Operations/BatchModelUsage/) | Provider token usage before it is reshaped. |

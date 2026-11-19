@@ -25,7 +25,7 @@ The client timed out before the Gateway responded.
 
 **Implements:** [ISerializable](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.iserializable)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L318)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L357)
 
 ## Constructors
 
@@ -51,7 +51,7 @@ Creates a timeout error.
 | `cause` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
 | `generationId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L321)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L360)
 
 ## Properties
 
@@ -70,7 +70,7 @@ Gateway error type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L330)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L369)
 
 ## Methods
 
@@ -98,7 +98,7 @@ Wraps a client timeout with the Gateway troubleshooting text.
 
 **Returns:** [GatewayTimeoutError](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L339)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L378)
 
 <a id="Vercel_AI_Gateway_GatewayTimeoutError_IsInstance_"></a>
 <a id="Vercel_AI_Gateway_GatewayTimeoutError_IsInstance_System_Exception_"></a>
@@ -121,4 +121,4 @@ True when &lt;code class="paramref"&gt;error&lt;/code&gt; is this error.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L333)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L372)

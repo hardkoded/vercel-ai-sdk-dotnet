@@ -28,13 +28,13 @@ Arguments for a speech-translation stream.
 ## Constructors
 
 <a id="Vercel_AI_Operations_TranslationStreamCall__ctor_"></a>
-<a id="Vercel_AI_Operations_TranslationStreamCall__ctor_Vercel_AI_Operations_AudioChunkStream_Vercel_AI_Operations_AudioFormat_System_String_System_String_System_String_System_Text_Json_JsonElement_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Nullable_System_Boolean__System_Threading_CancellationToken_System_Exception_"></a>
+<a id="Vercel_AI_Operations_TranslationStreamCall__ctor_Vercel_AI_Operations_AudioChunkStream_Vercel_AI_Operations_AudioFormat_System_String_System_String_Vercel_AI_Operations_AudioFormat_System_Text_Json_JsonElement_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Nullable_System_Boolean__System_Threading_CancellationToken_System_Exception_"></a>
 
-### `TranslationStreamCall(AudioChunkStream, AudioFormat, string, string?, string?, JsonElement, IReadOnlyDictionary<string, string>, bool?, CancellationToken, Exception?)`
+### `TranslationStreamCall(AudioChunkStream, AudioFormat, string, string?, AudioFormat?, JsonElement, IReadOnlyDictionary<string, string>, bool?, CancellationToken, Exception?)`
 
 
 ```csharp
-public TranslationStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, string targetLanguage, string? sourceLanguage, string? outputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken, Exception? abortReason = null)
+public TranslationStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, string targetLanguage, string? sourceLanguage, AudioFormat? outputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken, Exception? abortReason = null)
 ```
 
 
@@ -48,7 +48,7 @@ Creates a translation call.
 | `inputAudioFormat` | [AudioFormat](/api/Vercel.AI.Operations/AudioFormat/) |  |
 | `targetLanguage` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `sourceLanguage` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
-| `outputAudioFormat` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `outputAudioFormat` | [AudioFormat](/api/Vercel.AI.Operations/AudioFormat/) |  |
 | `providerOptions` | [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 | `headers` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 | `includeRawChunks` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |

@@ -211,7 +211,7 @@ Generates a complete result.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L881)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L911)
 
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_DoStreamAsync_Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_"></a>
@@ -235,7 +235,7 @@ Streams partial results. The result carries the stream with the request and resp
 
 **Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L938)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L971)
 
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_Prepare_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_Prepare_System_String_Vercel_AI_Provider_LanguageModelCallOptions_System_Boolean_"></a>

@@ -25,7 +25,7 @@ The Gateway error body could not be read.
 
 **Implements:** [ISerializable](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.iserializable)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L277)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L316)
 
 ## Constructors
 
@@ -54,7 +54,7 @@ Creates a response error.
 | `generationId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `isRetryable` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L280)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L319)
 
 ## Properties
 
@@ -73,7 +73,7 @@ Raw response body.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L305)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L344)
 
 <a id="Vercel_AI_Gateway_GatewayResponseError_Type_"></a>
 <a id="Vercel_AI_Gateway_GatewayResponseError_Type"></a>
@@ -90,7 +90,7 @@ Gateway error type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L302)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L341)
 
 <a id="Vercel_AI_Gateway_GatewayResponseError_ValidationError_"></a>
 <a id="Vercel_AI_Gateway_GatewayResponseError_ValidationError"></a>
@@ -107,7 +107,7 @@ Why the body was rejected.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L308)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L347)
 
 ## Methods
 
@@ -132,4 +132,4 @@ True when &lt;code class="paramref"&gt;error&lt;/code&gt; is this error.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L311)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayErrors.cs#L350)
