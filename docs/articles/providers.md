@@ -1781,6 +1781,34 @@ var result = await Extract.ExtractAsync(new ExtractRequest
 
 `ExtractRequest.ModelId` resolves a string id the same way as `DecideRequest.ModelId`: through `DecisionModels.DefaultProvider`, which must implement `IExtractionProvider`, or through the Gateway when it is null (`AI_GATEWAY_API_KEY`). `DecisionModels.ResolveExtractionModel(model, modelId)` throws `InvalidOperationException` ("The default provider does not support extraction models.") when the default provider has no `ExtractionModel`, `NoSuchModelError` (`extractionModel`) when it returns no model, and `UnsupportedModelVersionException` for a model that is not `v4`. `GatewayProvider` implements `IExtractionProvider`. Extraction models in `CustomProvider` and `ProviderRegistry` are not ported yet (#1372).
 
+### Extraction models in registries and custom providers
+
+A provider exposes extraction models by implementing `IExtractionProvider.ExtractionModel(id)`. `OpenAIProvider`, `AnthropicProvider`, `GoogleProvider`, and `CustomProvider` do. `ProviderRegistry.ExtractionModel("providerId:modelId")` returns the extraction model of the provider registered under `providerId`. It throws `NoSuchProviderError` for an unknown provider and `NoSuchModelError` (`ModelType` `extractionModel`) when the provider has no extraction factory or the factory returns null. Registry middleware does not wrap extraction models.
+
+`CustomProvider.AddExtractionModel(alias, model)` registers an `IExtractionCaller`, and `AddExtractionModel(alias, "model-id")` registers a string alias that goes through `DecisionModels.DefaultProvider` when `ExtractionModel(alias)` is called. An alias wins over `FallbackProvider`. An id that is not an alias goes to the fallback provider's extraction factory, or throws `NoSuchModelError`. Ids such as `toString` or `__proto__` never resolve to an alias.
+
+`ExtractRequest.ModelId` resolves a string id as described under Gateway extraction models: through `DecisionModels.DefaultProvider`, or the Gateway when it is null. `Model` wins when both are set. A model that is not `v4` throws `UnsupportedModelVersionException` on every path.
+
+```csharp
+var registry = new ProviderRegistry();
+registry.Register("invoices", new CustomProvider
+{
+    FallbackProvider = openai,
+}
+    .AddExtractionModel("fast", openai.ExtractionModel("gpt-6.1-sol"))
+    .AddExtractionModel("careful", openai.ExtractionModel("gpt-6-luna")));
+
+DecisionModels.DefaultProvider = new CustomProvider()
+    .AddExtractionModel("careful", registry.ExtractionModel("invoices:careful"));
+
+var result = await Extract.ExtractAsync(new ExtractRequest
+{
+    ModelId = "careful",
+    State = "Invoice INV-2041, total due $1,250.00 by March 3.",
+    Fields = new Dictionary<string, ExtractionField> { ["total"] = new("number") { Decimals = 2 } },
+});
+```
+
 ## Gateway decision fallbacks
 
 `providerOptions.gateway.models` for a decision request may start with one conditional entry, `{ "model": "...", "when": { ... } }`, followed by plain model ids. `when` is `confidenceBelow`, `probabilityBetween: [min, max]`, or an `any`, `all`, or `atLeast` group of conditions, nested at most 5 levels with 1 to 20 conditions per list. `GatewayDecisionModel` rejects an invalid shape with an `InvalidArgumentException` before any request. Other gateway options pass through unchanged.

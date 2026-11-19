@@ -59,6 +59,8 @@ var result = await Extract.ExtractAsync(new ExtractRequest
 var total = result.Answers["total"].Number; // null when the state has no total
 ```
 
+Extraction models also resolve by id: `ProviderRegistry.ExtractionModel("provider:model")`, `CustomProvider.AddExtractionModel(alias, model | "id")` and `ExtractRequest.ModelId` (through `DecisionModels.DefaultProvider`, which must implement `IExtractionProvider`; Gateway has none). Unknown ids throw `NoSuchModelError` with `ModelType` `extractionModel`. See `docs/articles/providers.md`.
+
 `ScaleDownProvider.ExtractionModel("extract-1")` extracts `text` fields and `list` fields of `text` items as verbatim spans, with confidence and sources. It accepts `providerOptions.scaledown.threshold` and rejects other field types with `ExtractionUnsupportedFieldTypeError`. See `docs/articles/scaledown.md`.
 
 `GatewayProvider.Create().ExtractionModel("scaledown/extract-1")` (or `ExtractRequest.ModelId = "scaledown/extract-1"`, which resolves through the Gateway unless `DecisionModels.DefaultProvider` is set) extracts through the AI Gateway. Which field types work depends on the model. An unsupported field throws `ExtractionUnsupportedFieldTypeError` after the request. Send files as bytes or base64.

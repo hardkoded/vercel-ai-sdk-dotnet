@@ -16,23 +16,6 @@ using ExtractOperation = Vercel.AI.Operations.Extract;
 
 namespace Vercel.AI.Tests.Upstream.Registry.ExtractionModel;
 
-/// <summary>A provider whose extraction factory is <c>factory</c>.</summary>
-internal sealed class ExtractionFactoryProvider : ProviderBase, IExtractionProvider
-{
-    private readonly Func<string, IExtractionCaller?> _factory;
-
-    public ExtractionFactoryProvider(Func<string, IExtractionCaller?> factory)
-        : base("extraction-factory")
-    {
-        _factory = factory;
-    }
-
-    public override ILanguageModel LanguageModel(string modelId) =>
-        throw new NotSupportedException();
-
-    public IExtractionCaller? ExtractionModel(string modelId) => _factory(modelId);
-}
-
 /// <summary>Port of <c>describe('extraction model resolution')</c> in <c>extraction-model.test.ts</c>.</summary>
 [Collection("DecisionDefaultProvider")]
 public sealed class ExtractionModelResolutionTests : DecisionDefaultProviderFixture
@@ -53,14 +36,17 @@ public sealed class ExtractionModelResolutionTests : DecisionDefaultProviderFixt
         Assert.Same(_model, DecisionModels.ResolveExtractionModel(_model));
     }
 
-    [Fact]
+    [Theory]
+    [InlineData("string")]
+    [InlineData("alias")]
     [UpstreamTest(
         Prefix + "extracts through Gateway using a model %s when no default provider is configured",
         Commit = "f886264eb6605d8c5a9bc26532a214d97fc72cd5",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Only the string resolution is ported. The alias resolution needs customProvider extractionModels, which are tracked in #1372."
+        Coverage = UpstreamCoverage.Covered
     )]
-    public async Task Extracts_through_Gateway_using_a_model_string_when_no_default_provider_is_configured()
+    public async Task Extracts_through_Gateway_using_a_model_when_no_default_provider_is_configured(
+        string resolution
+    )
     {
         DecisionModels.DefaultProvider = null;
         Environment.SetEnvironmentVariable("AI_GATEWAY_API_KEY", "test-api-key");
@@ -75,7 +61,13 @@ public sealed class ExtractionModelResolutionTests : DecisionDefaultProviderFixt
         var result = await ExtractOperation.ExtractAsync(
             new ExtractRequest
             {
-                ModelId = modelId,
+                Model =
+                    resolution == "string"
+                        ? null
+                        : new CustomProvider()
+                            .AddExtractionModel("invoices", modelId)
+                            .ExtractionModel("invoices"),
+                ModelId = resolution == "string" ? modelId : null,
                 State = "Invoice from Acme.",
                 Fields = new Dictionary<string, ExtractionField> { ["vendor"] = new("text") },
             }
@@ -121,16 +113,21 @@ public sealed class ExtractionModelResolutionTests : DecisionDefaultProviderFixt
             + "validates versions returned by model instances, aliases, registries, and defaults",
         Commit = "f886264eb6605d8c5a9bc26532a214d97fc72cd5",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Only model instances and default providers are checked. Aliases and registries need customProvider extractionModels and registry extractionModel, which are tracked in #1372."
+        Note = "The default provider is the custom provider. A ProviderRegistry is not a ProviderBase, so it cannot be the default provider as upstream does. Issue #1422."
     )]
-    public void Validates_versions_returned_by_model_instances_and_defaults()
+    public void Validates_versions_returned_by_model_instances_aliases_registries_and_defaults()
     {
         var invalid = new ExtractionMockModel { SpecificationVersion = "v3" };
-        DecisionModels.DefaultProvider = new ExtractionFactoryProvider(_ => invalid);
+        var provider = new CustomProvider().AddExtractionModel("invalid", invalid);
+        var registry = new ProviderRegistry();
+        registry.Register("provider", provider);
+        DecisionModels.DefaultProvider = provider;
         foreach (
             var resolve in new Func<IExtractionCaller>[]
             {
                 () => DecisionModels.ResolveExtractionModel(invalid),
+                () => provider.ExtractionModel("invalid"),
+                () => registry.ExtractionModel("provider:invalid"),
                 () => DecisionModels.ResolveExtractionModel(null, "invalid"),
             }
         )
@@ -173,14 +170,17 @@ public sealed class ExtractionModelResolutionTests : DecisionDefaultProviderFixt
         Assert.Equal("extractionModel", error.ModelType);
     }
 
-    [Fact]
+    [Theory]
+    [InlineData("string")]
+    [InlineData("registry")]
     [UpstreamTest(
         Prefix + "extracts with %s model resolution and forwards options in one call",
         Commit = "f886264eb6605d8c5a9bc26532a214d97fc72cd5",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Only the string resolution is ported. The registry resolution needs registry extractionModel, which is tracked in #1372."
+        Coverage = UpstreamCoverage.Covered
     )]
-    public async Task Extracts_with_string_model_resolution_and_forwards_options_in_one_call()
+    public async Task Extracts_with_model_resolution_and_forwards_options_in_one_call(
+        string resolution
+    )
     {
         var mock = new ExtractionMockModel
         {
@@ -195,13 +195,18 @@ public sealed class ExtractionModelResolutionTests : DecisionDefaultProviderFixt
                     )
                 ),
         };
-        DecisionModels.DefaultProvider = new ExtractionFactoryProvider(_ => mock);
+        var provider = new CustomProvider().AddExtractionModel("invoice", mock);
+        DecisionModels.DefaultProvider = provider;
+        var registry = new ProviderRegistry();
+        registry.Register("provider", provider);
         var fields = new Dictionary<string, ExtractionField> { ["total"] = new("number") };
 
         var result = await ExtractOperation.ExtractAsync(
             new ExtractRequest
             {
-                ModelId = "invoice",
+                Model =
+                    resolution == "string" ? null : registry.ExtractionModel("provider:invoice"),
+                ModelId = resolution == "string" ? "invoice" : null,
                 State = "Total: 12",
                 Fields = fields,
                 Headers = new Dictionary<string, string> { ["x-test"] = "header" },
