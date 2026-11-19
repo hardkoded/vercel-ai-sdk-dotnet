@@ -23,7 +23,7 @@ public class XaiOptions : OpenAICompatibleOptions
 /// <summary>
 /// xAI provider at <c>https://api.x.ai/v1</c>. <see cref="LanguageModel(string)"/> returns the Responses API model, as upstream does.
 /// </summary>
-public sealed class XaiProvider : OpenAICompatibleProvider
+public sealed class XaiProvider : OpenAICompatibleProvider, Operations.IBatchProvider
 {
     /// <summary>Provider id.</summary>
     public const string ProviderId = "xai";
@@ -66,6 +66,12 @@ public sealed class XaiProvider : OpenAICompatibleProvider
         return base.CreateChatModel(modelId);
     }
 #pragma warning restore CS0809
+
+    /// <summary>Batch API for processing text and image requests with xAI. Maps to <c>experimental_batch</c>.</summary>
+    public Operations.IBatchApi? ExperimentalBatch()
+    {
+        return new XaiBatch(this);
+    }
 
     /// <summary>xAI file store.</summary>
     public XaiFiles Files()

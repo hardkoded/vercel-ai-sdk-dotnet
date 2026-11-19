@@ -14,6 +14,7 @@ xAI provider.
 
 | Type | Summary |
 | --- | --- |
+| [XaiBatch](/api/Vercel.AI.Xai/XaiBatch/) | xAI Batch API. Uploads the requests as a JSONL file, creates a file-backed batch, and pages through its results. Maps to XaiBatch. |
 | [XaiClientSecret](/api/Vercel.AI.Xai/XaiClientSecret/) | Client secret returned by /realtime/clientsecrets. |
 | [XaiFileDeleteResult](/api/Vercel.AI.Xai/XaiFileDeleteResult/) | Result of deleting an xAI file. |
 | [XaiFileDownload](/api/Vercel.AI.Xai/XaiFileDownload/) | Downloaded xAI file bytes. |
