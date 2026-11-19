@@ -762,6 +762,7 @@ internal static class Generation
                 var toolCalls = new List<GeneratedToolCall>();
                 // Everything but text and reasoning blocks goes into contentOrder as it arrives, so the step content keeps the stream order.
                 var streamedApprovals = new StreamedApprovals();
+                var stepCallId = NewCallId();
                 FinishReason? finish = null;
                 string? rawFinish = null;
                 JsonElement? providerMetadata = null;
@@ -825,7 +826,18 @@ internal static class Generation
                     Body = options.Include?.RequestBody == true ? streamResult.Request?.Body : null,
                     Messages = options.Include?.RequestMessages == true ? stepMessages : null,
                 };
-                var enumerator = streamResult.Stream.GetAsyncEnumerator(cancellationToken);
+                // executeToolsFromStream decides the approvals as the calls arrive and runs the tools at the end of the model call.
+                var enumerator = ExecuteToolsFromStream
+                    .Execute(
+                        streamResult.Stream,
+                        StepOptions(options, update),
+                        stepCallId,
+                        stepMessages,
+                        now,
+                        instructionCount,
+                        cancellationToken
+                    )
+                    .GetAsyncEnumerator(cancellationToken);
                 var disposal = abort.Track(streamResult.Disposal);
                 var nextPending = false;
                 try
@@ -990,42 +1002,6 @@ internal static class Generation
                                 toolCalls.Add(toolCallPart.ToolCall);
                                 contentOrder.Add(toolCallPart.ToolCall);
                                 buffer.Add(toolCallPart);
-                                // Like executeToolsFromStream, the approval is decided as the call arrives.
-                                var approval = await ExecuteToolsFromStream
-                                    .ResolveToolCallApprovalAsync(
-                                        options,
-                                        toolCallPart.ToolCall,
-                                        messages.Skip(instructionCount).ToArray()
-                                    )
-                                    .ConfigureAwait(false);
-                                if (approval.Request != null)
-                                {
-                                    streamedApprovals.Requests.Add(approval.Request);
-                                    contentOrder.Add(approval.Request);
-                                    buffer.Add(new ToolApprovalRequestPart(approval.Request));
-                                }
-
-                                if (approval.Response != null)
-                                {
-                                    streamedApprovals.Responses.Add(approval.Response);
-                                    contentOrder.Add(approval.Response);
-                                    buffer.Add(new ToolApprovalResponsePart(approval.Response));
-                                    if (!approval.Response.Approved)
-                                    {
-                                        buffer.Add(
-                                            new ToolOutputDeniedPart(
-                                                approval.Response.ToolCall.ToolCallId,
-                                                approval.Response.ToolCall.ToolName
-                                            )
-                                        );
-                                    }
-                                }
-
-                                if (approval.Blocked)
-                                {
-                                    streamedApprovals.Blocked.Add(toolCallPart.ToolCall.ToolCallId);
-                                }
-
                                 break;
                             case ToolApprovalRequestPart approvalRequest:
                                 contentOrder.Add(
@@ -1035,9 +1011,40 @@ internal static class Generation
                                     )
                                     {
                                         ToolCall = approvalRequest.ToolCall,
+                                        Reason = approvalRequest.Reason,
+                                        IsAutomatic = approvalRequest.IsAutomatic,
+                                        Signature = approvalRequest.Signature,
                                     }
                                 );
                                 buffer.Add(approvalRequest);
+                                break;
+                            case ToolApprovalResponsePart approvalResponse:
+                                contentOrder.Add(
+                                    new GeneratedToolApprovalResponse(
+                                        approvalResponse.ApprovalId,
+                                        approvalResponse.ToolCall,
+                                        approvalResponse.Approved,
+                                        approvalResponse.Reason,
+                                        approvalResponse.ProviderExecuted
+                                    )
+                                );
+                                buffer.Add(approvalResponse);
+                                break;
+                            case ToolOutputDeniedPart outputDenied:
+                                buffer.Add(outputDenied);
+                                break;
+                            case ExecuteToolsFromStream.ToolExecutionEndPart executionEnd:
+                                streamedApprovals.ToolExecutionMs[executionEnd.ToolCallId] =
+                                    executionEnd.ToolExecutionMs;
+                                break;
+                            case ToolResultPart { Result.Preliminary: true } preliminaryResult:
+                                buffer.Add(preliminaryResult);
+                                break;
+                            case ToolResultPart executedResult
+                                when !executedResult.Result.ProviderExecuted:
+                                streamedApprovals.Executed.Add(executedResult.Result);
+                                emittedResultIds.Add(executedResult.Result.ToolCallId);
+                                buffer.Add(executedResult);
                                 break;
                             case ToolResultPart { Result.ProviderExecuted: true } providerResult:
                                 RecordProviderResult(providerResult.Result);
@@ -1046,6 +1053,14 @@ internal static class Generation
                             case ToolErrorPart { Result.ProviderExecuted: true } providerError:
                                 RecordProviderResult(providerError.Result);
                                 buffer.Add(providerError);
+                                break;
+                            case ToolErrorPart executedError
+                                when streamedApprovals.ToolExecutionMs.ContainsKey(
+                                    executedError.Result.ToolCallId
+                                ):
+                                streamedApprovals.Executed.Add(executedError.Result);
+                                emittedResultIds.Add(executedError.Result.ToolCallId);
+                                buffer.Add(executedError);
                                 break;
                             case ToolErrorPart invalidCallError:
                                 emittedResultIds.Add(invalidCallError.Result.ToolCallId);
@@ -1240,8 +1255,7 @@ internal static class Generation
                         stepResponse,
                         null,
                         streamedApprovals,
-                        deliveredSteeringMessages.Select(delivered => delivered.Message).ToArray(),
-                        preliminary => buffer.Add(new ToolResultPart(preliminary))
+                        deliveredSteeringMessages.Select(delivered => delivered.Message).ToArray()
                     )
                     .ConfigureAwait(false);
                 foreach (var toolResult in step.ToolResults)
@@ -1913,7 +1927,11 @@ internal static class Generation
         // an automatic denial settles the call without running it. A streamed step decided them as the calls arrived.
         var (approvalRequests, approvalResponses, blockedToolCallIds) =
             streamed != null
-                ? (streamed.Requests, streamed.Responses, streamed.Blocked)
+                ? (
+                    new List<GeneratedToolApprovalRequest>(),
+                    new List<GeneratedToolApprovalResponse>(),
+                    new HashSet<string>(StringComparer.Ordinal)
+                )
                 : await ResolveStepApprovalsAsync(
                         options,
                         toolCalls,
@@ -1935,6 +1953,12 @@ internal static class Generation
                         toolResults.Add(invalidResult);
                     }
 
+                    continue;
+                }
+
+                // A streamed step ran its tools when the model call ended.
+                if (streamed != null)
+                {
                     continue;
                 }
 
@@ -1996,6 +2020,13 @@ internal static class Generation
 
         if (streamed != null)
         {
+            foreach (var elapsed in streamed.ToolExecutionMs)
+            {
+                toolExecutionMs[elapsed.Key] = elapsed.Value;
+            }
+
+            toolResults.AddRange(streamed.Executed);
+
             // A streamed step keeps the stream order: the approvals and the results of the provider are in the content already,
             // and the results of the tools this loop ran follow it.
             foreach (var executed in toolResults)
@@ -2305,11 +2336,10 @@ internal static class Generation
     // The approvals that streamText decided while the model stream was read, as executeToolsFromStream does.
     private sealed class StreamedApprovals
     {
-        public List<GeneratedToolApprovalRequest> Requests { get; } = [];
+        // The results of the tools that ran when the model call ended, and how long each took.
+        public List<ExecutedTool> Executed { get; } = [];
 
-        public List<GeneratedToolApprovalResponse> Responses { get; } = [];
-
-        public HashSet<string> Blocked { get; } = new(StringComparer.Ordinal);
+        public Dictionary<string, double> ToolExecutionMs { get; } = new(StringComparer.Ordinal);
 
         // Calls whose result is in the step content already, like a call that failed to parse.
         public HashSet<string> InlineResultIds { get; } = new(StringComparer.Ordinal);
