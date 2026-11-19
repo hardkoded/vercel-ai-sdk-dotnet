@@ -3239,6 +3239,9 @@ public sealed class LanguageModelStreamRequest
 
     /// <summary>Request body sent to the provider, for debugging.</summary>
     public JsonElement? Body { get; }
+
+    /// <summary>URL the request was sent to. Telemetry events carry only its origin. Maps to <c>request.url</c>.</summary>
+    public string? Url { get; init; }
 }
 
 /// <summary>Response info for a stream call. Maps to the <c>response</c> field of <c>doStream</c>.</summary>

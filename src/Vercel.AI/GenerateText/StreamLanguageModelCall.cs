@@ -295,7 +295,8 @@ internal static class LanguageModelCallStreaming
                 effectiveCallId,
                 callOptions.ToolChoice,
                 now,
-                callStartTimestampMs
+                callStartTimestampMs,
+                streamResult.Request
             );
         }
         catch
@@ -357,7 +358,8 @@ internal static class LanguageModelCallStreaming
         string callId,
         ToolChoice? toolChoice,
         Func<double> now,
-        double callStartTimestampMs
+        double callStartTimestampMs,
+        LanguageModelStreamRequest? request
     )
     {
         // keep track of parsed tool calls so provider-emitted approval requests can reference them
@@ -447,7 +449,16 @@ internal static class LanguageModelCallStreaming
             switch (chunk)
             {
                 case ErrorStreamPart error:
-                    controller.Add(new ErrorPart(error.Message) { Error = error.Exception });
+                    var normalized =
+                        error.Error != null
+                            ? StreamErrors.NormalizeStreamProviderError(error.Error) as Exception
+                            : null;
+                    controller.Add(
+                        new ErrorPart((normalized ?? error.Exception)?.Message ?? error.Message)
+                        {
+                            Error = normalized ?? error.Exception,
+                        }
+                    );
                     break;
 
                 case TextStartStreamPart textStart:
@@ -833,6 +844,9 @@ internal static class LanguageModelCallStreaming
                                 )
                                 {
                                     CallId = callId,
+                                    Request = RequestOrigin.GetRequestOrigin(request?.Url) is { } origin
+                                        ? new LanguageModelStreamRequest { Url = origin }
+                                        : null,
                                     Performance = performance,
                                 },
                                 cancellationToken

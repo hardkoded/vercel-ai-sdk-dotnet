@@ -91,11 +91,7 @@ internal static class StepPerformanceCalculator
         );
     }
 
-    private static double Percentile(double[] sorted, double fraction)
-    {
-        var position = (sorted.Length - 1) * fraction;
-        var lower = (int)Math.Floor(position);
-        var upper = (int)Math.Ceiling(position);
-        return sorted[lower] + ((sorted[upper] - sorted[lower]) * (position - lower));
-    }
+    // Nearest-rank percentile, like upstream's calculatePercentile.
+    private static double Percentile(double[] sorted, double fraction) =>
+        sorted[(int)Math.Ceiling(fraction * sorted.Length) - 1];
 }

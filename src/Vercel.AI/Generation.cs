@@ -369,7 +369,15 @@ internal static class Generation
                                         generated.ResponseId,
                                         generated.ProviderMetadata,
                                         TimeSpan.FromMilliseconds(responseTimeMs)
-                                    ),
+                                    )
+                                    {
+                                        Request =
+                                            RequestOrigin.GetRequestOrigin(
+                                                modelResponse.Request?.Url
+                                            ) is { } origin
+                                                ? new LanguageModelStreamRequest { Url = origin }
+                                                : null,
+                                    },
                                     cancellationToken
                                 ),
                             cancellationToken
