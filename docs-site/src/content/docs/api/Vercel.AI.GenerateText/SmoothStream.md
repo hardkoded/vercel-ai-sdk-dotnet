@@ -34,11 +34,11 @@ Smooths text and reasoning streaming output. Maps to `smoothStream`.
 
 
 ```csharp
-public static Func<IReadOnlyList<Tool>?, Func<IAsyncEnumerable<TextStreamPart>, CancellationToken, IAsyncEnumerable<TextStreamPart>>> Create(SmoothStreamOptions? options = null)
+public static StreamTextTransform Create(SmoothStreamOptions? options = null)
 ```
 
 
-Creates the transform. Call the returned function with the tools to get a transform of the full stream.
+Creates the transform. Pass it to [ExperimentalTransform](/api/Vercel.AI/StreamTextOptions/#Vercel_AI_StreamTextOptions_ExperimentalTransform), or call it with [StreamTextTransformOptions](/api/Vercel.AI/StreamTextTransformOptions/) to get a transform of the full stream.
 
 **Parameters**
 
@@ -46,6 +46,6 @@ Creates the transform. Call the returned function with the tools to get a transf
 | --- | --- | --- |
 | `options` | [SmoothStreamOptions](/api/Vercel.AI.GenerateText/SmoothStreamOptions/) |  |
 
-**Returns:** [Func&lt;IReadOnlyList&lt;Tool&gt;, Func&lt;IAsyncEnumerable&lt;TextStreamPart&gt;, CancellationToken, IAsyncEnumerable&lt;TextStreamPart&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
+**Returns:** [StreamTextTransform](/api/Vercel.AI/StreamTextTransform/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/SmoothStream.cs#L87)

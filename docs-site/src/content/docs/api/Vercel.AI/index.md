@@ -100,6 +100,7 @@ Client, text generation, streaming, tools, and agents.
 | [StreamTextOptions](/api/Vercel.AI/StreamTextOptions/) | Options for CancellationToken). |
 | [StreamTextResult](/api/Vercel.AI/StreamTextResult/) | Result of streamText. Enumerating Stream(CancellationToken) or awaiting Text consumes the same buffered events. |
 | [StreamTextSingleConsumerResult](/api/Vercel.AI/StreamTextSingleConsumerResult/) | A single-consumer view of a text generation, without replay or final content members. Maps to StreamTextSingleConsumerResult. Choose one stream projection. A second one throws. |
+| [StreamTextTransformOptions](/api/Vercel.AI/StreamTextTransformOptions/) | The options a StreamTextTransform receives. Maps to the argument of StreamTextTransform. |
 | [TextDeltaPart](/api/Vercel.AI/TextDeltaPart/) | Text delta. Maps to text-delta. |
 | [TextEndPart](/api/Vercel.AI/TextEndPart/) | A text block ended. Maps to text-end. |
 | [TextStartPart](/api/Vercel.AI/TextStartPart/) | A text block started. Maps to text-start. |
@@ -132,3 +133,9 @@ Client, text generation, streaming, tools, and agents.
 | [IAiClient](/api/Vercel.AI/IAiClient/) | Core AI SDK client. Maps to the ai package functions. |
 | [IAiTelemetry](/api/Vercel.AI/IAiTelemetry/) | Telemetry hook invoked around generate and stream calls. |
 | [ILanguageModelMiddleware](/api/Vercel.AI/ILanguageModelMiddleware/) | Wraps doGenerate and doStream. Maps to language-model middleware. |
+
+## Delegates
+
+| Type | Summary |
+| --- | --- |
+| [StreamTextTransform](/api/Vercel.AI/StreamTextTransform/) | A transformation that is applied to the stream of parts. It receives the stream and returns the transformed stream. The transformation must maintain the stream structure for StreamTextAsync to work correctly. Maps to StreamTextTransform. |

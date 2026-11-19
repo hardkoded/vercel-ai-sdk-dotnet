@@ -28,12 +28,12 @@ Public types in the `Vercel.AI.Prompt` namespace.
 | [JsonToolModelOutput](/api/Vercel.AI.Prompt/JsonToolModelOutput/) | JSON tool output. |
 | [LanguageModelFilePart](/api/Vercel.AI.Prompt/LanguageModelFilePart/) | A file part in the v4 provider prompt. Maps to the result of convertToLanguageModelV4FilePart. |
 | [LanguageModelPrompts](/api/Vercel.AI.Prompt/LanguageModelPrompts/) | Prompt conversion before a model call. Maps to convert-to-language-model-prompt.ts. |
-| [PreparedTool](/api/Vercel.AI.Prompt/PreparedTool/) | A tool after String). |
+| [PreparedTool](/api/Vercel.AI.Prompt/PreparedTool/) | A tool after ISandboxSession). |
 | [PreparedToolChoice](/api/Vercel.AI.Prompt/PreparedToolChoice/) | A tool choice sent to a language model. Maps to the result of prepareToolChoice. |
 | [PreservedStreamError](/api/Vercel.AI.Prompt/PreservedStreamError/) | An error-shaped value that must be returned unchanged. |
 | [PromptInput](/api/Vercel.AI.Prompt/PromptInput/) | The prompt of a call: a user string or a list of messages. Maps to prompt: string \| ModelMessage[]. |
 | [Prompts](/api/Vercel.AI.Prompt/Prompts/) | Prompt normalization. Maps to standardizePrompt. |
-| [PromptTool](/api/Vercel.AI.Prompt/PromptTool/) | A tool passed to String). |
+| [PromptTool](/api/Vercel.AI.Prompt/PromptTool/) | A tool passed to ISandboxSession). |
 | [PromptTools](/api/Vercel.AI.Prompt/PromptTools/) | Tool preparation. Maps to prepareTools. |
 | [ProviderStreamError](/api/Vercel.AI.Prompt/ProviderStreamError/) | A provider stream payload that already carries status metadata. |
 | [StandardizedPrompt](/api/Vercel.AI.Prompt/StandardizedPrompt/) | A standardized prompt. Maps to the result of standardizePrompt. |
