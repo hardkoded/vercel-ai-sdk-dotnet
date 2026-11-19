@@ -1150,6 +1150,9 @@ public class GenerateTextOptions
     /// <summary>The clock for step timing in milliseconds. Tests replace it. Maps to <c>_internal.now</c>.</summary>
     internal Func<double>? NowMs { get; set; }
 
+    /// <summary>Generates the id of the call. Maps to <c>_internal.generateCallId</c>.</summary>
+    internal Func<string>? GenerateCallId { get; set; }
+
     /// <summary>A shallow copy of these options, so a caller can change one property without changing the original.</summary>
     internal GenerateTextOptions ShallowCopy() => (GenerateTextOptions)MemberwiseClone();
 
@@ -1270,6 +1273,16 @@ public class GenerateTextOptions
     public Vercel.AI.ProviderUtils.ISandboxSession? ExperimentalSandbox { get; set; }
 
     /// <summary>
+    /// Called immediately before each provider model call begins. An exception it throws is ignored.
+    /// Maps to <c>onLanguageModelCallStart</c>.
+    /// </summary>
+    public Func<
+        LanguageModelCallStartEvent,
+        CancellationToken,
+        Task
+    >? OnLanguageModelCallStart { get; set; }
+
+    /// <summary>
     /// Called after each provider model call returns, before tools run and before <see cref="OnStepEnd"/>.
     /// Maps to <c>onLanguageModelCallEnd</c>.
     /// </summary>
@@ -1363,6 +1376,31 @@ public class GenerateTextOptions
         string,
         Func<JsonElement, CancellationToken, Task<JsonElement>>
     >? RefineToolInput { get; set; }
+}
+
+/// <summary>Passed to <see cref="GenerateTextOptions.OnLanguageModelCallStart"/> before the model is called.</summary>
+public sealed class LanguageModelCallStartEvent
+{
+    /// <summary>Id of the model call.</summary>
+    public string CallId { get; init; } = string.Empty;
+
+    /// <summary>Provider id of the model.</summary>
+    public string Provider { get; init; } = string.Empty;
+
+    /// <summary>Model id.</summary>
+    public string ModelId { get; init; } = string.Empty;
+
+    /// <summary>Instructions of the call.</summary>
+    public Instructions? Instructions { get; init; }
+
+    /// <summary>Messages of the call, without the instructions.</summary>
+    public IReadOnlyList<ModelMessage> Messages { get; init; } = [];
+
+    /// <summary>Tools offered to the model.</summary>
+    public IReadOnlyList<LanguageModelTool>? Tools { get; init; }
+
+    /// <summary>Call settings.</summary>
+    public LanguageModelCallOptions CallOptions { get; init; } = new();
 }
 
 /// <summary>Passed to <see cref="GenerateTextOptions.OnLanguageModelCallEnd"/> after a provider model call returns.</summary>
