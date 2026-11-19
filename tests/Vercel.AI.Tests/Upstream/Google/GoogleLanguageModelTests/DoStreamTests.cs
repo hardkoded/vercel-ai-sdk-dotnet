@@ -196,6 +196,33 @@ public sealed class DoStreamTests
         );
     }
 
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should include the streamed prompt block reason message in provider metadata",
+        Commit = "a4de3a2148f0187dd8e2bc111c9b8ffb7cb4895e",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_include_the_streamed_prompt_block_reason_message_in_provider_metadata()
+    {
+        var handler = new SequencedHandler().Sse(
+            Sse(
+                "{\"promptFeedback\":{\"blockReason\":\"PROHIBITED_CONTENT\",\"blockReasonMessage\":\"The prompt is blocked due to prohibited contents\"},\"usageMetadata\":{\"promptTokenCount\":9,\"totalTokenCount\":9}}"
+            )
+        );
+
+        var parts = await Stream(handler, GoogleUpstream.Hello());
+
+        var finish = parts.OfType<FinishStreamPart>().First();
+        var feedback = finish
+            .ProviderMetadata!.Value.GetProperty("google")
+            .GetProperty("promptFeedback");
+        Assert.Equal("PROHIBITED_CONTENT", feedback.GetProperty("blockReason").GetString());
+        Assert.Equal(
+            "The prompt is blocked due to prohibited contents",
+            feedback.GetProperty("blockReasonMessage").GetString()
+        );
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("BLOCK_REASON_UNSPECIFIED")]

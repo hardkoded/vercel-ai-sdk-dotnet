@@ -1317,6 +1317,27 @@ public sealed class GoogleLanguageUpstreamTests
 
     [Fact]
     [UpstreamTest(
+        "packages/google/src/google-language-model.test.ts::doGenerate::should include the prompt block reason message in provider metadata",
+        Commit = "a4de3a2148f0187dd8e2bc111c9b8ffb7cb4895e",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Should_include_the_prompt_block_reason_message_in_provider_metadata()
+    {
+        var result = GoogleUpstream.Parse(
+            "{\"promptFeedback\":{\"blockReason\":\"PROHIBITED_CONTENT\",\"blockReasonMessage\":\"The prompt is blocked due to prohibited contents\"},\"usageMetadata\":{\"promptTokenCount\":9,\"totalTokenCount\":9}}"
+        );
+        var feedback = result
+            .ProviderMetadata!.Value.GetProperty("google")
+            .GetProperty("promptFeedback");
+        Assert.Equal("PROHIBITED_CONTENT", feedback.GetProperty("blockReason").GetString());
+        Assert.Equal(
+            "The prompt is blocked due to prohibited contents",
+            feedback.GetProperty("blockReasonMessage").GetString()
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
         "packages/google/src/google-language-model.test.ts::doGenerate::should not classify the default prompt block reason %j as a content filter",
         Coverage = UpstreamCoverage.Covered
     )]
