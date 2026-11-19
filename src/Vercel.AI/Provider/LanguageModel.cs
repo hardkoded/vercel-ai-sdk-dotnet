@@ -2921,6 +2921,9 @@ public sealed class ToolResultStreamPart : LanguageModelStreamPart
 
     /// <summary>Provider metadata for this result, keyed by provider name.</summary>
     public JsonElement? ProviderMetadata { get; init; }
+
+    /// <summary>True when the result is preliminary: the provider-executed tool streams it before its final result, such as a partial image.</summary>
+    public bool? Preliminary { get; init; }
 }
 
 /// <summary>A cited URL.</summary>

@@ -656,7 +656,8 @@ internal static class LanguageModelCallStreaming
                     };
                     var providerExecuted = Generation.ProviderExecutedResult(
                         providerResult,
-                        _toolCallsByToolCallId.Values.ToArray()
+                        _toolCallsByToolCallId.Values.ToArray(),
+                        toolResult.Preliminary
                     );
                     if (!_withholdToolParts)
                     {
@@ -667,7 +668,7 @@ internal static class LanguageModelCallStreaming
                         );
                     }
 
-                    if (options.CollectContent)
+                    if (options.CollectContent && toolResult.Preliminary != true)
                     {
                         _modelCallContent.Add(providerResult);
                     }
