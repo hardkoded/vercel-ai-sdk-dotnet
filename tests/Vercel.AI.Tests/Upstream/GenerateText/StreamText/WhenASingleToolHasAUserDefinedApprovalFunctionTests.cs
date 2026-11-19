@@ -19,8 +19,7 @@ public sealed class WhenASingleToolHasAUserDefinedApprovalFunctionTests
     [Fact]
     [UpstreamTest(
         Id + "should add tool approval requests to the full stream",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Upstream runs the call that needs no approval as soon as it arrives, so its tool-call and tool-result sit between the approval request and the finish-step. The port runs the tools after the model stream ends, so both tool-call parts come first, then the approval request, then the tool-result."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_add_tool_approval_requests_to_the_full_stream()
     {
@@ -33,8 +32,8 @@ public sealed class WhenASingleToolHasAUserDefinedApprovalFunctionTests
                 "start",
                 "start-step",
                 "tool-call",
-                "tool-call",
                 "tool-approval-request",
+                "tool-call",
                 "tool-result",
                 "finish-step",
                 "finish",
@@ -48,15 +47,15 @@ public sealed class WhenASingleToolHasAUserDefinedApprovalFunctionTests
             "tool1",
             "{\"value\":\"value-needs-approval\"}"
         );
+        var request = Assert.IsType<ToolApprovalRequestPart>(parts[3]);
+        Assert.Equal("id-1", request.ApprovalId);
+        AssertToolCall(request.ToolCall, "call-1", "tool1", "{\"value\":\"value-needs-approval\"}");
         AssertToolCall(
-            Assert.IsType<ToolCallPart>(parts[3]).ToolCall,
+            Assert.IsType<ToolCallPart>(parts[4]).ToolCall,
             "call-2",
             "tool1",
             "{\"value\":\"value-no-approval\"}"
         );
-        var request = Assert.IsType<ToolApprovalRequestPart>(parts[4]);
-        Assert.Equal("id-1", request.ApprovalId);
-        AssertToolCall(request.ToolCall, "call-1", "tool1", "{\"value\":\"value-needs-approval\"}");
         var toolResult = Assert.IsType<ToolResultPart>(parts[5]).Result;
         Assert.False(toolResult.Dynamic);
         Assert.Equal("call-2", toolResult.ToolCallId);
@@ -70,8 +69,7 @@ public sealed class WhenASingleToolHasAUserDefinedApprovalFunctionTests
     [Fact]
     [UpstreamTest(
         Id + "should add tool approval requests to the UI message stream",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Same ordering difference as the full stream: the port emits both tool-input-available chunks before the approval request."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_add_tool_approval_requests_to_the_UI_message_stream()
     {
@@ -81,8 +79,8 @@ public sealed class WhenASingleToolHasAUserDefinedApprovalFunctionTests
               { "type": "start" },
               { "type": "start-step" },
               { "input": { "value": "value-needs-approval" }, "toolCallId": "call-1", "toolName": "tool1", "type": "tool-input-available" },
-              { "input": { "value": "value-no-approval" }, "toolCallId": "call-2", "toolName": "tool1", "type": "tool-input-available" },
               { "approvalId": "id-1", "toolCallId": "call-1", "type": "tool-approval-request" },
+              { "input": { "value": "value-no-approval" }, "toolCallId": "call-2", "toolName": "tool1", "type": "tool-input-available" },
               { "output": "result for value-no-approval", "toolCallId": "call-2", "type": "tool-output-available" },
               { "type": "finish-step" },
               { "finishReason": "tool-calls", "type": "finish" }
@@ -120,19 +118,19 @@ public sealed class WhenASingleToolHasAUserDefinedApprovalFunctionTests
 
         Assert.Equal(4, content.Count);
         AssertToolCall(content[0], "call-1", "tool1", "{\"value\":\"value-needs-approval\"}");
-        AssertToolCall(content[1], "call-2", "tool1", "{\"value\":\"value-no-approval\"}");
-        var toolResult = Assert.IsType<GeneratedToolResult>(content[2]);
-        Assert.False(toolResult.Dynamic);
-        Assert.Equal("result for value-no-approval", toolResult.ResultJson);
-        Assert.Equal("call-2", toolResult.ToolCallId);
-        Assert.Equal("tool1", toolResult.ToolName);
         AssertApprovalRequest(
-            content[3],
+            content[1],
             "id-1",
             "call-1",
             "tool1",
             "{\"value\":\"value-needs-approval\"}"
         );
+        AssertToolCall(content[2], "call-2", "tool1", "{\"value\":\"value-no-approval\"}");
+        var toolResult = Assert.IsType<GeneratedToolResult>(content[3]);
+        Assert.False(toolResult.Dynamic);
+        Assert.Equal("result for value-no-approval", toolResult.ResultJson);
+        Assert.Equal("call-2", toolResult.ToolCallId);
+        Assert.Equal("tool1", toolResult.ToolName);
     }
 
     [Fact]
@@ -153,13 +151,13 @@ public sealed class WhenASingleToolHasAUserDefinedApprovalFunctionTests
             "tool1",
             "{\"value\":\"value-needs-approval\"}"
         );
+        AssertApprovalRequestPart(assistant.Parts[1], "id-1", "call-1");
         AssertToolCallPart(
-            assistant.Parts[1],
+            assistant.Parts[2],
             "call-2",
             "tool1",
             "{\"value\":\"value-no-approval\"}"
         );
-        AssertApprovalRequestPart(assistant.Parts[2], "id-1", "call-1");
         AssertToolResult(
             Assert.IsType<ToolModelMessage>(messages[1]),
             "call-2",
