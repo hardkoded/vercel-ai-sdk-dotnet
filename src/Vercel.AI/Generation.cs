@@ -7,13 +7,16 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Microsoft.AspNetCore.Http;
-using Vercel.AI.AspNetCore;
 using Vercel.AI.GenerateObject;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.Util;
+#if NET
+using Microsoft.AspNetCore.Http;
+using Vercel.AI.AspNetCore;
+#endif
+
 
 namespace Vercel.AI;
 
@@ -4645,6 +4648,7 @@ public sealed class StreamTextSingleConsumerResult
         return _result.ConsumeStreamAsync(cancellationToken);
     }
 
+#if NET
     /// <summary>Converts the stream parts into UI message chunks. Maps to <c>toUIMessageStream</c>.</summary>
     public IAsyncEnumerable<JsonObject> ToUIMessageStream(
         UIMessageStreamOptions? options = null,
@@ -4664,6 +4668,7 @@ public sealed class StreamTextSingleConsumerResult
     {
         return _result.ToUIMessageStreamResult(keepAliveMs, onError, redactToolErrors, sendSources);
     }
+#endif
 
     /// <summary>Builds a <c>text/plain</c> response of the text deltas. Maps to <c>toTextStreamResponse</c>.</summary>
     public TextStreamResponse ToTextStreamResponse(
@@ -4676,6 +4681,7 @@ public sealed class StreamTextSingleConsumerResult
         return _result.ToTextStreamResponse(status, statusText, headers, cancellationToken);
     }
 
+#if NET
     /// <summary>Pipes the UI message stream to <paramref name="response"/>. Maps to <c>pipeUIMessageStreamToResponse</c>.</summary>
     public Task PipeUIMessageStreamToResponseAsync(
         ServerResponse response,
@@ -4701,6 +4707,7 @@ public sealed class StreamTextSingleConsumerResult
             sendSources
         );
     }
+#endif
 
     /// <summary>Pipes the text deltas to <paramref name="response"/>. Maps to <c>pipeTextStreamToResponse</c>.</summary>
     public Task PipeTextStreamToResponseAsync(
