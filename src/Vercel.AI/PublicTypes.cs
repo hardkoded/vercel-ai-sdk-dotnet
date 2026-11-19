@@ -36,6 +36,12 @@ public sealed class Tool
     /// <summary>Tool description.</summary>
     public string? Description { get; }
 
+    /// <summary>
+    /// Resolves the description per call from the context of the tool and the sandbox, instead of the fixed <see cref="Description"/>.
+    /// Maps to a function-valued <c>description</c>.
+    /// </summary>
+    public Func<Vercel.AI.Prompt.ToolDescriptionContext, string>? DescriptionFactory { get; set; }
+
     /// <summary>Display title of the tool. Parsed calls of the tool carry it.</summary>
     public string? Title { get; set; }
 
