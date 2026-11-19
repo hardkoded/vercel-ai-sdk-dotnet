@@ -110,6 +110,7 @@ internal static class Generation
             )
             {
                 ExperimentalSteeringMessages = steeringMessages.Count > 0 ? steeringMessages : null,
+                ExperimentalSandbox = options.ExperimentalSandbox,
             }
         );
         if (update?.Instructions != null || update?.Messages != null)
@@ -124,6 +125,22 @@ internal static class Generation
         }
 
         return update;
+    }
+
+    // Maps to `stepSandbox = prepareStepResult?.experimental_sandbox ?? sandbox`. The sandbox from prepareStep applies to tool execution in this step only.
+    private static GenerateTextOptions StepOptions(
+        GenerateTextOptions options,
+        PrepareStepUpdate? update
+    )
+    {
+        if (update?.ExperimentalSandbox == null)
+        {
+            return options;
+        }
+
+        var stepOptions = options.ShallowCopy();
+        stepOptions.ExperimentalSandbox = update.ExperimentalSandbox;
+        return stepOptions;
     }
 
     // Maps to the shouldStartNextStep of generateText and streamText. A step with no client tool calls continues
@@ -388,7 +405,7 @@ internal static class Generation
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
                 var step = await FinishStepAsync(
                         generated,
-                        options,
+                        StepOptions(options, update),
                         messages,
                         instructionCount,
                         responseMessages,
@@ -1161,7 +1178,7 @@ internal static class Generation
                 var approvalParts = new List<TextStreamPart>();
                 var step = await FinishStepAsync(
                         generated,
-                        options,
+                        StepOptions(options, update),
                         messages,
                         instructionCount,
                         responseMessages,

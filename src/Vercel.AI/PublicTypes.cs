@@ -1113,6 +1113,9 @@ public sealed class PrepareStepContext
     /// steering messages of previous steps from <see cref="Steps"/>. Maps to <c>experimental_steeringMessages</c>.
     /// </summary>
     public IReadOnlyList<UserModelMessage>? ExperimentalSteeringMessages { get; init; }
+
+    /// <summary>The sandbox environment that the step is operating in. Maps to <c>experimental_sandbox</c>.</summary>
+    public Vercel.AI.ProviderUtils.ISandboxSession? ExperimentalSandbox { get; init; }
 }
 
 /// <summary>Optional changes applied before a step.</summary>
@@ -1134,6 +1137,11 @@ public sealed class PrepareStepUpdate
     /// Provider options for this step, such as an Anthropic container id. They are deep-merged onto the call's provider options.
     /// </summary>
     public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
+
+    /// <summary>
+    /// The sandbox environment that the step is operating in. Changing it affects tool execution in this step only. Maps to <c>experimental_sandbox</c>.
+    /// </summary>
+    public Vercel.AI.ProviderUtils.ISandboxSession? ExperimentalSandbox { get; set; }
 }
 
 /// <summary>Options for <see cref="IAiClient.GenerateTextAsync"/>. Property names follow <c>generateText</c>.</summary>
