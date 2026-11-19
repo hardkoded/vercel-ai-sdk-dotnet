@@ -21,7 +21,7 @@ public sealed class PipeAgentUIStreamToResponseOptions : CreateAgentUIStreamResp
 
 Options of `CancellationToken)`. Maps to the options of `pipeAgentUIStreamToResponse`.
 
-**Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [CreateAgentUIStreamOptions](/api/Vercel.AI.AspNetCore/CreateAgentUIStreamOptions/) → [CreateAgentUIStreamResponseOptions](/api/Vercel.AI.AspNetCore/CreateAgentUIStreamResponseOptions/)
+**Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [CreateAgentUIStreamOptionsBase](/api/Vercel.AI.AspNetCore/CreateAgentUIStreamOptionsBase/) → [CreateAgentUIStreamOptions](/api/Vercel.AI.AspNetCore/CreateAgentUIStreamOptions/) → [CreateAgentUIStreamResponseOptions](/api/Vercel.AI.AspNetCore/CreateAgentUIStreamResponseOptions/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/PipeAgentUIStreamToResponse.cs#L10)
 

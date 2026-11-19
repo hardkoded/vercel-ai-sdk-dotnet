@@ -14,11 +14,10 @@ using Vercel.AI.Util;
 
 namespace Vercel.AI.AspNetCore;
 
-/// <summary>Options of <see cref="UIMessageStreamConverter.CreateAgentUIStreamAsync"/>. Maps to the options of <c>createAgentUIStream</c>.</summary>
-public class CreateAgentUIStreamOptions
+/// <summary>The options of <c>createAgentUIStream</c> that do not depend on the agent. The .NET split of the generic <c>CALL_OPTIONS</c> parameter.</summary>
+public abstract class CreateAgentUIStreamOptionsBase
 {
-    /// <summary>The agent to run. Maps to <c>agent</c>.</summary>
-    public IAgent? Agent { get; set; }
+    internal CreateAgentUIStreamOptionsBase() { }
 
     /// <summary>The input UI messages. Maps to <c>uiMessages</c>. Set <see cref="UIMessagesJson"/> instead for messages that are not typed yet.</summary>
     public IReadOnlyList<UIMessage>? UIMessages { get; set; }
@@ -62,10 +61,28 @@ public class CreateAgentUIStreamOptions
     public UIMessageStreamOptions? UIMessageStreamOptions { get; set; }
 }
 
+/// <summary>Options of <see cref="UIMessageStreamConverter.CreateAgentUIStreamAsync(CreateAgentUIStreamOptions, CancellationToken)"/>. Maps to the options of <c>createAgentUIStream</c>.</summary>
+public class CreateAgentUIStreamOptions : CreateAgentUIStreamOptionsBase
+{
+    /// <summary>The agent to run. Maps to <c>agent</c>.</summary>
+    public IAgent? Agent { get; set; }
+}
+
+/// <summary>Options of <see cref="UIMessageStreamConverter.CreateAgentUIStreamAsync{TCallOptions}(CreateAgentUIStreamOptions{TCallOptions}, CancellationToken)"/>. Maps to the options of <c>createAgentUIStream</c> with a <c>CALL_OPTIONS</c> type.</summary>
+/// <typeparam name="TCallOptions">The type of the call options of the agent. Maps to <c>CALL_OPTIONS</c>.</typeparam>
+public class CreateAgentUIStreamOptions<TCallOptions> : CreateAgentUIStreamOptionsBase
+{
+    /// <summary>The agent to run. Maps to <c>agent</c>.</summary>
+    public IAgent<TCallOptions>? Agent { get; set; }
+
+    /// <summary>The options of the agent call. Maps to <c>options</c>.</summary>
+    public TCallOptions? Options { get; set; }
+}
+
 public static partial class UIMessageStreamConverter
 {
     /// <summary>Runs the agent and streams the output as a UI message stream. Maps to <c>createAgentUIStream</c>.</summary>
-    public static async Task<IAsyncEnumerable<JsonObject>> CreateAgentUIStreamAsync(
+    public static Task<IAsyncEnumerable<JsonObject>> CreateAgentUIStreamAsync(
         CreateAgentUIStreamOptions options,
         CancellationToken cancellationToken = default
     )
@@ -77,13 +94,76 @@ public static partial class UIMessageStreamConverter
 
         var agent = options.Agent
             ?? throw new ArgumentException("Agent is required.", nameof(options));
+        return CreateAgentUIStreamCoreAsync(
+            options,
+            agent.Tools,
+            agent is Agent,
+            (messages, onStepEnd) =>
+                agent.Stream(
+                    messages,
+                    cancellationToken,
+                    options.AbortSignal,
+                    options.Timeout,
+                    options.ExperimentalSteering,
+                    onStepEnd,
+                    options.ExperimentalSandbox
+                ),
+            cancellationToken
+        );
+    }
+
+    /// <summary>Runs an agent with call options and streams the output as a UI message stream. Maps to <c>createAgentUIStream</c> with <c>options</c>.</summary>
+    /// <typeparam name="TCallOptions">The type of the call options of the agent. Maps to <c>CALL_OPTIONS</c>.</typeparam>
+    public static Task<IAsyncEnumerable<JsonObject>> CreateAgentUIStreamAsync<TCallOptions>(
+        CreateAgentUIStreamOptions<TCallOptions> options,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        var agent = options.Agent
+            ?? throw new ArgumentException("Agent is required.", nameof(options));
+        return CreateAgentUIStreamCoreAsync(
+            options,
+            agent.Tools,
+            agent is Agent<TCallOptions>,
+            (messages, onStepEnd) =>
+                agent.Stream(
+                    messages,
+                    options.Options!,
+                    cancellationToken,
+                    options.AbortSignal,
+                    options.Timeout,
+                    options.ExperimentalSteering,
+                    onStepEnd,
+                    options.ExperimentalSandbox
+                ),
+            cancellationToken
+        );
+    }
+
+    private static async Task<IAsyncEnumerable<JsonObject>> CreateAgentUIStreamCoreAsync(
+        CreateAgentUIStreamOptionsBase options,
+        IReadOnlyList<Tool>? agentTools,
+        bool supportsSteering,
+        Func<
+            IReadOnlyList<ModelMessage>,
+            Func<StepResult, CancellationToken, Task>?,
+            StreamTextResult
+        > stream,
+        CancellationToken cancellationToken
+    )
+    {
         if (options.UIMessages is null && options.UIMessagesJson is null)
         {
             throw new ArgumentException("UIMessages is required.", nameof(options));
         }
 
         // other agents would ignore the steering object and never resolve its messages:
-        if (options.ExperimentalSteering != null && agent is not Agent)
+        if (options.ExperimentalSteering != null && !supportsSteering)
         {
             throw new InvalidArgumentException(
                 "experimental_steering",
@@ -92,7 +172,7 @@ public static partial class UIMessageStreamConverter
             );
         }
 
-        var tools = agent.Tools?.ToDictionary(tool => tool.Name, StringComparer.Ordinal);
+        var tools = agentTools?.ToDictionary(tool => tool.Name, StringComparer.Ordinal);
 
         var validatedMessages = await UIMessageValidation
             .ValidateUIMessagesForAgentAsync(
@@ -114,23 +194,15 @@ public static partial class UIMessageStreamConverter
             }
         );
 
-        var result = agent.Stream(
-            modelMessages,
-            cancellationToken,
-            options.AbortSignal,
-            options.Timeout,
-            options.ExperimentalSteering,
 #pragma warning disable CS0618
-            options.OnStepEnd ?? options.OnStepFinish,
+        var result = stream(modelMessages, options.OnStepEnd ?? options.OnStepFinish);
 #pragma warning restore CS0618
-            options.ExperimentalSandbox
-        );
 
         var streamOptions = options.UIMessageStreamOptions;
 #pragma warning disable CS0618
         var chunkOptions = new UIMessageStreamOptions
         {
-            Tools = agent.Tools,
+            Tools = agentTools,
             SendReasoning = streamOptions?.SendReasoning ?? true,
             SendSources = streamOptions?.SendSources ?? false,
             SendStart = streamOptions?.SendStart ?? true,
