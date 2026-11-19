@@ -53,7 +53,11 @@ public sealed class CustomExtractionModelsTests : DecisionDefaultProviderFixture
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves the fallback receiver", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "preserves the fallback receiver",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff"
+    )]
     public void Preserves_the_fallback_receiver()
     {
         var provider = new CustomProvider { FallbackProvider = new ExtractionTestProvider(_model) };

@@ -86,7 +86,11 @@ public sealed class ExtractionRegistryTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "reports malformed IDs", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "reports malformed IDs",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff"
+    )]
     public void Reports_malformed_IDs()
     {
         var error = Assert.Throws<NoSuchModelError>(() =>
