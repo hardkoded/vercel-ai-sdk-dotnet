@@ -73,14 +73,7 @@ public sealed class GoogleBatchApi : BatchResultsApiBase
         foreach (var request in requests)
         {
             var prepared =
-                request.Type == "text"
-                    ? PrepareTextRequest(request)
-                    : throw new UnsupportedFunctionalityException(
-                        "batch request type: " + request.Type,
-                        "The Google Batch API does not support batch requests with type \""
-                            + request.Type
-                            + "\" yet."
-                    );
+                request.Type == "text" ? PrepareTextRequest(request) : PrepareImageRequest(request);
             var inlinedRequest = new JsonObject
             {
                 ["request"] = prepared.Body.DeepClone(),
@@ -497,6 +490,171 @@ public sealed class GoogleBatchApi : BatchResultsApiBase
         }
 
         return prepared;
+    }
+
+    // Upstream's prepareImageRequest: the image options become a one-message language model call with the IMAGE modality.
+    private GooglePreparedRequest PrepareImageRequest(NormalizedBatchRequest request)
+    {
+        var options = request.Options;
+        var warnings = new List<GoogleWarning>();
+        if (IsSet(options, "mask"))
+        {
+            throw new UnsupportedFunctionalityException(
+                "mask-based image editing in Google batches",
+                "'mask-based image editing in Google batches' functionality not supported."
+            );
+        }
+
+        if (
+            options.TryGetProperty("n", out var n)
+            && n.ValueKind == JsonValueKind.Number
+            && n.GetDouble() > 1
+        )
+        {
+            throw new UnsupportedFunctionalityException(
+                "multiple images per Google batch request",
+                "'multiple images per Google batch request' functionality not supported."
+            );
+        }
+
+        if (IsSet(options, "size"))
+        {
+            warnings.Add(
+                new GoogleWarning(
+                    "unsupported",
+                    string.Empty,
+                    "size",
+                    "This model does not support the `size` option. Use `aspectRatio` instead."
+                )
+            );
+        }
+
+        var content = new List<UserContentPart>();
+        if (Str(options, "prompt") is { } prompt)
+        {
+            content.Add(new TextContentPart(prompt));
+        }
+
+        if (
+            options.TryGetProperty("files", out var files)
+            && files.ValueKind == JsonValueKind.Array
+        )
+        {
+            foreach (var file in files.EnumerateArray())
+            {
+                content.Add(
+                    Str(file, "type") == "url"
+                        ? new FileContentPart(
+                            "image/*",
+                            new Uri(Str(file, "url")!).ToString(),
+                            null,
+                            null
+                        )
+                        : new FileContentPart(
+                            Str(file, "mediaType") ?? "application/octet-stream",
+                            null,
+                            System.Convert.FromBase64String(Str(file, "data") ?? string.Empty),
+                            null
+                        )
+                );
+            }
+        }
+
+        var languageModelOptions = new JsonObject();
+        JsonElement? googleSearch = null;
+        JsonNode? userImageConfig = null;
+        if (
+            options.TryGetProperty("providerOptions", out var providerOptions)
+            && providerOptions.ValueKind == JsonValueKind.Object
+            && providerOptions.TryGetProperty("google", out var google)
+            && google.ValueKind == JsonValueKind.Object
+        )
+        {
+            foreach (var property in google.EnumerateObject())
+            {
+                switch (property.Name)
+                {
+                    case "googleSearch":
+                        googleSearch = property.Value.Clone();
+                        break;
+                    case "responseModalities":
+                        break;
+                    case "imageConfig":
+                        userImageConfig = JsonNode.Parse(property.Value.GetRawText());
+                        break;
+                    default:
+                        languageModelOptions[property.Name] = JsonNode.Parse(
+                            property.Value.GetRawText()
+                        );
+                        break;
+                }
+            }
+        }
+
+        languageModelOptions["responseModalities"] = new JsonArray(JsonValue.Create("IMAGE"));
+        var aspectRatio = Str(options, "aspectRatio");
+        if (aspectRatio != null || userImageConfig != null)
+        {
+            var imageConfig = userImageConfig as JsonObject ?? new JsonObject();
+            if (aspectRatio != null)
+            {
+                imageConfig["aspectRatio"] = aspectRatio;
+            }
+
+            languageModelOptions["imageConfig"] = imageConfig;
+        }
+
+        if (googleSearch is { } search)
+        {
+            if (search.ValueKind != JsonValueKind.Object)
+            {
+                throw new InvalidArgumentException(
+                    "providerOptions",
+                    null,
+                    "Invalid Google image provider option googleSearch."
+                );
+            }
+
+            languageModelOptions["providerTools"] = new JsonArray(
+                new JsonObject
+                {
+                    ["id"] = "google.google_search",
+                    ["name"] = "google_search",
+                    ["args"] = JsonNode.Parse(search.GetRawText()),
+                }
+            );
+        }
+
+        var callOptions = new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[] { new UserModelMessage(content) },
+            Seed = OpenAIJson.Int(options, "seed"),
+            ProviderOptions = new Dictionary<string, JsonElement>
+            {
+                ["google"] = JsonSerializer.SerializeToElement(languageModelOptions),
+            },
+        };
+        var prepared = GoogleRequest.Prepare(
+            request.ModelId,
+            _provider.ModelProvider,
+            callOptions,
+            false,
+            _provider.ToolResultDownloadSettings?.SupportsGoogleCloudStorageUrls ?? false
+        );
+        return new GooglePreparedRequest(
+            prepared.Body,
+            warnings.Concat(prepared.Warnings).ToList(),
+            prepared.ExtraHeaders,
+            prepared.Tools,
+            prepared.JsonResponseToolName
+        );
+    }
+
+    private static bool IsSet(JsonElement options, string name)
+    {
+        return options.TryGetProperty(name, out var value)
+            && value.ValueKind != JsonValueKind.Null
+            && value.ValueKind != JsonValueKind.Undefined;
     }
 
     private async Task<Dictionary<string, string?>> BatchHeadersAsync(
