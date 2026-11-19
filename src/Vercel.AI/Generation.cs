@@ -493,8 +493,16 @@ internal static class Generation
 
             if (telemetry != null && scope != null)
             {
-                telemetry.OnUsage(scope, result.Usage);
-                telemetry.OnFinish(scope, result.FinishReason);
+                try
+                {
+                    telemetry.OnUsage(scope, result.Usage);
+                    telemetry.OnFinish(scope, result.FinishReason);
+                }
+                catch (Exception)
+                    when (outputError != null && !cancellationToken.IsCancellationRequested)
+                {
+                    // Like upstream notify, a telemetry failure must not replace the saved parse error or skip onEnd.
+                }
             }
 
 #pragma warning disable CS0618 // OnFinish is the deprecated alias of OnEnd
