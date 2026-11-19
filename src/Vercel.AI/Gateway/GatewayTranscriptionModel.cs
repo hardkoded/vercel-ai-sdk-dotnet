@@ -104,13 +104,14 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
                     HttpMethod.Post,
                     _provider.Route("transcription-model"),
                     body.ToJsonString(),
-                    _provider.Headers(
+                    await _provider.HeadersAsync(
                         "ai-transcription-model-specification-version",
                         "4",
                         "ai-model-id",
                         ModelId,
                         null,
-                        headers
+                        headers,
+                        cancellationToken
                     ),
                     cancellationToken
                 )

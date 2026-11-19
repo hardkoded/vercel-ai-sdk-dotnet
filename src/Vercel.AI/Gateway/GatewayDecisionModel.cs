@@ -113,13 +113,14 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
                     HttpMethod.Post,
                     _provider.Route("decision-model"),
                     body.ToJsonString(),
-                    _provider.Headers(
+                    await _provider.HeadersAsync(
                         "ai-decision-model-specification-version",
                         "4",
                         "ai-model-id",
                         ModelId,
                         null,
-                        headers
+                        headers,
+                        cancellationToken
                     ),
                     cancellationToken
                 )
