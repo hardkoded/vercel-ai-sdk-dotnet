@@ -1993,7 +1993,23 @@ internal static class Generation
         var stepMessages = ToResponseMessages.Convert(content, options.Tools);
         if (!ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason))
         {
-            stepMessages.RemoveAll(message => message is ToolModelMessage);
+            // The results are dropped, but the approval responses stay.
+            for (var index = stepMessages.Count - 1; index >= 0; index--)
+            {
+                if (stepMessages[index] is not ToolModelMessage tool)
+                {
+                    continue;
+                }
+
+                if (tool.ApprovalResponses.Count > 0)
+                {
+                    stepMessages[index] = new ToolModelMessage(tool.ApprovalResponses);
+                }
+                else
+                {
+                    stepMessages.RemoveAt(index);
+                }
+            }
         }
 
         if (stepMessages.Count == 0 || stepMessages[0] is not AssistantModelMessage)
@@ -2290,6 +2306,7 @@ internal static class Generation
         IReadOnlyList<ModelMessage> prompt
     )
     {
+        prompt = ToolModelMessage.ExpandApprovalResponses(prompt);
         var needsWork = false;
         foreach (var message in prompt)
         {
@@ -2329,6 +2346,23 @@ internal static class Generation
                 {
                     callIds[request.ApprovalId] = request.ToolCallId;
                 }
+            }
+        }
+
+        var deniedToolCallIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var message in prompt)
+        {
+            if (
+                message
+                    is ToolApprovalResponseModelMessage
+                    {
+                        ProviderExecuted: true,
+                        Approved: false
+                    } denial
+                && callIds.TryGetValue(denial.ApprovalId, out var deniedCallId)
+            )
+            {
+                deniedToolCallIds.Add(deniedCallId);
             }
         }
 
@@ -2403,6 +2437,26 @@ internal static class Generation
                                 DeniedToolResult = denied,
                             }
                         );
+                    }
+
+                    break;
+                case ToolModelMessage tool when deniedToolCallIds.Count > 0:
+                    // The result of a denied provider-executed call is sent with its approval response.
+                    var kept = tool
+                        .Results.Where(result =>
+                            !(
+                                result.OutputType == "execution-denied"
+                                && deniedToolCallIds.Contains(result.ToolCallId)
+                            )
+                        )
+                        .ToArray();
+                    if (kept.Length == tool.Results.Count)
+                    {
+                        prepared.Add(message);
+                    }
+                    else if (kept.Length > 0)
+                    {
+                        prepared.Add(new ToolModelMessage(kept));
                     }
 
                     break;
@@ -2807,6 +2861,7 @@ internal static class Generation
         IReadOnlyList<ModelMessage> history
     )
     {
+        history = ToolModelMessage.ExpandApprovalResponses(history);
         var trailingStart = history.Count;
         while (
             trailingStart > 0

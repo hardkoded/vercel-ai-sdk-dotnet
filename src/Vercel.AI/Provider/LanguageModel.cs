@@ -1824,14 +1824,88 @@ public sealed class ToolModelMessage : ModelMessage
         _results = flat;
     }
 
+    /// <summary>
+    /// Creates a tool message that carries approval responses and no tool results, as upstream does for an approved provider-executed call.
+    /// Its single-result members are empty.
+    /// </summary>
+    public ToolModelMessage(IReadOnlyList<ToolApprovalResponseModelMessage> approvalResponses)
+        : base("tool")
+    {
+        if (approvalResponses is null || approvalResponses.Count == 0)
+        {
+            throw new ArgumentException(
+                "A tool message needs at least one approval response.",
+                nameof(approvalResponses)
+            );
+        }
+
+        ToolCallId = string.Empty;
+        ToolName = string.Empty;
+        OutputType = "text";
+        OutputJson = string.Empty;
+        _results = [];
+        ApprovalResponses = approvalResponses;
+    }
+
     private IReadOnlyList<ToolModelMessage>? _results;
+
+    /// <summary>The <c>tool-approval-response</c> parts of this tool message, which come before its results. Maps to the <c>tool-approval-response</c> parts of upstream's tool content.</summary>
+    public IReadOnlyList<ToolApprovalResponseModelMessage> ApprovalResponses
+    {
+        get => field ?? [];
+        init;
+    }
+
+    /// <summary>Splits the approval responses out of tool messages, each as a message of its own before the tool message that carried it. Other messages pass through.</summary>
+    internal static IReadOnlyList<ModelMessage> ExpandApprovalResponses(
+        IReadOnlyList<ModelMessage> messages
+    )
+    {
+        var carries = false;
+        foreach (var message in messages)
+        {
+            if (message is ToolModelMessage { ApprovalResponses.Count: > 0 })
+            {
+                carries = true;
+                break;
+            }
+        }
+
+        if (!carries)
+        {
+            return messages;
+        }
+
+        var expanded = new List<ModelMessage>(messages.Count);
+        foreach (var message in messages)
+        {
+            if (message is not ToolModelMessage { ApprovalResponses.Count: > 0 } tool)
+            {
+                expanded.Add(message);
+                continue;
+            }
+
+            expanded.AddRange(tool.ApprovalResponses);
+            if (tool.Results.Count > 0)
+            {
+                expanded.Add(tool.WithoutApprovalResponses());
+            }
+        }
+
+        return expanded;
+    }
+
+    // The results without the approval responses. They are the results of this message, so no result is rebuilt.
+    private ToolModelMessage WithoutApprovalResponses() =>
+        new(Results) { MessageProviderOptions = MessageProviderOptions };
 
     /// <summary>The tool results this message carries, one per executed call. A single-result message lists itself.</summary>
     public IReadOnlyList<ToolModelMessage> Results => _results ??= new[] { this };
 
-    /// <summary>Splits grouped tool messages into one message per result, in order. Other messages pass through.</summary>
+    /// <summary>Splits grouped tool messages into one message per result, in order, after the approval responses they carry. Other messages pass through.</summary>
     public static IReadOnlyList<ModelMessage> Flatten(IReadOnlyList<ModelMessage> messages)
     {
+        messages = ExpandApprovalResponses(messages);
         var grouped = false;
         foreach (var message in messages)
         {

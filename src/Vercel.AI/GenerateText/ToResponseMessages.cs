@@ -13,9 +13,8 @@ namespace Vercel.AI.GenerateText;
 internal static class ToResponseMessages
 {
     /// <summary>
-    /// Converts the content of a step to response messages: the assistant message, the approval responses, and one tool message
-    /// with the results in the order of the tool calls. Maps to <c>toResponseMessages</c>. Upstream puts the approval responses in
-    /// the tool message. The port keeps them as messages of their own, as the prompt preparation expects.
+    /// Converts the content of a step to response messages: the assistant message and one tool message with the approval
+    /// responses and the results in the order of the tool calls. Maps to <c>toResponseMessages</c>.
     /// </summary>
     internal static List<ModelMessage> Convert(
         IReadOnlyList<GeneratedContent> inputContent,
@@ -31,13 +30,14 @@ internal static class ToResponseMessages
             responseMessages.Add(new AssistantModelMessage(content));
         }
 
+        var approvalResponses = new List<ToolApprovalResponseModelMessage>();
         var toolResultContent = new List<ToolModelMessage>();
         foreach (var part in inputContent)
         {
             switch (part)
             {
                 case GeneratedToolApprovalResponse approvalResponse:
-                    responseMessages.Add(
+                    approvalResponses.Add(
                         new ToolApprovalResponseModelMessage(
                             approvalResponse.ApprovalId,
                             approvalResponse.Approved,
@@ -46,9 +46,8 @@ internal static class ToResponseMessages
                         )
                     );
 
-                    // When the tool approval is denied, there is no tool result for the call, so it gets an execution-denied
-                    // one. A provider-executed call gets it from the prompt preparation, which names the approval for the provider.
-                    if (!approvalResponse.Approved && !approvalResponse.ProviderExecuted)
+                    // When the tool approval is denied, there is no tool result for the call, so it gets an execution-denied one.
+                    if (!approvalResponse.Approved)
                     {
                         toolResultContent.Add(
                             new ToolModelMessage(
@@ -71,7 +70,19 @@ internal static class ToResponseMessages
         if (toolResultContent.Count > 0)
         {
             var sorted = SortToolResultContentByToolCallOrder(toolResultContent, toolCallOrder);
-            responseMessages.Add(sorted.Count == 1 ? sorted[0] : new ToolModelMessage(sorted));
+            var toolMessage = sorted.Count == 1 ? sorted[0] : new ToolModelMessage(sorted);
+            responseMessages.Add(
+                approvalResponses.Count > 0
+                    ? new ToolModelMessage(toolMessage.Results)
+                    {
+                        ApprovalResponses = approvalResponses,
+                    }
+                    : toolMessage
+            );
+        }
+        else if (approvalResponses.Count > 0)
+        {
+            responseMessages.Add(new ToolModelMessage(approvalResponses));
         }
 
         return responseMessages;

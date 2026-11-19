@@ -150,8 +150,7 @@ public sealed class ToolApprovalRequestTests
     [Fact]
     [UpstreamTest(
         Prefix + "should include approval response and tool result stages in the tool message",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The port keeps the approval response as a ToolApprovalResponseModelMessage before the tool message, not as a part of it. The prompt preparation expects that shape."
+        Coverage = UpstreamCoverage.Covered
     )]
     public void Should_include_approval_response_and_tool_result_stages_in_the_tool_message()
     {
@@ -171,24 +170,23 @@ public sealed class ToolApprovalRequestTests
             [Weather()]
         );
 
-        Assert.Equal(3, result.Count);
+        Assert.Equal(2, result.Count);
         var assistant = Assistant(result, 0);
         Assert.Equal(2, assistant.Parts.Count);
         ToolCall(assistant, 0, "call-1", "weather", TokyoInput);
         ApprovalRequest(assistant, 1, "approval-1", "call-1", isAutomatic: true);
-        var response = Assert.IsType<ToolApprovalResponseModelMessage>(result[1]);
+        var response = Assert.Single(ToolMessage(result, 1).ApprovalResponses);
         Assert.Equal("approval-1", response.ApprovalId);
         Assert.True(response.Approved);
         Assert.False(response.ProviderExecuted);
         Assert.Null(response.Reason);
-        AssertToolResult(ToolMessage(result, 2), "call-1", "weather", "text", "72F and sunny");
+        AssertToolResult(ToolMessage(result, 1), "call-1", "weather", "text", "72F and sunny");
     }
 
     [Fact]
     [UpstreamTest(
         Prefix + "should add an execution-denied tool result when tool approval is denied",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The port keeps the approval response as a ToolApprovalResponseModelMessage before the tool message, not as a part of it. The prompt preparation expects that shape."
+        Coverage = UpstreamCoverage.Covered
     )]
     public void Should_add_an_execution_denied_tool_result_when_tool_approval_is_denied()
     {
@@ -203,16 +201,16 @@ public sealed class ToolApprovalRequestTests
             [Weather()]
         );
 
-        Assert.Equal(3, result.Count);
+        Assert.Equal(2, result.Count);
         var assistant = Assistant(result, 0);
         Assert.Equal(2, assistant.Parts.Count);
         ToolCall(assistant, 0, "call-1", "weather", TokyoInput);
         ApprovalRequest(assistant, 1, "approval-1", "call-1");
-        var response = Assert.IsType<ToolApprovalResponseModelMessage>(result[1]);
+        var response = Assert.Single(ToolMessage(result, 1).ApprovalResponses);
         Assert.Equal("approval-1", response.ApprovalId);
         Assert.False(response.Approved);
         Assert.Equal("User denied access", response.Reason);
-        var denied = ToolMessage(result, 2);
+        var denied = ToolMessage(result, 1);
         Assert.Equal("call-1", denied.ToolCallId);
         Assert.Equal("weather", denied.ToolName);
         Assert.Equal("execution-denied", denied.OutputType);
@@ -222,8 +220,7 @@ public sealed class ToolApprovalRequestTests
     [Fact]
     [UpstreamTest(
         Prefix + "should include provider-executed approval response stages in the tool message",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The port keeps the approval response as a ToolApprovalResponseModelMessage, not as a part of a tool message. The prompt preparation expects that shape."
+        Coverage = UpstreamCoverage.Covered
     )]
     public void Should_include_provider_executed_approval_response_stages_in_the_tool_message()
     {
@@ -253,7 +250,9 @@ public sealed class ToolApprovalRequestTests
             providerExecuted: true
         );
         ApprovalRequest(assistant, 1, "mcp-approval-1", "mcp-call-1");
-        var response = Assert.IsType<ToolApprovalResponseModelMessage>(result[1]);
+        var toolMessage = ToolMessage(result, 1);
+        Assert.Empty(toolMessage.Results);
+        var response = Assert.Single(toolMessage.ApprovalResponses);
         Assert.Equal("mcp-approval-1", response.ApprovalId);
         Assert.True(response.Approved);
         Assert.True(response.ProviderExecuted);

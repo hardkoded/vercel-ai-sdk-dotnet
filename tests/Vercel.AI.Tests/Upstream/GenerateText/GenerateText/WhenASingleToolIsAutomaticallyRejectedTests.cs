@@ -60,32 +60,30 @@ public sealed class WhenASingleToolIsAutomaticallyRejectedTests
     }
 
     [Fact]
-    [UpstreamTest(
-        Id + "should produce response messages",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Upstream puts the approval response and the execution-denied result in one tool message. The port keeps the approval response as its own tool-role message, followed by the tool message."
-    )]
+    [UpstreamTest(Id + "should produce response messages", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_produce_response_messages()
     {
         var run = await RunAsync();
 
         var messages = run.Result.ResponseMessages;
-        Assert.Equal(4, messages.Count);
+        Assert.Equal(3, messages.Count);
         var assistant = Assert.IsType<AssistantModelMessage>(messages[0]);
         Assert.Equal(2, assistant.Parts.Count);
         AssertToolCallPart(assistant.Parts[0], "call-1", "tool1", "{\"value\":\"value\"}");
         AssertApprovalRequestPart(assistant.Parts[1], "id-1", "call-1", isAutomatic: true);
-        var response = Assert.IsType<ToolApprovalResponseModelMessage>(messages[1]);
+        var response = Assert.Single(
+            Assert.IsType<ToolModelMessage>(messages[1]).ApprovalResponses
+        );
         Assert.Equal("id-1", response.ApprovalId);
         Assert.False(response.Approved);
         Assert.False(response.ProviderExecuted);
         Assert.Equal("blocked by policy", response.Reason);
-        var denied = Assert.IsType<ToolModelMessage>(messages[2]);
+        var denied = Assert.IsType<ToolModelMessage>(messages[1]);
         Assert.Equal("call-1", denied.ToolCallId);
         Assert.Equal("tool1", denied.ToolName);
         Assert.Equal("execution-denied", denied.OutputType);
         Assert.Equal("blocked by policy", denied.OutputJson);
-        AssertText(messages[3], "Hello, world!");
+        AssertText(messages[2], "Hello, world!");
     }
 
     private static async Task<(
