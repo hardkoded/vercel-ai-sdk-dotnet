@@ -541,17 +541,19 @@ public sealed class BatchItemResult<TOutput> : BatchItemResult
             ErrorStatusCode = item.ErrorStatusCode,
             OutputError = item.OutputError,
         };
+        ((BatchItemResult)typed).Output = item.Output;
         if (item.Output is { } json)
         {
             try
             {
                 typed.Output = output.Deserialize(json);
             }
-            catch (JsonException)
+            catch (Exception error)
+                when (error is JsonException or NotSupportedException or InvalidOperationException)
             {
                 typed.OutputError = new BatchError
                 {
-                    Message = "No object generated: response did not match schema.",
+                    Message = "No object generated: response did not deserialize to the output type.",
                     Type = "AI_NoObjectGeneratedError",
                 };
             }
@@ -1088,6 +1090,14 @@ public static class Batch
         if (output == null)
         {
             throw new ArgumentNullException(nameof(output));
+        }
+
+        if (request.Output != null && !ReferenceEquals(request.Output, output))
+        {
+            throw new ArgumentException(
+                "request.Output must be the same specification as output.",
+                nameof(output)
+            );
         }
 
         var api = Resolve(request);

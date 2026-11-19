@@ -31,8 +31,10 @@ public sealed class BatchTypesTests
         );
         var request = Request("{\"text\":\"hello\"}");
 
+        var count = 0;
         await foreach (var item in BatchApi.GetBatchResults(request, output))
         {
+            count++;
             // The item is a BatchItemResult<TextOutput>: Output is TextOutput?, OutputError is BatchError?.
             BatchItemResult<TextOutput> typed = item;
             TextOutput? parsed = typed.Output;
@@ -40,7 +42,10 @@ public sealed class BatchTypesTests
 
             Assert.Null(error);
             Assert.Equal(new TextOutput("hello"), parsed);
+            Assert.NotNull(((BatchItemResult)typed).Output);
         }
+
+        Assert.Equal(1, count);
 
         // Without an output specification the item has no typed output: Output stays the raw JSON value.
         await foreach (var item in BatchApi.GetBatchResults(request))

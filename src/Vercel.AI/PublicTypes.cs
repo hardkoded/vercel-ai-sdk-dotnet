@@ -680,6 +680,20 @@ public abstract class OutputSpec
         );
     }
 
+    /// <summary>Array output with the element schema as a string, deserialized to <typeparamref name="TElement"/>.</summary>
+    public static OutputSpec<IReadOnlyList<TElement>> Array<TElement>(
+        string elementJsonSchema,
+        int? minItems = null,
+        int? maxItems = null,
+        string? name = null,
+        string? description = null
+    )
+    {
+        return new TypedOutput<IReadOnlyList<TElement>>(
+            Array(elementJsonSchema, minItems, maxItems, name, description)
+        );
+    }
+
     internal virtual JsonElement? Schema => null;
 
     internal virtual string? SchemaName => null;
