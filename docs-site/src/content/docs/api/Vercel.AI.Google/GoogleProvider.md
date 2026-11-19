@@ -15,7 +15,7 @@ Namespace: [Vercel.AI.Google](/api/Vercel.AI.Google/)
 
 
 ```csharp
-public class GoogleProvider : ProviderBase, IBatchProvider
+public class GoogleProvider : ProviderBase, IBatchProvider, IExtractionProvider
 ```
 
 
@@ -23,7 +23,7 @@ Google Gemini provider.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/)
 
-**Implements:** [IBatchProvider](/api/Vercel.AI.Operations/IBatchProvider/)
+**Implements:** [IBatchProvider](/api/Vercel.AI.Operations/IBatchProvider/), [IExtractionProvider](/api/Vercel.AI.Operations/IExtractionProvider/)
 
 **Derived:** [GoogleVertexProvider](/api/Vercel.AI.Google/GoogleVertexProvider/)
 
@@ -51,7 +51,7 @@ Creates a provider.
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `options` | [GoogleOptions](/api/Vercel.AI.Google/GoogleOptions/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L55)
 
 <a id="Vercel_AI_Google_GoogleProvider__ctor_System_Net_Http_HttpClient_Vercel_AI_Google_GoogleOptions_System_String_"></a>
 
@@ -73,7 +73,7 @@ Creates a provider with an explicit model provider id.
 | `options` | [GoogleOptions](/api/Vercel.AI.Google/GoogleOptions/) |  |
 | `modelProvider` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L59)
 
 ## Fields
 
@@ -91,7 +91,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L52)
 
 ## Properties
 
@@ -110,7 +110,7 @@ Clock used for response timestamps.
 
 **Value:** [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L143)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L146)
 
 <a id="Vercel_AI_Google_GoogleProvider_Http_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_Http"></a>
@@ -127,7 +127,7 @@ HTTP helper.
 
 **Value:** [ProviderHttp](/api/Vercel.AI.ProviderUtils/ProviderHttp/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L137)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L140)
 
 <a id="Vercel_AI_Google_GoogleProvider_ModelProvider_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_ModelProvider"></a>
@@ -144,7 +144,7 @@ Provider id recorded on models, such as `google.generative-ai` or `google.vertex
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L140)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L143)
 
 <a id="Vercel_AI_Google_GoogleProvider_Options_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_Options"></a>
@@ -161,7 +161,7 @@ Options.
 
 **Value:** [GoogleOptions](/api/Vercel.AI.Google/GoogleOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L68)
 
 ## Methods
 
@@ -187,7 +187,7 @@ Creates a provider.
 
 **Returns:** [GoogleProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L146)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L149)
 
 <a id="Vercel_AI_Google_GoogleProvider_DecisionModel_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_DecisionModel_System_String_"></a>
@@ -211,7 +211,7 @@ The provider id is `google.decision`.
 
 **Returns:** [GoogleDecisionModel](/api/Vercel.AI.Google/GoogleDecisionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L167)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L170)
 
 <a id="Vercel_AI_Google_GoogleProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_EmbeddingModel_System_String_"></a>
@@ -234,7 +234,7 @@ Returns an embedding model.
 
 **Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L210)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L218)
 
 <a id="Vercel_AI_Google_GoogleProvider_EvaluationModel_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_EvaluationModel_System_String_"></a>
@@ -262,7 +262,7 @@ Deprecated alias of [DecisionModel(string)](#Vercel_AI_Google_GoogleProvider_Dec
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L179)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L182)
 
 <a id="Vercel_AI_Google_GoogleProvider_ExperimentalBatch_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_ExperimentalBatch"></a>
@@ -279,7 +279,7 @@ Gemini Batch API. Downloads batch results.
 
 **Returns:** [IBatchApi](/api/Vercel.AI.Operations/IBatchApi/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L131)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L134)
 
 <a id="Vercel_AI_Google_GoogleProvider_ExtractionModel_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_ExtractionModel_System_String_"></a>
@@ -302,7 +302,7 @@ Experimental typed field extraction model that uses Gemini structured output. Th
 
 **Returns:** [ExtractionLanguageModel](/api/Vercel.AI.Operations/ExtractionLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L186)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L194)
 
 <a id="Vercel_AI_Google_GoogleProvider_ImageModel_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_ImageModel_System_String_"></a>
@@ -325,7 +325,7 @@ Returns an image model.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L216)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L224)
 
 <a id="Vercel_AI_Google_GoogleProvider_Interactions_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_Interactions_System_String_"></a>
@@ -348,7 +348,7 @@ Language model that posts to the Interactions API.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L198)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L206)
 
 <a id="Vercel_AI_Google_GoogleProvider_Interactions_Vercel_AI_Google_GoogleInteractionsAgent_"></a>
 
@@ -370,7 +370,7 @@ Language model that calls an agent through the Interactions API. The request sen
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L204)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L212)
 
 <a id="Vercel_AI_Google_GoogleProvider_LanguageModel_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_LanguageModel_System_String_"></a>
@@ -393,7 +393,7 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L158)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L161)
 
 <a id="Vercel_AI_Google_GoogleProvider_RealtimeModel_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_RealtimeModel_System_String_"></a>
@@ -416,7 +416,7 @@ Returns a realtime model.
 
 **Returns:** [IRealtimeModel](/api/Vercel.AI.Provider/IRealtimeModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L234)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L242)
 
 <a id="Vercel_AI_Google_GoogleProvider_SpeechModel_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_SpeechModel_System_String_"></a>
@@ -439,7 +439,7 @@ Returns a speech model.
 
 **Returns:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L222)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L230)
 
 <a id="Vercel_AI_Google_GoogleProvider_TranscriptionModel_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_TranscriptionModel_System_String_"></a>
@@ -462,4 +462,4 @@ Returns a transcription model.
 
 **Returns:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L228)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L236)

@@ -536,6 +536,22 @@ public sealed class ProviderRegistry
         return Operations.DecisionModels.AsEvaluationModel(DecisionModel(providerAndModel));
     }
 
+    /// <summary>
+    /// Resolves <c>provider:model</c> to an extraction model. The provider must implement <see cref="Operations.IExtractionProvider"/>,
+    /// or <see cref="NoSuchModelError"/> is thrown. Maps to <c>extractionModel</c>.
+    /// </summary>
+    public Operations.IExtractionCaller ExtractionModel(string providerAndModel)
+    {
+        return Operations.DecisionModels.ResolveExtractionModel(
+            Model<Operations.IExtractionCaller>(
+                providerAndModel,
+                "extractionModel",
+                (provider, modelId) =>
+                    (provider as Operations.IExtractionProvider)?.ExtractionModel(modelId)
+            )
+        );
+    }
+
     /// <summary>Returns the file store of the provider registered under <paramref name="providerId"/>.</summary>
     public IFileStore FileStore(string providerId)
     {
@@ -595,7 +611,10 @@ public sealed class ProviderRegistry
 /// A provider backed by caller-supplied models. Maps to <c>customProvider</c>. A model id that is not registered goes to
 /// <see cref="FallbackProvider"/>, or throws <see cref="NoSuchModelError"/> when there is none.
 /// </summary>
-public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
+public sealed class CustomProvider
+    : ProviderBase,
+        Operations.IDecisionProvider,
+        Operations.IExtractionProvider
 {
     private readonly Dictionary<string, ILanguageModel> _language = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IEmbeddingModel> _embedding = new(StringComparer.Ordinal);
@@ -611,6 +630,9 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
         StringComparer.Ordinal
     );
     private readonly Dictionary<string, Func<Operations.IDecisionCaller>> _legacyDecision = new(
+        StringComparer.Ordinal
+    );
+    private readonly Dictionary<string, Func<Operations.IExtractionCaller>> _extraction = new(
         StringComparer.Ordinal
     );
 
@@ -742,6 +764,33 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
         return Add(_legacyDecision, modelId, () => legacy);
     }
 
+    /// <summary>Registers an extraction model under <paramref name="modelId"/>. Maps to <c>extractionModels</c>.</summary>
+    public CustomProvider AddExtractionModel(string modelId, Operations.IExtractionCaller model)
+    {
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
+        return Add(_extraction, modelId, () => model);
+    }
+
+    /// <summary>
+    /// Registers a string alias for an extraction model. The id is resolved through
+    /// <see cref="Operations.DecisionModels.DefaultProvider"/> when <see cref="ExtractionModel"/> is called.
+    /// </summary>
+    public CustomProvider AddExtractionModel(string modelId, string providerModelId)
+    {
+        if (providerModelId is null)
+        {
+            throw new ArgumentNullException(nameof(providerModelId));
+        }
+
+        return Add(_extraction, modelId, () =>
+            Operations.DecisionModels.ResolveExtractionModel(null, providerModelId)
+        );
+    }
+
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
@@ -821,6 +870,25 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
     public Operations.IEvaluationDecisionCaller EvaluationModel(string modelId)
     {
         return Operations.DecisionModels.AsEvaluationModel(DecisionModel(modelId));
+    }
+
+    /// <summary>
+    /// Returns the extraction model registered under <paramref name="modelId"/>, or asks <see cref="FallbackProvider"/>
+    /// when it implements <see cref="Operations.IExtractionProvider"/>.
+    /// </summary>
+    public Operations.IExtractionCaller ExtractionModel(string modelId)
+    {
+        var factory = Find(_extraction, modelId, "extractionModel", fallback =>
+            (fallback as Operations.IExtractionProvider)?.ExtractionModel(modelId) is { } found
+                ? () => found
+                : null
+        );
+        return Operations.DecisionModels.ResolveExtractionModel(factory());
+    }
+
+    Operations.IExtractionCaller? Operations.IExtractionProvider.ExtractionModel(string modelId)
+    {
+        return ExtractionModel(modelId);
     }
 
     /// <inheritdoc />

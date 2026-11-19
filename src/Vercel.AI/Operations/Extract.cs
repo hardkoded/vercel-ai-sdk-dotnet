@@ -45,8 +45,15 @@ public sealed class ExtractionResult
 /// <summary>Options for <see cref="Extract.ExtractAsync"/>.</summary>
 public sealed class ExtractRequest : OperationRequest
 {
-    /// <summary>An extraction model instance.</summary>
+    /// <summary>Explicit extraction model instance. Wins over <see cref="ModelId"/> when both are set.</summary>
     public IExtractionCaller? Model { get; set; }
+
+    /// <summary>
+    /// Extraction model id, used when <see cref="Model"/> is null. It goes through <see cref="DecisionModels.DefaultProvider"/>.
+    /// Gateway has no extraction models, so without a default provider that implements <see cref="IExtractionProvider"/> it throws
+    /// <see cref="NoSuchModelError"/>.
+    /// </summary>
+    public string? ModelId { get; set; }
 
     /// <summary>
     /// Shared state: a string, a JSON object, or a list of parts. A JSON array is not valid state.
@@ -94,7 +101,7 @@ public static class Extract
             throw new ArgumentNullException(nameof(request));
         }
 
-        var model = DecisionModels.ResolveExtractionModel(request.Model);
+        var model = DecisionModels.ResolveExtractionModel(request.Model, request.ModelId);
 
         LanguageModelCallPreparation.PrepareLanguageModelCallOptions(
             new LanguageModelCallOptionsInput { MaxOutputTokens = request.MaxOutputTokens }

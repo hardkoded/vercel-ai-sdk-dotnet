@@ -59,6 +59,8 @@ var result = await Extract.ExtractAsync(new ExtractRequest
 var total = result.Answers["total"].Number; // null when the state has no total
 ```
 
+Extraction models also resolve by id: `ProviderRegistry.ExtractionModel("provider:model")`, `CustomProvider.AddExtractionModel(alias, model | "id")` and `ExtractRequest.ModelId` (through `DecisionModels.DefaultProvider`, which must implement `IExtractionProvider`; Gateway has none). Unknown ids throw `NoSuchModelError` with `ModelType` `extractionModel`. See `docs/articles/providers.md`.
+
 `ScaleDownProvider.ExtractionModel("extract-1")` extracts `text` fields and `list` fields of `text` items as verbatim spans, with confidence and sources. It accepts `providerOptions.scaledown.threshold` and rejects other field types with `ExtractionUnsupportedFieldTypeError`. See `docs/articles/scaledown.md`.
 
 Both take URL files in `State` only with `Download = Download.CreateDownload(fetch: ...)`. Without it a URL file throws `DownloadError`.

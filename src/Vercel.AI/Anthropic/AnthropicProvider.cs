@@ -91,7 +91,8 @@ public class AnthropicProvider
     : ProviderBase,
         Operations.IBatchProvider,
         Operations.IDecisionProvider,
-        Operations.IEvaluationProvider
+        Operations.IEvaluationProvider,
+        Operations.IExtractionProvider
 {
     /// <summary>Provider id used for dependency injection.</summary>
     public const string ProviderName = "anthropic";
@@ -250,6 +251,11 @@ public class AnthropicProvider
             "anthropic.extraction",
             maxFieldsPerCall: 16
         );
+    }
+
+    Operations.IExtractionCaller? Operations.IExtractionProvider.ExtractionModel(string modelId)
+    {
+        return ExtractionModel(modelId);
     }
 
     Operations.IDecisionCaller? Operations.IDecisionProvider.DecisionModel(string modelId)

@@ -12,6 +12,7 @@
         <Project Path="examples/GoogleSpeechLanguage/GoogleSpeechLanguage.csproj" />
         <Project Path="examples/ExtractMockBasic/ExtractMockBasic.csproj" />
         <Project Path="examples/ExtractOpenAIBasic/ExtractOpenAIBasic.csproj" />
+        <Project Path="examples/ExtractOpenAIRegistry/ExtractOpenAIRegistry.csproj" />
         <Project Path="examples/ExtractScaleDownBasic/ExtractScaleDownBasic.csproj" />
         <Project Path="examples/ExtractScaleDownDocument/ExtractScaleDownDocument.csproj" />
         <Project Path="examples/DecidePerplexityWebGrounding/DecidePerplexityWebGrounding.csproj" />

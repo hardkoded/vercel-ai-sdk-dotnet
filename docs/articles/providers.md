@@ -1653,7 +1653,7 @@ ProviderOptions = OperationJson.Parse("""
 
 ## Extraction
 
-`Extract.ExtractAsync(ExtractRequest)` is `experimental_extract`. It pulls typed values out of one shared state, such as an invoice number, a total, a due date, or a list of names, and sits next to `Decide.DecideAsync`. `ExtractRequest` takes `Model` (an `IExtractionCaller` instance; string model ids, registries, telemetry, and Gateway are not part of this first version, as upstream), `State` (a `DecisionState`, handled as in "Decision state"), `Fields` (a nonempty map of field ids to `ExtractionField`), and the optional `ReferenceDate`, `MaxOutputTokens`, `Reasoning`, `Download`, `Headers`, `ProviderOptions`, and `MaxRetries`. Retries, cancellation, and the `ai/` user-agent suffix work as in `Decide.DecideAsync`.
+`Extract.ExtractAsync(ExtractRequest)` is `experimental_extract`. It pulls typed values out of one shared state, such as an invoice number, a total, a due date, or a list of names, and sits next to `Decide.DecideAsync`. `ExtractRequest` takes `Model` (an `IExtractionCaller` instance) or `ModelId` (a string resolved by `DecisionModels.DefaultProvider`; see [Extraction models in registries and custom providers](#extraction-models-in-registries-and-custom-providers). Telemetry is not part of this version, as upstream), `State` (a `DecisionState`, handled as in "Decision state"), `Fields` (a nonempty map of field ids to `ExtractionField`), and the optional `ReferenceDate`, `MaxOutputTokens`, `Reasoning`, `Download`, `Headers`, `ProviderOptions`, and `MaxRetries`. Retries, cancellation, and the `ai/` user-agent suffix work as in `Decide.DecideAsync`.
 
 `new ExtractionField(type, instructions)` has seven types: `text`, `number`, `date`, `time`, `datetime`, `duration`, and `list`. `Unit` names the unit of a `number` (any string) or a `duration` (`seconds`, `minutes`, `hours`, `days`, `weeks`, `months`, or `years`; default `seconds`). `Integer` and `Decimals` (a `double?` holding an integer from 0 to 6) constrain `number`, `duration`, and `list` of numbers. A `list` sets `Items` to `text`, `number`, or `date`. `ReferenceDate` is a `YYYY-MM-DD` date that anchors relative dates and dates without a year.
 
@@ -1662,6 +1662,34 @@ ProviderOptions = OperationJson.Parse("""
 Validation is strict and returns no partial results. `Extract.ExtractAsync` throws `InvalidArgumentException` before any model call for a state or field that is not valid, a `ReferenceDate` that is not a calendar date, an empty field map, `Decimals` that is not an integer from 0 to 6, an instruction containing a non-finite number, an unknown duration unit, or an unknown list item type. A field type the model does not list in `SupportedFieldTypes` throws `ExtractionUnsupportedFieldTypeError` before any provider I/O. After the call, an answer with the wrong type, a value that is not a calendar date, an `HH:MM[:SS]` time, an ISO 8601 datetime, an integer when `Integer` is set, a number with more than `Decimals` places, or a negative duration, a probability outside [0, 1], or a source outside the state throws `InvalidResponseDataException`. A refused field throws `ExtractionRefusalError` and is not retried.
 
 `OpenAIProvider.ExtractionModel(id)` (Responses API, provider id `openai.extraction`), `AnthropicProvider.ExtractionModel(id)` (Messages, `anthropic.extraction`), and `GoogleProvider.ExtractionModel(id)` (Gemini, `google.extraction`) return an `ExtractionLanguageModel`. It wraps a V4 `ILanguageModel` and sends one structured-output request with reasoning `none`. Each field gets a nullable schema (`anyOf` the typed value and `null`) under an internal key (`f0`, `f1`, and so on), and the answers are mapped back to the field ids. Field options and `ReferenceDate` go in the prompt. An empty string or list becomes `null`. The adapter returns `null` for missing values and never returns `PNull`, `Confidence`, `Guess`, or `Source`. Image and PDF files pass through, and any other file media type throws `UnsupportedFunctionalityException` before the model is called. A finish reason of `content-filter` returns a refusal for each field. Any other finish reason except `stop`, invalid JSON, and a missing or extra value throw `InvalidResponseDataException`. `new ExtractionLanguageModel(model, provider, maxFieldsPerCall)` (a positive integer, or `double.PositiveInfinity` for no limit, the default) splits larger field maps into parallel calls of at most `maxFieldsPerCall` fields, because Anthropic caps structured output at 16 union parameters (`AnthropicProvider.ExtractionModel` sets 16). The answers are merged, usage is summed, and the response and provider metadata come from the first call. When one call fails, the whole extraction fails and the other calls are cancelled, and a caller cancel reaches every call. `ExtractionLanguageModel.Serialize(model)` and `Deserialize(options)` work like their `DecisionLanguageModel` counterparts.
+
+### Extraction models in registries and custom providers
+
+A provider exposes extraction models by implementing `IExtractionProvider.ExtractionModel(id)`. `OpenAIProvider`, `AnthropicProvider`, `GoogleProvider`, and `CustomProvider` do. `ProviderRegistry.ExtractionModel("providerId:modelId")` returns the extraction model of the provider registered under `providerId`. It throws `NoSuchProviderError` for an unknown provider and `NoSuchModelError` (`ModelType` `extractionModel`) when the provider has no extraction factory or the factory returns null. Registry middleware does not wrap extraction models.
+
+`CustomProvider.AddExtractionModel(alias, model)` registers an `IExtractionCaller`, and `AddExtractionModel(alias, "model-id")` registers a string alias that goes through `DecisionModels.DefaultProvider` when `ExtractionModel(alias)` is called. An alias wins over `FallbackProvider`. An id that is not an alias goes to the fallback provider's extraction factory, or throws `NoSuchModelError`. Ids such as `toString` or `__proto__` never resolve to an alias.
+
+`ExtractRequest.ModelId` resolves through `DecisionModels.DefaultProvider`, which must implement `IExtractionProvider`. `Model` wins when both are set. Gateway has no extraction models yet, so a string id without such a default provider throws `NoSuchModelError` ("The default provider does not support extraction models. ..."). A model that is not `v4` throws `UnsupportedModelVersionException` on every path.
+
+```csharp
+var registry = new ProviderRegistry();
+registry.Register("invoices", new CustomProvider
+{
+    FallbackProvider = openai,
+}
+    .AddExtractionModel("fast", openai.ExtractionModel("gpt-6.1-sol"))
+    .AddExtractionModel("careful", openai.ExtractionModel("gpt-6-luna")));
+
+DecisionModels.DefaultProvider = new CustomProvider()
+    .AddExtractionModel("careful", registry.ExtractionModel("invoices:careful"));
+
+var result = await Extract.ExtractAsync(new ExtractRequest
+{
+    ModelId = "careful",
+    State = "Invoice INV-2041, total due $1,250.00 by March 3.",
+    Fields = new Dictionary<string, ExtractionField> { ["total"] = new("number") { Decimals = 2 } },
+});
+```
 
 ## Gateway decision fallbacks
 

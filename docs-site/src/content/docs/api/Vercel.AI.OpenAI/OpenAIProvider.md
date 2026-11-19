@@ -15,7 +15,7 @@ Namespace: [Vercel.AI.OpenAI](/api/Vercel.AI.OpenAI/)
 
 
 ```csharp
-public sealed class OpenAIProvider : OpenAICompatibleProvider, IBatchProvider
+public sealed class OpenAIProvider : OpenAICompatibleProvider, IBatchProvider, IExtractionProvider
 ```
 
 
@@ -23,7 +23,7 @@ OpenAI provider: Chat Completions, Responses, embeddings, images, speech, transc
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/) → [OpenAICompatibleProvider](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleProvider/)
 
-**Implements:** [IBatchProvider](/api/Vercel.AI.Operations/IBatchProvider/)
+**Implements:** [IBatchProvider](/api/Vercel.AI.Operations/IBatchProvider/), [IExtractionProvider](/api/Vercel.AI.Operations/IExtractionProvider/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L98)
 
@@ -49,7 +49,7 @@ Creates an OpenAI provider.
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `options` | [OpenAIOptions](/api/Vercel.AI.OpenAI/OpenAIOptions/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L109)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L112)
 
 ## Fields
 
@@ -67,7 +67,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L101)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L104)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_UserAgentSuffix"></a>
 
@@ -83,7 +83,7 @@ User-Agent suffix appended to every request. Tracks `@ai-sdk/openai` 4.0.73.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L107)
 
 ## Properties
 
@@ -102,7 +102,7 @@ HTTP client used for calls that need response headers.
 
 **Value:** [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L118)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L121)
 
 ## Methods
 
@@ -121,7 +121,7 @@ Returns a batch model.
 
 **Returns:** [IBatchModel](/api/Vercel.AI.Provider/IBatchModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L229)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L237)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_ChatModel_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_ChatModel_System_String_"></a>
@@ -144,7 +144,7 @@ Chat Completions model. The provider id is `openai.chat`.
 
 **Returns:** [OpenAIChatLanguageModel](/api/Vercel.AI.OpenAI/OpenAIChatLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L141)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L144)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_CompletionModel_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_CompletionModel_System_String_"></a>
@@ -167,7 +167,7 @@ Legacy completions model. The provider id is `openai.completion`.
 
 **Returns:** [OpenAICompletionLanguageModel](/api/Vercel.AI.OpenAI/OpenAICompletionLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L153)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L156)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_Create_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_Create_Vercel_AI_OpenAI_OpenAIOptions_System_Net_Http_HttpMessageHandler_"></a>
@@ -191,7 +191,7 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [OpenAIProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L121)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L124)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_CreateOpenAIHeaders_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_CreateOpenAIHeaders_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__"></a>
@@ -215,7 +215,7 @@ The user-agent suffix is appended after that, and per-call headers override the 
 
 **Returns:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L288)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L296)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_DecisionModel_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_DecisionModel_System_String_"></a>
@@ -238,7 +238,7 @@ Decisions API model. The provider id is `openai.decision`.
 
 **Returns:** [OpenAIDecisionModel](/api/Vercel.AI.OpenAI/OpenAIDecisionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L159)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L162)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_EmbeddingModel_System_String_"></a>
@@ -261,7 +261,7 @@ Returns an embedding model.
 
 **Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L189)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L197)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_EvaluationModel_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_EvaluationModel_System_String_"></a>
@@ -289,7 +289,7 @@ Deprecated alias of [DecisionModel(string)](#Vercel_AI_OpenAI_OpenAIProvider_Dec
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L171)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L179)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_ExperimentalBatch_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_ExperimentalBatch"></a>
@@ -306,7 +306,7 @@ Batch API. Downloads batch results.
 
 **Returns:** [IBatchApi](/api/Vercel.AI.Operations/IBatchApi/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L219)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L227)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_ExperimentalRealtimeGetTokenAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_ExperimentalRealtimeGetTokenAsync_System_String_Vercel_AI_OpenAI_OpenAIRealtimeOptions_Vercel_AI_Provider_RealtimeModelV4SessionConfig_System_Nullable_System_Int32__System_Threading_CancellationToken_"></a>
@@ -334,7 +334,7 @@ Mints a short-lived client secret for a Realtime model. A Live model is rejected
 
 **Returns:** [Task&lt;OpenAIRealtimeClientSecret&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L266)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L274)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_ExtractionModel_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_ExtractionModel_System_String_"></a>
@@ -357,7 +357,7 @@ Experimental typed field extraction model that uses the Responses API. The provi
 
 **Returns:** [ExtractionLanguageModel](/api/Vercel.AI.Operations/ExtractionLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L165)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L173)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_FileStore_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_FileStore"></a>
@@ -374,7 +374,7 @@ Returns a file store.
 
 **Returns:** [IFileStore](/api/Vercel.AI.Provider/IFileStore/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L235)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L243)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_ImageModel_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_ImageModel_System_String_"></a>
@@ -397,7 +397,7 @@ Returns an image model.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L195)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L203)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_LanguageModel_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_LanguageModel_System_String_"></a>
@@ -420,7 +420,7 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L178)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L186)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_RealtimeModel_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_RealtimeModel_System_String_"></a>
@@ -443,7 +443,7 @@ Returns a realtime model.
 
 **Returns:** [IRealtimeModel](/api/Vercel.AI.Provider/IRealtimeModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L247)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L255)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_RealtimeModel_System_String_Vercel_AI_OpenAI_OpenAIRealtimeOptions_"></a>
 
@@ -468,7 +468,7 @@ Maps to `experimental_realtime`.
 
 **Returns:** [IRealtimeModel](/api/Vercel.AI.Provider/IRealtimeModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L257)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L265)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_ResponsesModel_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_ResponsesModel_System_String_"></a>
@@ -491,7 +491,7 @@ Responses API model. The provider id is `openai.responses`.
 
 **Returns:** [OpenAIResponsesLanguageModel](/api/Vercel.AI.OpenAI/OpenAIResponsesLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L147)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L150)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_SkillStore_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_SkillStore"></a>
@@ -508,7 +508,7 @@ Returns a skill store.
 
 **Returns:** [ISkillStore](/api/Vercel.AI.Provider/ISkillStore/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L241)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L249)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_SpeechModel_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_SpeechModel_System_String_"></a>
@@ -531,7 +531,7 @@ Returns a speech model.
 
 **Returns:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L201)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L209)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_SpeechTranslationModel_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_SpeechTranslationModel_System_String_"></a>
@@ -554,7 +554,7 @@ Returns a speech translation model.
 
 **Returns:** [ISpeechTranslationModel](/api/Vercel.AI.Provider/ISpeechTranslationModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L213)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L221)
 
 <a id="Vercel_AI_OpenAI_OpenAIProvider_TranscriptionModel_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIProvider_TranscriptionModel_System_String_"></a>
@@ -577,4 +577,4 @@ Returns a transcription model.
 
 **Returns:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L207)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L215)

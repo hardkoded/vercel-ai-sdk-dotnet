@@ -146,6 +146,30 @@ This API is obsolete.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L533)
 
+<a id="Vercel_AI_ProviderRegistry_ExtractionModel_"></a>
+<a id="Vercel_AI_ProviderRegistry_ExtractionModel_System_String_"></a>
+
+### ExtractionModel(string)
+
+
+```csharp
+public IExtractionCaller ExtractionModel(string providerAndModel)
+```
+
+
+Resolves `provider:model` to an extraction model. The provider must implement [IExtractionProvider](/api/Vercel.AI.Operations/IExtractionProvider/),
+or [NoSuchModelError](/api/Vercel.AI.Util/NoSuchModelError/) is thrown. Maps to `extractionModel`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `providerAndModel` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [IExtractionCaller](/api/Vercel.AI.Operations/IExtractionCaller/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L543)
+
 <a id="Vercel_AI_ProviderRegistry_FileStore_"></a>
 <a id="Vercel_AI_ProviderRegistry_FileStore_System_String_"></a>
 
@@ -167,7 +191,7 @@ Returns the file store of the provider registered under &lt;code class="paramref
 
 **Returns:** [IFileStore](/api/Vercel.AI.Provider/IFileStore/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L540)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L556)
 
 <a id="Vercel_AI_ProviderRegistry_ImageModel_"></a>
 <a id="Vercel_AI_ProviderRegistry_ImageModel_System_String_"></a>
@@ -304,7 +328,7 @@ Returns the skill store of the provider registered under &lt;code class="paramre
 
 **Returns:** [ISkillStore](/api/Vercel.AI.Provider/ISkillStore/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L546)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L562)
 
 <a id="Vercel_AI_ProviderRegistry_SpeechModel_"></a>
 <a id="Vercel_AI_ProviderRegistry_SpeechModel_System_String_"></a>
