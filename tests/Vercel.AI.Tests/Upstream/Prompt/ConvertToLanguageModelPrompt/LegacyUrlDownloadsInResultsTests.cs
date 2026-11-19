@@ -46,11 +46,15 @@ public sealed class LegacyUrlDownloadsInResultsTests
             }
         );
         var toolResult = new ToolModelMessage("call", "asset", output);
-        ModelMessage message = role == "tool"
-            ? toolResult
-            : new AssistantModelMessage(
-                new AssistantContentPart[] { new AssistantToolResultPart("call", "asset", toolResult) }
-            );
+        ModelMessage message =
+            role == "tool"
+                ? toolResult
+                : new AssistantModelMessage(
+                    new AssistantContentPart[]
+                    {
+                        new AssistantToolResultPart("call", "asset", toolResult),
+                    }
+                );
 
         var assets = await LanguageModelPrompts.DownloadAssetsAsync(
             new[] { message },

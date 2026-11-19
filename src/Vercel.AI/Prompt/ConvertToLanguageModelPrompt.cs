@@ -301,12 +301,7 @@ public static class LanguageModelPrompts
             return result;
         }
 
-        var content = MapToolResultOutput(
-            result.OutputContent,
-            downloaded,
-            provider,
-            warnings
-        );
+        var content = MapToolResultOutput(result.OutputContent, downloaded, provider, warnings);
         var changed = false;
         for (var i = 0; i < content.Count; i++)
         {

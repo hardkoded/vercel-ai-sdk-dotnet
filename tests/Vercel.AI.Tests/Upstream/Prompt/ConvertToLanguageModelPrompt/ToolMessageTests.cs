@@ -23,7 +23,10 @@ public sealed class ToolMessageTests
     private static JsonElement Json(string json) => JsonDocument.Parse(json).RootElement.Clone();
 
     [Fact]
-    [UpstreamTest(Id + "should convert basic tool result message", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should convert basic tool result message",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_convert_basic_tool_result_message()
     {
         var result = LanguageModelPrompts.ConvertToLanguageModelMessage(
@@ -41,7 +44,10 @@ public sealed class ToolMessageTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should convert tool result with provider metadata", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should convert tool result with provider metadata",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_convert_tool_result_with_provider_metadata()
     {
         var providerOptions = new Dictionary<string, JsonElement>

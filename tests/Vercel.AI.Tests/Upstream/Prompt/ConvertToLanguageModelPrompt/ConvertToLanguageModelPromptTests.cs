@@ -11,8 +11,7 @@ namespace Vercel.AI.Tests.Upstream.Prompt.ConvertToLanguageModelPrompt;
 /// <summary>Port of the tests of <c>convert-to-language-model-prompt.test.ts</c> that are outside any <c>describe</c>.</summary>
 public sealed class ConvertToLanguageModelPromptTests
 {
-    private const string Id =
-        "packages/ai/src/prompt/convert-to-language-model-prompt.test.ts::";
+    private const string Id = "packages/ai/src/prompt/convert-to-language-model-prompt.test.ts::";
 
     [Fact]
     [UpstreamTest(
@@ -61,12 +60,14 @@ public sealed class ConvertToLanguageModelPromptTests
     )
     {
         const string url = "https://example.com/asset";
-        var data = type == "image-url"
-            ? new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }
-            : new byte[] { 37, 80, 68, 70 };
-        UserContentPart item = type == "file-url"
-            ? new FileUrlContentPart(url, "application")
-            : new ImageUrlContentPart(url);
+        var data =
+            type == "image-url"
+                ? new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }
+                : new byte[] { 37, 80, 68, 70 };
+        UserContentPart item =
+            type == "file-url"
+                ? new FileUrlContentPart(url, "application")
+                : new ImageUrlContentPart(url);
 
         var mapped = LanguageModelPrompts.MapToolResultOutput(
             new[] { item },
