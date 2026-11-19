@@ -3233,7 +3233,10 @@ internal static class Generation
         }
 
         object? context = null;
-        if (options.ToolsContext != null && options.ToolsContext.TryGetValue(tool.Name, out var value))
+        if (
+            options.ToolsContext != null
+            && options.ToolsContext.TryGetValue(tool.Name, out var value)
+        )
         {
             context = value;
         }
