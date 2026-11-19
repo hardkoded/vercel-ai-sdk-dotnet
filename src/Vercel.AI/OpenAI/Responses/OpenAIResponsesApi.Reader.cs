@@ -34,7 +34,8 @@ internal static partial class OpenAIResponsesApi
             body.Obj("reasoning")?.Str("context"),
             body.Obj("incomplete_details")?.Req("reason"),
             ReadUsage(body.Obj("usage")),
-            ReadPromptCacheDiagnostics(body.Obj("prompt_cache_diagnostics"))
+            ReadPromptCacheDiagnostics(body.Obj("prompt_cache_diagnostics")),
+            ReadInputTransformations(body.Arr("input_transformations"))
         );
 
     /// <summary>Reads a chunk that matched a modeled variant of <c>openaiResponsesChunkSchema</c>. The caller validated it, and handles <c>unknown_chunk</c> itself.</summary>
@@ -749,6 +750,22 @@ internal static partial class OpenAIResponsesApi
             )
             : null;
 
+    private static IReadOnlyList<InputTransformation>? ReadInputTransformations(
+        JsonElement? transformations
+    ) =>
+        transformations is { } list
+            ?
+            [
+                .. list.EnumerateArray()
+                    .Select(t => new InputTransformation(
+                        t.Str("id"),
+                        t.Req("type"),
+                        t.Req("action"),
+                        t.Req("reason")
+                    )),
+            ]
+            : null;
+
     private static ResponseHeader ReadHeader(JsonElement response) =>
         new(
             response.Req("id"),
@@ -762,6 +779,7 @@ internal static partial class OpenAIResponsesApi
         var error = response.Obj("error");
         return new FinishedResponse(
             ReadPromptCacheDiagnostics(response.Obj("prompt_cache_diagnostics")),
+            ReadInputTransformations(response.Arr("input_transformations")),
             response.Obj("incomplete_details")?.Req("reason"),
             ReadUsage(response.Obj("usage")),
             response.Obj("reasoning")?.Str("context"),
@@ -789,6 +807,9 @@ internal static partial class OpenAIResponsesApi
 
     private static JsonElement? Obj(this JsonElement element, string name) =>
         element.Opt(name) is { ValueKind: JsonValueKind.Object } value ? value : null;
+
+    private static JsonElement? Arr(this JsonElement element, string name) =>
+        element.Opt(name) is { ValueKind: JsonValueKind.Array } value ? value : null;
 
     private static string? Str(this JsonElement element, string name) =>
         element.Opt(name) is { ValueKind: JsonValueKind.String } value ? Text(value) : null;

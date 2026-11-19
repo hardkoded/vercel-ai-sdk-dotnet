@@ -444,6 +444,13 @@ internal static class OpenAIResponsesSchema
         ("comparison_reusable_tokens", Nullish(Number))
     );
 
+    private static readonly Rule InputTransformation = Object(
+        ("id", Nullish(String)),
+        ("type", String),
+        ("action", String),
+        ("reason", String)
+    );
+
     private static readonly Rule Response = Object(
         ("id", Optional(String)),
         ("created_at", Optional(Number)),
@@ -462,6 +469,7 @@ internal static class OpenAIResponsesSchema
         ("output", Optional(Array(OutputItem))),
         ("service_tier", Nullish(String)),
         ("prompt_cache_diagnostics", Nullish(PromptCacheDiagnostics)),
+        ("input_transformations", Nullish(Array(InputTransformation))),
         ("reasoning", Nullish(Object(("context", Nullish(String))))),
         ("incomplete_details", Nullish(Object(("reason", String)))),
         ("usage", Nullish(Usage))
@@ -830,6 +838,7 @@ internal static class OpenAIResponsesSchema
             "response",
             Object(
                 ("prompt_cache_diagnostics", Nullish(PromptCacheDiagnostics)),
+                ("input_transformations", Nullish(Array(InputTransformation))),
                 ("incomplete_details", IncompleteDetails),
                 ("usage", Nullish(Usage)),
                 ("reasoning", ResponseReasoning),
@@ -876,6 +885,7 @@ internal static class OpenAIResponsesSchema
                     "response",
                     Object(
                         ("prompt_cache_diagnostics", Nullish(PromptCacheDiagnostics)),
+                        ("input_transformations", Nullish(Array(InputTransformation))),
                         ("error", Nullish(Object(("code", Nullish(String)), ("message", String)))),
                         ("incomplete_details", IncompleteDetails),
                         ("usage", Nullish(Usage)),

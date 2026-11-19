@@ -178,7 +178,8 @@ internal static partial class OpenAIResponsesApi
         string? ReasoningContext = null,
         string? IncompleteReason = null,
         Usage? Usage = null,
-        PromptCacheDiagnostics? PromptCacheDiagnostics = null
+        PromptCacheDiagnostics? PromptCacheDiagnostics = null,
+        IReadOnlyList<InputTransformation>? InputTransformations = null
     );
 
     /// <summary>A stream chunk (<c>openaiResponsesChunkSchema</c>).</summary>
@@ -553,6 +554,9 @@ internal static partial class OpenAIResponsesApi
         double? ComparisonReusableTokens
     );
 
+    /// <summary>An entry of <c>input_transformations</c> (<c>OpenAIResponsesInputTransformation</c>). Strings, so new actions and reasons pass through.</summary>
+    public sealed record InputTransformation(string? Id, string Type, string Action, string Reason);
+
     /// <summary>The <c>response</c> of <c>response.created</c> and <c>response.in_progress</c>.</summary>
     public sealed record ResponseHeader(
         string Id,
@@ -564,6 +568,7 @@ internal static partial class OpenAIResponsesApi
     /// <summary>The <c>response</c> of <c>response.completed</c>, <c>response.incomplete</c> and <c>response.failed</c>.</summary>
     public sealed record FinishedResponse(
         PromptCacheDiagnostics? PromptCacheDiagnostics,
+        IReadOnlyList<InputTransformation>? InputTransformations,
         string? IncompleteReason,
         Usage? Usage,
         string? ReasoningContext,
