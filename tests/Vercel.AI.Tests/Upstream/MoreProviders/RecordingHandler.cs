@@ -75,6 +75,9 @@ internal sealed class ParityHandler : HttpMessageHandler
     /// <summary>Response factory.</summary>
     public Func<ParityCall, HttpResponseMessage> Respond { get; set; }
 
+    /// <summary>Asynchronous response factory. When set it replaces <see cref="Respond"/>, so a test can hold a request open until its token is cancelled.</summary>
+    public Func<ParityCall, Task<HttpResponseMessage>>? RespondAsync { get; set; }
+
     /// <summary>JSON response.</summary>
     public static HttpResponseMessage Json(
         string json,
@@ -163,7 +166,9 @@ internal sealed class ParityHandler : HttpMessageHandler
             cancellationToken
         );
         Calls.Add(call);
-        return Respond(call);
+        return RespondAsync != null
+            ? await RespondAsync(call).ConfigureAwait(false)
+            : Respond(call);
     }
 
     private static void Add(HttpResponseMessage response, (string Name, string Value)[] headers)
