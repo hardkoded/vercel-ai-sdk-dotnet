@@ -291,21 +291,22 @@ public sealed class GatewayProvider
         return headers;
     }
 
-    internal Dictionary<string, string?> Headers(
+    internal async Task<Dictionary<string, string?>> HeadersAsync(
         string specificationHeader,
         string specificationValue,
         string modelHeader,
         string modelId,
         bool? streaming,
-        IReadOnlyDictionary<string, string?>? extra = null
+        IReadOnlyDictionary<string, string?>? extra,
+        CancellationToken cancellationToken
     )
     {
-        var key = ApiKeys.Require(Options.ApiKey, ApiKeyEnvironmentVariable);
+        var auth = await GetRealtimeAuthTokenAsync(cancellationToken).ConfigureAwait(false);
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Authorization"] = "Bearer " + key,
+            ["Authorization"] = "Bearer " + auth.Token,
             ["ai-gateway-protocol-version"] = "0.0.1",
-            ["ai-gateway-auth-method"] = "api-key",
+            ["ai-gateway-auth-method"] = auth.AuthMethod,
             [specificationHeader] = specificationValue,
             [modelHeader] = modelId,
         };
@@ -330,14 +331,17 @@ public sealed class GatewayProvider
         return headers;
     }
 
-    internal Dictionary<string, string?> BatchHeaders(IReadOnlyDictionary<string, string?>? extra)
+    internal async Task<Dictionary<string, string?>> BatchHeadersAsync(
+        IReadOnlyDictionary<string, string?>? extra,
+        CancellationToken cancellationToken
+    )
     {
-        var key = ApiKeys.Require(Options.ApiKey, ApiKeyEnvironmentVariable);
+        var auth = await GetRealtimeAuthTokenAsync(cancellationToken).ConfigureAwait(false);
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Authorization"] = "Bearer " + key,
+            ["Authorization"] = "Bearer " + auth.Token,
             ["ai-gateway-protocol-version"] = "0.0.1",
-            ["ai-gateway-auth-method"] = "api-key",
+            ["ai-gateway-auth-method"] = auth.AuthMethod,
         };
         if (extra != null)
         {
@@ -817,13 +821,14 @@ public sealed class GatewayLanguageModel : ILanguageModel
     )
     {
         // Built outside the try so a missing key surfaces as it is.
-        var headers = _provider.Headers(
+        var headers = await _provider.HeadersAsync(
             "ai-language-model-specification-version",
             "4",
             "ai-language-model-id",
             ModelId,
             false,
-            options.Headers
+            options.Headers,
+            cancellationToken
         );
         try
         {
@@ -852,13 +857,14 @@ public sealed class GatewayLanguageModel : ILanguageModel
     {
         // The request is sent here, so HTTP errors surface from this call as they do upstream.
         var json = V4Json.CallOptions(options);
-        var headers = _provider.Headers(
+        var headers = await _provider.HeadersAsync(
             "ai-language-model-specification-version",
             "4",
             "ai-language-model-id",
             ModelId,
             true,
-            options.Headers
+            options.Headers,
+            cancellationToken
         );
         ProviderSseResponse sse;
         try
@@ -1024,13 +1030,14 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
                     HttpMethod.Post,
                     _provider.Route("embedding-model"),
                     body.ToJsonString(),
-                    _provider.Headers(
+                    await _provider.HeadersAsync(
                         "ai-embedding-model-specification-version",
                         "4",
                         "ai-model-id",
                         ModelId,
                         null,
-                        headers
+                        headers,
+                        cancellationToken
                     ),
                     cancellationToken
                 )
@@ -1222,13 +1229,14 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
                     HttpMethod.Post,
                     _provider.Route("image-model"),
                     body.ToJsonString(),
-                    _provider.Headers(
+                    await _provider.HeadersAsync(
                         "ai-image-model-specification-version",
                         "4",
                         "ai-model-id",
                         ModelId,
                         null,
-                        headers
+                        headers,
+                        cancellationToken
                     ),
                     cancellationToken
                 )

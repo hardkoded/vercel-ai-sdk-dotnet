@@ -90,6 +90,15 @@ internal static class ExecuteToolsFromStream
                     when ToolExecution.IsToolExecutionAllowedFinishReason(
                         modelCallEnd.FinishReason
                     ):
+                    if (toolCallsToExecute.Count == 0)
+                    {
+                        // The setting is validated when the model call ends, as before.
+                        ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(
+                            options.ToolCallConcurrency
+                        );
+                        break;
+                    }
+
                     await foreach (
                         var part in RunToolCalls(
                                 toolCallsToExecute,
@@ -110,7 +119,8 @@ internal static class ExecuteToolsFromStream
         }
     }
 
-    // Runs the calls with the tool call concurrency. The parts of the executions are forwarded as they are produced.
+    // .NET-only: a queue and a semaphore take the place of upstream's stream controller. Runs the calls with the tool call
+    // concurrency. The parts of the executions are forwarded as they are produced.
     private static async IAsyncEnumerable<TextStreamPart> RunToolCalls(
         IReadOnlyList<GeneratedToolCall> toolCalls,
         GenerateTextOptions options,
