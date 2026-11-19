@@ -15,10 +15,6 @@ public static class DecisionModels
     public const string MissingProviderMessage =
         "The default provider does not support decision models.";
 
-    /// <summary>Message thrown when the default provider has no extraction models.</summary>
-    public const string MissingExtractionProviderMessage =
-        "The default provider does not support extraction models. Pass an extraction model instance or configure DefaultProvider with an ExtractionModel method.";
-
     private static readonly Lazy<GatewayProvider> SharedGateway = new(() =>
         GatewayProvider.Create()
     );
@@ -100,20 +96,17 @@ public static class DecisionModels
             );
     }
 
-    /// <summary>Maps to <c>resolveExtractionModel</c> for a model instance. A model that is not <c>v4</c> throws.</summary>
-    public static IExtractionCaller ResolveExtractionModel(IExtractionCaller? model)
-    {
-        return ResolveExtractionModel(model, null);
-    }
+    /// <summary>Message thrown when the default provider has no extraction models.</summary>
+    public const string MissingExtractionProviderMessage =
+        "The default provider does not support extraction models.";
 
     /// <summary>
-    /// Maps to <c>resolveExtractionModel</c>. <paramref name="model"/> wins when set. Otherwise <paramref name="modelId"/> goes
-    /// through <see cref="DefaultProvider"/>. Gateway has no extraction models, so a string id without a default provider that
-    /// implements <see cref="IExtractionProvider"/> throws <see cref="NoSuchModelError"/>. A model that is not <c>v4</c> throws.
+    /// Maps to <c>resolveExtractionModel</c>. <paramref name="model"/> wins when set. Otherwise <paramref name="modelId"/> goes through
+    /// <see cref="DefaultProvider"/>, or Gateway when none is set. A model that is not <c>v4</c> throws.
     /// </summary>
     public static IExtractionCaller ResolveExtractionModel(
         IExtractionCaller? model,
-        string? modelId
+        string? modelId = null
     )
     {
         if (model is null)
@@ -123,16 +116,14 @@ public static class DecisionModels
                 throw new InvalidArgumentException("model", null, "must be an extraction model");
             }
 
-            if (DefaultProvider is not IExtractionProvider provider)
+            var provider = DefaultProvider
+                ?? (GatewayFactory != null ? GatewayFactory() : SharedGateway.Value);
+            if (provider is not IExtractionProvider extraction)
             {
-                throw new NoSuchModelError(
-                    modelId!,
-                    "extractionModel",
-                    MissingExtractionProviderMessage
-                );
+                throw new InvalidOperationException(MissingExtractionProviderMessage);
             }
 
-            model = provider.ExtractionModel(modelId!)
+            model = extraction.ExtractionModel(modelId!)
                 ?? throw new NoSuchModelError(modelId!, "extractionModel");
         }
 

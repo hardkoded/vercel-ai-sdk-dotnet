@@ -42,7 +42,7 @@ Gets or sets the description of the model.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayModelEntry.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayModelEntry.cs#L63)
 
 <a id="Vercel_AI_Gateway_GatewayLanguageModelEntry_Id_"></a>
 <a id="Vercel_AI_Gateway_GatewayLanguageModelEntry_Id"></a>
@@ -59,7 +59,7 @@ Gets or sets the model id used by the remote provider in model settings.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayModelEntry.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayModelEntry.cs#L57)
 
 <a id="Vercel_AI_Gateway_GatewayLanguageModelEntry_KnownModelTypes_"></a>
 <a id="Vercel_AI_Gateway_GatewayLanguageModelEntry_KnownModelTypes"></a>
@@ -93,7 +93,7 @@ Gets or sets the model type, one of [KnownModelTypes](#Vercel_AI_Gateway_Gateway
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayModelEntry.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayModelEntry.cs#L72)
 
 <a id="Vercel_AI_Gateway_GatewayLanguageModelEntry_Name_"></a>
 <a id="Vercel_AI_Gateway_GatewayLanguageModelEntry_Name"></a>
@@ -110,7 +110,7 @@ Gets or sets the display name of the model.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayModelEntry.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayModelEntry.cs#L60)
 
 <a id="Vercel_AI_Gateway_GatewayLanguageModelEntry_Pricing_"></a>
 <a id="Vercel_AI_Gateway_GatewayLanguageModelEntry_Pricing"></a>
@@ -127,7 +127,7 @@ Gets or sets the pricing of the model.
 
 **Value:** [GatewayModelPricing](/api/Vercel.AI.Gateway/GatewayModelPricing/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayModelEntry.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayModelEntry.cs#L66)
 
 <a id="Vercel_AI_Gateway_GatewayLanguageModelEntry_Specification_"></a>
 <a id="Vercel_AI_Gateway_GatewayLanguageModelEntry_Specification"></a>
@@ -144,4 +144,4 @@ Gets or sets the AI SDK specification of the model.
 
 **Value:** [GatewayLanguageModelSpecification](/api/Vercel.AI.Gateway/GatewayLanguageModelSpecification/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayModelEntry.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayModelEntry.cs#L69)

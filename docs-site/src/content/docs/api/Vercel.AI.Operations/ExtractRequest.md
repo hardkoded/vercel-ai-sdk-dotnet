@@ -44,7 +44,7 @@ Without it a URL file throws [DownloadError](/api/Vercel.AI.Util/DownloadError/)
 
 **Value:** [Func&lt;IReadOnlyList&lt;DownloadRequestItem&gt;, Task&lt;IReadOnlyList&lt;DownloadResult&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L84)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L80)
 
 <a id="Vercel_AI_Operations_ExtractRequest_Fields_"></a>
 <a id="Vercel_AI_Operations_ExtractRequest_Fields"></a>
@@ -61,7 +61,7 @@ Nonempty field map.
 
 **Value:** [IReadOnlyDictionary&lt;string, ExtractionField&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L61)
 
 <a id="Vercel_AI_Operations_ExtractRequest_MaxOutputTokens_"></a>
 <a id="Vercel_AI_Operations_ExtractRequest_MaxOutputTokens"></a>
@@ -78,7 +78,7 @@ Maximum output tokens for supported models. Must be an integer of at least 1 whe
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L67)
 
 <a id="Vercel_AI_Operations_ExtractRequest_Model_"></a>
 <a id="Vercel_AI_Operations_ExtractRequest_Model"></a>
@@ -91,7 +91,7 @@ public IExtractionCaller? Model { get; set; }
 ```
 
 
-Explicit extraction model instance. Wins over [ModelId](#Vercel_AI_Operations_ExtractRequest_ModelId) when both are set.
+An extraction model instance. Wins over [ModelId](#Vercel_AI_Operations_ExtractRequest_ModelId) when both are set.
 
 **Value:** [IExtractionCaller](/api/Vercel.AI.Operations/IExtractionCaller/)
 
@@ -108,13 +108,11 @@ public string? ModelId { get; set; }
 ```
 
 
-Extraction model id, used when [Model](#Vercel_AI_Operations_ExtractRequest_Model) is null. It goes through [DefaultProvider](/api/Vercel.AI.Operations/DecisionModels/#Vercel_AI_Operations_DecisionModels_DefaultProvider).
-Gateway has no extraction models, so without a default provider that implements [IExtractionProvider](/api/Vercel.AI.Operations/IExtractionProvider/) it throws
-[NoSuchModelError](/api/Vercel.AI.Util/NoSuchModelError/).
+A model id resolved through [DefaultProvider](/api/Vercel.AI.Operations/DecisionModels/#Vercel_AI_Operations_DecisionModels_DefaultProvider), or Gateway when none is set.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L52)
 
 <a id="Vercel_AI_Operations_ExtractRequest_Reasoning_"></a>
 <a id="Vercel_AI_Operations_ExtractRequest_Reasoning"></a>
@@ -132,7 +130,7 @@ Reasoning effort for supported models: `provider-default`, `none`, `minimal`, `l
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L73)
 
 <a id="Vercel_AI_Operations_ExtractRequest_ReferenceDate_"></a>
 <a id="Vercel_AI_Operations_ExtractRequest_ReferenceDate"></a>
@@ -149,7 +147,7 @@ public string? ReferenceDate { get; set; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L64)
 
 <a id="Vercel_AI_Operations_ExtractRequest_State_"></a>
 <a id="Vercel_AI_Operations_ExtractRequest_State"></a>
@@ -167,4 +165,4 @@ Wrap it in an object or in a [DecisionJsonPart](/api/Vercel.AI.Operations/Decisi
 
 **Value:** [DecisionState](/api/Vercel.AI.Operations/DecisionState/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L58)

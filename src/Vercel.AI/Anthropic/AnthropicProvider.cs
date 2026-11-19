@@ -91,8 +91,8 @@ public class AnthropicProvider
     : ProviderBase,
         Operations.IBatchProvider,
         Operations.IDecisionProvider,
-        Operations.IEvaluationProvider,
-        Operations.IExtractionProvider
+        Operations.IExtractionProvider,
+        Operations.IEvaluationProvider
 {
     /// <summary>Provider id used for dependency injection.</summary>
     public const string ProviderName = "anthropic";

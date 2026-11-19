@@ -45,14 +45,10 @@ public sealed class ExtractionResult
 /// <summary>Options for <see cref="Extract.ExtractAsync"/>.</summary>
 public sealed class ExtractRequest : OperationRequest
 {
-    /// <summary>Explicit extraction model instance. Wins over <see cref="ModelId"/> when both are set.</summary>
+    /// <summary>An extraction model instance. Wins over <see cref="ModelId"/> when both are set.</summary>
     public IExtractionCaller? Model { get; set; }
 
-    /// <summary>
-    /// Extraction model id, used when <see cref="Model"/> is null. It goes through <see cref="DecisionModels.DefaultProvider"/>.
-    /// Gateway has no extraction models, so without a default provider that implements <see cref="IExtractionProvider"/> it throws
-    /// <see cref="NoSuchModelError"/>.
-    /// </summary>
+    /// <summary>A model id resolved through <see cref="DecisionModels.DefaultProvider"/>, or Gateway when none is set.</summary>
     public string? ModelId { get; set; }
 
     /// <summary>

@@ -264,7 +264,7 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [IEvaluationDecisionCaller](/api/Vercel.AI.Operations/IEvaluationDecisionCaller/) | A decision model that also has the deprecated CancellationToken). Returned by the deprecated EvaluationModel accessors of ProviderRegistry and CustomProvider. Both methods decide the same way. |
 | [IEvaluationProvider](/api/Vercel.AI.Operations/IEvaluationProvider/) | Deprecated provider factory for decision models. Implement IDecisionProvider instead. A provider that implements both is asked through IDecisionProvider only. |
 | [IExtractionCaller](/api/Vercel.AI.Operations/IExtractionCaller/) | Experimental extraction model used by CancellationToken). Maps to ExtractionModelV4. |
-| [IExtractionProvider](/api/Vercel.AI.Operations/IExtractionProvider/) | A provider that returns extraction models. ProviderRegistry and CustomProvider resolve extraction models through it. Maps to ExtractionProvider, the optional extractionModel factory of a provider. |
+| [IExtractionProvider](/api/Vercel.AI.Operations/IExtractionProvider/) | A provider that returns extraction models. String model ids resolve through it. Maps to the optional extractionModel factory of a provider. |
 | [IFileStore](/api/Vercel.AI.Operations/IFileStore/) | Files API. |
 | [IFileStoreProvider](/api/Vercel.AI.Operations/IFileStoreProvider/) | Provider that can expose a files API. |
 | [IImageCaller](/api/Vercel.AI.Operations/IImageCaller/) | Image model used by GenerateImage. |

@@ -1582,6 +1582,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             providerMetadata["promptCacheDiagnostics"] = promptCacheDiagnostics;
         }
 
+        if (InputTransformations(response.InputTransformations) is { } inputTransformations)
+        {
+            providerMetadata["inputTransformations"] = inputTransformations;
+        }
+
         return new LanguageModelGenerateResult(
             content,
             finish,
@@ -1716,6 +1721,34 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
 
         return update;
+    }
+
+    /// <summary>Returns <c>input_transformations</c> as provider metadata, or <c>null</c> when the response did not report it. An empty list is kept.</summary>
+    internal static JsonArray? InputTransformations(
+        IReadOnlyList<OpenAIResponsesApi.InputTransformation>? transformations
+    )
+    {
+        if (transformations is null)
+        {
+            return null;
+        }
+
+        var result = new JsonArray();
+        foreach (var transformation in transformations)
+        {
+            var entry = new JsonObject();
+            if (transformation.Id is { } id)
+            {
+                entry["id"] = id;
+            }
+
+            entry["type"] = transformation.Type;
+            entry["action"] = transformation.Action;
+            entry["reason"] = transformation.Reason;
+            result.Add(entry);
+        }
+
+        return result;
     }
 
     /// <summary>Returns the <c>prompt_cache_diagnostics</c> fields that the response carries, or <c>null</c> when it has none.</summary>

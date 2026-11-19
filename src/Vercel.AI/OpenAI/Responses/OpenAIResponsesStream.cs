@@ -44,6 +44,7 @@ internal sealed class OpenAIResponsesStream
     private string? _serviceTier;
     private string? _reasoningContext;
     private JsonObject? _promptCacheDiagnostics;
+    private JsonArray? _inputTransformations;
     private readonly IReadOnlyCollection<string> _functionToolNames;
     private readonly Dictionary<int, OngoingFunctionCall> _ongoingFunctionCalls = new();
     private readonly Dictionary<int, OngoingCustomToolCall> _ongoingCustomToolCalls = new();
@@ -335,6 +336,9 @@ internal sealed class OpenAIResponsesStream
                 _promptCacheDiagnostics = OpenAIResponsesLanguageModel.PromptCacheDiagnostics(
                     failed.PromptCacheDiagnostics
                 );
+                _inputTransformations = OpenAIResponsesLanguageModel.InputTransformations(
+                    failed.InputTransformations
+                );
                 _failedFinish =
                     failedReason != null
                         ? OpenAIResponsesLanguageModel.MapFinishReason(
@@ -379,6 +383,9 @@ internal sealed class OpenAIResponsesStream
         _reasoningContext = response.ReasoningContext ?? _reasoningContext;
         _promptCacheDiagnostics = OpenAIResponsesLanguageModel.PromptCacheDiagnostics(
             response.PromptCacheDiagnostics
+        );
+        _inputTransformations = OpenAIResponsesLanguageModel.InputTransformations(
+            response.InputTransformations
         );
         if (response.Usage != null)
         {
@@ -734,6 +741,11 @@ internal sealed class OpenAIResponsesStream
         if (_promptCacheDiagnostics != null)
         {
             metadata["promptCacheDiagnostics"] = _promptCacheDiagnostics;
+        }
+
+        if (_inputTransformations != null)
+        {
+            metadata["inputTransformations"] = _inputTransformations;
         }
 
         return metadata;

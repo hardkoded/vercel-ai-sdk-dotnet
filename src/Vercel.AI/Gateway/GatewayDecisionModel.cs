@@ -81,7 +81,7 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
 
         var body = new JsonObject
         {
-            ["stateParts"] = StateParts(call.State),
+            ["stateParts"] = ToGatewayStateParts.Convert(call.State, "decision"),
             ["questions"] = questions,
         };
         if (call.MaxOutputTokens != null)
@@ -270,69 +270,6 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
             element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
             ? value.GetString()
             : null;
-    }
-
-    /// <summary>Serializes the ordered state parts. File data goes out as base64. Maps to <c>toGatewayDecisionState</c>.</summary>
-    private static JsonArray StateParts(IReadOnlyList<DecisionModelStatePart> state)
-    {
-        var parts = new JsonArray();
-        foreach (var part in state)
-        {
-            switch (part)
-            {
-                case DecisionModelTextPart text:
-                    parts.Add(new JsonObject { ["type"] = "text", ["text"] = text.Text });
-                    break;
-                case DecisionModelJsonPart json:
-                    parts.Add(
-                        new JsonObject
-                        {
-                            ["type"] = "json",
-                            ["value"] = JsonNode.Parse(json.Value.GetRawText()),
-                        }
-                    );
-                    break;
-                case DecisionModelFilePart file:
-                    parts.Add(FilePart(file));
-                    break;
-            }
-        }
-
-        return parts;
-    }
-
-    private static JsonObject FilePart(DecisionModelFilePart file)
-    {
-        if (file.Data.DataType != "data")
-        {
-            var functionality = "Gateway decision file input: " + file.Data.DataType + " data";
-            throw new UnsupportedFunctionalityException(
-                functionality,
-                "'" + functionality + "' functionality not supported."
-            );
-        }
-
-        var data = file.Data.Base64
-            ?? ByteEncoding.ToBase64(file.Data.Bytes ?? Array.Empty<byte>());
-        var node = new JsonObject { ["type"] = "file", ["mediaType"] = file.MediaType };
-        if (file.FileName != null)
-        {
-            node["filename"] = file.FileName;
-        }
-
-        node["data"] = new JsonObject { ["type"] = "data", ["data"] = data };
-        if (file.ProviderOptions != null)
-        {
-            var options = new JsonObject();
-            foreach (var pair in file.ProviderOptions)
-            {
-                options[pair.Key] = JsonNode.Parse(pair.Value.GetRawText());
-            }
-
-            node["providerOptions"] = options;
-        }
-
-        return node;
     }
 }
 

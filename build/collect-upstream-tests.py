@@ -68,6 +68,7 @@ DOTNET_PROJECTS = {
     "gmicloud": "Vercel.AI.GmiCloud",
     "groq": "Vercel.AI.Groq",
     "heygen": "Vercel.AI",
+    "liquid": "Vercel.AI",
     "huggingface": "Vercel.AI.HuggingFace",
     "hume": "Vercel.AI.Hume",
     "klingai": "Vercel.AI.KlingAI",
