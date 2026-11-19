@@ -145,23 +145,17 @@ public sealed class ToolExecutionApprovalTests
 
     [Fact]
     [UpstreamTest(
-        Id
-            + "should execute transformed approved input after a persisted UI message round trip",
+        Id + "should execute transformed approved input after a persisted UI message round trip",
         Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_execute_transformed_approved_input_after_a_persisted_UI_message_round_trip()
     {
         var executeInputs = new List<string>();
-        var tool = Tool.Function(
-            "count",
-            null,
-            CountSchema,
-            (input, _) =>
-            {
-                executeInputs.Add(input.GetRawText());
-                return Task.FromResult(input.GetProperty("count").GetInt32().ToString());
-            }
-        );
+        var tool = Tool.Function("count", null, CountSchema, (input, _) =>
+        {
+            executeInputs.Add(input.GetRawText());
+            return Task.FromResult(input.GetProperty("count").GetInt32().ToString());
+        });
         tool.InputTransform = input =>
             JsonSerializer.SerializeToElement(
                 new { count = double.Parse(input.GetProperty("count").GetString()!) }
@@ -178,7 +172,11 @@ public sealed class ToolExecutionApprovalTests
                         {
                             new StreamStartStreamPart(Array.Empty<CallWarning>()),
                             new ToolCallStreamPart("count-call", "count", "{\"count\":\"3\"}"),
-                            new FinishStreamPart(FinishReason.ToolCalls, ToolExecutionApprovalStreamSupport.Usage, null),
+                            new FinishStreamPart(
+                                FinishReason.ToolCalls,
+                                ToolExecutionApprovalStreamSupport.Usage,
+                                null
+                            ),
                         }
                     ),
                     Tools = tools,
@@ -190,8 +188,7 @@ public sealed class ToolExecutionApprovalTests
             );
 
         var uiMessage = await ReadLastUiMessageAsync(await UiChunksAsync(firstResult));
-        var persisted = (JsonObject)
-            JsonNode.Parse(UIMessageJson.ToJson(uiMessage).ToJsonString())!;
+        var persisted = (JsonObject)JsonNode.Parse(UIMessageJson.ToJson(uiMessage).ToJsonString())!;
         var toolPart = persisted["parts"]!
             .AsArray()
             .Select(part => part!.AsObject())
@@ -224,10 +221,7 @@ public sealed class ToolExecutionApprovalTests
                     Model = new ScriptedModel(_ => TextStep("Done")),
                     Tools = tools,
                     ToolApproval = new ToolApprovalConfiguration { { "count", "user-approval" } },
-                    Messages = new ModelMessage[]
-                    {
-                        new UserModelMessage("Count three items."),
-                    }
+                    Messages = new ModelMessage[] { new UserModelMessage("Count three items.") }
                         .Concat(modelMessages)
                         .ToArray(),
                 }
