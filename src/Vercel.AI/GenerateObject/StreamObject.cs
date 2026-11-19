@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Text.Json;
 using Vercel.AI.GenerateText;
@@ -452,6 +453,7 @@ internal sealed class ObjectPartBuffer
     private readonly List<ObjectStreamPart> _parts = [];
     private readonly object _gate = new();
     private TaskCompletionSource<bool> _changed = NewSignal();
+    private Exception? _error;
     private bool _completed;
 
     public void Add(ObjectStreamPart part)
@@ -469,6 +471,15 @@ internal sealed class ObjectPartBuffer
         {
             _completed = true;
             Pulse();
+        }
+    }
+
+    // The readers throw the error after the parts that came before it.
+    public void Fail(Exception error)
+    {
+        lock (_gate)
+        {
+            _error ??= error;
         }
     }
 
@@ -490,6 +501,11 @@ internal sealed class ObjectPartBuffer
                 }
                 else if (_completed)
                 {
+                    if (_error != null)
+                    {
+                        ExceptionDispatchInfo.Capture(_error).Throw();
+                    }
+
                     yield break;
                 }
                 else
@@ -1049,9 +1065,20 @@ internal static class StreamObject
             }
             catch (Exception streamError) when (!_cancellationToken.IsCancellationRequested)
             {
+                // A raw stream error stops the stream: readers of the full stream throw it, and flush does not run.
                 result.RejectResultPromises(streamError);
-                error ??= streamError;
-                await EmitAsync(new ObjectStreamErrorPart(streamError)).ConfigureAwait(false);
+                if (options.OnError != null)
+                {
+                    await Generation
+                        .NotifyAsync(
+                            () => options.OnError(streamError, _cancellationToken),
+                            _cancellationToken
+                        )
+                        .ConfigureAwait(false);
+                }
+
+                buffer.Fail(streamError);
+                return;
             }
 
             // Maps to flush.
@@ -1157,14 +1184,9 @@ internal static class StreamObject
 
         private void LogCallWarnings(IReadOnlyList<CallWarning>? warnings)
         {
-            if (warnings == null || warnings.Count == 0)
-            {
-                return;
-            }
-
             LogWarnings.Log(
                 new LogWarningsOptions(
-                    warnings.Select(ToModelWarning).ToArray(),
+                    (warnings ?? []).Select(ToModelWarning).ToArray(),
                     model.Provider,
                     model.ModelId
                 )
