@@ -18,7 +18,14 @@ public sealed class StreamTextTransformTests
         _ =>
             Map(chunk =>
                 chunk is TextDeltaPart delta
-                    ? [new TextDeltaPart(delta.Id, delta.Text.ToUpperInvariant(), delta.ProviderMetadata)]
+                    ?
+                    [
+                        new TextDeltaPart(
+                            delta.Id,
+                            delta.Text.ToUpperInvariant(),
+                            delta.ProviderMetadata
+                        ),
+                    ]
                     : [chunk]
             );
 
@@ -44,7 +51,8 @@ public sealed class StreamTextTransformTests
 
     [Fact]
     [UpstreamTest(
-        Base + "with transformation that reads tools::should pass an empty tool set when no tools are provided",
+        Base
+            + "with transformation that reads tools::should pass an empty tool set when no tools are provided",
         Coverage = UpstreamCoverage.Covered,
         Commit = "485e2a05eb8b2820694afc1c5d227631721fdfba"
     )]
@@ -81,20 +89,32 @@ public sealed class StreamTextTransformTests
     )]
     public async Task Should_transform_the_stream_with_multiple_transformations()
     {
-        StreamTextTransform toUppercaseAndAddComma =
-            _ =>
-                Map(chunk =>
-                    chunk is TextDeltaPart delta
-                        ? [new TextDeltaPart(delta.Id, delta.Text.ToUpperInvariant() + ",", delta.ProviderMetadata)]
-                        : [chunk]
-                );
-        StreamTextTransform omitComma =
-            _ =>
-                Map(chunk =>
-                    chunk is TextDeltaPart delta
-                        ? [new TextDeltaPart(delta.Id, delta.Text.Replace(",", ""), delta.ProviderMetadata)]
-                        : [chunk]
-                );
+        StreamTextTransform toUppercaseAndAddComma = _ =>
+            Map(chunk =>
+                chunk is TextDeltaPart delta
+                    ?
+                    [
+                        new TextDeltaPart(
+                            delta.Id,
+                            delta.Text.ToUpperInvariant() + ",",
+                            delta.ProviderMetadata
+                        ),
+                    ]
+                    : [chunk]
+            );
+        StreamTextTransform omitComma = _ =>
+            Map(chunk =>
+                chunk is TextDeltaPart delta
+                    ?
+                    [
+                        new TextDeltaPart(
+                            delta.Id,
+                            delta.Text.Replace(",", ""),
+                            delta.ProviderMetadata
+                        ),
+                    ]
+                    : [chunk]
+            );
 
         var result = Client()
             .StreamTextAsync(
@@ -111,7 +131,8 @@ public sealed class StreamTextTransformTests
 
     [Fact]
     [UpstreamTest(
-        Base + "with transformation that aborts stream::stream should stop when STOP token is encountered",
+        Base
+            + "with transformation that aborts stream::stream should stop when STOP token is encountered",
         Coverage = UpstreamCoverage.Partial,
         Note = "Asserts the stream parts, not the exact finish-step and finish payloads."
     )]
@@ -129,23 +150,22 @@ public sealed class StreamTextTransformTests
                 new FinishStreamPart(FinishReason.Stop, SteeringTestSupport.Usage, "stop"),
             }
         );
-        StreamTextTransform stopWord =
-            options =>
-                Map(chunk =>
+        StreamTextTransform stopWord = options =>
+            Map(chunk =>
+            {
+                if (chunk is not TextDeltaPart delta)
                 {
-                    if (chunk is not TextDeltaPart delta)
-                    {
-                        return [chunk];
-                    }
-
-                    if (delta.Text.Contains("STOP"))
-                    {
-                        options.StopStream();
-                        return [new FinishPart(FinishReason.Stop, LanguageModelUsage.Empty)];
-                    }
-
                     return [chunk];
-                });
+                }
+
+                if (delta.Text.Contains("STOP"))
+                {
+                    options.StopStream();
+                    return [new FinishPart(FinishReason.Stop, LanguageModelUsage.Empty)];
+                }
+
+                return [chunk];
+            });
 
         var result = Client()
             .StreamTextAsync(

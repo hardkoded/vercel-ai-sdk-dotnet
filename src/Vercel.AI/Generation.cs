@@ -629,13 +629,7 @@ internal static class Generation
         {
             // The producer writes to its own buffer. The transforms read it and feed the buffer that consumers read.
             producerBuffer = new PartBuffer { OnConsumerStop = abort.Stop };
-            ApplyStreamTextTransforms(
-                producerBuffer,
-                buffer,
-                transforms,
-                options.Tools,
-                abort
-            );
+            ApplyStreamTextTransforms(producerBuffer, buffer, transforms, options.Tools, abort);
         }
         else
         {
