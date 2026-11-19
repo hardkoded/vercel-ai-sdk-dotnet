@@ -28,6 +28,26 @@ public interface IAgent
     );
 }
 
+/// <summary>An agent that streams a reply to model messages and takes call options. Maps to the <c>Agent</c> interface with a <c>CALL_OPTIONS</c> type.</summary>
+/// <typeparam name="TCallOptions">The type of the per-call options. Maps to <c>CALL_OPTIONS</c>.</typeparam>
+public interface IAgent<TCallOptions>
+{
+    /// <summary>The tools of the agent. Maps to <c>tools</c>.</summary>
+    IReadOnlyList<Tool>? Tools { get; }
+
+    /// <summary>Streams a reply to <paramref name="messages"/> with <paramref name="options"/>. Maps to <c>stream</c>.</summary>
+    StreamTextResult Stream(
+        IReadOnlyList<ModelMessage> messages,
+        TCallOptions options,
+        CancellationToken cancellationToken = default,
+        Vercel.AI.Util.AbortSignal? abortSignal = null,
+        TimeoutConfiguration? timeout = null,
+        ISteering? experimentalSteering = null,
+        Func<StepResult, CancellationToken, Task>? onStepEnd = null,
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
+    );
+}
+
 /// <summary>An agent that calls tools until <see cref="StopWhen"/> matches. Maps to <c>ToolLoopAgent</c>.</summary>
 public sealed class Agent : IAgent
 {
@@ -923,7 +943,7 @@ public sealed class AgentOptions<TCallOptions> : AgentOptions
 
 /// <summary>An agent that takes options on each call. Maps to <c>ToolLoopAgent</c> with a <c>CALL_OPTIONS</c> type.</summary>
 /// <typeparam name="TCallOptions">The type of the per-call options. Maps to <c>CALL_OPTIONS</c>.</typeparam>
-public sealed class Agent<TCallOptions>
+public sealed class Agent<TCallOptions> : IAgent<TCallOptions>
 {
     private static readonly System.Text.Json.JsonSerializerOptions s_json = new(
         System.Text.Json.JsonSerializerDefaults.Web

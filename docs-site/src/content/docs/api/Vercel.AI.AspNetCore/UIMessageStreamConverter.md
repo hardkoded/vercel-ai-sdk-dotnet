@@ -49,7 +49,36 @@ Runs the agent and streams the output as a UI message stream. Maps to `createAge
 
 **Returns:** [Task&lt;IAsyncEnumerable&lt;JsonObject&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateAgentUIStream.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateAgentUIStream.cs#L85)
+
+<a id="Vercel_AI_AspNetCore_UIMessageStreamConverter_CreateAgentUIStreamAsync__1_Vercel_AI_AspNetCore_CreateAgentUIStreamOptions___0__System_Threading_CancellationToken_"></a>
+
+### `CreateAgentUIStreamAsync<TCallOptions>(CreateAgentUIStreamOptions<TCallOptions>, CancellationToken)`
+
+
+```csharp
+public static Task<IAsyncEnumerable<JsonObject>> CreateAgentUIStreamAsync<TCallOptions>(CreateAgentUIStreamOptions<TCallOptions> options, CancellationToken cancellationToken = default)
+```
+
+
+Runs an agent with call options and streams the output as a UI message stream. Maps to `createAgentUIStream` with `options`.
+
+**Type parameters**
+
+| Name | Description |
+| --- | --- |
+| `TCallOptions` | The type of the call options of the agent. Maps to `CALL_OPTIONS`. |
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `options` | `CreateAgentUIStreamOptions&lt;TCallOptions&gt;` |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;IAsyncEnumerable&lt;JsonObject&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateAgentUIStream.cs#L117)
 
 <a id="Vercel_AI_AspNetCore_UIMessageStreamConverter_CreateAgentUIStreamResponse_"></a>
 <a id="Vercel_AI_AspNetCore_UIMessageStreamConverter_CreateAgentUIStreamResponse_Vercel_AI_AspNetCore_CreateAgentUIStreamResponseOptions_System_Threading_CancellationToken_"></a>
@@ -73,7 +102,36 @@ Runs the agent and returns a response object with a UI message stream. Maps to `
 
 **Returns:** [Task&lt;UIMessageStreamResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateAgentUIStreamResponse.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateAgentUIStreamResponse.cs#L92)
+
+<a id="Vercel_AI_AspNetCore_UIMessageStreamConverter_CreateAgentUIStreamResponse__1_Vercel_AI_AspNetCore_CreateAgentUIStreamResponseOptions___0__System_Threading_CancellationToken_"></a>
+
+### `CreateAgentUIStreamResponse<TCallOptions>(CreateAgentUIStreamResponseOptions<TCallOptions>, CancellationToken)`
+
+
+```csharp
+public static Task<UIMessageStreamResponse> CreateAgentUIStreamResponse<TCallOptions>(CreateAgentUIStreamResponseOptions<TCallOptions> options, CancellationToken cancellationToken = default)
+```
+
+
+Runs an agent with call options and returns a response object with a UI message stream. Maps to `createAgentUIStreamResponse` with `options`.
+
+**Type parameters**
+
+| Name | Description |
+| --- | --- |
+| `TCallOptions` | The type of the call options of the agent. Maps to `CALL_OPTIONS`. |
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `options` | `CreateAgentUIStreamResponseOptions&lt;TCallOptions&gt;` |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;UIMessageStreamResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/CreateAgentUIStreamResponse.cs#L73)
 
 <a id="Vercel_AI_AspNetCore_UIMessageStreamConverter_PipeAgentUIStreamToResponse_"></a>
 <a id="Vercel_AI_AspNetCore_UIMessageStreamConverter_PipeAgentUIStreamToResponse_Vercel_AI_AspNetCore_PipeAgentUIStreamToResponseOptions_System_Threading_CancellationToken_"></a>
@@ -97,7 +155,36 @@ Pipes the agent UI message stream to a [ServerResponse](/api/Vercel.AI.Util/Serv
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/PipeAgentUIStreamToResponse.cs#L19)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/PipeAgentUIStreamToResponse.cs#L54)
+
+<a id="Vercel_AI_AspNetCore_UIMessageStreamConverter_PipeAgentUIStreamToResponse__1_Vercel_AI_AspNetCore_PipeAgentUIStreamToResponseOptions___0__System_Threading_CancellationToken_"></a>
+
+### `PipeAgentUIStreamToResponse<TCallOptions>(PipeAgentUIStreamToResponseOptions<TCallOptions>, CancellationToken)`
+
+
+```csharp
+public static Task PipeAgentUIStreamToResponse<TCallOptions>(PipeAgentUIStreamToResponseOptions<TCallOptions> options, CancellationToken cancellationToken = default)
+```
+
+
+Pipes the UI message stream of an agent with call options to a [ServerResponse](/api/Vercel.AI.Util/ServerResponse/). Maps to `pipeAgentUIStreamToResponse` with `options`.
+
+**Type parameters**
+
+| Name | Description |
+| --- | --- |
+| `TCallOptions` | The type of the call options of the agent. Maps to `CALL_OPTIONS`. |
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `options` | `PipeAgentUIStreamToResponseOptions&lt;TCallOptions&gt;` |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/PipeAgentUIStreamToResponse.cs#L29)
 
 <a id="Vercel_AI_AspNetCore_UIMessageStreamConverter_ReadUIMessageStream_"></a>
 <a id="Vercel_AI_AspNetCore_UIMessageStreamConverter_ReadUIMessageStream_Vercel_AI_AspNetCore_ReadUIMessageStreamOptions_System_Threading_CancellationToken_"></a>

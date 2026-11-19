@@ -15,8 +15,12 @@ UI message stream responses for ASP.NET Core.
 | Type | Summary |
 | --- | --- |
 | [CreateAgentUIStreamOptions](/api/Vercel.AI.AspNetCore/CreateAgentUIStreamOptions/) | Options of CancellationToken). Maps to the options of createAgentUIStream. |
+| [CreateAgentUIStreamOptions&lt;TCallOptions&gt;](/api/Vercel.AI.AspNetCore/CreateAgentUIStreamOptions-1/) | Options of CancellationToken). Maps to the options of createAgentUIStream with a CALLOPTIONS type. |
+| [CreateAgentUIStreamOptionsBase](/api/Vercel.AI.AspNetCore/CreateAgentUIStreamOptionsBase/) | The options of createAgentUIStream that do not depend on the agent. The .NET split of the generic CALLOPTIONS parameter. |
 | [CreateAgentUIStreamResponseOptions](/api/Vercel.AI.AspNetCore/CreateAgentUIStreamResponseOptions/) | Options of CancellationToken). Maps to the options of createAgentUIStreamResponse. |
+| [CreateAgentUIStreamResponseOptions&lt;TCallOptions&gt;](/api/Vercel.AI.AspNetCore/CreateAgentUIStreamResponseOptions-1/) | Options of CancellationToken). Maps to the options of createAgentUIStreamResponse with a CALLOPTIONS type. |
 | [PipeAgentUIStreamToResponseOptions](/api/Vercel.AI.AspNetCore/PipeAgentUIStreamToResponseOptions/) | Options of CancellationToken). Maps to the options of pipeAgentUIStreamToResponse. |
+| [PipeAgentUIStreamToResponseOptions&lt;TCallOptions&gt;](/api/Vercel.AI.AspNetCore/PipeAgentUIStreamToResponseOptions-1/) | Options of CancellationToken). Maps to the options of pipeAgentUIStreamToResponse with a CALLOPTIONS type. |
 | [ReadUIMessageStreamOptions](/api/Vercel.AI.AspNetCore/ReadUIMessageStreamOptions/) | Options of CancellationToken). |
 | [TextUIMessageStream](/api/Vercel.AI.AspNetCore/TextUIMessageStream/) | Turns plain text into the UI message chunks a text-only client expects. |
 | [ToUIMessageChunkOptions](/api/Vercel.AI.AspNetCore/ToUIMessageChunkOptions/) | Options of ToUIMessageChunkOptions). Maps to ToUIMessageChunkOptions. |
