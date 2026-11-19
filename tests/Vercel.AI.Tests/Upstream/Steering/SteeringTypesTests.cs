@@ -31,6 +31,11 @@ public sealed class SteeringTypesTests
         Task<SteeringOutcome> outcome = steering.SteerAsync("hello");
         Assert.NotNull(outcome);
         steering.SteerAsync(new UserModelMessage("hello"), new SteerOptions { Id = "steer-1" });
+        steering.SteerAsync("stop", new SteerOptions { Interrupt = true });
+
+        // interrupt is a boolean, and queued messages wait for the task and cannot interrupt:
+        Assert.Equal(typeof(bool), typeof(SteerOptions).GetProperty("Interrupt")!.PropertyType);
+        Assert.Null(typeof(QueueOptions).GetProperty("Interrupt"));
 
         // only user messages can be sent: there is no overload for another message type.
         Assert.All(
@@ -55,7 +60,7 @@ public sealed class SteeringTypesTests
 
         Task<SteeringOutcome> outcome = steering.QueueAsync("hello");
         Assert.NotNull(outcome);
-        steering.QueueAsync(new UserModelMessage("hello"), new SteerOptions { Id = "queued-1" });
+        steering.QueueAsync(new UserModelMessage("hello"), new QueueOptions { Id = "queued-1" });
 
         // only user messages can be queued: there is no overload for another message type.
         Assert.All(

@@ -23,7 +23,7 @@ Creates steering objects and starts their runs. Maps to `steering.ts`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/Steering.cs#L147)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/Steering.cs#L167)
 
 ## Methods
 
@@ -42,4 +42,4 @@ Creates a steering object that sends user messages to a running generation. Maps
 
 **Returns:** [ISteering](/api/Vercel.AI.GenerateText/ISteering/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/Steering.cs#L152)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/Steering.cs#L172)

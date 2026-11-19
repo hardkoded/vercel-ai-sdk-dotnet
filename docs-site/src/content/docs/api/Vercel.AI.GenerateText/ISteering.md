@@ -22,4 +22,4 @@ public interface ISteering
 Sends user messages to a running generation. Pass it to `GenerateTextAsync`, `StreamText`, or an agent call
 with the `ExperimentalSteering` option. Maps to `Steering`.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/Steering.cs#L99)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateText/Steering.cs#L113)

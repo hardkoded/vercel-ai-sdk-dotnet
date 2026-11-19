@@ -260,6 +260,26 @@ PrepareStep = context => new PrepareStepUpdate
 },
 ```
 
+### Interrupting the current model call
+
+A steering message waits for the current step by default. Pass `new SteerOptions { Interrupt = true }` to cut the current model call short when the model has not produced any output yet, e.g. for a correction like "stop, use the other file":
+
+```csharp
+await steering.SteerAsync("Stop, use the other file.", new SteerOptions { Interrupt = true });
+```
+
+- When the model call has not produced any text, reasoning, tool input, or tool call yet, it is cancelled and made again in the same step with the message. The step keeps its step number and does not count toward stop conditions.
+- `GenerateTextAsync` receives the output of a model call all at once, so the call can be cancelled until it returns. A response that is almost complete is discarded.
+- When output has already started, or tools are running, the message is added at the next step boundary like any other steering message. Running tools are never interrupted. Stop conditions apply to that next step: with the default of one step, the message is not delivered and `SteerAsync` reports the reason `StopCondition`.
+- `PrepareStep` runs again for the new model call and receives the message in `PrepareStepContext.ExperimentalSteeringMessages`. It gets the same instructions and messages as its first call for the step.
+- `OnLanguageModelCallStart` is called again for the new model call. `OnLanguageModelCallEnd` is not called for the cancelled one.
+- `StreamTextAsync` closes the text and reasoning parts of the cancelled call and streams the `SteeringMessagePart` before the new output. A part that was closed before it got any content stays in the UI message as an empty text or reasoning part. It streams one `StartStepPart` and one `FinishStepPart` for the step.
+- A caller abort or a timeout wins over an interrupt: the call ends and the message is reported as not delivered with the reason `Aborted`. The step timeout keeps running when the step is redone.
+- A cancelled model call can still be billed by the provider. It is not included in the usage of the result.
+- `QueueAsync` takes `QueueOptions`, which has no `Interrupt`, because a queued message waits for the task to finish.
+
+> Stop conditions and usage do not limit interrupts. Each interrupt makes another model call in the same step, so a stop condition like `StopWhen.IsStepCount` does not count it, and the usage of the result leaves out the cancelled calls. If your users can send interrupting messages, limit how many you accept for one call and set a `Timeout`.
+
 ### Queueing messages
 
 `SteerAsync` changes what the agent is doing right now. Use `QueueAsync` for a follow-up that should wait until the agent has finished its current task. A queued message is added once the model finishes its current task, i.e. when it gives a final answer without tool calls. The loop then continues with the message, so the agent works through the queue one task at a time:
@@ -281,7 +301,7 @@ PrepareStep = context => new PrepareStepUpdate
 - `Aborted`: the loop was aborted.
 - `Error`: the loop failed.
 
-Pass `new SteerOptions { Id = id }` to make retries safe. Sending a message again with the same `Id` returns the outcome of the first message.
+Pass `new SteerOptions { Id = id }` (or `new QueueOptions { Id = id }`) to make retries safe. Sending a message again with the same `Id` returns the outcome of the first message. A message that is sent again does not interrupt again.
 
 ### Saving and showing steering messages
 

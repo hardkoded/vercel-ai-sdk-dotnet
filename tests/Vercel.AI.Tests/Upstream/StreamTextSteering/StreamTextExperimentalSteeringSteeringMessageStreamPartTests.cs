@@ -176,7 +176,7 @@ public sealed class StreamTextExperimentalSteeringSteeringMessageStreamPartTests
     {
         var steering = CreateSteering();
         Ignore(
-            steering.QueueAsync("Then update the readme.", new SteerOptions { Id = "queued-1" })
+            steering.QueueAsync("Then update the readme.", new QueueOptions { Id = "queued-1" })
         );
 
         var model = SteeringTestModel.Stream(
