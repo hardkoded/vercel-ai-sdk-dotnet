@@ -108,31 +108,6 @@ internal sealed class ModelCallEndPart : TextStreamPart
     public ModelCallPerformance Performance { get; }
 }
 
-/// <summary>Passed to <see cref="StreamLanguageModelCallOptions.OnLanguageModelCallStart"/> before the model is called.</summary>
-internal sealed class LanguageModelCallStartEvent
-{
-    /// <summary>Id of the model call.</summary>
-    public string CallId { get; init; } = string.Empty;
-
-    /// <summary>Provider id of the model.</summary>
-    public string Provider { get; init; } = string.Empty;
-
-    /// <summary>Model id.</summary>
-    public string ModelId { get; init; } = string.Empty;
-
-    /// <summary>Instructions of the call.</summary>
-    public Instructions? Instructions { get; init; }
-
-    /// <summary>Messages of the call, without the instructions.</summary>
-    public IReadOnlyList<ModelMessage> Messages { get; init; } = [];
-
-    /// <summary>Tools offered to the model.</summary>
-    public IReadOnlyList<LanguageModelTool>? Tools { get; init; }
-
-    /// <summary>Call settings.</summary>
-    public LanguageModelCallOptions CallOptions { get; init; } = new();
-}
-
 /// <summary>Options of <see cref="LanguageModelCallStreaming.StreamLanguageModelCall"/>.</summary>
 internal sealed class StreamLanguageModelCallOptions : GenerateTextOptions
 {
@@ -141,16 +116,6 @@ internal sealed class StreamLanguageModelCallOptions : GenerateTextOptions
 
     /// <summary>Whether to include raw provider chunks in the stream. Maps to <c>includeRawChunks</c>.</summary>
     public bool IncludeRawChunks { get; set; }
-
-    /// <summary>Called before the model is called. Maps to <c>onLanguageModelCallStart</c>.</summary>
-    public Func<
-        LanguageModelCallStartEvent,
-        CancellationToken,
-        Task
-    >? OnLanguageModelCallStart { get; set; }
-
-    /// <summary>Generates the id of the call. Maps to <c>_internal.generateCallId</c>.</summary>
-    public Func<string>? GenerateCallId { get; set; }
 
     /// <summary>Whether to collect the content of the call for <see cref="GenerateTextOptions.OnLanguageModelCallEnd"/>. Maps to <c>_internal.collectContent</c>.</summary>
     public bool CollectContent { get; set; } = true;

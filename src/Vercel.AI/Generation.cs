@@ -289,13 +289,15 @@ internal static class Generation
             var instructionCount = InstructionMessages(instructions).Count;
             var initialMessages = messages.Skip(instructionCount).ToArray();
             var responseMessages = new List<ModelMessage>();
+            var callId = (options.GenerateCallId ?? NewCallId)();
             await ProcessInitialApprovalsAsync(
                     options,
                     messages,
                     instructionCount,
                     responseMessages,
                     options.NowMs ?? DefaultNowMs,
-                    cancellationToken
+                    cancellationToken,
+                    callId: callId
                 )
                 .ConfigureAwait(false);
             var steps = new List<StepResult>();
@@ -356,6 +358,28 @@ internal static class Generation
                     )
                     .ConfigureAwait(false);
 
+                if (options.OnLanguageModelCallStart != null)
+                {
+                    await NotifyAsync(
+                            () =>
+                                options.OnLanguageModelCallStart(
+                                    new LanguageModelCallStartEvent
+                                    {
+                                        CallId = callId,
+                                        Provider = current.Provider,
+                                        ModelId = current.ModelId,
+                                        Instructions = instructions,
+                                        Messages = messages.Skip(instructionCount).ToArray(),
+                                        Tools = callOptions.Tools,
+                                        CallOptions = callOptions,
+                                    },
+                                    cancellationToken
+                                ),
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false);
+                }
+
                 var now = options.NowMs ?? DefaultNowMs;
                 var stepStartMs = now();
                 var modelResponse = await current
@@ -388,6 +412,7 @@ internal static class Generation
                                         TimeSpan.FromMilliseconds(responseTimeMs)
                                     )
                                     {
+                                        CallId = callId,
                                         Request = RequestOrigin.GetRequestOrigin(
                                             modelResponse.Request?.Url
                                         )
@@ -415,7 +440,8 @@ internal static class Generation
                         LanguageModelRequestMetadata.Empty,
                         GeneratedResponseInfo(generated, current),
                         ParseResponseBody(generated.RawResponse),
-                        steeringMessages: deliveredSteeringMessages
+                        steeringMessages: deliveredSteeringMessages,
+                        callId: callId
                     )
                     .ConfigureAwait(false);
                 steps.Add(step);
@@ -702,6 +728,7 @@ internal static class Generation
             var stop = options.StopWhen ?? StopWhen.IsStepCount(1);
             var current = model;
             buffer.Add(new StartPart());
+            var callId = (options.GenerateCallId ?? NewCallId)();
             await ProcessInitialApprovalsAsync(
                     options,
                     messages,
@@ -709,7 +736,8 @@ internal static class Generation
                     responseMessages,
                     options.NowMs ?? DefaultNowMs,
                     cancellationToken,
-                    buffer.Add
+                    buffer.Add,
+                    callId
                 )
                 .ConfigureAwait(false);
             initialResponseMessagesSource.TrySetResult(responseMessages.ToArray());
@@ -785,6 +813,7 @@ internal static class Generation
                 streamOptions.PromptMessages = stepMessages;
                 streamOptions.PromptInstructions = instructions;
                 streamOptions.NowMs = now;
+                streamOptions.CallId = callId;
                 streamOptions.ToolChoice = update?.ToolChoice ?? options.ToolChoice;
                 streamOptions.ProviderOptions = MergeProviderOptions(
                     options.ProviderOptions,
@@ -1250,7 +1279,8 @@ internal static class Generation
                         null,
                         streamedApprovals,
                         deliveredSteeringMessages.Select(delivered => delivered.Message).ToArray(),
-                        preliminary => buffer.Add(new ToolResultPart(preliminary))
+                        preliminary => buffer.Add(new ToolResultPart(preliminary)),
+                        callId
                     )
                     .ConfigureAwait(false);
                 foreach (var toolResult in step.ToolResults)
@@ -1851,7 +1881,8 @@ internal static class Generation
         JsonElement? responseBody,
         StreamedApprovals? streamed = null,
         IReadOnlyList<UserModelMessage>? steeringMessages = null,
-        Action<ExecutedTool>? onPreliminaryToolResult = null
+        Action<ExecutedTool>? onPreliminaryToolResult = null,
+        string? callId = null
     )
     {
         var toolExecutionMs = new Dictionary<string, double>(StringComparer.Ordinal);
@@ -1916,7 +1947,7 @@ internal static class Generation
         }
 
         var stepInputMessages = messages.ToArray();
-        var toolCallsCallId = NewCallId();
+        var toolCallsCallId = callId ?? NewCallId();
 
         // Each valid call to a known tool gets its approval status. A call that needs a user decision waits for it, and
         // an automatic denial settles the call without running it. A streamed step decided them as the calls arrived.
@@ -2747,7 +2778,8 @@ internal static class Generation
         List<ModelMessage> responseMessages,
         Func<double> now,
         CancellationToken cancellationToken,
-        Action<TextStreamPart>? emit = null
+        Action<TextStreamPart>? emit = null,
+        string? callId = null
     )
     {
         var history = messages.Skip(instructionCount).ToArray();
@@ -2825,7 +2857,7 @@ internal static class Generation
         }
 
         var stepMessages = messages.ToArray();
-        var approvalCallId = NewCallId();
+        var approvalCallId = callId ?? NewCallId();
         var executions = await ToolCallConcurrencyScheduler
             .MapWithConcurrency(
                 validated.ApprovedToolApprovals,
