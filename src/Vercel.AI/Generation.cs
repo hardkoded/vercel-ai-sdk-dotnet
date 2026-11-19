@@ -672,7 +672,12 @@ internal static class Generation
         if (options.ExperimentalTransform is { Count: > 0 } transforms)
         {
             // The producer writes to its own buffer. The transforms read it and feed the buffer that consumers read.
-            producerBuffer = new PartBuffer { OnConsumerStop = abort.Stop };
+            producerBuffer = new PartBuffer
+            {
+                OnConsumerStop = abort.Stop,
+                SingleConsumer = singleConsumer,
+                HighWaterMark = singleConsumer ? 1 : null,
+            };
             ApplyStreamTextTransforms(producerBuffer, buffer, transforms, options.Tools, abort);
         }
         else
@@ -790,6 +795,7 @@ internal static class Generation
                     var part in stream.WithCancellation(cancellation.Token).ConfigureAwait(false)
                 )
                 {
+                    await target.WaitForRoomAsync(cancellation.Token).ConfigureAwait(false);
                     target.Add(part);
                 }
 
@@ -4199,7 +4205,10 @@ internal sealed class PartBuffer
                                 index = 0;
                             }
 
-                            _room.Release();
+                            if (_room.CurrentCount == 0)
+                            {
+                                _room.Release();
+                            }
                         }
                         else
                         {
@@ -4240,7 +4249,10 @@ internal sealed class PartBuffer
             if (Interlocked.Decrement(ref _readers) == 0 && !finished)
             {
                 OnConsumerStop?.Invoke();
-                _room.Release();
+                if (_room.CurrentCount == 0)
+                {
+                    _room.Release();
+                }
             }
         }
     }
