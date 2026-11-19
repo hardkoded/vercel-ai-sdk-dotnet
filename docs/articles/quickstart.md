@@ -26,6 +26,8 @@ In ASP.NET Core, `services.AddAiSdk()` registers `IAiClient` and a named `HttpCl
 
 ## Model call callbacks
 
+`GenerateTextOptions.OnStart` runs once when `GenerateTextAsync` begins, before any model call, and `OnStepStart` runs when each step begins, before the provider is called. Their `GenerateTextStartEvent` and `GenerateTextStepStartEvent` carry the call settings, including `ActiveTools` and `ToolOrder`. The step event also carries `StepNumber`, the `Steps` that finished before it, and the model, tool choice, tool order and provider options of that step after `PrepareStep`. An exception a callback throws is ignored. `StreamTextOptions` does not call them yet.
+
 `GenerateTextOptions.OnLanguageModelCallStart` runs immediately before each provider call begins, after the prompt is prepared. Its `LanguageModelCallStartEvent` carries `CallId`, `Provider`, `ModelId`, `Instructions`, `Messages`, `Tools` and `CallOptions` (the call settings). `CallId` is the same for every model call of one `GenerateTextAsync` or `StreamTextAsync` call, and the `LanguageModelCallEndEvent` carries the same `CallId`. `StreamTextOptions` calls it too, once for each step. An exception it throws is ignored.
 
 `GenerateTextOptions.OnLanguageModelCallEnd` runs after each provider call returns, before tools run and before `OnStepEnd`. Its `LanguageModelCallEndEvent` carries `Provider`, `ModelId`, `FinishReason`, `Usage`, `Content`, `ResponseId`, `ProviderMetadata` and `ResponseTime`. It fires even when a tool then cancels the call, so the provider metadata of that call is not lost. `StreamTextOptions` calls it too, after the stream of a step ends.

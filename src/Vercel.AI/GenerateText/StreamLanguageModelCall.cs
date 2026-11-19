@@ -128,7 +128,11 @@ internal sealed class StreamLanguageModelCallOptions : GenerateTextOptions
     /// Receives the fully converted prompt before the model call starts. Prompt conversion downloads URLs, so it runs once per step
     /// and telemetry callbacks reuse its result. Maps to <c>onStart</c>.
     /// </summary>
-    public Func<StreamLanguageModelCallStartEvent, CancellationToken, Task>? OnStart { get; set; }
+    public new Func<
+        StreamLanguageModelCallStartEvent,
+        CancellationToken,
+        Task
+    >? OnStart { get; set; }
 
     /// <summary>Whether to collect the content of the call for <see cref="GenerateTextOptions.OnLanguageModelCallEnd"/>. Maps to <c>_internal.collectContent</c>.</summary>
     public bool CollectContent { get; set; } = true;
