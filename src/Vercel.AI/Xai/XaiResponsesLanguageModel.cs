@@ -173,6 +173,16 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
 
     internal PreparedRequest Prepare(LanguageModelCallOptions? options, bool stream)
     {
+        return PrepareRequest(ModelId, options, stream);
+    }
+
+    /// <summary>Builds the Responses request body without a model instance. Maps to <c>XaiResponsesLanguageModel.prepareRequest</c>.</summary>
+    internal static PreparedRequest PrepareRequest(
+        string modelId,
+        LanguageModelCallOptions? options,
+        bool stream
+    )
+    {
         options ??= new LanguageModelCallOptions();
         var warnings = new List<CallWarning>();
         var xai = XaiResponsesOptions.Parse(options.ProviderOptions);
@@ -203,7 +213,7 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
             include.Add("reasoning.encrypted_content");
         }
 
-        var body = new JsonObject { ["model"] = ModelId, ["input"] = input };
+        var body = new JsonObject { ["model"] = modelId, ["input"] = input };
         if (xai.Logprobs == true || xai.TopLogprobs.HasValue)
         {
             body["logprobs"] = true;
@@ -275,7 +285,12 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
             };
         }
 
-        var effort = ResolveReasoningEffort(xai.ReasoningEffort, options.Reasoning, warnings);
+        var effort = ResolveReasoningEffort(
+            modelId,
+            xai.ReasoningEffort,
+            options.Reasoning,
+            warnings
+        );
         if (effort != null)
         {
             body["reasoning"] = new JsonObject { ["effort"] = effort };
@@ -340,7 +355,8 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
         return new PreparedRequest(body, warnings, new XaiToolNames(options.Tools));
     }
 
-    private string? ResolveReasoningEffort(
+    private static string? ResolveReasoningEffort(
+        string modelId,
         string? providerEffort,
         string? reasoning,
         List<CallWarning> warnings
@@ -352,7 +368,7 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
         }
 
         var portable = XaiModelCatalog
-            .GetXaiLanguageModelEntry(ModelId)
+            .GetXaiLanguageModelEntry(modelId)
             .Capabilities.Reasoning.Portable;
         if (!portable.Configurable)
         {

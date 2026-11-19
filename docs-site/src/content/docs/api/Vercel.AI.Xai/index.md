@@ -14,6 +14,7 @@ xAI provider.
 
 | Type | Summary |
 | --- | --- |
+| [XaiBatch](/api/Vercel.AI.Xai/XaiBatch/) | xAI Batch API. Uploads the requests as a JSONL file, creates a file-backed batch, and pages through its results. Maps to XaiBatch. |
 | [XaiClientSecret](/api/Vercel.AI.Xai/XaiClientSecret/) | Client secret returned by /realtime/clientsecrets. |
 | [XaiFileDeleteResult](/api/Vercel.AI.Xai/XaiFileDeleteResult/) | Result of deleting an xAI file. |
 | [XaiFileDownload](/api/Vercel.AI.Xai/XaiFileDownload/) | Downloaded xAI file bytes. |
@@ -24,7 +25,6 @@ xAI provider.
 | [XaiFileUpload](/api/Vercel.AI.Xai/XaiFileUpload/) | Bytes, base64, or a stream uploaded to xAI. |
 | [XaiImageGenerationOptions](/api/Vercel.AI.Xai/XaiImageGenerationOptions/) | Arguments of String). Maps to imageGenerationArgsSchema. |
 | [XaiImageModel](/api/Vercel.AI.Xai/XaiImageModel/) | xAI image model, over /images/generations and /images/edits. Maps to XaiImageModel. |
-| [XaiImageModelOptions](/api/Vercel.AI.Xai/XaiImageModelOptions/) | Provider options for xAI image generation, read from providerOptions.xai. Maps to XaiImageModelOptions. |
 | [XaiMcpServerOptions](/api/Vercel.AI.Xai/XaiMcpServerOptions/) | Arguments of String). Maps to mcpServerArgsSchema. |
 | [XaiOptions](/api/Vercel.AI.Xai/XaiOptions/) | xAI settings. Maps to XaiProviderSettings. |
 | [XaiProvider](/api/Vercel.AI.Xai/XaiProvider/) | xAI provider at https://api.x.ai/v1. LanguageModel(string) returns the Responses API model, as upstream does. |
