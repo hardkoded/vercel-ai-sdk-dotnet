@@ -1182,7 +1182,7 @@ public sealed class GenerateTextBehaviorTests
                     Model = model,
                     Prompt = "prompt",
                     StopWhen = StopWhen.IsStepCount(3),
-                    OnFinish = onFinish,
+                    OnEnd = onFinish,
                     Tools = new[]
                     {
                         Tool.Function("tool1", null, "{\"type\":\"object\"}", (_, _) =>
@@ -1222,7 +1222,7 @@ public sealed class GenerateTextBehaviorTests
                     Model = model,
                     Prompt = "test-input",
                     StopWhen = StopWhen.IsStepCount(3),
-                    OnFinish = onFinish,
+                    OnEnd = onFinish,
                     Tools = new[]
                     {
                         Tool.Function(

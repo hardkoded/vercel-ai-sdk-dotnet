@@ -60,7 +60,7 @@ public sealed class AbortSignalTests
                             onErrorCalls++;
                             return Task.CompletedTask;
                         },
-                        OnFinish = (_, _) =>
+                        OnEnd = (_, _) =>
                         {
                             onFinishCalls++;
                             return Task.CompletedTask;

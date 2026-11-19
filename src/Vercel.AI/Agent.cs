@@ -277,7 +277,10 @@ public sealed class Agent : IAgent
                 ExperimentalSteering = experimentalSteering ?? prepared.ExperimentalSteering,
                 ExperimentalSandbox = prepared.ExperimentalSandbox,
                 OnStepEnd = MergeStepEnd(Options.OnStepEnd, onStepEnd ?? prepared.OnStepEnd),
+                OnEnd = prepared.OnEnd,
+#pragma warning disable CS0618 // OnFinish is the deprecated alias of OnEnd
                 OnFinish = prepared.OnFinish,
+#pragma warning restore CS0618
                 OnError = prepared.OnError,
                 ToolApproval = prepared.ToolApproval,
                 ToolsContext = prepared.ToolsContext,

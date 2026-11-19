@@ -88,7 +88,7 @@ public sealed class ProviderSelectedStructuredOutputTests
                         stepEnd = step;
                         return Task.CompletedTask;
                     },
-                    OnFinish = (finished, _) =>
+                    OnEnd = (finished, _) =>
                     {
                         end = finished;
                         return Task.CompletedTask;

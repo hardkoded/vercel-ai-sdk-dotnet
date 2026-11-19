@@ -245,4 +245,81 @@ public sealed class ResultResponseMessagesTests
         Assert.Equal("call-1", tool.ToolCallId);
         Assert.Equal("tool1", tool.ToolName);
     }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should support onFinish as a deprecated alias",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_support_onFinish_as_a_deprecated_alias()
+    {
+        var calls = new List<string>();
+
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = new TestLanguageModel
+                    {
+                        StreamParts = new LanguageModelStreamPart[]
+                        {
+                            new FinishStreamPart(FinishReason.Stop, TestUsage, "stop"),
+                        },
+                    },
+                    Prompt = "test-input",
+#pragma warning disable CS0618
+                    OnFinish = (_, _) =>
+                    {
+                        calls.Add("onFinish");
+                        return Task.CompletedTask;
+                    },
+#pragma warning restore CS0618
+                }
+            );
+
+        await result.ConsumeStreamAsync();
+
+        Assert.Equal(new[] { "onFinish" }, calls);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should prefer onEnd over onFinish",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_prefer_onEnd_over_onFinish()
+    {
+        var calls = new List<string>();
+
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = new TestLanguageModel
+                    {
+                        StreamParts = new LanguageModelStreamPart[]
+                        {
+                            new FinishStreamPart(FinishReason.Stop, TestUsage, "stop"),
+                        },
+                    },
+                    Prompt = "test-input",
+                    OnEnd = (_, _) =>
+                    {
+                        calls.Add("onEnd");
+                        return Task.CompletedTask;
+                    },
+#pragma warning disable CS0618
+                    OnFinish = (_, _) =>
+                    {
+                        calls.Add("onFinish");
+                        return Task.CompletedTask;
+                    },
+#pragma warning restore CS0618
+                }
+            );
+
+        await result.ConsumeStreamAsync();
+
+        Assert.Equal(new[] { "onEnd" }, calls);
+    }
 }

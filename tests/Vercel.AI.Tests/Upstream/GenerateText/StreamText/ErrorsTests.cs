@@ -125,7 +125,7 @@ public sealed class ErrorsTests
                         errors.Add(error);
                         return Task.CompletedTask;
                     },
-                    OnFinish = (value, _) =>
+                    OnEnd = (value, _) =>
                     {
                         finished = value;
                         return Task.CompletedTask;

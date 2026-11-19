@@ -450,9 +450,12 @@ internal static class Generation
                 telemetry.OnFinish(scope, result.FinishReason);
             }
 
-            if (options.OnFinish != null)
+#pragma warning disable CS0618 // OnFinish is the deprecated alias of OnEnd
+            var onEnd = options.OnEnd ?? options.OnFinish;
+#pragma warning restore CS0618
+            if (onEnd != null)
             {
-                await options.OnFinish(result, cancellationToken).ConfigureAwait(false);
+                await onEnd(result, cancellationToken).ConfigureAwait(false);
             }
 
             return result;
@@ -1326,9 +1329,12 @@ internal static class Generation
                 );
             }
             stepsSource.TrySetResult(result.Steps);
-            if (options.OnFinish != null)
+#pragma warning disable CS0618 // OnFinish is the deprecated alias of OnEnd
+            var onEnd = options.OnEnd ?? options.OnFinish;
+#pragma warning restore CS0618
+            if (onEnd != null)
             {
-                await options.OnFinish(result, cancellationToken).ConfigureAwait(false);
+                await onEnd(result, cancellationToken).ConfigureAwait(false);
             }
 
             buffer.Complete();
