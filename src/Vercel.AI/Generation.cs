@@ -3982,7 +3982,11 @@ internal sealed class OutputTransformStream
         // Only publish if the partial output can be parsed, and only if it changed.
         if (_output.ParsePartialOutput(_text.ToString()) is { } partial)
         {
-            var currentValue = partial.GetRawText();
+            // For string partials (text output), compare directly to avoid unnecessary serialization overhead.
+            var currentValue =
+                partial.ValueKind == JsonValueKind.String
+                    ? partial.GetString()
+                    : partial.GetRawText();
             if (!_hasPublishedValue || currentValue != _lastPublishedValue)
             {
                 _lastPublishedValue = currentValue;
