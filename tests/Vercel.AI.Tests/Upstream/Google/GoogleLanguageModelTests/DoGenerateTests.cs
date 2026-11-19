@@ -14,6 +14,34 @@ public sealed class DoGenerateTests
 {
     [Fact]
     [UpstreamTest(
+        "packages/google/src/google-language-model.test.ts::doGenerate::should include the prompt block reason message in provider metadata",
+        Commit = "a4de3a2148f0187dd8e2bc111c9b8ffb7cb4895e",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_include_the_prompt_block_reason_message_in_provider_metadata()
+    {
+        var handler = new SequencedHandler().Json(
+            "{\"promptFeedback\":{\"blockReason\":\"PROHIBITED_CONTENT\",\"blockReasonMessage\":\"The prompt is blocked due to prohibited contents\"},\"usageMetadata\":{\"promptTokenCount\":9,\"totalTokenCount\":9}}"
+        );
+        var provider = GoogleProvider.Create(
+            new GoogleOptions { ApiKey = "test-api-key" },
+            handler
+        );
+        var result = await provider
+            .LanguageModel("gemini-pro")
+            .DoGenerateAsync(GoogleUpstream.Hello(), CancellationToken.None);
+
+        var feedback = result
+            .ProviderMetadata!.Value.GetProperty("google")
+            .GetProperty("promptFeedback");
+        Assert.Equal(
+            """{"blockReason":"PROHIBITED_CONTENT","blockReasonMessage":"The prompt is blocked due to prohibited contents"}""",
+            feedback.GetRawText()
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
         "packages/google/src/google-language-model.test.ts::doGenerate::should use the custom code execution tool name for generated and streamed results",
         Coverage = UpstreamCoverage.Covered
     )]

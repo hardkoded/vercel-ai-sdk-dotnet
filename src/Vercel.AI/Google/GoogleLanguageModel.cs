@@ -301,6 +301,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
         JsonElement? metadata = null;
         var clientTool = false;
         string? confirmedBlock = null;
+        JsonElement? promptFeedback = null;
         var seenSources = new HashSet<string>(StringComparer.Ordinal);
         // Grounding metadata of each request of an automatically continued response (null when a request had none).
         var groundingPerRequest = new List<JsonElement?>();
@@ -447,6 +448,11 @@ public sealed class GoogleLanguageModel : ILanguageModel
                             && confirmedBlock == null
                         )
                         {
+                            if (feedback.ValueKind == JsonValueKind.Object)
+                            {
+                                promptFeedback = feedback.Clone();
+                            }
+
                             var reason = GoogleJson.String(feedback, "blockReason");
                             if (GoogleFinishReason.IsConfirmedPromptBlock(reason))
                             {
@@ -702,6 +708,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
             groundingPerRequest.Add(requestGrounding);
         }
 
+        metadata = WithPromptFeedback(metadata, promptFeedback);
         metadata = GoogleResponse.WithLongDecode(
             metadata,
             exposeToken ? lastToken : null,
@@ -710,6 +717,34 @@ public sealed class GoogleLanguageModel : ILanguageModel
             groundingPerRequest.Count > 0 ? groundingPerRequest : null
         );
         yield return new FinishStreamPart(finish, usage, rawFinish, metadata);
+    }
+
+    private static JsonElement? WithPromptFeedback(
+        JsonElement? metadata,
+        JsonElement? promptFeedback
+    )
+    {
+        // Upstream keeps the prompt feedback of the stream, so a later chunk without it does not drop it.
+        if (promptFeedback == null)
+        {
+            return metadata;
+        }
+
+        var root = metadata is { ValueKind: JsonValueKind.Object }
+            ? JsonNode.Parse(metadata.Value.GetRawText())!.AsObject()
+            : new JsonObject();
+        if (root["google"] is not JsonObject google)
+        {
+            google = new JsonObject();
+            root["google"] = google;
+        }
+
+        if (google["promptFeedback"] is null)
+        {
+            google["promptFeedback"] = JsonNode.Parse(promptFeedback.Value.GetRawText());
+        }
+
+        return JsonSerializer.SerializeToElement(root);
     }
 
     private static ProviderStreamError CreateStreamError(JsonElement error)

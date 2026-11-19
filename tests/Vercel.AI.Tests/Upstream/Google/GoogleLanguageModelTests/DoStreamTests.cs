@@ -216,10 +216,9 @@ public sealed class DoStreamTests
         var feedback = finish
             .ProviderMetadata!.Value.GetProperty("google")
             .GetProperty("promptFeedback");
-        Assert.Equal("PROHIBITED_CONTENT", feedback.GetProperty("blockReason").GetString());
         Assert.Equal(
-            "The prompt is blocked due to prohibited contents",
-            feedback.GetProperty("blockReasonMessage").GetString()
+            """{"blockReason":"PROHIBITED_CONTENT","blockReasonMessage":"The prompt is blocked due to prohibited contents"}""",
+            feedback.GetRawText()
         );
     }
 
