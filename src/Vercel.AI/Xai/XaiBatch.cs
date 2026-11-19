@@ -745,11 +745,15 @@ public sealed class XaiBatch : BatchResultsApiBase
             Content = content,
             FinishReason = MapXaiFinishReason.Map(rawFinishReason),
             RawFinishReason = rawFinishReason,
-            Usage = usage,
+            Usage = usage ?? new BatchModelUsage(),
             ResponseId = Str(response, "id"),
-            Timestamp = Number(response, "created") is { } created
-                ? DateTimeOffset.FromUnixTimeMilliseconds((long)(created * 1000)).UtcDateTime
-                : null,
+            // Like an invalid JavaScript Date, a value outside DateTimeOffset's range gives no timestamp.
+            Timestamp =
+                Number(response, "created") is { } created
+                && created * 1000 >= -62135596800000
+                && created * 1000 <= 253402300799999
+                    ? DateTimeOffset.FromUnixTimeMilliseconds((long)(created * 1000)).UtcDateTime
+                    : null,
             ModelId = Str(response, "model"),
         };
         if (costInUsdTicks != null || serviceTier != null)

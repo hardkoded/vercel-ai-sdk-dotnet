@@ -1248,7 +1248,6 @@ Streams send `tool-input-start`, `tool-input-delta`, `tool-input-end`, and `tool
 
 Tool results whose output is content with images (`input_image` in `function_call_output`) are not sent, because `ToolModelMessage` has no multipart content ([#327](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/327)).
 
-
 ## xAI Batch
 
 `XaiProvider.ExperimentalBatch()` (upstream `experimental_batch()`) returns the xAI batch API, which `Batch.StartBatchAsync` and the other batch functions use. Its provider id is `xai.batch`. The language and Responses models are not batch APIs.

@@ -736,7 +736,7 @@ public sealed class XaiBatchTests
             {
                 provider.LanguageModel("grok-4.3"),
                 provider.ResponsesModel("grok-4.3"),
-                provider.ResponsesModel("grok-4.3"),
+                new Vercel.AI.Xai.XaiResponsesLanguageModel(provider, "grok-4.3"),
             }
         )
         {
