@@ -199,6 +199,222 @@ public sealed class OptionsOutputObjectOutputTests
         );
     }
 
+    [Fact]
+    [UpstreamTest(Prefix + "should expose parsed output to onEnd after the stream completes")]
+    public async Task Should_expose_parsed_output_to_onEnd_after_the_stream_completes()
+    {
+        JsonElement? callbackOutput = null;
+        var result = StreamWithOnEnd(
+            OutputSpec.Object(OptionsOutputSupport.ValueSchema),
+            (value, _) =>
+            {
+                callbackOutput = value.Output;
+                return Task.CompletedTask;
+            }
+        );
+
+        await result.ConsumeStreamAsync();
+
+        Assert.Equal("{\"value\":\"Hello, world!\"}", callbackOutput!.Value.GetRawText());
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should not delay output for an active onEnd callback")]
+    public async Task Should_not_delay_output_for_an_active_onEnd_callback()
+    {
+        var callbackStarted = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var finishCallback = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var result = StreamWithOnEnd(
+            OutputSpec.Object(OptionsOutputSupport.ValueSchema),
+            async (_, _) =>
+            {
+                callbackStarted.SetResult();
+                await finishCallback.Task;
+            }
+        );
+
+        var outputTask = result.Output;
+        await callbackStarted.Task;
+
+        Assert.Equal("Hello, world!", (await outputTask)!.Value.GetProperty("value").GetString());
+
+        finishCallback.SetResult();
+        await result.ConsumeStreamAsync();
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should parse complete output once for onEnd and the output promise")]
+    public async Task Should_parse_complete_output_once_for_onEnd_and_the_output_promise()
+    {
+        var output = new CountingOutputSpec(OutputSpec.Object(OptionsOutputSupport.ValueSchema));
+        JsonElement? callbackOutput = null;
+        var result = StreamWithOnEnd(output, (value, _) =>
+        {
+            callbackOutput = value.Output;
+            return Task.CompletedTask;
+        });
+
+        var resultOutput = result.Output;
+        await result.ConsumeStreamAsync();
+
+        Assert.Equal("Hello, world!", (await resultOutput)!.Value.GetProperty("value").GetString());
+        Assert.Equal("{\"value\":\"Hello, world!\"}", callbackOutput!.Value.GetRawText());
+        Assert.Equal(1, output.ParseCompleteOutputCalls);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should provide undefined output to onEnd when parsing fails")]
+    public async Task Should_provide_undefined_output_to_onEnd_when_parsing_fails()
+    {
+        JsonElement? callbackOutput = null;
+        var called = false;
+        var result = StreamWithOnEnd(
+            OutputSpec.Object(OptionsOutputSupport.ValueSchema),
+            (value, _) =>
+            {
+                called = true;
+                callbackOutput = value.Output;
+                return Task.CompletedTask;
+            },
+            "{ \"value\": 42 }"
+        );
+
+        await result.ConsumeStreamAsync();
+
+        Assert.True(called);
+        Assert.Null(callbackOutput);
+        var error = await Assert.ThrowsAsync<Vercel.AI.GenerateObject.NoObjectGeneratedException>(
+            () =>
+                result.Output
+        );
+        Assert.Equal("No object generated: response did not match schema.", error.Message);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should allow onEnd to await the output promise after asynchronous work"
+    )]
+    public async Task Should_allow_onEnd_to_await_the_output_promise_after_asynchronous_work()
+    {
+        JsonElement? callbackOutput = null;
+        StreamTextResult? result = null;
+        result = StreamWithOnEnd(
+            OutputSpec.Object(OptionsOutputSupport.ValueSchema),
+            async (_, _) =>
+            {
+                await Task.Delay(1);
+                callbackOutput = await result!.Output;
+            }
+        );
+
+        await result.ConsumeStreamAsync();
+
+        Assert.Equal("{\"value\":\"Hello, world!\"}", callbackOutput!.Value.GetRawText());
+        Assert.Equal(
+            "Hello, world!",
+            (await result.Output)!.Value.GetProperty("value").GetString()
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should call onFinish with the correct content",
+        Coverage = UpstreamCoverage.Partial
+    )]
+    public async Task Should_call_onFinish_with_the_correct_content()
+    {
+        GenerateTextResult? finished = null;
+        var result = OptionsOutputSupport.Stream(
+            new Vercel.AI.Testing.TestLanguageModel
+            {
+                StreamParts = OptionsOutputSupport.Text(
+                    "{ ",
+                    "\"value\": ",
+                    "\"Hello, ",
+                    "world!\" ",
+                    "}"
+                ),
+            },
+            OutputSpec.Object(OptionsOutputSupport.ValueSchema),
+            (value, _) =>
+            {
+                finished = value;
+                return Task.CompletedTask;
+            }
+        );
+
+        await result.ConsumeStreamAsync();
+
+        Assert.NotNull(finished);
+        var text = Assert.IsType<GeneratedText>(Assert.Single(finished.Content));
+        Assert.Equal("{ \"value\": \"Hello, world!\" }", text.Text);
+        Assert.Empty(finished.Files);
+        Assert.Empty(finished.ToolCalls);
+        Assert.Empty(finished.ToolResults);
+        Assert.Empty(finished.Sources);
+        Assert.Empty(finished.Warnings);
+        Assert.Equal(FinishReason.Stop, finished.FinishReason);
+        Assert.Equal("stop", finished.FinalStep.RawFinishReason);
+        Assert.Equal("{\"value\":\"Hello, world!\"}", finished.Output!.Value.GetRawText());
+        Assert.Equal("{ \"value\": \"Hello, world!\" }", finished.Text);
+        Assert.Null(finished.ReasoningText);
+        Assert.Equal(3, finished.Usage.InputTokens);
+        Assert.Equal(10, finished.Usage.OutputTokens);
+        Assert.Equal(13, finished.Usage.TotalTokens);
+        var step = Assert.Single(finished.Steps);
+        Assert.Same(finished.FinalStep, step);
+        var message = Assert.IsType<AssistantModelMessage>(
+            Assert.Single(finished.ResponseMessages)
+        );
+        Assert.Equal("{ \"value\": \"Hello, world!\" }", message.Text);
+        Assert.Equal(finished.Response.ModelId, finished.FinalStep.ModelId);
+    }
+
+    private static StreamTextResult StreamWithOnEnd(
+        OutputSpec output,
+        Func<GenerateTextResult, CancellationToken, Task> onEnd,
+        string json = "{ \"value\": \"Hello, world!\" }"
+    )
+    {
+        return OptionsOutputSupport.Stream(
+            new Vercel.AI.Testing.TestLanguageModel
+            {
+                StreamParts = OptionsOutputSupport.Text(json),
+            },
+            output,
+            onEnd
+        );
+    }
+
+    // Maps to vi.spyOn(output, 'parseCompleteOutput').
+    private sealed class CountingOutputSpec(OutputSpec inner) : OutputSpec
+    {
+        private int _parseCompleteOutputCalls;
+
+        public int ParseCompleteOutputCalls => Volatile.Read(ref _parseCompleteOutputCalls);
+
+        internal override JsonElement? Schema => inner.Schema;
+
+        internal override string? SchemaName => inner.SchemaName;
+
+        internal override string? SchemaDescription => inner.SchemaDescription;
+
+        internal override JsonElement ParseCompleteOutput(string text)
+        {
+            Interlocked.Increment(ref _parseCompleteOutputCalls);
+            return inner.ParseCompleteOutput(text);
+        }
+
+        internal override JsonElement? ParsePartialOutput(string text)
+        {
+            return inner.ParsePartialOutput(text);
+        }
+    }
+
     private static IAsyncEnumerable<LanguageModelStreamPart> Parts(
         params LanguageModelStreamPart[] parts
     )
