@@ -107,6 +107,7 @@
     "huggingface": "Vercel.AI.HuggingFace",
     "hume": "Vercel.AI.Hume",
     "klingai": "Vercel.AI.KlingAI",
+    "liquid": "Vercel.AI",
     "luma": "Vercel.AI.Luma",
     "minimax": "Vercel.AI.MiniMax",
     "moonshotai": "Vercel.AI.Moonshot",
