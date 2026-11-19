@@ -88,10 +88,9 @@ public sealed class OnToolExecutionStartAndOnToolExecutionEndCallbacksTests
     [Fact]
     [UpstreamTest(
         Id + "should pass stepNumber and model to callbacks",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "ToolExecutionStartEvent has no StepNumber or Model. The test checks the other fields of the upstream snapshots."
+        Coverage = UpstreamCoverage.Covered
     )]
-    public async Task Should_pass_the_call_id_and_context_to_callbacks()
+    public async Task Should_pass_stepNumber_and_model_to_callbacks()
     {
         var starts = new ConcurrentQueue<ToolExecutionStartEvent>();
         var ends = new ConcurrentQueue<ToolExecutionEndEvent>();
